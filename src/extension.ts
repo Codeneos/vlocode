@@ -7,34 +7,40 @@ import * as path from 'path';
 import * as process from 'process';
 import constants from './constants';
 import VlocodeService from './services/vlocodeService';
+import * as s from './singleton';
+import * as c from './commands';
+import * as l from './loggers';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
+    // Init extension
+    let vloService = s.getInstance(VlocodeService);
+    let logger = new l.ChainLogger( 
+        new l.OutputLogger(vloService.outputChannel),  
+        new l.ConsoleLogger()        
+    );
+    
+    // Report some thing so that the users knows we are active
+    logger.info('Vlocode Started: version 0.0.1');
+
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
-    let helloCommand = vscode.commands.registerCommand('extension.sayHello', () => {
-        // The code you place here will be executed every time your command is executed
-
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
-    });
-
-    let vloService = new VlocodeService();
-    vloService.outputChannel.appendLine('Vlocode Started.');
-
-    let runDataPackCommand = function(action: vlocity.actionType, options: vlocity.jobOptions) {
-        process.chdir(vscode.workspace.rootPath);
-        let vlocityBuildTools = new vlocity(options);       
-        //vlocityBuildTools.tempFolder = path.join(context.storagePath, '.vlocity');
-        return new Promise((resolve, reject) => vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
-            new Promise((resolve, reject) => {
-                return vlocityBuildTools.datapacksjob.runJob(action, options, resolve, reject)
-            })           
-        );
-    }
+    c.datapackCommands
+        .map(cmd => {
+            logger.info(`Register command ${cmd.name}`);
+            return vscode.commands.registerCommand(cmd.name, () => {
+                logger.info(`Invoke command ${cmd.name}`);
+                try {
+                    cmd.callback();
+                } catch(err) {
+                    logger.info(`Command execution resulted in error: ${err}`);
+                }
+            });
+        })
+        .forEach(sub => context.subscriptions.push(sub));
 
     let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
         let datapackMatches = textDocument.fileName.match(/(.*)(\\|\/)(.*?)_DataPack\.json$/i);
@@ -61,8 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
         //return commandService.runCommand('ForceCode.compileMenu', textDocument);
         //vscode.window.showErrorMessage('The file you are trying to save to the server isn\'t in the current org\'s source folder (' + vscode.window.forceCode.projectRoot + ')');
     });
-
-    context.subscriptions.push(helloCommand, onDidSaveListner);
+    context.subscriptions.push(onDidSaveListner);
 }
 
 

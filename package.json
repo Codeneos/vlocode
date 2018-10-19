@@ -21,7 +21,12 @@
     "contributes": {
         "commands": [
             {
-                "command": "extension.sayHello",
+                "command": "extension.refreshDatapack",
+                "title": "Refresh Selected Datapack",
+                "category": "Vlocity"
+            },            
+            {
+                "command": "extension.deployDatapack",
                 "title": "Deploy Selected Datapack",
                 "category": "Vlocity"
             }
@@ -29,13 +34,13 @@
         "menus": {
             "explorer/context": [
                 {
-                    "when": "resourceFilename == *_datapack.json",
-                    "command": "extension.sayHello",
+                    "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
+                    "command": "extension.refreshDatapack",
                     "group": "1_modification"
                 },
                 {
                     "when": "explorerResourceIsFolder",
-                    "command": "extension.sayHello",
+                    "command": "extension.refreshDatapack",
                     "group": "1_modification"
                 }
             ]
