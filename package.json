@@ -1,0 +1,83 @@
+{
+    "name": "vlocode",
+    "displayName": "VloCode",
+    "description": "Vlocity datapack plugin",
+    "version": "0.0.1",
+    "publisher": "peter0136",
+    "engines": {
+        "vscode": "^1.25.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:extension.sayHello",
+        "workspaceContains:*_datapack.json",
+        "workspaceContains:*_DataPack.json",
+        "workspaceContains:**/*_datapack.json",
+        "workspaceContains:**/*_DataPack.json"
+    ],
+    "main": "./out/extension",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.sayHello",
+                "title": "Deploy Selected Datapack",
+                "category": "Vlocity"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "when": "resourceFilename == *_datapack.json",
+                    "command": "extension.sayHello",
+                    "group": "1_modification"
+                },
+                {
+                    "when": "explorerResourceIsFolder",
+                    "command": "extension.sayHello",
+                    "group": "1_modification"
+                }
+            ]
+        },
+        "configuration": {
+            "type": "object",
+            "title": "Vlocity configuration",
+            "properties": {
+                "vlocity.verbose": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Verbose output during vlocity command execution"
+                },
+                "vlocity.sfdxUsername": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Specifies the SFDX registered user name to use to login to your org"
+                },
+                "vlocity.username": { "type": ["string", "null"], "default": null },
+                "vlocity.password": { "type": ["string", "null"], "default": null },
+                "vlocity.loginUrl": { "type": ["string", "null"], "default": null },
+                "vlocity.instanceUrl": { "type": ["string", "null"], "default": null },
+                "vlocity.httpProxy": { "type": ["string", "null"], "default": null }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.21",
+        "tslint": "^5.8.0",
+        "@types/node": "^8.10.25",
+        "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "vlocity": "^1.7.6",
+        "vscode-languageclient": "^5.1.0"
+    }
+}
