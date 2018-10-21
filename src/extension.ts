@@ -6,7 +6,9 @@ import * as vlocity from 'vlocity';
 import * as path from 'path';
 import * as process from 'process';
 import constants from './constants';
+import VlocodeConfiguration from './models/VlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
+import * as vds from './services/vlocityDatapackService';
 import * as s from './singleton';
 import * as c from './commands';
 import * as l from './loggers';
@@ -16,25 +18,30 @@ import * as l from './loggers';
 export function activate(context: vscode.ExtensionContext) {
 
     // Init extension
-    let vloService = s.getInstance(VlocodeService);
-    let logger = new l.ChainLogger( 
+    let vloService = s.register(VlocodeService, new VlocodeService(VlocodeConfiguration.load()));
+    let logger = s.register(l.Logger, new l.ChainLogger( 
         new l.OutputLogger(vloService.outputChannel),  
         new l.ConsoleLogger()        
-    );
+    ));
     
     // Report some thing so that the users knows we are active
     logger.info('Vlocode Started: version 0.0.1');
+    let vlocityLogFilterRegex = [
+        /^(Current Status|Elapsed Time|Version Info|Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy).*/,
+        /^(Success|Remaining|Error).*?[0-9]+$/
+    ]
+    vds.setLogger(new l.LogFilterDecorator(logger, (...args) => {
+        return !vlocityLogFilterRegex.some(r => r.test(args[0]));
+    }));
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
+    // Resgiter all datapack commands from the commands file
     c.datapackCommands
         .map(cmd => {
             logger.info(`Register command ${cmd.name}`);
-            return vscode.commands.registerCommand(cmd.name, () => {
+            return vscode.commands.registerCommand(cmd.name, (...args) => {                
                 logger.info(`Invoke command ${cmd.name}`);
                 try {
-                    cmd.callback();
+                    cmd.callback.apply(null, args);
                 } catch(err) {
                     logger.info(`Command execution resulted in error: ${err}`);
                 }

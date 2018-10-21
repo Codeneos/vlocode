@@ -24,7 +24,7 @@
                 "command": "extension.refreshDatapack",
                 "title": "Refresh Selected Datapack",
                 "category": "Vlocity"
-            },            
+            },
             {
                 "command": "extension.deployDatapack",
                 "title": "Deploy Selected Datapack",
@@ -55,15 +55,48 @@
                     "description": "Verbose output during vlocity command execution"
                 },
                 "vlocity.sfdxUsername": {
-                    "type": ["string", "null"],
+                    "type": [
+                        "string",
+                        "null"
+                    ],
                     "default": null,
                     "description": "Specifies the SFDX registered user name to use to login to your org"
                 },
-                "vlocity.username": { "type": ["string", "null"], "default": null },
-                "vlocity.password": { "type": ["string", "null"], "default": null },
-                "vlocity.loginUrl": { "type": ["string", "null"], "default": null },
-                "vlocity.instanceUrl": { "type": ["string", "null"], "default": null },
-                "vlocity.httpProxy": { "type": ["string", "null"], "default": null }
+                "vlocity.username": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "vlocity.password": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "vlocity.loginUrl": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "vlocity.instanceUrl": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "vlocity.httpProxy": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                }
             }
         }
     },
@@ -82,6 +115,8 @@
         "@types/mocha": "^2.2.42"
     },
     "dependencies": {
+        "@types/sinon": "^5.0.5",
+        "sinon": "^7.0.0",
         "vlocity": "^1.7.6",
         "vscode-languageclient": "^5.1.0"
     }

@@ -1,30 +1,27 @@
 'use strict';
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as path from 'path';
 import * as process from 'process';
 import constants from '../constants';
 import VlocodeConfiguration from '../models/VlocodeConfiguration';
-import VlocityDatapackService from './vlocityDatapackService';
+import VlocityDatapackService, * as vds from './vlocityDatapackService';
 
 export default class VlocodeService {  
 
     private _config: VlocodeConfiguration;
-    private _datapackService: VlocityDatapackService;
     private _outputChannel: vscode.OutputChannel;
 
-    constructor();
     constructor(config?: VlocodeConfiguration) {
-        this._config = config || new VlocodeConfiguration();
-        VlocityDatapackService.setLogger((msg) => this.outputChannel.appendLine(msg));
-        this._datapackService = new VlocityDatapackService(this.createVlocityJobOptins(this._config)); 
+        if (!config) {
+            throw 'Cannot create VlocodeService without specifying a configuration object.';
+        }
+        this._config = config;
     }
 
-    private createVlocityJobOptins(config: VlocodeConfiguration) : vlocity.jobOptions {
+    private getVlocityJobOptions() : vlocity.jobOptions {
         // for now this is a simple cast but in the future this migth change
-        return <vlocity.jobOptions> config.toObject();
+        return <vlocity.jobOptions> (<any> this._config);
     }
 
     get config(): VlocodeConfiguration {
@@ -32,7 +29,7 @@ export default class VlocodeService {
     }
 
     get datapackService(): VlocityDatapackService {
-        return this._datapackService;
+        return new VlocityDatapackService(this.getVlocityJobOptions());
     }
 
     get outputChannel(): vscode.OutputChannel {

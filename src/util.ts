@@ -1,8 +1,4 @@
 'use strict';
-import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import constants from './constants';
 import { exec } from 'child_process';
 
 export interface ExecpResult {
