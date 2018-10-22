@@ -7,7 +7,7 @@ import constants from '../constants';
 import * as l from '../loggers';
 import * as s from '../singleton';
 import * as vm from 'vm';
-import { isBuffer, isString, isObject } from 'util';
+import { isBuffer, isString, isObject, isError } from 'util';
 
 declare var VlocityUtils: any;
 
@@ -17,8 +17,9 @@ export interface ManifestEntry {
 }
 
 export interface ObjectEntry {
-    objectType: string;
-    key: string;
+    sobjectType: string;
+    globalKey?: string;
+    name?: String;
 }
 
 // Derrived from Vlocity Tools
@@ -83,21 +84,26 @@ export default class VlocityDatapackService {
         return this.vlocityBuildTools.datapacksjob.queryDefinitions;
     }
 
+    public deploy(objects: ObjectEntry[]) : Promise<VlocityDatapackResult>  {
+        return this.runCommand('Deploy',{
+            'manifest': this.createDeployManifest(objects),
+            'projectPath': this.options.projectPath || vscode.workspace.rootPath
+        });
+    }
+
     public export(objects: ObjectEntry[], maxDepth: Number = 0) : Promise<VlocityDatapackResult>  {
         return this.runCommand('Export',{
             //'manifest': this.createExportManifest(objects)
             'queries': this.createExportQueries(objects),
             'maxDepth': maxDepth,
-            'projectPath': vscode.workspace.rootPath
+            'projectPath': this.options.projectPath || vscode.workspace.rootPath
         });
     }
 
     private createExportQueries(objects: ObjectEntry[]) : any {
         return objects.map(oe => {
-            let dpType = this.getDatapackType(oe.objectType) || 'SObject';
-            let query = `select Id from ${oe.objectType} where %vlocity_namespace%__GlobalKey__c = '${oe.key}'`;
-            //queries[dpType] = queries[dpType] || [];
-            //queries[dpType].push(query);
+            let dpType = this.getDatapackType(oe.sobjectType) || 'SObject';
+            let query = this.buildQuery(oe);
             return {
                 VlocityDataPackType: dpType,
                 query: query
@@ -105,10 +111,32 @@ export default class VlocityDatapackService {
         });
     }
 
-    public getDatapackType(soobjectType: string) : string {
+    private buildQuery(entry: ObjectEntry) : string {
+        if (!entry.globalKey && !entry.name) {
+            throw new Error(`Cannot export object without name or global key (${entry.sobjectType})`);
+        }
+        let query = `select Id from ${entry.sobjectType} where `;
+        if (entry.globalKey) {
+            query += `%vlocity_namespace%__GlobalKey__c = '${entry.globalKey}'`;
+        } else {
+            query += `Name = '${entry.name}'`;
+        }
+        return query;
+    }
+
+    public getDatapackType(sobjectType: string) : string {
         return Object.keys(this.queryDefinitions).find(type => {
-            return new RegExp(`from ${soobjectType}`,'ig').test(this.queryDefinitions[type].query);
+            return new RegExp(`from ${sobjectType}`,'ig').test(this.queryDefinitions[type].query);
         });
+    }
+
+    private createDeployManifest(objects: ObjectEntry[]) : any {
+        return objects.reduce((mf, item) => {     
+            let dpType = this.getDatapackType(item.sobjectType) || 'SObject';       
+            mf[dpType] = mf[dpType] || [];
+            mf[dpType].push(item.globalKey || item.name);
+            return mf;
+        }, {});
     }
 
     private createExportManifest(objects: ManifestEntry[]) : any {
@@ -119,29 +147,36 @@ export default class VlocityDatapackService {
         }, {});
     }
 
-    private runCommand(command: vlocity.actionType, jobInfo : any) : Promise<VlocityDatapackResult> {
-        process.chdir(vscode.workspace.rootPath);
-        return new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
-            new Promise((resolve, reject) => {
-                jobInfo = Object.assign({}, this.options, jobInfo);
-                return this.vlocityBuildTools.datapacksjob.runJob(command, jobInfo, resolve, reject);
-            })
-        );
+    private async runCommand(command: vlocity.actionType, jobInfo : any) : Promise<VlocityDatapackResult> {
+        try {
+            process.chdir(vscode.workspace.rootPath);
+            return await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
+                new Promise((resolve, reject) => {
+                    jobInfo = Object.assign({}, this.options, jobInfo);
+                    return this.vlocityBuildTools.datapacksjob.runJob(command, jobInfo, resolve, reject);
+                })
+            );
+        } catch (err) {
+            if (isError(err)) {
+                throw err;
+            }
+            return <VlocityDatapackResult>err;
+        }
     }
+}
+
+function formatMsgArg(arg: any) {
+    if (arg instanceof Error) {
+        return arg.stack;
+    } else if (typeof arg == 'object') {
+        return JSON.stringify(arg, null);
+    }
+    return arg;
 }
 
 export function setLogger(logger : l.Logger){
     VlocityUtils.output = (loggingMethod, color: string, args: IArguments) => {
-        let messageArray = Array.from(args);
-        let message = messageArray[0] + ': '+ messageArray.slice(1).map((arg, i) => {
-            if (arg instanceof Error) {
-                return arg.stack;
-            } else if (typeof arg == 'object') {
-                return JSON.stringify(arg, null);
-            }
-            return arg;
-        }).join(' ');
-        logger.log(message);
+        logger.log.apply(logger, Array.from(args).map(formatMsgArg));
     };
 }
 

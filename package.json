@@ -22,12 +22,12 @@
         "commands": [
             {
                 "command": "extension.refreshDatapack",
-                "title": "Refresh Selected Datapack",
+                "title": "Refresh Selected Datapack(s)",
                 "category": "Vlocity"
             },
             {
                 "command": "extension.deployDatapack",
-                "title": "Deploy Selected Datapack",
+                "title": "Deploy Selected Datapack(s)",
                 "category": "Vlocity"
             }
         ],
@@ -39,8 +39,8 @@
                     "group": "1_modification"
                 },
                 {
-                    "when": "explorerResourceIsFolder",
-                    "command": "extension.refreshDatapack",
+                    "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
+                    "command": "extension.deployDatapack",
                     "group": "1_modification"
                 }
             ]

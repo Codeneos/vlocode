@@ -9,6 +9,13 @@ export class Logger {
     error(...args) : void {}
 }
 
+enum logLevel {
+    info,
+    verbose,
+    warn,
+    error,
+}
+
 export class OutputLogger implements Logger {
     private _channel: vscode.OutputChannel;
 
@@ -16,30 +23,16 @@ export class OutputLogger implements Logger {
         this._channel = channel;
     }
 
-    public log(...args) : void {
+    private _log(...args) : void {
         this._channel.show();
         this._channel.appendLine(args.join(' '));
     }
 
-    public info(...args) : void {
-        this._channel.show();
-        this._channel.appendLine(args.join(' '));
-    }
-
-    public verbose(...args) : void {
-        this._channel.show();
-        this._channel.appendLine(args.join(' '));
-    }
-    
-    public warn(...args) : void {
-        this._channel.show();
-        this._channel.appendLine(args.join(' '));
-    }
-
-    public error(...args) : void {
-        this._channel.show();
-        this._channel.appendLine(args.join(' '));
-    }
+    public log(...args) : void { this._log.apply(this, args); }
+    public info(...args) : void { this._log.apply(this, args); }
+    public verbose(...args) : void { this._log.apply(this, args); }    
+    public warn(...args) : void { this._log.apply(this, args); }
+    public error(...args) : void { this._log.apply(this, args); }
 }
 
 export class ConsoleLogger implements Logger {
@@ -57,11 +50,11 @@ export class ChainLogger implements Logger {
         this._chain = args;
     }
 
-    public log(...args) : void { this._chain.forEach(c => c.log(args)); }
-    public info(...args) : void { this._chain.forEach(c => c.info(args)); }
-    public verbose(...args) : void { this._chain.forEach(c => c.verbose(args)); }
-    public warn(...args) : void { this._chain.forEach(c => c.warn(args)); }
-    public error(...args) : void { this._chain.forEach(c => c.error(args)); }
+    public log(...args) : void { this._chain.forEach(c => c.log.apply(c, args)); }
+    public info(...args) : void { this._chain.forEach(c => c.info.apply(c, args)); }
+    public verbose(...args) : void { this._chain.forEach(c => c.verbose.apply(c, args)); }
+    public warn(...args) : void { this._chain.forEach(c => c.warn.apply(c, args)); }
+    public error(...args) : void { this._chain.forEach(c => c.error.apply(c, args)); }
 }
 
 export class LogFilterDecorator implements Logger {
@@ -73,9 +66,9 @@ export class LogFilterDecorator implements Logger {
         this._filter = filterFunc;
     }
 
-    public log(...args) : void { !this._filter(args) || this._logger.log(args) ; }
-    public info(...args) : void { !this._filter(args) || this._logger.info(args); }
-    public verbose(...args) : void { !this._filter(args) || this._logger.verbose(args); }
-    public warn(...args) : void { !this._filter(args) || this._logger.warn(args); }
-    public error(...args) : void { !this._filter(args) || this._logger.error(args); }
+    public log(...args) : void { !this._filter(args) || this._logger.log.apply(this._logger, args) ; }
+    public info(...args) : void { !this._filter(args) || this._logger.info.apply(this._logger, args); }
+    public verbose(...args) : void { !this._filter(args) || this._logger.verbose.apply(this._logger, args); }
+    public warn(...args) : void { !this._filter(args) || this._logger.warn.apply(this._logger, args); }
+    public error(...args) : void { !this._filter(args) || this._logger.error.apply(this._logger, args); }
 }

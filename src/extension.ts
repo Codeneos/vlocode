@@ -13,11 +13,25 @@ import * as s from './singleton';
 import * as c from './commands';
 import * as l from './loggers';
 
+function setVlocityToolsLogger(){
+    let vloService = s.get(VlocodeService);
+    let vlocityLogFilterRegex = [
+        /^(Current Status|Elapsed Time|Version Info|Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy).*/,
+        /^(Success|Remaining|Error).*?[0-9]+$/
+    ];
+    vds.setLogger(new l.ChainLogger( 
+        new l.LogFilterDecorator(new l.OutputLogger(vloService.outputChannel), (...args) => {
+            return !vlocityLogFilterRegex.some(r => r.test(args[0]));
+        }),  
+        new l.ConsoleLogger()
+    ));
+}
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-    // Init extension
+    // Init logging and regsiter services
     let vloService = s.register(VlocodeService, new VlocodeService(VlocodeConfiguration.load()));
     let logger = s.register(l.Logger, new l.ChainLogger( 
         new l.OutputLogger(vloService.outputChannel),  
@@ -25,56 +39,39 @@ export function activate(context: vscode.ExtensionContext) {
     ));
     
     // Report some thing so that the users knows we are active
-    logger.info('Vlocode Started: version 0.0.1');
-    let vlocityLogFilterRegex = [
-        /^(Current Status|Elapsed Time|Version Info|Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy).*/,
-        /^(Success|Remaining|Error).*?[0-9]+$/
-    ]
-    vds.setLogger(new l.LogFilterDecorator(logger, (...args) => {
-        return !vlocityLogFilterRegex.some(r => r.test(args[0]));
-    }));
+    logger.info(`Vlocode version ${constants.VERSION} started`);
+    setVlocityToolsLogger();    
 
     // Resgiter all datapack commands from the commands file
     c.datapackCommands
         .map(cmd => {
-            logger.info(`Register command ${cmd.name}`);
-            return vscode.commands.registerCommand(cmd.name, (...args) => {                
-                logger.info(`Invoke command ${cmd.name}`);
+            logger.verbose(`Register command ${cmd.name}`);
+            return vscode.commands.registerCommand(cmd.name, async (...args) => {                
+                logger.verbose(`Invoke command ${cmd.name}`);
                 try {
-                    cmd.callback.apply(null, args);
+                    await cmd.callback.apply(null, args);
+                    logger.verbose(`Execution of command ${cmd.name} done`);
                 } catch(err) {
-                    logger.info(`Command execution resulted in error: ${err}`);
+                    logger.error(`Command execution resulted in error: ${err}`);
                 }
             });
         })
         .forEach(sub => context.subscriptions.push(sub));
 
-    let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
+    /*let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
         let datapackMatches = textDocument.fileName.match(/(.*)(\\|\/)(.*?)_DataPack\.json$/i);
         if (datapackMatches == null) {
             return;
         }
         let [,folder,,datapackName] = datapackMatches; 
-        /*outputChannel.show();       
-        outputChannel.appendLine('Deploying datapack ' + datapackName);
-        runDataPackCommand(
-            'Export', {
-                sfdxUsername: 'peter.van.gulik@accenture.com.peter',
-                verbose: true
-            }
-        ).catch(err => {
-            console.error(err);
-            outputChannel.appendLine(err);
-
-        });*/
-        
+              
         //vscode.window.showInformationMessage(JSON.stringify(datapack));
         //vscode.
         //const toolingType: string = getAnyTTFromFolder(textDocument.uri);
         //return commandService.runCommand('ForceCode.compileMenu', textDocument);
         //vscode.window.showErrorMessage('The file you are trying to save to the server isn\'t in the current org\'s source folder (' + vscode.window.forceCode.projectRoot + ')');
     });
-    context.subscriptions.push(onDidSaveListner);
+    context.subscriptions.push(onDidSaveListner);*/
 }
 
 

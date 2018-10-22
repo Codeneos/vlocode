@@ -9,10 +9,11 @@ import * as process from 'process';
 import constants from './constants';
 import commandModel from './models/commandModel';
 import VlocodeService from './services/vlocodeService';
-import * as vds from './services/vlocityDatapackService';
+import VlocityDatapackService, * as vds from './services/vlocityDatapackService';
 import * as s from './singleton';
 import * as c from './commands';
 import * as l from './loggers';
+import { isError } from 'util';
 
 function readFileAsync(file: vscode.Uri) : Promise<string> {
     return new Promise<string>((resolve, reject) => {
@@ -34,12 +35,15 @@ async function getDatapack(file: vscode.Uri) : Promise<vds.VlocityDatapack> {
     return new vds.VlocityDatapack(await getDocumentBodyAsString(file));
 }
 
-function showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, args? : IArguments) : Thenable<T> {
-    return vscode.window.showErrorMessage(errorMsg, { modal: false }, { title: 'Retry' })
+function showMsgWithRetry<T>(
+    msgFunc : (msg : String, options: vscode.MessageOptions, ...args: vscode.MessageItem[]) => Thenable<T>, 
+    errorMsg : string, 
+    retryCallback: (...args) => Promise<T>, args? : IArguments) : Thenable<T> {
+    return msgFunc(errorMsg, { modal: false }, { title: 'Retry' })
             .then(value => {
                 if (value) {
                     if (args !== undefined) {
-                        return retryCallback.apply(null, Array.prototype.splice.apply(args));
+                        return retryCallback.apply(null, Array.from(args));
                     } else {
                         return retryCallback();
                     }
@@ -47,28 +51,61 @@ function showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Pr
             });
 }
 
-export async function refreshDatapack(selectedFiles: vscode.Uri[]) {
-    let datapacks = await Promise.all(selectedFiles.map(f => getDatapack(f)));    
-    let datapacksForExport = datapacks.map(dp => { 
+function showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, args? : IArguments) : Thenable<T> {
+    return showMsgWithRetry<T>(vscode.window.showErrorMessage, errorMsg, retryCallback, args);
+}
+
+function showWarningWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, args? : IArguments) : Thenable<T> {
+    return showMsgWithRetry<T>(vscode.window.showWarningMessage, errorMsg, retryCallback, args);
+}
+
+export async function callCommandForFiles<T>(command : (objects: vds.ObjectEntry[]) => Promise<T>, files: vscode.Uri[]) : Promise<T> | undefined {
+    let datapacks = await Promise.all(files.map(f => getDatapack(f)));    
+    let objectEntries = datapacks.map(dp => { 
         return <vds.ObjectEntry>{ 
-            objectType: dp.sobjectType,
-            key: dp.globalKey
+            sobjectType: dp.sobjectType,
+            globalKey: dp.globalKey,
+            name: dp.name
         }
-    });
-
-    datapacks.forEach(dp => s.get(l.Logger).info(`Selected datapack ${dp.name} (${dp.globalKey})`));
-
-    try{
-        await s.get(VlocodeService).datapackService.export(datapacksForExport);
-    } catch (_err) {
-        // Errors cannot be type in TS for now so we use cast, but the export function will
-        let err = <vds.VlocityDatapackResult> _err;
-        let errParts = (err.message || _err).split('---').map(v => v.trim());
-        return showErrorWithRetry(`Error refreshing datapack: ${errParts[0]} ${errParts[errParts.length - 1]}`, refreshDatapack, arguments);
+    });    
+    try {
+        return await command.call(s.get(VlocodeService).datapackService, objectEntries);
+    } catch (err) {
+        if (isError(err)) {
+            throw err;
+        }
+        return Promise.resolve(<T>err);
     }
 }
 
-export function deployDatapack(datapackType: String, datapackKey: String) {
+export async function refreshDatapack(selectedFiles: vscode.Uri[]) {
+    try {
+        let result = await callCommandForFiles(VlocityDatapackService.prototype.export, selectedFiles);
+
+        // lets do some math to find out how successfull we were
+        let expectedMinResultCount = selectedFiles.length;
+        let successCount = (result.records || []).reduce((c, r) => c += (r.VlocityDataPackStatus == 'Success') ? 1 : 0, 0);
+        let errorCount = (result.records || []).reduce((c, r) => c += (r.VlocityDataPackStatus != 'Success') ? 1 : 0, 0);
+
+        // Interpred the results and report back
+        if (successCount > 0 && errorCount > 0) {
+            await showWarningWithRetry(`Unable to refresh all selected datapack(s); refreshed ${successCount} datapacks with ${errorCount} errors`, refreshDatapack, arguments);
+        }  else if (errorCount == 0) {
+            if(successCount >= expectedMinResultCount) {
+                vscode.window.showInformationMessage(`Succesfully refreshed ${successCount} datapack(s)`);
+            } else {
+                await showWarningWithRetry(`Unable to refresh all selected datapack(s); refreshed ${successCount} out of ${expectedMinResultCount}`, refreshDatapack, arguments);
+            }
+        } else if (successCount == 0) {
+            await showErrorWithRetry(`Failed to refresh the selected datapack(s); see the log for more details`, refreshDatapack, arguments);
+        }        
+    } catch (err) {
+
+    }
+}
+
+export async function deployDatapack(selectedFiles: vscode.Uri[]) {
+    return callCommandForFiles(VlocityDatapackService.prototype.deploy, selectedFiles);
 }
 
 export const datapackCommands : commandModel[] = [
@@ -77,6 +114,6 @@ export const datapackCommands : commandModel[] = [
         callback: (...args) => refreshDatapack(<vscode.Uri[]>args[1])
     }, {
         name: 'extension.deployDatapack',
-        callback: deployDatapack
+        callback: (...args) => deployDatapack(<vscode.Uri[]>args[1])
     }
 ];

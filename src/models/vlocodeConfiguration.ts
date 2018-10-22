@@ -4,14 +4,16 @@ import * as s from '../singleton';
 import * as l from '../loggers';
 
 export default class VlocodeConfiguration {
-    public verbose: Boolean;
-    public sfdxUsername: String;
-    public username: String;
-    public password: String;
-    public loginUrl: String;
-    public instanceUrl: String;
-    public httpProxy: String;
-    public additionalOptions: any;
+    public verbose?: Boolean;
+    public sfdxUsername?: String;
+    public username?: String;
+    public password?: String;
+    public loginUrl?: String;
+    public instanceUrl?: String;
+    public httpProxy?: String;
+    public additionalOptions?: any;
+    public projectPath?: String;
+    public maxDepth?: Number;
 
     public static load(configSectionName?: string) : VlocodeConfiguration {
         let vsconfig  = vscode.workspace.getConfiguration(configSectionName || Constants.CONFIG_SECTION);
