@@ -1,4 +1,4 @@
-<img src="images/logo1.png" height="160px">
+<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/images/logo1.png" height="160px">
 
 # VloCode for Visual Studio Code
 

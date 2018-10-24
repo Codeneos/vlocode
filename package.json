@@ -2,14 +2,25 @@
     "name": "vlocode",
     "displayName": "VloCode",
     "description": "Vlocity datapack plugin",
-    "version": "0.0.1",
+    "version": "0.2.0",
+    "license": "MIT",
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
     "publisher": "peter0136",
     "engines": {
-        "vscode": "^1.25.0"
+        "vscode": "^1.26.0"
     },
+    "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
         "Other"
-    ],
+    ], 
+    "repository": "github:codeneos/vlocode",
+    "bugs":{ 
+        "url" : "https://github.com/Codeneos/vlocode/issues",
+        "email" : "peter@curlybracket.nl"
+    },
     "activationEvents": [
         "onCommand:extension.sayHello",
         "workspaceContains:*_datapack.json",
@@ -47,7 +58,7 @@
         },
         "configuration": {
             "type": "object",
-            "title": "Vlocity configuration",
+            "title": "Vlocity",
             "properties": {
                 "vlocity.verbose": {
                     "type": "boolean",
