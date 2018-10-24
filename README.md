@@ -42,7 +42,7 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### Version 0.2.0 (alpha -)
+### Version 0.2.0 (alpha)
 
 * Initial release of VloCode with support for refreshing datapacks from the context menu.
 * Enabled login using SFDX
