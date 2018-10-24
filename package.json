@@ -52,50 +52,37 @@
                 "vlocity.verbose": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Verbose output during vlocity command execution"
+                    "markdownDescription": "Enable verbose loging to the output window"
                 },
                 "vlocity.sfdxUsername": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null,
-                    "description": "Specifies the SFDX registered user name to use to login to your org"
+                    "type": "string",
+                    "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
                 },
                 "vlocity.username": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null
+                    "type": "string",
+                    "markdownDescription": "SalseForce username"
                 },
                 "vlocity.password": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null
+                    "type": "string",
+                    "markdownDescription": "SalseForce account password appended with your Salesforce security token"
                 },
                 "vlocity.loginUrl": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null
+                    "type": "string",
+                    "pattern": "(^http(s){0,1}:\\/\\/[^/]+\\.[a-z]+(:[0-9]+|)$)|(^\\s*$)",
+                    "markdownDescription": "Login URL for salesforce, i.e: <https://test.salesforce.com>"
                 },
                 "vlocity.instanceUrl": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null
+                    "type": "string",
+                    "pattern": "(^http(s){0,1}:\\/\\/[^/]+\\.[a-z]+(:[0-9]+|)$)|(^\\s*$)",
+                    "markdownDescription": "Instance URL for salesforce, i.e: <https://test.salesforce.com>"
                 },
                 "vlocity.httpProxy": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null
+                    "type": "string",
+                    "description": "Optional HTTP proxy for connecting to Salesforce"
+                },
+                "vlocity.projectPath": {
+                    "type": "string",
+                    "markdownDescription": "Path to the folder comtaining the Vlocity datapacks relative to the workspace's root folder, for example:\n - `./vlocity`\n - `./datapacks`"
                 }
             }
         }
@@ -105,14 +92,16 @@
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "test": "npm run compile && node ./node_modules/vscode/bin/test",
+        "package": "vsce package"
     },
     "devDependencies": {
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.21",
-        "tslint": "^5.8.0",
+        "@types/mocha": "^2.2.42",
         "@types/node": "^8.10.25",
-        "@types/mocha": "^2.2.42"
+        "tslint": "^5.8.0",
+        "typescript": "^2.6.1",
+        "vsce": "^1.52.0",
+        "vscode": "^1.1.21"
     },
     "dependencies": {
         "@types/sinon": "^5.0.5",

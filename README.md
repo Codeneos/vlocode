@@ -1,65 +1,49 @@
-# vlocode README
+<img src="images/logo1.png" height="160px">
 
-This is the README for your extension "vlocode". After writing up a brief description, we recommend including the following sections.
+# VloCode for Visual Studio Code
+
+This extension provides an alternate way for developing, extracting and deploying Vlocity data with Visual Studio Code.  
+It is targeted at Vlocity developers who want a lightweight and fast way to work with Vlocity components and datapacks.
+There's no complicated setup process or project configurations, no external apps to keep open, and no jarring errors knocking you out of your flow.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+* Uses the standard Vlocity NPM package
+* Support SFDX username or alias to login to Salesforce
+  > **Tip** Setup SFDX (see Requirements) to avoid storing your Salesforce password and security token as plain text workspace configuration
+* Retrieve/refresh Vlocity datapacks from within Visual Studio Code
+* (WIP) Deploy single or multiple Vlocity datapacks from within Visual Studio Code
+* (WIP) Automaticly update Vlocity templates when edited from Visual Studio Code
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Vlocode works best with SFDX for authentication with salesforce, download the SFDX CLI tools from <https://developer.salesforce.com/tools/sfdxcli>. 
+After installing SFDX authorize your development sanbox using the following command:
+```
+sfdx force:auth:web:login -r https://test.salesforce.com
+```
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+* `vlocity.projectPath`: Path to the folder comtaining the Vlocity datapacks relative to the workspace's root folder, for example:
+  - `./vlocity`
+  - `./datapacks`
+* `vlocity.verbose`: Enable verbose loging to the output window
+* `vlocity.sfdxUsername`: SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+* Deploying of datapacks from VSCode does not yet work
+* Onsave handler that detects changes on file level is currently disabled
+* Datapacks are not validated on validity before a refresh
+* The temp folder used by the Vlocity NPM package is hardcoded
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### Version 0.2.0 (alpha -)
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+* Initial release of VloCode with support for refreshing datapacks from the context menu.
+* Enabled login using SFDX
+* Use official Vlocity NPM package
