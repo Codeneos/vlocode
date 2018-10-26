@@ -14,18 +14,34 @@ export default class VlocodeConfiguration {
     public additionalOptions?: any;
     public projectPath?: String;
     public maxDepth?: Number;
+    private vsconfig: vscode.WorkspaceConfiguration;
 
-    public static load(configSectionName?: string) : VlocodeConfiguration {
-        let vsconfig  = vscode.workspace.getConfiguration(configSectionName || Constants.CONFIG_SECTION);
-        let config = new VlocodeConfiguration();
-        Object.keys(vsconfig).forEach(function(key) {
-            if (vsconfig.has(key)) {
-                Object.defineProperty(config, key, {
-                    get: () => vsconfig.get(key),
-                    set: v => vsconfig.update(key, v, false)
+    private loadFrom(config: vscode.WorkspaceConfiguration) : void {
+        this.vsconfig = config;
+        Object.keys(config).forEach(key => {
+            if (this.vsconfig.has(key)) {
+                Object.defineProperty(this, key, {
+                    get: () => this.vsconfig.get(key),
+                    set: v => this.vsconfig.update(key, v, false)
                 });   
             }   
         });
+    }
+
+    private listenForChanges(configSectionName?: string) {
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration(Constants.CONFIG_SECTION)) {
+                s.get(l.Logger).verbose(`Observed configiration change in ${Constants.CONFIG_SECTION}; reloading config...`);
+                this.loadFrom(vscode.workspace.getConfiguration(configSectionName));
+            }
+        })
+    }
+
+    public static load(configSectionName?: string) : VlocodeConfiguration {
+        let config = new VlocodeConfiguration();
+        let vsconfig = vscode.workspace.getConfiguration(configSectionName || Constants.CONFIG_SECTION);        
+        config.loadFrom(vsconfig);
+        config.listenForChanges(configSectionName || Constants.CONFIG_SECTION);
         return config;
     }
 }

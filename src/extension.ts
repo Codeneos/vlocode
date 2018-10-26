@@ -12,6 +12,7 @@ import * as vds from './services/vlocityDatapackService';
 import * as s from './singleton';
 import * as c from './commands';
 import * as l from './loggers';
+import { requireHtml } from './util';
 
 function setVlocityToolsLogger(){
     let vloService = s.get(VlocodeService);
@@ -37,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
         new l.OutputLogger(vloService.outputChannel),  
         new l.ConsoleLogger()        
     ));
-    
+
     // Report some thing so that the users knows we are active
     logger.info(`Vlocode version ${constants.VERSION} started`);
     setVlocityToolsLogger();    
@@ -46,10 +47,17 @@ export function activate(context: vscode.ExtensionContext) {
     c.datapackCommands
         .map(cmd => {
             logger.verbose(`Register command ${cmd.name}`);
-            return vscode.commands.registerCommand(cmd.name, async (...args) => {                
+            return vscode.commands.registerCommand(cmd.name, async (...args) => {     
+                try {
+                    s.get(VlocodeService).validateConfig();
+                } catch (err) {
+                    logger.error(`${cmd.name}: ${err}`);
+                    return vscode.window.showErrorMessage(err, { modal: false }, { title: 'Open settings' }).then(r => 
+                        r === undefined || vscode.commands.executeCommand('workbench.action.openWorkspaceSettings', 'test'))
+                }
                 logger.verbose(`Invoke command ${cmd.name}`);
                 try {
-                    await cmd.callback.apply(null, args);
+                    await cmd.callback.apply(null, args.concat([context]));
                     logger.verbose(`Execution of command ${cmd.name} done`);
                 } catch(err) {
                     logger.error(`Command execution resulted in error: ${err}`);
@@ -57,6 +65,8 @@ export function activate(context: vscode.ExtensionContext) {
             });
         })
         .forEach(sub => context.subscriptions.push(sub));
+
+   
 
     /*let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
         let datapackMatches = textDocument.fileName.match(/(.*)(\\|\/)(.*?)_DataPack\.json$/i);

@@ -14,15 +14,7 @@ import * as s from './singleton';
 import * as c from './commands';
 import * as l from './loggers';
 import { isError } from 'util';
-
-function readFileAsync(file: vscode.Uri) : Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-        fs.readFile(file.fsPath, (err, data) => {
-            if(err) reject(err);
-            else resolve(data.toString());
-        })
-    });
-}
+import { readFileAsync, requireHtml } from './util';
 
 async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file.fsPath);
@@ -100,7 +92,7 @@ export async function refreshDatapack(selectedFiles: vscode.Uri[]) {
             await showErrorWithRetry(`Failed to refresh the selected datapack(s); see the log for more details`, refreshDatapack, arguments);
         }        
     } catch (err) {
-
+        await showErrorWithRetry(`Error: ${err}`, refreshDatapack, arguments);
     }
 }
 
@@ -108,12 +100,28 @@ export async function deployDatapack(selectedFiles: vscode.Uri[]) {
     return callCommandForFiles(VlocityDatapackService.prototype.deploy, selectedFiles);
 }
 
+export async function viewDatapackGeneric(context) {
+    // Create and show a new webview
+    const panel = vscode.window.createWebviewPanel(
+        'viewDatapackGeneric', // Identifies the type of the webview. Used internally
+        "Datapack View", // Title of the panel displayed to the user
+        vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+        { 
+            enableScripts: true 
+        }
+    );
+    panel.webview.html = await requireHtml('./views/container.html');
+};
+
 export const datapackCommands : commandModel[] = [
     {
-        name: 'extension.refreshDatapack',
+        name: 'vlocity.refreshDatapack',
         callback: (...args) => refreshDatapack(<vscode.Uri[]>args[1])
     }, {
-        name: 'extension.deployDatapack',
+        name: 'vlocity.deployDatapack',
         callback: (...args) => deployDatapack(<vscode.Uri[]>args[1])
+    }, {
+        name: 'vlocity.viewDatapack.generic',
+        callback: (context, ...args) => viewDatapackGeneric(context)
     }
 ];

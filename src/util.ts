@@ -1,5 +1,8 @@
 'use strict';
 import { exec } from 'child_process';
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface ExecpResult {
     stdout: Buffer;
@@ -49,4 +52,17 @@ export async function getSfdxOrgDetails(srcDir: string) : Promise<any> {
         console.log('Unabled to retrieve SFDX: ' + err);
         process.exit(0);
     }
+}
+
+export function readFileAsync(file: vscode.Uri) : Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+        fs.readFile(file.fsPath, (err, data) => {
+            if(err) reject(err);
+            else resolve(data.toString());
+        })
+    });
+}
+
+export async function requireHtml(filepath: string) {
+    return await readFileAsync(vscode.Uri.file(path.join(__dirname, filepath)));
 }

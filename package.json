@@ -15,11 +15,11 @@
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
         "Other"
-    ], 
+    ],
     "repository": "github:codeneos/vlocode",
-    "bugs":{ 
-        "url" : "https://github.com/Codeneos/vlocode/issues",
-        "email" : "peter@curlybracket.nl"
+    "bugs": {
+        "url": "https://github.com/Codeneos/vlocode/issues",
+        "email": "peter@curlybracket.nl"
     },
     "activationEvents": [
         "onCommand:extension.sayHello",
@@ -28,17 +28,22 @@
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json"
     ],
-    "main": "./out/extension",
+    "main": "./out/main",
     "contributes": {
         "commands": [
             {
-                "command": "extension.refreshDatapack",
-                "title": "Refresh Selected Datapack(s)",
+                "command": "vlocity.refreshDatapack",
+                "title": "Refresh Selected Datapack(s)",    
                 "category": "Vlocity"
             },
             {
-                "command": "extension.deployDatapack",
+                "command": "vlocity.deployDatapack",
                 "title": "Deploy Selected Datapack(s)",
+                "category": "Vlocity"
+            },
+            {
+                "command": "vlocity.viewDatapack.generic",
+                "title": "View Selected Datapack",
                 "category": "Vlocity"
             }
         ],
@@ -46,12 +51,12 @@
             "explorer/context": [
                 {
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
-                    "command": "extension.refreshDatapack",
+                    "command": "vlocity.refreshDatapack",
                     "group": "1_modification"
                 },
                 {
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
-                    "command": "extension.deployDatapack",
+                    "command": "vlocity.deployDatapack",
                     "group": "1_modification"
                 }
             ]
@@ -100,24 +105,28 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
+        "compile": "webpack",
+        "watch": "webpack --watch",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./node_modules/vscode/bin/test",
         "package": "vsce package"
     },
     "devDependencies": {
         "@types/mocha": "^2.2.42",
-        "@types/node": "^8.10.25",
+        "@types/node": "^8.10.36",        
+        "@types/sinon": "^5.0.5",
+        "awesome-typescript-loader": "^5.2.1",
         "tslint": "^5.8.0",
-        "typescript": "^2.6.1",
+        "typescript": "2.9.2",
         "vsce": "^1.52.0",
-        "vscode": "^1.1.21"
+        "sinon": "^7.0.0",
+        "vscode": "^1.1.21",
+        "webpack": "^4.23.1",
+        "webpack-cli": "^3.1.2"
     },
     "dependencies": {
-        "@types/sinon": "^5.0.5",
-        "sinon": "^7.0.0",
-        "vlocity": "^1.7.6",
-        "vscode-languageclient": "^5.1.0"
+        "angular": "^1.7.5",
+        "vlocity": "^1.7.7",
+        "vscode-languageclient": "^5.1.1"
     }
 }
