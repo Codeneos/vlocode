@@ -1,4 +1,3 @@
-'use strict';
 import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as path from 'path';
@@ -14,12 +13,18 @@ export default class VlocodeService {
 
     private _config: VlocodeConfiguration;
     private _outputChannel: vscode.OutputChannel;
+    private _context: vscode.ExtensionContext;
 
-    constructor(config?: VlocodeConfiguration) {
+    constructor(context?: vscode.ExtensionContext, config?: VlocodeConfiguration) {
         if (!config) {
             throw 'Cannot create VlocodeService without specifying a configuration object.';
         }
+        this._context = context;
         this.setConfig(config);
+    }
+
+    public getContext(): vscode.ExtensionContext {
+        return this._context;
     }
     
     public setConfig(config: VlocodeConfiguration){

@@ -58,6 +58,11 @@
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
                     "command": "vlocity.deployDatapack",
                     "group": "1_modification"
+                },
+                {
+                    "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
+                    "command": "vlocity.viewDatapack.generic",
+                    "group": "1_modification"
                 }
             ]
         },

@@ -1,4 +1,3 @@
-'use strict';
 import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as path from 'path';
@@ -8,6 +7,7 @@ import * as l from '../loggers';
 import * as s from '../singleton';
 import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
+import { getDocumentBodyAsString } from '../util';
 
 declare var VlocityUtils: any;
 
@@ -82,6 +82,12 @@ export default class VlocityDatapackService {
 
     public get queryDefinitions() {
         return this.vlocityBuildTools.datapacksjob.queryDefinitions;
+    }
+
+    // Move to helper class
+    public async readDatapackFile(file: vscode.Uri) : Promise<VlocityDatapack> {
+        s.get(l.Logger).log(`Loading datapack: ${file.fsPath}`);
+        return new VlocityDatapack(await getDocumentBodyAsString(file));
     }
 
     public deploy(objects: ObjectEntry[]) : Promise<VlocityDatapackResult>  {

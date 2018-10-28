@@ -12,7 +12,6 @@ import * as vds from './services/vlocityDatapackService';
 import * as s from './singleton';
 import * as c from './commands';
 import * as l from './loggers';
-import { requireHtml } from './util';
 
 function setVlocityToolsLogger(){
     let vloService = s.get(VlocodeService);
@@ -33,7 +32,7 @@ function setVlocityToolsLogger(){
 export function activate(context: vscode.ExtensionContext) {
 
     // Init logging and regsiter services
-    let vloService = s.register(VlocodeService, new VlocodeService(VlocodeConfiguration.load()));
+    let vloService = s.register(VlocodeService, new VlocodeService(context, VlocodeConfiguration.load()));
     let logger = s.register(l.Logger, new l.ChainLogger( 
         new l.OutputLogger(vloService.outputChannel),  
         new l.ConsoleLogger()        
@@ -57,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
                 }
                 logger.verbose(`Invoke command ${cmd.name}`);
                 try {
-                    await cmd.callback.apply(null, args.concat([context]));
+                    await cmd.execute(args);
                     logger.verbose(`Execution of command ${cmd.name} done`);
                 } catch(err) {
                     logger.error(`Command execution resulted in error: ${err}`);
@@ -66,9 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
         })
         .forEach(sub => context.subscriptions.push(sub));
 
-   
-
-    /*let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
+        /*let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
         let datapackMatches = textDocument.fileName.match(/(.*)(\\|\/)(.*?)_DataPack\.json$/i);
         if (datapackMatches == null) {
             return;

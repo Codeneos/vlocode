@@ -1,4 +1,3 @@
-'use strict';
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
@@ -63,6 +62,8 @@ export function readFileAsync(file: vscode.Uri) : Promise<string> {
     });
 }
 
-export async function requireHtml(filepath: string) {
-    return await readFileAsync(vscode.Uri.file(path.join(__dirname, filepath)));
+export async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string> {
+    let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file.fsPath);
+    if (doc) return doc.getText();
+    return await readFileAsync(file);
 }

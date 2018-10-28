@@ -1,4 +1,3 @@
-'use strict';
 import * as sinon from 'sinon';
 
 /**

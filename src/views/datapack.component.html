@@ -1,3 +1,3 @@
 <ul>
-    <li ng-repeat="datapack in $ctrl.datapacks">{{ datapack.name }}</li>
+    <li ng-if='!!v' ng-repeat="(k, v) in datapack"><pre>{{ k }} = {{ v }}</pre></li>
 </ul>

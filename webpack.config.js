@@ -85,8 +85,7 @@ let views = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      title: 'Custom template using Handlebars',
-      template: './src/views/test.html'
+      template: './src/test/test.html.tpl'
     })
   ]
 };
