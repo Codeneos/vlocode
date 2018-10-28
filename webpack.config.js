@@ -2,6 +2,7 @@ const path = require('path');
 const merge = require('webpack-merge').smart;
 const webpack = require('webpack');
 const entry = require('webpack-glob-entry');
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 let common = {
   devtool: 'source-map',
@@ -14,17 +15,31 @@ let common = {
         query: {
           useCache: true
         }
+      },
+      {
+        test: /\.html$/,
+        exclude: /test.html/i,
+        use: [
+          {
+            loader: 'html-loader',
+            options: {
+              exportAsDefault: true
+            }
+          }
+        ]
       }
     ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js']
+    extensions: ['.tsx', '.ts', '.js', '.html']
   },
   mode: 'development'
 };
 
 let vscodeExtension = {
-  entry: './src/extension.ts',
+  entry: {
+    'vlocode': './src/extension.ts'
+  },
   target: 'node',
   name: 'vlocode',
   devtool: 'source-map',
@@ -42,24 +57,38 @@ let vscodeExtension = {
 };
 
 let views = {
-  entry: entry('./src/views/*.ts'),
+  entry: {
+    'script': './src/views/vlocode.ts'
+  },
+  name: 'views',
   output: {
-    path: path.resolve(__dirname, 'out'),
+    path: path.resolve(__dirname, 'out', 'views'),
     publicPath: '/',
     filename: '[name].js',
-    chunkFilename: '[id].chunk.js'
+    chunkFilename: '[id].js'
   },
   optimization: {
     splitChunks: {
       cacheGroups: {
         commons: {
           test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
+          name: 'vendor',
           chunks: 'all'
         }
       }
     }
-  }
+  },
+  devServer: {
+    contentBase: path.join(__dirname, 'out', 'views'),
+    compress: true,
+    port: 9000
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      title: 'Custom template using Handlebars',
+      template: './src/views/test.html'
+    })
+  ]
 };
 
 module.exports = [

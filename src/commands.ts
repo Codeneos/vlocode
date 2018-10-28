@@ -15,6 +15,7 @@ import * as c from './commands';
 import * as l from './loggers';
 import { isError } from 'util';
 import { readFileAsync, requireHtml } from './util';
+import datapackHtml from './views/datapack.view.html';
 
 async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file.fsPath);
@@ -101,16 +102,24 @@ export async function deployDatapack(selectedFiles: vscode.Uri[]) {
 }
 
 export async function viewDatapackGeneric(context) {
-    // Create and show a new webview
+    let viewsRoot = vscode.Uri.file(path.join(context.extensionPath, 'out', 'views'));
     const panel = vscode.window.createWebviewPanel(
         'viewDatapackGeneric', // Identifies the type of the webview. Used internally
         "Datapack View", // Title of the panel displayed to the user
         vscode.ViewColumn.One, // Editor column to show the new webview panel in.
         { 
-            enableScripts: true 
+            enableScripts: true, 
+            localResourceRoots : [ viewsRoot ] 
         }
     );
-    panel.webview.html = await requireHtml('./views/container.html');
+    
+    /*// Handle messages from the webview
+    panel.webview.onDidReceiveMessage(message => {
+        s.get(l.Logger).verbose(message);
+    }, undefined, context.subscriptions);*/
+
+    panel.webview.html = datapackHtml.replace(/(vscode-resource:)/ig, `${viewsRoot.with({ scheme: 'vscode-resource' })}`);
+    s.get(l.Logger).verbose(panel.webview.html);
 };
 
 export const datapackCommands : commandModel[] = [
