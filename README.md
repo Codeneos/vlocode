@@ -6,7 +6,7 @@ This extension provides an alternate way for developing, extracting and deployin
 It is targeted at Vlocity developers who want to develop Vlocity components and updated datapacks from an IDE instead of using the web based UI available in Salesforce.
 There's no complicated setup process or bothersome project configuration to maintain.
 
-<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/refreshDatapack.gif" width="600">
+<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/refreshDatapack.gif" width="898">
 
 ## Features
 
