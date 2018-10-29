@@ -56,7 +56,11 @@ export function activate(context: vscode.ExtensionContext) {
                 }
                 logger.verbose(`Invoke command ${cmd.name}`);
                 try {
-                    await cmd.execute(args);
+                    if (cmd.withProgress) {
+                        await vscode.window.withProgress(cmd.withProgressOptions, async (p) => await cmd.execute.apply(cmd, args.concat(p)));
+                    } else {
+                        await cmd.execute.apply(cmd, args);
+                    }
                     logger.verbose(`Execution of command ${cmd.name} done`);
                 } catch(err) {
                     logger.error(`Command execution resulted in error: ${err}`);

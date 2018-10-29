@@ -8,9 +8,15 @@ import { Command } from "./command";
 
 export abstract class DatapackCommand extends Command {
 
+    public withProgress = true;
+    public withProgressOptions : vscode.ProgressOptions = {
+        location: vscode.ProgressLocation.Notification,
+        cancellable: false
+    };
+
     protected get datapackService() : VlocityDatapackService {
         return s.get(VlocodeService).datapackService;
-    }    
+    }   
 
     protected async callCommandForFiles<T>(command : (objects: vds.ObjectEntry[]) => Promise<T>, files: vscode.Uri[]) : Promise<T> | undefined {
         let datapacks = await Promise.all(files.map(f => this.datapackService.readDatapackFile(f)));    
@@ -21,13 +27,6 @@ export abstract class DatapackCommand extends Command {
                 name: dp.name
             }
         });    
-        try {
-            return await command.call(this.datapackService, objectEntries);
-        } catch (err) {
-            if (isError(err)) {
-                throw err;
-            }
-            return Promise.resolve(<T>err);
-        }
+        return await command.call(this.datapackService, objectEntries);
     }
 }

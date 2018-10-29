@@ -13,7 +13,7 @@ declare var VlocityUtils: any;
 
 export interface ManifestEntry {
     datapackType: string;
-    name: string;
+    key: string;
 }
 
 export interface ObjectEntry {
@@ -76,7 +76,7 @@ export default class VlocityDatapackService {
     private verboseLogging: Boolean;
 
     constructor(options: vlocity.jobOptions) {
-        this.options = options;
+        this.options = options || {};
         this.vlocityBuildTools  = new vlocity(this.options);
     }
 
@@ -90,10 +90,40 @@ export default class VlocityDatapackService {
         return new VlocityDatapack(await getDocumentBodyAsString(file));
     }
 
-    public deploy(objects: ObjectEntry[]) : Promise<VlocityDatapackResult>  {
+    private senatizePath(pathStr: string) {
+        if (!pathStr) {
+            return pathStr;
+        }
+        pathStr = pathStr.replace(/^[\/\\]*(.*?)[\/\\]*$/g, '$1');
+        pathStr = pathStr.replace(/[\/\\]+/g,path.sep);
+        return pathStr;
+    }
+
+    private resolveProjectPathFor(file: vscode.Uri) : string {
+        if (path.isAbsolute(this.options.projectPath)) {
+            return this.options.projectPath || '';
+        }
+        let rootFolder = vscode.workspace.getWorkspaceFolder(file);
+        return rootFolder 
+            ? path.resolve(rootFolder.uri.fsPath, this.options.projectPath) 
+            : path.resolve(this.options.projectPath);
+    }
+
+    public getDatapackManifestKey(file: vscode.Uri) : ManifestEntry {
+        let filePath = file.fsPath; // always passed as absolute path
+        let projectPath = this.resolveProjectPathFor(file);
+        let relativePath = filePath.replace(projectPath,'');
+        let splitedPath = relativePath.split(/\/|\\/gm).filter(v => !!v);
+        return {
+            datapackType: splitedPath[0],
+            key: `${splitedPath.slice(1, splitedPath.length - 1).join('/')}`
+        };        
+    }
+
+    public deploy(mainfest: ManifestEntry[]) : Promise<VlocityDatapackResult>  {
         return this.runCommand('Deploy',{
-            'manifest': this.createDeployManifest(objects),
-            'projectPath': this.options.projectPath || vscode.workspace.rootPath
+            'manifest': this.createDeployManifest(mainfest),
+            'projectPath': this.options.projectPath || '.'
         });
     }
 
@@ -102,7 +132,7 @@ export default class VlocityDatapackService {
             //'manifest': this.createExportManifest(objects)
             'queries': this.createExportQueries(objects),
             'maxDepth': maxDepth,
-            'projectPath': this.options.projectPath || vscode.workspace.rootPath
+            'projectPath': this.options.projectPath || '.'
         });
     }
 
@@ -136,19 +166,27 @@ export default class VlocityDatapackService {
         });
     }
 
-    private createDeployManifest(objects: ObjectEntry[]) : any {
+    private createDeployManifest(objects: ManifestEntry[]) : any {
+        return objects.reduce((mf, item) => {  
+            mf[item.datapackType] = mf[item.datapackType] || [];
+            mf[item.datapackType].push(item.key);
+            return mf;
+        }, {});
+    }
+
+    /*private createDeployManifest(objects: ObjectEntry[]) : any {
         return objects.reduce((mf, item) => {     
             let dpType = this.getDatapackType(item.sobjectType) || 'SObject';       
             mf[dpType] = mf[dpType] || [];
             mf[dpType].push(item.globalKey || item.name);
             return mf;
         }, {});
-    }
+    }*/
 
     private createExportManifest(objects: ManifestEntry[]) : any {
         return objects.reduce((m, item) => {            
             m[item.datapackType] = m[item.datapackType] || [];
-            m[item.datapackType].push(item.name);
+            m[item.datapackType].push(item.key);
             return m;
         }, {});
     }

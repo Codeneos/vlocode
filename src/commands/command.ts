@@ -8,17 +8,23 @@ import { Logger } from '../loggers';
 /** Default command interface */
 export interface ICommand {
     name: string;
-    execute: (... args) => void;
+    withProgress?: boolean;
+    withProgressOptions?: vscode.ProgressOptions;
+    execute(... args: any[]): void;
 }
 
 export abstract class Command implements ICommand {
 
-    public name: string;
-    public execute: (... args) => void;
+    public name: string;    
+    private executor: (... args: any[]) => void
 
-    constructor(name: string, execute: (... args) => void) {
+    constructor(name: string, executor?: (... args: any[]) => void) {
         this.name = name;
-        this.execute = execute;
+        this.executor = executor;
+    }
+
+    public execute(... args: any[]): void {
+        return this.executor(args);
     }
 
     protected get extensionContext() : vscode.ExtensionContext {

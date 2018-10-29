@@ -13,7 +13,8 @@ import * as s from '../singleton';
 export default class ViewDatapackCommand extends DatapackCommand {
     
     constructor(name : string) {
-        super(name, args => this.viewDatapack(args[0]))
+        super(name, args => this.viewDatapack(args[0]));
+        this.withProgress = false;
     }
 
     protected async viewDatapack(selectedFile: vscode.Uri) {

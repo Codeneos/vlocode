@@ -43,8 +43,9 @@ let vscodeExtension = {
   target: 'node',
   name: 'vlocode',
   devtool: 'source-map',
-  output: {
+  output: {    
     filename: '[name].js',
+    chunkFilename: '[id].js',
     library: 'extension',
     libraryTarget: 'commonjs2',
     path: path.resolve(__dirname, 'out'),

@@ -8,6 +8,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
     
     constructor(name : string) {
         super(name, args => this.refreshDatapacks(args[1]))
+        this.withProgressOptions.title = 'Refreshing Vlocity datapacks...';
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) {
