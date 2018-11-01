@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import VlocityDatapackService from '../services/vlocityDatapackService';
+import VlocityDatapackService, * as vds from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import helper from './commandHelper';
 
@@ -13,10 +13,12 @@ export default class RefreshDatapackCommand extends DatapackCommand {
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) {
         try {
-            let result = await this.callCommandForFiles(VlocityDatapackService.prototype.export, selectedFiles);
+            // prepare and call
+            let datapacks = await this.resolveDatapacksForFiles(selectedFiles);
+            let result = await this.datapackService.export(datapacks, 0);
     
             // lets do some math to find out how successfull we were
-            let expectedMinResultCount = selectedFiles.length;
+            let expectedMinResultCount = datapacks.length;
             let successCount = (result.records || []).reduce((c, r) => c += (r.VlocityDataPackStatus == 'Success') ? 1 : 0, 0);
             let errorCount = (result.records || []).reduce((c, r) => c += (r.VlocityDataPackStatus != 'Success') ? 1 : 0, 0);
     

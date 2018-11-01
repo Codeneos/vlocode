@@ -15,11 +15,11 @@ export default class DeployDatapackCommand extends DatapackCommand {
         try {
             
             // prepare input
-            let mainfestEntires = selectedFiles.map(file => this.datapackService.getDatapackManifestKey(file));
-            let result = await this.datapackService.deploy(mainfestEntires);
+            let mainfestEntries = await this.resolveManifestEntriesForFiles(selectedFiles);
+            let result = await this.datapackService.deploy(mainfestEntries);
     
             // lets do some math to find out how successfull we were
-            let expectedMinResultCount = selectedFiles.length;
+            let expectedMinResultCount = mainfestEntries.length;
             let successCount = (result.records || []).reduce((c, r) => c += (r.VlocityDataPackStatus == 'Success') ? 1 : 0, 0);
             let errorCount = (result.records || []).reduce((c, r) => c += (r.VlocityDataPackStatus != 'Success') ? 1 : 0, 0);
     

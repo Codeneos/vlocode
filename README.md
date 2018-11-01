@@ -18,8 +18,6 @@ There's no complicated setup process or bothersome project configuration to main
 ## Planned Features
 
 * Automatically deployment of Vlocity datapacks when edited from Visual Studio Code
-* Detect datapack parent for related files
-  * This should enable deployment when working in a related file such as a SASS stylesheet or HTML template that outside of the `_Datapack.json` file
 * Recompiling (deactivate -> activate flow) of OmniScripts after changing a template to directly see the effects in your browsers.
 * Simple OmniScript editor inside VisualStudio code using Webview API
 * GUI for editing datapacks from within VSCode (see preview UI based on angularJS in version 0.3.1)
@@ -44,6 +42,4 @@ This extension contributes the following settings:
 
 ## Known Issues
 
-* No datapack validation is being done; trying deploy something that isn't a datapack will result in an error
-* Datapack folders cannot yet be retrieved or deployed; for now you have to select the datapack master file which is post fixed with `_Datapack.json`
 * Custom expand definition overrides are not yet loaded.

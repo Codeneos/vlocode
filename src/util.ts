@@ -53,17 +53,45 @@ export async function getSfdxOrgDetails(srcDir: string) : Promise<any> {
     }
 }
 
-export function readFileAsync(file: vscode.Uri) : Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-        fs.readFile(file.fsPath, (err, data) => {
-            if(err) reject(err);
-            else resolve(data.toString());
-        })
-    });
-}
-
 export async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file.fsPath);
     if (doc) return doc.getText();
     return await readFileAsync(file);
+}
+
+export function promisify<T1, T2, T3>(func: (arg1: T2, arg2: T2, cb: (err: any, result: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
+export function promisify<T1, T2>(func: (arg1: T2, cb: (err: any, result: T1) => void) => void, thisArg?: any) : (arg1: T2) => Promise<T1>;
+export function promisify<T1>(func: (...args: any[]) => void, thisArg: any = null) : (...args: any[]) => Promise<T1> {
+    return (...args: any[]) : Promise<T1> => {
+        return new Promise<T1>((resolve, reject) => { 
+            var callbackFunc = (err, ...args: any[]) => {
+                if(err) reject(err);
+                else resolve.apply(null, args);
+            };
+            func.apply(thisArg, args.concat(callbackFunc));
+        });
+    };
+}
+
+var _readFileAsync = promisify(fs.readFile);
+export function readFileAsync(file: vscode.Uri) : Promise<string> {
+    return _readFileAsync(file.fsPath).then(buffer => buffer.toString());
+}
+
+var _fstatAsync = promisify(fs.stat);
+export function fstatAsync(file: vscode.Uri) : Promise<fs.Stats> {
+    return promisify(fs.stat)(file.fsPath);
+}
+
+var _readdirAsync = promisify(fs.readdir);
+export function readdirAsync(path: string) : Promise<string[]> {
+    return promisify(fs.readdir)(path);
+}
+
+export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
+    let unqiueSet = new Set();
+    return arr.filter(item => {
+        let k = uniqueKeyFunc(item);
+        return unqiueSet.has(k) ? false : unqiueSet.add(k);
+    });
 }

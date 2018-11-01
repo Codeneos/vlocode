@@ -1,10 +1,13 @@
 import { expect } from 'chai';
 import { spy } from 'sinon';
 import * as path from 'path';
+import * as mockFs from 'mock-fs';
+import * as fs from 'fs';
 import 'mocha';
 
 import * as vscode from 'vscode';
 import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
+import { fail } from 'assert';
 
 declare var VlocityUtils: any;
 
@@ -61,7 +64,71 @@ describe('vlocityDatapackService', () => {
             expect(vds.datapackType).equals('dptype');
             expect(vds.key).equals('dpname1/dpname2');
         });
-    })
+    });
+
+    describe('#resolveDatapackHeader',  () => {        
+        before(() => {
+            // setup fake FS for testing
+            mockFs({
+                'c:/datapacks': {
+                    'product2': {
+                        'outside_file.json': '{}',
+                        'test1': {
+                            'header_Datapack.json': '{}',
+                            'otherfile.html': '',
+                            'more.json': ''
+                        },
+                        'test2': {
+                            'no_dataoacks_here.json': '{}'
+                        }
+                    }
+                }
+            });
+        });
+        it('should resolve datapack header for folders/directories', (done) => {
+            let datapackFolder = vscode.Uri.file('c:/datapacks/product2/test1');
+            new vlocityDatapackService().resolveDatapackHeader(datapackFolder).then(datapackHeader => {
+                // assert
+                expect(datapackHeader).not.equals(undefined);
+                expect(datapackHeader.path).equals('/c:/datapacks/product2/test1/header_Datapack.json');
+                done();
+            }).catch(err => done(err));           
+        });
+        it('should resolve datapack header for siblings', (done) => {
+            let datapackFolder = vscode.Uri.file('c:/datapacks/product2/test1/otherfile.html');
+            new vlocityDatapackService().resolveDatapackHeader(datapackFolder).then(datapackHeader => {
+                // assert
+                expect(datapackHeader).not.equals(undefined);
+                expect(datapackHeader.path).equals('/c:/datapacks/product2/test1/header_Datapack.json');
+                done();
+            }).catch(err => done(err));
+        });
+        it('should resolve datapack header when datapack header is passed', (done) => {
+            let datapackFolder = vscode.Uri.file('c:/datapacks/product2/test1/header_Datapack.json');
+            new vlocityDatapackService().resolveDatapackHeader(datapackFolder).then(datapackHeader => {
+                // assert
+                expect(datapackHeader).not.equals(undefined);
+                expect(datapackHeader.path).equals('/c:/datapacks/product2/test1/header_Datapack.json');
+                done();
+            }).catch(err => done(err));          
+        });
+        it('should return undefined for files outside of a datapack folder', (done) => {
+            let datapackFolder = vscode.Uri.file('c:/datapacks/product2/test2/no_dataoacks_here.html');
+            new vlocityDatapackService().resolveDatapackHeader(datapackFolder).then(datapackHeader => {
+                // assert
+                expect(datapackHeader).equals(undefined);
+                done();
+            }).catch(err => done(err));           
+        });
+        it('should return undefined for non-existoing files', (done) => {
+            let datapackFolder = vscode.Uri.file('c:/datapacks/product2/test2/no_dataoacks_here.html');
+            new vlocityDatapackService().resolveDatapackHeader(datapackFolder).then(datapackHeader => {
+                // assert
+                expect(datapackHeader).equals(undefined);
+                done();
+            }).catch(err => done(err));          
+        });     
+    });
 
     describe('#setLogger', () => {
         it("should intercept all logging calls", function() {

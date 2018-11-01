@@ -24,7 +24,7 @@ export class OutputLogger implements Logger {
     }
 
     private _log(...args) : void {
-        this._channel.show();
+        this._channel.show(true);
         this._channel.appendLine(args.join(' '));
     }
 

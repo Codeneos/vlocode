@@ -30,6 +30,10 @@ export default class VlocodeService {
     public setConfig(config: VlocodeConfiguration){
         this._config = config;
     }
+    
+    public focusLog() : any {
+        this.outputChannel.show(false);
+    }
 
     public validateConfig() : void {
         if (this.config.sfdxUsername) {

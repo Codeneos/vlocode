@@ -52,8 +52,8 @@ let vscodeExtension = {
     devtoolModuleFilenameTemplate: '[absolute-resource-path]'
   },
   externals: {
-    vscode: 'vscode',
-    vlocity: 'vlocity'
+    'vscode': 'vscode',
+    'vlocity': 'vlocity'
   }
 };
 

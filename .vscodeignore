@@ -1,6 +1,7 @@
 .*
 .*/**/*
 **/*.pdn
+**/*.stg
 **/*.ts
 **/*.vsix
 out/test/**
@@ -9,5 +10,5 @@ out/**/*.map
 src/**
 tsconfig.json
 tslint.json
-webpack*.json
+webpack.config.json
 package-lock.json

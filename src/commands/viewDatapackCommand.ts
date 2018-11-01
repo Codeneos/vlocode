@@ -33,7 +33,7 @@ export default class ViewDatapackCommand extends DatapackCommand {
 
         let datapackView = new DatapackView(panel.webview);
         datapackView.onReady(async view => {
-            datapackView.updateSate({ datapack: (await this.datapackService.readDatapackFile(selectedFile)).data });
+            datapackView.updateSate({ datapack: (await this.datapackService.loadDatapackFromFile(selectedFile)).data });
         });        
     }
 

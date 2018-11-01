@@ -1,5 +1,14 @@
 # Changelog Vlocode
 
+## [0.4.0] - 2018-11-1 (beta)
+### Added
+- Resolving datapack types based on folder structure
+- Child items can now be resolved back to their parent datapack
+- Checks to ensure all selected files are part of a datapack
+
+### Changed
+- Do not take input focus while logging, this fixes a rather nasty behavior when editing extensions config
+
 ## [0.3.1] - 2018-10-29 (beta)
 ### Added
 - Support for deploying of datapacks from within VSCode

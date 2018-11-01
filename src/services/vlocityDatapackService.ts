@@ -7,7 +7,7 @@ import * as l from '../loggers';
 import * as s from '../singleton';
 import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString } from '../util';
+import { getDocumentBodyAsString, readdirAsync, fstatAsync } from '../util';
 
 declare var VlocityUtils: any;
 
@@ -18,6 +18,7 @@ export interface ManifestEntry {
 
 export interface ObjectEntry {
     sobjectType: string;
+    datapackType: string;
     globalKey?: string;
     name?: String;
 }
@@ -40,18 +41,26 @@ export interface VlocityDatapackRecord {
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
  */
-export class VlocityDatapack {
-    private _data;
+export class VlocityDatapack implements ManifestEntry, ObjectEntry {
+    private _data: any;
+    private _headerFile: string;
+    private _key: string;
+    private _type: string;
 
     public get hasGlobalKey(): boolean { return this.globalKey !== undefined && this.globalKey !== null; }
     public get globalKey(): string { return this._data['%vlocity_namespace%__GlobalKey__c']; }
     public get name(): string { return this._data['Name']; }
-    public get type(): string { return this._data['VlocityDataPackType']; }
+    public get datapackType(): string { return this._type; }
     public get sobjectType(): string { return this._data['VlocityRecordSObjectType']; }
     public get sourceKey(): string { return this._data['VlocityRecordSourceKey']; }
     public get data(): any { return this._data; }
+    public get key(): string { return this._key; }    
+    public get mainfestEntry(): ManifestEntry { return { key: this._key, datapackType: this._type }; }
     
-    constructor(data?: any) {
+    constructor(headerFile: string, type: string, key: string, data?: any) {
+        this._headerFile = headerFile;
+        this._type = type;
+        this._key = key;        
         if (isBuffer(data)) {
             data = data.toString();
         }        
@@ -72,22 +81,30 @@ export class VlocityDatapack {
 export default class VlocityDatapackService {  
 
     private options: vlocity.jobOptions;
-    private vlocityBuildTools: vlocity;
+    private _vlocityBuildTools: vlocity;
     private verboseLogging: Boolean;
 
-    constructor(options: vlocity.jobOptions) {
+    constructor(options?: vlocity.jobOptions) {
         this.options = options || {};
-        this.vlocityBuildTools  = new vlocity(this.options);
     }
+     
+    private get vlocityBuildTools() : vlocity {
+        return this._vlocityBuildTools || (this._vlocityBuildTools = new vlocity(this.options));
+    }    
 
     public get queryDefinitions() {
         return this.vlocityBuildTools.datapacksjob.queryDefinitions;
     }
 
+    protected get logger() {
+        return s.get(l.Logger);
+    }
+
     // Move to helper class
-    public async readDatapackFile(file: vscode.Uri) : Promise<VlocityDatapack> {
-        s.get(l.Logger).log(`Loading datapack: ${file.fsPath}`);
-        return new VlocityDatapack(await getDocumentBodyAsString(file));
+    public async loadDatapackFromFile(file: vscode.Uri) : Promise<VlocityDatapack> {
+        this.logger.log(`Loading datapack: ${file.fsPath}`);
+        let mainfestEntry = this.getDatapackManifestKey(file);
+        return new VlocityDatapack(file.fsPath, mainfestEntry.datapackType, mainfestEntry.key, await getDocumentBodyAsString(file));
     }
 
     private senatizePath(pathStr: string) {
@@ -127,10 +144,10 @@ export default class VlocityDatapackService {
         });
     }
 
-    public export(objects: ObjectEntry[], maxDepth: Number = 0) : Promise<VlocityDatapackResult>  {
+    public export(entries: ObjectEntry[], maxDepth: Number = 0) : Promise<VlocityDatapackResult>  {
         return this.runCommand('Export',{
-            //'manifest': this.createExportManifest(objects)
-            'queries': this.createExportQueries(objects),
+            'queries': this.createExportQueries(entries),
+            //'manifest': this.createDeployManifest(mainfest),
             'maxDepth': maxDepth,
             'projectPath': this.options.projectPath || '.'
         });
@@ -138,11 +155,9 @@ export default class VlocityDatapackService {
 
     private createExportQueries(objects: ObjectEntry[]) : any {
         return objects.map(oe => {
-            let dpType = this.getDatapackType(oe.sobjectType) || 'SObject';
-            let query = this.buildQuery(oe);
             return {
-                VlocityDataPackType: dpType,
-                query: query
+                VlocityDataPackType: oe.datapackType || 'SObject',
+                query: this.buildQuery(oe)
             };
         });
     }
@@ -151,7 +166,14 @@ export default class VlocityDatapackService {
         if (!entry.globalKey && !entry.name) {
             throw new Error(`Cannot export object without name or global key (${entry.sobjectType})`);
         }
-        let query = `select Id from ${entry.sobjectType} where `;
+        // determine the base query
+        let query = this.getDefaultQuery(entry.datapackType);
+        if (!query) {
+            this.logger.warn('No default query available for datapack of type ${(entry.datapackType}; building generic query instead')
+            query = `select Id from ${entry.sobjectType}`;
+        }
+        // append query conditions
+        query += / where /gi.test(query) ? ' and ' : ' where ';
         if (entry.globalKey) {
             query += `%vlocity_namespace%__GlobalKey__c = '${entry.globalKey}'`;
         } else {
@@ -160,7 +182,19 @@ export default class VlocityDatapackService {
         return query;
     }
 
-    public getDatapackType(sobjectType: string) : string {
+    private getDefaultQuery(datapackType: string) : string | undefined {
+        if (this.queryDefinitions[datapackType]) {
+            return this.queryDefinitions[datapackType].query;
+        }
+        return undefined
+    }
+
+    /**
+     * Tries to get the Vlocity datapack type for a specified SObject type, this 
+     * will not work for objects that are associated with multiple datapacks types, i.e: OmniScripts
+     * @param sobjectType Salesforce object type, replace Vlocity namespace with %vlocity_namespace%
+     */
+    public getDatapackType(sobjectType: string) : string | undefined {
         return Object.keys(this.queryDefinitions).find(type => {
             return new RegExp(`from ${sobjectType}`,'ig').test(this.queryDefinitions[type].query);
         });
@@ -172,6 +206,40 @@ export default class VlocityDatapackService {
             mf[item.datapackType].push(item.key);
             return mf;
         }, {});
+    }
+
+    /**
+     * Finds the datapacks header JSON by scanning the directory for files post fixed with _datapack.json
+     * @param file file or folder for which to find the _datapack.json file
+     */
+    public async resolveDatapackHeader(file: vscode.Uri) : Promise<vscode.Uri> {
+        if (file.fsPath.toLowerCase().endsWith('_datapack.json')) {
+            return file;
+        }
+        try{
+            // either detect based on ending or do a full stat command
+            let isDirectory = file.fsPath.endsWith(path.sep) || (await fstatAsync(file)).isDirectory();
+            if (isDirectory) {
+                return this.findDatapackHeaderInFolder(file.fsPath);
+            }
+            return this.findDatapackHeaderInFolder(path.dirname(file.fsPath));
+        } catch (err) {
+            // catch fstatAsync exceptions; this indeicates tha file does not exoist and as such we
+            // return undefined indicating the DP header cannot be resolved.
+            return undefined;
+        }
+    }
+
+    private async findDatapackHeaderInFolder(pathStr: string) : Promise<vscode.Uri> {
+        try {
+            let files = await readdirAsync(pathStr);
+            let datapackFile = files.find(f => f.toLowerCase().endsWith('_datapack.json'));
+            return datapackFile ? vscode.Uri.file(path.join(pathStr, datapackFile)) : undefined;
+        } catch (err) {
+            // in case this is not a folder readdirAsync will return an exception
+            // which we will catch and for that return a undefined aka not found result 
+            return undefined;
+        }
     }
 
     /*private createDeployManifest(objects: ObjectEntry[]) : any {
