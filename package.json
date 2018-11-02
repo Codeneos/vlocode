@@ -1,15 +1,15 @@
 {
     "name": "vlocode",
     "displayName": "Vlocode",
-    "description": "Vlocity developemtn extension",
-    "version": "0.4.0",
+    "description": "Extension for working with Vlocity datapacks",
+    "version": "0.4.1",
     "license": "MIT",
 	"icon": "resources/icon.png",
     "author": {
         "name": "Peter van Gulik",
         "email": "peter@curlybracket.nl"
     },
-    "publisher": "peter0136",
+    "publisher": "curlybracket",
     "engines": {
         "vscode": "^1.26.0"
     },
@@ -34,17 +34,17 @@
         "commands": [
             {
                 "command": "vlocity.refreshDatapack",
-                "title": "Refresh Selected Datapack(s)",
+                "title": "Vlocity: Refresh Datapack(s)",
                 "category": "Vlocity"
             },
             {
                 "command": "vlocity.deployDatapack",
-                "title": "Deploy Selected Datapack(s)",
+                "title": "Vlocity: Deploy Datapack(s)",
                 "category": "Vlocity"
             },
             {
                 "command": "vlocity.viewDatapack.generic",
-                "title": "View Selected Datapack",
+                "title": "Vlocity: View Datapack",
                 "category": "Vlocity"
             }
         ],
@@ -58,11 +58,6 @@
                 {
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
                     "command": "vlocity.deployDatapack",
-                    "group": "1_modification"
-                },
-                {
-                    "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
-                    "command": "vlocity.viewDatapack.generic",
                     "group": "1_modification"
                 }
             ]
