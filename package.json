@@ -34,18 +34,19 @@
         "commands": [
             {
                 "command": "vlocity.refreshDatapack",
-                "title": "Vlocity: Refresh Datapack(s)",
-                "category": "Vlocity"
+                "title": "Vlocity: Refresh Datapack(s)"
             },
             {
                 "command": "vlocity.deployDatapack",
-                "title": "Vlocity: Deploy Datapack(s)",
-                "category": "Vlocity"
+                "title": "Vlocity: Deploy Datapack(s)"
             },
             {
                 "command": "vlocity.viewDatapack.generic",
-                "title": "Vlocity: View Datapack",
-                "category": "Vlocity"
+                "title": "Vlocity: View Datapack"
+            },
+            {
+                "command": "vlocity.exportDatapack",
+                "title": "Vlocity: Export Datapack(s) from server"
             }
         ],
         "menus": {
@@ -57,7 +58,7 @@
                 },
                 {
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
-                    "command": "vlocity.deployDatapack",
+                    "command": "vlocity.deployDatapack", 
                     "group": "1_modification"
                 }
             ]

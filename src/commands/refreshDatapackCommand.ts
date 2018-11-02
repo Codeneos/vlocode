@@ -6,16 +6,22 @@ import helper from './commandHelper';
 
 export default class RefreshDatapackCommand extends DatapackCommand {
     
+    private progressText : string = 'Refreshing Vlocity datapacks...';
+
     constructor(name : string) {
-        super(name, args => this.refreshDatapacks(args[1]))
-        this.withProgressOptions.title = 'Refreshing Vlocity datapacks...';
+        super(name, args => this.refreshDatapacks(args[1]));
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) {
         try {
             // prepare and call
-            let datapacks = await this.resolveDatapacksForFiles(selectedFiles);
-            let result = await this.datapackService.export(datapacks, 0);
+            let progressToken = await this.startProgress(this.progressText);
+            try {
+                var datapacks = await this.resolveDatapacksForFiles(selectedFiles);
+                var result = await this.datapackService.export(datapacks, 0);
+            } finally {
+                progressToken.complete();
+            }            
     
             // lets do some math to find out how successfull we were
             let expectedMinResultCount = datapacks.length;

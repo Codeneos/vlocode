@@ -10,12 +10,6 @@ import { fstatAsync, readdirAsync, unique } from '../util';
 
 export abstract class DatapackCommand extends Command {
 
-    public withProgress = true;
-    public withProgressOptions : vscode.ProgressOptions = {
-        location: vscode.ProgressLocation.Notification,
-        cancellable: false
-    };
-
     protected get datapackService() : VlocityDatapackService {
         return s.get(VlocodeService).datapackService;
     }

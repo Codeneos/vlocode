@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
+import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
 import constants from '../constants';
@@ -83,13 +84,14 @@ export default class VlocityDatapackService {
     private options: vlocity.jobOptions;
     private _vlocityBuildTools: vlocity;
     private verboseLogging: Boolean;
+    private vlocityNamespace: string;
 
     constructor(options?: vlocity.jobOptions) {
         this.options = options || {};
     }
      
     private get vlocityBuildTools() : vlocity {
-        return this._vlocityBuildTools || (this._vlocityBuildTools = new vlocity(this.options));
+        return this._vlocityBuildTools || (this._vlocityBuildTools = new vlocity(this.options));        
     }    
 
     public get queryDefinitions() {
@@ -100,7 +102,39 @@ export default class VlocityDatapackService {
         return s.get(l.Logger);
     }
 
-    // Move to helper class
+    // TODO: move salesforce related calls to a seperate service class
+    public async getJsForceConnection() : Promise<jsforce.Connection> {
+        process.chdir(vscode.workspace.rootPath);
+        return await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
+            this._vlocityBuildTools.jsForceConnection
+        )
+    }
+
+    // TODO: move to seperate salesforce service class
+    public async isVlocityPackageInstalled() : Promise<Boolean> {
+        return (await this.getPackageDetails()) !== undefined;
+    }
+
+    // TODO: move to seperate salesforce service class
+    public async getPackageNamespace() : Promise<string> {
+        if (this.vlocityNamespace == undefined) {
+            let vlocityPackage = await this.getPackageDetails();
+            if (!vlocityPackage) {
+                throw 'The Vlocity managed package is not installed on your Salesforce organization';
+            }
+            this.logger.log(`Vlocity managed installed: ${vlocityPackage.fileName}; prefix: ${vlocityPackage.namespacePrefix}`);
+            this.vlocityNamespace = vlocityPackage.namespacePrefix;
+        }
+        return this.vlocityNamespace
+    }
+
+    // TODO: move to seperate salesforce service class
+    private async getPackageDetails() : Promise<jsforce.FileProperties | undefined> {
+        let con = await this.getJsForceConnection();
+        let results = await con.metadata.list( { type: 'InstalledPackage' });        
+        return results.find(packageInfo => /^vlocity/i.test(packageInfo.fullName));
+    }
+    
     public async loadDatapackFromFile(file: vscode.Uri) : Promise<VlocityDatapack> {
         this.logger.log(`Loading datapack: ${file.fsPath}`);
         let mainfestEntry = this.getDatapackManifestKey(file);

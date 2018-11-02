@@ -35,6 +35,12 @@ export default class VlocodeService {
         this.outputChannel.show(false);
     }
 
+    public validateSalesforce() : void {
+        if (!this.datapackService.isVlocityPackageInstalled()) {
+            throw 'The Vlocity managed package is not installed on your Salesforce organization; select a different Salesforce organization or install the Vlocity managed package.';
+        }
+    }
+
     public validateConfig() : void {
         if (this.config.sfdxUsername) {
             // check for username and password

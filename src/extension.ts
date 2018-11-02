@@ -49,6 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
             return vscode.commands.registerCommand(cmd.name, async (...args) => {     
                 try {
                     s.get(VlocodeService).validateConfig();
+                    s.get(VlocodeService).validateSalesforce();
                 } catch (err) {
                     logger.error(`${cmd.name}: ${err}`);
                     return vscode.window.showErrorMessage(err, { modal: false }, { title: 'Open settings' }).then(r => 
@@ -56,11 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
                 }
                 logger.verbose(`Invoke command ${cmd.name}`);
                 try {
-                    if (cmd.withProgress) {
-                        await vscode.window.withProgress(cmd.withProgressOptions, async (p) => await cmd.execute.apply(cmd, args.concat(p)));
-                    } else {
-                        await cmd.execute.apply(cmd, args);
-                    }
+                    await cmd.execute.apply(cmd, args);
                     logger.verbose(`Execution of command ${cmd.name} done`);
                 } catch(err) {
                     logger.error(`Command execution resulted in error: ${err}`);

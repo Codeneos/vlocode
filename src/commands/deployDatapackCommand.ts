@@ -5,18 +5,25 @@ import { DatapackCommand } from './datapackCommand';
 import helper from './commandHelper';
 
 export default class DeployDatapackCommand extends DatapackCommand {
-    
+
+    private progressText : string = 'Deploying Vlocity datapacks...';
+
     constructor(name : string) {
         super(name, args => this.deployDatapacks(args[1]));
-        this.withProgressOptions.title = 'Deploying Vlocity datapacks...';
+        
     }
 
     protected async deployDatapacks(selectedFiles: vscode.Uri[]) {
         try {
             
             // prepare input
-            let mainfestEntries = await this.resolveManifestEntriesForFiles(selectedFiles);
-            let result = await this.datapackService.deploy(mainfestEntries);
+            let progressToken = await this.startProgress(this.progressText);
+            try {
+                var mainfestEntries = await this.resolveManifestEntriesForFiles(selectedFiles);            
+                var result = await this.datapackService.deploy(mainfestEntries);
+            } finally {
+                progressToken.complete();
+            }
     
             // lets do some math to find out how successfull we were
             let expectedMinResultCount = mainfestEntries.length;
