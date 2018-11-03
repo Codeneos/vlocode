@@ -14,6 +14,7 @@ export default class VlocodeService {
     private _config: VlocodeConfiguration;
     private _outputChannel: vscode.OutputChannel;
     private _context: vscode.ExtensionContext;
+    private _datapackService: VlocityDatapackService;
 
     constructor(context?: vscode.ExtensionContext, config?: VlocodeConfiguration) {
         if (!config) {
@@ -69,7 +70,7 @@ export default class VlocodeService {
     }
 
     get datapackService(): VlocityDatapackService {
-        return new VlocityDatapackService(this.getVlocityJobOptions());
+        return this._datapackService || (this._datapackService = new VlocityDatapackService(this.getVlocityJobOptions()));
     }
 
     get outputChannel(): vscode.OutputChannel {

@@ -4,44 +4,51 @@ import * as s from '../singleton';
 import * as l from '../loggers';
 
 export default class VlocodeConfiguration {
-    public verbose?: Boolean;
-    public sfdxUsername?: String;
-    public username?: String;
-    public password?: String;
-    public loginUrl?: String;
-    public instanceUrl?: String;
-    public httpProxy?: String;
-    public additionalOptions?: any;
-    public projectPath?: String;
-    public maxDepth?: Number;
-    private vsconfig: vscode.WorkspaceConfiguration;
 
-    private loadFrom(config: vscode.WorkspaceConfiguration) : void {
-        this.vsconfig = config;
-        Object.keys(config).forEach(key => {
-            if (this.vsconfig.has(key)) {
-                Object.defineProperty(this, key, {
-                    get: () => this.vsconfig.get(key),
-                    set: v => this.vsconfig.update(key, v, false)
-                });   
-            }   
+    private _onChangeEmitter: vscode.EventEmitter<VlocodeConfiguration> = new vscode.EventEmitter<VlocodeConfiguration>();
+    private _onDispose: (VlocodeConfiguration) => void;
+
+    constructor(
+        public verbose?: Boolean,
+        public sfdxUsername?: String,
+        public username?: String,
+        public password?: String,
+        public loginUrl?: String,
+        public instanceUrl?: String,
+        public httpProxy?: String,
+        public additionalOptions?: any,
+        public projectPath?: String,
+        public maxDepth?: Number
+    ) { }
+
+    public dispose() {
+        if(this._onChangeEmitter != null) {
+            this._onChangeEmitter.dispose();
+            this._onChangeEmitter = null;
+        }
+        !this._onDispose || this._onDispose(this);
+    }
+
+    public static fromWorkspaceConfiguration(configSectionName: string, assingTo?: VlocodeConfiguration) : VlocodeConfiguration {
+        const vloConfig = assingTo || new VlocodeConfiguration();
+        const vsconfig = vscode.workspace.getConfiguration(configSectionName);
+        Object.keys(vloConfig).filter(key => !key.startsWith('_')).forEach(key => {            
+            Object.defineProperty(vloConfig, key, {
+                get: () => {
+                    return vsconfig.get(key);
+                },
+                set: v => {
+                    vsconfig.update(key, v, false);
+                    vloConfig._onChangeEmitter.fire(vloConfig);
+                }
+            });
         });
-    }
-
-    private listenForChanges(configSectionName?: string) {
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration(Constants.CONFIG_SECTION)) {
-                s.get(l.Logger).verbose(`Observed configiration change in ${Constants.CONFIG_SECTION}; reloading config...`);
-                this.loadFrom(vscode.workspace.getConfiguration(configSectionName));
+        const configListner = vscode.workspace.onDidChangeConfiguration(e => { 
+            if(e.affectsConfiguration(configSectionName)) {
+                vloConfig._onChangeEmitter.fire(vloConfig);
             }
-        })
-    }
-
-    public static load(configSectionName?: string) : VlocodeConfiguration {
-        let config = new VlocodeConfiguration();
-        let vsconfig = vscode.workspace.getConfiguration(configSectionName || Constants.CONFIG_SECTION);        
-        config.loadFrom(vsconfig);
-        config.listenForChanges(configSectionName || Constants.CONFIG_SECTION);
-        return config;
+        });
+        vloConfig._onDispose = () => configListner.dispose();
+        return vloConfig;
     }
 }

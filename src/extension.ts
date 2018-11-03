@@ -32,7 +32,7 @@ function setVlocityToolsLogger(){
 export function activate(context: vscode.ExtensionContext) {
 
     // Init logging and regsiter services
-    let vloService = s.register(VlocodeService, new VlocodeService(context, VlocodeConfiguration.load()));
+    let vloService = s.register(VlocodeService, new VlocodeService(context, VlocodeConfiguration.fromWorkspaceConfiguration(constants.CONFIG_SECTION)));
     let logger = s.register(l.Logger, new l.ChainLogger( 
         new l.OutputLogger(vloService.outputChannel),  
         new l.ConsoleLogger()        

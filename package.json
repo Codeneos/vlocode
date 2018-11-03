@@ -4,7 +4,7 @@
     "description": "Extension for working with Vlocity datapacks",
     "version": "0.4.1",
     "license": "MIT",
-	"icon": "resources/icon.png",
+    "icon": "resources/icon.png",
     "author": {
         "name": "Peter van Gulik",
         "email": "peter@curlybracket.nl"
@@ -58,7 +58,7 @@
                 },
                 {
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
-                    "command": "vlocity.deployDatapack", 
+                    "command": "vlocity.deployDatapack",
                     "group": "1_modification"
                 }
             ]
@@ -151,6 +151,7 @@
     "dependencies": {
         "jsforce": "^1.9.1",
         "salesforce-alm": "^44.5.0",
+        "sfdx-node": "^1.1.0",
         "vlocity": "^1.7.7"
     }
 }
