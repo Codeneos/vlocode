@@ -2,7 +2,14 @@ const path = require('path');
 const merge = require('webpack-merge').smart;
 const webpack = require('webpack');
 const entry = require('webpack-glob-entry');
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const packageJson = require("./package.json");
+
+let packageExternals = Object.keys(packageJson.dependencies)
+  .reduce((externals, dep) => {
+      externals[dep] =  dep;
+      return externals;
+  }, {});
 
 let common = {
   devtool: 'source-map',
@@ -51,10 +58,7 @@ let vscodeExtension = {
     path: path.resolve(__dirname, 'out'),
     devtoolModuleFilenameTemplate: '[absolute-resource-path]'
   },
-  externals: {
-    'vscode': 'vscode',
-    'vlocity': 'vlocity'
-  }
+  externals: packageExternals
 };
 
 let views = {
