@@ -14,13 +14,12 @@ import * as c from './commands';
 import * as l from './loggers';
 
 function setVlocityToolsLogger(){
-    let vloService = s.get(VlocodeService);
-    let vlocityLogFilterRegex = [
+    const vlocityLogFilterRegex = [
         /^(Current Status|Elapsed Time|Version Info|Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy).*/,
         /^(Success|Remaining|Error).*?[0-9]+$/
     ];
     vds.setLogger(new l.ChainLogger( 
-        new l.LogFilterDecorator(new l.OutputLogger(vloService.outputChannel), (...args) => {
+        new l.LogFilterDecorator(new l.OutputLogger(s.get(VlocodeService).outputChannel), (args: any[]) => {
             return !vlocityLogFilterRegex.some(r => r.test(args[0]));
         }),  
         new l.ConsoleLogger()
