@@ -3,12 +3,12 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import constants from '../constants';
+import * as constants from '../constants';
 import * as l from '../loggers';
 import * as s from '../singleton';
 import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync } from '../util';
+import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties } from '../util';
 
 declare var VlocityUtils: any;
 
@@ -128,15 +128,6 @@ export default class VlocityDatapackService {
         return new VlocityDatapack(file.fsPath, mainfestEntry.datapackType, mainfestEntry.key, await getDocumentBodyAsString(file));
     }
 
-    private senatizePath(pathStr: string) {
-        if (!pathStr) {
-            return pathStr;
-        }
-        pathStr = pathStr.replace(/^[\/\\]*(.*?)[\/\\]*$/g, '$1');
-        pathStr = pathStr.replace(/[\/\\]+/g,path.sep);
-        return pathStr;
-    }
-
     private resolveProjectPathFor(file: vscode.Uri) : string {
         if (path.isAbsolute(this.options.projectPath)) {
             return this.options.projectPath || '';
@@ -190,7 +181,7 @@ export default class VlocityDatapackService {
         // determine the base query
         let query = this.getDefaultQuery(entry.datapackType);
         if (!query) {
-            this.logger.warn('No default query available for datapack of type ${(entry.datapackType}; building generic query instead')
+            this.logger.warn('No default query available for datapack of type ${(entry.datapackType}; building generic query instead');
             query = `select Id from ${entry.sobjectType}`;
         }
         // append query conditions
@@ -207,7 +198,7 @@ export default class VlocityDatapackService {
         if (this.queryDefinitions[datapackType]) {
             return this.queryDefinitions[datapackType].query;
         }
-        return undefined
+        return undefined;
     }
 
     /**
@@ -280,7 +271,7 @@ export default class VlocityDatapackService {
         }, {});
     }
 
-    private async runCommand(command: vlocity.actionType, jobInfo : any) : Promise<VlocityDatapackResult> {
+    public async runCommand(command: vlocity.actionType, jobInfo : any) : Promise<VlocityDatapackResult> {
         try {
             process.chdir(vscode.workspace.rootPath);
             return await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
@@ -298,18 +289,23 @@ export default class VlocityDatapackService {
     }
 }
 
-function formatMsgArg(arg: any) {
-    if (arg instanceof Error) {
-        return arg.stack;
-    } else if (typeof arg == 'object') {
-        return JSON.stringify(arg, null);
-    }
-    return arg;
-}
-
-export function setLogger(logger : l.Logger){
-    VlocityUtils.output = (loggingMethod, color: string, args: IArguments) => {
-        logger.log.apply(logger, Array.from(args).map(formatMsgArg));
+export function setLogger(logger : l.Logger, includeCallerDetails: Boolean = false){
+    const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
+        if(includeCallerDetails) {
+            let callerFrame = getStackFrameDetails(2);
+            args.push(`(${callerFrame.fileName}:${callerFrame.lineNumber})`);
+        }
+        logFn.apply(logger, args);
     };
+    const vlocityLoggerMaping : { [ func: string ]: (...args: any[]) => void } = {
+        report: logger.info,
+        success: logger.info,
+        warn: logger.warn,
+        error: logger.error,
+        verbose: logger.verbose        
+    };
+    // Override all methods
+    getProperties(vlocityLoggerMaping).forEach(kvp => VlocityUtils[kvp.key] = (...args: any[]) => vlocityLogFn(kvp.value, args));
+    VlocityUtils.fatal = (...args: any[]) => { throw new Error(Array.from(args).join(' ')); };
+    VlocityUtils.output = (loggingMethod, color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
 }
-

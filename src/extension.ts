@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as path from 'path';
 import * as process from 'process';
-import constants from './constants';
+import * as constants from './constants';
 import VlocodeConfiguration from './models/VlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as vds from './services/vlocityDatapackService';
@@ -19,9 +19,9 @@ function setVlocityToolsLogger(){
         /^(Success|Remaining|Error).*?[0-9]+$/
     ];
     vds.setLogger(new l.ChainLogger( 
-        new l.LogFilterDecorator(new l.OutputLogger(s.get(VlocodeService).outputChannel), (args: any[]) => {
-            return !vlocityLogFilterRegex.some(r => r.test(args[0]));
-        }),  
+        new l.LogFilterDecorator(new l.OutputLogger(s.get(VlocodeService).outputChannel), (args: any[]) => 
+            !vlocityLogFilterRegex.some(r => r.test(args.join(' ')))
+        ),  
         new l.ConsoleLogger()
     ));
 }

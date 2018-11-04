@@ -2,10 +2,9 @@ import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as path from 'path';
 import * as process from 'process';
-import constants from '../constants';
+import * as constants from '../constants';
 import VlocodeConfiguration from '../models/VlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
-import Constants from '../constants';
 import * as s from '../singleton';
 import * as l from '../loggers';
 

@@ -1,7 +1,4 @@
 import * as vscode from 'vscode';
-import Constants from '../constants';
-import * as s from '../singleton';
-import * as l from '../loggers';
 
 export default class VlocodeConfiguration {
 

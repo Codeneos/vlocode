@@ -1,15 +1,22 @@
-'use strict';
 import * as vscode from 'vscode';
 import { isObject } from 'util';
+import moment = require('moment');
+import * as constants from './constants';
 
-enum LogLevel {
-    info,
-    verbose,
-    warn,
+export enum LogLevel {    
     error,
+    warn,
+    info,
+    verbose
 }
 
 type FormatFn = (args: any[], severity?: LogLevel) => string;
+
+// TODO; write better filter pattern to handle log level filters
+var maxLogLevel = LogLevel.info;
+export function setLogLevel(level: LogLevel) : void { 
+    maxLogLevel = level;
+}
 
 export class Logger {
     log(...args: any[]) : void {}
@@ -20,15 +27,22 @@ export class Logger {
 }
 
 class Formatter {    
-    static format(args: any[]) : string {
-        return args.map(Formatter.formatArg).join(' ');
+    static format(args: any[], severity?: LogLevel) : string {
+        let logLevel = (LogLevel[severity] || 'unknown');
+        return `[${Formatter.formatTime(new Date())}] ${logLevel.substr(0,1)}: ${args.map(Formatter.formatArg).join(' ')}`;
     }
 
     static formatArg(arg: any) : string | any {
         if (isObject(arg)) {
             return JSON.stringify(arg);
+        } else if (arg instanceof Error) {
+            return arg.stack;
         }
         return arg;
+    }
+
+    static formatTime(date: Date) : string | any {
+        return moment(date).format(constants.LOG_DATE_FORMAT);
     }
 }
 
@@ -40,7 +54,10 @@ abstract class LogAdapter implements Logger {
     }
 
     private writeFormatted(args: any[], severity: LogLevel) {
-        this.write(this._formatter(args), severity | LogLevel.info);
+        if (severity > maxLogLevel) {
+            return;
+        }
+        this.write(this._formatter(args, severity), severity);
     }
     
     protected abstract write(message: string, level?: LogLevel) : void;
@@ -66,12 +83,19 @@ export class OutputLogger extends LogAdapter {
     }
 }
 
-export class ConsoleLogger implements Logger {
-    public log(...args: any[]) : void { console.log(Formatter.format(args)); }
-    public info(...args: any[]) : void { console.info(Formatter.format(args)); }  
-    public verbose(...args: any[]) : void { console.info(Formatter.format(args)); }
-    public warn(...args: any[]) : void { console.warn(Formatter.format(args)); }
-    public error(...args: any[]) : void { console.error(Formatter.format(args)); }
+export class ConsoleLogger extends LogAdapter {
+    constructor() {
+        super();
+    }
+
+    protected write(message: string, level?: LogLevel) : void {
+        switch(level) {
+            case LogLevel.info: return console.info(message);
+            case LogLevel.verbose: return console.info(message);
+            case LogLevel.warn: return console.warn(message);
+            case LogLevel.error: return console.error(message);
+        }
+    }
 }
 
 export class ChainLogger implements Logger {
@@ -97,9 +121,15 @@ export class LogFilterDecorator implements Logger {
         this._filter = filterFunc;
     }
 
-    public log(...args: any[]) : void { !this._filter(args) || this._logger.log.apply(this._logger, args) ; }
-    public info(...args: any[]) : void { !this._filter(args) || this._logger.info.apply(this._logger, args); }
-    public verbose(...args: any[]) : void { !this._filter(args) || this._logger.verbose.apply(this._logger, args); }
-    public warn(...args: any[]) : void { !this._filter(args) || this._logger.warn.apply(this._logger, args); }
-    public error(...args: any[]) : void { !this._filter(args) || this._logger.error.apply(this._logger, args); }
+    private applyFilter(logFn: (...args: any[]) => void, args: any[]) {
+        if(this._filter(args)) {
+            logFn.apply(this._logger, args);
+        }
+    }
+
+    public log(...args: any[]) : void { this.applyFilter(this._logger.log, args); }
+    public info(...args: any[]) : void { this.applyFilter(this._logger.info, args); }
+    public verbose(...args: any[]) : void { this.applyFilter(this._logger.verbose, args); }
+    public warn(...args: any[]) : void { this.applyFilter(this._logger.warn, args); }
+    public error(...args: any[]) : void { this.applyFilter(this._logger.error, args); }
 }

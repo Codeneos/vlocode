@@ -95,3 +95,67 @@ export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
         return unqiueSet.has(k) ? false : unqiueSet.add(k);
     });
 }
+
+/**
+ * Removes any double or trailing slashes from the path
+ * @param pathStr path string
+ */
+export function senatizePath(pathStr: string) {
+    if (!pathStr) {
+        return pathStr;
+    }
+    pathStr = pathStr.replace(/^[\/\\]*(.*?)[\/\\]*$/g, '$1');
+    pathStr = pathStr.replace(/[\/\\]+/g,path.sep);
+    return pathStr;
+}
+
+export interface StackFrame {
+    functionName: string;
+    modulePath: string;
+    fileName: string;
+    lineNumber: number;
+    columnNumber: number;
+}
+
+/**
+ * Gets a single stack frame from the current call stack.
+ * @param stackFrame The frame number to get
+ * @returns A stack frame object that describes the request stack frame or undefined when the stack frame does not exist
+ */
+export function getStackFrameDetails(frameNumber: number) : StackFrame | undefined {
+    const stackLineCaller = new Error().stack.split('\n');
+    if(stackLineCaller.length < frameNumber + 4) {
+        return;
+    }
+    // frameNumber +2 as we want to exlcude our self and the first line of the split which is not stackframe
+    const stackFrameString = stackLineCaller.slice(frameNumber+2, frameNumber+3)[0];
+    const [,,callerName,path,basename,line,column] = stackFrameString.match(stackLineRegex);
+    return {
+        functionName: callerName,
+        modulePath: path,
+        fileName: basename,
+        lineNumber: Number.parseInt(line),
+        columnNumber: Number.parseInt(column)
+    };
+}
+const stackLineRegex = /at\s*(module\.|exports\.|object\.)*(.*?)\s*\((.*?([^:\\/]+)):([0-9]+):([0-9]+)\)$/i;
+
+/**
+ * Loop over all own properties in an object.
+ * @param obj Object who's properties to loop over.
+ * @param cb for-each function called for each property of the object
+ */
+export function forEachProperty<T>(obj: T, cb: (key: string, value: any, obj: T) => void) : void {
+    Object.keys(obj).forEach(key => {
+        cb(key, obj[key], obj);
+    });
+}
+
+export function getProperties(obj: any) : { readonly key: string, readonly value: any }[] {
+    return Object.keys(obj).map(key => { 
+        return Object.defineProperties({},{
+            key: { value: key, },
+            value: { get: () => obj[key] }
+        });
+    });
+}

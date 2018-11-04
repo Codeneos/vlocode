@@ -1,9 +1,8 @@
 /**
  * Default constants used in this extensipn
  */
-export default class Constants {
-    public static VERSION = '0.4.1';
-    public static CONFIG_SECTION = 'vlocity';
-    public static OUTPUT_CHANNEL_NAME = 'Vlocity';
-    public static NG_APP_NAME = 'Vlocode';
-}
+export const VERSION = '0.4.1';
+export const CONFIG_SECTION = 'vlocity';
+export const OUTPUT_CHANNEL_NAME = 'Vlocity';
+export const NG_APP_NAME = 'Vlocode';
+export const LOG_DATE_FORMAT = 'hh:mm:ss.SS';

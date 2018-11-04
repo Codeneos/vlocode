@@ -22,7 +22,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
                     label: queryDef.VlocityDataPackType,
                     detail: query,
                     query: queryDef.query
-                }
+                };
             }
         );
     }
@@ -53,24 +53,58 @@ export default class ExportDatapackCommand extends DatapackCommand {
             matchOnDetail: true,
             placeHolder: 'Select datapack types to export'
         });
-        let connection = await this.datapackService.getJsForceConnection();
-        let query = datapackToExport.query.replace(/%vlocity_namespace%/g, this.datapackService.vlocityNamespace);
-        let results = await this.showProgress(this.progressText, connection.queryAll<SObjectRecord>(query));
 
-        // no results
-        if (results.totalSize == 0) {
-            return;
+        if (!datapackToExport) {
+            return; // selection cancelled;
+        }
+        
+        let queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');
+        try {
+            let connection = await this.datapackService.getJsForceConnection();
+            let query = datapackToExport.query.replace(/%vlocity_namespace%/g, this.datapackService.vlocityNamespace);
+            var results = await this.showProgress(this.progressText, connection.queryAll<SObjectRecord>(query));
+        } finally {
+            queryProgress.complete();
+        }
+
+        if (results.totalSize === 0) {
+            return; // no results
         }
 
         // select object to export
         let records = results.records.map(r => { return { 
             label: this.getLabel(this.unprefix(r, this.datapackService.vlocityNamespace)),
-            detail: r.attributes.url
-        }});
+            detail: r.attributes.url,
+            record: r
+        };});
         let objectToExport = await vscode.window.showQuickPick(records, {
             matchOnDetail: true,
-            placeHolder: 'Select datapack types to export'
+            placeHolder: 'Select datapack object to export'
         });
+
+        if (!objectToExport) {
+            return; // selection cancelled;
+        }
+
+        let exportProgress = await this.startProgress(`Exporting datapack: ${objectToExport.label}...`);
+        try {        
+            // TODO: move code to datapack service class
+            let result = await this.datapackService.runCommand('Export',{
+                fullManifest: {
+                    [datapackToExport.label]: {
+                        [objectToExport.record.Id]: Object.defineProperties(objectToExport.record, {
+                            VlocityDataPackType: { get: () => datapackToExport.label },
+                            VlocityRecordSObjectType: { get: () => objectToExport.record.attributes.type }
+                        })
+                    }
+                },
+                skipQueries: true,
+                maxDepth: 0,
+                projectPath: '.'
+            });
+        } finally {
+            exportProgress.complete();
+        }
     }
 }
 
