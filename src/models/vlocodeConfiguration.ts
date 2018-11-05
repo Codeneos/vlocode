@@ -7,6 +7,7 @@ export default class VlocodeConfiguration {
 
     constructor(
         public verbose?: Boolean,
+        public debug?: Boolean,
         public sfdxUsername?: String,
         public username?: String,
         public password?: String,

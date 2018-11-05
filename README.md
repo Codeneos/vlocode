@@ -1,10 +1,11 @@
 <img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/logo1.png" height="160">
 
-# Vlocode for Visual Studio Code
+# Vlocode: Vlocity development tools for Visual Studio Code
 
-This extension provides an alternate way for developing, extracting and deploying Vlocity data with Visual Studio Code.  
-It is targeted at Vlocity developers who want to develop Vlocity components and updated datapacks from an IDE instead of using the web based UI available in Salesforce.
-There's no complicated setup process or bothersome project configuration to maintain.
+This extension provides functionality for deploying, extracting and refreshing Vlocity datapacks from with Visual Studio Code.
+It is targeted at Vlocity/Salesforce developers who want work on Vlocity data from within their IDE and have the most commonly used datapacks comands available directly from with Visual Studio Code. 
+
+In the background this extension relies of the official Vlocity build tools library for executing the deployment and export jobs, meaning the results will be the same way as produced by your CI environment. 
 
 <img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/refreshDatapack.gif" width="898">
 
@@ -12,6 +13,7 @@ There's no complicated setup process or bothersome project configuration to main
 
 * Retrieve/refresh Vlocity datapacks from within Visual Studio Code
 * Deploy a single or multiple Vlocity datapacks from within Visual Studio Code
+* Export any datapack enabled object directly from within VSCode.
 * Support SFDX username or alias to login to Salesforce
   > **Tip** Setup SFDX (see Requirements) to avoid storing your Salesforce password and security token as plain text workspace configuration
 
@@ -42,4 +44,4 @@ This extension contributes the following settings:
 
 ## Known Issues
 
-* Custom expand definition overrides are not yet loaded.
+* Custom expand definitions and overrides are not loaded.

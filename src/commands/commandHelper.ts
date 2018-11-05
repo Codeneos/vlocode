@@ -9,12 +9,12 @@ export default class CommandHelper  {
         errorMsg : string, 
         retryCallback: (...args) => Promise<T>, 
         thisArg?: any,
-        args? : IArguments) : Thenable<T> {
+        args? : any[]) : Thenable<T> {
         return msgFunc(errorMsg, { modal: false }, { title: 'Retry' })
                 .then(value => {
                     if (value) {
                         if (args !== undefined) {
-                            return retryCallback.apply(thisArg || null, Array.from(args));
+                            return retryCallback.apply(thisArg || null, args || []);
                         } else {
                             return retryCallback();
                         }
@@ -22,11 +22,11 @@ export default class CommandHelper  {
                 });
     }
     
-    public static showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, args? : IArguments) : Thenable<T> {
+    public static showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
         return CommandHelper.showMsgWithRetry<T>(vscode.window.showErrorMessage, errorMsg, retryCallback, thisArg, args);
     }
     
-    public static showWarningWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, args? : IArguments) : Thenable<T> {
+    public static showWarningWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
         return CommandHelper.showMsgWithRetry<T>(vscode.window.showWarningMessage, errorMsg, retryCallback, thisArg, args);
     }
 }

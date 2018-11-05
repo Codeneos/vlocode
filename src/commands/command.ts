@@ -18,6 +18,7 @@ export class ProgressToken {
     private progressResolve : () => void;
     private progressReject : (reason?: any) => void;
     private progress : vscode.Progress<{ message?: string }>;
+    private resolved: boolean = false;
 
     constructor(progressResolve : () => void, progressReject : (reason?: any) => void, progress : vscode.Progress<{ message?: string }>) {
         this.progressResolve = progressResolve;
@@ -26,18 +27,23 @@ export class ProgressToken {
     }
 
     public complete() : void {
-        this.progressResolve();
+        if (!this.resolved) {
+            this.progressResolve();
+            this.resolved = true;
+        }
     }
 
     public report(message: string) : void {
+        if (!this.resolved) {
         this.progress.report({ message: message });
+        }
     }
 }
 
 export abstract class Command implements ICommand {
 
     public name: string;    
-    private executor: (... args: any[]) => void
+    private executor: (... args: any[]) => void;
 
     constructor(name: string, executor?: (... args: any[]) => void) {
         this.name = name;

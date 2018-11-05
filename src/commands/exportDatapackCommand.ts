@@ -1,13 +1,23 @@
 import * as vscode from 'vscode';
 
 import VlocityDatapackService, * as vds from '../services/vlocityDatapackService';
+import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, ObjectEntry } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import helper from './commandHelper';
 import SObjectRecord from 'models/sobjectRecord';
 
 export default class ExportDatapackCommand extends DatapackCommand {
     
-    private progressText : string = 'Exporting Vlocity datapacks...';
+    private repsonseMessages: { [key: number] : (result: Result) => string } = {
+        [Outcome.success]: (r) => `Succesfully exported ${r.totalCount} datapack(s)`,
+        [Outcome.partial]: (r: Result) => {
+            if (r.errors.length > 0) {
+                return `Unable to export all the specified object(s); exported ${r.success.length} objects with ${r.errors.length} errors`;
+            }
+            return `Unable to export all the specified object(s); exported ${r.totalCount} out of ${r.totalCount + r.missingCount} objects`;
+        },
+        [Outcome.error]: (r) => `Failed to export the selected object(s); see the log for more details`
+    };
 
     constructor(name : string) {
         super(name, args => this.exportDatapacks());
@@ -28,7 +38,6 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     protected getLabel(salesforceRecord : SObjectRecord) : string {
-        this.logger.log(salesforceRecord);
         if (salesforceRecord.Name) {
             return salesforceRecord.Name;
         } else if (salesforceRecord['Type__c']) {
@@ -62,7 +71,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         try {
             let connection = await this.datapackService.getJsForceConnection();
             let query = datapackToExport.query.replace(/%vlocity_namespace%/g, this.datapackService.vlocityNamespace);
-            var results = await this.showProgress(this.progressText, connection.queryAll<SObjectRecord>(query));
+            var results = await connection.queryAll<SObjectRecord>(query);
         } finally {
             queryProgress.complete();
         }
@@ -86,24 +95,22 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
 
-        let exportProgress = await this.startProgress(`Exporting datapack: ${objectToExport.label}...`);
-        try {        
-            // TODO: move code to datapack service class
-            let result = await this.datapackService.runCommand('Export',{
-                fullManifest: {
-                    [datapackToExport.label]: {
-                        [objectToExport.record.Id]: Object.defineProperties(objectToExport.record, {
-                            VlocityDataPackType: { get: () => datapackToExport.label },
-                            VlocityRecordSObjectType: { get: () => objectToExport.record.attributes.type }
-                        })
-                    }
-                },
-                skipQueries: true,
-                maxDepth: 0,
-                projectPath: '.'
-            });
-        } finally {
-            exportProgress.complete();
+        let exportEntries : ObjectEntry[] = [{
+            id: objectToExport.record.Id,
+            sobjectType: objectToExport.record.attributes.type,
+            datapackType: datapackToExport.label
+        }];
+
+        let result = await this.showProgress(
+            `Exporting datapack: ${objectToExport.label}...`, 
+            this.datapackService.export(exportEntries, 0));
+
+        // report UI progress back
+        let message = this.repsonseMessages[result.outcome](result);
+        switch(result.outcome) {
+            case Outcome.success: vscode.window.showInformationMessage(message); break;
+            case Outcome.partial: vscode.window.showErrorMessage(message); break;
+            case Outcome.error: vscode.window.showErrorMessage(message); break;
         }
     }
 }

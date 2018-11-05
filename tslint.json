@@ -9,7 +9,11 @@
 			true,
 			"always"
 		],
-		"triple-equals": true
+		"triple-equals": false,
+		"typeof-compare": true,
+		"use-isnan": true,
+		"deprecation": true,
+		"prefer-readonly": true
 	},
 	"defaultSeverity": "warning"
 }

@@ -52,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
                 } catch (err) {
                     logger.error(`${cmd.name}: ${err}`);
                     return vscode.window.showErrorMessage(err, { modal: false }, { title: 'Open settings' }).then(r => 
-                        r === undefined || vscode.commands.executeCommand('workbench.action.openWorkspaceSettings', 'test'))
+                        r === undefined || vscode.commands.executeCommand('workbench.action.openWorkspaceSettings', 'test'));
                 }
                 logger.verbose(`Invoke command ${cmd.name}`);
                 try {
@@ -64,21 +64,6 @@ export function activate(context: vscode.ExtensionContext) {
             });
         })
         .forEach(sub => context.subscriptions.push(sub));
-
-        /*let onDidSaveListner = vscode.workspace.onDidSaveTextDocument((textDocument: vscode.TextDocument) => {
-        let datapackMatches = textDocument.fileName.match(/(.*)(\\|\/)(.*?)_DataPack\.json$/i);
-        if (datapackMatches == null) {
-            return;
-        }
-        let [,folder,,datapackName] = datapackMatches; 
-              
-        //vscode.window.showInformationMessage(JSON.stringify(datapack));
-        //vscode.
-        //const toolingType: string = getAnyTTFromFolder(textDocument.uri);
-        //return commandService.runCommand('ForceCode.compileMenu', textDocument);
-        //vscode.window.showErrorMessage('The file you are trying to save to the server isn\'t in the current org\'s source folder (' + vscode.window.forceCode.projectRoot + ')');
-    });
-    context.subscriptions.push(onDidSaveListner);*/
 }
 
 

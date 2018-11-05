@@ -59,9 +59,9 @@ export default class VlocodeService {
         }
     }
 
-    private getVlocityJobOptions() : vlocity.jobOptions {
+    private getVlocityJobOptions() : vlocity.JobOptions {
         // for now this is a simple cast but in the future this migth change
-        return <vlocity.jobOptions> (<any> this._config);
+        return <vlocity.JobOptions> (<any> this._config);
     }
 
     get config(): VlocodeConfiguration {

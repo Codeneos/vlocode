@@ -1,5 +1,13 @@
 # Changelog Vlocode
 
+## [0.5.1] - 2018-11-5
+### Added
+- Ability to export non-existing datapacks directly from within VSCode.
+- Better logging to the console; disabled verbose mode by default
+
+### Fixed
+- Do not create new instances of the Vlocity build tools for every operation, prevents excessive logging
+
 ## [0.4.0] - 2018-11-1 (beta)
 ### Added
 - Resolving datapack types based on folder structure
