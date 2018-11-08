@@ -20,7 +20,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
     };
 
     constructor(name : string) {
-        super(name, args => this.exportDatapacks());
+        super(name, args => this.executeExport(args));
     }
 
     protected getDatapackOptionsList(namespacePrefix?: string) : (vscode.QuickPickItem & { query: string })[] {
@@ -57,7 +57,20 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return record;
     }
 
-    protected async exportDatapacks() {
+    private isExportableObjectEntry(obj : any) {
+        return 'sobjectType' in obj && 
+               'datapackType' in obj &&
+               'id' in obj;
+    }
+
+    protected async executeExport(args: any[]) : Promise<void>  {
+        if (args != null && args.length == 1 && this.isExportableObjectEntry(args[0])) {
+            return this.exportObject(args[0]);
+        } 
+        return this.exportDatapacks();
+    }
+
+    protected async exportDatapacks() : Promise<void>  {
         let datapackToExport = await vscode.window.showQuickPick(this.getDatapackOptionsList(), {
             matchOnDetail: true,
             placeHolder: 'Select datapack types to export'
@@ -95,14 +108,18 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
 
-        let exportEntries : ObjectEntry[] = [{
+        return this.exportObject({
             id: objectToExport.record.Id,
             sobjectType: objectToExport.record.attributes.type,
             datapackType: datapackToExport.label
-        }];
+        });
+    }
+
+    protected async exportObject(objectToExport: ObjectEntry) : Promise<void> {
+        let exportEntries : ObjectEntry[] = [objectToExport];
 
         let result = await this.showProgress(
-            `Exporting datapack: ${objectToExport.label}...`, 
+            `Exporting datapack: ${objectToExport.datapackType}...`, 
             this.datapackService.export(exportEntries, 0));
 
         // report UI progress back

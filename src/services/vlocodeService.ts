@@ -7,6 +7,7 @@ import VlocodeConfiguration from '../models/VlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
 import * as s from '../singleton';
 import * as l from '../loggers';
+import { ICommand } from '../commands/command';
 
 export default class VlocodeService {  
 
@@ -14,6 +15,7 @@ export default class VlocodeService {
     private _outputChannel: vscode.OutputChannel;
     private _context: vscode.ExtensionContext;
     private _datapackService: VlocityDatapackService;
+    private _disposables: {dispose() : any}[] = [];
 
     constructor(context?: vscode.ExtensionContext, config?: VlocodeConfiguration) {
         if (!config) {
@@ -21,6 +23,14 @@ export default class VlocodeService {
         }
         this._context = context;
         this.setConfig(config);
+        context.subscriptions.push(this);
+    }
+
+    public dispose() {
+        this._disposables.forEach(disposable => {
+            disposable.dispose();
+        });
+        this._disposables = [];
     }
 
     public getContext(): vscode.ExtensionContext {
@@ -33,6 +43,38 @@ export default class VlocodeService {
     
     public focusLog() : any {
         this.outputChannel.show(false);
+    }
+
+    protected get logger() : l.Logger {
+        return s.get(l.Logger);
+    }
+
+    public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {
+        this._disposables.push(disposable);
+        return disposable;
+    }
+
+    public registerCommand(...cmds: ICommand[]) : void {
+        cmds.forEach(cmd => {
+            this.logger.verbose(`Register commands ${cmd.name}`);
+            this.registerDisposable(vscode.commands.registerCommand(cmd.name, async (...args) => {     
+                try {
+                    s.get(VlocodeService).validateConfig();
+                    s.get(VlocodeService).validateSalesforce();
+                } catch (err) {
+                    this.logger.error(`${cmd.name}: ${err}`);
+                    return vscode.window.showErrorMessage(err, { modal: false }, { title: 'Open settings' }).then(r => 
+                        r === undefined || vscode.commands.executeCommand('workbench.action.openWorkspaceSettings', 'test'));
+                }
+                this.logger.verbose(`Invoke command ${cmd.name}`);
+                try {
+                    await cmd.execute.apply(cmd, args);
+                    this.logger.verbose(`Execution of command ${cmd.name} done`);
+                } catch(err) {
+                    this.logger.error(`Command execution resulted in error: ${err}`);
+                }
+            }))
+        });
     }
 
     public validateSalesforce() : void {

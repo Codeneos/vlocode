@@ -111,8 +111,16 @@ export default class VlocityDatapackService {
     }
      
     private get vlocityBuildTools() : vlocity {
-        return this._vlocityBuildTools || (this._vlocityBuildTools = new vlocity(this.options));        
+        return this._vlocityBuildTools || (this._vlocityBuildTools = this.createVlocityInstance());        
     }    
+
+    private createVlocityInstance() : vlocity {
+        const buildTools = new vlocity(this.options);
+        buildTools.datapacksutils.printJobStatus = () => {};
+        buildTools.datapacksutils.saveCurrentJobInfo = () => {};
+        buildTools.datapacksexportbuildfile.saveFile = () => {};
+        return buildTools;
+    }
 
     public get vlocityNamespace() : string {
         return this.vlocityBuildTools.namespace;        
@@ -299,9 +307,10 @@ export default class VlocityDatapackService {
         let localOptions : vlocity.JobOptions = { projectPath: this.options.projectPath || '.' };
         try {
             process.chdir(vscode.workspace.rootPath);
-            jobResult = await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
+            jobResult = await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() => 
                 new Promise((resolve, reject) => {
                     jobInfo = Object.assign({}, this.options, jobInfo, localOptions);
+                    this.resetBuildTools();
                     return this.vlocityBuildTools.datapacksjob.runJob(command, jobInfo, resolve, reject);
                 })
             );
@@ -312,6 +321,11 @@ export default class VlocityDatapackService {
             jobResult =<vlocity.VlocityJobResult>err;
         }
         return this.parseJobResult(jobResult);
+    }
+
+    private resetBuildTools() : void {        
+        // reset build tools for proper functioning
+        this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
     }
 
     private parseJobResult(result: vlocity.VlocityJobResult) : DatapackCommandResult {

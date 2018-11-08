@@ -4,9 +4,12 @@ import DeployDatapackCommand from "./commands/deployDatapackCommand";
 import ViewDatapackCommand from "./commands/viewDatapackCommand";
 import ExportDatapackCommand from "./commands/exportDatapackCommand";
 
-export const datapackCommands : ICommand[] = [
+export const DatapackCommands : ICommand[] = [
     new RefreshDatapackCommand('vlocity.refreshDatapack'),
     new DeployDatapackCommand('vlocity.deployDatapack'),
     new ViewDatapackCommand('vlocity.viewDatapack.generic'),
     new ExportDatapackCommand('vlocity.exportDatapack')
 ];
+
+
+//DatapackExplorer

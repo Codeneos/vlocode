@@ -31,6 +31,23 @@
     ],
     "main": "./out/vlocode",
     "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "vlocity-activitybar",
+                    "title": "Vlocity",
+                    "icon": "resources/datapacks.svg"
+                }
+            ]
+        },
+        "views": {
+            "vlocity-activitybar": [
+                {
+                    "id": "datapackExplorer",
+                    "name": "Datapacks"
+                }
+            ]
+        },
         "commands": [
             {
                 "command": "vlocity.refreshDatapack",
@@ -47,9 +64,35 @@
             {
                 "command": "vlocity.exportDatapack",
                 "title": "Vlocity: Export Datapack(s) from server"
-            }
+            },            
+            {
+                "command": "vlocity.datapackExplorer.export",
+                "title": "Export",
+                "icon": {
+                    "light": "resources/light/export.svg",
+                    "dark": "resources/dark/export.svg"
+                }
+            },
+            {
+				"command": "vlocity.datapackExplorer.refresh",
+				"title": "Refresh",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			}
         ],
         "menus": {
+            "commandPalette": [
+				{
+					"command": "vlocity.refreshDatapack", 
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.deployDatapack", 
+                    "group": "v_vlocity"
+                }
+			],
             "explorer/context": [
                 {
                     "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
@@ -71,6 +114,25 @@
                 {
                     "when": "resourceFilename =~ /(.*\\.json)$/i",
                     "command": "vlocity.deployDatapack",
+                    "group": "v_vlocity"
+                }
+            ],
+            "view/title": [
+				{
+					"command": "vlocity.datapackExplorer.refresh",
+					"when": "view == datapackExplorer",
+					"group": "navigation"
+				}
+            ],
+            "view/item/context": [                
+                {
+                    "command": "vlocity.datapackExplorer.export",
+                    "when": "viewItem == vlocity:datapack:object",
+                    "group": "inline"
+                },                
+                {
+                    "command": "vlocity.datapackExplorer.export",
+                    "when": "viewItem == vlocity:datapack:object",
                     "group": "v_vlocity"
                 }
             ]
@@ -151,7 +213,6 @@
         "sinon": "^7.1.0",
         "tslint": "^5.11.0",
         "typescript": "^3.1.3",
-        "vscode": "^1.1.21",
         "vscode-languageclient": "^5.1.1",
         "webpack": "^4.23.1",
         "webpack-cli": "^3.1.2",
@@ -162,9 +223,9 @@
     },
     "dependencies": {
         "jsforce": "^1.9.1",
+        "moment": "^2.22.2",
         "salesforce-alm": "^44.5.0",
         "sfdx-node": "^1.1.0",
-        "moment": "^2.22.2",
         "vlocity": "^1.7.7",
         "vscode": "^1.1.21"
     }

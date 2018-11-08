@@ -8,8 +8,6 @@ import { Logger } from '../loggers';
 /** Default command interface */
 export interface ICommand {
     name: string;
-    withProgress?: boolean;
-    withProgressOptions?: vscode.ProgressOptions;
     execute(... args: any[]): void;
 }
 

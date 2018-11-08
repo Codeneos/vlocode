@@ -10,5 +10,7 @@ out/**/*.map
 src/**
 tsconfig.json
 tslint.json
-webpack.config.json
+webpack.config.js
 package-lock.json
+sfdx-project.json
+vlo-datapack-lang-config.json
