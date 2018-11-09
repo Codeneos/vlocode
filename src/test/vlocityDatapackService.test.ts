@@ -8,6 +8,7 @@ import 'mocha';
 import * as vscode from 'vscode';
 import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
 import { fail } from 'assert';
+import { Logger } from 'loggers';
 
 declare var VlocityUtils: any;
 
@@ -30,22 +31,6 @@ describe('vlocityDatapackService', () => {
             let uriForResolve = vscode.Uri.file('./myfile');
             // assert
             expect((<any>vds).resolveProjectPathFor(uriForResolve)).equals('x:\\project\\vlc\\');
-        });
-    });
-
-    describe('#senatizePath (private)', () => { 
-        let s = path.sep;
-        it("should remove double path seperators from input", function() {
-            let vds = <any>new vlocityDatapackService(null);
-            expect(vds.senatizePath('a\\\\/b\\\\\\/c\\\\/d')).equals(`a${s}b${s}c${s}d`);
-        });
-        it("should trim path seperators from input", function() { 
-            let vds = <any>new vlocityDatapackService(null);
-            expect(vds.senatizePath('\\\\/test/\\\\/')).equals('test');
-        });
-        it("should normalize all seperators to the platform standard", function() { 
-            let vds = <any>new vlocityDatapackService(null);
-            expect(vds.senatizePath('a/b\\c/d\\e')).equals(`a${s}b${s}c${s}d${s}e`);
         });
     });
 
@@ -133,7 +118,13 @@ describe('vlocityDatapackService', () => {
     describe('#setLogger', () => {
         it("should intercept all logging calls", function() {
             var logSpy = spy();
-            vds.setLogger(<any>{log: logSpy});
+            vds.setLogger(<Logger>{
+                log: logSpy, 
+                info: logSpy, 
+                verbose: logSpy,
+                warn: logSpy,
+                error:logSpy
+            });
             VlocityUtils.verboseLogging = true;
             VlocityUtils.log('b', 'a');
             VlocityUtils.report('b', 'a');
@@ -143,7 +134,7 @@ describe('vlocityDatapackService', () => {
             VlocityUtils.verbose('b', 'a');
             try { VlocityUtils.fatal('b', 'a'); } catch(e){ }    
             // assert
-            expect(logSpy.callCount).equals(7);
+            expect(logSpy.callCount).equals(6);
         });
         it("should format log message", function() {
             var logSpy = spy();

@@ -3,9 +3,8 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import * as constants from 'constants';
-import * as l from 'loggers';
-import * as s from 'singleton';
+import * as l from '../loggers';
+import * as s from '../singleton';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties } from '../util';
 

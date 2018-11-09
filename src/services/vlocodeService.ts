@@ -3,12 +3,12 @@ import * as vlocity from 'vlocity';
 import * as path from 'path';
 import * as process from 'process';
 import * as constants from '../constants';
-import VlocodeConfiguration from 'models/VlocodeConfiguration';
+import VlocodeConfiguration from '../models/VlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
-import * as serviceProvider from 'singleton';
-import { Logger } from 'loggers';
+import * as serviceProvider from '../singleton';
+import { Logger } from '../loggers';
 import CommandRouter from './commandRouter';
-import { VlocodeCommand } from 'commands';
+import { VlocodeCommand } from '../commands';
 
 export default class VlocodeService {  
 

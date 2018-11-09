@@ -4,7 +4,7 @@ import VlocityDatapackService, * as vds from '../services/vlocityDatapackService
 import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, ObjectEntry } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import helper from './commandHelper';
-import SObjectRecord from 'models/sobjectRecord';
+import SObjectRecord from '../models/sobjectRecord';
 
 export default class ExportDatapackCommand extends DatapackCommand {
     
