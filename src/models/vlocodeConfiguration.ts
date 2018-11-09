@@ -1,52 +1,44 @@
-import * as vscode from 'vscode';
+import { workspace, WorkspaceConfiguration, Disposable } from 'vscode';
+import { JobOptions } from 'vlocity';
 
-export default class VlocodeConfiguration {
-
-    private _onChangeEmitter: vscode.EventEmitter<VlocodeConfiguration> = new vscode.EventEmitter<VlocodeConfiguration>();
-    private _onDispose: (VlocodeConfiguration) => void;
-
+export default class VlocodeConfiguration implements JobOptions {
     constructor(
-        public verbose?: Boolean,
-        public debug?: Boolean,
-        public sfdxUsername?: String,
-        public username?: String,
-        public password?: String,
-        public loginUrl?: String,
-        public instanceUrl?: String,
-        public httpProxy?: String,
+        public readonly sectionName: string,
+        public verbose?: boolean,
+        public debug?: boolean,
+        public sfdxUsername?: string,
+        public username?: string,
+        public password?: string,
+        public loginUrl?: string,
+        public instanceUrl?: string,
+        public httpProxy?: string,
         public additionalOptions?: any,
-        public projectPath?: String,
-        public maxDepth?: Number
+        public projectPath?: string,
+        public maxDepth?: number
     ) { }
 
-    public dispose() {
-        if(this._onChangeEmitter != null) {
-            this._onChangeEmitter.dispose();
-            this._onChangeEmitter = null;
-        }
-        !this._onDispose || this._onDispose(this);
-    }
-
-    public static fromWorkspaceConfiguration(configSectionName: string, assingTo?: VlocodeConfiguration) : VlocodeConfiguration {
-        const vloConfig = assingTo || new VlocodeConfiguration();
-        const vsconfig = vscode.workspace.getConfiguration(configSectionName);
-        Object.keys(vloConfig).filter(key => !key.startsWith('_')).forEach(key => {            
+    public static load(configSectionName: string, assingTo?: VlocodeConfiguration) : VlocodeConfiguration {
+        const vloConfig = assingTo || new VlocodeConfiguration(configSectionName);
+        const vsconfig = workspace.getConfiguration(configSectionName);
+        Object.keys(vloConfig).filter(key => !key.startsWith('_')).forEach(key => {    
+            if (key == 'sectionName') { 
+                return; 
+            }
             Object.defineProperty(vloConfig, key, {
-                get: () => {
-                    return vsconfig.get(key);
-                },
-                set: v => {
-                    vsconfig.update(key, v, false);
-                    vloConfig._onChangeEmitter.fire(vloConfig);
-                }
+                get: () => vsconfig.get(key),
+                set: v => vsconfig.update(key, v, false)
             });
         });
-        const configListner = vscode.workspace.onDidChangeConfiguration(e => { 
-            if(e.affectsConfiguration(configSectionName)) {
-                vloConfig._onChangeEmitter.fire(vloConfig);
+        return vloConfig;
+    }
+
+    public static watch(config: VlocodeConfiguration, watcher: (config: VlocodeConfiguration) => void, thisArg?: any) : Disposable {
+        const vloConfig = VlocodeConfiguration.load(config.sectionName, config);
+        const configListner = workspace.onDidChangeConfiguration(e => { 
+            if (e.affectsConfiguration(config.sectionName)) {
+                watcher.call(thisArg, VlocodeConfiguration.load(config.sectionName, config));
             }
         });
-        vloConfig._onDispose = () => configListner.dispose();
-        return vloConfig;
+        return configListner;
     }
 }

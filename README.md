@@ -11,11 +11,12 @@ In the background this extension relies of the official Vlocity build tools libr
 
 ## Features
 
-* Retrieve/refresh Vlocity datapacks from within Visual Studio Code
-* Deploy a single or multiple Vlocity datapacks from within Visual Studio Code
-* Export any datapack enabled object directly from within VSCode.
-* Support SFDX username or alias to login to Salesforce
-  > **Tip** Setup SFDX (see Requirements) to avoid storing your Salesforce password and security token as plain text workspace configuration
+* **Retrieve & refresh** Vlocity datapacks from within Visual Studio Code simplifying your workflow
+* **Deploy** exported Vlocity datapacks with a single click from within Visual Studio Code
+* **Datapack explorer** view all exportable objects available in the connected org and export them with a single click
+* **Easy setup** Simplified setup based on SFDX using session tokens instead; no need to acquire security tokens or copy-past passwords and usernames around.
+* **Export** any datapack enabled object directly from within VSCode.
+* **SFDX Support** username or alias to login to Salesforce
 
 ## Planned Features
 
@@ -26,11 +27,8 @@ In the background this extension relies of the official Vlocity build tools libr
 
 ## Requirements
 
-Vlocode works best with SFDX for authentication with salesforce, download the SFDX CLI tools from <https://developer.salesforce.com/tools/sfdxcli>. 
-After installing SFDX authorize your development sandbox using the following command:
-```
-sfdx force:auth:web:login -r https://test.salesforce.com
-```
+- Basic knowledge of how Vlocity datapacks work
+- Access to a Salesforce with the Vlocity managed package installed
 
 ## Extension Settings
 

@@ -38,7 +38,8 @@ let common = {
     ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js', '.html']
+    extensions: ['.tsx', '.ts', '.js', '.html'],
+    modules: ['node_modules', 'src']
   },
   mode: 'development'
 };

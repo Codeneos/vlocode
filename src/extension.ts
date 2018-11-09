@@ -1,23 +1,15 @@
-'use strict';
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import { window, ExtensionContext } from 'vscode';
-import * as vlocity from 'vlocity';
-import * as path from 'path';
-import * as process from 'process';
-import * as constants from './constants';
 import VlocodeConfiguration from './models/VlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
-import * as vds from './services/vlocityDatapackService';
+import * as constants from './constants';
 import * as s from './singleton';
 import * as l from './loggers';
-import { DatapackExplorer } from './datapackExplorer';
-import { DatapackCommands } from './commands';
+import CommandRouter from './services/commandRouter';
 
 export function activate(context: ExtensionContext) : void {
 
     // Init logging and regsiter services
-    let vloService = s.register(VlocodeService, new VlocodeService(context, VlocodeConfiguration.fromWorkspaceConfiguration(constants.CONFIG_SECTION)));
+    let vloService = s.register(VlocodeService, new VlocodeService(context, VlocodeConfiguration.load(constants.CONFIG_SECTION)));
     let logger = s.register(l.Logger, new l.ChainLogger( 
         new l.OutputLogger(vloService.outputChannel),  
         new l.ConsoleLogger()        
@@ -28,17 +20,23 @@ export function activate(context: ExtensionContext) : void {
     const vlocityLogFilterRegex = [
         /^(Current Status|Elapsed Time|Version Info|Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy).*/,
         /^(Success|Remaining|Error).*?[0-9]+$/
-    ];
-    vds.setLogger(new l.ChainLogger( 
-        new l.LogFilterDecorator(new l.OutputLogger(s.get(VlocodeService).outputChannel), (args: any[]) => 
-            !vlocityLogFilterRegex.some(r => r.test(args.join(' ')))
-        ),  
-        new l.ConsoleLogger()
-    )); 
+    ];    
 
-    // Regsiter commands
-    vloService.registerDisposable(window.registerTreeDataProvider('datapackExplorer', new DatapackExplorer()));
-    DatapackCommands.forEach(cmd => vloService.registerCommand(cmd));
+    // do async setup
+    import('./services/vlocityDatapackService').then(vds =>
+        vds.setLogger(new l.ChainLogger( 
+            new l.LogFilterDecorator(new l.OutputLogger(s.get(VlocodeService).outputChannel), (args: any[]) => 
+                !vlocityLogFilterRegex.some(r => r.test(args.join(' ')))
+            ),  
+            new l.ConsoleLogger()
+        ))
+    );
+    import('./commands').then(i => {
+        s.get(CommandRouter).registerAll(i.Commands);
+    });
+    import('./datapackExplorer').then(dpe => {
+        vloService.registerDisposable(window.registerTreeDataProvider('datapackExplorer', new dpe.DatapackExplorer()))
+    });
 }
 
 export function deactivate() { }

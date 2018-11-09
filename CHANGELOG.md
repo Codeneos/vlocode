@@ -1,5 +1,15 @@
 # Changelog Vlocode
 
+## [0.7.0] - 2018-11-9
+### Added
+- Datapack explorer allowing you to explore and export all datapack enabled objects available in the connect org
+- Simplified setup using SFDX for authorizing new orgs and setting up the deployment tools
+- New status bar org switcher making it easy to change your deployment or export target during development
+
+### Fixed
+- Deploy command did not work after running an export
+- Configuration changes did not reload the extension config causing settings to only reflect after a VSCode restart
+
 ## [0.5.1] - 2018-11-5
 ### Added
 - Ability to export non-existing datapacks directly from within VSCode.

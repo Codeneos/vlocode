@@ -6,6 +6,7 @@ import VlocodeService from './services/vlocodeService';
 import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
 import SObjectRecord from './models/sobjectRecord';
 import ExportDatapackCommand from './commands/exportDatapackCommand';
+import CommandRouter from './services/commandRouter';
 
 export class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 
@@ -13,13 +14,10 @@ export class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 	readonly onDidChangeTreeData: vscode.Event<DatapackNode | undefined> = this._onDidChangeTreeData.event;
 
 	constructor() {
-		this.vlocode.registerCommand(
-			new ExportDatapackCommand('vlocity.datapackExplorer.export'), 
-			{ 
-				name: 'vlocity.datapackExplorer.refresh', 
-				execute: () => this.refresh()
-			}
-		);
+		this.commands.registerAll({
+			'vlocity.datapackExplorer.export': ExportDatapackCommand,
+			'vlocity.datapackExplorer.refresh': () => this.refresh()
+		});
 	}
 
 	protected get datapackService() : VlocityDatapackService {
@@ -28,6 +26,10 @@ export class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 	
 	protected get vlocode() : VlocodeService {
         return s.get(VlocodeService);
+	}
+	
+	protected get commands() : CommandRouter {
+        return s.get(CommandRouter);
     }
 
 	public refresh(): void {

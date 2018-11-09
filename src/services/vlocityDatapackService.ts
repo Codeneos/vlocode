@@ -3,10 +3,9 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import * as constants from '../constants';
-import * as l from '../loggers';
-import * as s from '../singleton';
-import * as vm from 'vm';
+import * as constants from 'constants';
+import * as l from 'loggers';
+import * as s from 'singleton';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties } from '../util';
 
@@ -105,6 +104,7 @@ export default class VlocityDatapackService {
 
     private options: vlocity.JobOptions;
     private _vlocityBuildTools: vlocity;
+    private _jsforceConnection: jsforce.Connection;
 
     constructor(options?: vlocity.JobOptions) {
         this.options = options || {};
@@ -135,10 +135,8 @@ export default class VlocityDatapackService {
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
-        process.chdir(vscode.workspace.rootPath);
-        return await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() =>
-            this._vlocityBuildTools.jsForceConnection
-        );
+        await this.checkLoginAsync();
+        return this._vlocityBuildTools.jsForceConnection;
     }
 
     public async isVlocityPackageInstalled() : Promise<Boolean> {
@@ -187,7 +185,7 @@ export default class VlocityDatapackService {
         });
     }
 
-    public export(entries: ObjectEntry[], maxDepth: Number = 0) : Promise<DatapackCommandResult>  {
+    public export(entries: ObjectEntry[], maxDepth: number = 0) : Promise<DatapackCommandResult>  {
         const exportQueries = this.createExportQueries(entries.filter(e => !e.id));
         const exportMainfest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
         return this.runCommand('Export',{
@@ -304,28 +302,37 @@ export default class VlocityDatapackService {
 
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackCommandResult> {
         let jobResult : vlocity.VlocityJobResult;
-        let localOptions : vlocity.JobOptions = { projectPath: this.options.projectPath || '.' };
         try {
-            process.chdir(vscode.workspace.rootPath);
-            jobResult = await new Promise((resolve, reject) => this.vlocityBuildTools.checkLogin(resolve, reject)).then(() => 
-                new Promise((resolve, reject) => {
-                    jobInfo = Object.assign({}, this.options, jobInfo, localOptions);
-                    this.resetBuildTools();
-                    return this.vlocityBuildTools.datapacksjob.runJob(command, jobInfo, resolve, reject);
-                })
-            );
+            await this.checkLoginAsync();
+            jobResult = await this.datapacksjobAsync(command, jobInfo);
         } catch (err) {
             if (isError(err)) {
                 throw err;
             }
-            jobResult =<vlocity.VlocityJobResult>err;
+            jobResult = <vlocity.VlocityJobResult>err;
         }
         return this.parseJobResult(jobResult);
     }
 
-    private resetBuildTools() : void {        
-        // reset build tools for proper functioning
-        this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
+    private checkLoginAsync() : Promise<void> {
+        return new Promise((resolve, reject) => {
+            process.chdir(vscode.workspace.rootPath);
+            
+            return this.vlocityBuildTools.checkLogin(resolve, reject);
+        });
+    }
+
+    private datapacksjobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
+        return new Promise((resolve, reject) => {
+            // collect and create job optipns
+            const localOptions = { projectPath: this.options.projectPath || '.' };
+            const jobOptions = Object.assign({}, this.options, jobInfo, localOptions);
+            // clean-up build tools left overs from the last invocation
+            this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
+            delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
+            // run the jon
+            return this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject);
+        });
     }
 
     private parseJobResult(result: vlocity.VlocityJobResult) : DatapackCommandResult {

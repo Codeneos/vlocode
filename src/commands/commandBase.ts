@@ -1,15 +1,9 @@
 import * as vscode from 'vscode';
 
 import VlocodeService from '../services/vlocodeService';
-import VlocityDatapackService, * as vds from '../services/vlocityDatapackService';
-import * as s from '../singleton';
+import * as serviceProvider from '../singleton';
 import { Logger } from '../loggers';
-
-/** Default command interface */
-export interface ICommand {
-    name: string;
-    execute(... args: any[]): void;
-}
+import { Command } from '../models/command';
 
 export class ProgressToken {
 
@@ -38,14 +32,11 @@ export class ProgressToken {
     }
 }
 
-export abstract class Command implements ICommand {
+export abstract class CommandBase implements Command {
 
-    public name: string;    
-    private executor: (... args: any[]) => void;
-
-    constructor(name: string, executor?: (... args: any[]) => void) {
-        this.name = name;
-        this.executor = executor;
+    constructor(
+        public readonly name: string, 
+        private readonly executor?: (... args: any[]) => void) {
     }
 
     public execute(... args: any[]): void {
@@ -69,12 +60,16 @@ export abstract class Command implements ICommand {
             p => task);
     }
 
+    protected get vloService() : VlocodeService {
+        return serviceProvider.get(VlocodeService);
+    }
+
     protected get extensionContext() : vscode.ExtensionContext {
-        return s.get(VlocodeService).getContext();
+        return serviceProvider.get(VlocodeService).getContext();
     }
 
     protected get logger() : Logger {
-        return s.get(Logger);
+        return serviceProvider.get(Logger);
     }
 }
 

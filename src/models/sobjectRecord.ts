@@ -1,3 +1,6 @@
+/**
+ * Describes a standard Salesforce record
+ */
 export default interface SObjectRecord {
     attributes: { 
         type: string;
