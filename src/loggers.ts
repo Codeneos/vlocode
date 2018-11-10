@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { isObject } from 'util';
 import moment = require('moment');
 import * as constants from './constants';
+import { container } from 'serviceContainer';
 
 export enum LogLevel {    
     error,
@@ -10,13 +11,26 @@ export enum LogLevel {
     verbose
 }
 
-type FormatFn = (args: any[], severity?: LogLevel) => string;
-
 // TODO; write better filter pattern to handle log level filters
 var maxLogLevel = LogLevel.info;
 export function setLogLevel(level: LogLevel) : void { 
     maxLogLevel = level;
 }
+
+class LogManager {
+    private _activeLoggers : { [key: string]: any } = {};
+    public loggerFactory :  (name: string) => Logger;
+
+    public get<T>(type: (new (...args: any[]) => T) | string) : Logger {
+        const name = typeof type === 'string' ? type : type.name;
+        return this._activeLoggers[name] || (this._activeLoggers[name] = this.createLogger(name));
+    }
+
+    private createLogger(name: string) : Logger {
+        return this.loggerFactory ? this.loggerFactory(name) : container.get(Logger);
+    }
+}
+export const LogProvider = new LogManager();
 
 export class Logger {
     log(...args: any[]) : void {}
@@ -26,6 +40,7 @@ export class Logger {
     error(...args: any[]) : void {}
 }
 
+type FormatFn = (args: any[], severity?: LogLevel) => string;
 class Formatter {    
     static format(args: any[], severity?: LogLevel) : string {
         let logLevel = (LogLevel[severity] || 'unknown');

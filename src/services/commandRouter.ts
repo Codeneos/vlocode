@@ -1,10 +1,11 @@
 
-import * as serviceProvider from '../singleton';
-import { Logger } from '../loggers';
-import VlocodeService from './vlocodeService';
+import { container } from 'serviceContainer';
+import { Logger, LogProvider } from 'loggers';
+import VlocodeService from 'services/vlocodeService';
 import * as vscode from 'vscode';
-import { Command, CommandMap } from "../models/command";
-import { VlocodeCommand } from '../commands';
+import { Command, CommandMap } from "models/command";
+import { VlocodeCommand } from 'commands';
+import { isError } from 'util';
 
 type CommandCtor = (new(name: string) => Command);
 
@@ -38,11 +39,11 @@ class CommandExecutor implements Command {
     }
 
     protected get logger() : Logger {
-        return serviceProvider.get(Logger);
+        return LogProvider.get(CommandExecutor);
     }
 
     protected get vlocode() : VlocodeService {
-        return serviceProvider.get(VlocodeService);
+        return container.get(VlocodeService);
     }
 
     public async execute(... args: any[]) : Promise<void> {
@@ -64,6 +65,9 @@ class CommandExecutor implements Command {
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {
             this.logger.error(`Command execution resulted in error: ${err}`);
+            if (isError(err)) {
+                this.logger.error(err.stack);                
+            }
         }
     }
 }
@@ -77,11 +81,11 @@ export default class CommandRouter implements CommandMap {
     private _commands : Command[] = [];
 
     protected get logger() : Logger {
-        return serviceProvider.get(Logger);
+        return LogProvider.get(CommandRouter);
     }
 
     protected get vlocode() : VlocodeService {
-        return serviceProvider.get(VlocodeService);
+        return container.get(VlocodeService);
     }
 
     protected get count() : number {

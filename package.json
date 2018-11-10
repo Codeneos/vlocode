@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.7.0",
+    "version": "0.7.1",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -23,9 +23,11 @@
         "email": "peter@curlybracket.nl"
     },
     "activationEvents": [
-        "onCommand:extension.sayHello",
-        "workspaceContains:*_datapack.json",
-        "workspaceContains:*_DataPack.json",
+        "onCommand:vlocity.selectOrg",
+        "onCommand:vlocity.refreshDatapack",
+        "onCommand:vlocity.deployDatapack",
+        "onCommand:vlocity.exportDatapack",
+        "onView:datapackExplorer",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json"
     ],
@@ -103,7 +105,7 @@
                 {
                     "command": "vlocity.selectOrg",
                     "group": "v_vlocity"
-                },                
+                },
                 {
                     "command": "vlocity.viewDatapack.generic",
                     "when": "false"
@@ -119,24 +121,24 @@
             ],
             "explorer/context": [
                 {
-                    "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
+                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.refreshDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "when": "resourceFilename =~ /(.*_datapack\\.json)$/i",
+                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
                 }
             ],
             "editor/context": [
                 {
-                    "when": "resourceFilename =~ /(.*\\.json)$/i",
+                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.refreshDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "when": "resourceFilename =~ /(.*\\.json)$/i",
+                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
                 }
@@ -204,13 +206,12 @@
         }
     },
     "scripts": {
-        "compile": "npm run compile:extension",
-        "compile:extension": "webpack",
-        "compile:tests": "tsc -p ./",
+        "compile": "webpack --config webpack.prod.js",
+        "compile:debug": "webpack --config webpack.dev.js",
         "clean": "rimraf ./out",
-        "watch": "webpack --watch",
-        "start": "webpack-dev-server --config-name views",
-        "test": "npm run compile:tests && node ./node_modules/vscode/bin/test",
+        "watch": "webpack --config webpack.dev.js --watch",
+        "start": "webpack-dev-server --config webpack.dev.js --config-name views",
+        "test": "npm run compile:debug && node ./node_modules/vscode/bin/test",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "vscode:prepublish": "npm-run-all clean compile",
         "package": "modclean -r -n default:safe,default:caution && vsce package"
@@ -251,7 +252,9 @@
         "moment": "^2.22.2",
         "salesforce-alm": "^44.5.0",
         "sfdx-node": "^1.1.0",
+        "tslib": "^1.9.3",
         "vlocity": "^1.7.7",
-        "vscode": "^1.1.21"
+        "vscode": "^1.1.21",
+        "vscode-languageclient": "^5.1.1"
     }
 }

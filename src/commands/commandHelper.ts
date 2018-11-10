@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as s from '../singleton';
+import * as s from '../serviceContainer';
 import * as l from '../loggers';
 
 export default class CommandHelper  {

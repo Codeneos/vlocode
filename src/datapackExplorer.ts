@@ -1,19 +1,20 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as s from './singleton';
+import ServiceConatiner from 'serviceContainer';
 import VlocodeService from './services/vlocodeService';
 import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
 import SObjectRecord from './models/sobjectRecord';
 import ExportDatapackCommand from './commands/exportDatapackCommand';
 import CommandRouter from './services/commandRouter';
+import { LogProvider, Logger } from 'loggers';
 
-export class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
+export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 
 	private _onDidChangeTreeData: vscode.EventEmitter<DatapackNode | undefined> = new vscode.EventEmitter<DatapackNode | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<DatapackNode | undefined> = this._onDidChangeTreeData.event;
 
-	constructor() {
+	constructor(private readonly container: ServiceConatiner) {
 		this.commands.registerAll({
 			'vlocity.datapackExplorer.export': ExportDatapackCommand,
 			'vlocity.datapackExplorer.refresh': () => this.refresh()
@@ -25,15 +26,19 @@ export class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 	}
 	
 	protected get vlocode() : VlocodeService {
-        return s.get(VlocodeService);
+        return this.container.get(VlocodeService);
 	}
+
+	protected get logger() : Logger {
+        return LogProvider.get(DatapackExplorer);
+    }
 	
 	protected get commands() : CommandRouter {
-        return s.get(CommandRouter);
+        return this.container.get(CommandRouter);
     }
 
-	public refresh(): void {
-		this._onDidChangeTreeData.fire();
+	public refresh(node?: DatapackNode): void {
+		this._onDidChangeTreeData.fire(node);
 	}
 
 	public getTreeItem(node: DatapackNode): vscode.TreeItem {
@@ -45,16 +50,25 @@ export class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 			return Object.keys(this.datapackService.queryDefinitions).map(
 				option => {
 					const queryDef = this.datapackService.queryDefinitions[option];
-					return new DatapackCategoryNode(queryDef.VlocityDataPackType, queryDef.query);
+					return new DatapackCategoryNode(this.vlocode, queryDef.VlocityDataPackType, queryDef.query);
 				}
 			);
 		} else if (node instanceof DatapackCategoryNode) {			
 			const connection = await this.datapackService.getJsForceConnection();
-            const query = node.query.replace(/(%|)vlocity_namespace(%|)/gi, this.datapackService.vlocityNamespace);
-			const results = await connection.queryAll<SObjectRecord>(query);
-			return results.records.map(record => new DatapackObjectNode(record, node.datapackType));
+			const query = node.query.replace(/(%|)vlocity_namespace(%|)/gi, this.datapackService.vlocityNamespace);
+			
+			this.logger.verbose(`Query: ${query}`);
+			const results = await connection.queryAll<SObjectRecord>(query);			
+			this.logger.log(`Found ${results.totalSize} exportable datapacks form type ${node.datapackType}`);
+
+			// set node to not expand in case there are no results
+			if(results.totalSize == 0) {
+				node.expandable = false;
+				this.refresh(node);
+				return [];
+			}
+			return results.records.map(record => new DatapackObjectNode(this.vlocode, record, node.datapackType));
 		}
-		return [];
 	}
 }
 
@@ -65,8 +79,9 @@ enum DatapackNodeType {
 
 abstract class DatapackNode {	
 	constructor(
+		private readonly vlocode: VlocodeService,
 		public readonly nodeType: DatapackNodeType,
-		public expanable: Boolean = false,
+		public expandable: Boolean = false,
 		public icon: { light: string, dark: string } | string = undefined
 	) { }
 
@@ -78,12 +93,12 @@ abstract class DatapackNode {
 			return undefined;
 		}
 		if (typeof this.icon === 'string') {
-			return s.get(VlocodeService).getContext().asAbsolutePath(this.icon)
+			return this.vlocode.getContext().asAbsolutePath(this.icon)
 		}
 		if (typeof this.icon === 'object') {
 			return {
-				light: s.get(VlocodeService).getContext().asAbsolutePath(this.icon.light),
-				dark: s.get(VlocodeService).getContext().asAbsolutePath(this.icon.dark)
+				light: this.vlocode.getContext().asAbsolutePath(this.icon.light),
+				dark: this.vlocode.getContext().asAbsolutePath(this.icon.dark)
 			};
 		}
 	}
@@ -94,17 +109,18 @@ abstract class DatapackNode {
 			tooltip: this.getItemTooltip(),
 			iconPath: this.getItemIconPath(),
 			contextValue: `vlocity:datapack:${this.nodeType}`,
-			collapsibleState: this.expanable ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+			collapsibleState: this.expandable ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
 		};
 	}	
 }
 
 class DatapackCategoryNode extends DatapackNode {
 	constructor(
+		vlocode: VlocodeService,
 		public datapackType: string,
 		public query: string
 	) {
-		super(DatapackNodeType.Category, true);
+		super(vlocode, DatapackNodeType.Category, true);
 	}
 
 	protected getItemLabel() {
@@ -118,6 +134,7 @@ class DatapackCategoryNode extends DatapackNode {
 
 class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 	constructor(
+		vlocode: VlocodeService,
 		public record: SObjectRecord,
 		public datapackType: string,
 		public icon = {
@@ -125,7 +142,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 			dark: 'resources/dark/datapack.svg'
 		}
 	) {
-		super(DatapackNodeType.Object, false);
+		super(vlocode, DatapackNodeType.Object, false);
 	}
 
 	protected getItemLabel() {

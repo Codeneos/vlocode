@@ -6,7 +6,7 @@ import * as process from 'process';
 import * as sfdx from 'sfdx-node';
 import * as constants from '../constants';
 import * as l from '../loggers';
-import * as s from '../singleton';
+import * as s from '../serviceContainer';
 import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync } from '../util';

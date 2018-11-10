@@ -1,15 +1,14 @@
 import * as vscode from 'vscode';
 
-import VlocodeService from '../services/vlocodeService';
-import VlocityDatapackService, * as vds from '../services/vlocityDatapackService';
-import * as serviceProvider from '../singleton';
-import { CommandBase } from "./commandBase";
+import VlocodeService from 'services/vlocodeService';
+import VlocityDatapackService, * as vds from 'services/vlocityDatapackService';
+import { CommandBase } from "commands/commandBase";
 import { unique } from '../util';
 
 export abstract class DatapackCommand extends CommandBase {
 
     protected get datapackService() : VlocityDatapackService {
-        return serviceProvider.get(VlocodeService).datapackService;
+        return this.vloService.datapackService;
     }
 
     protected async resolveDatapackHeaders(files: vscode.Uri[], reportErrors: boolean = true) : Promise<vscode.Uri[]> {
@@ -25,7 +24,7 @@ export abstract class DatapackCommand extends CommandBase {
             let unresolvedFiles = results.filter(v => !v.header);
             if (unresolvedFiles.length > 0) {
                 let errorMessageText = `${unresolvedFiles.length} of the selected files ${unresolvedFiles.length === 1 ? 'is' : 'are'} not part of a Vlocity datapack. \nSee the log for details.`;
-                vscode.window.showWarningMessage(errorMessageText, { title: 'View log...' }).then(o => o && serviceProvider.get(VlocodeService).focusLog());
+                vscode.window.showWarningMessage(errorMessageText, { title: 'View log...' }).then(o => o && this.vloService.focusLog());
                 unresolvedFiles.forEach(f => this.logger.warn(`Unabled to resolve datapack header for: ${f.file.fsPath}`));
             }
         }

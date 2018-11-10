@@ -2,41 +2,39 @@ import { window, ExtensionContext } from 'vscode';
 import VlocodeConfiguration from './models/VlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
-import * as s from './singleton';
-import * as l from './loggers';
+import { Logger, ChainLogger, ConsoleLogger, LogFilterDecorator, OutputLogger }  from './loggers';
 import CommandRouter from './services/commandRouter';
+import { setLogger as setVlocityLogger } from './services/vlocityDatapackService';
+import DatapackExplorer from 'datapackExplorer';
+import { Commands } from 'commands';
+import { container } from 'serviceContainer';
 
 export function activate(context: ExtensionContext) : void {
 
     // Init logging and regsiter services
-    let vloService = s.register(VlocodeService, new VlocodeService(context, VlocodeConfiguration.load(constants.CONFIG_SECTION)));
-    let logger = s.register(l.Logger, new l.ChainLogger( 
-        new l.OutputLogger(vloService.outputChannel),  
-        new l.ConsoleLogger()        
+    let vloService = container.register(VlocodeService, new VlocodeService(container, context, VlocodeConfiguration.load(constants.CONFIG_SECTION)));
+    let logger = container.register(Logger, new ChainLogger( 
+        new OutputLogger(vloService.outputChannel),  
+        new ConsoleLogger()        
     ));
 
     // Report some thing so that the users knows we are active
     logger.info(`Vlocode version ${constants.VERSION} started`);
     const vlocityLogFilterRegex = [
-        /^(Current Status|Elapsed Time|Version Info|Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy).*/,
+        /^(Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy [0-9]* Items).*/i,
         /^(Success|Remaining|Error).*?[0-9]+$/
-    ];    
+    ];
 
     // do async setup
-    import('./services/vlocityDatapackService').then(vds =>
-        vds.setLogger(new l.ChainLogger( 
-            new l.LogFilterDecorator(new l.OutputLogger(s.get(VlocodeService).outputChannel), (args: any[]) => 
-                !vlocityLogFilterRegex.some(r => r.test(args.join(' ')))
-            ),  
-            new l.ConsoleLogger()
-        ))
-    );
-    import('./commands').then(i => {
-        s.get(CommandRouter).registerAll(i.Commands);
-    });
-    import('./datapackExplorer').then(dpe => {
-        vloService.registerDisposable(window.registerTreeDataProvider('datapackExplorer', new dpe.DatapackExplorer()))
-    });
+    setVlocityLogger(new ChainLogger(
+        new ConsoleLogger(), 
+        new LogFilterDecorator(new OutputLogger(vloService.outputChannel), (args: any[]) => 
+            !vlocityLogFilterRegex.some(r => r.test(args.join(' ')))
+        )
+    ));
+
+    container.get(CommandRouter).registerAll(Commands);
+    vloService.registerDisposable(window.registerTreeDataProvider('datapackExplorer', new DatapackExplorer(container)));
 }
 
 export function deactivate() { }

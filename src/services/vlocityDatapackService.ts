@@ -3,10 +3,10 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import * as l from '../loggers';
-import * as s from '../singleton';
+import { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties } from '../util';
+import { LogProvider, Logger } from 'loggers';
 
 declare var VlocityUtils: any;
 
@@ -89,7 +89,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             try {
                 this._data = JSON.parse(data);
             } catch (err) {
-                s.get(l.Logger).error('Unable to parse datapack JSON: ' + (err.message || err));
+                LogProvider.get(VlocityDatapack).error('Unable to parse datapack JSON: ' + (err.message || err));
             }
         } else if (isObject(data)) {
             this._data = data;
@@ -130,7 +130,7 @@ export default class VlocityDatapackService {
     }
 
     protected get logger() {
-        return s.get(l.Logger);
+        return LogProvider.get(VlocityDatapackService);
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
@@ -356,7 +356,7 @@ export default class VlocityDatapackService {
     }
 }
 
-export function setLogger(logger : l.Logger, includeCallerDetails: Boolean = false){
+export function setLogger(logger : Logger, includeCallerDetails: Boolean = false){
     const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
         if (includeCallerDetails) {
             let callerFrame = getStackFrameDetails(2);

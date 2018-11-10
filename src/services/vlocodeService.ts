@@ -5,25 +5,21 @@ import * as process from 'process';
 import * as constants from '../constants';
 import VlocodeConfiguration from '../models/VlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
-import * as serviceProvider from '../singleton';
-import { Logger } from '../loggers';
+import { default as serviceProvider } from 'serviceContainer';
+import { Logger, LogProvider } from '../loggers';
 import CommandRouter from './commandRouter';
-import { VlocodeCommand } from '../commands';
+import { VlocodeCommand } from 'commands';
+import ServiceContainer from 'serviceContainer';
 
 export default class VlocodeService {  
 
     private _config: VlocodeConfiguration;
     private _outputChannel: vscode.OutputChannel;
-    private _context: vscode.ExtensionContext;
     private _datapackService: VlocityDatapackService;
     private _disposables: {dispose() : any}[] = [];
     private _statusBar: vscode.StatusBarItem;
 
-    constructor(context?: vscode.ExtensionContext, config?: VlocodeConfiguration) {
-        if (!config) {
-            throw new Error('Cannot create VlocodeService without specifying a configuration object.');
-        }
-        this._context = context;
+    constructor(private readonly container: ServiceContainer, private readonly context: vscode.ExtensionContext, config: VlocodeConfiguration) {
         this.setConfig(config);
         context.subscriptions.push(this);
     }
@@ -49,7 +45,7 @@ export default class VlocodeService {
     }
 
     public getContext(): vscode.ExtensionContext {
-        return this._context;
+        return this.context;
     }
     
     public setConfig(config: VlocodeConfiguration){
@@ -76,7 +72,7 @@ export default class VlocodeService {
     }
 
     protected get logger() : Logger {
-        return serviceProvider.get(Logger);
+        return LogProvider.get(VlocodeService);
     }
 
     public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {

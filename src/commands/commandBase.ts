@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-import VlocodeService from '../services/vlocodeService';
-import * as serviceProvider from '../singleton';
-import { Logger } from '../loggers';
-import { Command } from '../models/command';
+import VlocodeService from 'services/vlocodeService';
+import { container } from 'serviceContainer';
+import { Logger, LogProvider } from 'loggers';
+import { Command } from 'models/command';
 
 export class ProgressToken {
 
@@ -61,15 +61,15 @@ export abstract class CommandBase implements Command {
     }
 
     protected get vloService() : VlocodeService {
-        return serviceProvider.get(VlocodeService);
+        return container.get(VlocodeService);
     }
 
     protected get extensionContext() : vscode.ExtensionContext {
-        return serviceProvider.get(VlocodeService).getContext();
+        return this.vloService.getContext();
     }
 
     protected get logger() : Logger {
-        return serviceProvider.get(Logger);
+        return LogProvider.get(this.name);
     }
 }
 
