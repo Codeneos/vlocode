@@ -4,6 +4,8 @@ import VlocodeService from 'services/vlocodeService';
 import VlocityDatapackService, * as vds from 'services/vlocityDatapackService';
 import { CommandBase } from "commands/commandBase";
 import { unique } from '../util';
+import { ManifestEntry } from 'services/vlocityDatapackService';
+import { VlocityDatapack } from 'models/datapack';
 
 export abstract class DatapackCommand extends CommandBase {
 
@@ -33,13 +35,13 @@ export abstract class DatapackCommand extends CommandBase {
         return unique(results.filter(v => !!v.header), v => v.header.fsPath).map(v => v.header);
     }
 
-    protected resolveManifestEntriesForFiles(files: vscode.Uri[]) : Promise<vds.ManifestEntry[]> {
+    protected resolveManifestEntriesForFiles(files: vscode.Uri[]) : Promise<ManifestEntry[]> {
         return this.resolveDatapackHeaders(files).then(h => 
             Promise.all(h.map(h => this.datapackService.getDatapackManifestKey(h)))
         );
     }
 
-    protected resolveDatapacksForFiles(files: vscode.Uri[]) : Promise<vds.VlocityDatapack[]> {
+    protected resolveDatapacksForFiles(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
         return this.resolveDatapackHeaders(files).then(h => 
             Promise.all(h.map(h => this.datapackService.loadDatapackFromFile(h)))
         );

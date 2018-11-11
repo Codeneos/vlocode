@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.7.1",
+    "version": "0.8.0",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -172,6 +172,11 @@
                     "default": false,
                     "markdownDescription": "Enable verbose loging to the output window"
                 },
+                "vlocity.activate": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Automaticly activate deployed datapacks after deployment"
+                },
                 "vlocity.sfdxUsername": {
                     "type": "string",
                     "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
@@ -201,6 +206,10 @@
                 "vlocity.projectPath": {
                     "type": "string",
                     "markdownDescription": "Path to the folder comtaining the Vlocity datapacks relative to the workspace's root folder, for example:\n - `./vlocity`\n - `./datapacks`"
+                },
+                "vlocity.customJobOptionsYaml": {
+                    "type": "string",
+                    "markdownDescription": "Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.\n\n> **Note** most of the job options are controlled by Vlocode therefore only the **`preStepApex`**, **`postStepApex`** and **`OverrideSettings`** settings will be used from specified YAML file."
                 }
             }
         }
@@ -222,6 +231,7 @@
         "@types/mocha": "^2.2.48",
         "@types/node": "^8.10.36",
         "@types/sinon": "^5.0.5",
+        "@types/yaml": "^1.0.0",
         "ajv": "^6.5.4",
         "angular": "^1.7.5",
         "awesome-typescript-loader": "^5.2.1",
@@ -255,6 +265,7 @@
         "tslib": "^1.9.3",
         "vlocity": "^1.7.7",
         "vscode": "^1.1.21",
-        "vscode-languageclient": "^5.1.1"
+        "vscode-languageclient": "^5.1.1",
+        "yaml": "^1.0.1"
     }
 }

@@ -1,5 +1,10 @@
 # Changelog Vlocode
 
+## [0.9.0] - 2018-11-11
+### Added
+- Support for loading custom override definitions
+- Option to automatically activate deployed datapacks; default is on
+
 ## [0.7.0] - 2018-11-9
 ### Added
 - Datapack explorer allowing you to explore and export all datapack enabled objects available in the connect org

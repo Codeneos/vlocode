@@ -3,10 +3,13 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import { default as s } from 'serviceContainer';
+import * as yaml from 'yaml';
+import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties } from '../util';
+import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync } from '../util';
 import { LogProvider, Logger } from 'loggers';
+import { VlocityDatapack } from 'models/datapack';
+import VlocodeConfiguration from 'models/VlocodeConfiguration';
 
 declare var VlocityUtils: any;
 
@@ -59,54 +62,15 @@ type ExportQueryArray = Array<{
     query: string 
 }>;
 
-/**
- * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
- */
-export class VlocityDatapack implements ManifestEntry, ObjectEntry {
-    private _data: any;
-    private _headerFile: string;
-    private _key: string;
-    private _type: string;
-
-    public get hasGlobalKey(): boolean { return this.globalKey !== undefined && this.globalKey !== null; }
-    public get globalKey(): string { return this._data['%vlocity_namespace%__GlobalKey__c']; }
-    public get name(): string { return this._data['Name']; }
-    public get datapackType(): string { return this._type; }
-    public get sobjectType(): string { return this._data['VlocityRecordSObjectType']; }
-    public get sourceKey(): string { return this._data['VlocityRecordSourceKey']; }
-    public get data(): any { return this._data; }
-    public get key(): string { return this._key; }    
-    public get mainfestEntry(): ManifestEntry { return { key: this._key, datapackType: this._type }; }
-    
-    constructor(headerFile: string, type: string, key: string, data?: any) {
-        this._headerFile = headerFile;
-        this._type = type;
-        this._key = key;        
-        if (isBuffer(data)) {
-            data = data.toString();
-        }        
-        if (isString(data)) {
-            try {
-                this._data = JSON.parse(data);
-            } catch (err) {
-                LogProvider.get(VlocityDatapack).error('Unable to parse datapack JSON: ' + (err.message || err));
-            }
-        } else if (isObject(data)) {
-            this._data = data;
-        } else {
-            this._data = {};
-        }
-    }
-}
-
 export default class VlocityDatapackService {  
 
-    private options: vlocity.JobOptions;
     private _vlocityBuildTools: vlocity;
     private _jsforceConnection: jsforce.Connection;
+    private _customSettings: any; // load from yaml when needed
 
-    constructor(options?: vlocity.JobOptions) {
-        this.options = options || {};
+    constructor(
+        private readonly container : ServiceContainer, 
+        private readonly config: VlocodeConfiguration) {
     }
      
     private get vlocityBuildTools() : vlocity {
@@ -114,7 +78,7 @@ export default class VlocityDatapackService {
     }    
 
     private createVlocityInstance() : vlocity {
-        const buildTools = new vlocity(this.options);
+        const buildTools = new vlocity(this.config);
         buildTools.datapacksutils.printJobStatus = () => {};
         buildTools.datapacksutils.saveCurrentJobInfo = () => {};
         buildTools.datapacksexportbuildfile.saveFile = () => {};
@@ -155,13 +119,13 @@ export default class VlocityDatapackService {
     }
 
     private resolveProjectPathFor(file: vscode.Uri) : string {
-        if (path.isAbsolute(this.options.projectPath)) {
-            return this.options.projectPath || '';
+        if (path.isAbsolute(this.config.projectPath)) {
+            return this.config.projectPath || '';
         }
         let rootFolder = vscode.workspace.getWorkspaceFolder(file);
         return rootFolder 
-            ? path.resolve(rootFolder.uri.fsPath, this.options.projectPath) 
-            : path.resolve(this.options.projectPath);
+            ? path.resolve(rootFolder.uri.fsPath, this.config.projectPath) 
+            : path.resolve(this.config.projectPath);
     }
 
     public getDatapackManifestKey(file: vscode.Uri) : ManifestEntry {
@@ -322,16 +286,45 @@ export default class VlocityDatapackService {
     }
 
     private datapacksjobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             // collect and create job optipns
-            const localOptions = { projectPath: this.options.projectPath || '.' };
-            const jobOptions = Object.assign({}, this.options, jobInfo, localOptions);
+            const localOptions = { projectPath: this.config.projectPath || '.' };
+            const customOptions = await this.getCustomJobOptions();
+            const jobOptions = Object.assign({}, customOptions, this.config, jobInfo, localOptions);
             // clean-up build tools left overs from the last invocation
             this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
             delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
             // run the jon
             return this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject);
         });
+    }
+
+    private async getCustomJobOptions() : Promise<any> {        
+        if (!this.config.customJobOptionsYaml) {
+            // when no YAML file is specified skip this step
+            return undefined;
+        }
+
+        if (!this._customSettings) {
+            // parse any custom job options from the custom yaml
+            let yamlPaths = vscode.workspace.workspaceFolders.map(root => path.join(root.uri.fsPath, this.config.customJobOptionsYaml));
+            const existsResults = await Promise.all(yamlPaths.map(p => existsAsync(p)));
+            yamlPaths = yamlPaths.filter((_p,i) => existsResults[i]);
+            if (yamlPaths.length == 0) {
+                this.logger.warn(`The specified custom YAML file '${this.config.customJobOptionsYaml}' does not exists`);
+                return undefined;
+            }
+            // const yamlPaths.reduce((map, yaml, i) => Object.assign(map, { [yaml]: existsResults[i] }), {});
+            const customSettings = yaml.parse(await readFileAsync(yamlPaths[0]), { merge: true });
+            this._customSettings = {
+                OverrideSettings: customSettings.OverrideSettings,
+                preStepApex: customSettings.preStepApex,
+                postJobApex: customSettings.postJobApex
+            };
+            this.logger.info(`Loading custom YAML file at: ${yamlPaths[0]}`);
+        }
+
+        return this._customSettings;
     }
 
     private parseJobResult(result: vlocity.VlocityJobResult) : DatapackCommandResult {

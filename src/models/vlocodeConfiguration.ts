@@ -3,8 +3,9 @@ import { JobOptions } from 'vlocity';
 
 export default class VlocodeConfiguration implements JobOptions {
     constructor(
-        public readonly sectionName: string,
+        public readonly sectionName?: string,
         public verbose?: boolean,
+        public activate?: boolean,
         public debug?: boolean,
         public sfdxUsername?: string,
         public username?: string,
@@ -14,7 +15,8 @@ export default class VlocodeConfiguration implements JobOptions {
         public httpProxy?: string,
         public additionalOptions?: any,
         public projectPath?: string,
-        public maxDepth?: number
+        public maxDepth?: number,
+        public customJobOptionsYaml?: string
     ) { }
 
     public static load(configSectionName: string, assingTo?: VlocodeConfiguration) : VlocodeConfiguration {

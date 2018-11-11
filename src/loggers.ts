@@ -45,7 +45,7 @@ class Formatter {
     static format(args: any[], severity?: LogLevel) : string {
         let logLevel = (LogLevel[severity] || 'unknown');
         return `[${Formatter.formatTime(new Date())}] ${logLevel.substr(0,1)}: ${args.map(Formatter.formatArg).join(' ')}`;
-    }
+    }//[2018-11-10 14:05:30.271] [renderer1] [error] 
 
     static formatArg(arg: any) : string | any {
         if (isObject(arg)) {

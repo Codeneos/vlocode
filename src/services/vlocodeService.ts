@@ -13,14 +13,17 @@ import ServiceContainer from 'serviceContainer';
 
 export default class VlocodeService {  
 
-    private _config: VlocodeConfiguration;
     private _outputChannel: vscode.OutputChannel;
     private _datapackService: VlocityDatapackService;
     private _disposables: {dispose() : any}[] = [];
     private _statusBar: vscode.StatusBarItem;
 
-    constructor(private readonly container: ServiceContainer, private readonly context: vscode.ExtensionContext, config: VlocodeConfiguration) {
-        this.setConfig(config);
+    constructor(private readonly container: ServiceContainer, private readonly context: vscode.ExtensionContext, public readonly config: VlocodeConfiguration) {
+        this.updateStatusBar(config);
+        this.registerDisposable(VlocodeConfiguration.watch(config, (c) => {
+            this._datapackService = null;
+            this.updateStatusBar(c);
+        }));
         context.subscriptions.push(this);
     }
 
@@ -46,15 +49,6 @@ export default class VlocodeService {
 
     public getContext(): vscode.ExtensionContext {
         return this.context;
-    }
-    
-    public setConfig(config: VlocodeConfiguration){
-        this._config = config;
-        this.updateStatusBar(config);
-        this.registerDisposable(VlocodeConfiguration.watch(config, (c) => {
-            this._datapackService = null;
-            this.updateStatusBar(c);
-        }));
     }
 
     private updateStatusBar(config: VlocodeConfiguration) {
@@ -104,17 +98,8 @@ export default class VlocodeService {
         }
     }
 
-    private get vlocityJobOptions() : vlocity.JobOptions {
-        // for now this is a simple cast but in the future this migth change
-        return <vlocity.JobOptions> (<any> this._config);
-    }
-
-    get config(): VlocodeConfiguration {
-        return this._config;
-    }
-
     get datapackService(): VlocityDatapackService {
-        return this._datapackService || (this._datapackService = new VlocityDatapackService(this.vlocityJobOptions));
+        return this._datapackService || (this._datapackService = new VlocityDatapackService(this.container, this.config));
     }
 
     get outputChannel(): vscode.OutputChannel {

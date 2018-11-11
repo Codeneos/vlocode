@@ -3,7 +3,7 @@
 # Vlocode: Vlocity development tools for Visual Studio Code
 
 This extension provides functionality for deploying, extracting and refreshing Vlocity datapacks from with Visual Studio Code.
-It is targeted at Vlocity/Salesforce developers who want work on Vlocity data from within their IDE and have the most commonly used datapacks comands available directly from with Visual Studio Code. 
+It is targeted at Vlocity/Salesforce developers who want work on Vlocity data from within their IDE and have the most commonly used datapacks commands available directly from with Visual Studio Code. 
 
 In the background this extension relies of the official Vlocity build tools library for executing the deployment and export jobs, meaning the results will be the same way as produced by your CI environment. 
 
@@ -38,8 +38,10 @@ This extension contributes the following settings:
   - `./vlocity`
   - `./datapacks`
 * `vlocity.verbose`: Enable verbose logging to the output window
+* `vlocity.activate`: Automatically activate deployed datapacks
+* `vlocity.customJobOptionsYaml`: Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.
 * `vlocity.sfdxUsername`: SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored.
 
 ## Known Issues
 
-* Custom expand definitions and overrides are not loaded.
+* Rejections or promises and some other errors are not always correctly fed back by the Vlocity build library, due to this you might get a stuck deployment which is not going to complete. Set the logging to verbose which will likely provide the error and call stack for debugging.

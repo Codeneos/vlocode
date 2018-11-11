@@ -33,30 +33,10 @@ export async function execp(cmd: string, opts : any) : Promise<ExecpResult> {
     });
 } 
 
-/**
- * 
- * @param srcDir Source directory to execute the SFDX comand on
- */
-export async function getSfdxOrgDetails(srcDir: string) : Promise<any> {
-    const sfdxDisplayOrgCmd = 'sfdx force:org:display --json';
-    console.log('Requesting auth token from SFDX...');
-    try {
-        let sfdxProc = await execp(sfdxDisplayOrgCmd, { cwd: srcDir });
-        let parsed = JSON.parse(sfdxProc.stdout.toString());
-        if(parsed.status == 0 && parsed.result) {
-            return parsed.result;
-        }
-        throw parsed.status + ': unabled to retrieve SFDX org deplays';
-    } catch (err) {
-        console.log('Unabled to retrieve SFDX: ' + err);
-        process.exit(0);
-    }
-}
-
 export async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file.fsPath);
     if (doc) return doc.getText();
-    return await readFileAsync(file);
+    return await readFileAsync(file.fsPath);
 }
 
 export function promisify<T1, T2, T3>(func: (arg1: T2, arg2: T2, cb: (err: any, result: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
@@ -73,19 +53,25 @@ export function promisify<T1>(func: (...args: any[]) => void, thisArg: any = nul
     };
 }
 
-var _readFileAsync = promisify(fs.readFile);
-export function readFileAsync(file: vscode.Uri) : Promise<string> {
-    return _readFileAsync(file.fsPath).then(buffer => buffer.toString());
+const _readFileAsync = promisify(fs.readFile);
+export function readFileAsync(file: fs.PathLike) : Promise<string> {
+    return _readFileAsync(file).then(buffer => buffer.toString());
 }
 
-var _fstatAsync = promisify(fs.stat);
+const _fstatAsync = promisify(fs.stat);
 export function fstatAsync(file: vscode.Uri) : Promise<fs.Stats> {
     return promisify(fs.stat)(file.fsPath);
 }
 
-var _readdirAsync = promisify(fs.readdir);
-export function readdirAsync(path: string) : Promise<string[]> {
+const _readdirAsync = promisify(fs.readdir);
+export function readdirAsync(path: fs.PathLike) : Promise<string[]> {
     return promisify(fs.readdir)(path);
+}
+
+export function existsAsync(path: fs.PathLike) : Promise<boolean> {
+    return new Promise(resolve => {
+        fs.exists(path, result => resolve(result));
+    });
 }
 
 export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
