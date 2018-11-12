@@ -10,6 +10,8 @@ import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails
 import { LogProvider, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/VlocodeConfiguration';
+import { FSWatcher, PathLike } from 'fs';
+import { runInThisContext } from 'vm';
 
 declare var VlocityUtils: any;
 
@@ -62,15 +64,22 @@ type ExportQueryArray = Array<{
     query: string 
 }>;
 
-export default class VlocityDatapackService {  
+export default class VlocityDatapackService implements vscode.Disposable {  
 
     private _vlocityBuildTools: vlocity;
-    private _jsforceConnection: jsforce.Connection;
     private _customSettings: any; // load from yaml when needed
+    private _customSettingsWatcher: vscode.FileSystemWatcher; 
 
     constructor(
         private readonly container : ServiceContainer, 
         private readonly config: VlocodeConfiguration) {
+    }
+
+    public dispose(){
+        if (this._customSettingsWatcher) {
+            this._customSettingsWatcher.dispose();
+            this._customSettingsWatcher = null;
+        }
     }
      
     private get vlocityBuildTools() : vlocity {
@@ -295,14 +304,22 @@ export default class VlocityDatapackService {
             this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
             delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
             // run the jon
-            return this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject);
+            try {
+                this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
+                    (reason) => {
+                        reject(reason);
+                    }
+                )
+            } catch(err) {
+                this.logger.error(err);
+            }
         });
     }
 
     private async getCustomJobOptions() : Promise<any> {        
         if (!this.config.customJobOptionsYaml) {
             // when no YAML file is specified skip this step
-            return undefined;
+            return;
         }
 
         if (!this._customSettings) {
@@ -312,19 +329,35 @@ export default class VlocityDatapackService {
             yamlPaths = yamlPaths.filter((_p,i) => existsResults[i]);
             if (yamlPaths.length == 0) {
                 this.logger.warn(`The specified custom YAML file '${this.config.customJobOptionsYaml}' does not exists`);
-                return undefined;
+                return;
             }
-            // const yamlPaths.reduce((map, yaml, i) => Object.assign(map, { [yaml]: existsResults[i] }), {});
-            const customSettings = yaml.parse(await readFileAsync(yamlPaths[0]), { merge: true });
-            this._customSettings = {
+            // watch for changes or deletes of teh custom YAML
+            if (!this._customSettingsWatcher) {
+                this._customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlPaths[0]);
+                this._customSettingsWatcher.onDidChange(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this._customSettingsWatcher.onDidCreate(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this._customSettingsWatcher.onDidDelete(_e => this._customSettings = null);       
+            }
+            // load settings
+            this._customSettings = await this.loadCustomSettingsFrom(yamlPaths[0]);
+        }
+
+        return this._customSettings;
+    }
+
+    private async loadCustomSettingsFrom(yamlFile: PathLike) : Promise<any> {        
+        try {
+            // parse and watch Custom YAML
+            const customSettings = yaml.parse(await readFileAsync(yamlFile), { merge: true });
+            this.logger.info(`Loaded custom settings from YAML file: ${yamlFile}`);
+            return  {
                 OverrideSettings: customSettings.OverrideSettings,
                 preStepApex: customSettings.preStepApex,
                 postJobApex: customSettings.postJobApex
             };
-            this.logger.info(`Loading custom YAML file at: ${yamlPaths[0]}`);
+        } catch(err) {
+            this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${err.message || err}`);
         }
-
-        return this._customSettings;
     }
 
     private parseJobResult(result: vlocity.VlocityJobResult) : DatapackCommandResult {
@@ -366,6 +399,9 @@ export function setLogger(logger : Logger, includeCallerDetails: Boolean = false
     };
     // Override all methods
     getProperties(vlocityLoggerMaping).forEach(kvp => VlocityUtils[kvp.key] = (...args: any[]) => vlocityLogFn(kvp.value, args));
-    VlocityUtils.fatal = (...args: any[]) => { throw new Error(Array.from(args).join(' ')); };
     VlocityUtils.output = (loggingMethod, color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
+    VlocityUtils.fatal = (...args: any[]) => { 
+        vlocityLogFn(logger.error, Array.from(args));
+        throw new Error(Array.from(args).join(' ')); 
+    };    
 }

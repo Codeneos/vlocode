@@ -1,6 +1,10 @@
 # Changelog Vlocode
 
-## [0.9.0] - 2018-11-11
+## [0.8.1] - 2018-11-12
+### Fixed
+- Handling of rejected APEX errors
+
+## [0.8.0] - 2018-11-11
 ### Added
 - Support for loading custom override definitions
 - Option to automatically activate deployed datapacks; default is on

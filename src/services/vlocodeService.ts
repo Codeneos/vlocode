@@ -11,7 +11,7 @@ import CommandRouter from './commandRouter';
 import { VlocodeCommand } from 'commands';
 import ServiceContainer from 'serviceContainer';
 
-export default class VlocodeService {  
+export default class VlocodeService implements vscode.Disposable {  
 
     private _outputChannel: vscode.OutputChannel;
     private _datapackService: VlocityDatapackService;
@@ -21,7 +21,10 @@ export default class VlocodeService {
     constructor(private readonly container: ServiceContainer, private readonly context: vscode.ExtensionContext, public readonly config: VlocodeConfiguration) {
         this.updateStatusBar(config);
         this.registerDisposable(VlocodeConfiguration.watch(config, (c) => {
-            this._datapackService = null;
+            if (this._datapackService) {
+                this._datapackService.dispose();
+                this._datapackService = null;
+            }
             this.updateStatusBar(c);
         }));
         context.subscriptions.push(this);
@@ -41,10 +44,12 @@ export default class VlocodeService {
     }
 
     public dispose() {
-        this._disposables.forEach(disposable => {
-            disposable.dispose();
-        });
+        this._disposables.forEach(disposable => disposable.dispose());
         this._disposables = [];
+        if (this._datapackService) {
+            this._datapackService.dispose();
+            this._datapackService = null;
+        }
     }
 
     public getContext(): vscode.ExtensionContext {
