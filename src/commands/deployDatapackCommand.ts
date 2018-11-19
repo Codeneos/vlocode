@@ -19,8 +19,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
     };
 
     constructor(name : string) {
-        super(name, args => this.deployDatapacks(args[1] || [args[0]]));
-        
+        super(name, args => this.deployDatapacks(args[1] || [args[0] || this.currentOpenDocument]));
     }
 
     protected async deployDatapacks(selectedFiles: vscode.Uri[]) {

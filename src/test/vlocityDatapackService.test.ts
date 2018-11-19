@@ -132,7 +132,6 @@ describe('vlocityDatapackService', () => {
             VlocityUtils.warn('b', 'a');
             VlocityUtils.error('b', 'a');
             VlocityUtils.verbose('b', 'a');
-            try { VlocityUtils.fatal('b', 'a'); } catch(e){ }    
             // assert
             expect(logSpy.callCount).equals(6);
         });

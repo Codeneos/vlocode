@@ -43,6 +43,10 @@ export abstract class CommandBase implements Command {
         return this.executor(args);
     }
 
+    protected get currentOpenDocument() : vscode.Uri | undefined {
+        return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
+    }
+
     protected async startProgress(title: string) : Promise<ProgressToken> {
         let progressPromise = new Promise<ProgressToken>(progressTokenResolve => {
             vscode.window.withProgress(

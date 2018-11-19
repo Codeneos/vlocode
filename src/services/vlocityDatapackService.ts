@@ -309,7 +309,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                     (reason) => {
                         reject(reason);
                     }
-                )
+                );
             } catch(err) {
                 this.logger.error(err);
             }

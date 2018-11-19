@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.8.0",
+    "version": "0.8.2",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -86,38 +86,22 @@
                     "light": "resources/light/refresh.svg",
                     "dark": "resources/dark/refresh.svg"
                 }
+            },
+            {
+                "command": "vlocity.buildDatapack",
+                "title": "Vlocity: Build Datapack"
             }
         ],
         "menus": {
             "commandPalette": [
-                {
-                    "command": "vlocity.refreshDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.deployDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.exportDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.selectOrg",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.viewDatapack.generic",
-                    "when": "false"
-                },
-                {
-                    "command": "vlocity.datapackExplorer.export",
-                    "when": "false"
-                },
-                {
-                    "command": "vlocity.datapackExplorer.refresh",
-                    "when": "false"
-                }
+                { "command": "vlocity.refreshDatapack", "group": "v_vlocity" },
+                { "command": "vlocity.deployDatapack", "group": "v_vlocity" },
+                { "command": "vlocity.exportDatapack", "group": "v_vlocity" },
+                { "command": "vlocity.selectOrg", "group": "v_vlocity" },                
+                { "command": "vlocity.buildDatapack", "when": "false" },
+                { "command": "vlocity.datapackExplorer.export", "when": "false" },
+                { "command": "vlocity.datapackExplorer.refresh", "when": "false" },
+                { "command": "vlocity.viewDatapack.generic", "when": "false" }
             ],
             "explorer/context": [
                 {

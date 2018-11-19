@@ -39,14 +39,15 @@ export async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string
     return await readFileAsync(file.fsPath);
 }
 
-export function promisify<T1, T2, T3>(func: (arg1: T2, arg2: T2, cb: (err: any, result: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
-export function promisify<T1, T2>(func: (arg1: T2, cb: (err: any, result: T1) => void) => void, thisArg?: any) : (arg1: T2) => Promise<T1>;
+export function promisify<T1, T2, T3, T4>(func: (arg1: T2, arg2: T2, arg3: T3, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
+export function promisify<T1, T2, T3>(func: (arg1: T2, arg2: T2, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
+export function promisify<T1, T2>(func: (arg1: T2, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2) => Promise<T1>;
 export function promisify<T1>(func: (...args: any[]) => void, thisArg: any = null) : (...args: any[]) => Promise<T1> {
     return (...args: any[]) : Promise<T1> => {
         return new Promise<T1>((resolve, reject) => { 
             var callbackFunc = (err, ...args: any[]) => {
-                if(err) reject(err);
-                else resolve.apply(null, args);
+                if(err) { reject(err); }
+                else { resolve.apply(null, args); }
             };
             func.apply(thisArg, args.concat(callbackFunc));
         });
@@ -66,6 +67,15 @@ export function fstatAsync(file: vscode.Uri) : Promise<fs.Stats> {
 const _readdirAsync = promisify(fs.readdir);
 export function readdirAsync(path: fs.PathLike) : Promise<string[]> {
     return promisify(fs.readdir)(path);
+}
+
+export function writeFileAsync(path: fs.PathLike, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; }) : Promise<void> {
+    return new Promise((resolve, reject) => {
+        fs.writeFile(path, data, options, (err) => {
+            if(err) { reject(err); }
+            else { resolve(); }
+        });
+    });
 }
 
 export function existsAsync(path: fs.PathLike) : Promise<boolean> {
@@ -144,4 +154,30 @@ export function getProperties(obj: any) : { readonly key: string, readonly value
             value: { get: () => obj[key] }
         });
     });
+}
+
+/**
+ * Execute callback async in sequence on each of the items in the specified array
+ * @param array Array to execute the callback on
+ * @param callback The callback to execute for each item
+ */
+export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<void>) : Promise<T[]> {
+    let foreachPromise = Promise.resolve();
+    for (let i = 0; i < array.length; i++) {
+        foreachPromise = foreachPromise.then(_r => callback(array[i], i, array));
+    }
+    return foreachPromise.then(_r => array);
+}
+
+/**
+ * Execute callback async in parallel on each of the items in the specified array
+ * @param array Array to execute the callback on
+ * @param callback The callback to execute for each item
+ */
+export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<void>) : Promise<T[]> {
+    let tasks : Thenable<void>[] = [];
+    for (let i = 0; i < array.length; i++) {
+        tasks.push(callback(array[i], i, array));
+    }
+    return Promise.all(tasks).then(_r => array);
 }

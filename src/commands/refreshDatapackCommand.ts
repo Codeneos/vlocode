@@ -19,7 +19,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
     };
 
     constructor(name : string) {
-        super(name, args => this.refreshDatapacks(args[1] || [args[0]]));
+        super(name, args => this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]));
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) {

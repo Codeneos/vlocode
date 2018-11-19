@@ -46,7 +46,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/test/**/*.js"
             ],
-            "preLaunchTask": "npm: compile:dev"
+            "preLaunchTask": "npm: compile:debug"
         }
     ]
 }

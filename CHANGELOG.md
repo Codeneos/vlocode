@@ -1,5 +1,9 @@
 # Changelog Vlocode
 
+## [0.8.2] - 2018-11-19
+### Fixed
+- Auto select currently open file as argument for the to be executed command instead of throwing an error.
+
 ## [0.8.1] - 2018-11-12
 ### Fixed
 - Handling of rejected APEX errors
