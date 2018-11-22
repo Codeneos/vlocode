@@ -1,8 +1,8 @@
 # Changelog Vlocode
 
-## [0.8.3] - 2018-11-19
+## [0.8.4] - 2018-11-22
 ### Fixed
-- Revert to latest stable version of Vlocity build tools on githun instead of using version released on NPM.
+- Update to latest stable version of Vlocity build tools (1.7.8)
 
 ## [0.8.2] - 2018-11-19
 ### Fixed
