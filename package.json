@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.8.2",
+    "version": "0.8.3",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -247,7 +247,7 @@
         "salesforce-alm": "^44.5.0",
         "sfdx-node": "^1.1.0",
         "tslib": "^1.9.3",
-        "vlocity": "^1.7.7",
+        "vlocity": "https://github.com/vlocityinc/vlocity_build/archive/dbbdaadbe0ae623f69319df5eae7a61f663f5252.tar.gz",
         "vscode": "^1.1.21",
         "vscode-languageclient": "^5.1.1",
         "yaml": "^1.0.1"

@@ -1,5 +1,9 @@
 # Changelog Vlocode
 
+## [0.8.3] - 2018-11-19
+### Fixed
+- Revert to latest stable version of Vlocity build tools on githun instead of using version released on NPM.
+
 ## [0.8.2] - 2018-11-19
 ### Fixed
 - Auto select currently open file as argument for the to be executed command instead of throwing an error.
