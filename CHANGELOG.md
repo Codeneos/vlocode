@@ -1,6 +1,6 @@
 # Changelog Vlocode
 
-## [0.8.5] - 2018-11-28
+## [0.8.6] - 2018-11-28
 ### Security issue
 - Fixed critical security issue due malicious dependency in event-stream referenced by dependency
 
