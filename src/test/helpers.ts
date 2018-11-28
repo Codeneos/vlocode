@@ -6,7 +6,7 @@ import * as sinon from 'sinon';
  * @param moduleToMock 
  * @param defaultMockValuesForMock 
  */
-export function mockModule<T extends { [K: string]: any }>(moduleToMock: T, defaultMockValuesForMock: Partial<{ [K in keyof T]: T[K] }>) {
+/*export function mockModule<T extends { [K: string]: any }>(moduleToMock: T, defaultMockValuesForMock: Partial<{ [K in keyof T]: T[K] }>) {
     return (sandbox: sinon.SinonSandbox, returnOverrides?: Partial<{ [K in keyof T]: T[K] }>): void => {
       const functions = Object.keys(moduleToMock);
       const returns = returnOverrides || {};
@@ -14,4 +14,4 @@ export function mockModule<T extends { [K: string]: any }>(moduleToMock: T, defa
         sandbox.stub(moduleToMock, f).callsFake(returns[f] || defaultMockValuesForMock[f]);
       });
     };
-  }
+  }*/

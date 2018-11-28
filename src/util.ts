@@ -61,12 +61,12 @@ export function readFileAsync(file: fs.PathLike) : Promise<string> {
 
 const _fstatAsync = promisify(fs.stat);
 export function fstatAsync(file: vscode.Uri) : Promise<fs.Stats> {
-    return promisify(fs.stat)(file.fsPath);
+    return _fstatAsync(file.fsPath);
 }
 
 const _readdirAsync = promisify(fs.readdir);
 export function readdirAsync(path: fs.PathLike) : Promise<string[]> {
-    return promisify(fs.readdir)(path);
+    return _readdirAsync(path);
 }
 
 export function writeFileAsync(path: fs.PathLike, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; }) : Promise<void> {

@@ -4,8 +4,19 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const packageJson = require("./package.json");
 const fs = require('fs');
 
+const externals = [
+   // In order to run tests the main test frameworks need to be marked
+   // as external to avoid conflicts when loaded by the VSCode test runner
+   'mocha',
+   'chai',
+   'sinon',
+   // VSCode is an external that we do not want to package
+   'vscode', 
+   'vscode-languageclient'
+];
 const packageExternals = Object.keys(packageJson.dependencies)
-    .reduce((externals, dep) => Object.assign(externals, { [dep]: dep }), {});
+        .concat(externals)
+        .reduce((externals, dep) => Object.assign(externals, { [dep]: dep }), {});
 
 const common = {
     devtool: 'source-map',
@@ -37,7 +48,8 @@ const common = {
         extensions: ['.tsx', '.ts', '.js', '.html'],
         modules: ['node_modules', 'src']
     },
-    mode: 'development'
+    mode: 'development',
+    externals: packageExternals
 };
 
 const vscodeExtension = {
@@ -54,8 +66,7 @@ const vscodeExtension = {
         libraryTarget: 'commonjs2',
         path: path.resolve(__dirname, 'out'),
         devtoolModuleFilenameTemplate: '[absolute-resource-path]'
-    },
-    externals: packageExternals
+    }
 };
 
 const tests = {
@@ -73,14 +84,7 @@ const tests = {
         libraryTarget: 'commonjs2',
         path: path.resolve(__dirname, 'out', 'test'),
         devtoolModuleFilenameTemplate: '[absolute-resource-path]'
-    },
-    // In order to run tests the main test frameworks need to be marked
-    // as external to avoid conflicts when loaded by the VSCode test runner
-    externals: Object.assign({
-        'mocha': 'mocha',
-        'chai': 'chai',
-        'sinon': 'sinon'
-    }, packageExternals)
+    }
 };
 
 const views = {

@@ -1,5 +1,12 @@
 # Changelog Vlocode
 
+## [0.8.5] - 2018-11-28
+### Security issue
+- Fixed critical security issue due malicious dependency in event-stream referenced by dependency
+
+### Changed
+- Optimize and compress output using TerserPlugin
+
 ## [0.8.4] - 2018-11-22
 ### Fixed
 - Update to latest stable version of Vlocity build tools (1.7.8)

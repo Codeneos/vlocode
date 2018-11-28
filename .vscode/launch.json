@@ -6,7 +6,7 @@
 	"version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension (debug)",
+            "name": "Extension Debug",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -17,10 +17,10 @@
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
             ],
-            "preLaunchTask": "npm: compile:debug",
+            "preLaunchTask": "npm: build:debug",
         },
         {
-            "name": "Extension (release)",
+            "name": "Extension Release",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -31,7 +31,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
             ],
-            "preLaunchTask": "npm: compile"
+            "preLaunchTask": "npm: build"
         },
         {
             "name": "Extension Tests",
@@ -46,7 +46,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/test/**/*.js"
             ],
-            "preLaunchTask": "npm: compile:debug"
+            "preLaunchTask": "npm: build:debug"
         }
     ]
 }
