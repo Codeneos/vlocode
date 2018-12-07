@@ -27,11 +27,12 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return Object.keys(this.datapackService.queryDefinitions).map(
             option => {
                 const queryDef = this.datapackService.queryDefinitions[option];
-                const query = queryDef.query.replace(/(%|)vlocity_namespace(%|)[_]*/gi, namespacePrefix || '');
+                const query = queryDef.query;
+                const detail = query.replace(/(%|)vlocity_namespace(%|)[_]*/gi, namespacePrefix || '');
                 return {
                     label: queryDef.VlocityDataPackType,
-                    detail: query,
-                    query: queryDef.query
+                    detail: detail,
+                    query: query
                 };
             }
         );
@@ -40,8 +41,8 @@ export default class ExportDatapackCommand extends DatapackCommand {
     protected getLabel(salesforceRecord : SObjectRecord) : string {
         if (salesforceRecord.Name) {
             return salesforceRecord.Name;
-        } else if (salesforceRecord['Type__c']) {
-            return salesforceRecord['Type__c'] + '/' + salesforceRecord['SubType__c'];
+        } else if (salesforceRecord.Type__c) {
+            return `${salesforceRecord.Type__c}/${salesforceRecord.SubType__c}`;
         }
         return salesforceRecord.Id;
     }
@@ -108,19 +109,30 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
 
+        // With depencies?
+        let withDependencies = await vscode.window.showQuickPick([
+            { label: 'None', description: 'Do not export any dependencies, only export the selected object', maxDepth: 0 },
+            { label: 'Direct', description: 'Include only direct dependencies, up to 1 level deep', maxDepth: 1  },
+            { label: 'All', description: 'Include all depending objects', maxDepth: -1  }
+        ], { placeHolder: 'Export object dependencies' });
+
+        if (!withDependencies) {
+            return; // selection cancelled;
+        }
+
         return this.exportObject({
             id: objectToExport.record.Id,
             sobjectType: objectToExport.record.attributes.type,
             datapackType: datapackToExport.label
-        });
+        }, withDependencies.maxDepth);
     }
 
-    protected async exportObject(objectToExport: ObjectEntry) : Promise<void> {
+    protected async exportObject(objectToExport: ObjectEntry, maxDepth: number = 0) : Promise<void> {
         let exportEntries : ObjectEntry[] = [objectToExport];
 
         let result = await this.showProgress(
             `Exporting datapack: ${objectToExport.datapackType}...`, 
-            this.datapackService.export(exportEntries, 0));
+            this.datapackService.export(exportEntries, maxDepth));
 
         // report UI progress back
         let message = this.repsonseMessages[result.outcome](result);

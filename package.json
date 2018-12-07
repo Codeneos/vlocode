@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.8.6",
+    "version": "0.8.8",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -224,12 +224,13 @@
     },
     "scripts": {
         "build": "webpack --config webpack.prod.js",
-        "build:dev": "webpack --config webpack.dev.js",
+        "build:debug": "webpack --config webpack.dev.js",
         "clean": "rimraf ./out",
-        "test": "npm run build:dev && node ./node_modules/vscode/bin/test",
+        "test": "npm run build:debug && node ./node_modules/vscode/bin/test",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "package": "modclean -r -n default:safe,default:caution && vsce package",
-        "publish": "modclean -r -n default:safe,default:caution && vsce publish",
+        "modclean": "modclean -r -n default:safe,default:caution",
+        "package": "npm run modclean && vsce package",
+        "publish": "npm run modclean && vsce publish",
         "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
@@ -248,14 +249,17 @@
         "html-webpack-plugin": "^3.2.0",
         "mock-fs": "^4.7.0",
         "modclean": "^3.0.0-beta.1",
+        "moment": "^2.22.2",
         "raw-loader": "^0.5.1",
         "regex-replace-loader": "^1.0.1",
         "rimraf": "^2.6.2",
         "rxjs": "^6.3.3",
+        "sfdx-node": "^1.1.0",
         "sinon": "^7.1.1",
         "terser-webpack-plugin": "^1.1.0",
         "tslint": "^5.11.0",
         "typescript": "^3.1.6",
+        "vsce": "^1.53.2",
         "vscode": "^1.1.22",
         "vscode-languageclient": "^5.1.1",
         "webpack": "^4.26.1",
@@ -263,14 +267,12 @@
         "webpack-dev-server": "^3.1.10",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.1.4",
+        "yaml": "^1.0.2",
         "zone.js": "^0.8.26"
     },
     "dependencies": {
         "jsforce": "^1.9.1",
-        "moment": "^2.22.2",
         "salesforce-alm": "^44.8.0",
-        "sfdx-node": "^1.1.0",
-        "vlocity": "1.7.8",
-        "yaml": "^1.0.2"
+        "vlocity": "^1.7.9"
     }
 }
