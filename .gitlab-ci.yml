@@ -1,18 +1,26 @@
 stages:
+  - prepare
   - build
   - test
   - codequality
 
 cache:
+  key: ${CI_COMMIT_REF_SLUG}
   paths:
   - node_modules/
+
+# Prepare by pulling in NodejS packages
+prepare:npm:
+  stage: prepare
+  image: node:latest
+  script:
+    - npm install --unsafe-perm
 
 # Build stage
 build:nodejs:
   stage: build
-  image: node:lts-alpine
+  image: node:latest
   script:
-    - npm install --unsafe-perm
     - npm run build:debug
   artifacts:
     when: on_success
@@ -22,7 +30,7 @@ build:nodejs:
 # Unit testing stage
 test:
   stage: test
-  image: node:lts-alpine
+  image: node:latest
   variables:
     TEST_RESULTS_FILE: '$CI_PROJECT_DIR/test-results.xml'  
   script:
@@ -35,7 +43,7 @@ test:
 
 retirejs:
   stage: codequality
-  image: node:lts-alpine
+  image: node:latest
   script:
   - npm install -g retire
   - retire --cachedir retire-cache  --outputformat json --outputpath retirejs-report.json --node
