@@ -12,7 +12,7 @@ build:nodejs:
   stage: build
   image: node:lts-alpine
   script:
-    - npm install
+    - npm install --unsafe-perm
     - npm run build:debug
   artifacts:
     when: on_success
