@@ -52,7 +52,7 @@ describe('vlocityDatapackService', () => {
     });
 
     describe('#resolveDatapackHeader',  () => {        
-        before(() => {
+        beforeEach(() => {
             // setup fake FS for testing
             mockFs({
                 'c:/datapacks': {
@@ -112,7 +112,8 @@ describe('vlocityDatapackService', () => {
                 expect(datapackHeader).equals(undefined);
                 done();
             }).catch(err => done(err));          
-        });     
+        });
+        afterEach(mockFs.restore);
     });
 
     describe('#setLogger', () => {

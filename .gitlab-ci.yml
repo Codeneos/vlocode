@@ -1,0 +1,64 @@
+stages:
+  - build
+  - test
+  - codequality
+
+cache:
+  paths:
+  - node_modules/
+
+# Build stage
+build:nodejs:
+  stage: build
+  image: node:lts-alpine
+  script:
+    - npm install
+    - npm run build:debug
+  artifacts:
+    when: on_success
+    paths:
+      - out/
+
+# Unit testing stage
+test:
+  stage: test
+  image: node:lts-alpine
+  variables:
+    TEST_RESULTS_FILE: '$CI_PROJECT_DIR/test-results.xml'  
+  script:
+    - npm run test
+  dependencies:
+    - build:nodejs
+  artifacts:
+    reports:
+      junit: test-results.xml
+
+retirejs:
+  stage: codequality
+  image: node:lts-alpine
+  script:
+  - npm install -g retire
+  - retire --cachedir retire-cache  --outputformat json --outputpath retirejs-report.json --node
+  cache:
+    paths:
+    - retire-cache/
+  artifacts:
+    reports:
+      dependency_scanning: retirejs-report.json
+
+codequality:
+  stage: codequality
+  image: docker:latest
+  only:
+   - pushes
+  when: manual
+  variables:
+    DOCKER_DRIVER: overlay2
+  services:
+    - docker:dind
+  script:
+    - docker pull codeclimate/codeclimate:latest
+    - docker run --rm -t -e CODECLIMATE_CODE="$PWD" -v "$PWD":/code -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/cc:/tmp/cc codeclimate/codeclimate analyze --dev -f json > codeclimate.json
+  artifacts:
+    reports:
+      codequality: codeclimate.json

@@ -53,7 +53,7 @@ var NodeHttp = assign(Class(Transport, { className: 'NodeHttp',
   },
 
   request: function(messages) {
-    var content = new Buffer(this.encode(messages), 'utf8'),
+    var content = Buffer.from(this.encode(messages), 'utf8'),
         params  = this._buildParams(content),
         request = this._httpClient.request(params),
         self    = this;
@@ -93,7 +93,7 @@ var NodeHttp = assign(Class(Transport, { className: 'NodeHttp',
     };
 
     if (uri.auth)
-      headers['Authorization'] = 'Basic ' + new Buffer(uri.auth, 'utf8').toString('base64');
+      headers['Authorization'] = 'Basic ' + Buffer.from(uri.auth, 'utf8').toString('base64');
 
     var params = {
       method:   'POST',
@@ -114,7 +114,7 @@ var NodeHttp = assign(Class(Transport, { className: 'NodeHttp',
       params.path = this.endpoint.href;
       assign(params, this._proxy.tls);
       if (proxy.auth)
-        params.headers['Proxy-Authorization'] = new Buffer(proxy.auth, 'utf8').toString('base64');
+        params.headers['Proxy-Authorization'] = Buffer.from(proxy.auth, 'utf8').toString('base64');
     }
 
     return params;

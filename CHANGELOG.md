@@ -1,5 +1,10 @@
 # Changelog Vlocode
 
+## [0.8.9] - 2018-12-19
+### Changed
+ - Update vlocity tools to 1.7.11
+ - Update all dependend packages to their latest relases available from NPM
+
 ## [0.8.8] - 2018-12-07
 ### Changed
  - Update vlocity tools to 1.7.9

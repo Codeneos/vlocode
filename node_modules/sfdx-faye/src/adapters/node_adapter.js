@@ -173,7 +173,7 @@ var NodeAdapter = Class({ className: 'NodeAdapter',
           headers['Content-Disposition'] = 'attachment; filename=f.txt';
         }
 
-        headers['Content-Length'] = new Buffer(body, 'utf8').length.toString();
+        headers['Content-Length'] = Buffer.from(body, 'utf8').length.toString();
 
         this.debug('HTTP response: ?', body);
         response.writeHead(200, headers);
@@ -259,7 +259,7 @@ var NodeAdapter = Class({ className: 'NodeAdapter',
     });
 
     stream.on('end', function() {
-      var buffer = new Buffer(length),
+      var buffer = new Buffer.alloc(length),
           offset = 0;
 
       for (var i = 0, n = chunks.length; i < n; i++) {
