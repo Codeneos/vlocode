@@ -30,7 +30,7 @@ build:nodejs:
 # Unit testing stage
 test:
   stage: test
-  image: node:latest
+  image: starlabio/ubuntu-nodejs-build
   variables:
     TEST_RESULTS_FILE: '$CI_PROJECT_DIR/test-results.xml'  
   script:
