@@ -1,5 +1,5 @@
 import { window, ExtensionContext } from 'vscode';
-import VlocodeConfiguration from './models/VlocodeConfiguration';
+import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
 import { Logger, ChainLogger, ConsoleLogger, LogFilterDecorator, OutputLogger }  from './loggers';

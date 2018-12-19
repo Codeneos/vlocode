@@ -3,7 +3,7 @@ import * as vlocity from 'vlocity';
 import * as path from 'path';
 import * as process from 'process';
 import * as constants from '../constants';
-import VlocodeConfiguration from '../models/VlocodeConfiguration';
+import VlocodeConfiguration from '../models/vlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
 import { default as serviceProvider } from 'serviceContainer';
 import { Logger, LogProvider } from '../loggers';
