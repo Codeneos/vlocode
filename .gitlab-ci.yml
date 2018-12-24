@@ -2,7 +2,6 @@ stages:
   - prepare
   - build
   - test
-  - codequality
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -27,9 +26,20 @@ build:nodejs:
     paths:
       - out/
 
+build:package:
+  stage: build
+  image: node:latest
+  script:
+    - npm run package
+  artifacts:
+    when: on_success
+    paths:
+      - vlocode-*.vsix
+
 # Unit testing stage
 test:
   stage: test
+  when: manual
   image: starlabio/ubuntu-nodejs-build
   variables:
     TEST_RESULTS_FILE: '$CI_PROJECT_DIR/test-results.xml'  
@@ -42,7 +52,7 @@ test:
       junit: test-results.xml
 
 retirejs:
-  stage: codequality
+  stage: test
   image: node:latest
   script:
   - npm install -g retire
@@ -55,7 +65,7 @@ retirejs:
       dependency_scanning: retirejs-report.json
 
 codequality:
-  stage: codequality
+  stage: test
   image: docker:latest
   only:
    - pushes
