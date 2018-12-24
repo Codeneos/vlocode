@@ -20,8 +20,9 @@ export default class VlocodeService implements vscode.Disposable {
 
     constructor(private readonly container: ServiceContainer, private readonly context: vscode.ExtensionContext, public readonly config: VlocodeConfiguration) {
         this.updateStatusBar(config);
-        this.registerDisposable(VlocodeConfiguration.watch(config, (c) => {
+        this.registerDisposable(config.watch(c => {
             if (this._datapackService) {
+                // re-create _datapackService class when the config changes
                 this._datapackService.dispose();
                 this._datapackService = null;
             }

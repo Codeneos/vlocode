@@ -1,6 +1,7 @@
 out
 node_modules
-.vscode-test/
+.vscode-test
+retire-cache
 *.vsix
 .awcache
 .sfdx

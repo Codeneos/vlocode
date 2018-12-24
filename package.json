@@ -218,23 +218,29 @@
                 "vlocity.customJobOptionsYaml": {
                     "type": "string",
                     "markdownDescription": "Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.\n\n> **Note** most of the job options are controlled by Vlocode therefore only the **`preStepApex`**, **`postStepApex`** and **`OverrideSettings`** settings will be used from specified YAML file."
+                },
+                "vlocity.deployOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Automaticly deploy datapacks to Salesforce when changes are saved."
                 }
             }
         }
     },
     "scripts": {
-        "build": "webpack --config webpack.prod.js",
-        "build:debug": "webpack --config webpack.dev.js",
+        "build": "npm run prepare && webpack --config webpack.prod.js",
+        "build:debug": "npm run prepare && webpack --config webpack.dev.js",
         "clean": "rimraf ./out",
         "test": "node ./node_modules/vscode/bin/test",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "modclean": "modclean -r -n default:safe,default:caution",
+        "modclean": "modclean -r -n default:safe",
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "npm run clean && npm run build"
+        "vscode:prepublish": "npm run clean && npm run build",
+        "prepare": "patch-package && npm run modclean"
     },
     "devDependencies": {
-        "@types/angular": "^1.6.51",
+        "@types/angular": "^1.6.52",
         "@types/chai": "^4.1.7",
         "@types/mocha": "^2.2.48",
         "@types/node": "^8.10.39",
@@ -253,30 +259,31 @@
         "mock-fs": "^4.7.0",
         "modclean": "^3.0.0-beta.1",
         "moment": "^2.23.0",
+        "patch-package": "^5.1.1",
         "raw-loader": "^0.5.1",
         "regex-replace-loader": "^1.0.1",
         "rimraf": "^2.6.2",
         "rxjs": "^6.3.3",
-        "sfdx-node": "^1.1.0",
+        "sfdx-node": "^1.0.0",
         "sinon": "^7.2.2",
-        "terser-webpack-plugin": "^1.1.0",
+        "terser-webpack-plugin": "^1.2.0",
         "tslint": "^5.12.0",
         "typescript": "^3.2.2",
         "vsce": "^1.54.0",
         "vscode": "^1.1.26",
         "vscode-languageclient": "^5.2.1",
-        "webpack": "^4.28.0",
+        "webpack": "^4.28.2",
         "webpack-cli": "^3.1.2",
-        "webpack-dev-server": "^3.1.10",
+        "webpack-dev-server": "^3.1.14",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.1.5",
         "yaml": "^1.1.0",
-        "zone.js": "^0.8.26"
+        "zone.js": "^0.8.26",
+        "retire": "^2.0.2"
     },
     "dependencies": {
         "jsforce": "^1.9.1",
-        "retire": "^2.0.2",
-        "salesforce-alm": "^44.11.0",
-        "vlocity": "^1.7.11"
+        "salesforce-alm": "^43.7.0",
+        "vlocity": "1.7.11"
     }
 }

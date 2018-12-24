@@ -5,6 +5,7 @@ import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, Obje
 import { DatapackCommand } from './datapackCommand';
 import helper from './commandHelper';
 import SObjectRecord from '../models/sobjectRecord';
+import DatapackUtil from 'datapackUtil';
 
 export default class ExportDatapackCommand extends DatapackCommand {
     
@@ -36,15 +37,6 @@ export default class ExportDatapackCommand extends DatapackCommand {
                 };
             }
         );
-    }
-
-    protected getLabel(salesforceRecord : SObjectRecord) : string {
-        if (salesforceRecord.Name) {
-            return salesforceRecord.Name;
-        } else if (salesforceRecord.Type__c) {
-            return `${salesforceRecord.Type__c}/${salesforceRecord.SubType__c}`;
-        }
-        return salesforceRecord.Id;
     }
 
     protected unprefix(record: SObjectRecord, prefix: string) : SObjectRecord {
@@ -96,7 +88,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         // select object to export
         let records = results.records.map(r => { return { 
-            label: this.getLabel(this.unprefix(r, this.datapackService.vlocityNamespace)),
+            label: DatapackUtil.getLabel(this.unprefix(r, this.datapackService.vlocityNamespace)),
             detail: r.attributes.url,
             record: r
         };});
