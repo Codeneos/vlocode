@@ -1,5 +1,5 @@
-import { window, ExtensionContext } from 'vscode';
-import VlocodeConfiguration from './models/VlocodeConfiguration';
+import { window, ExtensionContext, workspace } from 'vscode';
+import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
 import { Logger, ChainLogger, ConsoleLogger, LogFilterDecorator, OutputLogger }  from './loggers';
@@ -8,11 +8,13 @@ import { setLogger as setVlocityLogger } from './services/vlocityDatapackService
 import DatapackExplorer from 'datapackExplorer';
 import { Commands } from 'commands';
 import { container } from 'serviceContainer';
+import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 
 export function activate(context: ExtensionContext) : void {
 
     // Init logging and regsiter services
-    let vloService = container.register(VlocodeService, new VlocodeService(container, context, VlocodeConfiguration.load(constants.CONFIG_SECTION)));
+    let vloService = container.register(VlocodeService, new VlocodeService(container, context, 
+        new VlocodeConfiguration(constants.CONFIG_SECTION)));
     let logger = container.register(Logger, new ChainLogger( 
         new OutputLogger(vloService.outputChannel),  
         new ConsoleLogger()        
@@ -35,6 +37,7 @@ export function activate(context: ExtensionContext) : void {
 
     container.get(CommandRouter).registerAll(Commands);
     vloService.registerDisposable(window.registerTreeDataProvider('datapackExplorer', new DatapackExplorer(container)));
+    vloService.registerDisposable(new DatapackSavedEventHandler(workspace.onDidSaveTextDocument));
 }
 
 export function deactivate() { }

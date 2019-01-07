@@ -161,7 +161,7 @@ export function getProperties(obj: any) : { readonly key: string, readonly value
  * @param array Array to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<void>) : Promise<T[]> {
+export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<any>) : Promise<T[]> {
     let foreachPromise = Promise.resolve();
     for (let i = 0; i < array.length; i++) {
         foreachPromise = foreachPromise.then(_r => callback(array[i], i, array));
@@ -174,10 +174,23 @@ export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, 
  * @param array Array to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<void>) : Promise<T[]> {
-    let tasks : Thenable<void>[] = [];
+export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<any>) : Promise<T[]> {
+    let tasks : Thenable<any>[] = [];
     for (let i = 0; i < array.length; i++) {
         tasks.push(callback(array[i], i, array));
     }
     return Promise.all(tasks).then(_r => array);
+}
+
+/**
+ * Execute callback async in parallel on each of the items in the specified array
+ * @param array Array to execute the callback on
+ * @param callback The callback to execute for each item
+ */
+export function mapAsyncParallel<T,R>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<R>) : Promise<R[]> {
+    let tasks : Thenable<R>[] = [];
+    for (let i = 0; i < array.length; i++) {
+        tasks.push(callback(array[i], i, array));
+    }
+    return Promise.all(tasks);
 }

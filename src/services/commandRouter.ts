@@ -107,7 +107,7 @@ export default class CommandRouter implements CommandMap {
 
     public register(name: string, commandCtor: ((...args: any[]) => void) | CommandCtor) : Command {
         const command = new CommandExecutor(this.createCommand(name, commandCtor));
-        const index = this._commands.push(command);
+        const index = this._commands.push(command) - 1;
         Object.defineProperty(this, name, { get: () => this._commands[index] });
         this.vlocode.registerDisposable(vscode.commands.registerCommand(command.name, command.execute, command));
         return command;

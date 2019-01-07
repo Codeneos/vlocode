@@ -16,29 +16,34 @@ export default class VlocodeConfiguration implements JobOptions {
         public additionalOptions?: any,
         public projectPath?: string,
         public maxDepth?: number,
-        public customJobOptionsYaml?: string
-    ) { }
+        public customJobOptionsYaml?: string,
+        public deployOnSave?: boolean
+    ) {
+        return this.load(this.sectionName);
+    }
 
-    public static load(configSectionName: string, assingTo?: VlocodeConfiguration) : VlocodeConfiguration {
-        const vloConfig = assingTo || new VlocodeConfiguration(configSectionName);
+    public load(configSectionName?: string) : VlocodeConfiguration {
         const vsconfig = workspace.getConfiguration(configSectionName);
-        Object.keys(vloConfig).filter(key => !key.startsWith('_')).forEach(key => {    
+        Object.keys(this).filter(key => !key.startsWith('_')).forEach(key => {    
             if (key == 'sectionName') { 
                 return; 
             }
-            Object.defineProperty(vloConfig, key, {
+            Object.defineProperty(this, key, {
                 get: () => vsconfig.get(key),
                 set: v => vsconfig.update(key, v, false)
             });
         });
-        return vloConfig;
+        return this;
     }
 
-    public static watch(config: VlocodeConfiguration, watcher: (config: VlocodeConfiguration) => void, thisArg?: any) : Disposable {
-        const vloConfig = VlocodeConfiguration.load(config.sectionName, config);
-        const configListner = workspace.onDidChangeConfiguration(e => { 
-            if (e.affectsConfiguration(config.sectionName)) {
-                watcher.call(thisArg, VlocodeConfiguration.load(config.sectionName, config));
+    public reload() : VlocodeConfiguration {
+        return this.load(this.sectionName);
+    }
+
+    public watch(watcher: (config: VlocodeConfiguration) => void, thisArg?: any) : Disposable {
+        const configListner = workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration(this.sectionName)) {
+                watcher.call(thisArg, this.reload());
             }
         });
         return configListner;

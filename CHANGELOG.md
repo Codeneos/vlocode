@@ -1,5 +1,19 @@
 # Changelog Vlocode
 
+## [0.8.9] - 2018-12-19
+### Changed
+ - Update vlocity tools to 1.7.11
+ - Update all dependend packages to their latest relases available from NPM
+
+## [0.8.8] - 2018-12-07
+### Changed
+ - Update vlocity tools to 1.7.9
+ - Set dependency level when doing manual export to all, none or direct which will export related object
+
+## [0.8.7] - 2018-12-03
+### Changed
+ - Opimize plugin packeging
+
 ## [0.8.6] - 2018-11-28
 ### Security issue
 - Fixed critical security issue due malicious dependency in event-stream referenced by dependency

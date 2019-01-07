@@ -8,7 +8,7 @@ import DatapackBuilder from 'services/datapackBuilder';
 
 describe('datapackBuilder', () => {   
     describe("#buildImport", function () {
-        before(() => {
+        beforeEach(() => {
             // setup fake FS for testing
             mockFs({
                 'datapack.json': JSON.stringify({ name: 'test', json1: 'test1.json', html: 'test.html' }),
@@ -28,5 +28,6 @@ describe('datapackBuilder', () => {
             expect(JSON.parse(JSON.parse(compiledDataPack.json1).json2).name).equals('test2');
             expect(JSON.parse(JSON.parse(compiledDataPack.json1).json2).html).equals('test_content');
         });
+        afterEach(mockFs.restore);
     });    
 });
