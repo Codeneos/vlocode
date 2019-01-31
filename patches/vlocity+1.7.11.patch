@@ -1,4 +1,15 @@
 patch-package
+--- a/node_modules/vlocity/lib/datapacksjob.js
++++ b/node_modules/vlocity/lib/datapacksjob.js
+@@ -1380,6 +1380,8 @@ DataPacksJob.prototype.runStepApex = function(projectPath, stepSettings, apexDat
+         async.eachSeries(Object.keys(runApexByType), function(apexClassName, callback) {
+             self.vlocity.datapacksutils.runApex(projectPath, runApexByType[apexClassName].apexClass, runApexByType[apexClassName].apexData).then(function() {
+                 callback();
++            }).catch(function(err) {
++                callback(err);
+             });
+         }, function(err, result) {
+             onComplete();
 --- a/node_modules/vlocity/lib/datapacksutils.js
 +++ b/node_modules/vlocity/lib/datapacksutils.js
 @@ -630,7 +630,9 @@ DataPacksUtils.prototype.runApex = function(projectPath, filePaths, currentConte
