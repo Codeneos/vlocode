@@ -12,6 +12,7 @@ import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
 import { FSWatcher, PathLike } from 'fs';
 import { runInThisContext } from 'vm';
+import SalesforceService from 'services/salesforceService';
 
 declare var VlocityUtils: any;
 
@@ -84,7 +85,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
      
     private get vlocityBuildTools() : vlocity {
         return this._vlocityBuildTools || (this._vlocityBuildTools = this.createVlocityInstance());        
-    }    
+    }
 
     private createVlocityInstance() : vlocity {
         const buildTools = new vlocity(this.config);
@@ -102,7 +103,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this.vlocityBuildTools.datapacksjob.queryDefinitions;
     }
 
-    protected get logger() {
+    private get logger() {
         return LogProvider.get(VlocityDatapackService);
     }
 
@@ -112,13 +113,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async isVlocityPackageInstalled() : Promise<Boolean> {
-        return (await this.getVlocityPackageDetails()) !== undefined;
-    }
-
-    private async getVlocityPackageDetails() : Promise<jsforce.FileProperties | undefined> {
-        let con = await this.getJsForceConnection();
-        let results = await con.metadata.list( { type: 'InstalledPackage' });        
-        return results.find(packageInfo => /^vlocity/i.test(packageInfo.fullName));
+        return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
     public async loadDatapackFromFile(file: vscode.Uri) : Promise<VlocityDatapack> {
@@ -150,7 +145,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     public deploy(mainfest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
         return this.runCommand('Deploy',{
-            manifest: this.createDeployManifest(mainfest)
+            manifest: this.createDeployManifest(mainfest),
+            activate: this.config.autoActivate,
+            delete: true,
+            compileOnBuild: this.config.compileOnBuild
         }).then(result => {
             result.missingCount = Math.max(result.totalCount - mainfest.length, 0);
             return result;
@@ -276,7 +274,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         let jobResult : vlocity.VlocityJobResult;
         try {
             await this.checkLoginAsync();
-            jobResult = await this.datapacksjobAsync(command, jobInfo);
+            jobResult = await this.datapacksJobAsync(command, jobInfo);
         } catch (err) {
             if (isError(err)) {
                 throw err;
@@ -294,15 +292,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
         });
     }
 
-    private datapacksjobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
+    private datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
         return new Promise(async (resolve, reject) => {
+
             // collect and create job optipns
             const localOptions = { projectPath: this.config.projectPath || '.' };
             const customOptions = await this.getCustomJobOptions();
             const jobOptions = Object.assign({}, customOptions, this.config, jobInfo, localOptions);
+
             // clean-up build tools left overs from the last invocation
             this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
             delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
+
             // run the jon
             try {
                 this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
@@ -313,6 +314,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             } catch(err) {
                 this.logger.error(err);
             }
+
         });
     }
 
@@ -325,19 +327,21 @@ export default class VlocityDatapackService implements vscode.Disposable {
         if (!this._customSettings) {
             // parse any custom job options from the custom yaml
             let yamlPaths = vscode.workspace.workspaceFolders.map(root => path.join(root.uri.fsPath, this.config.customJobOptionsYaml));
-            const existsResults = await Promise.all(yamlPaths.map(p => existsAsync(p)));
+            let existsResults = await Promise.all(yamlPaths.map(p => existsAsync(p)));
             yamlPaths = yamlPaths.filter((_p,i) => existsResults[i]);
             if (yamlPaths.length == 0) {
                 this.logger.warn(`The specified custom YAML file '${this.config.customJobOptionsYaml}' does not exists`);
                 return;
             }
-            // watch for changes or deletes of teh custom YAML
+
+            // watch for changes or deletes of the custom YAML
             if (!this._customSettingsWatcher) {
                 this._customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlPaths[0]);
                 this._customSettingsWatcher.onDidChange(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
                 this._customSettingsWatcher.onDidCreate(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
                 this._customSettingsWatcher.onDidDelete(_e => this._customSettings = null);       
             }
+            
             // load settings
             this._customSettings = await this.loadCustomSettingsFrom(yamlPaths[0]);
         }
@@ -353,6 +357,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             return  {
                 OverrideSettings: customSettings.OverrideSettings,
                 preStepApex: customSettings.preStepApex,
+                postStepApex: customSettings.postStepApex,
                 postJobApex: customSettings.postJobApex
             };
         } catch(err) {

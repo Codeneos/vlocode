@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.8.9",
+    "version": "0.8.10",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -129,24 +129,20 @@
             ],
             "explorer/context": [
                 {
-                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.refreshDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
                 }
             ],
             "editor/context": [
                 {
-                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.refreshDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "when": "resourceFilename =~ /.*_datapack\\.json$/i",
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
                 }
@@ -178,12 +174,7 @@
                 "vlocity.verbose": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Enable verbose loging to the output window"
-                },
-                "vlocity.activate": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Automaticly activate deployed datapacks after deployment"
+                    "markdownDescription": "Enable verbose logging to the output window"
                 },
                 "vlocity.sfdxUsername": {
                     "type": "string",
@@ -213,7 +204,7 @@
                 },
                 "vlocity.projectPath": {
                     "type": "string",
-                    "markdownDescription": "Path to the folder comtaining the Vlocity datapacks relative to the workspace's root folder, for example:\n - `./vlocity`\n - `./datapacks`"
+                    "markdownDescription": "Path to the folder containing the Vlocity datapacks relative to the workspace root folder, for example:\n - `./vlocity`\n - `./datapacks`"
                 },
                 "vlocity.customJobOptionsYaml": {
                     "type": "string",
@@ -222,7 +213,17 @@
                 "vlocity.deployOnSave": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Automaticly deploy datapacks to Salesforce when changes are saved."
+                    "markdownDescription": "Automatically deploy datapacks to Salesforce when changes are saved."
+                },
+                "vlocity.compileOnBuild": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Compile SCSS source before deploying to the target org."
+                },
+                "vlocity.autoActivate": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Automatically activate datapacks after deployment to the target org."
                 }
             }
         }

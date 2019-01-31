@@ -5,7 +5,6 @@ export default class VlocodeConfiguration implements JobOptions {
     constructor(
         public readonly sectionName?: string,
         public verbose?: boolean,
-        public activate?: boolean,
         public debug?: boolean,
         public sfdxUsername?: string,
         public username?: string,
@@ -17,7 +16,9 @@ export default class VlocodeConfiguration implements JobOptions {
         public projectPath?: string,
         public maxDepth?: number,
         public customJobOptionsYaml?: string,
-        public deployOnSave?: boolean
+        public deployOnSave?: boolean,
+        public autoActivate?: boolean,
+        public compileOnBuild?: boolean
     ) {
         return this.load(this.sectionName);
     }
