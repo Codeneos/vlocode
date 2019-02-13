@@ -243,6 +243,7 @@
     "devDependencies": {
         "@types/angular": "^1.6.52",
         "@types/chai": "^4.1.7",
+        "@types/jsforce": "^1.9.4",
         "@types/mocha": "^2.2.48",
         "@types/node": "^8.10.39",
         "@types/sinon": "^5.0.7",
@@ -263,6 +264,7 @@
         "patch-package": "^5.1.1",
         "raw-loader": "^0.5.1",
         "regex-replace-loader": "^1.0.1",
+        "retire": "^2.0.2",
         "rimraf": "^2.6.2",
         "rxjs": "^6.3.3",
         "sfdx-node": "^1.0.0",
@@ -279,8 +281,7 @@
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.1.5",
         "yaml": "^1.1.0",
-        "zone.js": "^0.8.26",
-        "retire": "^2.0.2"
+        "zone.js": "^0.8.26"
     },
     "dependencies": {
         "jsforce": "^1.9.1",

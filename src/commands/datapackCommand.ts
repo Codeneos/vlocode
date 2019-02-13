@@ -27,7 +27,7 @@ export abstract class DatapackCommand extends CommandBase {
             if (unresolvedFiles.length > 0) {
                 let errorMessageText = `${unresolvedFiles.length} of the selected files ${unresolvedFiles.length === 1 ? 'is' : 'are'} not part of a Vlocity datapack. \nSee the log for details.`;
                 vscode.window.showWarningMessage(errorMessageText, { title: 'View log...' }).then(o => o && this.vloService.focusLog());
-                unresolvedFiles.forEach(f => this.logger.warn(`Unabled to resolve datapack header for: ${f.file.fsPath}`));
+                unresolvedFiles.forEach(f => this.logger.warn(`Unable to resolve datapack header for: ${f.file.fsPath}`));
             }
         }
 

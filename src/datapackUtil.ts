@@ -12,11 +12,9 @@ import { LogProvider, Logger } from 'loggers';
 export default class DatapackUtil {
 
     public static getLabel(sfRecordLikeObject : { [field: string]: any }) : string {
-        if (sfRecordLikeObject.Type__c && sfRecordLikeObject.SubType__c) {
-            // for OmniScripts use type + subtype as name
+        if (DatapackUtil.isOmniscriptRecord(sfRecordLikeObject)) {
             return `${sfRecordLikeObject.Type__c}/${sfRecordLikeObject.SubType__c}`;
         } else if (sfRecordLikeObject.Name) {
-            // All other objects perfer to use name
             return sfRecordLikeObject.Name;
         } 
         
@@ -31,6 +29,16 @@ export default class DatapackUtil {
         
         // if the object has nonw we will throw an exception as we can't git it a name :/
         throw new Error(`The specified object does not have a name like property to use as label ${JSON.stringify(sfRecordLikeObject)}`);
+    }
+
+    public static isOmniscriptRecord(sfRecordLikeObject : { [field: string]: any }) : boolean {
+        if (sfRecordLikeObject.sobjectType && sfRecordLikeObject.sobjectType.endsWith('OmniScript__c')) {
+            return true;
+        }
+        if (sfRecordLikeObject.Id && sfRecordLikeObject.Id.startsWith('a2C')) {
+            return true;
+        }
+        return false;
     }
 
     protected static get logger() : Logger {

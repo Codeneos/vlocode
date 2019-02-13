@@ -8,6 +8,7 @@ import SObjectRecord from './models/sobjectRecord';
 import ExportDatapackCommand from './commands/exportDatapackCommand';
 import CommandRouter from './services/commandRouter';
 import { LogProvider, Logger } from 'loggers';
+import DatapackUtil from 'datapackUtil';
 
 export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 
@@ -55,7 +56,8 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 			);
 		} else if (node instanceof DatapackCategoryNode) {			
 			const connection = await this.datapackService.getJsForceConnection();
-			const query = node.query.replace(/(%|)vlocity_namespace(%|)/gi, this.datapackService.vlocityNamespace);
+			const namespace = this.datapackService.vlocityNamespace;
+			const query = node.query.replace(/(%|)vlocity_namespace(%|)/gi, namespace);
 			
 			this.logger.verbose(`Query: ${query}`);
 			const results = await connection.queryAll<SObjectRecord>(query);			
@@ -67,7 +69,14 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 				this.refresh(node);
 				return [];
 			}
-			return results.records.map(record => new DatapackObjectNode(this.vlocode, record, node.datapackType));
+			
+			return results.records.map(r => {
+				return new Proxy(r, {
+					get: (target, name) => {
+						return target[name.toString()] || target[namespace + '__' + name.toString()];
+					}
+				});
+			}).map(record => new DatapackObjectNode(this.vlocode, record, node.datapackType));
 		}
 	}
 }
@@ -146,7 +155,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 	}
 
 	protected getItemLabel() {
-		return this.record.Name || this.record.Id;
+		return DatapackUtil.getLabel(this.record);
 	}
 
 	protected getItemTooltip() {

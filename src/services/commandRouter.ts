@@ -48,9 +48,9 @@ class CommandExecutor implements Command {
 
     public async execute(... args: any[]) : Promise<void> {
         let configValidation = this.vlocode.validateConfig() || 
-                               this.vlocode.validateSalesforce();
+                               this.vlocode.validateSalesforceConnectivity();
                                
-        if (configValidation){
+        if (configValidation) {
             this.logger.error(`${this.name}: ${configValidation}`);
             return vscode.window.showErrorMessage(configValidation, { modal: false }, ...this.messageItemsConfigError).then(outcome => {
                 if (outcome && outcome.command){

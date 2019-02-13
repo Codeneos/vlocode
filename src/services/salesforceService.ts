@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
+import { DescribeGlobalResult, DescribeSObjectResult } from 'jsforce/describe-result';
 import * as path from 'path';
 import * as process from 'process';
 import * as sfdx from 'sfdx-node';
@@ -10,6 +11,7 @@ import * as s from '../serviceContainer';
 import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync } from '../util';
+import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -26,9 +28,9 @@ export interface OrganizationDetails {
     NamespacePrefix: string;
 }
 
-export default class SalesforceService {  
+export default class SalesforceService implements JsForceConnectionProvider {  
 
-    constructor(private connectionProvider: { getJsForceConnection() : Promise<jsforce.Connection> }) {
+    constructor(private connectionProvider: JsForceConnectionProvider) {
     }
 
     public getJsForceConnection() : Promise<jsforce.Connection> {
@@ -62,5 +64,12 @@ export default class SalesforceService {
         let con = await this.getJsForceConnection();
         let results = await con.query('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
         return <OrganizationDetails>results.records[0];
+    }
+
+    public async getRecordPrefixes() : Promise<{ [key: string]: string }> {
+        let con = await this.getJsForceConnection();
+        let result = await con.describeGlobal();
+        return result.sobjects.filter(rec => !!rec.keyPrefix)
+                              .reduce((map: {}, rec) => map[rec.keyPrefix] = rec.name, {});
     }
 }
