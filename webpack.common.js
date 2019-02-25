@@ -3,6 +3,7 @@ const merge = require('webpack-merge').smart;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const packageJson = require("./package.json");
 const fs = require('fs');
+var yaml = require('js-yaml');
 
 const externals = [
    // In order to run tests the main test frameworks need to be marked
@@ -40,6 +41,13 @@ const common = {
                             exportAsDefault: true
                         }
                     }
+                ]
+            },
+            {
+                test: /\.yaml$/,
+                use: [
+                    'json-loader',                    
+                    'yaml-loader'
                 ]
             }
         ]

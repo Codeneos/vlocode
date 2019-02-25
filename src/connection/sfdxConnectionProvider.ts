@@ -3,7 +3,7 @@ import * as sfdx from 'sfdx-node';
 import * as vscode from 'vscode';
 import sfdxUtil from 'sfdxUtil';
 import JsForceConnectionProvider from './jsForceConnectionProvider';
-import { LogProvider, Logger } from 'loggers';
+import { LogManager, Logger } from 'loggers';
 
 export default class SfdxConnectionProvider implements JsForceConnectionProvider {
 
@@ -44,6 +44,6 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
     }
 
     protected get logger() : Logger {
-        return LogProvider.get(SfdxConnectionProvider);
+        return LogManager.get(SfdxConnectionProvider);
     }
 }

@@ -3,7 +3,7 @@ import * as jsforce from 'jsforce';
 import * as constants from '../constants';
 import VlocodeConfiguration from '../models/vlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
-import { Logger, LogProvider } from '../loggers';
+import { Logger, LogManager } from '../loggers';
 import { VlocodeCommand } from 'commands';
 import ServiceContainer from 'serviceContainer';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
@@ -28,7 +28,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     protected get logger() : Logger {
-        return LogProvider.get(VlocodeService);
+        return LogManager.get(VlocodeService);
     }
 
     // Ctor + Methods

@@ -5,7 +5,7 @@ export default class ServiceContainer {
     private _instances : { [key: string]: any } = { };
 
     constructor() {
-        console.log('# Initilizing new ServiceContainer');
+        console.log('# Initializing new ServiceContainer');
     }
 
     public get<T>(ctor: (new (...args: any[]) => T)): T {

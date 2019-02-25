@@ -1,6 +1,6 @@
 import { ManifestEntry, ObjectEntry } from "services/vlocityDatapackService";
 import { isBuffer, isString, isObject } from "util";
-import { LogProvider } from "loggers";
+import { LogManager } from "loggers";
 
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
@@ -28,7 +28,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             try {
                 this.data = JSON.parse(data);
             } catch (err) {
-                LogProvider.get(VlocityDatapack).error('Unable to parse datapack JSON: ' + (err.message || err));
+                LogManager.get(VlocityDatapack).error('Unable to parse datapack JSON: ' + (err.message || err));
             }
         } else if (isObject(data)) {
             this.data = data;

@@ -1,6 +1,6 @@
 
 import { container } from 'serviceContainer';
-import { Logger, LogProvider } from 'loggers';
+import { Logger, LogManager } from 'loggers';
 import VlocodeService from 'services/vlocodeService';
 import * as vscode from 'vscode';
 import { Command, CommandMap } from "models/command";
@@ -39,7 +39,7 @@ class CommandExecutor implements Command {
     }
 
     protected get logger() : Logger {
-        return LogProvider.get(CommandExecutor);
+        return LogManager.get(CommandExecutor);
     }
 
     protected get vlocode() : VlocodeService {
@@ -81,7 +81,7 @@ export default class CommandRouter implements CommandMap {
     private _commands : Command[] = [];
 
     protected get logger() : Logger {
-        return LogProvider.get(CommandRouter);
+        return LogManager.get(CommandRouter);
     }
 
     protected get vlocode() : VlocodeService {

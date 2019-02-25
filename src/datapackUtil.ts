@@ -7,7 +7,9 @@ import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackS
 import SObjectRecord from './models/sobjectRecord';
 import ExportDatapackCommand from './commands/exportDatapackCommand';
 import CommandRouter from './services/commandRouter';
-import { LogProvider, Logger } from 'loggers';
+import { LogManager, Logger } from 'loggers';
+
+import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
 
 export default class DatapackUtil {
 
@@ -27,7 +29,7 @@ export default class DatapackUtil {
             return sfRecordLikeObject.GlobalKey__c;
         }
         
-        // if the object has nonw we will throw an exception as we can't git it a name :/
+        // if the object has now we will throw an exception as we can't git it a name :/
         throw new Error(`The specified object does not have a name like property to use as label ${JSON.stringify(sfRecordLikeObject)}`);
     }
 
@@ -42,7 +44,7 @@ export default class DatapackUtil {
     }
 
     protected static get logger() : Logger {
-        return LogProvider.get(DatapackUtil);
+        return LogManager.get(DatapackUtil);
     }
 }
 

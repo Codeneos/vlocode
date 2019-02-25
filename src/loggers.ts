@@ -8,46 +8,106 @@ export enum LogLevel {
     error,
     warn,
     info,
-    verbose
+    verbose,
+    debug
 }
 
-// TODO; write better filter pattern to handle log level filters
-var maxLogLevel = LogLevel.info;
-export function setLogLevel(level: LogLevel) : void { 
-    maxLogLevel = level;
+export type LogFilter = (severity: LogLevel, ...args: any[]) => boolean;
+
+export class LogWriter {
+    public write(level: LogLevel, ...args: any[]) : void { }
 }
 
-class LogManager {
-    private _activeLoggers : { [key: string]: any } = {};
-    public loggerFactory :  (name: string) => Logger;
+class LogManagerImplementation {
+    private activeLoggers : { [key: string]: any } = {};
+    private globalLogLevel: LogLevel = LogLevel.info;
+    private detailedLogLevels: { [log: string]: LogLevel } = {};
+    private logFilters: { [log: string]: LogFilter } = {};
 
     public get<T>(type: (new (...args: any[]) => T) | string) : Logger {
         const name = typeof type === 'string' ? type : type.name;
-        return this._activeLoggers[name] || (this._activeLoggers[name] = this.createLogger(name));
+        return this.activeLoggers[name] || (this.activeLoggers[name] = this.createLogger(name));
+    }
+
+    public setGlobalLogLevel(level: LogLevel) : void {
+        if (this.globalLogLevel != level){
+            console.info(`# Changed global logging level from ${LogLevel[this.globalLogLevel]} to ${LogLevel[level]}`);
+            this.globalLogLevel = level;
+        }
+    }
+
+    public getGlobalLogLevel() : LogLevel {
+        return this.globalLogLevel;
+    }
+
+    public setLogLevel(name: string, level: LogLevel) : void {
+        this.detailedLogLevels[name] = level;
+    }
+
+    public getLogLevel(name: string) : LogLevel {
+        return this.detailedLogLevels[name] || this.globalLogLevel;
+    }
+
+    public registerFilter(name: string, filter: LogFilter) : void {
+        if (this.logFilters[name]) {
+            const currentFilter = this.logFilters[name];
+            filter = (severity: LogLevel, ...args: any[]) => currentFilter(severity, ...args) && filter(severity, ...args);
+        }
+        this.logFilters[name] = filter;
+    }
+
+    public getFilter(name: string) : LogFilter {
+        return this.logFilters[name];
     }
 
     private createLogger(name: string) : Logger {
-        return this.loggerFactory ? this.loggerFactory(name) : container.get(Logger);
+        return new Logger(this, name, container.get(LogWriter));
     }
 }
-export const LogProvider = new LogManager();
+export const LogManager = new LogManagerImplementation();
 
 export class Logger {
-    log(...args: any[]) : void {}
-    info(...args: any[]) : void {}
-    verbose(...args: any[]) : void {}
-    warn(...args: any[]) : void {}
-    error(...args: any[]) : void {}
+    constructor(
+        private manager: LogManagerImplementation,
+        private name: string, 
+        private writer: LogWriter) {
+    }
+
+    public log(...args: any[]) : void { this.write(LogLevel.info, args); }
+    public info(...args: any[]) : void { this.write(LogLevel.info, args); }
+    public verbose(...args: any[]) : void { this.write(LogLevel.verbose, args); }
+    public warn(...args: any[]) : void { this.write(LogLevel.warn, args); }
+    public error(...args: any[]) : void { this.write(LogLevel.error, args); }
+    public debug(...args: any[]) : void { this.write(LogLevel.debug, args); }
+    
+    private write(level: LogLevel, args: any[]) : void {
+        if (level > this.manager.getLogLevel(this.name)) {
+            return;
+        }
+        const filter = this.manager.getFilter(this.name);
+        if (filter && !filter(level, ...args)) {
+            return;
+        }
+        this.writer.write(level, ...args);
+    }
 }
 
-type FormatFn = (args: any[], severity?: LogLevel) => string;
-class Formatter {    
-    static format(args: any[], severity?: LogLevel) : string {
-        let logLevel = (LogLevel[severity] || 'unknown');
-        return `[${Formatter.formatTime(new Date())}] ${logLevel.substr(0,1)}: ${args.map(Formatter.formatArg).join(' ')}`;
-    }//[2018-11-10 14:05:30.271] [renderer1] [error] 
+// ----------------------------------------------
+// Proxies 
+// ----------------------------------------------
 
-    static formatArg(arg: any) : string | any {
+export class FormatProxy<T extends LogWriter> implements LogWriter {    
+    constructor(private writer: T) {
+    }
+
+    public write(level: LogLevel, ...args: any[]) : void {
+        const logLevel = LogLevel[level] || 'unknown';
+        const time = moment(new Date()).format(constants.LOG_DATE_FORMAT);
+        const message = args.map(this.formatArg).join(' ');
+        this.writer.write(level, `[${time}] ${logLevel.substr(0,1)}: ${message}`);
+    }
+
+    public formatArg(arg: any) : string | any {
         if (isObject(arg)) {
             return JSON.stringify(arg);
         } else if (arg instanceof Error) {
@@ -55,96 +115,57 @@ class Formatter {
         }
         return arg;
     }
-
-    static formatTime(date: Date) : string | any {
-        return moment(date).format(constants.LOG_DATE_FORMAT);
-    }
 }
 
-abstract class LogAdapter implements Logger {
-    private _formatter: FormatFn;
-
-    constructor(formatter?: FormatFn) {
-        this._formatter = formatter || Formatter.format;
+export class LogFilterProxy<T extends LogWriter> implements LogWriter {    
+    constructor(private writer: T, private filter : (args: any[]) => boolean) {
     }
 
-    private writeFormatted(args: any[], severity: LogLevel) {
-        if (severity > maxLogLevel) {
+    public write(level: LogLevel, ...args: any[]) : void {
+        if (!this.filter(args)) {
             return;
         }
-        this.write(this._formatter(args, severity), severity);
-    }
-    
-    protected abstract write(message: string, level?: LogLevel) : void;
-
-    public log(...args: any[]) : void { this.writeFormatted(args, LogLevel.info); }
-    public info(...args: any[]) : void { this.writeFormatted(args, LogLevel.info); }
-    public verbose(...args: any[]) : void { this.writeFormatted(args, LogLevel.verbose); }
-    public warn(...args: any[]) : void { this.writeFormatted(args, LogLevel.warn); }
-    public error(...args: any[]) : void { this.writeFormatted(args, LogLevel.error); }
-}
-
-export class OutputLogger extends LogAdapter {
-    private _channel: vscode.OutputChannel;
-
-    constructor(channel: vscode.OutputChannel) {
-        super();
-        this._channel = channel;
-    }
-
-    protected write(message: string, level?: LogLevel) : void {
-        this._channel.show(true);
-        this._channel.appendLine(message);
+        this.writer.write(level, ...args);
     }
 }
 
-export class ConsoleLogger extends LogAdapter {
+// ----------------------------------------------
+// Output writers
+// ----------------------------------------------
+
+export class OutputChannelWriter implements LogWriter {
+    constructor(private channel: vscode.OutputChannel) {
+        return <OutputChannelWriter><any>new FormatProxy(this);
+    }
+
+    public write(level: LogLevel, ...args: any[]) : void {
+        this.channel.show(true);
+        this.channel.appendLine(args[0]);
+    }
+}
+
+export class ConsoleWriter implements LogWriter {
     constructor() {
-        super();
+        return <ConsoleWriter><any>new FormatProxy(this);
     }
 
-    protected write(message: string, level?: LogLevel) : void {
+    public write(level: LogLevel, ...args: any[]) : void {
         switch(level) {
-            case LogLevel.info: return console.info(message);
-            case LogLevel.verbose: return console.info(message);
-            case LogLevel.warn: return console.warn(message);
-            case LogLevel.error: return console.error(message);
+            case LogLevel.warn: return console.warn(...args);
+            case LogLevel.error: return console.error(...args);
+            default: return console.info(...args);
         }
     }
 }
 
-export class ChainLogger implements Logger {
-    private _chain: Logger[];
+export class WriterChain implements LogWriter {
+    private _chain: LogWriter[];
 
-    constructor(...args: Logger[]) {
+    constructor(...args: LogWriter[]) {
         this._chain = args;
     }
 
-    public log(...args: any[]) : void { this._chain.forEach(c => c.log.apply(c, args)); }
-    public info(...args: any[]) : void { this._chain.forEach(c => c.info.apply(c, args)); }
-    public verbose(...args: any[]) : void { this._chain.forEach(c => c.verbose.apply(c, args)); }
-    public warn(...args: any[]) : void { this._chain.forEach(c => c.warn.apply(c, args)); }
-    public error(...args: any[]) : void { this._chain.forEach(c => c.error.apply(c, args)); }
-}
-
-export class LogFilterDecorator implements Logger {
-    private _logger: Logger;
-    private _filter: (args: any[]) => Boolean;
-
-    constructor(logger: Logger, filterFunc : (args: any[]) => Boolean) {
-        this._logger = logger;
-        this._filter = filterFunc;
+    public write(level: LogLevel, ...args: any[]): void {
+        this._chain.forEach(writer => writer.write(level, ...args));
     }
-
-    private applyFilter(logFn: (...args: any[]) => void, args: any[]) {
-        if(this._filter(args)) {
-            logFn.apply(this._logger, args);
-        }
-    }
-
-    public log(...args: any[]) : void { this.applyFilter(this._logger.log, args); }
-    public info(...args: any[]) : void { this.applyFilter(this._logger.info, args); }
-    public verbose(...args: any[]) : void { this.applyFilter(this._logger.verbose, args); }
-    public warn(...args: any[]) : void { this.applyFilter(this._logger.warn, args); }
-    public error(...args: any[]) : void { this.applyFilter(this._logger.error, args); }
 }

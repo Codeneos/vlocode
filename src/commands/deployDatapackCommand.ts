@@ -28,7 +28,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
     private savingDocumentsList : Set<string>; 
 
     constructor(name : string) {
-        super(name, args => this.deployDatapacks(args[1] || [args[0] || this.currentOpenDocument]));
+        super(name, args => this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
     }
 
     /**
@@ -52,10 +52,10 @@ export default class DeployDatapackCommand extends DatapackCommand {
         return forEachAsyncParallel(openDocuments, doc => doc.save().then(_ => this.savingDocumentsList.delete(doc.uri.fsPath)));
     }
 
-    protected async deployDatapacks(selectedFiles: vscode.Uri[]) {
+    protected async deployDatapacks(selectedFiles: vscode.Uri[], reportErrors: boolean = true) {
         try {
             // prepare input
-            const datapackHeaders = await this.resolveDatapackHeaders(selectedFiles);
+            const datapackHeaders = await this.resolveDatapackHeaders(selectedFiles, reportErrors);
             if(datapackHeaders.length == 0) {
                 // no datapack files found, lets pretent this didn't happen
                 return;

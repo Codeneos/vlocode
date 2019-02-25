@@ -7,7 +7,7 @@ import * as yaml from 'yaml';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync, forEachAsync } from '../util';
-import { LogProvider, Logger } from 'loggers';
+import { LogManager, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
 import { FSWatcher, PathLike } from 'fs';

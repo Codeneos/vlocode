@@ -41,7 +41,3 @@ This extension contributes the following settings:
 * `vlocity.activate`: Automatically activate deployed datapacks
 * `vlocity.customJobOptionsYaml`: Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.
 * `vlocity.sfdxUsername`: SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored.
-
-## Known Issues
-
-* Rejections or promises and some other errors are not always correctly fed back by the Vlocity build library, due to this you might get a stuck deployment which is not going to complete. Set the logging to verbose which will likely provide the error and call stack for debugging.

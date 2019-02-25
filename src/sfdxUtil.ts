@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as sfdx from 'sfdx-node';
-import { LogProvider, Logger } from 'loggers';
+import { LogManager, Logger } from 'loggers';
 
 export default class SfdxUtil {
 
@@ -24,7 +24,7 @@ export default class SfdxUtil {
     }
     
     protected static get logger() : Logger {
-        return LogProvider.get(SfdxUtil);
+        return LogManager.get(SfdxUtil);
     }
 }
 

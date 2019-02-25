@@ -11,7 +11,13 @@ export default class DatapackSavedEventHandler extends EventHandlerBase<vscode.T
    
     protected async handleEvent(document: vscode.TextDocument): Promise<void> {        
         if (this.vloService.config.deployOnSave) {
-            return container.get(CommandRouter).execute(VlocodeCommand.deployDatapack, document.uri);
+            console.debug('# Handle onDidSaveEvent');
+            if (document.uri.fsPath.includes('.vscode') || 
+                document.uri.fsPath.includes('.git') ||
+                !vscode.workspace.getWorkspaceFolder(document.uri)) {
+                return; // ignore these
+            }
+            return container.get(CommandRouter).execute(VlocodeCommand.deployDatapack, document.uri, null, false);
         }
     }
 }
