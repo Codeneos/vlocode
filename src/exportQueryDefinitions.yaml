@@ -39,10 +39,6 @@ DocumentTemplate:
 EntityFilter:
   VlocityDataPackType: EntityFilter
   query: Select Id, Name, %vlocity_namespace%__GlobalKey__c from %vlocity_namespace%__EntityFilter__c
-IntegrationProcedure:
-  VlocityDataPackType: IntegrationProcedure
-  query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = true  
-  name: '${%vlocity_namespace%__Type__c}/${%vlocity_namespace%__SubType__c} (version: ${%vlocity_namespace%__Version__c})'
 InterfaceImplementation:
   VlocityDataPackType: InterfaceImplementation
   query: Select Id, Name from %vlocity_namespace%__InterfaceImplementation__c    
@@ -61,10 +57,6 @@ ObjectContextRule:
 ObjectLayout:
   VlocityDataPackType: ObjectLayout
   query: Select Id, Name, %vlocity_namespace%__GlobalKey__c from %vlocity_namespace%__ObjectLayout__c
-OmniScript:
-  VlocityDataPackType: OmniScript
-  query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Language__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = false
-  name: '${%vlocity_namespace%__Type__c}/${%vlocity_namespace%__SubType__c} (version: ${%vlocity_namespace%__Version__c})'
 OrchestrationDependencyDefinition:
   VlocityDataPackType: OrchestrationDependencyDefinition
   query: Select Id, Name, %vlocity_namespace%__GlobalKey__c from %vlocity_namespace%__OrchestrationDependencyDefinition__c
@@ -119,10 +111,6 @@ UISection:
 VlocityAction:
   VlocityDataPackType: VlocityAction
   query: SELECT Id, Name, %vlocity_namespace%__IsActive__c FROM %vlocity_namespace%__VlocityAction__c where %vlocity_namespace%__IsSeedAction__c = false
-VlocityCard:
-  VlocityDataPackType: VlocityCard
-  query: SELECT Id, Name, %vlocity_namespace%__Version__c, %vlocity_namespace%__Active__c FROM %vlocity_namespace%__VlocityCard__c
-  name: '${Name} (version: ${%vlocity_namespace%__Version__c})'
 VlocityFunction:
   VlocityDataPackType: VlocityFunction
   query: Select Id, Name, %vlocity_namespace%__GlobalKey__c from %vlocity_namespace%__VlocityFunction__c
@@ -135,17 +123,42 @@ VlocitySearchWidgetSetup:
 VlocityStateModel:
   VlocityDataPackType: VlocityStateModel
   query: Select Id, Name from %vlocity_namespace%__VlocityStateModel__c
-VlocityUILayout:
-  VlocityDataPackType: VlocityUILayout
-  query: Select Id, Name, %vlocity_namespace%__Version__c from %vlocity_namespace%__VlocityUILayout__c
-  name: '${Name} (version: ${%vlocity_namespace%__Version__c})'
-VlocityUITemplate:
-  VlocityDataPackType: VlocityUITemplate
-  query: Select Id, Name, %vlocity_namespace%__Version__c from %vlocity_namespace%__VlocityUITemplate__c
-  name: '${Name} (version: ${%vlocity_namespace%__Version__c})'
 VqMachine:
   VlocityDataPackType: VqMachine
   query: Select Id, Name from %vlocity_namespace%__VqMachine__c
 VqResource:
   VlocityDataPackType: VqResource
   query: Select Id, Name from %vlocity_namespace%__VqResource__c
+
+# Extended definitions
+# Overwrite configuration
+VlocityUILayout:
+  VlocityDataPackType: VlocityUILayout
+  query: Select Id, Name, %vlocity_namespace%__Version__c from %vlocity_namespace%__VlocityUILayout__c
+  groupKey: '${Name}'
+  groupName: '${Name}'
+  name: 'Version ${Version__c}'
+VlocityUITemplate:
+  VlocityDataPackType: VlocityUITemplate
+  query: Select Id, Name, %vlocity_namespace%__Version__c from %vlocity_namespace%__VlocityUITemplate__c
+  groupKey: '${Name}'
+  groupName: '${Name}'
+  name: 'Version ${Version__c}'
+VlocityCard:
+  VlocityDataPackType: VlocityCard
+  query: SELECT Id, Name, %vlocity_namespace%__Version__c, %vlocity_namespace%__Active__c FROM %vlocity_namespace%__VlocityCard__c
+  groupKey: '${Name}'
+  groupName: '${Name}'
+  name: 'Version ${Version__c}'
+OmniScript:
+  VlocityDataPackType: OmniScript
+  query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Language__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = false
+  groupKey: '${Type__c}_${SubType__c}'
+  groupName: '${Type__c}/${SubType__c}'
+  name: 'Version ${Version__c}'
+IntegrationProcedure:
+  VlocityDataPackType: IntegrationProcedure
+  query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = true  
+  groupKey: '${Type__c}_${SubType__c}_${Language__c}'
+  groupName: '${Type__c}/${SubType__c} (${Language__c})'
+  name: 'Version ${Version__c}'

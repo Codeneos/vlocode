@@ -216,9 +216,8 @@ export function matchAll(s: string, r: RegExp) : RegExpMatchArray[] {
  */
 export function formatString(stringToFormat: string, contextValues: {}) {
     return stringToFormat.replace(/\${(.+?(.*?))}/gm, match => {
-        const g = /\${(.+?(.*?))}/g.exec(match)[1]; 
-        const gg = contextValues[g];
-        return gg || match;
+        const key = /\${(.+?(.*?))}/g.exec(match)[1]; 
+        return contextValues[key] || match;
     });
 }
 
@@ -237,3 +236,27 @@ export function groupBy<T>(array: T[], predicate: (item: T) => string | undefine
         }, {}
     );
 }
+
+/**
+ * Compare 2 strings for equality.
+ * @param a String a
+ * @param b String b
+ * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
+ */
+export function stringEquals(a : string, b: string, insensitive?: boolean) : boolean {
+    if (a === b) {
+        return true;
+    }
+    if (a === null || a === undefined) {
+        return false;
+    }
+    if (b === null || b === undefined) {
+        return false;
+    }
+    if (insensitive) {
+        return b.toLowerCase() == a.toLowerCase();
+    }
+    return false;
+}
+
+

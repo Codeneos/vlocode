@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.8.10",
+    "version": "0.9.1",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.26.0"
+        "vscode": "^1.30.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -273,8 +273,8 @@
         "terser-webpack-plugin": "^1.2.0",
         "tslint": "^5.12.0",
         "typescript": "^3.2.2",
-        "vsce": "^1.54.0",
-        "vscode": "^1.1.26",
+        "vsce": "^1.57.1",
+        "vscode": "^1.1.30",
         "vscode-languageclient": "^5.2.1",
         "webpack": "^4.28.2",
         "webpack-cli": "^3.1.2",
@@ -282,7 +282,6 @@
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.1.5",
         "yaml": "^1.1.0",
-        "yaml-frontmatter-loader": "^0.1.0",
         "yaml-loader": "^0.5.0",
         "zone.js": "^0.8.26"
     },

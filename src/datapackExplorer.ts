@@ -12,7 +12,7 @@ import { LogManager, Logger } from 'loggers';
 import DatapackUtil from 'datapackUtil';
 import { groupBy, formatString } from './util';
 
-import explorerConfig = require('datapackExplorer.yaml');
+import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
 
 export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 	
@@ -60,7 +60,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 
 	public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
 		if (!node) {
-			return Object.keys(this.datapackService.queryDefinitions).map(
+			return Object.keys(exportQueryDefinitions).map(
 				dataPackType => new DatapackCategoryNode(this, dataPackType)
 			);
 		} else if (node instanceof DatapackCategoryNode) {			
@@ -74,7 +74,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 			}
 
 			// group results?
-			const nodeConfig = explorerConfig[node.datapackType];
+			const nodeConfig = exportQueryDefinitions[node.datapackType];
 			if (nodeConfig && nodeConfig.groupKey) {
 				return this.createDatapackGroupNodes(records, node.datapackType, nodeConfig.groupKey);
 			}
@@ -208,7 +208,7 @@ class DatapackObjectGroupNode extends DatapackNode  {
 	}
 	
 	protected getItemDescription() {
-		const nodeConfig = explorerConfig[this.datapackType];
+		const nodeConfig = exportQueryDefinitions[this.datapackType];
 		if (nodeConfig && nodeConfig.groupDescription) {
 			return formatString(nodeConfig.groupDescription, { ...this.records[0], count: this.records.length });
 		}
@@ -216,7 +216,7 @@ class DatapackObjectGroupNode extends DatapackNode  {
 	}
 
 	private getLabelFormat() : string {
-		const nodeConfig = explorerConfig[this.datapackType];
+		const nodeConfig = exportQueryDefinitions[this.datapackType];
 		if (nodeConfig && nodeConfig.groupName) {
 			return formatString(nodeConfig.groupName, { ...this.records[0], count: this.records.length });
 		}
@@ -242,7 +242,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 	}
 
 	protected getItemLabel() {
-		const nodeConfig = explorerConfig[this.datapackType];		
+		const nodeConfig = exportQueryDefinitions[this.datapackType];		
 		if (nodeConfig && nodeConfig.name) {
 			return formatString(nodeConfig.name, this.record);
 		}
@@ -250,7 +250,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 	}
 
 	protected getItemDescription() {
-		const nodeConfig = explorerConfig[this.datapackType];		
+		const nodeConfig = exportQueryDefinitions[this.datapackType];		
 		if (nodeConfig && nodeConfig.description) {
 			return formatString(nodeConfig.description, this.record);
 		}

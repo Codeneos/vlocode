@@ -8,7 +8,7 @@ import helper from './commandHelper';
 export default class RefreshDatapackCommand extends DatapackCommand {
     
     private repsonseMessages: { [key: number] : (result: Result) => string } = {
-        [Outcome.success]: (r) => `Succesfully refreshed ${r.totalCount} datapack(s)`,
+        [Outcome.success]: (r) => `Successfully refreshed ${r.totalCount} datapack(s)`,
         [Outcome.partial]: (r: Result) => {
             if (r.errors.length > 0) {
                 return `Unable to refresh all selected datapack(s); refreshed ${r.success.length} datapacks with ${r.errors.length} errors`;
