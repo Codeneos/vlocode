@@ -1,20 +1,18 @@
 import * as vscode from 'vscode';
 import * as constants from '../constants';
 
-import VlocityDatapackService, * as vds from '../services/vlocityDatapackService';
-import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, ObjectEntry } from '../services/vlocityDatapackService';
+import { DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, ObjectEntry } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import helper from './commandHelper';
 import SObjectRecord from '../models/sobjectRecord';
 import DatapackUtil from 'datapackUtil';
-
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
 import { groupBy, formatString } from '../util';
 import { createRecordProxy } from 'salesforceUtil';
 
+import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+
 export default class ExportDatapackCommand extends DatapackCommand {
     
-    private responseMessages: { [key: number] : (result: Result) => string } = {
+    protected responseMessages: { [key: number] : (result: Result) => string } = {
         [Outcome.success]: (r) => `Successfully exported ${r.totalCount} datapack(s)`,
         [Outcome.partial]: (r: Result) => {
             if (r.errors.length > 0) {
@@ -26,17 +24,17 @@ export default class ExportDatapackCommand extends DatapackCommand {
     };
 
     constructor(name : string) {
-        super(name, args => this.executeExport(args));
+        super(name);
     }
 
-    protected async executeExport(args: any[]) : Promise<void>  {
+    public async execute(...args: any[]) : Promise<void>  {
         if (args != null && args.length == 1 && this.isExportableObjectEntry(args[0])) {
-            return this.exportObject(args[0]);
+            return this.exportObjects(args[0]);
         } 
         return this.exportWizard();
     }
 
-    private isExportableObjectEntry(obj : any) {
+    protected isExportableObjectEntry(obj : any) {
         return 'sobjectType' in obj && 
                'datapackType' in obj &&
                'id' in obj;
@@ -80,7 +78,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
 
-        return this.exportObject({
+        return this.exportObjects({
             id: recordToExport.Id,
             sobjectType: recordToExport.attributes.type,
             datapackType: datapackType
@@ -104,7 +102,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         }
     }
 
-    private async showDatapackTypeSelection() : Promise<string | undefined> {
+    protected async showDatapackTypeSelection() : Promise<string | undefined> {
         let datapackOptions = Object.keys(exportQueryDefinitions).map(
             option => {
                 const queryDef = exportQueryDefinitions[option];
@@ -127,7 +125,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return datapackToExport.datapackType;
     }
 
-    private async showGroupSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord[] | undefined> {
+    protected async showGroupSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord[] | undefined> {
         // get the query def for the object type
         const queryDef = exportQueryDefinitions[datapackType];
 
@@ -151,7 +149,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return objectGroupSelection.records;
     }
 
-    private async showRecordSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord | undefined> {
+    protected async showRecordSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord | undefined> {
         // get the query def for the object type
         const queryDef = exportQueryDefinitions[datapackType];
 
@@ -193,11 +191,10 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return objectSelection.record;
     }
 
-    protected async exportObject(objectToExport: ObjectEntry, maxDepth: number = 0) : Promise<void> {
-        let exportEntries : ObjectEntry[] = [objectToExport];
-
+    protected async exportObjects(exportEntries: ObjectEntry | ObjectEntry[], maxDepth: number = 0) : Promise<void> {
+        exportEntries = Array.isArray(exportEntries) ? exportEntries : [exportEntries];
         let result = await this.showProgress(
-            `Exporting datapack: ${objectToExport.datapackType}...`, 
+            `Exporting ${exportEntries.length} datapack(s)...`, 
             this.datapackService.export(exportEntries, maxDepth));
 
         // report UI progress back

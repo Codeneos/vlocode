@@ -11,15 +11,20 @@ import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
 
 import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import { removeNamespacePrefix } from 'salesforceUtil';
 
 export default class DatapackUtil {
+    
+    private static get logger() : Logger {
+        return LogManager.get(DatapackUtil);
+    }
 
     public static getLabel(sfRecordLikeObject : { [field: string]: any }) : string {
         if (DatapackUtil.isOmniscriptRecord(sfRecordLikeObject)) {
             return `${sfRecordLikeObject.Type__c}/${sfRecordLikeObject.SubType__c}`;
         } else if (sfRecordLikeObject.Name) {
             return sfRecordLikeObject.Name;
-        } 
+        }        
         
         DatapackUtil.logger.warn(`Object does not have common namable property`, sfRecordLikeObject);        
         if (sfRecordLikeObject.Id) {
@@ -44,8 +49,28 @@ export default class DatapackUtil {
         return false;
     }
 
-    protected static get logger() : Logger {
-        return LogManager.get(DatapackUtil);
+    /**
+     * Gets the datapack name for the specified SObject type, namespaces prefixes are replaced with %vlocity_namespace% when applicable
+     * @param sobjectType Salesforce object type
+     */
+    public static getDatapackType(sobjectType: string) : string | undefined {
+        const sobjectTypeWithoutNamespace = removeNamespacePrefix(sobjectType);
+        const regex = new RegExp(`from (${sobjectType}|%vlocity_namespace%__${sobjectTypeWithoutNamespace})`,'ig');
+        return Object.keys(exportQueryDefinitions).find(type =>  regex.test(exportQueryDefinitions[type].query));
+    }
+
+    /**
+     * Gets the SObject type for the specified Datapack, namespaces are returned with a replaceable prefix %vlocity_namespace%
+     * @param sobjectType Datapack type
+     */
+    public static getSObjectType(datapackType: string) : string | undefined {
+        const queryDef = exportQueryDefinitions[datapackType];
+        if (queryDef) {
+            const match = queryDef.query.match(/from ([^\s]+)/im);
+            if (match) {
+                return match[1];
+            }
+        }
     }
 }
 

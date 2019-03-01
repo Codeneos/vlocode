@@ -11,6 +11,10 @@ declare module 'exportQueryDefinitions.yaml' {
     groupName?: string
     groupDescription?: string
     description?: string
+    matchingKey?: {
+      fields: string[],
+      returnField?: string
+    }
   }
   const exportQueryDefinitions : { 
     [datapackType: string] : DatapackQueryDefinition

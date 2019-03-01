@@ -3,7 +3,6 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import * as yaml from 'yaml';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync, forEachAsync } from '../util';

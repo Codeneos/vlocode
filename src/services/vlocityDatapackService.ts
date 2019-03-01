@@ -3,7 +3,7 @@ import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
-import * as yaml from 'yaml';
+import * as yaml from 'js-yaml';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync } from '../util';
@@ -15,6 +15,9 @@ import { runInThisContext } from 'vm';
 import SalesforceService from 'services/salesforceService';
 
 import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import SObjectRecord from 'models/sobjectRecord';
+import { createRecordProxy } from 'salesforceUtil';
+import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 
 declare var VlocityUtils: any;
 
@@ -62,10 +65,16 @@ type ExportManifest = {
     } 
 };
 
-type ExportQueryArray = Array<{ 
+type ExportQuery = { 
     VlocityDataPackType: string, 
     query: string 
-}>;
+};
+
+export interface VlocityMatchingKey {
+    sobjectType: string;
+    fields: Array<string>;
+    returnField: string;
+}
 
 export default class VlocityDatapackService implements vscode.Disposable {  
 
@@ -114,6 +123,19 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this._vlocityBuildTools.jsForceConnection;
     }
 
+    // Todo: get vlocity namespace earlier
+    // instead 
+    private async getVlocityNamespace() : Promise<string> {
+        if (!this.vlocityNamespace) {
+            await this.checkLoginAsync();
+        }
+        return this.vlocityNamespace;
+    }
+
+    public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
+        return new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this);
+    }
+
     public async isVlocityPackageInstalled() : Promise<Boolean> {
         return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
@@ -145,29 +167,29 @@ export default class VlocityDatapackService implements vscode.Disposable {
         };        
     }
 
-    public deploy(mainfest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
-        return this.runCommand('Deploy',{
-            manifest: this.createDeployManifest(mainfest),
+    public async deploy(manifest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
+        let result = await this.runCommand('Deploy',{
+            manifest: this.createDeployManifest(manifest),
             activate: this.config.autoActivate,
             delete: true,
-            compileOnBuild: this.config.compileOnBuild
-        }).then(result => {
-            result.missingCount = Math.max(result.totalCount - mainfest.length, 0);
-            return result;
+            compileOnBuild: this.config.compileOnBuild        
+        });
+        return Object.assign(result, { 
+            missingCount: Math.max(result.totalCount - manifest.length, 0)
         });
     }
 
-    public export(entries: ObjectEntry[], maxDepth: number = 0) : Promise<DatapackCommandResult>  {
-        const exportQueries = this.createExportQueries(entries.filter(e => !e.id));
+    public async export(entries: ObjectEntry[], maxDepth: number = 0) : Promise<DatapackCommandResult>  {
+        const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportMainfest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
-        return this.runCommand('Export',{
+        let result = await this.runCommand('Export',{
             queries: exportQueries,
             fullManifest: exportMainfest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth
-        }).then(result => {
-            result.missingCount = Math.max(result.totalCount - entries.length, 0);
-            return result;
+        });
+        return Object.assign(result, { 
+            missingCount: Math.max(result.totalCount - entries.length, 0) 
         });
     }
 
@@ -184,50 +206,13 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return mainfest;
     }
 
-    private createExportQueries(objects: ObjectEntry[]) : ExportQueryArray {
-        return objects.map(entry => [{
-                VlocityDataPackType: entry.datapackType || 'SObject',
-                query: this.buildQuery(entry)
-            }][0]
-        );
-    }
-
-    private buildQuery(entry: ObjectEntry) : string {
-        if (!entry.globalKey && !entry.name) {
-            throw new Error(`Cannot export object without name or global key (${entry.sobjectType})`);
-        }
-        // determine the base query
-        let query = this.getDefaultQuery(entry.datapackType);
-        if (!query) {
-            this.logger.warn('No default query available for datapack of type ${(entry.datapackType}; building generic query instead');
-            query = `select Id from ${entry.sobjectType}`;
-        }
-        // append query conditions
-        query += / where /gi.test(query) ? ' and ' : ' where ';
-        if (entry.globalKey) {
-            query += `%vlocity_namespace%__GlobalKey__c = '${entry.globalKey}'`;
-        } else {
-            query += `Name = '${entry.name}'`;
-        }
-        return query;
-    }
-
-    private getDefaultQuery(datapackType: string) : string | undefined {
-        if (this.queryDefinitions[datapackType]) {
-            return this.queryDefinitions[datapackType].query;
-        }
-        return undefined;
-    }
-
-    /**
-     * Tries to get the Vlocity datapack type for a specified SObject type, this 
-     * will not work for objects that are associated with multiple datapacks types, i.e: OmniScripts
-     * @param sobjectType Salesforce object type, replace Vlocity namespace with %vlocity_namespace%
-     */
-    public getDatapackType(sobjectType: string) : string | undefined {
-        return Object.keys(this.queryDefinitions).find(type => {
-            return new RegExp(`from ${sobjectType}`,'ig').test(this.queryDefinitions[type].query);
-        });
+    private async createExportQueries(objects: ObjectEntry[]) : Promise<Array<ExportQuery>> {
+        return Promise.all(objects.map(async entry => {
+            return {
+                VlocityDataPackType: entry.datapackType,
+                query: await (await this.getMatchingKeyService()).getQuery(entry.datapackType, entry)
+            };
+        }));
     }
 
     private createDeployManifest(objects: ManifestEntry[]) : any {
@@ -254,7 +239,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             }
             return this.findDatapackHeaderInFolder(path.dirname(file.fsPath));
         } catch (err) {
-            // catch fstatAsync exceptions; this indeicates tha file does not exoist and as such we
+            // catch fstatAsync exceptions; this indicates tha file does not exist and as such we
             // return undefined indicating the DP header cannot be resolved.
             return undefined;
         }
@@ -354,7 +339,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     private async loadCustomSettingsFrom(yamlFile: PathLike) : Promise<any> {        
         try {
             // parse and watch Custom YAML
-            const customSettings = yaml.parse(await readFileAsync(yamlFile), { merge: true });
+            const customSettings = yaml.safeLoad(await readFileAsync(yamlFile));
             this.logger.info(`Loaded custom settings from YAML file: ${yamlFile}`);
             return  {
                 OverrideSettings: customSettings.OverrideSettings,
