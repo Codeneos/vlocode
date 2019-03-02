@@ -238,7 +238,7 @@
         "package": "vsce package",
         "publish": "vsce publish",
         "vscode:prepublish": "npm run clean && npm run build",
-        "prepare": "patch-package && npm run modclean"
+        "prepare": "patch-package"
     },
     "devDependencies": {
         "@types/angular": "^1.6.52",
