@@ -3,7 +3,7 @@ import { container } from 'serviceContainer';
 import CommandRouter from 'services/commandRouter';
 import { VlocodeCommand } from 'commands';
 import VlocodeService from 'services/vlocodeService';
-import { LogProvider, Logger } from 'loggers';
+import { LogManager, Logger } from 'loggers';
 
 export abstract class EventHandlerBase<T> implements vscode.Disposable {
     private eventListner : vscode.Disposable;
@@ -28,7 +28,7 @@ export abstract class EventHandlerBase<T> implements vscode.Disposable {
     }
 
     protected get logger() : Logger {
-        return LogProvider.get(this.constructor.name);
+        return LogManager.get(this.constructor.name);
     }
 
     private async _handleEvent(eventObject: T) : Promise<void> {

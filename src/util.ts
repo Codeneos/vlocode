@@ -96,7 +96,7 @@ export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
  * Removes any double or trailing slashes from the path
  * @param pathStr path string
  */
-export function senatizePath(pathStr: string) {
+export function sanitizePath(pathStr: string) {
     if (!pathStr) {
         return pathStr;
     }
@@ -194,3 +194,69 @@ export function mapAsyncParallel<T,R>(array: T[], callback: (item: T, index?: nu
     }
     return Promise.all(tasks);
 }
+
+/**
+ * Match all expressions in target string s 
+ * @param s input string on which to run match
+ * @param r return array of matches as RegExpMatchArray's
+ */
+export function matchAll(s: string, r: RegExp) : RegExpMatchArray[] {
+    const regex = new RegExp(r);
+    let matches: RegExpMatchArray[], match: RegExpMatchArray;
+    while(match = regex.exec(s)) {
+        (matches || (matches = [])).push(match);
+    }
+    return matches;
+}
+
+/**
+ * Format string using the specified context values; format: 'Bar ${foo}', with context values {foo: 'bar'} results in 'Bar bar'
+ * @param stringToFormat string to format
+ * @param contextValues context values supplied
+ */
+export function formatString(stringToFormat: string, contextValues: {}) {
+    return stringToFormat.replace(/\${(.+?(.*?))}/gm, match => {
+        const key = /\${(.+?(.*?))}/g.exec(match)[1]; 
+        return contextValues[key] || match;
+    });
+}
+
+/**
+ * Groups an array into key accessible groups of objects
+ * @param array Array to group
+ * @param predicate function to get the group by key
+ */
+export function groupBy<T>(array: T[], predicate: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
+    return array.reduce(
+        (arr, item) => {
+            const key = predicate(item);
+            arr[key] = arr[key] || [];
+            arr[key].push(item);
+            return arr;
+        }, {}
+    );
+}
+
+/**
+ * Compare 2 strings for equality.
+ * @param a String a
+ * @param b String b
+ * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
+ */
+export function stringEquals(a : string, b: string, insensitive?: boolean) : boolean {
+    if (a === b) {
+        return true;
+    }
+    if (a === null || a === undefined) {
+        return false;
+    }
+    if (b === null || b === undefined) {
+        return false;
+    }
+    if (insensitive) {
+        return b.toLowerCase() == a.toLowerCase();
+    }
+    return false;
+}
+
+

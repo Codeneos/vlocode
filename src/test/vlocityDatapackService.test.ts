@@ -106,7 +106,7 @@ describe('vlocityDatapackService', () => {
                 done();
             }).catch(err => done(err));           
         });
-        it('should return undefined for non-existoing files', (done) => {
+        it('should return undefined for non-existing files', (done) => {
             let datapackFolder = vscode.Uri.file('c:/datapacks/product2/test2/no_dataoacks_here.html');
             new vlocityDatapackService(null, <VlocodeConfiguration>{}).resolveDatapackHeader(datapackFolder).then(datapackHeader => {
                 // assert
@@ -120,12 +120,14 @@ describe('vlocityDatapackService', () => {
     describe('#setLogger', () => {
         it("should intercept all logging calls", function() {
             var logSpy = spy();
-            vds.setLogger(<Logger>{
+            vds.setLogger(<Logger><any>{
                 log: logSpy, 
                 info: logSpy, 
                 verbose: logSpy,
                 warn: logSpy,
-                error:logSpy
+                error:logSpy,
+                debug:logSpy,
+                write: null
             });
             VlocityUtils.verboseLogging = true;
             VlocityUtils.log('b', 'a');

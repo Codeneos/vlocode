@@ -7,8 +7,8 @@ import helper from './commandHelper';
 
 export default class RefreshDatapackCommand extends DatapackCommand {
     
-    private repsonseMessages: { [key: number] : (result: Result) => string } = {
-        [Outcome.success]: (r) => `Succesfully refreshed ${r.totalCount} datapack(s)`,
+    private responseMessages: { [key: number] : (result: Result) => string } = {
+        [Outcome.success]: (r) => `Successfully refreshed ${r.totalCount} datapack(s)`,
         [Outcome.partial]: (r: Result) => {
             if (r.errors.length > 0) {
                 return `Unable to refresh all selected datapack(s); refreshed ${r.success.length} datapacks with ${r.errors.length} errors`;
@@ -19,10 +19,14 @@ export default class RefreshDatapackCommand extends DatapackCommand {
     };
 
     constructor(name : string) {
-        super(name, args => this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]));
+        super(name);
     }
 
-    protected async refreshDatapacks(selectedFiles: vscode.Uri[]) {
+    public execute(...args: any[]) : Promise<void> {
+       return this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]);
+    }
+
+    protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
         try {
             // call
             let progressToken = await this.startProgress('Refreshing Vlocity datapacks...');
@@ -34,7 +38,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
             }
 
             // report UI progress back
-            let message = this.repsonseMessages[result.outcome](result);
+            let message = this.responseMessages[result.outcome](result);
             switch(result.outcome) {
                 case Outcome.success: await vscode.window.showInformationMessage(message); break;
                 case Outcome.partial: await helper.showWarningWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;

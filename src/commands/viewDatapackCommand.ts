@@ -7,7 +7,7 @@ import helper from './commandHelper';
 import datapackViewTemplate from '../views/datapack.view.html';
 import webviewMessage from '../models/webviewMessage';
 import VlocodeService from '../services/vlocodeService';
-import { Logger, LogProvider } from 'loggers';
+import { Logger, LogManager } from 'loggers';
 import { container } from 'serviceContainer';
 
 export default class ViewDatapackCommand extends DatapackCommand {
@@ -77,7 +77,7 @@ class DatapackView {
     }
 
     protected get logger() : Logger {
-        return LogProvider.get(DatapackView);
+        return LogManager.get(DatapackView);
     }
 
     protected handleWebviewPostMessage(message : webviewMessage) {

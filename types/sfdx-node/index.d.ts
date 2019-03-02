@@ -9,7 +9,7 @@ declare module 'sfdx-node' {
     }
 
     namespace org {
-        function list(opts: { all?: boolean, loglevel?: logLevel }) : Thenable<{nonScratchOrgs: SalesforceOrgDetails[], scratchOrgs: SalesforceOrgDetails[]}>;
+        function list(opts?: { all?: boolean, loglevel?: logLevel }) : Thenable<{nonScratchOrgs: SalesforceOrgDetails[], scratchOrgs: SalesforceOrgDetails[]}>;
     }
     
     type logLevel = 'error' | 'trace' | 'debug' | 'info' | 'warn' | 'fatal';
@@ -20,28 +20,25 @@ declare module 'sfdx-node' {
         instanceUrl?: string,
         loginUrl?: string,
         username?: string,
+        clientId?: string, 
         connectedStatus?: string,
-        lastUsed?: string
+        lastUsed?: string,
+        alias?: string,
+        isDefaultDevHubUsername? : boolean,
+        isDefaultUsername?: boolean
     }
 
-    interface WebLoginResult {
-        accessToken?: string, 
-        clientId?: string, 
+    interface WebLoginResult extends SalesforceOrgDetails {        
         clientSecret?: string, 
         created?: string | undefined, //undefined
         createdOrgInstance?: string | undefined, //undefined
         devHubUsername?: string | undefined, //undefined
-        instanceUrl?: string, 
-        loginUrl?: string, 
-        orgId?: string, 
         refreshToken?: string, 
         scratchAdminUsername?: string | undefined, //undefined
         trialExpirationDate?: string | undefined, //undefined
         userId?: string | undefined, //undefined
-        username?: string, 
         userProfileName?: string | undefined, //undefined
     }
-
 
     /*webLogin({
         setdefaultdevhubusername: true,

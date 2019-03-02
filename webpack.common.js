@@ -41,6 +41,10 @@ const common = {
                         }
                     }
                 ]
+            },
+            {
+                test: /\.yaml$/,
+                use: './build/loaders/yaml'
             }
         ]
     },

@@ -4,7 +4,7 @@ import DeployDatapackCommand from "./commands/deployDatapackCommand";
 import ViewDatapackCommand from "./commands/viewDatapackCommand";
 import ExportDatapackCommand from "./commands/exportDatapackCommand";
 import SelectOrgCommand from "./commands/selectOrgCommand";
-import BuildDatapackCommand from "commands/buildDatapackCommand";
+import BuildDatapackCommand from "./commands/buildDatapackCommand";
 
 export enum VlocodeCommand {
     refreshDatapack = 'vlocity.refreshDatapack',

@@ -1,0 +1,47 @@
+# include files -- processed by custom loader
+include: [ ./node_modules/vlocity/lib/querydefinition.yaml ]
+
+# Extend default configuration from querydefinition
+VlocityUILayout:
+  query: Select Id, Name, %vlocity_namespace%__Version__c from %vlocity_namespace%__VlocityUILayout__c
+  <<: &basicGroupProps
+    groupKey: ${Name}
+    groupName: ${Name}
+    name: Version ${Version__c}
+  matchingKey: 
+    fields: [ Name, "%vlocity_namespace%__Version__c" ]
+
+VlocityUITemplate:
+  query: Select Id, Name, %vlocity_namespace%__Version__c from %vlocity_namespace%__VlocityUITemplate__c
+  <<: *basicGroupProps  
+  matchingKey: 
+    fields: [ Name, "%vlocity_namespace%__Version__c" ]
+
+VlocityCard:
+  query: SELECT Id, Name, %vlocity_namespace%__Version__c, %vlocity_namespace%__Active__c FROM %vlocity_namespace%__VlocityCard__c
+  <<: *basicGroupProps  
+  matchingKey: 
+    fields: [ Name, "%vlocity_namespace%__Version__c" ]
+
+OmniScript:
+  query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Language__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = false
+  <<: *basicGroupProps
+  groupKey: ${Type__c}_${SubType__c}_${Language__c}
+  groupName: ${Type__c}/${SubType__c} (${Language__c})
+  matchingKey: 
+    fields: 
+      - "%vlocity_namespace%__SubType__c"
+      - "%vlocity_namespace%__Type__c"
+      - "%vlocity_namespace%__Version__c"
+      - "%vlocity_namespace%__Language__c"
+
+IntegrationProcedure:
+  query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = true  
+  <<: *basicGroupProps
+  groupKey: ${Type__c}_${SubType__c}
+  groupName: ${Type__c}/${SubType__c}
+  matchingKey: 
+    fields: 
+      - "%vlocity_namespace%__SubType__c"
+      - "%vlocity_namespace%__Type__c"
+      - "%vlocity_namespace%__Version__c"

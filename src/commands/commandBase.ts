@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import VlocodeService from 'services/vlocodeService';
 import { container } from 'serviceContainer';
-import { Logger, LogProvider } from 'loggers';
+import { Logger, LogManager } from 'loggers';
 import { Command } from 'models/command';
 
 export class ProgressToken {
@@ -73,7 +73,7 @@ export abstract class CommandBase implements Command {
     }
 
     protected get logger() : Logger {
-        return LogProvider.get(this.name);
+        return LogManager.get(this.name);
     }
 }
 

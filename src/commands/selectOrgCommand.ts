@@ -1,18 +1,3 @@
-/*var sfdx = require('sfdx-node');
- 
-//authorize a dev hub
-sfdx.auth.webLogin({
-    setdefaultdevhubusername: true,
-    setalias: 'HubOrg'
-})
-.then(function(){
-  //push source
-  return sfdx.source.push();  
-})
-.then(function(){
-  console.log('Source pushed to scratch org');  
-});*/
-
 import * as vscode from 'vscode';
 import * as sfdx from 'sfdx-node';
 import { CommandBase } from './commandBase';
@@ -21,7 +6,7 @@ export default class SelectOrgCommand extends CommandBase {
 
     private readonly newOrgOption : (vscode.QuickPickItem & sfdx.SalesforceOrgDetails) = { 
         label: 'Authorize new org',
-        description: 'You will be promted for the login url'
+        description: 'You will be prompted for the login url'
     };
 
     private readonly salesforceOrgTypes : (vscode.QuickPickItem & { instanceUrl?: string })[] = [{ 
@@ -54,8 +39,8 @@ export default class SelectOrgCommand extends CommandBase {
             Object.assign({}, org, <vscode.QuickPickItem>{ label: org.username, description: org.instanceUrl }));
     }
 
-    protected async selectOrg() : Promise<void> {        
-        const knownOrgs = await this.getAuthorizedOrgs();
+    protected async selectOrg() : Promise<void> {
+        const knownOrgs = await this.showProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
         let selectedOrg : sfdx.SalesforceOrgDetails = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
@@ -68,7 +53,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
 
         if (selectedOrg) {
-            this.logger.log(`Saving ${selectedOrg.username} org as default configuration`);
+            this.logger.log(`Set ${selectedOrg.username} as target org for Vlocity deploy/refresh operations`);
             this.vloService.config.sfdxUsername = selectedOrg.username;
             this.vloService.config.password = undefined;
             this.vloService.config.username = undefined;
@@ -106,7 +91,7 @@ export default class SelectOrgCommand extends CommandBase {
         }, loginTask);
 
         if (loginResult && loginResult.accessToken) {
-            let successMessage = `Succesfully authorized ${loginResult.username}, you can now close the browser`;
+            let successMessage = `Successfully authorized ${loginResult.username}, you can now close the browser`;
             this.logger.log(successMessage);
             vscode.window.showInformationMessage(successMessage);
             return loginResult;

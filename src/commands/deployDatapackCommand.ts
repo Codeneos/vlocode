@@ -10,8 +10,8 @@ import DatapackUtil from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
-    private repsonseMessages: { [key: number] : (result: Result) => string } = {
-        [Outcome.success]: (r) => `Succesfully deployed ${r.totalCount} datapack(s)`,
+    private responseMessages: { [key: number] : (result: Result) => string } = {
+        [Outcome.success]: (r) => `Successfully deployed ${r.totalCount} datapack(s)`,
         [Outcome.partial]: (r: Result) => {
             if (r.errors.length > 0) {
                 return `Unable to deploy all selected datapack(s); deployed ${r.success.length} datapacks with ${r.errors.length} errors`;
@@ -28,7 +28,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
     private savingDocumentsList : Set<string>; 
 
     constructor(name : string) {
-        super(name, args => this.deployDatapacks(args[1] || [args[0] || this.currentOpenDocument]));
+        super(name, args => this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
     }
 
     /**
@@ -52,10 +52,10 @@ export default class DeployDatapackCommand extends DatapackCommand {
         return forEachAsyncParallel(openDocuments, doc => doc.save().then(_ => this.savingDocumentsList.delete(doc.uri.fsPath)));
     }
 
-    protected async deployDatapacks(selectedFiles: vscode.Uri[]) {
+    protected async deployDatapacks(selectedFiles: vscode.Uri[], reportErrors: boolean = true) {
         try {
             // prepare input
-            const datapackHeaders = await this.resolveDatapackHeaders(selectedFiles);
+            const datapackHeaders = await this.resolveDatapackHeaders(selectedFiles, reportErrors);
             if(datapackHeaders.length == 0) {
                 // no datapack files found, lets pretent this didn't happen
                 return;
@@ -68,14 +68,14 @@ export default class DeployDatapackCommand extends DatapackCommand {
             try {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                const mainfestEntries = datapackHeaders.map(h => this.datapackService.getDatapackManifestKey(h));
-                var result = await this.datapackService.deploy(mainfestEntries);
+                const manifestEntries = datapackHeaders.map(h => this.datapackService.getDatapackManifestKey(h));
+                var result = await this.datapackService.deploy(manifestEntries);
             } finally {
                 progressToken.complete();
             }
 
             // report UI progress back
-            let message = this.repsonseMessages[result.outcome](result);
+            let message = this.responseMessages[result.outcome](result);
             switch(result.outcome) {
                 case Outcome.success: await vscode.window.showInformationMessage(message); break;
                 case Outcome.partial: await helper.showWarningWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;

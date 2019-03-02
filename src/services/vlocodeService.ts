@@ -1,56 +1,72 @@
 import * as vscode from 'vscode';
-import * as vlocity from 'vlocity';
-import * as path from 'path';
-import * as process from 'process';
+import * as jsforce from 'jsforce';
 import * as constants from '../constants';
 import VlocodeConfiguration from '../models/vlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
-import { default as serviceProvider } from 'serviceContainer';
-import { Logger, LogProvider } from '../loggers';
-import CommandRouter from './commandRouter';
+import { Logger, LogManager } from '../loggers';
 import { VlocodeCommand } from 'commands';
 import ServiceContainer from 'serviceContainer';
+import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
+import SfdxConnectionProvider from 'connection/sfdxConnectionProvider';
 
-export default class VlocodeService implements vscode.Disposable {  
+export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {  
+
+    // Privates
+    private disposables: {dispose() : any}[] = [];
+    private statusBar: vscode.StatusBarItem;
+    private connector: SfdxConnectionProvider;
+
+    // Properties
+    private _datapackService: VlocityDatapackService;
+    get datapackService(): VlocityDatapackService {
+        return this._datapackService || (this._datapackService = new VlocityDatapackService(this.container, this.config));
+    }
 
     private _outputChannel: vscode.OutputChannel;
-    private _datapackService: VlocityDatapackService;
-    private _disposables: {dispose() : any}[] = [];
-    private _statusBar: vscode.StatusBarItem;
+    get outputChannel(): vscode.OutputChannel {
+        return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(constants.OUTPUT_CHANNEL_NAME));
+    }
 
-    constructor(private readonly container: ServiceContainer, private readonly context: vscode.ExtensionContext, public readonly config: VlocodeConfiguration) {
-        this.updateStatusBar(config);
-        this.registerDisposable(config.watch(c => {
-            if (this._datapackService) {
-                // re-create _datapackService class when the config changes
-                this._datapackService.dispose();
-                this._datapackService = null;
-            }
-            this.updateStatusBar(c);
-        }));
+    protected get logger() : Logger {
+        return LogManager.get(VlocodeService);
+    }
+
+    // Ctor + Methods
+    constructor(
+        private readonly container: ServiceContainer, 
+        private readonly context: vscode.ExtensionContext, 
+        public readonly config: VlocodeConfiguration) {
+        this.registerDisposable(this.createConfigWatcher());
         context.subscriptions.push(this);
     }
 
-    public showStatus(text: string, command: VlocodeCommand | string = undefined) : void {
-        if (!this._statusBar) {
-            this._statusBar = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10));
-        }
-        this._statusBar.command = command;
-        this._statusBar.text = text;
-        this._statusBar.show();
-    }
-
-    public hideStatus() : void {
-        this._statusBar.hide();
-    }
-
     public dispose() {
-        this._disposables.forEach(disposable => disposable.dispose());
-        this._disposables = [];
+        this.disposables.forEach(disposable => disposable.dispose());
+        this.disposables = [];
         if (this._datapackService) {
             this._datapackService.dispose();
             this._datapackService = null;
         }
+    }
+
+    public showStatus(text: string, command: VlocodeCommand | string = undefined) : void {
+        if (!this.statusBar) {
+            this.statusBar = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10));
+        }
+        this.statusBar.command = command;
+        this.statusBar.text = text;
+        this.statusBar.show();
+    }
+
+    public hideStatus() : void {
+        this.statusBar.hide();
+    }
+    
+    public getJsForceConnection() : Promise<jsforce.Connection> {
+        if (this.connector == null) {
+            this.connector = new SfdxConnectionProvider(this.config.sfdxUsername);
+        }
+        return this.connector.getJsForceConnection();
     }
 
     public getContext(): vscode.ExtensionContext {
@@ -71,45 +87,46 @@ export default class VlocodeService implements vscode.Disposable {
         this.outputChannel.show(false);
     }
 
-    protected get logger() : Logger {
-        return LogProvider.get(VlocodeService);
-    }
-
     public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {
-        this._disposables.push(disposable);
+        this.disposables.push(disposable);
         return disposable;
     }
 
-    public validateSalesforce() : string {
+    public validateSalesforceConnectivity() : string {
         if (!this.datapackService.isVlocityPackageInstalled()) {
             return 'The Vlocity managed package is not installed on your Salesforce organization; select a different Salesforce organization or install the Vlocity managed package.';
         }
+    }
+
+    private createConfigWatcher() : vscode.Disposable {
+        this.updateStatusBar(this.config);
+        return this.config.watch(c => {
+            if (this._datapackService) {
+                // re-create _datapackService class when the config changes
+                this._datapackService.dispose();
+                this._datapackService = null;
+            }
+            this.connector = null;
+            this.updateStatusBar(c);
+        });
     }
 
     public validateConfig() : string {
         if (this.config.sfdxUsername) {
             // check for username and password
             if (this.config.username || this.config.password) {
-                vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the regular salesforce username and password.');
+                vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the Salesforce username or password.');
             }
         } else {
             if (!!this.config.username && !!this.config.password) {
-                return 'Invalid condiguration - Please configure either a SFDX username or Salesforce login credential in order to use Vlocode.';
+                return 'Invalid configuration - No salesforce username or SFDX alias/credential set';
             } else if (this.config.instanceUrl) {
-                return 'Invalid condiguration - Please configure the instance url for Salesforce; or use an SFDX authorized username.';
+                return 'Invalid configuration - Set the instance url config for Salesforce -or- use an SFDX alias/credential';
             }
         }
         if (!this.config.projectPath) {
-            return 'Invalid condiguration - Please configure the projectPath to point to the folder containing Vlocity datapack sources.';
+            return 'Invalid configuration - Set projectPath config to the folder containing Vlocity datapacks';
         }
-    }
-
-    get datapackService(): VlocityDatapackService {
-        return this._datapackService || (this._datapackService = new VlocityDatapackService(this.container, this.config));
-    }
-
-    get outputChannel(): vscode.OutputChannel {
-        return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(constants.OUTPUT_CHANNEL_NAME));
     }
 }
 
