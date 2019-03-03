@@ -13,6 +13,14 @@ export abstract class DatapackCommand extends CommandBase {
         return this.vloService.datapackService;
     }
 
+    public async validate() : Promise<void> {
+        const validaionMessage = this.vloService.validateWorkspaceFolder() ||
+                                 await this.vloService.validateSalesforceConnectivity();
+        if (validaionMessage) {
+            throw validaionMessage;
+        }
+    }
+
     protected async resolveDatapackHeaders(files: vscode.Uri[], reportErrors: boolean = true) : Promise<vscode.Uri[]> {
         const results = await Promise.all(files.map(async (file) => {
             return {

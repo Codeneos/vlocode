@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import helper from './commandHelper';
 import DatapackBuilder from 'services/datapackBuilder';
 import { VlocityDatapackRelationshipType } from 'models/datapackCollection';
 import { writeFile } from 'fs';
@@ -38,7 +37,7 @@ export default class BuildDatapackCommand extends DatapackCommand {
         } catch(err) {
             progressToken.complete();
             this.logger.error(`Dataopack build failed with error: ${err.message || err}`);
-            await helper.showErrorWithRetry(`Failed to build the selected datapack(s); see the log for more details`, 
+            await this.showErrorWithRetry(`Failed to build the selected datapack(s); see the log for more details`, 
                     () => this.buildDatapacks(selectedFiles));
         }
     }

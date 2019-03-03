@@ -234,11 +234,11 @@
         "clean": "rimraf ./out",
         "test": "node ./node_modules/vscode/bin/test",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "modclean": "modclean -r -n default:safe",
+        "modclean": "node ./build/removeFiles . .vscodeignore",
         "package": "vsce package",
         "publish": "vsce publish",
         "vscode:prepublish": "npm run clean && npm run build",
-        "prepare": "patch-package"
+        "prepare": "patch-package && npm run modclean"
     },
     "devDependencies": {
         "@types/angular": "^1.6.52",
@@ -250,6 +250,7 @@
         "@types/sinon": "^5.0.7",
         "ajv": "^6.6.2",
         "angular": "^1.7.5",
+        "angular-expressions": "^1.0.0",
         "awesome-typescript-loader": "^5.2.1",
         "chai": "^4.2.0",
         "cpx": "^1.5.0",

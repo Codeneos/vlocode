@@ -4,6 +4,7 @@
 export interface Command {
     name: string;
     execute(... args: any[]): void;
+    validate?(... args: any[]): void;
 }
 
 /**

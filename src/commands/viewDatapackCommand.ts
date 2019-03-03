@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import VlocityDatapackService from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import helper from './commandHelper';
 import datapackViewTemplate from '../views/datapack.view.html';
 import webviewMessage from '../models/webviewMessage';
 import VlocodeService from '../services/vlocodeService';

@@ -26,13 +26,9 @@ class LazyCommand implements Command {
 }
 
 class CommandExecutor implements Command {
-
     constructor(
-        private command: Command, 
-        private readonly messageItemsConfigError = [
-            { title: 'Select org', command: VlocodeCommand.selectOrg },
-            { title: 'Open settings', command: 'workbench.action.openWorkspaceSettings' }
-        ]) { }    
+        private command: Command 
+    ) { }    
 
     public get name() : string {
         return this.command.name;
@@ -46,28 +42,17 @@ class CommandExecutor implements Command {
         return container.get(VlocodeService);
     }
 
-    public async execute(... args: any[]) : Promise<void> {
-        let configValidation = this.vlocode.validateConfig() || 
-                               this.vlocode.validateSalesforceConnectivity();
-                               
-        if (configValidation) {
-            this.logger.error(`${this.name}: ${configValidation}`);
-            return vscode.window.showErrorMessage(configValidation, { modal: false }, ...this.messageItemsConfigError).then(outcome => {
-                if (outcome && outcome.command){
-                    vscode.commands.executeCommand(outcome.command);
-                }
-            });
-        }
-
+    public async execute(... args: any[]) : Promise<void> {        
         this.logger.verbose(`Invoke command ${this.name}`);
         try {
             await this.command.execute.apply(this.command, args);
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {
-            this.logger.error(`Command execution resulted in error: ${err}`);
+            this.logger.error(`Command error: ${err}`);
             if (isError(err)) {
                 this.logger.error(err.stack);                
             }
+            vscode.window.showErrorMessage(`${this.name}: ${err}`);
         }
     }
 }
@@ -99,8 +84,9 @@ export default class CommandRouter implements CommandMap {
     }
 
     public execute(commandName : VlocodeCommand | string, ...args: any[]) : Thenable<any> {
-        if (this[commandName]) {
-            return this[commandName].execute(...args);
+        const command : Command = this[commandName];
+        if (command) {
+            return Promise.resolve(command.validate(...args)).then(_ => command.execute(...args));
         }
         return vscode.commands.executeCommand(commandName, ...args);
     }

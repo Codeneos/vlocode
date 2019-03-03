@@ -30,7 +30,14 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     constructor(name : string) {
-        super(name, args => this.selectOrg());
+        super(name, _ => this.selectOrg());
+    }
+
+    public validate() : void {
+        const validaionMessage = this.vloService.validateWorkspaceFolder();
+        if (validaionMessage) {
+            throw validaionMessage;
+        }
     }
 
     protected async getAuthorizedOrgs() : Promise<(vscode.QuickPickItem & sfdx.SalesforceOrgDetails)[]> {
