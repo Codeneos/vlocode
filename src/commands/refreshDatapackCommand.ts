@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
 
-import VlocityDatapackService, * as vds from '../services/vlocityDatapackService';
 import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import helper from './commandHelper';
 
 export default class RefreshDatapackCommand extends DatapackCommand {
     
@@ -41,11 +39,11 @@ export default class RefreshDatapackCommand extends DatapackCommand {
             let message = this.responseMessages[result.outcome](result);
             switch(result.outcome) {
                 case Outcome.success: await vscode.window.showInformationMessage(message); break;
-                case Outcome.partial: await helper.showWarningWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
-                case Outcome.error: await helper.showErrorWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
+                case Outcome.partial: await this.showWarningWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
+                case Outcome.error: await this.showErrorWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
             }
         } catch (err) {
-            await helper.showErrorWithRetry(`Error: ${err}`, () => this.refreshDatapacks(selectedFiles));
+            await this.showErrorWithRetry(`Error: ${err}`, () => this.refreshDatapacks(selectedFiles));
         }
     }
 }

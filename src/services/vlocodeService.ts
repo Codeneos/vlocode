@@ -59,7 +59,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     public hideStatus() : void {
-        this.statusBar.hide();
+        if (this.statusBar) {
+            this.statusBar.hide();
+        }
     }
     
     public getJsForceConnection() : Promise<jsforce.Connection> {
@@ -74,11 +76,11 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     private updateStatusBar(config: VlocodeConfiguration) {
-        if (!config.sfdxUsername && !config.username) {
-            return this.showStatus(`$(gear) Vlocode: select org`, VlocodeCommand.selectOrg);
+        if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length == 0) {
+            return this.hideStatus();
         }
-        if (!config.projectPath) {
-            return this.showStatus(`$(file-directory) Vlocode: select project path`);
+        if (!config.sfdxUsername && !config.username) {
+            return this.showStatus(`$(gear) Select Vlocity org`, VlocodeCommand.selectOrg);
         }
         return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername || config.username}`, VlocodeCommand.selectOrg);
     }
@@ -90,12 +92,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {
         this.disposables.push(disposable);
         return disposable;
-    }
-
-    public validateSalesforceConnectivity() : string {
-        if (!this.datapackService.isVlocityPackageInstalled()) {
-            return 'The Vlocity managed package is not installed on your Salesforce organization; select a different Salesforce organization or install the Vlocity managed package.';
-        }
     }
 
     private createConfigWatcher() : vscode.Disposable {
@@ -111,22 +107,33 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         });
     }
 
-    public validateConfig() : string {
-        if (this.config.sfdxUsername) {
-            // check for username and password
-            if (this.config.username || this.config.password) {
-                vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the Salesforce username or password.');
-            }
-        } else {
-            if (!!this.config.username && !!this.config.password) {
-                return 'Invalid configuration - No salesforce username or SFDX alias/credential set';
-            } else if (this.config.instanceUrl) {
-                return 'Invalid configuration - Set the instance url config for Salesforce -or- use an SFDX alias/credential';
-            }
+    public async validateSalesforceConnectivity() : Promise<string | undefined> {
+        if (!this.config.sfdxUsername) {
+            return 'Select a Salesforce instance for this workspace in order to use Vlocode operations.';            
         }
-        if (!this.config.projectPath) {
-            return 'Invalid configuration - Set projectPath config to the folder containing Vlocity datapacks';
+        if (!await this.datapackService.isVlocityPackageInstalled()) {
+            return 'The Vlocity managed package is not installed on your Salesforce organization; select a different Salesforce organization or install the Vlocity.';
         }
+        if (this.config.username || this.config.password) {
+            vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the Salesforce username or password.');
+        }
+    }
+
+    public validateWorkspaceFolder() : string | undefined {
+        if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length == 0) {
+            return 'No workspace folders detected. Open at least one folder in the current workspace to use Vlocode.';
+        }
+    }
+
+    public async validateAll(throwException: boolean) : Promise<string | void> {
+        const validationResult = this.validateWorkspaceFolder() || 
+								 await this.validateSalesforceConnectivity();
+		if (validationResult) {
+            if (throwException) {
+                throw Error(validationResult);
+            }
+			return validationResult;
+		}
     }
 }
 

@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as expressions from "angular-expressions";
 
 export interface ExecpResult {
     stdout: Buffer;
@@ -210,14 +211,23 @@ export function matchAll(s: string, r: RegExp) : RegExpMatchArray[] {
 }
 
 /**
- * Format string using the specified context values; format: 'Bar ${foo}', with context values {foo: 'bar'} results in 'Bar bar'
- * @param stringToFormat string to format
+ * Evaluates an angular expression on the specified scope.
+ * @param expr Format string
  * @param contextValues context values supplied
  */
-export function formatString(stringToFormat: string, contextValues: {}) {
-    return stringToFormat.replace(/\${(.+?(.*?))}/gm, match => {
+export function evalExpr(expr: string, contextValues: any) : string {
+    return expressions.compile(expr)(contextValues);
+}
+
+/**
+ * Format string using the specified context values; format: 'Bar ${foo}', with context values {foo: 'bar'} results in 'Bar bar'
+ * @param stringFormat Format string
+ * @param contextValues context values supplied
+ */
+export function formatString(stringFormat: string, contextValues: {}) : string {
+    return stringFormat.replace(/\${(.+?(.*?))}/gm, match => {
         const key = /\${(.+?(.*?))}/g.exec(match)[1]; 
-        return contextValues[key] || match;
+        return contextValues[key] === undefined ? match : contextValues[key];
     });
 }
 

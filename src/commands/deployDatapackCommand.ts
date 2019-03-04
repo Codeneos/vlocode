@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import VlocityDatapackService from '../services/vlocityDatapackService';
 import { DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import helper from './commandHelper';
 import { forEachAsyncParallel, readdirAsync } from '../util';
 import * as path from 'path';
 import DatapackUtil from 'datapackUtil';
@@ -78,13 +77,13 @@ export default class DeployDatapackCommand extends DatapackCommand {
             let message = this.responseMessages[result.outcome](result);
             switch(result.outcome) {
                 case Outcome.success: await vscode.window.showInformationMessage(message); break;
-                case Outcome.partial: await helper.showWarningWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;
-                case Outcome.error: await helper.showErrorWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;
+                case Outcome.partial: await this.showWarningWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;
+                case Outcome.error: await this.showErrorWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;
             }
 
         } catch (err) {
             this.logger.error(err);
-            await helper.showErrorWithRetry(`Error while deploying datapack(s), see the log for details...`, () => this.deployDatapacks(selectedFiles));
+            await this.showErrorWithRetry(`Error while deploying datapack(s), see the log for details...`, () => this.deployDatapacks(selectedFiles));
         }
     }
 }

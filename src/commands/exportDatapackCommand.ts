@@ -5,7 +5,7 @@ import { DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, Obj
 import { DatapackCommand } from './datapackCommand';
 import SObjectRecord from '../models/sobjectRecord';
 import DatapackUtil from 'datapackUtil';
-import { groupBy, formatString } from '../util';
+import { groupBy, evalExpr } from '../util';
 import { createRecordProxy } from 'salesforceUtil';
 
 import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
@@ -130,12 +130,12 @@ export default class ExportDatapackCommand extends DatapackCommand {
         const queryDef = exportQueryDefinitions[datapackType];
 
         // grouped records support
-        const groupedRecords = groupBy(records, r => formatString(queryDef.groupKey, r));
+        const groupedRecords = groupBy(records, r => evalExpr(queryDef.groupKey, r));
         const groupOptions = Object.keys(groupedRecords).map(key => { 
             const groupRecord = createRecordProxy({ count: groupedRecords[key].length, ...groupedRecords[key][0]});
             return { 
-                label: formatString(queryDef.groupName, groupRecord),
-                description: queryDef.groupDescription ? formatString(queryDef.groupDescription, groupRecord) : `version(s) ${groupedRecords[key].length}`,
+                label: evalExpr(queryDef.groupName, groupRecord),
+                description: queryDef.groupDescription ? evalExpr(queryDef.groupDescription, groupRecord) : `version(s) ${groupedRecords[key].length}`,
                 records: groupedRecords[key]
             };
         }).sort((a,b) => a.label.localeCompare(b.label));
@@ -156,7 +156,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         // Select object        
         let objectOptions =  records.map(r => { 
             return { 
-                label: queryDef.name ? formatString(queryDef.name, r) : DatapackUtil.getLabel(r),
+                label: queryDef.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
                 description: r.attributes.url,
                 record: r
             };
@@ -167,7 +167,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             const latestVersion = objectOptions[0].record;
             objectOptions.unshift({
                 label: 'Latest',
-                description: queryDef.name ? formatString(queryDef.name, latestVersion) : DatapackUtil.getLabel(latestVersion),
+                description: queryDef.name ? evalExpr(queryDef.name, latestVersion) : DatapackUtil.getLabel(latestVersion),
                 record: latestVersion
             });
 
@@ -176,7 +176,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             if (activeVersion) {
                 objectOptions.unshift({
                     label: 'Active',
-                    description: queryDef.name ? formatString(queryDef.name, activeVersion) : DatapackUtil.getLabel(activeVersion),
+                    description: queryDef.name ? evalExpr(queryDef.name, activeVersion) : DatapackUtil.getLabel(activeVersion),
                     record: activeVersion
                 });
             }

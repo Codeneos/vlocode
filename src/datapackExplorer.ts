@@ -10,9 +10,10 @@ import ExportDatapackCommand from './commands/exportDatapackCommand';
 import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
 import DatapackUtil from 'datapackUtil';
-import { groupBy, formatString } from './util';
+import { groupBy, evalExpr } from './util';
 
 import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import { createRecordProxy } from 'salesforceUtil';
 
 export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 	
@@ -59,6 +60,8 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 	}
 
 	public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
+		await this.vlocode.validateAll(true);
+		
 		if (!node) {
 			return Object.keys(exportQueryDefinitions).map(
 				dataPackType => new DatapackCategoryNode(this, dataPackType)
@@ -93,16 +96,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 		const results = await connection.queryAll<SObjectRecord>(query);			
 		this.logger.log(`Found ${results.totalSize} exportable datapacks form type ${datapackType}`);
 
-		return results.totalSize == 0 ? null : results.records.map(this.createRecordProxy, { vlocityNamespace: this.vlocityNamespace });
-	}
-
-	private createRecordProxy(record: SObjectRecord) : SObjectRecord {
-		return new Proxy(record, {
-			get: (target, name) => {
-				return target[name.toString().replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)] || 
-				       target[this.vlocityNamespace + '__' + name.toString()];
-			}
-		});
+		return results.totalSize == 0 ? null : results.records.map(createRecordProxy);
 	}
 
 	private getQuery(datapackType: string) {
@@ -111,7 +105,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 	}
 
 	private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
-		const groupedRecords = groupBy(records, r => formatString(groupByKey, r));
+		const groupedRecords = groupBy(records, r => evalExpr(groupByKey, r));
 		return Object.keys(groupedRecords).map(
 			key => new DatapackObjectGroupNode(this, groupedRecords[key], datapackType)
 		);
@@ -204,13 +198,13 @@ class DatapackObjectGroupNode extends DatapackNode  {
 	}
 
 	protected getItemLabel() {
-		return formatString(this.getLabelFormat(), this.records[0]);
+		return evalExpr(this.getLabelFormat(), this.records[0]);
 	}
 	
 	protected getItemDescription() {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];
 		if (nodeConfig && nodeConfig.groupDescription) {
-			return formatString(nodeConfig.groupDescription, { ...this.records[0], count: this.records.length });
+			return evalExpr(nodeConfig.groupDescription, { ...this.records[0], count: this.records.length });
 		}
 		return `${this.records.length} version(s)`;
 	}
@@ -218,9 +212,9 @@ class DatapackObjectGroupNode extends DatapackNode  {
 	private getLabelFormat() : string {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];
 		if (nodeConfig && nodeConfig.groupName) {
-			return formatString(nodeConfig.groupName, { ...this.records[0], count: this.records.length });
+			return nodeConfig.groupName;
 		}
-		return '<NO_GROUP_NAME> ${Id}';
+		return '\'<NO_GROUP_NAME>\' + Id';
 	}
 
 	protected getItemTooltip() {
@@ -244,7 +238,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 	protected getItemLabel() {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];		
 		if (nodeConfig && nodeConfig.name) {
-			return formatString(nodeConfig.name, this.record);
+			return evalExpr(nodeConfig.name, this.record);
 		}
 		return  DatapackUtil.getLabel(this.record);
 	}
@@ -252,7 +246,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 	protected getItemDescription() {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];		
 		if (nodeConfig && nodeConfig.description) {
-			return formatString(nodeConfig.description, this.record);
+			return evalExpr(nodeConfig.description, this.record);
 		}
 		return this.id;
 	}

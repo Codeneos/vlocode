@@ -1,5 +1,7 @@
 <img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/logo1.png" height="160">
 
+[![Build Status](https://travis-ci.org/Codeneos/vlocode.svg?branch=master)](https://travis-ci.org/Codeneos/vlocode)
+
 # Vlocode: Vlocity development tools for Visual Studio Code
 
 This extension provides functionality for deploying, extracting and refreshing Vlocity datapacks from with Visual Studio Code.

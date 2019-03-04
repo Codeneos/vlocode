@@ -32,6 +32,20 @@ export class ProgressToken {
     }
 }
 
+type ShowMessageFunction<T> = (msg : String, options: vscode.MessageOptions, ...args: vscode.MessageItem[]) => Thenable<T>;
+async function showMsgWithRetry<T>(
+    msgFunc : ShowMessageFunction<T>, errorMsg : string, retryCallback: (...args: any[]) => Promise<T>, 
+    thisArg?: any, args? : any[]) : Promise<T> {            
+    const value = await msgFunc(errorMsg, { modal: false }, { title: 'Retry' });
+    if (value) {
+        if (args !== undefined) {
+            return retryCallback.apply(thisArg || null, args || []);
+        }
+        return retryCallback();
+    }
+    return value;
+}
+
 export abstract class CommandBase implements Command {
 
     constructor(
@@ -41,6 +55,9 @@ export abstract class CommandBase implements Command {
 
     public execute(... args: any[]): void {
         return this.executor(args);
+    }
+
+    public validate(... args: any[]): void {
     }
 
     protected get currentOpenDocument() : vscode.Uri | undefined {
@@ -56,6 +73,14 @@ export abstract class CommandBase implements Command {
                 }));
         });        
         return await progressPromise; 
+    }
+
+    protected showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
+        return showMsgWithRetry<T>(vscode.window.showErrorMessage, errorMsg, retryCallback, thisArg, args);
+    }
+    
+    protected showWarningWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
+        return showMsgWithRetry<T>(vscode.window.showWarningMessage, errorMsg, retryCallback, thisArg, args);
     }
 
     protected showProgress<T>(title: string, task: Promise<T>) : Thenable<T> {

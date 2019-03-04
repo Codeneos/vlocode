@@ -27,5 +27,6 @@ const prodModeConfig = {
 
 module.exports = [
     merge(common.extestion, prodModeConfig),
+    merge(common.tests, prodModeConfig),
     merge(common.views, prodModeConfig)
 ];

@@ -7,7 +7,7 @@ import 'mocha';
 
 import * as vscode from 'vscode';
 import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
-import { sanitizePath, formatString, groupBy } from '../util';
+import { sanitizePath, formatString, groupBy, evalExpr } from '../util';
 
 declare var VlocityUtils: any;
 describe('util', () => {   
@@ -31,6 +31,15 @@ describe('util', () => {
         });
         it("should not replace values not found in context array", function() { 
             expect(formatString('Foo ${bar} foo', { foo: 'foo'})).equals('Foo ${bar} foo');
+        });
+    });
+
+    describe('#evalExpr', () => { 
+        it("simple expression should return evaluated result as string", function() {
+            expect(evalExpr('\'Foo \' + bar', { bar: 'bar'})).equals('Foo bar');
+        });
+        it("complex expression should return evaluated result as string", function() { 
+            expect(evalExpr('\'Foo \' + (i == 0 ? (bar || foo) : \'bla\')', { i: 0, foo: 'bar'})).equals('Foo bar');
         });
     });
 
