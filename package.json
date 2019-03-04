@@ -261,6 +261,7 @@
         "mocha-html-reporter": "0.0.1",
         "mocha-junit-reporter": "^1.18.0",
         "mocha-simple-html-reporter": "^1.1.0",
+        "mocha-sonarqube-reporter": "^1.0.1",
         "mock-fs": "^4.7.0",
         "modclean": "^3.0.0-beta.1",
         "moment": "^2.23.0",

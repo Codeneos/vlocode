@@ -17,9 +17,9 @@ import * as testRunner from 'vscode/lib/testrunner';
 const testRunnerConfig = {
     ui: 'bdd',
     useColors: true,
-    reporter: process.env.TEST_RESULTS_FILE ? 'mocha-junit-reporter' : null,
+    reporter: process.env.TEST_RESULTS_FILE ? 'mocha-sonarqube-reporter' : null,
     reporterOptions: {
-        mochaFile: process.env.TEST_RESULTS_FILE
+        output: process.env.TEST_RESULTS_FILE
     }
 };
 
