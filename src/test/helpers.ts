@@ -1,4 +1,5 @@
 import * as sinon from 'sinon';
+import * as path from 'path';
 
 /**
  * Helper function to mock class; uses sinon
@@ -15,3 +16,14 @@ import * as sinon from 'sinon';
       });
     };
   }*/
+
+/**
+ * Makes cross platform compatible path string for testing using MockFS
+ * @param p Path to make 
+ */
+export function makePath(p : string) {    
+    if (path.sep == path.win32.sep) {
+        return p.replace(/^\//i, 'c:\\').replace(/\//g, '\\');
+    }
+    return p;
+}

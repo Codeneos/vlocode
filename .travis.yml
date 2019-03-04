@@ -20,8 +20,6 @@ install:
   - npm install
 
 script:
-  - npm run build:debug
-  - npm test
-  - npm run clean
   - npm run build
+  - npm test
   - npm run package
