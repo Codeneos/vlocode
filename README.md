@@ -1,6 +1,12 @@
 <img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/logo1.png" height="160">
 
 [![Build Status](https://travis-ci.org/Codeneos/vlocode.svg?branch=master)](https://travis-ci.org/Codeneos/vlocode)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=curlybracket.vlocode&metric=alert_status)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=curlybracket.vlocode&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=curlybracket.vlocode&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=curlybracket.vlocode&metric=security_rating)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=curlybracket.vlocode&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=curlybracket.vlocode&metric=sqale_index)](https://sonarcloud.io/dashboard?id=curlybracket.vlocode)
 
 # Vlocode: Vlocity development tools for Visual Studio Code
 
