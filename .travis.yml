@@ -8,9 +8,13 @@ addons:
   apt:
     packages:
       - libsecret-1-dev
+  sonarcloud:
+    organization: $SONAR_ORG
+    token:
+      secure: $SONAR_TOKEN
 
-# env:
-#   - TEST_RESULTS_FILE=test-results.xml
+env:
+  - TEST_RESULTS_FILE=test-results.xml
 
 before_install:
   - export DISPLAY=:99.0
@@ -20,6 +24,8 @@ install:
   - npm install
 
 script:
-  - npm run build
-  - npm test
+  - npm run build:debug
+  - npm test  
+  - npm run lint -- -o tslint-report.json --format json
+  - sonar-scanner
   - npm run package
