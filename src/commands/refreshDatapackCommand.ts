@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 
 import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
+import { getExportProjectFolder } from 'datapackUtil';
+import { groupBy, mapAsyncParallel } from '../util';
 
 export default class RefreshDatapackCommand extends DatapackCommand {
     
@@ -25,25 +27,33 @@ export default class RefreshDatapackCommand extends DatapackCommand {
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
+        // call
+        let progressToken = await this.startProgress('Refreshing selected datapacks');
+        let result : Result;
         try {
-            // call
-            let progressToken = await this.startProgress('Refreshing Vlocity datapacks...');
-            try {
-                var datapacks = await this.loadDatapacks(selectedFiles);
-                var result = await this.datapackService.export(datapacks, 0);
-            } finally {
-                progressToken.complete();
-            }
+            const datapacksByproject = groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder);
+            const results = await mapAsyncParallel(Object.keys(datapacksByproject),
+                projectFolder => this.datapackService.export(datapacksByproject[projectFolder], projectFolder, 0)
+            );
+            result = results.reduce((sum, added) => {
+                return {
+                    errors: [...sum.errors, ...added.errors], 
+                    success: [...sum.success, ...added.success],  
+                    totalCount: sum.totalCount + added.totalCount,
+                    missingCount: sum.missingCount + added.missingCount,
+                    outcome: added.outcome > sum.outcome ? added.outcome : sum.outcome
+                }
+            }, results.shift());
+        } finally {
+            progressToken.complete();
+        }
 
-            // report UI progress back
-            let message = this.responseMessages[result.outcome](result);
-            switch(result.outcome) {
-                case Outcome.success: await vscode.window.showInformationMessage(message); break;
-                case Outcome.partial: await this.showWarningWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
-                case Outcome.error: await this.showErrorWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
-            }
-        } catch (err) {
-            await this.showErrorWithRetry(`Error: ${err}`, () => this.refreshDatapacks(selectedFiles));
+        // report UI progress back
+        let message = this.responseMessages[result.outcome](result);
+        switch(result.outcome) {
+            case Outcome.success: await vscode.window.showInformationMessage(message); break;
+            case Outcome.partial: await this.showWarningWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
+            case Outcome.error: await this.showErrorWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;
         }
     }
 }

@@ -247,10 +247,10 @@ export function formatString(stringFormat: string, contextValues: {}) : string {
  * @param array Array to group
  * @param predicate function to get the group by key
  */
-export function groupBy<T>(array: T[], predicate: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
+export function groupBy<T>(array: T[], keySelector: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
     return array.reduce(
         (arr, item) => {
-            const key = predicate(item);
+            const key = keySelector(item);
             arr[key] = arr[key] || [];
             arr[key].push(item);
             return arr;

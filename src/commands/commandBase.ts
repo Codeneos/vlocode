@@ -27,7 +27,7 @@ export class ProgressToken {
 
     public report(message: string) : void {
         if (!this.resolved) {
-        this.progress.report({ message: message });
+            this.progress.report({ message: message });
         }
     }
 }

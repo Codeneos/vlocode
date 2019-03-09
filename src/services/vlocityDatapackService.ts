@@ -18,7 +18,7 @@ import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
 import SObjectRecord from 'models/sobjectRecord';
 import { createRecordProxy } from 'salesforceUtil';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
-import { getDatapackManifestKey } from 'datapackUtil';
+import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 
 declare var VlocityUtils: any;
 
@@ -144,12 +144,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         this.logger.log(`Loading datapack: ${file.fsPath}`);
         let mainfestEntry = getDatapackManifestKey(file.fsPath);
-        return new VlocityDatapack(file.fsPath, mainfestEntry.datapackType, mainfestEntry.key, await getDocumentBodyAsString(file));
+        return new VlocityDatapack(
+            file.fsPath, 
+            mainfestEntry.datapackType, 
+            mainfestEntry.key, 
+            getExportProjectFolder(file.fsPath), 
+            await getDocumentBodyAsString(file));
     }
 
     public async deploy(manifest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
-        let result = await this.runCommand('Deploy',{
-            manifest: this.createDeployManifest(manifest),
+        let result = await this.runCommand('Deploy', {
+            manifest: [],
+            currentStatus: Object.values(manifest).reduce((map, key) =>Object.assign(map, { [key.key]: 'Ready' }), {}),
             activate: this.config.autoActivate,
             delete: true,
             compileOnBuild: this.config.compileOnBuild        
@@ -159,11 +165,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
         });
     }
 
-    public async export(entries: ObjectEntry[], maxDepth: number = 0) : Promise<DatapackCommandResult>  {
+    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackCommandResult>  {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportMainfest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
         let result = await this.runCommand('Export',{
             queries: exportQueries,
+            projectPath: exportFolder,
             fullManifest: exportMainfest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth
@@ -231,7 +238,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             // collect and create job optipns
             const localOptions = { projectPath: this.config.projectPath || '.' };
             const customOptions = await this.getCustomJobOptions();
-            const jobOptions = Object.assign({}, customOptions, this.config, jobInfo, localOptions);
+            const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
 
             // clean-up build tools left overs from the last invocation
             this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
@@ -243,11 +250,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
                     (reason) => {
                         reject(reason);
                     }
-                );
+                ).then((e) => {
+                    return jobOptions.currentStatus;
+                });
             } catch(err) {
                 this.logger.error(err);
             }
-
         });
     }
 
