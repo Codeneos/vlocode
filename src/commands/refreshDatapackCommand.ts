@@ -28,7 +28,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
         // call
-        let progressToken = await this.startProgress('Refreshing selected datapacks');
+        const progressToken = await this.startProgress('Refreshing selected datapacks');
         let result : Result;
         try {
             const datapacksByproject = groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder);
@@ -42,7 +42,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
                     totalCount: sum.totalCount + added.totalCount,
                     missingCount: sum.missingCount + added.missingCount,
                     outcome: added.outcome > sum.outcome ? added.outcome : sum.outcome
-                }
+                };
             }, results.shift());
         } finally {
             progressToken.complete();
