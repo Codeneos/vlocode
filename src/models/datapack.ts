@@ -20,6 +20,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         public readonly headerFile: string, 
         public readonly datapackType: string, 
         public readonly key: string, 
+        public readonly projectFolder: string,
         public readonly data?: any) {
         if (isBuffer(data)) {
             data = data.toString();

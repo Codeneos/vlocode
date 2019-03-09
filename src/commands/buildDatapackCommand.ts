@@ -28,7 +28,7 @@ export default class BuildDatapackCommand extends DatapackCommand {
         // prepare input
         let progressToken = await this.startProgress('Building Vlocity datapacks from expanded source...');
         try {
-            var datapacks = await this.resolveDatapacksForFiles(selectedFiles);
+            var datapacks = await this.loadDatapacks(selectedFiles);
             var datapackRecs = await Promise.all(datapacks.map(datapack => this.datapackBuilder.buildImportRecord(datapack, VlocityDatapackRelationshipType.primary )));
             var collection = await this.datapackBuilder.buildImportCollection(datapackRecs);
             await writeFileAsync( 'test.json', JSON.stringify(collection, null, '    ') );

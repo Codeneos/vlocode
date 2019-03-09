@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as constants from './constants';
 import ServiceConatiner from 'serviceContainer';
@@ -10,8 +10,54 @@ import ExportDatapackCommand from './commands/exportDatapackCommand';
 import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { removeNamespacePrefix } from 'salesforceUtil';
+import { mapAsyncParallel, filterAsyncParallel } from './util';
+
+/**
+ * Gets a list of datapack headers 
+ * @param file Path to the file to check
+ */
+export async function getDatapackHeaders(...paths: string[]) : Promise<string[]> {
+    const folderSet = await mapAsyncParallel(paths, async pathStr => {
+        const stat = await fs.stat(pathStr);
+        if (!stat.isDirectory()) {
+            return path.dirname(pathStr);
+        }
+        return pathStr;
+    });
+
+    const results = await mapAsyncParallel(folderSet, async pathStr => {
+        const files = (await fs.readdir(pathStr)).map(file => path.join(pathStr, file));
+        const datapackHeaders = files.filter(name => /DataPack.json$/i.test(name));
+        const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
+        return [...datapackHeaders, ... await getDatapackHeaders(...folders)];
+    });
+    return [].concat(...results);
+}
+
+/**
+ * Simple datapack key resolution based on teh folder structure
+ * @param file Datapack header file path
+ */
+export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackType: string, key: string } {
+    const dirname = path.dirname(datapackHeaderPath);
+    const lastPathParts = dirname.split(/\/|\\/gm).slice(-2);
+    return {
+        datapackType: lastPathParts[0],
+        key: `${lastPathParts.join('/')}`
+    };
+}
+
+/**
+ * Resolve the project folder of the datapack assuming the standard 2-level structure
+ * @param file Datapack header file path
+ */
+export function getExportProjectFolder(datapackHeaderPath: string) : string {
+    const dirname = path.dirname(datapackHeaderPath);
+    const lastPathParts = dirname.split(/\/|\\/gm);
+    return path.join(...lastPathParts.slice(0, lastPathParts.length - 2));
+}
 
 export default class DatapackUtil {
     
@@ -73,4 +119,3 @@ export default class DatapackUtil {
         }
     }
 }
-

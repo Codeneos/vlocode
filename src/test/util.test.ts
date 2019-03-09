@@ -7,7 +7,7 @@ import 'mocha';
 
 import * as vscode from 'vscode';
 import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
-import { sanitizePath, formatString, groupBy, evalExpr } from '../util';
+import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel } from '../util';
 
 declare var VlocityUtils: any;
 describe('util', () => {   
@@ -22,6 +22,17 @@ describe('util', () => {
         });
         it("should normalize all separators to the platform standard", function() { 
             expect(sanitizePath('a/b\\c/d\\e')).equals(`a${s}b${s}c${s}d${s}e`);
+        });
+    });
+
+    describe('#filterAsyncParallel', () => { 
+        it("should return filtered list", async function() {
+            const input = [ 1,2,3,4,5,6 ];
+            const output = await filterAsyncParallel(input, async i => i % 2 == 0);
+            expect(output.length).equals(3);
+            expect(output).contains(2);
+            expect(output).contains(4);
+            expect(output).contains(6);
         });
     });
 

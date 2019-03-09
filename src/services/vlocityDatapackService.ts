@@ -14,10 +14,11 @@ import { FSWatcher, PathLike } from 'fs';
 import { runInThisContext } from 'vm';
 import SalesforceService from 'services/salesforceService';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from 'models/sobjectRecord';
 import { createRecordProxy } from 'salesforceUtil';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
+import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 
 declare var VlocityUtils: any;
 
@@ -140,36 +141,21 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
-    public async loadDatapackFromFile(file: vscode.Uri) : Promise<VlocityDatapack> {
+    public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         this.logger.log(`Loading datapack: ${file.fsPath}`);
-        let mainfestEntry = this.getDatapackManifestKey(file);
-        return new VlocityDatapack(file.fsPath, mainfestEntry.datapackType, mainfestEntry.key, await getDocumentBodyAsString(file));
-    }
-
-    private resolveProjectPathFor(file: vscode.Uri) : string {
-        if (path.isAbsolute(this.config.projectPath)) {
-            return this.config.projectPath || '';
-        }
-        let rootFolder = vscode.workspace.getWorkspaceFolder(file);
-        return rootFolder 
-            ? path.resolve(rootFolder.uri.fsPath, this.config.projectPath) 
-            : path.resolve(this.config.projectPath);
-    }
-
-    public getDatapackManifestKey(file: vscode.Uri) : ManifestEntry {
-        let filePath = file.fsPath; // always passed as absolute path
-        let projectPath = this.resolveProjectPathFor(file);
-        let relativePath = filePath.replace(projectPath,'');
-        let splitedPath = relativePath.split(/\/|\\/gm).filter(v => !!v);
-        return {
-            datapackType: splitedPath[0],
-            key: `${splitedPath.slice(1, splitedPath.length - 1).join('/')}`
-        };        
+        const mainfestEntry = getDatapackManifestKey(file.fsPath);
+        return new VlocityDatapack(
+            file.fsPath, 
+            mainfestEntry.datapackType, 
+            mainfestEntry.key, 
+            getExportProjectFolder(file.fsPath), 
+            await getDocumentBodyAsString(file));
     }
 
     public async deploy(manifest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
-        let result = await this.runCommand('Deploy',{
-            manifest: this.createDeployManifest(manifest),
+        let result = await this.runCommand('Deploy', {
+            manifest: [],
+            currentStatus: Object.values(manifest).reduce((map, key) =>Object.assign(map, { [key.key]: 'Ready' }), {}),
             activate: this.config.autoActivate,
             delete: true,
             compileOnBuild: this.config.compileOnBuild        
@@ -179,11 +165,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
         });
     }
 
-    public async export(entries: ObjectEntry[], maxDepth: number = 0) : Promise<DatapackCommandResult>  {
+    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackCommandResult>  {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportMainfest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
         let result = await this.runCommand('Export',{
             queries: exportQueries,
+            projectPath: exportFolder,
             fullManifest: exportMainfest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth
@@ -223,40 +210,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }, {});
     }
 
-    /**
-     * Finds the datapacks header JSON by scanning the directory for files post fixed with _datapack.json
-     * @param file file or folder for which to find the _datapack.json file
-     */
-    public async resolveDatapackHeader(file: vscode.Uri) : Promise<vscode.Uri> {
-        if (file.fsPath.toLowerCase().endsWith('_datapack.json')) {
-            return file;
-        }
-        try{
-            // either detect based on ending or do a full stat command
-            let isDirectory = file.fsPath.endsWith(path.sep) || (await fstatAsync(file)).isDirectory();
-            if (isDirectory) {
-                return this.findDatapackHeaderInFolder(file.fsPath);
-            }
-            return this.findDatapackHeaderInFolder(path.dirname(file.fsPath));
-        } catch (err) {
-            // catch fstatAsync exceptions; this indicates tha file does not exist and as such we
-            // return undefined indicating the DP header cannot be resolved.
-            return undefined;
-        }
-    }
-
-    private async findDatapackHeaderInFolder(pathStr: string) : Promise<vscode.Uri> {
-        try {
-            let files = await readdirAsync(pathStr);
-            let datapackFile = files.find(f => f.toLowerCase().endsWith('_datapack.json'));
-            return datapackFile ? vscode.Uri.file(path.join(pathStr, datapackFile)) : undefined;
-        } catch (err) {
-            // in case this is not a folder readdirAsync will return an exception
-            // which we will catch and for that return a undefined aka not found result 
-            return undefined;
-        }
-    }
-
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackCommandResult> {
         let jobResult : vlocity.VlocityJobResult;
         try {
@@ -285,23 +238,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
             // collect and create job optipns
             const localOptions = { projectPath: this.config.projectPath || '.' };
             const customOptions = await this.getCustomJobOptions();
-            const jobOptions = Object.assign({}, customOptions, this.config, jobInfo, localOptions);
+            const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
 
             // clean-up build tools left overs from the last invocation
             this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
             delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
 
-            // run the jon
-            try {
-                this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
-                    (reason) => {
-                        reject(reason);
-                    }
-                );
-            } catch(err) {
-                this.logger.error(err);
-            }
-
+            // run the job
+            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
+                (reason) => {
+                    reject(reason);
+                }
+            );
         });
     }
 

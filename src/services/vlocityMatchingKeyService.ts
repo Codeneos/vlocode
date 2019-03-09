@@ -13,7 +13,7 @@ import { FSWatcher, PathLike } from 'fs';
 import { runInThisContext } from 'vm';
 import SalesforceService from 'services/salesforceService';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from 'models/sobjectRecord';
 import { createRecordProxy } from 'salesforceUtil';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';

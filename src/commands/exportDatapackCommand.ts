@@ -8,7 +8,7 @@ import DatapackUtil from 'datapackUtil';
 import { groupBy, evalExpr } from '../util';
 import { createRecordProxy } from 'salesforceUtil';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 
 export default class ExportDatapackCommand extends DatapackCommand {
     
@@ -191,14 +191,51 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return objectSelection.record;
     }
 
+    protected async showExportPathSelection() : Promise<string> { 
+        const projectFolderSelection = await vscode.window.showQuickPick([ 
+            { value: 2, label: 'Configure project folder for export', description: 'set the default Vlocity project folder and continue' },            
+            { value: 1, label: 'Set folder just for this export', description: 'select a folder only for this export'  },
+            { value: 0, label: 'No, stop the export' } 
+        ], {
+            placeHolder: 'A project folder is required to export datapacks from Salesforce, set one up now?'
+        });
+        if (!projectFolderSelection || !projectFolderSelection.value) {
+            return;
+        }
+        
+        const firstWorkspace = vscode.workspace.workspaceFolders.slice(0,1).pop();
+        const selectedFolder = await vscode.window.showOpenDialog({
+            defaultUri: firstWorkspace ? firstWorkspace.uri : undefined,
+            openLabel: 'Select Vlocity project folder',
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: false
+        });
+        if(!selectedFolder) {            
+            return;
+        }        
+        if (projectFolderSelection.value == 2) {
+            this.logger.info(`Updating Vlocity project path to: ${selectedFolder[0].fsPath}`);
+            this.vloService.config.projectPath = selectedFolder[0].fsPath;
+        }        
+        return selectedFolder[0].fsPath;
+    }
+
     protected async exportObjects(exportEntries: ObjectEntry | ObjectEntry[], maxDepth: number = 0) : Promise<void> {
+        let exportPath = this.vloService.config.projectPath;
+        if (!exportPath && !(exportPath = await this.showExportPathSelection())) {            
+            vscode.window.showErrorMessage('No project path selected; export aborted.');
+            return;
+        }
+        
+        this.logger.info(`Exporting to folder: ${exportPath}`);
         exportEntries = Array.isArray(exportEntries) ? exportEntries : [exportEntries];
         let result = await this.showProgress(
             `Exporting ${exportEntries.length} datapack(s)...`, 
-            this.datapackService.export(exportEntries, maxDepth));
+            this.datapackService.export(exportEntries, exportPath, maxDepth));
 
         // report UI progress back
-        let message = this.responseMessages[result.outcome](result);
+        const message = this.responseMessages[result.outcome](result);
         switch(result.outcome) {
             case Outcome.success: vscode.window.showInformationMessage(message); break;
             case Outcome.partial: vscode.window.showErrorMessage(message); break;

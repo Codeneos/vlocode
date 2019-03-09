@@ -184,16 +184,27 @@ export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: 
 }
 
 /**
- * Execute callback async in parallel on each of the items in the specified array
- * @param array Array to execute the callback on
+ * Execute the map callback async in parallel on each of the items in the specified array
+ * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function mapAsyncParallel<T,R>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<R>) : Promise<R[]> {
+export function mapAsyncParallel<T,R>(array: Iterable<T>, callback: (item: T) => Thenable<R>) : Promise<R[]> {
     let tasks : Thenable<R>[] = [];
-    for (let i = 0; i < array.length; i++) {
-        tasks.push(callback(array[i], i, array));
+    for (const value of array) {
+        tasks.push(callback(value));
     }
     return Promise.all(tasks);
+}
+
+/**
+ * Execute the filter callback async in parallel on each of the items in the specified array
+ * @param array An Iterable to execute the callback on
+ * @param callback The callback to execute for each item
+ */
+export async function filterAsyncParallel<T>(array: Iterable<T>, callback: (item: T) => Thenable<boolean>) : Promise<T[]> {
+    const result = [];
+    await mapAsyncParallel(array, async item => !(await callback(item)) || result.push(item));
+    return result;
 }
 
 /**
@@ -236,10 +247,10 @@ export function formatString(stringFormat: string, contextValues: {}) : string {
  * @param array Array to group
  * @param predicate function to get the group by key
  */
-export function groupBy<T>(array: T[], predicate: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
+export function groupBy<T>(array: T[], keySelector: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
     return array.reduce(
         (arr, item) => {
-            const key = predicate(item);
+            const key = keySelector(item);
             arr[key] = arr[key] || [];
             arr[key].push(item);
             return arr;
