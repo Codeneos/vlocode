@@ -28,14 +28,14 @@ export abstract class DatapackCommand extends CommandBase {
     }
 
     protected resolveManifestEntriesForFiles(files: vscode.Uri[]) : Promise<ManifestEntry[]> {
-        return this.getDatapackHeaders(files).then(h => 
-            Promise.all(h.map(h => getDatapackManifestKey(h.fsPath)))
+        return this.getDatapackHeaders(files).then(headerFiles => 
+            Promise.all(headerFiles.map(header => getDatapackManifestKey(header.fsPath)))
         );
     }
 
     protected loadDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
-        return this.getDatapackHeaders(files).then(h => 
-            Promise.all(h.map(h => this.datapackService.loadDatapack(h)))
+        return this.getDatapackHeaders(files).then(headerFiles => 
+            Promise.all(headerFiles.map(header => this.datapackService.loadDatapack(header)))
         );
     }
 }

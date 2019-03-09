@@ -143,7 +143,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         this.logger.log(`Loading datapack: ${file.fsPath}`);
-        let mainfestEntry = getDatapackManifestKey(file.fsPath);
+        const mainfestEntry = getDatapackManifestKey(file.fsPath);
         return new VlocityDatapack(
             file.fsPath, 
             mainfestEntry.datapackType, 
@@ -244,18 +244,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
             this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
             delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
 
-            // run the jon
-            try {
-                this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
-                    (reason) => {
-                        reject(reason);
-                    }
-                ).then((e) => {
-                    return jobOptions.currentStatus;
-                });
-            } catch(err) {
-                this.logger.error(err);
-            }
+            // run the job
+            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
+                (reason) => {
+                    reject(reason);
+                }
+            );
         });
     }
 

@@ -202,7 +202,7 @@ export function mapAsyncParallel<T,R>(array: Iterable<T>, callback: (item: T) =>
  * @param callback The callback to execute for each item
  */
 export async function filterAsyncParallel<T>(array: Iterable<T>, callback: (item: T) => Thenable<boolean>) : Promise<T[]> {
-    let result = [];
+    const result = [];
     await mapAsyncParallel(array, async item => !(await callback(item)) || result.push(item));
     return result;
 }
