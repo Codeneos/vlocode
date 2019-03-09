@@ -6,16 +6,12 @@ import { Logger, LogManager } from 'loggers';
 import { Command } from 'models/command';
 
 export class ProgressToken {
+    private resolved = false;
 
-    private progressResolve : () => void;
-    private progressReject : (reason?: any) => void;
-    private progress : vscode.Progress<{ message?: string }>;
-    private resolved: boolean = false;
-
-    constructor(progressResolve : () => void, progressReject : (reason?: any) => void, progress : vscode.Progress<{ message?: string }>) {
-        this.progressResolve = progressResolve;
-        this.progressReject = progressReject;
-        this.progress = progress;
+    constructor(
+        private readonly progressResolve : () => void, 
+        private readonly progressReject :  (reason?: any) => void, 
+        private readonly progress : vscode.Progress<{ message?: string }>) {
     }
 
     public complete() : void {
@@ -32,7 +28,7 @@ export class ProgressToken {
     }
 }
 
-type ShowMessageFunction<T> = (msg : String, options: vscode.MessageOptions, ...args: vscode.MessageItem[]) => Thenable<T>;
+type ShowMessageFunction<T> = (msg : string, options: vscode.MessageOptions, ...args: vscode.MessageItem[]) => Thenable<T>;
 async function showMsgWithRetry<T>(
     msgFunc : ShowMessageFunction<T>, errorMsg : string, retryCallback: (...args: any[]) => Promise<T>, 
     thisArg?: any, args? : any[]) : Promise<T> {            
@@ -65,14 +61,13 @@ export abstract class CommandBase implements Command {
     }
 
     protected async startProgress(title: string) : Promise<ProgressToken> {
-        let progressPromise = new Promise<ProgressToken>(progressTokenResolve => {
+        return new Promise<ProgressToken>(progressTokenResolve => {
             vscode.window.withProgress(
                 {location: vscode.ProgressLocation.Notification, title: title, cancellable: false }, 
                 p => new Promise<void>((resolve, reject) => { 
                     progressTokenResolve(new ProgressToken(resolve, reject, p));
                 }));
-        });        
-        return await progressPromise; 
+        });
     }
 
     protected showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {

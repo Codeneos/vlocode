@@ -12,7 +12,7 @@ import { LogManager, Logger } from 'loggers';
 import DatapackUtil from 'datapackUtil';
 import { groupBy, evalExpr } from './util';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { createRecordProxy } from 'salesforceUtil';
 
 export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {

@@ -7,7 +7,7 @@ import { groupBy, mapAsyncParallel } from '../util';
 
 export default class RefreshDatapackCommand extends DatapackCommand {
     
-    private responseMessages: { [key: number] : (result: Result) => string } = {
+    private readonly responseMessages: { [key: number] : (result: Result) => string } = {
         [Outcome.success]: (r) => `Successfully refreshed ${r.totalCount} datapack(s)`,
         [Outcome.partial]: (r: Result) => {
             if (r.errors.length > 0) {
@@ -49,7 +49,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
         }
 
         // report UI progress back
-        let message = this.responseMessages[result.outcome](result);
+        const message = this.responseMessages[result.outcome](result);
         switch(result.outcome) {
             case Outcome.success: await vscode.window.showInformationMessage(message); break;
             case Outcome.partial: await this.showWarningWithRetry(message, () => this.refreshDatapacks(selectedFiles)); break;

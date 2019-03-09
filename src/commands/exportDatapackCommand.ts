@@ -8,7 +8,7 @@ import DatapackUtil from 'datapackUtil';
 import { groupBy, evalExpr } from '../util';
 import { createRecordProxy } from 'salesforceUtil';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 
 export default class ExportDatapackCommand extends DatapackCommand {
     
@@ -235,7 +235,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             this.datapackService.export(exportEntries, exportPath, maxDepth));
 
         // report UI progress back
-        let message = this.responseMessages[result.outcome](result);
+        const message = this.responseMessages[result.outcome](result);
         switch(result.outcome) {
             case Outcome.success: vscode.window.showInformationMessage(message); break;
             case Outcome.partial: vscode.window.showErrorMessage(message); break;

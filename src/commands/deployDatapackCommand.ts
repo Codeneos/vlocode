@@ -9,7 +9,7 @@ import DatapackUtil, { getDatapackManifestKey } from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
-    private responseMessages: { [key: number] : (result: Result) => string } = {
+    private readonly responseMessages: { [key: number] : (result: Result) => string } = {
         [Outcome.success]: (r) => `Successfully deployed ${r.totalCount} datapack(s)`,
         [Outcome.partial]: (r: Result) => {
             if (r.errors.length > 0) {
@@ -24,7 +24,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
      * In order to prevent a loop with the on save handler keep a list of documents that we are currently saving
      * and ignore any deloyment command that comes in for these.
      */
-    private savingDocumentsList : Set<string>; 
+    private readonly savingDocumentsList = new Set<string>(); 
 
     constructor(name : string) {
         super(name, args => this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
@@ -74,7 +74,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
             }
 
             // report UI progress back
-            let message = this.responseMessages[result.outcome](result);
+            const message = this.responseMessages[result.outcome](result);
             switch(result.outcome) {
                 case Outcome.success: await vscode.window.showInformationMessage(message); break;
                 case Outcome.partial: await this.showWarningWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;

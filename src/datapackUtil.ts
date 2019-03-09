@@ -10,7 +10,7 @@ import ExportDatapackCommand from './commands/exportDatapackCommand';
 import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
 
-import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { removeNamespacePrefix } from 'salesforceUtil';
 import { mapAsyncParallel, filterAsyncParallel } from './util';
 
@@ -41,8 +41,8 @@ export async function getDatapackHeaders(...paths: string[]) : Promise<string[]>
  * @param file Datapack header file path
  */
 export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackType: string, key: string } {
-    let dirname = path.dirname(datapackHeaderPath);
-    let lastPathParts = dirname.split(/\/|\\/gm).slice(-2);
+    const dirname = path.dirname(datapackHeaderPath);
+    const lastPathParts = dirname.split(/\/|\\/gm).slice(-2);
     return {
         datapackType: lastPathParts[0],
         key: `${lastPathParts.join('/')}`
@@ -54,8 +54,8 @@ export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackT
  * @param file Datapack header file path
  */
 export function getExportProjectFolder(datapackHeaderPath: string) : string {
-    let dirname = path.dirname(datapackHeaderPath);
-    let lastPathParts = dirname.split(/\/|\\/gm);
+    const dirname = path.dirname(datapackHeaderPath);
+    const lastPathParts = dirname.split(/\/|\\/gm);
     return path.join(...lastPathParts.slice(0, lastPathParts.length - 2));
 }
 
