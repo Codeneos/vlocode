@@ -5,7 +5,7 @@ import { DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } fr
 import { DatapackCommand } from './datapackCommand';
 import { forEachAsyncParallel, readdirAsync } from '../util';
 import * as path from 'path';
-import DatapackUtil from 'datapackUtil';
+import DatapackUtil, { getDatapackManifestKey } from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -54,20 +54,20 @@ export default class DeployDatapackCommand extends DatapackCommand {
     protected async deployDatapacks(selectedFiles: vscode.Uri[], reportErrors: boolean = true) {
         try {
             // prepare input
-            const datapackHeaders = await this.resolveDatapackHeaders(selectedFiles, reportErrors);
+            const datapackHeaders = await this.getDatapackHeaders(selectedFiles);
             if(datapackHeaders.length == 0) {
                 // no datapack files found, lets pretent this didn't happen
                 return;
             }
             
-            const datapacks = await Promise.all(datapackHeaders.map(header => this.datapackService.loadDatapackFromFile(header)));
+            const datapacks = await Promise.all(datapackHeaders.map(header => this.datapackService.loadDatapack(header)));
             const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
             
             let progressToken = await this.startProgress(`Deploying: ${datapackNames.join(', ')} ...`);
             try {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                const manifestEntries = datapackHeaders.map(h => this.datapackService.getDatapackManifestKey(h));
+                const manifestEntries = datapackHeaders.map(h => getDatapackManifestKey(h.fsPath));
                 var result = await this.datapackService.deploy(manifestEntries);
             } finally {
                 progressToken.complete();

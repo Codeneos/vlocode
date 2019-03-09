@@ -18,6 +18,7 @@ import exportQueryDefinitions = require('exportQueryDefinitions.yaml');
 import SObjectRecord from 'models/sobjectRecord';
 import { createRecordProxy } from 'salesforceUtil';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
+import { getDatapackManifestKey } from 'datapackUtil';
 
 declare var VlocityUtils: any;
 
@@ -140,31 +141,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
-    public async loadDatapackFromFile(file: vscode.Uri) : Promise<VlocityDatapack> {
+    public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         this.logger.log(`Loading datapack: ${file.fsPath}`);
-        let mainfestEntry = this.getDatapackManifestKey(file);
+        let mainfestEntry = getDatapackManifestKey(file.fsPath);
         return new VlocityDatapack(file.fsPath, mainfestEntry.datapackType, mainfestEntry.key, await getDocumentBodyAsString(file));
-    }
-
-    private resolveProjectPathFor(file: vscode.Uri) : string {
-        if (path.isAbsolute(this.config.projectPath)) {
-            return this.config.projectPath || '';
-        }
-        let rootFolder = vscode.workspace.getWorkspaceFolder(file);
-        return rootFolder 
-            ? path.resolve(rootFolder.uri.fsPath, this.config.projectPath) 
-            : path.resolve(this.config.projectPath);
-    }
-
-    public getDatapackManifestKey(file: vscode.Uri) : ManifestEntry {
-        let filePath = file.fsPath; // always passed as absolute path
-        let projectPath = this.resolveProjectPathFor(file);
-        let relativePath = filePath.replace(projectPath,'');
-        let splitedPath = relativePath.split(/\/|\\/gm).filter(v => !!v);
-        return {
-            datapackType: splitedPath[0],
-            key: `${splitedPath.slice(1, splitedPath.length - 1).join('/')}`
-        };        
     }
 
     public async deploy(manifest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
@@ -221,40 +201,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
             mf[item.datapackType].push(item.key);
             return mf;
         }, {});
-    }
-
-    /**
-     * Finds the datapacks header JSON by scanning the directory for files post fixed with _datapack.json
-     * @param file file or folder for which to find the _datapack.json file
-     */
-    public async resolveDatapackHeader(file: vscode.Uri) : Promise<vscode.Uri> {
-        if (file.fsPath.toLowerCase().endsWith('_datapack.json')) {
-            return file;
-        }
-        try{
-            // either detect based on ending or do a full stat command
-            let isDirectory = file.fsPath.endsWith(path.sep) || (await fstatAsync(file)).isDirectory();
-            if (isDirectory) {
-                return this.findDatapackHeaderInFolder(file.fsPath);
-            }
-            return this.findDatapackHeaderInFolder(path.dirname(file.fsPath));
-        } catch (err) {
-            // catch fstatAsync exceptions; this indicates tha file does not exist and as such we
-            // return undefined indicating the DP header cannot be resolved.
-            return undefined;
-        }
-    }
-
-    private async findDatapackHeaderInFolder(pathStr: string) : Promise<vscode.Uri> {
-        try {
-            let files = await readdirAsync(pathStr);
-            let datapackFile = files.find(f => f.toLowerCase().endsWith('_datapack.json'));
-            return datapackFile ? vscode.Uri.file(path.join(pathStr, datapackFile)) : undefined;
-        } catch (err) {
-            // in case this is not a folder readdirAsync will return an exception
-            // which we will catch and for that return a undefined aka not found result 
-            return undefined;
-        }
     }
 
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackCommandResult> {

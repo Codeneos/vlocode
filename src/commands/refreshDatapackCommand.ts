@@ -29,7 +29,7 @@ export default class RefreshDatapackCommand extends DatapackCommand {
             // call
             let progressToken = await this.startProgress('Refreshing Vlocity datapacks...');
             try {
-                var datapacks = await this.resolveDatapacksForFiles(selectedFiles);
+                var datapacks = await this.loadDatapacks(selectedFiles);
                 var result = await this.datapackService.export(datapacks, 0);
             } finally {
                 progressToken.complete();
