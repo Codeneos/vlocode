@@ -14,8 +14,9 @@ addons:
       secure: $SONAR_TOKEN
 
 env:
-  - TEST_RESULTS_FILE=test-results.xml
-  - RELEASE_BRANCH=feature/automated_releases
+  global:
+    - TEST_RESULTS_FILE=test-results.xml
+    - RELEASE_BRANCH=feature/automated_releases
 
 before_install:
   - export CXX="g++-4.9" CC="gcc-4.9" DISPLAY=:99.0
