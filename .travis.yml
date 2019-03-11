@@ -39,7 +39,7 @@ before_deploy:
 
 deploy:
   - provider: releases
-    api_key: $GITHUB OAUTH TOKEN
+    api_key: $GITHUB_TOKEN
     file_glob: true
     file: "*.vsix"
     skip_cleanup: true
