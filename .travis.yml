@@ -15,9 +15,10 @@ addons:
 
 env:
   - TEST_RESULTS_FILE=test-results.xml
+  - RELEASE_BRANCH=master
 
 before_install:
-  - export DISPLAY=:99.0
+  - export CXX="g++-4.9" CC="gcc-4.9" DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
 
 install:
@@ -28,4 +29,24 @@ script:
   - npm test  
   - npm run lint -- -o tslint-report.json --format json
   - sonar-scanner
+
+before_deploy:
+  - git config --global user.email "builds@travis-ci.com"
+  - git config --global user.name "Travis CI"
+  - npm version patch -m "Bumping to %s"
+  - export TRAVIS_TAG=v$(node -p "require('./package.json').version")
   - npm run package
+
+deploy:
+  - provider: releases
+    api_key: $GITHUB OAUTH TOKEN
+    file_glob: true
+    file: *.vsix
+    skip_cleanup: true
+    on:
+      branch: $RELEASE_BRANCH
+  - provider: script  
+    script: npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
+    skip_cleanup: true
+    on:
+      branch: $RELEASE_BRANCH
