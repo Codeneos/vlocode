@@ -46,7 +46,11 @@ declare module 'vlocity' {
 
     namespace vlocity {
         export class DatapacksJob {
-            runJob(command : actionType, jobInfo: JobInfo, resolve, reject) : Promise<VlocityJobResult>
+            runJob<T>(
+                command : actionType, 
+                jobInfo: JobInfo, 
+                resolve: (result: VlocityJobResult) => void, 
+                reject?: (result: VlocityJobResult) => void) : void
             /**
              * Data loaded from 'defaultjobsettings.yaml'
              */
@@ -106,6 +110,7 @@ declare module 'vlocity' {
             ErrorMessage?: string;
             VlocityDataPackKey?: string;
             VlocityDataPackStatus?: VlocityJobStatus;
+            VlocityDataPackDisplayLabel?: string;
         }
     
         export interface JobOptions {

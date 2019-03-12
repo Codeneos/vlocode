@@ -54,6 +54,7 @@ export interface DatapackCommandResult {
     missingCount?: number;
     errors: { error: string, key: string }[];
     success: string[];
+    results?: { [key: string]: any };
 }
 
 type ExportManifest = { 
@@ -155,7 +156,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     public async deploy(manifest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
         let result = await this.runCommand('Deploy', {
             manifest: [],
-            currentStatus: Object.values(manifest).reduce((map, key) =>Object.assign(map, { [key.key]: 'Ready' }), {}),
+            currentStatus: Object.values(manifest).reduce((map, key) => Object.assign(map, { [key.key]: 'Ready' }), {}),
             activate: this.config.autoActivate,
             delete: true,
             compileOnBuild: this.config.compileOnBuild        
@@ -211,46 +212,32 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackCommandResult> {
-        let jobResult : vlocity.VlocityJobResult;
-        try {
-            await this.checkLoginAsync();
-            jobResult = await this.datapacksJobAsync(command, jobInfo);
-        } catch (err) {
-            if (isError(err)) {
-                throw err;
-            }
-            jobResult = <vlocity.VlocityJobResult>err;
-        }
+        await this.checkLoginAsync();
+        const jobResult = await this.datapacksJobAsync(command, jobInfo);
         return this.parseJobResult(jobResult);
     }
 
     private checkLoginAsync() : Promise<void> {
         return new Promise((resolve, reject) => {
-            process.chdir(vscode.workspace.rootPath);
-            
+            process.chdir(vscode.workspace.rootPath);            
             return this.vlocityBuildTools.checkLogin(resolve, reject);
         });
     }
 
-    private datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
-        return new Promise(async (resolve, reject) => {
+    private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
+        // collect and create job optipns
+        const localOptions = { projectPath: this.config.projectPath || '.' };
+        const customOptions = await this.getCustomJobOptions();
+        const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
 
-            // collect and create job optipns
-            const localOptions = { projectPath: this.config.projectPath || '.' };
-            const customOptions = await this.getCustomJobOptions();
-            const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
+        // clean-up build tools left overs from the last invocation
+        this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
+        delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
 
-            // clean-up build tools left overs from the last invocation
-            this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
-            delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
-
-            // run the job
-            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
-                (reason) => {
-                    reject(reason);
-                }
-            );
-        });
+        // run the job 
+        const result = await new Promise<vlocity.VlocityJobResult>(resolve => 
+            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, resolve));
+        return Object.assign(result, { currentStatus: jobOptions.currentStatus });
     }
 
     private async getCustomJobOptions() : Promise<any> {        
@@ -305,19 +292,36 @@ export default class VlocityDatapackService implements vscode.Disposable {
         const successRecords = (result.records || []).filter(r => r.VlocityDataPackStatus == VlocityJobStatus.success);
         let outcome = DatapackCommandOutcome.success;
 
-        if (successRecords.length > 0 && errorRecords.length > 0) {
-            outcome = DatapackCommandOutcome.partial;
-        }  else if (errorRecords.length == 0) {
+        if (successRecords.length > 0 && errorRecords.length == 0) {
             outcome = DatapackCommandOutcome.success;
-        } else if (successRecords.length == 0) {
+        } else if (successRecords.length > 0 && errorRecords.length > 0) {
+            outcome = DatapackCommandOutcome.partial;
+        } else {
             outcome = DatapackCommandOutcome.error;
         }
+
+        const resultRecordsByKey = (result.records || []).reduce((map, record) => {
+            return Object.assign(map, {
+                [record.VlocityDataPackKey]: {
+                    key: record.VlocityDataPackKey,
+                    status: record.VlocityDataPackStatus,
+                    error: (record.ErrorMessage || '').split('--').slice(-1)[0].trim() || null
+                }                
+            });
+        });
 
         return {
             outcome: outcome, 
             totalCount: (result.records || []).length,
+            results: resultRecordsByKey,
             success: successRecords.map(r => r.VlocityDataPackKey),
-            errors: errorRecords.map(r => [{ error: r.ErrorMessage, key: r.VlocityDataPackKey }][0])
+            errors: errorRecords.map(r => {
+                return {
+                    // Only get the actual error not the prefix 
+                    error: r.ErrorMessage.split('--').slice(-1)[0].trim(), 
+                    key: r.VlocityDataPackKey 
+                }
+            }),
         };
     }
 }
