@@ -16,8 +16,6 @@ addons:
 env:
   global:
     - TEST_RESULTS_FILE=test-results.xml
-    - RELEASE_BRANCH=feature/automated_releases
-    - GITHUB_REPO=
 
 before_install:
   - export CXX="g++-4.9" CC="gcc-4.9" DISPLAY=:99.0
@@ -33,12 +31,7 @@ script:
   - sonar-scanner
 
 before_deploy:
-  - git config --global user.email "builds@travis-ci.com"
-  - git config --global user.name "Travis CI"
-  - npm version patch -m "Bumping to %s"
-  - git push && git push --tags
   - export PACKAGE_VERSION=$(node -p "require('./package.json').version")
-  - export TRAVIS_TAG=v${PACKAGE_VERSION}
   - npm run package
 
 deploy:
@@ -49,9 +42,9 @@ deploy:
     skip_cleanup: true
     name: "Version $PACKAGE_VERSION"
     on:
-      branch: $RELEASE_BRANCH
+      tags: true
   - provider: script  
     script: npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
     skip_cleanup: true
     on:
-      branch: $RELEASE_BRANCH
+      tags: true
