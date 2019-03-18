@@ -157,14 +157,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
         const headersByProject = groupBy(datapackHeaders, header => getExportProjectFolder(header));
 
         const results = await mapAsync(Object.keys(headersByProject), projectFolder => {
-
-            const manifestEntries = headersByProject[projectFolder].map(header =>getDatapackManifestKey(header));
-            const deployStatusItems = manifestEntries.reduce((map, key) => Object.assign(map, { [key.key]: 'Ready' }), {});
+            
+            const deployManifest = headersByProject[projectFolder].map(header => getDatapackManifestKey(header).key);
 
             return this.runCommand('Deploy', {
-                manifest: [],
+                manifest: deployManifest,
                 projectPath: projectFolder,
-                currentStatus: deployStatusItems,
                 activate: this.config.autoActivate,
                 delete: true,
                 compileOnBuild: this.config.compileOnBuild        
