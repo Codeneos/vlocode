@@ -37,7 +37,7 @@ export async function getDatapackHeaders(...paths: string[]) : Promise<string[]>
 }
 
 /**
- * Simple datapack key resolution based on teh folder structure
+ * Simple datapack key resolution based on the folder structure
  * @param file Datapack header file path
  */
 export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackType: string, key: string } {

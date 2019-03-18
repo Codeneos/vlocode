@@ -184,7 +184,20 @@ export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: 
 }
 
 /**
- * Execute the map callback async in parallel on each of the items in the specified array
+ * Execute the map callback async in sequence on each of the items in the specified Iterable
+ * @param array An Iterable to execute the callback on
+ * @param callback The callback to execute for each item
+ */
+export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Thenable<R>) : Promise<R[]> {
+    let mapPromise = Promise.resolve(new Array<R>());
+    for (const value of array) {
+        mapPromise = mapPromise.then(async result => result.concat(await callback(value)));
+    }
+    return mapPromise;
+}
+
+/**
+ * Execute the map callback async in parallel on each of the items in the specified Iterable
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
