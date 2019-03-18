@@ -6,7 +6,7 @@ import * as process from 'process';
 import * as yaml from 'js-yaml';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync } from '../util';
+import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync, groupBy, forEachAsync, mapAsync } from '../util';
 import { LogManager, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
@@ -54,6 +54,7 @@ export interface DatapackCommandResult {
     missingCount?: number;
     errors: { error: string, key: string }[];
     success: string[];
+    results?: { [key: string]: any };
 }
 
 type ExportManifest = { 
@@ -143,35 +144,54 @@ export default class VlocityDatapackService implements vscode.Disposable {
     
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         this.logger.log(`Loading datapack: ${file.fsPath}`);
-        const mainfestEntry = getDatapackManifestKey(file.fsPath);
+        const manifestEntry = getDatapackManifestKey(file.fsPath);
         return new VlocityDatapack(
             file.fsPath, 
-            mainfestEntry.datapackType, 
-            mainfestEntry.key, 
+            manifestEntry.datapackType, 
+            manifestEntry.key, 
             getExportProjectFolder(file.fsPath), 
             await getDocumentBodyAsString(file));
     }
 
-    public async deploy(manifest: ManifestEntry[]) : Promise<DatapackCommandResult>  {
-        let result = await this.runCommand('Deploy', {
-            manifest: [],
-            currentStatus: Object.values(manifest).reduce((map, key) =>Object.assign(map, { [key.key]: 'Ready' }), {}),
-            activate: this.config.autoActivate,
-            delete: true,
-            compileOnBuild: this.config.compileOnBuild        
+    public async deploy(...datapackHeaders: string[]) : Promise<DatapackCommandResult>  {
+        const headersByProject = groupBy(datapackHeaders, header => getExportProjectFolder(header));
+
+        const results = await mapAsync(Object.keys(headersByProject), projectFolder => {
+
+            const manifestEntries = headersByProject[projectFolder].map(header =>getDatapackManifestKey(header));
+            const deployStatusItems = manifestEntries.reduce((map, key) => Object.assign(map, { [key.key]: 'Ready' }), {});
+
+            return this.runCommand('Deploy', {
+                manifest: [],
+                projectPath: projectFolder,
+                currentStatus: deployStatusItems,
+                activate: this.config.autoActivate,
+                delete: true,
+                compileOnBuild: this.config.compileOnBuild        
+            });
         });
-        return Object.assign(result, { 
-            missingCount: Math.max(result.totalCount - manifest.length, 0)
-        });
+
+        // TODO: return results in more organized way using a result class
+        // that interprets the underlying result records instead of preparing it in 
+        // multiple places
+        return results.reduce((sum, added) => {
+            return {
+                errors: [...sum.errors, ...added.errors], 
+                success: [...sum.success, ...added.success],  
+                totalCount: sum.totalCount + added.totalCount,
+                missingCount: sum.missingCount + added.missingCount,
+                outcome: added.outcome > sum.outcome ? added.outcome : sum.outcome
+            };
+        }, results.shift());
     }
 
     public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackCommandResult>  {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
-        const exportMainfest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
+        const exportManifest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
         let result = await this.runCommand('Export',{
             queries: exportQueries,
             projectPath: exportFolder,
-            fullManifest: exportMainfest,
+            fullManifest: exportManifest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth
         });
@@ -181,16 +201,16 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private createExportManifest(objects: ObjectEntryWithId[]) : ExportManifest  {
-        let mainfest = objects.reduce((mainfest, entry) => {
-            mainfest[entry.datapackType] = mainfest[entry.datapackType] || {};
-            mainfest[entry.datapackType][entry.id] = {
+        let manifest = objects.reduce((manifest, entry) => {
+            manifest[entry.datapackType] = manifest[entry.datapackType] || {};
+            manifest[entry.datapackType][entry.id] = {
                 Id: entry.id,
                 VlocityDataPackType: entry.datapackType,
                 VlocityRecordSObjectType: entry.sobjectType
             };
-            return mainfest;
+            return manifest;
         }, {});
-        return mainfest;
+        return manifest;
     }
 
     private async createExportQueries(objects: ObjectEntry[]) : Promise<Array<ExportQuery>> {
@@ -211,46 +231,32 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackCommandResult> {
-        let jobResult : vlocity.VlocityJobResult;
-        try {
-            await this.checkLoginAsync();
-            jobResult = await this.datapacksJobAsync(command, jobInfo);
-        } catch (err) {
-            if (isError(err)) {
-                throw err;
-            }
-            jobResult = <vlocity.VlocityJobResult>err;
-        }
+        await this.checkLoginAsync();
+        const jobResult = await this.datapacksJobAsync(command, jobInfo);
         return this.parseJobResult(jobResult);
     }
 
     private checkLoginAsync() : Promise<void> {
         return new Promise((resolve, reject) => {
-            process.chdir(vscode.workspace.rootPath);
-            
+            process.chdir(vscode.workspace.rootPath);            
             return this.vlocityBuildTools.checkLogin(resolve, reject);
         });
     }
 
-    private datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
-        return new Promise(async (resolve, reject) => {
+    private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
+        // collect and create job optipns
+        const localOptions = { projectPath: this.config.projectPath || '.' };
+        const customOptions = await this.getCustomJobOptions();
+        const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
 
-            // collect and create job optipns
-            const localOptions = { projectPath: this.config.projectPath || '.' };
-            const customOptions = await this.getCustomJobOptions();
-            const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
+        // clean-up build tools left overs from the last invocation
+        this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
+        delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
 
-            // clean-up build tools left overs from the last invocation
-            this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
-            delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
-
-            // run the job
-            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, reject).catch(
-                (reason) => {
-                    reject(reason);
-                }
-            );
-        });
+        // run the job 
+        const result = await new Promise<vlocity.VlocityJobResult>(resolve => 
+            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, resolve));
+        return Object.assign(result, { currentStatus: jobOptions.currentStatus });
     }
 
     private async getCustomJobOptions() : Promise<any> {        
@@ -305,19 +311,36 @@ export default class VlocityDatapackService implements vscode.Disposable {
         const successRecords = (result.records || []).filter(r => r.VlocityDataPackStatus == VlocityJobStatus.success);
         let outcome = DatapackCommandOutcome.success;
 
-        if (successRecords.length > 0 && errorRecords.length > 0) {
-            outcome = DatapackCommandOutcome.partial;
-        }  else if (errorRecords.length == 0) {
+        if (successRecords.length > 0 && errorRecords.length == 0) {
             outcome = DatapackCommandOutcome.success;
-        } else if (successRecords.length == 0) {
+        } else if (successRecords.length > 0 && errorRecords.length > 0) {
+            outcome = DatapackCommandOutcome.partial;
+        } else {
             outcome = DatapackCommandOutcome.error;
         }
+
+        const resultRecordsByKey = (result.records || []).reduce((map, record) => {
+            return Object.assign(map, {
+                [record.VlocityDataPackKey]: {
+                    key: record.VlocityDataPackKey,
+                    status: record.VlocityDataPackStatus,
+                    error: (record.ErrorMessage || '').split('--').slice(-1)[0].trim() || null
+                }                
+            });
+        });
 
         return {
             outcome: outcome, 
             totalCount: (result.records || []).length,
+            results: resultRecordsByKey,
             success: successRecords.map(r => r.VlocityDataPackKey),
-            errors: errorRecords.map(r => [{ error: r.ErrorMessage, key: r.VlocityDataPackKey }][0])
+            errors: errorRecords.map(r => {
+                return {
+                    // Only get the actual error not the prefix 
+                    error: r.ErrorMessage.split('--').slice(-1)[0].trim(), 
+                    key: r.VlocityDataPackKey 
+                }
+            }),
         };
     }
 }
@@ -330,16 +353,18 @@ export function setLogger(logger : Logger, includeCallerDetails: Boolean = false
         }
         logFn.apply(logger, args);
     };
-    const vlocityLoggerMaping : { [ func: string ]: (...args: any[]) => void } = {
+
+    const vlocityLoggerMapping : { [ func: string ]: (...args: any[]) => void } = {
         report: logger.info,
         success: logger.info,
         warn: logger.warn,
         error: logger.error,
         verbose: logger.verbose        
     };
+
     // Override all methods
-    getProperties(vlocityLoggerMaping).forEach(kvp => VlocityUtils[kvp.key] = (...args: any[]) => vlocityLogFn(kvp.value, args));
-    VlocityUtils.output = (loggingMethod, color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
+    getProperties(vlocityLoggerMapping).forEach(kvp => VlocityUtils[kvp.key] = (...args: any[]) => vlocityLogFn(kvp.value, args));
+    VlocityUtils.output = (_loggingMethod, _color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
     VlocityUtils.fatal = (...args: any[]) => { 
         vlocityLogFn(logger.error, Array.from(args));
         throw new Error(Array.from(args).join(' ')); 

@@ -56,7 +56,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
             // prepare input
             const datapackHeaders = await this.getDatapackHeaders(selectedFiles);
             if(datapackHeaders.length == 0) {
-                // no datapack files found, lets pretent this didn't happen
+                // no datapack files found, lets pretend this didn't happen
                 return;
             }
             
@@ -67,8 +67,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
             try {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                const manifestEntries = datapackHeaders.map(h => getDatapackManifestKey(h.fsPath));
-                var result = await this.datapackService.deploy(manifestEntries);
+                var result = await this.datapackService.deploy(...datapackHeaders.map(header => header.fsPath));
             } finally {
                 progressToken.complete();
             }
