@@ -5,7 +5,7 @@ import ViewDatapackCommand from "./viewDatapackCommand";
 import ExportDatapackCommand from "./exportDatapackCommand";
 import SelectOrgCommand from "./selectOrgCommand";
 import BuildDatapackCommand from "./buildDatapackCommand";
-import AdminCommands from "./adminCommands";
+import AdminCommands from "./vlocityAdminCommand";
 import { VlocodeCommand } from "../constants";
 
 export default {

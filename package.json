@@ -92,6 +92,10 @@
                 "title": "Vlocity: Clear Platform Cache"
             },
             {
+                "command": "vlocity.adminCommands",
+                "title": "Vlocity: Administration Console"
+            },
+            {
                 "command": "vlocity.datapackExplorer.export",
                 "title": "Export",
                 "icon": {
@@ -149,6 +153,10 @@
                 {
                     "command": "vlocity.admin.clearPlatformCache",
                     "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.buildDatapack",
+                    "when": "false"
                 },
                 {
                     "command": "vlocity.buildDatapack",

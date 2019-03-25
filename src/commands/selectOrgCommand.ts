@@ -5,20 +5,20 @@ import { CommandBase } from './commandBase';
 export default class SelectOrgCommand extends CommandBase {
 
     private readonly newOrgOption : (vscode.QuickPickItem & sfdx.SalesforceOrgDetails) = { 
-        label: 'Authorize new org',
+        label: '$(key) Authorize new org',
         description: 'You will be prompted for the login url'
     };
 
     private readonly salesforceOrgTypes : (vscode.QuickPickItem & { instanceUrl?: string })[] = [{ 
-        label: 'Sandbox',
+        label: '$(microscope) Sandbox',
         description: 'https://test.salesforce.com',
         instanceUrl: 'https://test.salesforce.com'
     }, { 
-        label: 'Production',
+        label: '$(device-desktop) Production',
         description: 'https://login.salesforce.com',
         instanceUrl: 'https://login.salesforce.com'
     }, { 
-        label: 'Other',
+        label: '$(settings) Other',
         description: 'Provide a custom instance URL'
     }];
 

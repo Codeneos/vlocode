@@ -20,9 +20,9 @@ export enum VlocodeCommand {
     exportDatapack = 'vlocity.exportDatapack',
     selectOrg = 'vlocity.selectOrg',
     buildDatapack  = 'vlocity.buildDatapack',
+    adminCommands  = 'vlocity.adminCommands',
     refreshPriceBook  = 'vlocity.admin.refreshPriceBook',
     refreshProductHierarchy  = 'vlocity.admin.refreshProductHierarchy',
-    refreshPriceBookAndProductHierarchy = 'vlocity.admin.refreshPriceBookAndProductHierarchy',
     updateAllProdAttribCommand  = 'vlocity.admin.updateAllProdAttribCommand',
     clearPlatformCache  = 'vlocity.admin.clearPlatformCache'
 };

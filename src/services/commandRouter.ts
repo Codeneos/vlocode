@@ -103,9 +103,7 @@ export default class CommandRouter implements CommandMap {
     public createCommand(name: string, commandCtor: any) : Command {
         if ('prototype' in commandCtor) {
             return new LazyCommand(name, commandCtor);
-        } else if (typeof commandCtor == 'object' && commandCtor.execute) {
-            return commandCtor
-        }
+        } 
         return { name: name, execute: commandCtor };
     }
 
