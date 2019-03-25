@@ -4,8 +4,9 @@ import { Logger, LogManager } from 'loggers';
 import VlocodeService from 'services/vlocodeService';
 import * as vscode from 'vscode';
 import { Command, CommandMap } from "models/command";
-import { VlocodeCommand } from 'commands';
-import { isError } from 'util';
+import { VlocodeCommand } from '../constants';
+import { isError, isObject, isFunction } from 'util';
+import { CommandBase } from 'commands/commandBase';
 
 type CommandCtor = (new(name: string) => Command);
 
@@ -13,7 +14,7 @@ class LazyCommand implements Command {
     private instance: Command;
 
     constructor(
-        public readonly name: string, 
+        public readonly name: string,
         private ctor: CommandCtor) {
     }
 
@@ -27,8 +28,8 @@ class LazyCommand implements Command {
 
 class CommandExecutor implements Command {
     constructor(
-        private command: Command 
-    ) { }    
+        private command: Command
+    ) { }
 
     public get name() : string {
         return this.command.name;
@@ -42,7 +43,7 @@ class CommandExecutor implements Command {
         return container.get(VlocodeService);
     }
 
-    public async execute(... args: any[]) : Promise<void> {        
+    public async execute(... args: any[]) : Promise<void> {
         this.logger.verbose(`Invoke command ${this.name}`);
         try {
             await this.command.execute.apply(this.command, args);
@@ -50,7 +51,7 @@ class CommandExecutor implements Command {
         } catch(err) {
             this.logger.error(`Command error: ${err}`);
             if (isError(err)) {
-                this.logger.error(err.stack);                
+                this.logger.error(err.stack);
             }
             vscode.window.showErrorMessage(`${this.name}: ${err}`);
         }
@@ -58,8 +59,8 @@ class CommandExecutor implements Command {
 }
 
 /**
- * Class responsible for routing and handling command calls in a consistent way 
- * for the Vlocode extension. Holds 
+ * Class responsible for routing and handling command calls in a consistent way
+ * for the Vlocode extension. Holds
  */
 export default class CommandRouter implements CommandMap {
     [commandName: string]: Command | any;
@@ -102,6 +103,8 @@ export default class CommandRouter implements CommandMap {
     public createCommand(name: string, commandCtor: any) : Command {
         if ('prototype' in commandCtor) {
             return new LazyCommand(name, commandCtor);
+        } else if (typeof commandCtor == 'object' && commandCtor.execute) {
+            return commandCtor
         }
         return { name: name, execute: commandCtor };
     }

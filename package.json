@@ -72,6 +72,26 @@
                 "title": "Vlocity: Select Salesforce Org"
             },
             {
+                "command": "vlocity.admin.refreshPriceBook",
+                "title": "Vlocity: Refresh Pricebook"
+            },
+            {
+                "command": "vlocity.admin.refreshProductHierarchy",
+                "title": "Vlocity: Refresh Product Hierarchy"
+            },
+            {
+                "command": "vlocity.admin.refreshPriceBookAndProductHierarchy",
+                "title": "Vlocity: Refresh Pricebook and Product Hierarchy"
+            },
+            {
+                "command": "vlocity.admin.updateAllProdAttribCommand",
+                "title": "Vlocity: Update Product Attributes"
+            },
+            {
+                "command": "vlocity.admin.clearPlatformCache",
+                "title": "Vlocity: Clear Platform Cache"
+            },
+            {
                 "command": "vlocity.datapackExplorer.export",
                 "title": "Export",
                 "icon": {
@@ -108,6 +128,26 @@
                 },
                 {
                     "command": "vlocity.selectOrg",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.admin.refreshPriceBook",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.admin.refreshProductHierarchy",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.admin.refreshPriceBookAndProductHierarchy",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.admin.updateAllProdAttribCommand",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.admin.clearPlatformCache",
                     "group": "v_vlocity"
                 },
                 {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { container } from 'serviceContainer';
 import CommandRouter from 'services/commandRouter';
-import { VlocodeCommand } from 'commands';
+import { VlocodeCommand } from '../constants';
 import VlocodeService from 'services/vlocodeService';
 import { LogManager, Logger } from 'loggers';
 

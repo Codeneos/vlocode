@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import { getExportProjectFolder } from 'datapackUtil';
 import { groupBy, mapAsyncParallel } from '../util';
 
 export default class RefreshDatapackCommand extends DatapackCommand {

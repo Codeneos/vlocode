@@ -6,12 +6,12 @@ import { LogManager, LogWriter, WriterChain, ConsoleWriter, OutputChannelWriter,
 import CommandRouter from './services/commandRouter';
 import { setLogger as setVlocityLogger } from './services/vlocityDatapackService';
 import DatapackExplorer from 'datapackExplorer';
-import { Commands } from 'commands';
+import Commands from 'commands';
 import { container } from 'serviceContainer';
 import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 
 export function activate(context: ExtensionContext) : void {
-
+    
     // Init logging and register services
     let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);
     let vloService = container.register(VlocodeService, new VlocodeService(container, context, vloConfig));

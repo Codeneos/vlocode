@@ -12,3 +12,17 @@ export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
 
 export const exportQueryDefinitions =  require("exportQueryDefinitions.yaml");
+
+export enum VlocodeCommand {
+    refreshDatapack = 'vlocity.refreshDatapack',
+    deployDatapack = 'vlocity.deployDatapack',
+    viewDatapackGeneric = 'vlocity.viewDatapack.generic',
+    exportDatapack = 'vlocity.exportDatapack',
+    selectOrg = 'vlocity.selectOrg',
+    buildDatapack  = 'vlocity.buildDatapack',
+    refreshPriceBook  = 'vlocity.admin.refreshPriceBook',
+    refreshProductHierarchy  = 'vlocity.admin.refreshProductHierarchy',
+    refreshPriceBookAndProductHierarchy = 'vlocity.admin.refreshPriceBookAndProductHierarchy',
+    updateAllProdAttribCommand  = 'vlocity.admin.updateAllProdAttribCommand',
+    clearPlatformCache  = 'vlocity.admin.clearPlatformCache'
+};

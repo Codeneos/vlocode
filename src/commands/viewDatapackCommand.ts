@@ -44,7 +44,7 @@ export default class ViewDatapackCommand extends DatapackCommand {
                 return this.logger.log(message.data);
             }
         }
-        this.logger.verbose('Unhanlded message: ' + JSON.stringify(message));
+        this.logger.verbose('Unhandled message: ' + JSON.stringify(message));
     }
 }
 
