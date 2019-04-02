@@ -34,10 +34,10 @@ export async function execp(cmd: string, opts : any) : Promise<ExecpResult> {
     });
 } 
 
-export async function getDocumentBodyAsString(file: vscode.Uri) : Promise<string> {
-    let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file.fsPath);
+export async function getDocumentBodyAsString(file: string) : Promise<string> {
+    let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
     if (doc) return doc.getText();
-    return await readFileAsync(file.fsPath);
+    return await readFileAsync(file);
 }
 
 export function promisify<T1, T2, T3, T4>(func: (arg1: T2, arg2: T2, arg3: T3, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;

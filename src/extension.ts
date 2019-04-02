@@ -43,4 +43,9 @@ export function activate(context: ExtensionContext) : void {
     vloService.registerDisposable(new DatapackSavedEventHandler(workspace.onDidSaveTextDocument));
 }
 
+export function isDatapack() {
+    console.log('isDatapack');
+    console.log(arguments);
+}
+
 export function deactivate() { }

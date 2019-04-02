@@ -88,7 +88,9 @@ export class Logger {
         if (filter && !filter(level, ...args)) {
             return;
         }
-        this.writer.write(level, ...args);
+        if (this.writer) {
+            this.writer.write(level, ...args);
+        }
     }
 }
 

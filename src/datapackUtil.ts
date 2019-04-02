@@ -59,6 +59,17 @@ export function getExportProjectFolder(datapackHeaderPath: string) : string {
     return path.join(...lastPathParts.slice(0, lastPathParts.length - 2));
 }
 
+/**
+ * Resolve the project folder of the datapack assuming the standard 2-level structure
+ * @param file Datapack header file path
+ */
+export function getDatapackDependencies(datapackHeaderPath: string) : string {
+    const dirname = path.dirname(datapackHeaderPath);
+    const lastPathParts = dirname.split(/\/|\\/gm);
+    return path.join(...lastPathParts.slice(0, lastPathParts.length - 2));
+}
+
+
 export default class DatapackUtil {
     
     private static get logger() : Logger {

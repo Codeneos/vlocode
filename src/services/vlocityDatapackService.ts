@@ -19,6 +19,7 @@ import SObjectRecord from 'models/sobjectRecord';
 import { createRecordProxy } from 'salesforceUtil';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
+import { type } from 'os';
 
 declare var VlocityUtils: any;
 
@@ -37,24 +38,54 @@ export interface ObjectEntry {
 
 type ObjectEntryWithId = ObjectEntry & { id: string; };
 
-export enum DatapackCommandOutcome {
-    success = 0,
-    partial = 1,
-    error = 2
-}
-
 export enum VlocityJobStatus {
     success = 'Success',
     error = 'Error'
 }
 
-export interface DatapackCommandResult {
-    outcome: DatapackCommandOutcome;
-    totalCount: number;
-    missingCount?: number;
-    errors: { error: string, key: string }[];
-    success: string[];
-    results?: { [key: string]: any };
+export type DatapackResult = { key: string, success: boolean, message?: string };
+
+export class DatapackResultCollection implements Iterable<DatapackResult> {
+
+    constructor(private results : DatapackResult[] = []) {
+    }
+
+    public get length() : number {
+        return this.results.length;
+    }
+
+    public get hasErrors() : boolean {
+        return this.results.some(result => !result.success);
+    }
+
+    [Symbol.iterator](): Iterator<DatapackResult> {
+        return this.results[Symbol.iterator]();
+    }
+
+    public getErrors() : DatapackResult[] {
+        return this.results.filter(result => !result.success);
+    }
+
+    public getResult(key : string) : DatapackResult {
+        return this.results.find(result => result.key.toLowerCase() == key.toLowerCase());
+    }
+
+    public add(...results: DatapackResult[]) {
+        this.results.push(...results);
+    }
+
+    public join(results: Iterable<DatapackResult>) : DatapackResultCollection {
+        this.results.push(...results);
+        return this;
+    }
+
+    /* let missingKeys = new Set(expectedKeys);
+        this.results.forEach(result => missingKeys.delete(result.key));
+        return Array.from(missingKeys); */
+
+    public clear() {
+        this.results = [];
+    }
 }
 
 type ExportManifest = { 
@@ -150,16 +181,14 @@ export default class VlocityDatapackService implements vscode.Disposable {
             manifestEntry.datapackType, 
             manifestEntry.key, 
             getExportProjectFolder(file.fsPath), 
-            await getDocumentBodyAsString(file));
+            await getDocumentBodyAsString(file.fsPath));
     }
 
-    public async deploy(...datapackHeaders: string[]) : Promise<DatapackCommandResult>  {
+    public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {
         const headersByProject = groupBy(datapackHeaders, header => getExportProjectFolder(header));
 
         const results = await mapAsync(Object.keys(headersByProject), projectFolder => {
-            
             const deployManifest = headersByProject[projectFolder].map(header => getDatapackManifestKey(header).key);
-
             return this.runCommand('Deploy', {
                 manifest: deployManifest,
                 projectPath: projectFolder,
@@ -169,32 +198,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
             });
         });
 
-        // TODO: return results in more organized way using a result class
-        // that interprets the underlying result records instead of preparing it in 
-        // multiple places
-        return results.reduce((sum, added) => {
-            return {
-                errors: [...sum.errors, ...added.errors], 
-                success: [...sum.success, ...added.success],  
-                totalCount: sum.totalCount + added.totalCount,
-                missingCount: sum.missingCount + added.missingCount,
-                outcome: added.outcome > sum.outcome ? added.outcome : sum.outcome
-            };
-        }, results.shift());
+        return results.reduce((results, result) => results.join(result));
     }
 
-    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackCommandResult>  {
+    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackResultCollection>  {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportManifest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
-        let result = await this.runCommand('Export',{
+        return this.runCommand('Export',{
             queries: exportQueries,
             projectPath: exportFolder,
             fullManifest: exportManifest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth
-        });
-        return Object.assign(result, { 
-            missingCount: Math.max(result.totalCount - entries.length, 0) 
         });
     }
 
@@ -228,10 +243,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }, {});
     }
 
-    public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackCommandResult> {
+    public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackResultCollection> {
         await this.checkLoginAsync();
         const jobResult = await this.datapacksJobAsync(command, jobInfo);
-        return this.parseJobResult(jobResult);
+        return new DatapackResultCollection(this.parseJobResult(jobResult));
     }
 
     private checkLoginAsync() : Promise<void> {
@@ -304,42 +319,15 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }
     }
 
-    private parseJobResult(result: vlocity.VlocityJobResult) : DatapackCommandResult {
-        const errorRecords = (result.records || []).filter(r => r.VlocityDataPackStatus != VlocityJobStatus.success);
-        const successRecords = (result.records || []).filter(r => r.VlocityDataPackStatus == VlocityJobStatus.success);
-        let outcome = DatapackCommandOutcome.success;
-
-        if (successRecords.length > 0 && errorRecords.length == 0) {
-            outcome = DatapackCommandOutcome.success;
-        } else if (successRecords.length > 0 && errorRecords.length > 0) {
-            outcome = DatapackCommandOutcome.partial;
-        } else {
-            outcome = DatapackCommandOutcome.error;
-        }
-
-        const resultRecordsByKey = (result.records || []).reduce((map, record) => {
-            return Object.assign(map, {
-                [record.VlocityDataPackKey]: {
-                    key: record.VlocityDataPackKey,
-                    status: record.VlocityDataPackStatus,
-                    error: (record.ErrorMessage || '').split('--').slice(-1)[0].trim() || null
-                }                
-            });
+    private parseJobResult(result: vlocity.VlocityJobResult) : DatapackResult[] {
+        return (result.records || []).map(record => {
+            return {
+                key: record.VlocityDataPackKey,
+                success: record.VlocityDataPackStatus == VlocityJobStatus.success,
+                status: record.VlocityDataPackStatus,
+                error: (record.ErrorMessage || '').split('--').slice(-1)[0].trim() || null
+            }
         });
-
-        return {
-            outcome: outcome, 
-            totalCount: (result.records || []).length,
-            results: resultRecordsByKey,
-            success: successRecords.map(r => r.VlocityDataPackKey),
-            errors: errorRecords.map(r => {
-                return {
-                    // Only get the actual error not the prefix 
-                    error: r.ErrorMessage.split('--').slice(-1)[0].trim(), 
-                    key: r.VlocityDataPackKey 
-                }
-            }),
-        };
     }
 }
 

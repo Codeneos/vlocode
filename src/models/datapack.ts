@@ -14,7 +14,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public get name(): string { return this.data['Name']; }
     public get sobjectType(): string { return this.data['VlocityRecordSObjectType']; }
     public get sourceKey(): string { return this.data['VlocityRecordSourceKey']; }
-    public get mainfestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
+    public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
     
     constructor(
         public readonly headerFile: string, 
@@ -46,7 +46,8 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     }
 
     private getProperty(name: string | number | symbol) : any {
-        if (name == undefined || name == null){
+        console.log('Ger prop ' + name.toString());
+        if (name === undefined || name === null){
             return undefined;
         } else if (name in this){
             return (<any>this)[name];

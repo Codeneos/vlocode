@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 
-import {DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import DatapackBuilder from 'services/datapackBuilder';
 import { VlocityDatapackRelationshipType } from 'models/datapackCollection';

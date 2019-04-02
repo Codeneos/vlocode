@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as constants from '../constants';
 
-import { DatapackCommandOutcome as Outcome, DatapackCommandResult as Result, ObjectEntry } from '../services/vlocityDatapackService';
+import { DatapackResultCollection, ObjectEntry } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import SObjectRecord from '../models/sobjectRecord';
 import DatapackUtil from 'datapackUtil';
@@ -11,17 +11,6 @@ import { createRecordProxy } from 'salesforceUtil';
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 
 export default class ExportDatapackCommand extends DatapackCommand {
-    
-    protected responseMessages: { [key: number] : (result: Result) => string } = {
-        [Outcome.success]: (r) => `Successfully exported ${r.totalCount} datapack(s)`,
-        [Outcome.partial]: (r: Result) => {
-            if (r.errors.length > 0) {
-                return `Unable to export all the specified object(s); exported ${r.success.length} objects with ${r.errors.length} errors`;
-            }
-            return `Unable to export all the specified object(s); exported ${r.totalCount} out of ${r.totalCount + r.missingCount} objects`;
-        },
-        [Outcome.error]: (r) => `Failed to export the selected object(s); see the log for more details`
-    };
 
     constructor(name : string) {
         super(name);
@@ -230,18 +219,20 @@ export default class ExportDatapackCommand extends DatapackCommand {
         
         this.logger.info(`Exporting to folder: ${exportPath}`);
         exportEntries = Array.isArray(exportEntries) ? exportEntries : [exportEntries];
-        let result = await this.showProgress(
+        const results = await this.showProgress(
             `Exporting ${exportEntries.length} datapack(s)...`, 
             this.datapackService.export(exportEntries, exportPath, maxDepth));
 
         // report UI progress back
-        const message = this.responseMessages[result.outcome](result);
-        switch(result.outcome) {
-            case Outcome.success: vscode.window.showInformationMessage(message); break;
-            case Outcome.partial: vscode.window.showErrorMessage(message); break;
-            case Outcome.error: vscode.window.showErrorMessage(message); break;
+        this.showResultMessage(results);
+    }
+
+    private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
+        if (results.hasErrors) {    
+            results.getErrors().forEach((errorRec, i)  => this.logger.error(`${i}.${errorRec.key}: ${errorRec.message || '<NO_MESSAGE>'}`));            
+            return vscode.window.showErrorMessage( `One or more errors occurred during the exporting the selected datapacks`);           
         }
+        [...results].forEach((errorRec, i) => this.logger.verbose(`${i}.${errorRec.key}: ${errorRec.success || errorRec.message}`));
+        return vscode.window.showErrorMessage(`Successfully exported ${results.length} datapack(s)`);
     }
 }
-
-

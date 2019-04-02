@@ -98,10 +98,12 @@ class VlocityAdminCommand extends CommandBase {
     }
 };
 
-export default [ 
-    VlocodeCommand.refreshPriceBook, 
-    VlocodeCommand.refreshProductHierarchy, 
-    VlocodeCommand.clearPlatformCache, 
-    VlocodeCommand.clearPlatformCache ].reduce( 
-        (map, command) => Object.assign(map, { [command]: _ => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), 
-    { [VlocodeCommand.adminCommands]: VlocityAdminCommand });
+export default {
+    [VlocodeCommand.adminCommands]: VlocityAdminCommand,
+ ...[VlocodeCommand.refreshPriceBook, 
+     VlocodeCommand.refreshProductHierarchy, 
+     VlocodeCommand.clearPlatformCache, 
+     VlocodeCommand.clearPlatformCache].reduce( 
+       (map, command) => Object.assign(map, { [command]: _ => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
+    )
+};

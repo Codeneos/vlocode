@@ -1,24 +1,12 @@
 import * as vscode from 'vscode';
 
-import VlocityDatapackService from '../services/vlocityDatapackService';
-import { DatapackCommandOutcome as Outcome, DatapackCommandResult as Result } from '../services/vlocityDatapackService';
+import VlocityDatapackService, { DatapackResultCollection } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { forEachAsyncParallel, readdirAsync } from '../util';
 import * as path from 'path';
 import DatapackUtil, { getDatapackManifestKey } from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
-
-    private readonly responseMessages: { [key: number] : (result: Result) => string } = {
-        [Outcome.success]: (r) => `Successfully deployed ${r.totalCount} datapack(s)`,
-        [Outcome.partial]: (r: Result) => {
-            if (r.errors.length > 0) {
-                return `Unable to deploy all selected datapack(s); deployed ${r.success.length} datapacks with ${r.errors.length} errors`;
-            }
-            return `Unable to deploy all selected datapack(s); deployed ${r.totalCount} out of ${r.totalCount + r.missingCount}`;
-        },
-        [Outcome.error]: (r) => `Failed to deploy the selected datapack(s); see the log for more details`
-    };
 
     /** 
      * In order to prevent a loop with the on save handler keep a list of documents that we are currently saving
@@ -73,18 +61,20 @@ export default class DeployDatapackCommand extends DatapackCommand {
             }
 
             // report UI progress back
-            const message = this.responseMessages[result.outcome](result);
-            switch(result.outcome) {
-                case Outcome.success: await vscode.window.showInformationMessage(message); break;
-                case Outcome.partial: await this.showWarningWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;
-                case Outcome.error: await this.showErrorWithRetry(message, () => this.deployDatapacks(selectedFiles)); break;
-            }
+            return this.showResultMessage(result);
 
         } catch (err) {
             this.logger.error(err);
-            await this.showErrorWithRetry(`Error while deploying datapack(s), see the log for details...`, () => this.deployDatapacks(selectedFiles));
+            vscode.window.showErrorMessage(`Vlocode encountered an error while deploying the selected datapacks, see the log for details.`);
         }
     }
+
+    private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
+        if (results.hasErrors) {    
+            results.getErrors().forEach((errorRec, i)  => this.logger.error(`${i}.${errorRec.key}: ${errorRec.message || '<NO_MESSAGE>'}`));            
+            return vscode.window.showErrorMessage( `One or more errors occurred during the deployment the selected datapacks`);           
+        }
+        [...results].forEach((errorRec, i) => this.logger.verbose(`${i}.${errorRec.key}: ${errorRec.success || errorRec.message}`));
+        return vscode.window.showErrorMessage(`Successfully deployed ${results.length} datapack(s)`);
+    }
 }
-
-
