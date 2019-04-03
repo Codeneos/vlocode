@@ -1,4 +1,4 @@
-import { window, ExtensionContext, workspace } from 'vscode';
+import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
@@ -10,7 +10,7 @@ import Commands from 'commands';
 import { container } from 'serviceContainer';
 import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 
-export function activate(context: ExtensionContext) : void {
+export function activate(context: vscode.ExtensionContext) : void {
     
     // Init logging and register services
     let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);
@@ -37,15 +37,12 @@ export function activate(context: ExtensionContext) : void {
     });
     setVlocityLogger(LogManager.get('vlocity'));
 
+    vscode.commands.registerCommand
+
     // register commands and windows
     container.get(CommandRouter).registerAll(Commands);
-    vloService.registerDisposable(window.registerTreeDataProvider('datapackExplorer', new DatapackExplorer(container)));
-    vloService.registerDisposable(new DatapackSavedEventHandler(workspace.onDidSaveTextDocument));
-}
-
-export function isDatapack() {
-    console.log('isDatapack');
-    console.log(arguments);
+    vloService.registerDisposable(vscode.window.registerTreeDataProvider('datapackExplorer', new DatapackExplorer(container)));
+    vloService.registerDisposable(new DatapackSavedEventHandler(vscode.workspace.onDidSaveTextDocument));
 }
 
 export function deactivate() { }

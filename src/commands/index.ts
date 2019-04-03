@@ -4,9 +4,9 @@ import DeployDatapackCommand from "./deployDatapackCommand";
 import ViewDatapackCommand from "./viewDatapackCommand";
 import ExportDatapackCommand from "./exportDatapackCommand";
 import SelectOrgCommand from "./selectOrgCommand";
-import BuildDatapackCommand from "./buildDatapackCommand";
 import AdminCommands from "./vlocityAdminCommand";
 import { VlocodeCommand } from "../constants";
+import BuildParentKeyFilesCommand from "./buildParentKeyFiles";
 
 export default {
     [VlocodeCommand.refreshDatapack]: RefreshDatapackCommand,
@@ -14,6 +14,6 @@ export default {
     [VlocodeCommand.viewDatapackGeneric]: ViewDatapackCommand,
     [VlocodeCommand.exportDatapack]: ExportDatapackCommand,
     [VlocodeCommand.selectOrg]: SelectOrgCommand,
-    [VlocodeCommand.buildDatapack]: BuildDatapackCommand,
+    [VlocodeCommand.buildParentKeyFiles]: BuildParentKeyFilesCommand,
     ...AdminCommands
 };

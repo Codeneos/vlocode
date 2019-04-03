@@ -15,6 +15,8 @@ import { groupBy, evalExpr, getDocumentBodyAsString } from './util';
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { createRecordProxy } from 'salesforceUtil';
 import { VlocityDatapack } from 'models/datapack';
+import { isObject } from 'util';
+import handleExceptions from 'decorators/handleExceptions';
 
 type DatapackLoaderRule = { rule: RegExp, load: (fileName: string) => Promise<any> };
 
@@ -54,17 +56,26 @@ export default class DatapackLoader {
         return datapack;
     }
 
-    public loadRaw(fileName : string) : Promise<any> {
+    private loadRaw(fileName : string) : Promise<any> {
         return getDocumentBodyAsString(fileName);
     }
 
-    public loadProperty(baseDir: string, fieldValue: any) : Promise<any> {
+    private async loadProperty(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
             let fileName = fieldValue.split(/\\|\//i).pop();
             let loader = this.loaders.find(loader => loader.rule.test(fileName));
             if (loader) {
-                return loader.load.call(this, path.join(baseDir, fileName));
-            }            
+                try {
+                    return await loader.load.call(this, path.join(baseDir, fileName));
+                } catch(err) { 
+                    return fieldValue;
+                }                
+            }
+        } else if (Array.isArray(fieldValue)) {
+            return Promise.all(fieldValue.map(value => this.loadProperty(baseDir, value)));
+        } else if (isObject(fieldValue)) {
+            await Promise.all(Object.keys(fieldValue).map(
+                async key => fieldValue[key] = await this.loadProperty(baseDir, fieldValue[key])));
         }
         return Promise.resolve(fieldValue);
     }

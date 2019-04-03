@@ -4,7 +4,7 @@ import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
 import * as yaml from 'js-yaml';
-import ServiceContainer, { default as s } from 'serviceContainer';
+import ServiceContainer, { default as s, container } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
 import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync, groupBy, forEachAsync, mapAsync } from '../util';
 import { LogManager, Logger } from 'loggers';
@@ -20,6 +20,7 @@ import { createRecordProxy } from 'salesforceUtil';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 import { type } from 'os';
+import DatapackLoader from 'datapackLoader';
 
 declare var VlocityUtils: any;
 
@@ -173,15 +174,11 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
+    /**
+     * @deprecated Use datapack loader class instead: `container.get(DatapackLoader)`
+     */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
-        this.logger.log(`Loading datapack: ${file.fsPath}`);
-        const manifestEntry = getDatapackManifestKey(file.fsPath);
-        return new VlocityDatapack(
-            file.fsPath, 
-            manifestEntry.datapackType, 
-            manifestEntry.key, 
-            getExportProjectFolder(file.fsPath), 
-            await getDocumentBodyAsString(file.fsPath));
+        return container.get(DatapackLoader).loadFrom(file.fsPath);
     }
 
     public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {

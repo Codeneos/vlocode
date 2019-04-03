@@ -12,7 +12,7 @@ import { LogManager, Logger } from 'loggers';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { removeNamespacePrefix } from 'salesforceUtil';
-import { mapAsyncParallel, filterAsyncParallel } from './util';
+import { mapAsyncParallel, filterAsyncParallel, getDocumentBodyAsString } from './util';
 
 /**
  * Gets a list of datapack headers 
@@ -67,6 +67,21 @@ export function getDatapackDependencies(datapackHeaderPath: string) : string {
     const dirname = path.dirname(datapackHeaderPath);
     const lastPathParts = dirname.split(/\/|\\/gm);
     return path.join(...lastPathParts.slice(0, lastPathParts.length - 2));
+}
+
+/**
+ * Search the project for a datapack with a certain matching key in the currently open workspace folders.
+ * @param file Datapack header file path
+ */
+export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Promise<string> {
+    const files = (await vscode.workspace.findFiles('**/*_DataPack.json')).map(uri => uri.fsPath);    
+    for (let i = 0; i < files.length; i++) {
+        const body = await getDocumentBodyAsString(files[i]);
+        if (body.includes(matchingKey)) {
+            return files[i];
+        }
+    }
+    return null;
 }
 
 

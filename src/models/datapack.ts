@@ -1,6 +1,7 @@
 import { ManifestEntry, ObjectEntry } from "services/vlocityDatapackService";
 import { isBuffer, isString, isObject } from "util";
 import { LogManager } from "loggers";
+import { unique } from "../util";
 
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
@@ -38,15 +39,33 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }
         
         // Proxies allow us to intercept all property calls
-        // allowing us to simmulate an indexer ([]) overload 
+        // allowing us to simulate an indexer ([]) overload 
         return new Proxy(this, {
             get: (target, name) => target.getProperty(name),
             set: (target, name, value) => target.setProperty(name, value),
         });
     }
 
+    public getParentRecordKeys() : string[] {
+        const dependencyWalker = (record : any, matcher: (key : string) => boolean, keys : string[] = []) : string[] => 
+            Object.keys(record || {}).reduce((keys, key) => {
+                if (matcher(key)) {
+                    keys.push(record[key]);
+                } else if (Array.isArray(record[key])) {
+                    record[key].forEach(item => dependencyWalker(item, matcher, keys));
+                } else if (typeof record[key] == 'object') {
+                    dependencyWalker(record[key], matcher, keys);
+                } 
+                return keys;
+            }, keys);
+        
+        const requiredKeys = dependencyWalker(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
+        const providedKeys = dependencyWalker(this.data, key => key == 'VlocityRecordSourceKey');
+        
+        return [...new Set(requiredKeys.filter(k => !providedKeys.includes(k)))];
+    }
+
     private getProperty(name: string | number | symbol) : any {
-        console.log('Ger prop ' + name.toString());
         if (name === undefined || name === null){
             return undefined;
         } else if (name in this){

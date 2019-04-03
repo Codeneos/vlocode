@@ -114,6 +114,10 @@
             {
                 "command": "vlocity.buildDatapack",
                 "title": "Vlocity: Build Datapack"
+            },
+            {
+                "command": "vlocity.buildParentKeyFiles",
+                "title": "Vlocity: Build Parent Key Files"
             }
         ],
         "menus": {
@@ -183,6 +187,10 @@
                 {
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.buildParentKeyFiles",
+                    "group": "v_vlocity"
                 }
             ],
             "editor/context": [
@@ -192,6 +200,10 @@
                 },
                 {
                     "command": "vlocity.deployDatapack",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.buildParentKeyFiles",
                     "group": "v_vlocity"
                 }
             ],

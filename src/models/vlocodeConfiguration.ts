@@ -42,11 +42,11 @@ export default class VlocodeConfiguration implements JobOptions {
     }
 
     public watch(watcher: (config: VlocodeConfiguration) => void, thisArg?: any) : Disposable {
-        const configListner = workspace.onDidChangeConfiguration(e => {
+        const configListener = workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration(this.sectionName)) {
                 watcher.call(thisArg, this.reload());
             }
         });
-        return configListner;
+        return configListener;
     }
 }
