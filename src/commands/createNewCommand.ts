@@ -4,7 +4,6 @@ import { DatapackCommand } from './datapackCommand';
 import DatapackBuilder from 'services/datapackBuilder';
 import { VlocityDatapackRelationshipType } from 'models/datapackCollection';
 import { writeFile } from 'fs';
-import { writeFileAsync } from '../util';
 import SalesforceService from 'services/salesforceService';
 import { isObject } from 'util';
 

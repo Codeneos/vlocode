@@ -1,8 +1,9 @@
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as expressions from "angular-expressions";
+import { readFile } from 'fs';
 
 export interface ExecpResult {
     stdout: Buffer;
@@ -37,7 +38,7 @@ export async function execp(cmd: string, opts : any) : Promise<ExecpResult> {
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
     if (doc) return doc.getText();
-    return await readFileAsync(file);
+    return (await fs.readFile(file)).toString();
 }
 
 export function promisify<T1, T2, T3, T4>(func: (arg1: T2, arg2: T2, arg3: T3, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
@@ -53,30 +54,6 @@ export function promisify<T1>(func: (...args: any[]) => void, thisArg: any = nul
             func.apply(thisArg, args.concat(callbackFunc));
         });
     };
-}
-
-const _readFileAsync = promisify(fs.readFile);
-export function readFileAsync(file: fs.PathLike) : Promise<string> {
-    return _readFileAsync(file).then(buffer => buffer.toString());
-}
-
-const _fstatAsync = promisify(fs.stat);
-export function fstatAsync(file: vscode.Uri) : Promise<fs.Stats> {
-    return _fstatAsync(file.fsPath);
-}
-
-const _readdirAsync = promisify(fs.readdir);
-export function readdirAsync(path: fs.PathLike) : Promise<string[]> {
-    return _readdirAsync(path);
-}
-
-export function writeFileAsync(path: fs.PathLike, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; }) : Promise<void> {
-    return new Promise((resolve, reject) => {
-        fs.writeFile(path, data, options, (err) => {
-            if(err) { reject(err); }
-            else { resolve(); }
-        });
-    });
 }
 
 export function existsAsync(path: fs.PathLike) : Promise<boolean> {

@@ -31,12 +31,11 @@ export default class RefreshDatapackCommand extends DatapackCommand {
     }
 
     private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
-        if (results.hasErrors) {    
-            results.getErrors().forEach((errorRec, i)  => this.logger.error(`${i}.${errorRec.key}: ${errorRec.message || '<NO_MESSAGE>'}`));            
-            return vscode.window.showErrorMessage( `One or more errors occurred during the refresh the selected datapacks`);           
+        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.message}`));
+        if (results.hasErrors) {            
+            return vscode.window.showErrorMessage( `One or more errors occurred while refreshing the selected datapacks`);           
         }
-        [...results].forEach((errorRec, i) => this.logger.verbose(`${i}.${errorRec.key}: ${errorRec.success || errorRec.message}`));
-        return vscode.window.showErrorMessage(`Successfully refreshed ${results.length} datapack(s)`);
+        return vscode.window.showInformationMessage(`Successfully refreshed ${results.length} datapack(s)`);
     }
 }
 

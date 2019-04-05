@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs-extra';
 
-import VlocityDatapackService, { DatapackResultCollection } from '../services/vlocityDatapackService';
+import { DatapackResultCollection } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import { forEachAsyncParallel, readdirAsync } from '../util';
+import { forEachAsyncParallel } from '../util';
 import * as path from 'path';
-import DatapackUtil, { getDatapackManifestKey } from 'datapackUtil';
+import DatapackUtil from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -25,11 +26,11 @@ export default class DeployDatapackCommand extends DatapackCommand {
     protected async saveUnsavedChangesInDatapacks(datapackHeaders: vscode.Uri[]) : Promise<vscode.TextDocument[]> {
         const datapackFolders = datapackHeaders.map(header => path.dirname(header.fsPath));
         const datapackFiles = new Set(
-            (await Promise.all(datapackFolders.map(folder => readdirAsync(folder))))
-            // prepend folder names so we have fully qualified paths
-            .map((files, i) => files.map(file => path.join(datapackFolders[i], file)))
-            // Could have used .flat() but that wasn't available yet
-            .reduce((arr, readdirResults) => arr.concat(...readdirResults), [])
+            (await Promise.all(datapackFolders.map(folder => fs.readdir(folder))))
+                    // prepend folder names so we have fully qualified paths
+                    .map((files, i) => files.map(file => path.join(datapackFolders[i], file)))
+                    // Could have used .flat() but that wasn't available yet
+                    .reduce((arr, readdirResults) => arr.concat(...readdirResults), [])
         );
         const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && datapackFiles.has(d.uri.fsPath));
         
@@ -70,11 +71,10 @@ export default class DeployDatapackCommand extends DatapackCommand {
     }
 
     private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
-        if (results.hasErrors) {    
-            results.getErrors().forEach((errorRec, i)  => this.logger.error(`${i}.${errorRec.key}: ${errorRec.message || '<NO_MESSAGE>'}`));            
+        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.message}`));
+        if (results.hasErrors) {            
             return vscode.window.showErrorMessage( `One or more errors occurred during the deployment the selected datapacks`);           
         }
-        [...results].forEach((errorRec, i) => this.logger.verbose(`${i}.${errorRec.key}: ${errorRec.success || errorRec.message}`));
-        return vscode.window.showErrorMessage(`Successfully deployed ${results.length} datapack(s)`);
+        return vscode.window.showInformationMessage(`Successfully deployed ${results.length} datapack(s)`);
     }
 }

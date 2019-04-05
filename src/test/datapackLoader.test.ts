@@ -32,7 +32,7 @@ describe('datapackLoader', () => {
         });
         it("should treat non-existing references as strings", async function() {
             const loader = new DatapackLoader();
-            const loadedDatapack = await loader.loadFrom('datapack.json');
+            const loadedDatapack = await loader.loadFrom('datapack2.json');
 
             // assert
             expect(loadedDatapack.name).equals('test');

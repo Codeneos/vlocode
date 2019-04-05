@@ -10,7 +10,7 @@ import * as l from '../loggers';
 import * as s from '../serviceContainer';
 import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync } from '../util';
+import { getDocumentBodyAsString } from '../util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {

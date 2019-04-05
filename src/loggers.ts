@@ -73,14 +73,14 @@ export class Logger {
         private writer: LogWriter) {
     }
 
-    public log(...args: any[]) : void { this.write(LogLevel.info, args); }
-    public info(...args: any[]) : void { this.write(LogLevel.info, args); }
-    public verbose(...args: any[]) : void { this.write(LogLevel.verbose, args); }
-    public warn(...args: any[]) : void { this.write(LogLevel.warn, args); }
-    public error(...args: any[]) : void { this.write(LogLevel.error, args); }
-    public debug(...args: any[]) : void { this.write(LogLevel.debug, args); }
+    public log(...args: any[]) : void { this.write(LogLevel.info, ...args); }
+    public info(...args: any[]) : void { this.write(LogLevel.info, ...args); }
+    public verbose(...args: any[]) : void { this.write(LogLevel.verbose, ...args); }
+    public warn(...args: any[]) : void { this.write(LogLevel.warn, ...args); }
+    public error(...args: any[]) : void { this.write(LogLevel.error, ...args); }
+    public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
     
-    private write(level: LogLevel, args: any[]) : void {
+    private write(level: LogLevel, ...args: any[]) : void {
         if (level > this.manager.getLogLevel(this.name)) {
             return;
         }

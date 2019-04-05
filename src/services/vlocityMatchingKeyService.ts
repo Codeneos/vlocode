@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as process from 'process';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync } from '../util';
+import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties, existsAsync } from '../util';
 import { LogManager, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';

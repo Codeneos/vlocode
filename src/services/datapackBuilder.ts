@@ -2,10 +2,11 @@ import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
+import * as fs from 'fs-extra';
 import * as process from 'process';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync, forEachAsync } from '../util';
+import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties, existsAsync, forEachAsync } from '../util';
 import { LogManager, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
@@ -115,7 +116,7 @@ export default class DatapackBuilder {
     private async compileData(data : string) : Promise<string> {
         const ext = path.extname(data).toLowerCase().replace('.','');
         if (ext) {
-            const fileContent = await readFileAsync(data);
+            const fileContent = (await fs.readFile(data)).toString();
             if (this.compilers[ext]) {
                 return this.compilers[ext](fileContent);
             }

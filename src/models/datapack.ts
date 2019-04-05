@@ -68,11 +68,11 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     private getProperty(name: string | number | symbol) : any {
         if (name === undefined || name === null){
             return undefined;
-        } else if (name in this){
+        } else if (name in this && (<any>this)[name] !== undefined){
             return (<any>this)[name];
-        } else if (this.data[name]) {
+        } else if (this.data[name] !== undefined) {
             return this.data[name];
-        } else if (isString(name) && this.data['%vlocity_namespace%__' + name]) {
+        } else if (isString(name) && this.data['%vlocity_namespace%__' + name]  !== undefined) {
             return this.data['%vlocity_namespace%__' + name];
         }
         return undefined;

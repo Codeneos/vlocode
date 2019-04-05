@@ -4,9 +4,10 @@ import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as process from 'process';
 import * as yaml from 'js-yaml';
+import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, readdirAsync, fstatAsync, getStackFrameDetails, forEachProperty, getProperties, readFileAsync, existsAsync, groupBy, forEachAsync, mapAsync } from '../util';
+import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties,  existsAsync, groupBy, forEachAsync, mapAsync } from '../util';
 import { LogManager, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
@@ -300,10 +301,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this._customSettings;
     }
 
-    private async loadCustomSettingsFrom(yamlFile: PathLike) : Promise<any> {        
+    private async loadCustomSettingsFrom(yamlFile: string) : Promise<any> {        
         try {
             // parse and watch Custom YAML
-            const customSettings = yaml.safeLoad(await readFileAsync(yamlFile));
+            const customSettings = yaml.safeLoad((await fs.readFile(yamlFile)).toString());
             this.logger.info(`Loaded custom settings from YAML file: ${yamlFile}`);
             return  {
                 OverrideSettings: customSettings.OverrideSettings,
