@@ -33,9 +33,14 @@ export abstract class DatapackCommand extends CommandBase {
         );
     }
 
-    protected loadDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
+    protected loadDatapacks(files: vscode.Uri[], onProgress?: (loadedFile: vscode.Uri, progress?: number) => void) : Promise<VlocityDatapack[]> {
+        let progressCounter = 0;
         return this.getDatapackHeaders(files).then(headerFiles => 
-            Promise.all(headerFiles.map(header => this.datapackService.loadDatapack(header)))
+            Promise.all(headerFiles.map(async (header, i, arr) => {
+                const datapack = await this.datapackService.loadDatapack(header);
+                !onProgress || onProgress(header, ++progressCounter / arr.length);
+                return datapack;
+            }))
         );
     }
 }

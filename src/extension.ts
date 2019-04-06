@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
-import { LogManager, LogWriter, WriterChain, ConsoleWriter, OutputChannelWriter, LogFilterProxy, LogLevel }  from './loggers';
+import { LogManager, LogWriter, WriterChain, ConsoleWriter, OutputChannelWriter, LogLevel }  from './loggers';
 import CommandRouter from './services/commandRouter';
 import { setLogger as setVlocityLogger } from './services/vlocityDatapackService';
 import DatapackExplorer from 'datapackExplorer';

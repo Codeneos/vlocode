@@ -18,17 +18,15 @@ const packageExternals = Object.keys(packageJson.dependencies)
         .concat(externals)
         .reduce((externals, dep) => Object.assign(externals, { [dep]: dep }), {});
 
+/**@type {import('webpack').Configuration}*/
 const common = {
     devtool: 'source-map',
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
-                loader: 'awesome-typescript-loader',
-                exclude: /node_modules/,
-                query: {
-                    useCache: true
-                }
+                test: /\.ts$/,
+                loader: 'ts-loader',
+                exclude: /node_modules/
             },
             {
                 test: /\.html$/,
@@ -52,10 +50,16 @@ const common = {
         extensions: ['.tsx', '.ts', '.js', '.html'],
         modules: ['node_modules', 'src']
     },
+    output: {
+        filename: '[name].js',
+        chunkFilename: '[id].js',
+        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+    },
     mode: 'development',
     externals: packageExternals
 };
 
+/**@type {import('webpack').Configuration}*/
 const vscodeExtension = {
     entry: {
         'vlocode': './src/extension.ts'
@@ -64,15 +68,12 @@ const vscodeExtension = {
     name: 'vlocode',
     devtool: 'source-map',
     output: {
-        filename: '[name].js',
-        chunkFilename: '[id].js',
-        library: 'extension',
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out'),
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+        path: path.resolve(__dirname, 'out')
     }
 };
 
+/**@type {import('webpack').Configuration}*/
 const tests = {
     entry: fs.readdirSync('./src/test/')
         .filter(file => file.match(/(.*)\.test\.ts$/))
@@ -82,15 +83,12 @@ const tests = {
         { index: './src/test/index.ts' }),
     target: 'node',
     output: {
-        filename: '[name].js',
-        chunkFilename: '[id].js',
-        library: 'extension',
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out', 'test'),
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+        path: path.resolve(__dirname, 'out', 'test')
     }
 };
 
+/**@type {import('webpack').Configuration}*/
 const views = {
     entry: {
         'script': './src/views/vlocode.ts'
@@ -98,9 +96,7 @@ const views = {
     name: 'views',
     output: {
         path: path.resolve(__dirname, 'out', 'views'),
-        publicPath: '/',
-        filename: '[name].js',
-        chunkFilename: '[id].js'
+        publicPath: '/'
     },
     optimization: {
         splitChunks: {

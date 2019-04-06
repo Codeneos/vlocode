@@ -146,6 +146,17 @@ export class OutputChannelWriter implements LogWriter {
     }
 }
 
+export class TerminalWriter implements LogWriter {
+    constructor(private terminal: vscode.Terminal) {
+        return <TerminalWriter><any>new FormatProxy(this);
+    }
+
+    public write(level: LogLevel, ...args: any[]) : void {
+        this.terminal.show(true)
+        this.terminal.sendText(args[0]);
+    }
+}
+
 export class ConsoleWriter implements LogWriter {
     constructor() {
         return <ConsoleWriter><any>new FormatProxy(this);

@@ -289,18 +289,18 @@
         }
     },
     "scripts": {
+        "prepare": "patch-package",
         "build": "npm run prepare && webpack --config webpack.prod.js",
         "build:debug": "npm run prepare && webpack --config webpack.dev.js",
         "clean": "rimraf ./out",
+        "watch": "webpack --config webpack.dev.js --info-verbosity verbose --watch",
         "lint": "tslint -p .",
         "test": "node ./node_modules/vscode/bin/test",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "bump": "npm version patch -m \"Bumping to %s\"",
-        "modclean": "node ./build/removeFiles . .vscodeignore",
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "npm run clean && npm run build",
-        "prepare": "patch-package"
+        "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
         "@types/angular": "^1.6.52",
@@ -334,6 +334,7 @@
         "sfdx-node": "^1.0.0",
         "sinon": "^7.2.2",
         "terser-webpack-plugin": "^1.2.3",
+        "ts-loader": "^5.3.3",
         "tslint": "^5.15.0",
         "typescript": "^3.4.1",
         "vsce": "^1.59.0",

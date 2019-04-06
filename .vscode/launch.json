@@ -16,8 +16,10 @@
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
-            ],
-            "preLaunchTask": "npm: build:debug",
+            ], 
+            "preLaunchTask": "build",
+            "stopOnEntry": false,
+            "sourceMaps": true
         },
         {
             "name": "Extension Release",
@@ -30,8 +32,10 @@
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
-            ],
-            "preLaunchTask": "npm: build"
+            ], 
+            "preLaunchTask": "build",
+            "stopOnEntry": false,
+            "sourceMaps": true
         },
         {
             "name": "Extension Tests",
@@ -45,8 +49,10 @@
             ],
             "outFiles": [
                 "${workspaceFolder}/out/test/**/*.js"
-            ],
-            "preLaunchTask": "npm: build:debug"
+            ], 
+            "preLaunchTask": "build",
+            "stopOnEntry": false,
+            "sourceMaps": true
         }
     ]
 }
