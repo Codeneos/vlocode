@@ -10,19 +10,18 @@ declare module 'vlocity' {
     
         constructor(options: vlocity.JobOptions);
     
-        checkLogin(onSuccess: any, onError: any): void;
+        /**
+         * Refreshs loging token and sets `namespace` property.
+         */
+        checkLogin(): Promise<void>;
     
-        getNamespace(onSuccess: any, onError: any): any;
+        /**
+         * Logsin into Salesforce and sets the `organizationId`
+         * @param retryCount number of tries to retry before thrown an exception
+         */
+        login(retryCount: Number): Promise<void>;
     
-        getPackageVersion(onSuccess: any, onError: any): void;
-    
-        login(onSuccess: any, onError: any, retryCount: Number): any;
-    
-        loginFailedMessage(error: any): any;
-    
-        sfdxLogin(onSuccess: any, onError: any): any;
-    
-        static runDataPacksCommand(action: vlocity.actionType, options: vlocity.JobOptions): any;
+        static runDataPacksCommand(action: vlocity.actionType, options: vlocity.JobOptions) : Promise<vlocity.VlocityJobResult>
     
         readonly datapacksjob : vlocity.DatapacksJob;    
         readonly datapacksexpand : vlocity.DataPacksExpand;    
@@ -30,14 +29,21 @@ declare module 'vlocity' {
         readonly datapacksexportbuildfile: vlocity.DataPacksExportBuildFile;
         readonly datapacksbuilder: vlocity.DataPacksBuilder;
 
+        readonly PackageVersion : string; 
+        readonly PackageMajorVersion : string;
+        readonly PackageMinorVersion : string;
+        readonly BuildToolSettingVersion : string;
+
         readonly tempFolder: string;
         readonly namespace: string;
+        readonly namespacePrefix: string;
     
         jsForceConnection: jsforce.Connection;
         accessToken: string;
         verbose: boolean;    
         sessionId: string;
         instanceUrl: string;
+        organizationId: string;
         passedInOptionsOverride: string;
         sfdxUsername: string;
     }
@@ -46,11 +52,8 @@ declare module 'vlocity' {
 
     namespace vlocity {
         export class DatapacksJob {
-            runJob<T>(
-                command : actionType, 
-                jobInfo: JobInfo, 
-                resolve: (result: VlocityJobResult) => void, 
-                reject?: (result: VlocityJobResult) => void) : void
+            runJob(action : actionType, jobInfo: JobInfo) : Promise<VlocityJobResult>
+            runJobWithInfo(jobInfo: JobInfo, action : actionType) : Promise<VlocityJobResult>
             /**
              * Data loaded from 'defaultjobsettings.yaml'
              */
@@ -93,6 +96,18 @@ declare module 'vlocity' {
             printJobStatus(jobInfo: JobInfo) : void;
         }
 
+        export class UtilityService {                
+            /**
+             * Sets `namespace` and `namespacePrefix` property.
+             */
+            getNamespace(): Promise<void>;
+        
+            /**
+             * Sets `PackageVersion`, `PackageMajorVersion`, `PackageMinorVersion` and `BuildToolSettingVersion`
+             */
+            getPackageVersion(): Promise<void>;
+        }
+
         export class DataPacksBuilder {
             allFileDataMap: {[key: string] : any};
         }
@@ -101,9 +116,10 @@ declare module 'vlocity' {
     
         export interface VlocityJobResult {
             action?: string;
-            message?: string;
-            status?: VlocityJobStatus;
             records?: VlocityDatapackRecord[];
+            status?: VlocityJobStatus;
+            message?: string;
+            data?: any;            
         }
         
         export interface VlocityDatapackRecord {
@@ -138,11 +154,16 @@ declare module 'vlocity' {
         }
     
         export interface JobInfo extends JobOptions {
+            jobAction?: actionType;
             exportBuildFile?: string;
             fullManifest?: any;
             skipQueries?: boolean;
             queries?: any;
             manifest?: any;
+            hasError?: boolean;
+            errors?: string[];
+            sourceKeyToRecordId?: { [key: string] : string }
+            currentStatus?: any[];
             [key: string]: any;
         } 
     
@@ -162,7 +183,9 @@ declare module 'vlocity' {
             'UpdateSettings' |
             'RefreshVlocityBase' |
             'Apex' |
-            'JavaScript';
+            'JavaScript' |
+            'RetrieveSalesforce' |
+            'GetAllAvailableExports' ;
     }
 }
 

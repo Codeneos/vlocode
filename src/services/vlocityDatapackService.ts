@@ -248,10 +248,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private checkLoginAsync() : Promise<void> {
-        return new Promise((resolve, reject) => {
-            process.chdir(vscode.workspace.rootPath);            
-            return this.vlocityBuildTools.checkLogin(resolve, reject);
-        });
+        process.chdir(vscode.workspace.rootPath);
+        return this.vlocityBuildTools.checkLogin();
     }
 
     private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
@@ -265,8 +263,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
 
         // run the job 
-        const result = await new Promise<vlocity.VlocityJobResult>(resolve => 
-            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, resolve));
+        const result = await this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions);
         return Object.assign(result, { currentStatus: jobOptions.currentStatus });
     }
 
