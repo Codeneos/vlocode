@@ -36,10 +36,10 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": {
-                            "regexp": "Compilation  starting…"
+                            "regexp": "Compilation.+?starting…"
                         },
                         "endsPattern": {
-                            "regexp": "Compilation  finished"
+                            "regexp": "Compilation.+?finished"
                         }
                     }
                 },
@@ -66,10 +66,10 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": {
-                            "regexp": "Compilation  starting…"
+                            "regexp": "Compilation.+?starting…"
                         },
                         "endsPattern": {
-                            "regexp": "Compilation  finished"
+                            "regexp": "Compilation.+?finished"
                         }
                     }
                 }

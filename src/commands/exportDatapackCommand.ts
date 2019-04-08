@@ -57,13 +57,8 @@ export default class ExportDatapackCommand extends DatapackCommand {
         }
 
         // With dependencies?
-        let withDependencies = await vscode.window.showQuickPick([
-            { label: 'None', description: 'Do not export any dependencies, only export the selected object', maxDepth: 0 },
-            { label: 'Direct', description: 'Include only direct dependencies, up to 1 level deep', maxDepth: 1  },
-            { label: 'All', description: 'Include all depending objects', maxDepth: -1  }
-        ], { placeHolder: 'Export object dependencies' });
-
-        if (!withDependencies) {
+        let dependencyExportDepth = await this.showDependencySelection();
+        if (!dependencyExportDepth) {
             return; // selection cancelled;
         }
 
@@ -71,17 +66,22 @@ export default class ExportDatapackCommand extends DatapackCommand {
             id: recordToExport.Id,
             sobjectType: recordToExport.attributes.type,
             datapackType: datapackType
-        }, withDependencies.maxDepth);
+        }, dependencyExportDepth);
     }
 
-    private async queryExportableRecords(datapackType : string) : Promise<SObjectRecord[] | undefined> {
+    private getExportQuery(datapackType: string, vlocityNamespace?: string) : string | undefined {
+        if (exportQueryDefinitions[datapackType]) {
+            return exportQueryDefinitions[datapackType].query
+                    .replace(constants.NAMESPACE_PLACEHOLDER, vlocityNamespace || this.datapackService.vlocityNamespace);
+        }
+    }
+
+    protected async queryExportableRecords(datapackType : string) : Promise<SObjectRecord[] | undefined> {
         // query available records        
         let queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');        
         try {
-            const queryDef = exportQueryDefinitions[datapackType];
             const connection = await this.datapackService.getJsForceConnection();
-            const query = queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER, this.datapackService.vlocityNamespace);
-            const results = await connection.queryAll<SObjectRecord>(query);
+            const results = await connection.queryAll<SObjectRecord>(this.getExportQuery(datapackType));
             if (results.totalSize === 0) {
                 return; // no results
             }
@@ -136,6 +136,21 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
         return objectGroupSelection.records;
+    }
+
+    protected async showDependencySelection() : Promise<number | undefined> {
+        // With dependencies?
+        let withDependencies = await vscode.window.showQuickPick([
+            { label: 'None', description: 'Do not export any dependencies, only export the selected object', maxDepth: 0 },
+            { label: 'Direct', description: 'Include only direct dependencies, up to 1 level deep', maxDepth: 1  },
+            { label: 'All', description: 'Include all depending objects', maxDepth: -1  }
+        ], { placeHolder: 'Export object dependencies' });
+
+        if (!withDependencies) {
+            return; // selection cancelled;
+        }
+
+        return withDependencies.maxDepth;
     }
 
     protected async showRecordSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord | undefined> {

@@ -2,7 +2,7 @@
  * Default constants used in this extensipn
  */
 
-const packageJson = require("../package.json");
+import * as packageJson from '../package.json';
 
 export const VERSION = packageJson.version;
 export const CONFIG_SECTION = 'vlocity';

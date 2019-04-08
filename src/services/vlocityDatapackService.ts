@@ -23,8 +23,6 @@ import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 import { type } from 'os';
 import DatapackLoader from 'datapackLoader';
 
-declare var VlocityUtils: any;
-
 export interface ManifestEntry {
     datapackType: string;
     key: string;
@@ -324,30 +322,4 @@ export default class VlocityDatapackService implements vscode.Disposable {
             }
         });
     }
-}
-
-export function setLogger(logger : Logger, includeCallerDetails: Boolean = false){
-    const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
-        if (includeCallerDetails) {
-            let callerFrame = getStackFrameDetails(2);
-            args.push(`(${callerFrame.fileName}:${callerFrame.lineNumber})`);
-        }
-        logFn.apply(logger, args);
-    };
-
-    const vlocityLoggerMapping : { [ func: string ]: (...args: any[]) => void } = {
-        report: logger.info,
-        success: logger.info,
-        warn: logger.warn,
-        error: logger.error,
-        verbose: logger.verbose        
-    };
-
-    // Override all methods
-    getProperties(vlocityLoggerMapping).forEach(kvp => VlocityUtils[kvp.key] = (...args: any[]) => vlocityLogFn(kvp.value, args));
-    VlocityUtils.output = (_loggingMethod, _color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
-    VlocityUtils.fatal = (...args: any[]) => { 
-        vlocityLogFn(logger.error, Array.from(args));
-        throw new Error(Array.from(args).join(' ')); 
-    };    
 }
