@@ -1,6 +1,7 @@
 import { Logger } from "loggers";
 import * as util from "./util";
 import * as vlocityPackageManifest from "vlocity/package.json";
+import 'vlocity';
 
 // Import VlocityUtils as global from Vlocity NodeJS module
 declare var VlocityUtils: any;
@@ -11,7 +12,7 @@ const loggerMapping = {
     warn: Logger.prototype.warn,
     error: Logger.prototype.error,
     verbose: Logger.prototype.verbose
-}
+};
 
 /**
  * Intercept calls to `VlocityUtils` logging methods and redirect them to the specified logger instance.

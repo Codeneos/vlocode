@@ -1,22 +1,12 @@
 // Place your settings in this file to overwrite default and user settings.
 {
     "files.exclude": {
-        "out": false // set this to true to hide the "out" folder with the compiled JS files
+        "out": false 
     },
     "search.exclude": {
-        "out": true // set this to false to include "out" folder in search results
+        "out": true 
     },
-    // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "typescript.tsc.autoDetect": "off",
-    "terminal.integrated.env.osx": {
-        "SFDX_SET_CLIENT_IDS": "sfdx-vscode"
-    },
-    "terminal.integrated.env.linux": {
-        "SFDX_SET_CLIENT_IDS": "sfdx-vscode"
-    },
-    "terminal.integrated.env.windows": {
-        "SFDX_SET_CLIENT_IDS": "sfdx-vscode"
-    },
-    "eslint.nodePath": "c:\\Users\\Peter Gulik\\.vscode\\extensions\\salesforce.salesforcedx-vscode-lwc-44.6.1\\node_modules",
-    "debug.node.autoAttach": "on"
+    "debug.node.autoAttach": "on",
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }

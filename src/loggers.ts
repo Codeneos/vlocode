@@ -152,7 +152,7 @@ export class TerminalWriter implements LogWriter {
     }
 
     public write(level: LogLevel, ...args: any[]) : void {
-        this.terminal.show(true)
+        this.terminal.show(true);
         this.terminal.sendText(args[0]);
     }
 }

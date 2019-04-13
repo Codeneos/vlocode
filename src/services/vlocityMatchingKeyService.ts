@@ -23,7 +23,7 @@ import QueryBuilder from './queryBuilder';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
-    readonly datapackType: string,
+    readonly datapackType: string;
     readonly fields: Array<string>;
     readonly returnField: string;
 }

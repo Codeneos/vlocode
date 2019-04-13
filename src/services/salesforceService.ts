@@ -30,7 +30,7 @@ export interface OrganizationDetails {
 
 export default class SalesforceService implements JsForceConnectionProvider {  
 
-    constructor(private connectionProvider: JsForceConnectionProvider) {
+    constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
 
     public getJsForceConnection() : Promise<jsforce.Connection> {
@@ -44,7 +44,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
         let installedPackage = await this.getInstalledPackageDetails(packageName);
         if (!installedPackage) {
-            throw `Package with name ${packageName} is not installed on your Salesforce organization`;
+            throw new Error(`Package with name ${packageName} is not installed on your Salesforce organization`);
         }
         return installedPackage.namespacePrefix;
     }

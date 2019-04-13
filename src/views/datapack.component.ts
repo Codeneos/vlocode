@@ -1,6 +1,6 @@
 
-import DatapackController from './datapack.controller'
-import DatapackTemplate from './datapack.component.html'
+import DatapackController from './datapack.controller';
+import DatapackTemplate from './datapack.component.html';
 
 export default class DatapackComponent implements ng.IComponentOptions {
 

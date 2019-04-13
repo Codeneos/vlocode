@@ -328,7 +328,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 success: record.VlocityDataPackStatus == VlocityJobStatus.success,
                 status: record.VlocityDataPackStatus,
                 error: (record.ErrorMessage || '').split('--').slice(-1)[0].trim() || null
-            }
+            };
         });
     }
 }

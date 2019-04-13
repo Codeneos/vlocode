@@ -1,8 +1,9 @@
 const path = require('path');
 const merge = require('webpack-merge').smart;
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const packageJson = require("./package.json");
 const fs = require('fs');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const externals = [
    // In order to run tests the main test frameworks need to be marked
@@ -20,18 +21,41 @@ const packageExternals = Object.keys(packageJson.dependencies)
 
 /**@type {import('webpack').Configuration}*/
 const common = {
+    context: __dirname,
     devtool: 'source-map',
     module: {
         rules: [
             {
                 test: /\.ts$/,
-                loader: 'ts-loader',
-                exclude: /node_modules/
+                enforce: 'pre',
+                use: [
+                    {
+                        loader: 'tslint-loader',
+                        options: { 
+                            fix: true,
+                            typeCheck: false,
+                            tsConfigFile: 'tsconfig.json'
+                        }
+                    }
+                ]
+            },
+            {
+                test: /\.ts$/,
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {
+                            transpileOnly: true,
+                            experimentalWatchApi: true
+                        },
+                    },
+                ],
             },
             {
                 test: /\.html$/,
                 exclude: /test.html/i,
                 use: [
+                    { loader: 'cache-loader' },
                     {
                         loader: 'html-loader',
                         options: {
@@ -42,7 +66,7 @@ const common = {
             },
             {
                 test: /\.yaml$/,
-                use: './build/loaders/yaml'
+                use: ['cache-loader', './build/loaders/yaml']
             }
         ]
     },
@@ -53,7 +77,8 @@ const common = {
     output: {
         filename: '[name].js',
         chunkFilename: '[id].js',
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+        devtoolModuleFilenameTemplate: '[absolute-resource-path]',
+        pathinfo: false
     },
     mode: 'development',
     externals: packageExternals
@@ -82,6 +107,7 @@ const tests = {
         }), 
         { index: './src/test/index.ts' }),
     target: 'node',
+    name: 'tests',
     output: {
         libraryTarget: 'commonjs2',
         path: path.resolve(__dirname, 'out', 'test')

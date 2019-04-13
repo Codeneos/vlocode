@@ -6,7 +6,7 @@ import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 class VlocityAdminCommand extends CommandBase {
 
-    private adminCommands = [
+    private readonly adminCommands = [
         { 
             title: 'Refresh Pricebook',  
             icon: 'mirror',
@@ -75,7 +75,7 @@ class VlocityAdminCommand extends CommandBase {
     }
 
     private executeBatch(batchClass: string) : Promise<void> {   
-        const apex = `Database.executeBatch(new ${batchClass}());`  
+        const apex = `Database.executeBatch(new ${batchClass}());`;  
         return this.executeAnonymous(apex);
     }
 
