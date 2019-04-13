@@ -23,8 +23,8 @@ export function activate(context: vscode.ExtensionContext) : void {
 
     LogManager.get('vlocode').info(`Vlocode version ${constants.VERSION} started`);
     LogManager.get('vlocode').info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);
-    LogManager.get('vlocode').verbose(`Verbose logging enabled`);    
-    
+    LogManager.get('vlocode').verbose(`Verbose logging enabled`);
+
     // setup Vlocity logger and filters
     const vlocityLogFilterRegex = [
         /^(Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy [0-9]* Items).*/i,
@@ -37,8 +37,6 @@ export function activate(context: vscode.ExtensionContext) : void {
         return !vlocityLogFilterRegex.some(r => r.test(args.join(' ')));
     });
     vlocityUtil.setVlocityLogger(LogManager.get('vlocity'));
-
-    vscode.commands.registerCommand
 
     // register commands and windows
     container.get(CommandRouter).registerAll(Commands);

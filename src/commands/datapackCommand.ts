@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import VlocodeService from 'services/vlocodeService';
 import VlocityDatapackService, * as vds from 'services/vlocityDatapackService';
 import { CommandBase } from "commands/commandBase";
-import { unique } from '../util';
+import { unique, mapAsync } from '../util';
 import { ManifestEntry } from 'services/vlocityDatapackService';
 import { VlocityDatapack } from 'models/datapack';
 import { getDatapackHeaders, getDatapackManifestKey } from 'datapackUtil';
@@ -15,10 +15,10 @@ export abstract class DatapackCommand extends CommandBase {
     }
 
     public async validate() : Promise<void> {
-        const validaionMessage = this.vloService.validateWorkspaceFolder() ||
-                                 await this.vloService.validateSalesforceConnectivity();
-        if (validaionMessage) {
-            throw validaionMessage;
+        const validationMessage = this.vloService.validateWorkspaceFolder() ||
+                                  await this.vloService.validateSalesforceConnectivity();
+        if (validationMessage) {
+            throw validationMessage;
         }
     }
 
@@ -33,14 +33,13 @@ export abstract class DatapackCommand extends CommandBase {
         );
     }
 
-    protected loadDatapacks(files: vscode.Uri[], onProgress?: (loadedFile: vscode.Uri, progress?: number) => void) : Promise<VlocityDatapack[]> {
+    protected async loadDatapacks(files: vscode.Uri[], onProgress?: (loadedFile: vscode.Uri, progress?: number) => void) : Promise<VlocityDatapack[]> {
         let progressCounter = 0;
-        return this.getDatapackHeaders(files).then(headerFiles => 
-            Promise.all(headerFiles.map(async (header, i, arr) => {
-                const datapack = await this.datapackService.loadDatapack(header);
-                !onProgress || onProgress(header, ++progressCounter / arr.length);
-                return datapack;
-            }))
-        );
+        const headerFiles = await this.getDatapackHeaders(files);
+        return mapAsync(headerFiles, async header => {
+            !onProgress || onProgress(header, ++progressCounter / headerFiles.length);
+            const datapack = await this.datapackService.loadDatapack(header);                
+            return datapack;
+        });
     }
 }

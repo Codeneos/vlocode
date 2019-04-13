@@ -10,7 +10,7 @@ class VlocityAdminCommand extends CommandBase {
         { 
             title: 'Refresh Pricebook',  
             icon: 'mirror',
-            detail: 'Runs refreshed the pricebook entries on the currently connected Salesforce org',
+            detail: 'Runs the refresh pricebook entries command on the currently connected Salesforce org',
             method: 'refreshPriceBook',
             name: VlocodeCommand.refreshPriceBook
         },
@@ -96,7 +96,7 @@ class VlocityAdminCommand extends CommandBase {
             throw new Error(`${result.exceptionMessage}\n${result.exceptionStackTrace}`);
         }
     }
-};
+}
 
 export default {
     [VlocodeCommand.adminCommands]: VlocityAdminCommand,

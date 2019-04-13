@@ -70,13 +70,13 @@ declare module 'vlocity' {
         }
     
         export class DataPacksExpand {
-            generateFolderPath(dataPackType, parentName) : string;
-            generateFolderOrFilename(filename, extension) : string;
-            generateFilepath(dataPackType, parentName, filename, extension) : string;
-            getNameWithFields(nameFields, dataPackData): string;
-            getDataPackName (dataPackType, sObjectType, dataPackData) : string;        
-            getListFileName(dataPackType, sObjectType, dataPackData) : string;         
-            getDataPackFolder(dataPackType, sObjectType, dataPackData) : string;
+            generateFolderPath(dataPackType: string, parentName: string) : string;
+            generateFolderOrFilename(filename: string, extension: string) : string;
+            generateFilepath(dataPackType: string, parentName: string, filename: string, extension: string) : string;
+            getNameWithFields(nameFields: string[], dataPackData: {}): string;
+            getDataPackName (dataPackType: string, sObjectType: string, dataPackData : {}) : string;     
+            getListFileName(dataPackType: string, sObjectType: string, dataPackData : {}) : string;         
+            getDataPackFolder(dataPackType: string, sObjectType: string, dataPackData : {}) : string;
         }
     
         export class DataPacksExportBuildFile {

@@ -2,7 +2,7 @@
  * Default constants used in this extensipn
  */
 
-import * as packageJson from '../package.json';
+const packageJson = require('../package.json');
 
 export const VERSION = packageJson.version;
 export const CONFIG_SECTION = 'vlocity';
@@ -11,7 +11,7 @@ export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
 
-export const exportQueryDefinitions =  require("exportQueryDefinitions.yaml");
+export const exportQueryDefinitions = require("exportQueryDefinitions.yaml");
 
 export enum VlocodeCommand {
     refreshDatapack = 'vlocity.refreshDatapack',
@@ -26,4 +26,4 @@ export enum VlocodeCommand {
     refreshProductHierarchy  = 'vlocity.admin.refreshProductHierarchy',
     updateAllProdAttribCommand  = 'vlocity.admin.updateAllProdAttribCommand',
     clearPlatformCache  = 'vlocity.admin.clearPlatformCache'
-};
+}

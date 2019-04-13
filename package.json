@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.9.5",
+    "version": "0.10.0",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -27,6 +27,9 @@
         "onCommand:vlocity.refreshDatapack",
         "onCommand:vlocity.deployDatapack",
         "onCommand:vlocity.exportDatapack",
+        "onCommand:vlocity.adminCommands",
+        "onCommand:vlocity.buildParentKeyFiles",
+        "onCommand:vlocity.buildDatapack",
         "onView:datapackExplorer",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json"
@@ -139,6 +142,10 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.buildParentKeyFiles",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocity.admin.refreshPriceBook",
                     "group": "v_vlocity"
                 },
@@ -157,10 +164,6 @@
                 {
                     "command": "vlocity.admin.clearPlatformCache",
                     "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.buildDatapack",
-                    "when": "false"
                 },
                 {
                     "command": "vlocity.buildDatapack",
@@ -187,10 +190,6 @@
                 {
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.buildParentKeyFiles",
-                    "group": "v_vlocity"
                 }
             ],
             "editor/context": [
@@ -200,10 +199,6 @@
                 },
                 {
                     "command": "vlocity.deployDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.buildParentKeyFiles",
                     "group": "v_vlocity"
                 }
             ],

@@ -32,8 +32,8 @@ export interface ObjectEntry {
     sobjectType: string;
     datapackType: string;
     globalKey?: string;
-    name?: String;
-    id?: String;
+    name?: string;
+    id?: string;
 }
 
 type ObjectEntryWithId = ObjectEntry & { id: string; };
@@ -151,6 +151,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return LogManager.get(VlocityDatapackService);
     }
 
+    public async ensureConnected() : Promise<void> {
+        await this.checkLoginAsync();
+    }
+
     public async getJsForceConnection() : Promise<jsforce.Connection> {
         await this.checkLoginAsync();
         return this._vlocityBuildTools.jsForceConnection;
@@ -169,7 +173,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this);
     }
 
-    public async isVlocityPackageInstalled() : Promise<Boolean> {
+    public async isVlocityPackageInstalled() : Promise<boolean> {
         return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
@@ -178,6 +182,11 @@ export default class VlocityDatapackService implements vscode.Disposable {
      */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         return container.get(DatapackLoader).loadFrom(file.fsPath);
+    }
+
+    public getDatapackReferenceKey(datapack : VlocityDatapack) {
+        return datapack.datapackType + '/' + 
+                this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack);
     }
 
     public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {

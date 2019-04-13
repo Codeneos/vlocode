@@ -15,6 +15,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private disposables: {dispose() : any}[] = [];
     private statusBar: vscode.StatusBarItem;
     private connector: SfdxConnectionProvider;
+    private diagnostics: { [key : string] : vscode.DiagnosticCollection } = {}
 
     // Properties
     private _datapackService: VlocityDatapackService;
@@ -24,7 +25,10 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     private _outputChannel: vscode.OutputChannel;
     get outputChannel(): vscode.OutputChannel {
-        return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(constants.OUTPUT_CHANNEL_NAME));
+        
+        this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(constants.OUTPUT_CHANNEL_NAME));
+        console.log(this._outputChannel.name);
+        return this._outputChannel;
     }
 
     protected get logger() : Logger {
@@ -47,6 +51,13 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             this._datapackService.dispose();
             this._datapackService = null;
         }
+    }
+
+    public getDiagnostics(name : string): vscode.DiagnosticCollection {
+        if (this.diagnostics[name]) {
+            return this.diagnostics[name];
+        }
+        return this.registerDisposable(this.diagnostics[name] = vscode.languages.createDiagnosticCollection(name));
     }
 
     public showStatus(text: string, command: VlocodeCommand | string = undefined) : void {
