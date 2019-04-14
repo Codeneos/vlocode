@@ -3,7 +3,6 @@ const merge = require('webpack-merge').smart;
 const packageJson = require("./package.json");
 const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const externals = [
    // In order to run tests the main test frameworks need to be marked
