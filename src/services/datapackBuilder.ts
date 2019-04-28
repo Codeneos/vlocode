@@ -18,7 +18,7 @@ import VlocityDatapackService from 'services/vlocityDatapackService';
 
 export default class DatapackBuilder {  
 
-    private compilers : { [fileExt: string] : (data: string) => Thenable<string> } = {
+    private readonly compilers : { [fileExt: string] : (data: string) => Thenable<string> } = {
         'json': (data: string) => this.buildJson(JSON.parse(data)),
         //'sass': (data: string) => Promise.resolve(sass.renderSync({ data: data }).css.toString())
     };

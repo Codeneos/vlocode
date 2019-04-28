@@ -178,7 +178,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
     
     /**
-     * @deprecated Use datapack loader class instead: `container.get(DatapackLoader)`
+     * @deprecated Use `container.get(DatapackLoader).loadFrom(...)` instead
      */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         return container.get(DatapackLoader).loadFrom(file.fsPath);

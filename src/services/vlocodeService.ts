@@ -15,7 +15,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private disposables: {dispose() : any}[] = [];
     private statusBar: vscode.StatusBarItem;
     private connector: SfdxConnectionProvider;
-    private diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
+    private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
 
     // Properties
     private _datapackService: VlocityDatapackService;
