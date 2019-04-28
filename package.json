@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.30.0"
+        "vscode": "^1.31.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -29,7 +29,7 @@
         "onCommand:vlocity.exportDatapack",
         "onCommand:vlocity.adminCommands",
         "onCommand:vlocity.buildParentKeyFiles",
-        "onCommand:vlocity.buildDatapack",
+        "onCommand:vlocity.openSalesforce",
         "onView:datapackExplorer",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json"
@@ -65,6 +65,10 @@
             {
                 "command": "vlocity.viewDatapack.generic",
                 "title": "Vlocity: View Datapack"
+            },
+            {
+                "command": "vlocity.openSalesforce",
+                "title": "Vlocity: View in Salesforce"
             },
             {
                 "command": "vlocity.exportDatapack",
@@ -112,6 +116,14 @@
                 "icon": {
                     "light": "resources/light/refresh.svg",
                     "dark": "resources/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "vlocity.datapackExplorer.openSalesforce",
+                "title": "View in Salesforce",
+                "icon": {
+                    "light": "resources/light/external-link-small.svg",
+                    "dark": "resources/dark/external-link-small.svg"
                 }
             },
             {
@@ -166,6 +178,10 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.openSalesforce",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocity.buildDatapack",
                     "when": "false"
                 },
@@ -175,6 +191,10 @@
                 },
                 {
                     "command": "vlocity.datapackExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
                     "when": "false"
                 },
                 {
@@ -190,6 +210,10 @@
                 {
                     "command": "vlocity.deployDatapack",
                     "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.openSalesforce",
+                    "group": "v_vlocity"
                 }
             ],
             "editor/context": [
@@ -199,6 +223,10 @@
                 },
                 {
                     "command": "vlocity.deployDatapack",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.openSalesforce",
                     "group": "v_vlocity"
                 }
             ],
@@ -216,7 +244,17 @@
                     "group": "inline"
                 },
                 {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
+                    "when": "viewItem == vlocity:datapack:object",
+                    "group": "inline"
+                },
+                {
                     "command": "vlocity.datapackExplorer.export",
+                    "when": "viewItem == vlocity:datapack:object",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
                     "when": "viewItem == vlocity:datapack:object",
                     "group": "v_vlocity"
                 }

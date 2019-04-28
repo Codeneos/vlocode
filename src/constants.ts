@@ -20,6 +20,7 @@ export enum VlocodeCommand {
     exportDatapack = 'vlocity.exportDatapack',
     selectOrg = 'vlocity.selectOrg',
     buildDatapack  = 'vlocity.buildDatapack',
+    openInSalesforce  = 'vlocity.openSalesforce',
     buildParentKeyFiles  = 'vlocity.buildParentKeyFiles',
     adminCommands  = 'vlocity.adminCommands',
     refreshPriceBook  = 'vlocity.admin.refreshPriceBook',

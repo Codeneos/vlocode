@@ -15,6 +15,10 @@ declare module 'exportQueryDefinitions.yaml' {
       fields: string[],
       returnField?: string
     }
+    salesforceUrl?: {
+      namespace?: string,
+      path: string
+    } | string
   }
   const exportQueryDefinitions : { 
     [datapackType: string] : DatapackQueryDefinition

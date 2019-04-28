@@ -112,6 +112,7 @@ export interface VlocityMatchingKey {
 export default class VlocityDatapackService implements vscode.Disposable {  
 
     private _vlocityBuildTools: vlocity;
+    private _matchingKeyService: VlocityMatchingKeyService;
     private _customSettings: any; // load from yaml when needed
     private _customSettingsWatcher: vscode.FileSystemWatcher; 
 
@@ -170,7 +171,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        return new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this);
+        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this));
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
@@ -204,6 +205,19 @@ export default class VlocityDatapackService implements vscode.Disposable {
         });
 
         return results.reduce((results, result) => results.join(result));
+    }
+
+    /**
+     * Gets the first matching Salesforce ID for the specified Vlocity object.
+     * @param entries Objects to query for Salesforce IDs
+     */
+    public async getSalesforceIds(entries: ObjectEntry[]) : Promise<string[]>  {
+        const exportQueries = await this.createExportQueries(entries);
+        const salesforceConn = await this.getJsForceConnection();
+        // query all objects even if they have an Id altrady; it is up to the caller to filter out objects with an Id if they
+        // do not want to query them
+        const results = await Promise.all(exportQueries.map(query => salesforceConn.queryAll<SObjectRecord>(query.query)));
+        return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
     }
 
     public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackResultCollection>  {

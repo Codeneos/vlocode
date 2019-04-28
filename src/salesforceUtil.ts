@@ -21,7 +21,7 @@ export function createRecordProxy(record: SObjectRecord) : SObjectRecord {
  * Removes the namespace from the specified field if it is there, otherwise return the field name as-is.
  * @param field Field to remove the namespace from
  */
-export function removeNamespacePrefix(field : string) {
+export function removeNamespacePrefix(field : string) : string {
     const namespaceIndex = field.indexOf('__');
     if (namespaceIndex > 0) {
         // custom fields are postfixed with __c, avoid detection field name as namespace
@@ -31,4 +31,12 @@ export function removeNamespacePrefix(field : string) {
         }
     }    
     return field;
+}
+
+/**
+ * Verifies if the specified string could be a salesforce Id
+ * @param id ID like string to check
+ */
+export function isSalesforceId(id : string) : boolean {
+    return /^[a-z0-9]{15}|[a-z0-9]{18}$/i.test(id);
 }

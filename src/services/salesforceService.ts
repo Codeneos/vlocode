@@ -41,6 +41,12 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return (await this.getInstalledPackageDetails(packageName)) !== undefined;
     }
 
+    public async getPageUrl(page : string, namespacePrefix? : string) {
+        const con = await this.getJsForceConnection();
+        const urlNamespace = namespacePrefix ? '--' + namespacePrefix.replace(/_/i, '-') : '';
+        return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${page.replace(/^\/+/, '')}`);
+    }
+
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
         let installedPackage = await this.getInstalledPackageDetails(packageName);
         if (!installedPackage) {
