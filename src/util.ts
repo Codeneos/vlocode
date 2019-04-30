@@ -37,7 +37,7 @@ export async function execp(cmd: string, opts : any) : Promise<ExecpResult> {
 
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
-    if (doc) return doc.getText();
+    if (doc) { return doc.getText(); }
     return (await fs.readFile(file)).toString();
 }
 

@@ -19,11 +19,11 @@ import { createRecordProxy } from 'salesforceUtil';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import DatapackUtil from 'datapackUtil';
 import * as constants from '../constants';
-import QueryBuilderService from './queryBuilder';
+import QueryBuilder from './queryBuilder';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
-    readonly datapackType: string,
+    readonly datapackType: string;
     readonly fields: Array<string>;
     readonly returnField: string;
 }
@@ -33,7 +33,7 @@ type Map<T> = { [key: string] : T };
 export default class VlocityMatchingKeyService {  
 
     private matchingKeys: Map<VlocityMatchingKey>;
-    private readonly matchingKeyQuery = new QueryBuilderService('vlocity_namespace__DRMatchingKey__mdt')
+    private readonly matchingKeyQuery = new QueryBuilder('vlocity_namespace__DRMatchingKey__mdt')
         .select('vlocity_namespace__MatchingKeyFields__c', 'vlocity_namespace__ObjectAPIName__c', 'vlocity_namespace__ReturnKeyField__c')
         .build();
 

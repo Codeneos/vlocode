@@ -7,6 +7,7 @@ import VlocodeService from './services/vlocodeService';
 import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
 import SObjectRecord from './models/sobjectRecord';
 import ExportDatapackCommand from './commands/exportDatapackCommand';
+import OpenSalesforceCommand from 'commands/openSalesforceCommand';
 import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
 import DatapackUtil from 'datapackUtil';
@@ -23,6 +24,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 	constructor(private readonly container: ServiceContainer) {
 		this.commands.registerAll({
 			'vlocity.datapackExplorer.export': ExportDatapackCommand,
+			'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
 			'vlocity.datapackExplorer.refresh': () => this.refresh()
 		});
 	}

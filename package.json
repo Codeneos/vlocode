@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.9.5",
+    "version": "0.10.0",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.30.0"
+        "vscode": "^1.31.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -27,6 +27,9 @@
         "onCommand:vlocity.refreshDatapack",
         "onCommand:vlocity.deployDatapack",
         "onCommand:vlocity.exportDatapack",
+        "onCommand:vlocity.adminCommands",
+        "onCommand:vlocity.buildParentKeyFiles",
+        "onCommand:vlocity.openSalesforce",
         "onView:datapackExplorer",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json"
@@ -62,6 +65,10 @@
             {
                 "command": "vlocity.viewDatapack.generic",
                 "title": "Vlocity: View Datapack"
+            },
+            {
+                "command": "vlocity.openSalesforce",
+                "title": "Vlocity: View in Salesforce"
             },
             {
                 "command": "vlocity.exportDatapack",
@@ -112,6 +119,14 @@
                 }
             },
             {
+                "command": "vlocity.datapackExplorer.openSalesforce",
+                "title": "View in Salesforce",
+                "icon": {
+                    "light": "resources/light/external-link-small.svg",
+                    "dark": "resources/dark/external-link-small.svg"
+                }
+            },
+            {
                 "command": "vlocity.buildDatapack",
                 "title": "Vlocity: Build Datapack"
             },
@@ -139,6 +154,10 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.buildParentKeyFiles",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocity.admin.refreshPriceBook",
                     "group": "v_vlocity"
                 },
@@ -159,8 +178,8 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.buildDatapack",
-                    "when": "false"
+                    "command": "vlocity.openSalesforce",
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocity.buildDatapack",
@@ -172,6 +191,10 @@
                 },
                 {
                     "command": "vlocity.datapackExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
                     "when": "false"
                 },
                 {
@@ -189,7 +212,7 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.buildParentKeyFiles",
+                    "command": "vlocity.openSalesforce",
                     "group": "v_vlocity"
                 }
             ],
@@ -203,7 +226,7 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.buildParentKeyFiles",
+                    "command": "vlocity.openSalesforce",
                     "group": "v_vlocity"
                 }
             ],
@@ -221,7 +244,17 @@
                     "group": "inline"
                 },
                 {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
+                    "when": "viewItem == vlocity:datapack:object",
+                    "group": "inline"
+                },
+                {
                     "command": "vlocity.datapackExplorer.export",
+                    "when": "viewItem == vlocity:datapack:object",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
                     "when": "viewItem == vlocity:datapack:object",
                     "group": "v_vlocity"
                 }
@@ -289,66 +322,68 @@
         }
     },
     "scripts": {
+        "prepare": "patch-package",
         "build": "npm run prepare && webpack --config webpack.prod.js",
         "build:debug": "npm run prepare && webpack --config webpack.dev.js",
         "clean": "rimraf ./out",
+        "watch": "webpack --config webpack.dev.js --info-verbosity verbose --watch",
         "lint": "tslint -p .",
         "test": "node ./node_modules/vscode/bin/test",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "bump": "npm version patch -m \"Bumping to %s\"",
-        "modclean": "node ./build/removeFiles . .vscodeignore",
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "npm run clean && npm run build",
-        "prepare": "patch-package"
+        "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
-        "@types/angular": "^1.6.52",
+        "@types/angular": "^1.6.54",
         "@types/chai": "^4.1.7",
         "@types/fs-extra": "^5.0.5",
-        "@types/js-yaml": "^3.12.0",
-        "@types/jsforce": "^1.9.4",
+        "@types/js-yaml": "^3.12.1",
+        "@types/jsforce": "^1.9.5",
         "@types/mocha": "^2.2.48",
         "@types/node": "^8.10.39",
         "@types/sinon": "^5.0.7",
         "ajv": "^6.6.2",
-        "angular": "^1.7.5",
+        "angular": "^1.7.8",
         "angular-expressions": "^1.0.0",
-        "awesome-typescript-loader": "^5.2.1",
+        "cache-loader": "^2.0.1",
         "chai": "^4.2.0",
         "cpx": "^1.5.0",
         "html-loader": "^0.5.5",
         "html-webpack-plugin": "^3.2.0",
-        "js-yaml": "^3.12.2",
+        "js-yaml": "^3.13.1",
         "json-loader": "^0.5.7",
         "mocha-html-reporter": "0.0.1",
-        "mocha-junit-reporter": "^1.18.0",
+        "mocha-junit-reporter": "^1.21.0",
         "mocha-simple-html-reporter": "^1.1.0",
         "mocha-sonarqube-reporter": "^1.0.1",
         "mock-fs": "^4.8.0",
         "moment": "^2.23.0",
-        "patch-package": "^5.1.1",
+        "patch-package": "^5.1.2",
         "retire": "^2.0.2",
-        "rimraf": "^2.6.2",
-        "rxjs": "^6.3.3",
-        "sfdx-node": "^1.0.0",
-        "sinon": "^7.2.2",
+        "rimraf": "^2.6.3",
+        "rxjs": "^6.4.0",
+        "sfdx-node": "^42.0.0",
+        "sinon": "^7.3.1",
         "terser-webpack-plugin": "^1.2.3",
+        "ts-loader": "^5.3.3",
         "tslint": "^5.15.0",
-        "typescript": "^3.4.1",
+        "tslint-loader": "^3.5.4",
+        "typescript": "^3.4.2",
         "vsce": "^1.59.0",
-        "vscode": "^1.1.30",
+        "vscode": "^1.1.33",
         "vscode-languageclient": "^5.2.1",
         "webpack": "^4.29.6",
-        "webpack-cli": "^3.2.3",
+        "webpack-cli": "^3.3.0",
         "webpack-dev-server": "^3.2.1",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.2.1",
-        "zone.js": "^0.8.26"
+        "zone.js": "^0.8.29"
     },
     "dependencies": {
         "jsforce": "^1.9.1",
-        "salesforce-alm": "^43.7.0",
-        "vlocity": "1.7.11"
+        "salesforce-alm": "^45.12.0",
+        "vlocity": "^1.9.4"
     }
 }

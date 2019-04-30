@@ -23,8 +23,6 @@ import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 import { type } from 'os';
 import DatapackLoader from 'datapackLoader';
 
-declare var VlocityUtils: any;
-
 export interface ManifestEntry {
     datapackType: string;
     key: string;
@@ -34,8 +32,8 @@ export interface ObjectEntry {
     sobjectType: string;
     datapackType: string;
     globalKey?: string;
-    name?: String;
-    id?: String;
+    name?: string;
+    id?: string;
 }
 
 type ObjectEntryWithId = ObjectEntry & { id: string; };
@@ -114,6 +112,7 @@ export interface VlocityMatchingKey {
 export default class VlocityDatapackService implements vscode.Disposable {  
 
     private _vlocityBuildTools: vlocity;
+    private _matchingKeyService: VlocityMatchingKeyService;
     private _customSettings: any; // load from yaml when needed
     private _customSettingsWatcher: vscode.FileSystemWatcher; 
 
@@ -153,6 +152,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return LogManager.get(VlocityDatapackService);
     }
 
+    public async ensureConnected() : Promise<void> {
+        await this.checkLoginAsync();
+    }
+
     public async getJsForceConnection() : Promise<jsforce.Connection> {
         await this.checkLoginAsync();
         return this._vlocityBuildTools.jsForceConnection;
@@ -168,18 +171,23 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        return new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this);
+        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this));
     }
 
-    public async isVlocityPackageInstalled() : Promise<Boolean> {
+    public async isVlocityPackageInstalled() : Promise<boolean> {
         return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
     /**
-     * @deprecated Use datapack loader class instead: `container.get(DatapackLoader)`
+     * @deprecated Use `container.get(DatapackLoader).loadFrom(...)` instead
      */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         return container.get(DatapackLoader).loadFrom(file.fsPath);
+    }
+
+    public getDatapackReferenceKey(datapack : VlocityDatapack) {
+        return datapack.datapackType + '/' + 
+                this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack);
     }
 
     public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {
@@ -197,6 +205,19 @@ export default class VlocityDatapackService implements vscode.Disposable {
         });
 
         return results.reduce((results, result) => results.join(result));
+    }
+
+    /**
+     * Gets the first matching Salesforce ID for the specified Vlocity object.
+     * @param entries Objects to query for Salesforce IDs
+     */
+    public async getSalesforceIds(entries: ObjectEntry[]) : Promise<string[]>  {
+        const exportQueries = await this.createExportQueries(entries);
+        const salesforceConn = await this.getJsForceConnection();
+        // query all objects even if they have an Id altrady; it is up to the caller to filter out objects with an Id if they
+        // do not want to query them
+        const results = await Promise.all(exportQueries.map(query => salesforceConn.queryAll<SObjectRecord>(query.query)));
+        return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
     }
 
     public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackResultCollection>  {
@@ -248,10 +269,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private checkLoginAsync() : Promise<void> {
-        return new Promise((resolve, reject) => {
-            process.chdir(vscode.workspace.rootPath);            
-            return this.vlocityBuildTools.checkLogin(resolve, reject);
-        });
+        process.chdir(vscode.workspace.rootPath);
+        return this.vlocityBuildTools.checkLogin();
     }
 
     private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
@@ -265,8 +284,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
 
         // run the job 
-        const result = await new Promise<vlocity.VlocityJobResult>(resolve => 
-            this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions, resolve, resolve));
+        const result = await this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions);
         return Object.assign(result, { currentStatus: jobOptions.currentStatus });
     }
 
@@ -324,33 +342,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 success: record.VlocityDataPackStatus == VlocityJobStatus.success,
                 status: record.VlocityDataPackStatus,
                 error: (record.ErrorMessage || '').split('--').slice(-1)[0].trim() || null
-            }
+            };
         });
     }
-}
-
-export function setLogger(logger : Logger, includeCallerDetails: Boolean = false){
-    const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
-        if (includeCallerDetails) {
-            let callerFrame = getStackFrameDetails(2);
-            args.push(`(${callerFrame.fileName}:${callerFrame.lineNumber})`);
-        }
-        logFn.apply(logger, args);
-    };
-
-    const vlocityLoggerMapping : { [ func: string ]: (...args: any[]) => void } = {
-        report: logger.info,
-        success: logger.info,
-        warn: logger.warn,
-        error: logger.error,
-        verbose: logger.verbose        
-    };
-
-    // Override all methods
-    getProperties(vlocityLoggerMapping).forEach(kvp => VlocityUtils[kvp.key] = (...args: any[]) => vlocityLogFn(kvp.value, args));
-    VlocityUtils.output = (_loggingMethod, _color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
-    VlocityUtils.fatal = (...args: any[]) => { 
-        vlocityLogFn(logger.error, Array.from(args));
-        throw new Error(Array.from(args).join(' ')); 
-    };    
 }

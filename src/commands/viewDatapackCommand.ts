@@ -59,14 +59,14 @@ class DatapackView {
         this.webview.onDidReceiveMessage(this.handleWebviewPostMessage, this, this.extensionContext.subscriptions);
     }
 
-    public updateSate(state : any) : Thenable<Boolean> {
+    public updateSate(state : any) : Thenable<boolean> {
         return this.postMessage({ 
             command: 'updateState', 
             data: state 
         });
     }
 
-    protected postMessage(msg : webviewMessage) : Thenable<Boolean> {
+    protected postMessage(msg : webviewMessage) : Thenable<boolean> {
         this.logger.verbose('DatapackView.postMessage: ' + JSON.stringify(msg));
         return this.webview.postMessage(msg);
     }

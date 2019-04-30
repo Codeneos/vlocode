@@ -15,20 +15,25 @@ class LazyCommand implements Command {
 
     constructor(
         public readonly name: string,
-        private ctor: CommandCtor) {
+        private readonly ctor: CommandCtor) {
     }
 
     public execute(... args: any[]){
-        if (!this.instance) {
-            this.instance = new this.ctor(this.name);
-        }
-        return this.instance.execute(...args);
+        return this.getCreateInstance().execute(...args);
+    }
+
+    public validate(... args: any[]) {        
+        return this.getCreateInstance().validate(...args);
+    }    
+
+    private getCreateInstance() {
+        return this.instance || (this.instance = new this.ctor(this.name));
     }
 }
 
 class CommandExecutor implements Command {
     constructor(
-        private command: Command
+        private readonly command: Command
     ) { }
 
     public get name() : string {
@@ -37,10 +42,6 @@ class CommandExecutor implements Command {
 
     protected get logger() : Logger {
         return LogManager.get(CommandExecutor);
-    }
-
-    protected get vlocode() : VlocodeService {
-        return container.get(VlocodeService);
     }
 
     public async execute(... args: any[]) : Promise<void> {
@@ -56,6 +57,12 @@ class CommandExecutor implements Command {
             vscode.window.showErrorMessage(`${this.name}: ${err}`);
         }
     }
+
+    public validate(... args: any[]) : Promise<void> | void {       
+        if (this.command.validate) {
+            return this.command.validate(...args);
+        }
+    } 
 }
 
 /**
@@ -64,7 +71,7 @@ class CommandExecutor implements Command {
  */
 export default class CommandRouter implements CommandMap {
     [commandName: string]: Command | any;
-    private _commands : Command[] = [];
+    private readonly commands : Command[] = [];
 
     protected get logger() : Logger {
         return LogManager.get(CommandRouter);
@@ -75,7 +82,7 @@ export default class CommandRouter implements CommandMap {
     }
 
     protected get count() : number {
-        return this._commands.length;
+        return this.commands.length;
     }
 
     constructor(commands?: { [name: string]: CommandCtor }) {
@@ -84,18 +91,21 @@ export default class CommandRouter implements CommandMap {
         }
     }
 
-    public execute(commandName : VlocodeCommand | string, ...args: any[]) : Thenable<any> {
+    public async execute(commandName : VlocodeCommand | string, ...args: any[]) : Promise<void> {
         const command : Command = this[commandName];
         if (command) {
-            return Promise.resolve(command.validate(...args)).then(_ => command.execute(...args));
+            if (command.validate) {
+                await Promise.resolve(command.validate(...args));
+            }            
+            return command.execute(...args);
         }
         return vscode.commands.executeCommand(commandName, ...args);
     }
 
     public register(name: string, commandCtor: ((...args: any[]) => void) | CommandCtor) : Command {
         const command = new CommandExecutor(this.createCommand(name, commandCtor));
-        const index = this._commands.push(command) - 1;
-        Object.defineProperty(this, name, { get: () => this._commands[index] });
+        const index = this.commands.push(command) - 1;
+        Object.defineProperty(this, name, { get: () => this.commands[index] });
         this.vlocode.registerDisposable(vscode.commands.registerCommand(command.name, command.execute, command));
         return command;
     }

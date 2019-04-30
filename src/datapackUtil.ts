@@ -37,6 +37,14 @@ export async function getDatapackHeaders(...paths: string[]) : Promise<string[]>
 }
 
 /**
+ * Get all datapack header file in the current workspace folders.
+ */
+export async function getDatapackHeadersInWorkspace() : Promise<vscode.Uri[]> {
+    return await vscode.workspace.findFiles('**/*_DataPack.json');
+}
+
+
+/**
  * Simple datapack key resolution based on the folder structure
  * @param file Datapack header file path
  */
@@ -74,7 +82,7 @@ export function getDatapackDependencies(datapackHeaderPath: string) : string {
  * @param file Datapack header file path
  */
 export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Promise<string> {
-    const files = (await vscode.workspace.findFiles('**/*_DataPack.json')).map(uri => uri.fsPath);    
+    const files = (await getDatapackHeadersInWorkspace()).map(uri => uri.fsPath);    
     for (let i = 0; i < files.length; i++) {
         const body = await getDocumentBodyAsString(files[i]);
         if (body.includes(matchingKey)) {
@@ -83,7 +91,6 @@ export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Prom
     }
     return null;
 }
-
 
 export default class DatapackUtil {
     

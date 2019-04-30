@@ -10,7 +10,6 @@
 			"always"
 		],
 		"triple-equals": false,
-		"typeof-compare": true,
 		"use-isnan": true,
 		"deprecation": true,
 		"prefer-readonly": true

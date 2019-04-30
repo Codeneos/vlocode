@@ -47,22 +47,27 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     }
 
     public getParentRecordKeys() : string[] {
-        const dependencyWalker = (record : any, matcher: (key : string) => boolean, keys : string[] = []) : string[] => 
-            Object.keys(record || {}).reduce((keys, key) => {
-                if (matcher(key)) {
-                    keys.push(record[key]);
-                } else if (Array.isArray(record[key])) {
-                    record[key].forEach(item => dependencyWalker(item, matcher, keys));
-                } else if (typeof record[key] == 'object') {
-                    dependencyWalker(record[key], matcher, keys);
-                } 
-                return keys;
-            }, keys);
-        
-        const requiredKeys = dependencyWalker(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
-        const providedKeys = dependencyWalker(this.data, key => key == 'VlocityRecordSourceKey');
-        
+        const requiredKeys = this.getPropertyValuesMatching<string>(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
+        const providedKeys = this.getProvidedRecordKeys();  
         return [...new Set(requiredKeys.filter(k => !providedKeys.includes(k)))];
+    }
+
+    public getProvidedRecordKeys() : string[] {
+        const providedKeys = this.getPropertyValuesMatching<string>(this.data, key => key == 'VlocityRecordSourceKey');
+        return [...new Set(providedKeys)];
+    }
+
+    private getPropertyValuesMatching<T>(record : any, matcher: (key : string) => boolean, keys : T[] = []) : T[] {
+        return Object.keys(record || {}).reduce((keys, key) => {
+            if (matcher(key)) {
+                keys.push(record[key]);
+            } else if (Array.isArray(record[key])) {
+                record[key].forEach(item => this.getPropertyValuesMatching(item, matcher, keys));
+            } else if (typeof record[key] == 'object') {
+                this.getPropertyValuesMatching(record[key], matcher, keys);
+            } 
+            return keys;
+        }, keys);
     }
 
     private getProperty(name: string | number | symbol) : any {

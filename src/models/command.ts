@@ -3,8 +3,8 @@
  */
 export interface Command {
     name: string;
-    execute(... args: any[]): void;
-    validate?(... args: any[]): void;
+    execute(... args: any[]): void | Promise<void>;
+    validate?(... args: any[]): void | Promise<void>;
 }
 
 /**

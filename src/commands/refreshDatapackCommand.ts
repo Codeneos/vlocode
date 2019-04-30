@@ -3,8 +3,9 @@ import * as vscode from 'vscode';
 import { DatapackResultCollection } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { groupBy, mapAsyncParallel, mapAsync } from '../util';
+import ExportDatapackCommand from './exportDatapackCommand';
 
-export default class RefreshDatapackCommand extends DatapackCommand {
+export default class RefreshDatapackCommand extends ExportDatapackCommand {
     
     constructor(name : string) {
         super(name);
@@ -27,10 +28,10 @@ export default class RefreshDatapackCommand extends DatapackCommand {
         }
 
         // report UI progress back
-        this.showResultMessage(results.reduce((results, result) => results.join(result)));
+        this.showRefreshResult(results.reduce((results, result) => results.join(result)));
     }
 
-    private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
+    private showRefreshResult(results : DatapackResultCollection) : Thenable<any> {
         [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.message}`));
         if (results.hasErrors) {            
             return vscode.window.showErrorMessage( `One or more errors occurred while refreshing the selected datapacks`);           

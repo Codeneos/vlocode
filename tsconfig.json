@@ -11,6 +11,7 @@
         "sourceMap": true,
         "rootDir": "src", 
         "strict": false, 
+        "resolveJsonModule": true,
         "noUnusedLocals": false, 
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,

@@ -20,7 +20,7 @@ export enum SortOrder {
 /**
  * Simple salesforce SOQL builder
  */
-export default class QueryBuilderService {  
+export default class QueryBuilder {  
 
     private fields: string[] = [];
     private conditions: QueryCondition[] = [];
@@ -33,7 +33,7 @@ export default class QueryBuilderService {
     }
 
     private get logger() {
-        return LogManager.get(QueryBuilderService);
+        return LogManager.get(QueryBuilder);
     }
 
     public select(...fields: string[]) {
@@ -41,7 +41,7 @@ export default class QueryBuilderService {
         return this;
     }
 
-    public sortBy(...sortFields: [string, SortOrder?][] | string[]) : QueryBuilderService {
+    public sortBy(...sortFields: [string, SortOrder?][] | string[]) : QueryBuilder {
         sortFields.forEach(sortField => {
             if(Array.isArray(sortField)) {
                 this.sorting.push({ 
@@ -58,15 +58,15 @@ export default class QueryBuilderService {
         return this;
     }
 
-    public whereEq(field: string, value: any) : QueryBuilderService {
+    public whereEq(field: string, value: any) : QueryBuilder {
         return this.where([field, '=', value]);
     }
 
-    public whereNotEq(field: string, value: any) : QueryBuilderService {
+    public whereNotEq(field: string, value: any) : QueryBuilder {
         return this.where([field, '!=', value]);
     }    
 
-    public where(...conditions: [string, string, any][]) : QueryBuilderService {
+    public where(...conditions: [string, string, any][]) : QueryBuilder {
         conditions.forEach(condition => {
             this.conditions.push({ 
                 field: condition[0], 

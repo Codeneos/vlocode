@@ -1,8 +1,8 @@
 const path = require('path');
 const merge = require('webpack-merge').smart;
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const packageJson = require("./package.json");
 const fs = require('fs');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const externals = [
    // In order to run tests the main test frameworks need to be marked
@@ -18,22 +18,43 @@ const packageExternals = Object.keys(packageJson.dependencies)
         .concat(externals)
         .reduce((externals, dep) => Object.assign(externals, { [dep]: dep }), {});
 
+/**@type {import('webpack').Configuration}*/
 const common = {
+    context: __dirname,
     devtool: 'source-map',
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
-                loader: 'awesome-typescript-loader',
-                exclude: /node_modules/,
-                query: {
-                    useCache: true
-                }
+                test: /\.ts$/,
+                enforce: 'pre',
+                use: [
+                    {
+                        loader: 'tslint-loader',
+                        options: { 
+                            fix: true,
+                            typeCheck: false,
+                            tsConfigFile: 'tsconfig.json'
+                        }
+                    }
+                ]
+            },
+            {
+                test: /\.ts$/,
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {
+                            transpileOnly: true,
+                            experimentalWatchApi: true
+                        },
+                    },
+                ],
             },
             {
                 test: /\.html$/,
                 exclude: /test.html/i,
                 use: [
+                    { loader: 'cache-loader' },
                     {
                         loader: 'html-loader',
                         options: {
@@ -44,7 +65,7 @@ const common = {
             },
             {
                 test: /\.yaml$/,
-                use: './build/loaders/yaml'
+                use: ['cache-loader', './build/loaders/yaml']
             }
         ]
     },
@@ -52,10 +73,17 @@ const common = {
         extensions: ['.tsx', '.ts', '.js', '.html'],
         modules: ['node_modules', 'src']
     },
+    output: {
+        filename: '[name].js',
+        chunkFilename: '[id].js',
+        devtoolModuleFilenameTemplate: '[absolute-resource-path]',
+        pathinfo: false
+    },
     mode: 'development',
     externals: packageExternals
 };
 
+/**@type {import('webpack').Configuration}*/
 const vscodeExtension = {
     entry: {
         'vlocode': './src/extension.ts'
@@ -64,15 +92,12 @@ const vscodeExtension = {
     name: 'vlocode',
     devtool: 'source-map',
     output: {
-        filename: '[name].js',
-        chunkFilename: '[id].js',
-        library: 'extension',
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out'),
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+        path: path.resolve(__dirname, 'out')
     }
 };
 
+/**@type {import('webpack').Configuration}*/
 const tests = {
     entry: fs.readdirSync('./src/test/')
         .filter(file => file.match(/(.*)\.test\.ts$/))
@@ -81,16 +106,14 @@ const tests = {
         }), 
         { index: './src/test/index.ts' }),
     target: 'node',
+    name: 'tests',
     output: {
-        filename: '[name].js',
-        chunkFilename: '[id].js',
-        library: 'extension',
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out', 'test'),
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+        path: path.resolve(__dirname, 'out', 'test')
     }
 };
 
+/**@type {import('webpack').Configuration}*/
 const views = {
     entry: {
         'script': './src/views/vlocode.ts'
@@ -98,9 +121,7 @@ const views = {
     name: 'views',
     output: {
         path: path.resolve(__dirname, 'out', 'views'),
-        publicPath: '/',
-        filename: '[name].js',
-        chunkFilename: '[id].js'
+        publicPath: '/'
     },
     optimization: {
         splitChunks: {

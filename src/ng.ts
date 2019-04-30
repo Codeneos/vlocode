@@ -2,7 +2,7 @@
 /* Wrapper arround Angular functions */
 import * as constants from './constants';
 
-declare var angular: ng.IAngularStatic
+declare var angular: ng.IAngularStatic;
 var appModule;
 
 export function module() : ng.IModule {
@@ -18,6 +18,6 @@ export function registerComponent<T>(ctor: (new () => T)) {
 export function bootstrapAngular<T>(components: [(new () => T)]) {
     components.forEach(cmp => registerComponent(cmp));
     angular.element(document).ready(() => {
-        angular.bootstrap(document, [constants.NG_APP_NAME])
+        angular.bootstrap(document, [constants.NG_APP_NAME]);
     });
 }

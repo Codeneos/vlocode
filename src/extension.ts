@@ -2,13 +2,13 @@ import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
-import { LogManager, LogWriter, WriterChain, ConsoleWriter, OutputChannelWriter, LogFilterProxy, LogLevel }  from './loggers';
+import { LogManager, LogWriter, WriterChain, ConsoleWriter, OutputChannelWriter, LogLevel }  from './loggers';
 import CommandRouter from './services/commandRouter';
-import { setLogger as setVlocityLogger } from './services/vlocityDatapackService';
 import DatapackExplorer from 'datapackExplorer';
 import Commands from 'commands';
 import { container } from 'serviceContainer';
 import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
+import * as vlocityUtil from 'vlocityUtil';
 
 export function activate(context: vscode.ExtensionContext) : void {
     
@@ -22,8 +22,9 @@ export function activate(context: vscode.ExtensionContext) : void {
     vloConfig.watch(c => LogManager.setGlobalLogLevel(c.verbose ? LogLevel.verbose : LogLevel.info));
 
     LogManager.get('vlocode').info(`Vlocode version ${constants.VERSION} started`);
-    LogManager.get('vlocode').verbose(`Verbose logging enabled`);    
-    
+    LogManager.get('vlocode').info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);
+    LogManager.get('vlocode').verbose(`Verbose logging enabled`);
+
     // setup Vlocity logger and filters
     const vlocityLogFilterRegex = [
         /^(Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy [0-9]* Items).*/i,
@@ -35,9 +36,7 @@ export function activate(context: vscode.ExtensionContext) : void {
         }
         return !vlocityLogFilterRegex.some(r => r.test(args.join(' ')));
     });
-    setVlocityLogger(LogManager.get('vlocity'));
-
-    vscode.commands.registerCommand
+    vlocityUtil.setVlocityLogger(LogManager.get('vlocity'));
 
     // register commands and windows
     container.get(CommandRouter).registerAll(Commands);

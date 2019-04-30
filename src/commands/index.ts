@@ -7,6 +7,7 @@ import SelectOrgCommand from "./selectOrgCommand";
 import AdminCommands from "./vlocityAdminCommand";
 import { VlocodeCommand } from "../constants";
 import BuildParentKeyFilesCommand from "./buildParentKeyFiles";
+import OpenSalesforceCommand from "./openSalesforceCommand";
 
 export default {
     [VlocodeCommand.refreshDatapack]: RefreshDatapackCommand,
@@ -15,5 +16,6 @@ export default {
     [VlocodeCommand.exportDatapack]: ExportDatapackCommand,
     [VlocodeCommand.selectOrg]: SelectOrgCommand,
     [VlocodeCommand.buildParentKeyFiles]: BuildParentKeyFilesCommand,
+    [VlocodeCommand.openInSalesforce]: OpenSalesforceCommand,
     ...AdminCommands
 };

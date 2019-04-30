@@ -6,11 +6,11 @@ import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 class VlocityAdminCommand extends CommandBase {
 
-    private adminCommands = [
+    private readonly adminCommands = [
         { 
             title: 'Refresh Pricebook',  
             icon: 'mirror',
-            detail: 'Runs refreshed the pricebook entries on the currently connected Salesforce org',
+            detail: 'Runs the refresh pricebook entries command on the currently connected Salesforce org',
             method: 'refreshPriceBook',
             name: VlocodeCommand.refreshPriceBook
         },
@@ -75,7 +75,7 @@ class VlocityAdminCommand extends CommandBase {
     }
 
     private executeBatch(batchClass: string) : Promise<void> {   
-        const apex = `Database.executeBatch(new ${batchClass}());`  
+        const apex = `Database.executeBatch(new ${batchClass}());`;  
         return this.executeAnonymous(apex);
     }
 
@@ -96,7 +96,7 @@ class VlocityAdminCommand extends CommandBase {
             throw new Error(`${result.exceptionMessage}\n${result.exceptionStackTrace}`);
         }
     }
-};
+}
 
 export default {
     [VlocodeCommand.adminCommands]: VlocityAdminCommand,
