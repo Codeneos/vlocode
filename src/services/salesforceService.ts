@@ -4,7 +4,6 @@ import * as jsforce from 'jsforce';
 import { DescribeGlobalResult, DescribeSObjectResult } from 'jsforce/describe-result';
 import * as path from 'path';
 import * as process from 'process';
-import * as sfdx from 'sfdx-node';
 import * as constants from '../constants';
 import * as l from '../loggers';
 import * as s from '../serviceContainer';
