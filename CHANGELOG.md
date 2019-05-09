@@ -1,9 +1,23 @@
 # Changelog Vlocode
 
+## [0.10.1] - 2019-05-09
+### Fixed
+ - Fix bug in switch org command causing null error.
+ - Prevent log to take focus for each line written; instead only focus on command start.
+
+## [0.10.0] - 2019-05-01
+### New
+ - Build parent key command
+ - Admin commands from Command Pallet
+ - Better detection of datapack types
+### Changed
+ - Update vlocity tools to 1.9.4
+ - Update all dependent packages to their latest releases available from NPM
+
 ## [0.8.9] - 2018-12-19
 ### Changed
  - Update vlocity tools to 1.7.11
- - Update all dependend packages to their latest relases available from NPM
+ - Update all dependent packages to their latest releases available from NPM
 
 ## [0.8.8] - 2018-12-07
 ### Changed

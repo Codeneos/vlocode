@@ -34,9 +34,9 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     public validate() : void {
-        const validaionMessage = this.vloService.validateWorkspaceFolder();
-        if (validaionMessage) {
-            throw validaionMessage;
+        const validationMessage = this.vloService.validateWorkspaceFolder();
+        if (validationMessage) {
+            throw validationMessage;
         }
     }
 
@@ -105,7 +105,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
 
         this.logger.error(`Unable to authorize at '${instanceUrl}': `, loginResult);
-        vscode.window.showErrorMessage('Failed to authorize with Salesforce, please verrify you are connected to the internet');
+        vscode.window.showErrorMessage('Failed to authorize with Salesforce, please verify you are connected to the internet');
         return null;
     }
 }

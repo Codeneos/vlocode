@@ -94,7 +94,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
     
     public focusLog() : any {
-        this.outputChannel.show(false);
+        this.outputChannel.show(true);
     }
 
     public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {

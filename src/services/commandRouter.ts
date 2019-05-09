@@ -5,8 +5,7 @@ import VlocodeService from 'services/vlocodeService';
 import * as vscode from 'vscode';
 import { Command, CommandMap } from "models/command";
 import { VlocodeCommand } from '../constants';
-import { isError, isObject, isFunction } from 'util';
-import { CommandBase } from 'commands/commandBase';
+import { isError } from 'util';
 
 type CommandCtor = (new(name: string) => Command);
 
@@ -40,13 +39,18 @@ class CommandExecutor implements Command {
         return this.command.name;
     }
 
-    protected get logger() : Logger {
+    private get logger() : Logger {
         return LogManager.get(CommandExecutor);
+    }
+
+    private get vlocode() : VlocodeService {
+        return container.get(VlocodeService);
     }
 
     public async execute(... args: any[]) : Promise<void> {
         this.logger.verbose(`Invoke command ${this.name}`);
         try {
+            this.vlocode.focusLog();
             await this.command.execute.apply(this.command, args);
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {

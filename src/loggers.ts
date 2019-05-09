@@ -141,7 +141,6 @@ export class OutputChannelWriter implements LogWriter {
     }
 
     public write(level: LogLevel, ...args: any[]) : void {
-        this.channel.show(true);
         this.channel.appendLine(args[0]);
     }
 }
