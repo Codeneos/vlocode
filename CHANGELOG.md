@@ -1,5 +1,14 @@
 # Changelog Vlocode
 
+## [0.10.2] - 2019-05-18
+### New
+ - Support for Custom datapacks defined in custom options YAML file
+ - Sort datapacks alphabetically in datapack explorer
+### Fixed
+ - Open in Salesforce opened all pages in classic 
+ - Open in Salesforce would not always work properly using the frontdoor session ID; for now avoid using the frontdoor.jsp
+
+
 ## [0.10.1] - 2019-05-09
 ### Fixed
  - Fix bug in switch org command causing null error.

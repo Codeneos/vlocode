@@ -47,15 +47,16 @@ export default class OpenSalesforceCommand extends DatapackCommand {
 
     protected async openIdInSalesforce(objectId: string, datapackType: string) {    
         // Build URL
-        let salesforceUrl = exportQueryDefinitions[datapackType].salesforceUrl || `'${objectId}'`;
+        const queryDefinitions = await this.datapackService.getQueryDefinitions();
+        let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'${objectId}'`;
         salesforceUrl = isString(salesforceUrl) ? { path: salesforceUrl } : salesforceUrl;
 
-        const sessionId = (await this.salesforceService.getJsForceConnection()).accessToken;
+        //const sessionId = (await this.salesforceService.getJsForceConnection()).accessToken;
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
         const salesforcePath = evalExpr(salesforceUrl.path, { id: objectId, type: datapackType, namespace: namespace });
-        const frontdoorPath = `/secur/frontdoor.jsp?sid=${sessionId}&retURL=${encodeURI(salesforcePath)}`;
+        //const frontdoorPath = `/secur/frontdoor.jsp?sid=${encodeURIComponent(sessionId)}&retURL=${encodeURIComponent(salesforcePath)}`;
 
-        const url = await this.salesforceService.getPageUrl(frontdoorPath, namespace);
+        const url = await this.salesforceService.getPageUrl(salesforcePath, namespace);
         this.logger.info(`Opening URL: ${salesforcePath}`);
         vscode.env.openExternal(vscode.Uri.parse(url));
     }

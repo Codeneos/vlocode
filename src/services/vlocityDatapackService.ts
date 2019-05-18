@@ -38,6 +38,8 @@ export interface ObjectEntry {
 
 type ObjectEntryWithId = ObjectEntry & { id: string; };
 
+type QueryDefinitions = typeof import('exportQueryDefinitions.yaml');
+
 export enum VlocityJobStatus {
     success = 'Success',
     error = 'Error'
@@ -103,6 +105,15 @@ type ExportQuery = {
     query: string 
 };
 
+type CustomJobYaml = { 
+    customQueries: [{VlocityDataPackType: string, query: string}],
+    OverrideSettings: any,
+    preStepApex: any,
+    postStepApex: any,
+    postJobApex: any,
+    [key: string] : any
+};
+
 export interface VlocityMatchingKey {
     sobjectType: string;
     fields: Array<string>;
@@ -150,6 +161,13 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     private get logger() {
         return LogManager.get(VlocityDatapackService);
+    }
+
+    public async getQueryDefinitions() : Promise<QueryDefinitions> {
+        const customJobOptions = await this.getCustomJobOptions();
+        const customQueries = customJobOptions.customQueries.reduce((map, val) => 
+            Object.assign(map, {[val.VlocityDataPackType]: val}) , {});
+        return Object.assign(customQueries, exportQueryDefinitions);
     }
 
     public async ensureConnected() : Promise<void> {
@@ -288,7 +306,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return Object.assign(result, { currentStatus: jobOptions.currentStatus });
     }
 
-    private async getCustomJobOptions() : Promise<any> {        
+    public async getCustomJobOptions() : Promise<CustomJobYaml> {        
         if (!this.config.customJobOptionsYaml) {
             // when no YAML file is specified skip this step
             return;
@@ -319,7 +337,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this._customSettings;
     }
 
-    private async loadCustomSettingsFrom(yamlFile: string) : Promise<any> {        
+    private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml> {        
         try {
             // parse and watch Custom YAML
             const customSettings = yaml.safeLoad((await fs.readFile(yamlFile)).toString());
@@ -328,7 +346,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 OverrideSettings: customSettings.OverrideSettings,
                 preStepApex: customSettings.preStepApex,
                 postStepApex: customSettings.postStepApex,
-                postJobApex: customSettings.postJobApex
+                postJobApex: customSettings.postJobApex,
+                customQueries: customSettings.queries
             };
         } catch(err) {
             this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${err.message || err}`);

@@ -40,3 +40,19 @@ export function removeNamespacePrefix(field : string) : string {
 export function isSalesforceId(id : string) : boolean {
     return /^[a-z0-9]{15}|[a-z0-9]{18}$/i.test(id);
 }
+
+/**
+ * Add the specified fields to the query.
+ * @param query Query to add fields to
+ * @param fields Fields to add
+ */
+export function addFieldsToQuery(query: string, ...fields: string[]) {
+    const fromIndex = query.toLowerCase().lastIndexOf(' from ');
+    let firstPart = query.substring(0, fromIndex).trim();
+    for (const field of fields) {
+        if (!firstPart.toLowerCase().includes(field.toLowerCase())) {
+            firstPart += `,${field}`;
+        }
+    }
+    return firstPart + ' ' + query.substring(fromIndex);
+}

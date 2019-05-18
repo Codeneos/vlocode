@@ -14,7 +14,7 @@ import DatapackUtil from 'datapackUtil';
 import { groupBy, evalExpr } from './util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { createRecordProxy } from 'salesforceUtil';
+import { createRecordProxy, addFieldsToQuery } from 'salesforceUtil';
 
 export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
 	
@@ -63,11 +63,12 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 
 	public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
 		await this.vlocode.validateAll(true);
+		const nodeSorter = (a: DatapackNode, b: DatapackNode) => a.getItemLabel().localeCompare(b.getItemLabel());
 		
 		if (!node) {
-			return Object.keys(exportQueryDefinitions).map(
+			return Object.keys(await this.datapackService.getQueryDefinitions()).map(
 				dataPackType => new DatapackCategoryNode(this, dataPackType)
-			);
+			).sort(nodeSorter);
 		} else if (node instanceof DatapackCategoryNode) {			
 			const records = await this.getExportableRecords(node.datapackType);
 
@@ -79,20 +80,21 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 			}
 
 			// group results?
-			const nodeConfig = exportQueryDefinitions[node.datapackType];
+			const queryDefinitions = await this.datapackService.getQueryDefinitions();
+			const nodeConfig = queryDefinitions[node.datapackType];
 			if (nodeConfig && nodeConfig.groupKey) {
-				return this.createDatapackGroupNodes(records, node.datapackType, nodeConfig.groupKey);
+				return this.createDatapackGroupNodes(records, node.datapackType, nodeConfig.groupKey).sort(nodeSorter);
 			}
-			return this.createDatapackObjectNodes(records, node.datapackType);
+			return this.createDatapackObjectNodes(records, node.datapackType).sort(nodeSorter);
 
 		} else if (node instanceof DatapackObjectGroupNode) {
-			return this.createDatapackObjectNodes(node.records, node.datapackType);				
+			return this.createDatapackObjectNodes(node.records, node.datapackType).sort(nodeSorter);			
 		}
 	}
 
 	private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {		
 		const connection = await this.datapackService.getJsForceConnection();
-		const query = this.getQuery(datapackType);
+		const query = await this.getQuery(datapackType);
 
 		this.logger.verbose(`Query: ${query}`);		
 		const results = await connection.queryAll<SObjectRecord>(query);			
@@ -101,9 +103,10 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
 		return results.totalSize == 0 ? null : results.records.map(createRecordProxy);
 	}
 
-	private getQuery(datapackType: string) {
-		const queryString = this.datapackService.queryDefinitions[datapackType].query;
-		return queryString.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
+	private async getQuery(datapackType: string) {
+		const queryDefinitions = await this.datapackService.getQueryDefinitions();
+		const queryString = addFieldsToQuery(queryDefinitions[datapackType].query, 'Name');
+		return queryString.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);	
 	}
 
 	private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
@@ -134,9 +137,9 @@ abstract class DatapackNode {
 		public icon: { light: string, dark: string } | string = undefined
 	) { }
 
-	protected abstract getItemLabel() : string;
-	protected abstract getItemTooltip() : string;
-	protected abstract getItemDescription() : string;
+	public abstract getItemLabel() : string;
+	public abstract getItemTooltip() : string;
+	public abstract getItemDescription() : string;
 
 	private getItemIconPath() : { light: string, dark: string } | string | undefined {
 		if(!this.icon) {
@@ -173,15 +176,15 @@ class DatapackCategoryNode extends DatapackNode {
 		super(explorer, DatapackNodeType.Category, true);
 	}
 
-	protected getItemLabel() {
+	public getItemLabel() {
 		return this.datapackType;
 	}
 
-	protected getItemDescription() {
+	public getItemDescription() {
 		return null;
 	}
 
-	protected getItemTooltip() {
+	public getItemTooltip() {
 		return `View datapacks of type ${this.datapackType}`;
 	}
 }
@@ -199,11 +202,11 @@ class DatapackObjectGroupNode extends DatapackNode  {
 		super(explorer, DatapackNodeType.ObjectGroup, true);
 	}
 
-	protected getItemLabel() {
+	public getItemLabel() {
 		return evalExpr(this.getLabelFormat(), this.records[0]);
 	}
 	
-	protected getItemDescription() {
+	public getItemDescription() {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];
 		if (nodeConfig && nodeConfig.groupDescription) {
 			return evalExpr(nodeConfig.groupDescription, { ...this.records[0], count: this.records.length });
@@ -211,7 +214,7 @@ class DatapackObjectGroupNode extends DatapackNode  {
 		return `${this.records.length} version(s)`;
 	}
 
-	private getLabelFormat() : string {
+	public getLabelFormat() : string {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];
 		if (nodeConfig && nodeConfig.groupName) {
 			return nodeConfig.groupName;
@@ -219,7 +222,7 @@ class DatapackObjectGroupNode extends DatapackNode  {
 		return '\'<NO_GROUP_NAME>\' + Id';
 	}
 
-	protected getItemTooltip() {
+	public getItemTooltip() {
 		return `Found ${this.records.length} versions`;
 	}
 }
@@ -237,7 +240,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 		super(explorer, DatapackNodeType.Object, false);
 	}
 
-	protected getItemLabel() {
+	public getItemLabel() {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];		
 		if (nodeConfig && nodeConfig.name) {
 			return evalExpr(nodeConfig.name, this.record);
@@ -245,7 +248,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 		return  DatapackUtil.getLabel(this.record);
 	}
 
-	protected getItemDescription() {
+	public getItemDescription() {
 		const nodeConfig = exportQueryDefinitions[this.datapackType];		
 		if (nodeConfig && nodeConfig.description) {
 			return evalExpr(nodeConfig.description, this.record);
@@ -253,7 +256,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
 		return this.id;
 	}
 
-	protected getItemTooltip() {
+	public getItemTooltip() {
 		return this.record.attributes.url;
 	}
 
