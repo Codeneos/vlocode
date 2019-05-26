@@ -58,7 +58,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         // With dependencies?
         let dependencyExportDepth = await this.showDependencySelection();
-        if (!dependencyExportDepth) {
+        if (dependencyExportDepth === undefined) {
             return; // selection cancelled;
         }
 
