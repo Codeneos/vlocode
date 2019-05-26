@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as expressions from "angular-expressions";
-import { readFile } from 'fs';
 
 export interface ExecpResult {
     stdout: Buffer;

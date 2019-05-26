@@ -381,9 +381,10 @@
         "zone.js": "^0.8.29"
     },
     "dependencies": {
+        "@salesforce/core": "^1.3.3",
         "jsforce": "^1.9.1",
+        "salesforce-alm": "^45.18.0",
         "sfdx-node": "^1.3.2",
-        "salesforce-alm": "^45.12.0",
         "vlocity": "^1.9.4"
     }
 }

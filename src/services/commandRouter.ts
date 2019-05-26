@@ -49,6 +49,7 @@ class CommandExecutor implements Command {
 
     public async execute(... args: any[]) : Promise<void> {
         this.logger.verbose(`Invoke command ${this.name}`);
+        await Promise.resolve(this.validate(...args));
         try {
             this.vlocode.focusLog();
             await this.command.execute.apply(this.command, args);
@@ -56,7 +57,7 @@ class CommandExecutor implements Command {
         } catch(err) {
             this.logger.error(`Command error: ${err}`);
             if (isError(err)) {
-                this.logger.error(err.stack);
+                this.logger.error(err);
             }
             vscode.window.showErrorMessage(`${this.name}: ${err}`);
         }
@@ -98,9 +99,6 @@ export default class CommandRouter implements CommandMap {
     public async execute(commandName : VlocodeCommand | string, ...args: any[]) : Promise<void> {
         const command : Command = this[commandName];
         if (command) {
-            if (command.validate) {
-                await Promise.resolve(command.validate(...args));
-            }            
             return command.execute(...args);
         }
         return vscode.commands.executeCommand(commandName, ...args);

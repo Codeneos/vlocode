@@ -19,7 +19,7 @@ declare module 'vlocity' {
          * Logsin into Salesforce and sets the `organizationId`
          * @param retryCount number of tries to retry before thrown an exception
          */
-        login(retryCount: Number): Promise<void>;
+        login(retryCount: number): Promise<void>;
     
         static runDataPacksCommand(action: vlocity.actionType, options: vlocity.JobOptions) : Promise<vlocity.VlocityJobResult>
     
@@ -28,6 +28,7 @@ declare module 'vlocity' {
         readonly datapacksutils: vlocity.DataPacksUtils;    
         readonly datapacksexportbuildfile: vlocity.DataPacksExportBuildFile;
         readonly datapacksbuilder: vlocity.DataPacksBuilder;
+        readonly utilityservice: any;
 
         readonly PackageVersion : string; 
         readonly PackageMajorVersion : string;
@@ -35,7 +36,6 @@ declare module 'vlocity' {
         readonly BuildToolSettingVersion : string;
 
         readonly tempFolder: string;
-        readonly namespace: string;
         readonly namespacePrefix: string;
     
         jsForceConnection: jsforce.Connection;
@@ -46,11 +46,13 @@ declare module 'vlocity' {
         organizationId: string;
         passedInOptionsOverride: string;
         sfdxUsername: string;
+        namespace: string;
     }
 
-    export = vlocity;
+    export = vlocity
 
     namespace vlocity {
+ 
         export class DatapacksJob {
             runJob(action : actionType, jobInfo: JobInfo) : Promise<VlocityJobResult>
             runJobWithInfo(jobInfo: JobInfo, action : actionType) : Promise<VlocityJobResult>
@@ -63,12 +65,12 @@ declare module 'vlocity' {
              */
             queryDefinitions: { [datapackType: string] : QueryDefinition };
         }
-    
+
         export interface QueryDefinition {
             VlocityDataPackType: string;
             query: string;
         }
-    
+
         export class DataPacksExpand {
             generateFolderPath(dataPackType: string, parentName: string) : string;
             generateFolderOrFilename(filename: string, extension: string) : string;
@@ -78,7 +80,7 @@ declare module 'vlocity' {
             getListFileName(dataPackType: string, sObjectType: string, dataPackData : {}) : string;         
             getDataPackFolder(dataPackType: string, sObjectType: string, dataPackData : {}) : string;
         }
-    
+
         export class DataPacksExportBuildFile {
             filename : string;
             currentExportFileData: any;
@@ -89,7 +91,7 @@ declare module 'vlocity' {
             saveFile(): void;
             addToExportBuildFile (jobInfo: JobInfo, dataPackData: any) : void;
         }
-    
+
         export class DataPacksUtils {
             saveCurrentJobInfo(djobInfo: JobInfo) : void;
             loadCurrentJobInfo(jobInfon: JobInfo) : void;
@@ -113,7 +115,7 @@ declare module 'vlocity' {
         }
 
         export type VlocityJobStatus = 'Error' | 'Success' ;
-    
+
         export interface VlocityJobResult {
             action?: string;
             records?: VlocityDatapackRecord[];
@@ -128,7 +130,7 @@ declare module 'vlocity' {
             VlocityDataPackStatus?: VlocityJobStatus;
             VlocityDataPackDisplayLabel?: string;
         }
-    
+
         export interface JobOptions {
             sfdxUsername?: string;
             username?: string;
@@ -152,7 +154,7 @@ declare module 'vlocity' {
             supportForceDeploy?: boolean;
             ignoreAllErrors?: boolean;
         }
-    
+
         export interface JobInfo extends JobOptions {
             jobAction?: actionType;
             exportBuildFile?: string;
@@ -166,7 +168,7 @@ declare module 'vlocity' {
             currentStatus?: any[];
             [key: string]: any;
         } 
-    
+
         type actionType = 
             'Export' | 
             'Import' | 
@@ -184,8 +186,7 @@ declare module 'vlocity' {
             'RefreshVlocityBase' |
             'Apex' |
             'JavaScript' |
-            'RetrieveSalesforce' |
-            'GetAllAvailableExports' ;
+            'RetrieveSalesforce';
     }
 }
 

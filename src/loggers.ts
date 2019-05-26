@@ -5,12 +5,13 @@ import * as constants from './constants';
 import { container } from 'serviceContainer';
 
 export enum LogLevel {    
-    error,
-    warn,
-    info,
+    debug,
     verbose,
-    debug
-}
+    info,
+    warn,
+    error,
+    fatal
+} 
 
 export type LogFilter = (severity: LogLevel, ...args: any[]) => boolean;
 
@@ -80,8 +81,9 @@ export class Logger {
     public error(...args: any[]) : void { this.write(LogLevel.error, ...args); }
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
     
-    private write(level: LogLevel, ...args: any[]) : void {
-        if (level > this.manager.getLogLevel(this.name)) {
+    public write(level: LogLevel, ...args: any[]) : void {
+        const logLevel = this.manager.getLogLevel(this.name);
+        if (level < logLevel) {
             return;
         }
         const filter = this.manager.getFilter(this.name);
@@ -110,11 +112,11 @@ export class FormatProxy<T extends LogWriter> implements LogWriter {
     }
 
     public formatArg(arg: any) : string | any {
-        if (isObject(arg)) {
-            return JSON.stringify(arg);
-        } else if (arg instanceof Error) {
+        if (arg instanceof Error) {
             return arg.stack;
-        }
+        } else if (isObject(arg)) {
+            return JSON.stringify(arg);
+        } 
         return arg;
     }
 }

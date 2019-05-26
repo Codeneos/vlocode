@@ -12,14 +12,12 @@ import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 export default class OpenSalesforceCommand extends DatapackCommand {
 
-    private readonly salesforceService : SalesforceService;
     private readonly namespaceResolver = {
         'vlocity': () => this.datapackService.vlocityNamespace
     };
 
-    constructor(name : string, connectionProvider?: JsForceConnectionProvider) {
+    constructor(name : string) {
         super(name, args => this.openInSalesforce(args[0] || this.currentOpenDocument));
-        this.salesforceService = new SalesforceService(connectionProvider || this.vloService.datapackService);
     }
 
     protected async openInSalesforce(input: vscode.Uri | ObjectEntry) {     
@@ -51,12 +49,10 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'${objectId}'`;
         salesforceUrl = isString(salesforceUrl) ? { path: salesforceUrl } : salesforceUrl;
 
-        //const sessionId = (await this.salesforceService.getJsForceConnection()).accessToken;
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
         const salesforcePath = evalExpr(salesforceUrl.path, { id: objectId, type: datapackType, namespace: namespace });
-        //const frontdoorPath = `/secur/frontdoor.jsp?sid=${encodeURIComponent(sessionId)}&retURL=${encodeURIComponent(salesforcePath)}`;
 
-        const url = await this.salesforceService.getPageUrl(salesforcePath, namespace);
+        const url = await this.vloService.salesforceService.getPageUrl(salesforcePath);
         this.logger.info(`Opening URL: ${salesforcePath}`);
         vscode.env.openExternal(vscode.Uri.parse(url));
     }

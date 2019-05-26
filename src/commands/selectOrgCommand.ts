@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as sfdx from 'sfdx-node';
 import { CommandBase } from './commandBase';
+import SfdxUtil, { FullSalesforceOrgDetails } from 'sfdxUtil';
 
 export default class SelectOrgCommand extends CommandBase {
 
@@ -40,15 +41,15 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async getAuthorizedOrgs() : Promise<(vscode.QuickPickItem & sfdx.SalesforceOrgDetails)[]> {
-        const sfdxOrgs = await sfdx.org.list({ all: true});
-        return sfdxOrgs.nonScratchOrgs.map(org => 
+    protected async getAuthorizedOrgs() : Promise<(vscode.QuickPickItem & FullSalesforceOrgDetails)[]> {
+        const orgList = await SfdxUtil.getAllKnownOrgDetails(); 
+        return orgList.map(org => 
             Object.assign({}, org, <vscode.QuickPickItem>{ label: org.username, description: org.instanceUrl }));
     }
 
     protected async selectOrg() : Promise<void> {
         const knownOrgs = await this.showProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
-        let selectedOrg : sfdx.SalesforceOrgDetails = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
+        let selectedOrg : FullSalesforceOrgDetails = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
         if (!selectedOrg) {

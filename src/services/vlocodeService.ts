@@ -8,19 +8,21 @@ import { VlocodeCommand } from '../constants';
 import ServiceContainer from 'serviceContainer';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from 'connection/sfdxConnectionProvider';
+import SalesforceService from './salesforceService';
 
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {  
 
     // Privates
     private disposables: {dispose() : any}[] = [];
     private statusBar: vscode.StatusBarItem;
-    private connector: SfdxConnectionProvider;
+    private connector: JsForceConnectionProvider;
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
+
 
     // Properties
     private _datapackService: VlocityDatapackService;
     get datapackService(): VlocityDatapackService {
-        return this._datapackService || (this._datapackService = new VlocityDatapackService(this.container, this.config));
+        return this._datapackService;
     }
 
     private _outputChannel: vscode.OutputChannel;
@@ -28,8 +30,17 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(constants.OUTPUT_CHANNEL_NAME));
     }
 
+    private _salesforceService: SalesforceService;
+    get salesforceService(): SalesforceService {
+        return this._salesforceService;
+    }
+
     protected get logger() : Logger {
         return LogManager.get(VlocodeService);
+    }
+
+    public get connected() : boolean {
+        return !!this._datapackService;
     }
 
     // Ctor + Methods
@@ -47,6 +58,22 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         if (this._datapackService) {
             this._datapackService.dispose();
             this._datapackService = null;
+        }
+    }
+
+    public async initialize() {
+        this.showStatus(`$(sync) Connecting to Salesforce...`);
+        try {
+            this.connector = null;            
+            if (this._datapackService) {
+                this._datapackService.dispose();
+            }
+            this._salesforceService = new SalesforceService(this);
+            this._datapackService = await new VlocityDatapackService(this.container, this, this.config, this.salesforceService).initialize();
+            this.updateStatusBar(this.config);
+        } catch (err) {
+            this.logger.error(err);
+            this.showStatus(`$(alert) Could not connect to Salesforce`, VlocodeCommand.selectOrg);
         }
     }
 
@@ -105,25 +132,26 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private createConfigWatcher() : vscode.Disposable {
         this.updateStatusBar(this.config);
         return this.config.watch(c => {
-            if (this._datapackService) {
-                // re-create _datapackService class when the config changes
-                this._datapackService.dispose();
-                this._datapackService = null;
-            }
-            this.connector = null;
-            this.updateStatusBar(c);
+            this.showStatus(`$(sync) Processing config changes...`, VlocodeCommand.selectOrg);
+            this.initialize();
         });
     }
 
     public async validateSalesforceConnectivity() : Promise<string | undefined> {
         if (!this.config.sfdxUsername) {
-            return 'Select a Salesforce instance for this workspace in order to use Vlocode operations.';            
+            return 'Select a Salesforce instance for this workspace to use Vlocode';
+        }
+        if (!this.connected) {
+            await this.initialize();
+            if (!this.connected) {
+                return 'Unable to connect to Salesforce; are you connected to the Internet?';
+            }
         }
         if (!await this.datapackService.isVlocityPackageInstalled()) {
-            return 'The Vlocity managed package is not installed on your Salesforce organization; select a different Salesforce organization or install the Vlocity.';
+            return 'The Vlocity managed package is not installed on your Salesforce instance; select a different Salesforce instance or install Vlocity';
         }
         if (this.config.username || this.config.password) {
-            vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the Salesforce username or password.');
+            vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the Salesforce username or password');
         }
     }
 

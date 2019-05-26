@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
-import { DescribeGlobalResult, DescribeSObjectResult } from 'jsforce/describe-result';
 import * as path from 'path';
 import * as process from 'process';
 import * as constants from '../constants';
@@ -29,6 +28,9 @@ export interface OrganizationDetails {
 
 export default class SalesforceService implements JsForceConnectionProvider {  
 
+    private readonly describeCache = new Map<string, jsforce.DescribeSObjectResult>();
+    private packageCache: InstalledPackageRecord[];
+    
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
 
@@ -47,7 +49,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
-        let installedPackage = await this.getInstalledPackageDetails(packageName);
+        const installedPackage = await this.getInstalledPackageDetails(packageName);
         if (!installedPackage) {
             throw new Error(`Package with name ${packageName} is not installed on your Salesforce organization`);
         }
@@ -55,26 +57,53 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     public async getInstalledPackageDetails(packageName: string | RegExp) : Promise<InstalledPackageRecord | undefined> {
-        let results = await this.getInstalledPackages();     
+        const results = await this.getInstalledPackages();     
         return results.find(packageInfo => isString(packageName) ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
     }
 
     public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {
-        let con = await this.getJsForceConnection();
-        let results = await con.metadata.list( { type: 'InstalledPackage' });        
-        return <InstalledPackageRecord[]>results;
+        if (this.packageCache) {
+            return this.packageCache;
+        }
+        const con = await this.getJsForceConnection();
+        const results = await con.metadata.list( { type: 'InstalledPackage' });        
+        this.packageCache = <InstalledPackageRecord[]>results;
+        return this.packageCache;
     }
 
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
-        let con = await this.getJsForceConnection();
-        let results = await con.query('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
+        const con = await this.getJsForceConnection();
+        const results = await con.query('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
         return <OrganizationDetails>results.records[0];
     }
 
     public async getRecordPrefixes() : Promise<{ [key: string]: string }> {
-        let con = await this.getJsForceConnection();
-        let result = await con.describeGlobal();
+        const con = await this.getJsForceConnection();
+        const result = await con.describeGlobal();
         return result.sobjects.filter(rec => !!rec.keyPrefix)
                               .reduce((map: {}, rec) => map[rec.keyPrefix] = rec.name, {});
+    }
+
+    public async describeSObject(type: string) : Promise<jsforce.DescribeSObjectResult> {
+        let result = this.describeCache.get(type);
+        if (!result) {
+            const con = await this.getJsForceConnection();
+            try {
+                result = await con.describe(type);
+            } catch(err) {
+                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
+            }
+            this.describeCache.set(type, result);
+        }
+        return result;
+    }
+
+    public async getSObjectField(type: string, fieldName: string) : Promise<jsforce.Field> {
+        const result = await this.describeSObject(type);
+        const field = result.fields.find(field => field.name.toLowerCase() == fieldName.toLowerCase());
+        if (!field) {
+            throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
+        }
+        return field;
     }
 }

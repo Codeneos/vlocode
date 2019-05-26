@@ -38,18 +38,15 @@ export default class CreateNewCommand extends DatapackCommand {
         }
     }];
 
-    private salesforceService : SalesforceService;
-
     constructor(name : string) {
         super(name, args => this.create(args[1] || [args[0] || this.currentOpenDocument]));
-        this.salesforceService = new SalesforceService(this.vloService.datapackService);
     }    
 
     protected async create(selectedFiles: vscode.Uri[]) {       
         let selectedType = await vscode.window.showQuickPick(this.newItemTypes,
             { placeHolder: 'Select the type of item to create' });
 
-        let orgName = (await this.salesforceService.getOrganizationDetails()).Name;
+        let orgName = (await this.vloService.salesforceService.getOrganizationDetails()).Name;
         let vlocityNamespace = this.vloService.datapackService.vlocityNamespace;
 
         this.logger.info(`orgName: ${orgName}`);

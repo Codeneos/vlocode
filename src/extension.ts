@@ -10,7 +10,10 @@ import { container } from 'serviceContainer';
 import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 import * as vlocityUtil from 'vlocityUtil';
 
-export function activate(context: vscode.ExtensionContext) : void {
+export function activate(context: vscode.ExtensionContext) : Promise<void> {
+
+    // All SFDX and Vloctiy commands work better when we are running from the workspace folder    
+    process.chdir(vscode.workspace.rootPath);
     
     // Init logging and register services
     let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);

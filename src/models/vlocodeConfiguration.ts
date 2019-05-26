@@ -41,7 +41,7 @@ export default class VlocodeConfiguration implements JobOptions {
         return this.load(this.sectionName);
     }
 
-    public watch(watcher: (config: VlocodeConfiguration) => void, thisArg?: any) : Disposable {
+    public watch(watcher: (config: VlocodeConfiguration) => void | Promise<void>, thisArg?: any) : Disposable {
         const configListener = workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration(this.sectionName)) {
                 watcher.call(thisArg, this.reload());

@@ -95,6 +95,9 @@ export default class ExportDatapackCommand extends DatapackCommand {
         let datapackOptions = Object.keys(exportQueryDefinitions).map(
             option => {
                 const queryDef = exportQueryDefinitions[option];
+                if(!queryDef.query) {
+                    return;
+                }
                 return {
                     label: queryDef.VlocityDataPackType,
                     detail: queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER, 'vlocity'),

@@ -2,26 +2,21 @@ import * as vscode from 'vscode';
 import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
-import * as process from 'process';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
-import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties,  existsAsync, groupBy, forEachAsync, mapAsync } from '../util';
-import { LogManager, Logger } from 'loggers';
+import { existsAsync, groupBy, mapAsync } from '../util';
+import { LogManager } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
-import { FSWatcher, PathLike } from 'fs';
-import { runInThisContext } from 'vm';
 import SalesforceService from 'services/salesforceService';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from 'models/sobjectRecord';
-import { createRecordProxy } from 'salesforceUtil';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
-import { type } from 'os';
 import DatapackLoader from 'datapackLoader';
+import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 export interface ManifestEntry {
     datapackType: string;
@@ -122,14 +117,17 @@ export interface VlocityMatchingKey {
 
 export default class VlocityDatapackService implements vscode.Disposable {  
 
-    private _vlocityBuildTools: vlocity;
+    private vlocityBuildTools: vlocity;
     private _matchingKeyService: VlocityMatchingKeyService;
     private _customSettings: any; // load from yaml when needed
     private _customSettingsWatcher: vscode.FileSystemWatcher; 
 
     constructor(
         private readonly container : ServiceContainer, 
-        private readonly config: VlocodeConfiguration) {
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly config: VlocodeConfiguration,
+        private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider)
+        ) {
     }
 
     public dispose(){
@@ -138,13 +136,25 @@ export default class VlocityDatapackService implements vscode.Disposable {
             this._customSettingsWatcher = null;
         }
     }
-     
-    private get vlocityBuildTools() : vlocity {
-        return this._vlocityBuildTools || (this._vlocityBuildTools = this.createVlocityInstance());        
+
+    public async initialize() : Promise<VlocityDatapackService> {
+        this.vlocityBuildTools = await this.createVlocityInstance();
+        return this;
     }
 
-    private createVlocityInstance() : vlocity {
-        const buildTools = new vlocity(this.config);
+    private async createVlocityInstance() : Promise<vlocity> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const vlocityNamespace = await this.salesforceService.getInstalledPackageNamespace(/vlocity/i);
+        const vlocityInstanceParams = { 
+            accessToken: connection.accessToken,
+            instanceUrl: connection.instanceUrl,
+            vlocityNamespace
+        };
+        const buildTools = new vlocity(<VlocodeConfiguration>Object.assign({}, this.config, vlocityInstanceParams));
+        buildTools.jsForceConnection = connection;
+        buildTools.namespace = vlocityNamespace;
+        buildTools.utilityservice.login = () => {};
+        buildTools.utilityservice.sfdxLogin = () => {};
         buildTools.datapacksutils.printJobStatus = () => {};
         buildTools.datapacksutils.saveCurrentJobInfo = () => {};
         buildTools.datapacksexportbuildfile.saveFile = () => {};
@@ -170,21 +180,13 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return Object.assign(customQueries, exportQueryDefinitions);
     }
 
-    public async ensureConnected() : Promise<void> {
-        await this.checkLoginAsync();
-    }
-
     public async getJsForceConnection() : Promise<jsforce.Connection> {
-        await this.checkLoginAsync();
-        return this._vlocityBuildTools.jsForceConnection;
+        return this.connectionProvider.getJsForceConnection();
     }
 
     // Todo: get vlocity namespace earlier
     // instead 
     private async getVlocityNamespace() : Promise<string> {
-        if (!this.vlocityNamespace) {
-            await this.checkLoginAsync();
-        }
         return this.vlocityNamespace;
     }
 
@@ -193,7 +195,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
-        return (await new SalesforceService(this).isPackageInstalled(/^vlocity/i)) !== undefined;
+        return (await this.salesforceService.isPackageInstalled(/^vlocity/i)) !== undefined;
     }
     
     /**
@@ -205,7 +207,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     public getDatapackReferenceKey(datapack : VlocityDatapack) {
         return datapack.datapackType + '/' + 
-                this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack);
+               this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack);
     }
 
     public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {
@@ -232,7 +234,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     public async getSalesforceIds(entries: ObjectEntry[]) : Promise<string[]>  {
         const exportQueries = await this.createExportQueries(entries);
         const salesforceConn = await this.getJsForceConnection();
-        // query all objects even if they have an Id altrady; it is up to the caller to filter out objects with an Id if they
+        // query all objects even if they have an Id already; it is up to the caller to filter out objects with an Id if they
         // do not want to query them
         const results = await Promise.all(exportQueries.map(query => salesforceConn.queryAll<SObjectRecord>(query.query)));
         return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
@@ -281,16 +283,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackResultCollection> {
-        await this.checkLoginAsync();
         const jobResult = await this.datapacksJobAsync(command, jobInfo);
         return new DatapackResultCollection(this.parseJobResult(jobResult));
     }
-
-    private checkLoginAsync() : Promise<void> {
-        process.chdir(vscode.workspace.rootPath);
-        return this.vlocityBuildTools.checkLogin();
-    }
-
+    
     private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
         // collect and create job optipns
         const localOptions = { projectPath: this.config.projectPath || '.' };

@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as process from 'process';
 import ServiceContainer, { default as s } from 'serviceContainer';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties, existsAsync } from '../util';
+import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties, existsAsync, stringEquals } from '../util';
 import { LogManager, Logger } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
@@ -40,7 +40,8 @@ export default class VlocityMatchingKeyService {
     constructor(
         private readonly container : ServiceContainer, 
         private readonly vlocityNamespace: string,
-        private readonly connectionProvider: JsForceConnectionProvider) {
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider)) {
     }
 
     private get queryDefinitions() {
@@ -65,17 +66,38 @@ export default class VlocityMatchingKeyService {
         let baseQuery = this.getExportQuery(type);
         if (!baseQuery) {
             this.logger.warn(`No base query found for type ${type}; using generic select`);
-            baseQuery = `select ${matchingKey.returnField} from ${matchingKey.sobjectType}`;
+            baseQuery = `SELECT ${matchingKey.returnField} FROM ${matchingKey.sobjectType}`;
         } 
-        
+
+        // describe object
+        const sobject = await this.salesforceService.describeSObject(this.updateNamespace(matchingKey.sobjectType));
+        const getFieldType = (fieldName: string) => 
+            sobject.fields.find(field => stringEquals(field.name, this.updateNamespace(fieldName), true)).type;
+
         // append matching key fields
-        baseQuery += / where /gi.test(baseQuery) ? ' and ' : ' where ';
+        baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
         baseQuery += matchingKey.fields.filter(field => entry[field])
-            .map(field => `${field} = '${entry[field]}'`).join(' and ');
-        baseQuery += ' order by LastModifiedDate DESC limit 1';
+            .map(field => `${field} = ${this.formatValue(entry[field], getFieldType(field))}`).join(' and ');
+        baseQuery += ' ORDER BY LastModifiedDate DESC LIMIT 1';
 
         this.logger.verbose(`Build query: ${baseQuery}`);
         return baseQuery.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
+    }
+
+    private updateNamespace(value: string) : string {
+        return value ? value.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace) : value;
+    }
+
+    private formatValue(value: any, type: jsforce.FieldType) : string {
+        switch (type) {
+            case 'int': return `${parseInt(value)}`;
+            case 'boolean': return `${value === null || value === undefined ? null : !!value}`;
+            case 'datetime': 
+            case 'double': 
+            case 'currency':
+            case 'date': return value ? `${value}` : 'null';
+        }
+        return value ? `'${value}'` : 'null';
     }
 
     private getExportQuery(datapackType: string) : string | undefined {

@@ -14,9 +14,7 @@ const externals = [
    'vscode', 
    'vscode-languageclient'
 ];
-const packageExternals = Object.keys(packageJson.dependencies)
-        .concat(externals)
-        .reduce((externals, dep) => Object.assign(externals, { [dep]: dep }), {});
+const packageExternals = [...Object.keys(packageJson.dependencies), ...externals];
 
 /**@type {import('webpack').Configuration}*/
 const common = {
@@ -80,7 +78,16 @@ const common = {
         pathinfo: false
     },
     mode: 'development',
-    externals: packageExternals
+    externals: 
+        function(context, request, callback) {
+            const isExternal = packageExternals.some(
+                moduleName => new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
+            )
+            if (isExternal){
+                return callback(null, 'commonjs ' + request);
+            }
+            callback();
+        }
 };
 
 /**@type {import('webpack').Configuration}*/
