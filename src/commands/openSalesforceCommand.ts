@@ -1,14 +1,10 @@
 import * as vscode from 'vscode';
 
 import { DatapackCommand } from './datapackCommand';
-import SalesforceService from 'services/salesforceService';
 import { isString } from 'util';
-import * as childProcess from 'child_process';
 import { evalExpr } from '../util';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { ObjectEntry } from 'services/vlocityDatapackService';
-import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 
 export default class OpenSalesforceCommand extends DatapackCommand {
 

@@ -1,7 +1,8 @@
 import * as jsforce from 'jsforce';
-import * as sfdx from '@salesforce/core';
+import * as path from 'path';
+import * as salesforce from '@salesforce/core';
+import * as sfdx from 'sfdx-node';
 import { LogManager, Logger } from 'loggers';
-import Org from 'salesforce-alm/dist/lib/core/scratchOrgApi';
 
 export type FullSalesforceOrgDetails = {
     orgId?: string,
@@ -19,45 +20,49 @@ export type FullSalesforceOrgDetails = {
 
 export default class SfdxUtil {
 
-    public static async getDefaultUsername(includeScratchOrgs = true) : Promise<string> {
-        return (await SfdxUtil.getDefaultOrg(includeScratchOrgs)).username;
-    }
+    // public static async getDefaultUsername(includeScratchOrgs = true) : Promise<string> {
+    //     return (await SfdxUtil.getDefaultOrg(includeScratchOrgs)).username;
+    // }
 
-    public static async getDefaultOrg(includeScratchOrgs = true) : Promise<FullSalesforceOrgDetails> {
-        const orgList = await SfdxUtil.getAllKnownOrgDetails(includeScratchOrgs);
-        const defaultOrg = orgList.find(org => !!org.isDefaultUsername);
-        SfdxUtil.logger.verbose(`Found ${orgList.length} orgs; default username ${defaultOrg ? defaultOrg.username : 'none'}`);
-        return defaultOrg;
-    }
+    // public static async getDefaultOrg(includeScratchOrgs = true) : Promise<FullSalesforceOrgDetails> {
+    //     const orgList = await SfdxUtil.getAllKnownOrgDetails(includeScratchOrgs);
+    //     orgList.some(a => a)
+    //     // const defaultOrg = orgList.find(org => !!org.isDefaultUsername);
+    //     // SfdxUtil.logger.verbose(`Found ${orgList.length} orgs; default username ${defaultOrg ? defaultOrg.username : 'none'}`);
+    //     // return defaultOrg;
+    // }
 
-    public static async getConnectedOrgDetails(username: string, includeScratchOrgs = true) : Promise<FullSalesforceOrgDetails> {
-        let orgList = await SfdxUtil.getAllKnownOrgDetails(includeScratchOrgs);
-        let orgDetails = orgList.find(org => org.username == username || (org.alias && org.alias == username));
-        return orgDetails;
-    }
+    // public static async getConnectedOrgDetails(username: string, includeScratchOrgs = true) : Promise<sfdx.AuthInfo> {
+    //     //let orgList = await SfdxUtil.getAllKnownOrgDetails(includeScratchOrgs);
+    //     //let orgDetails = orgList.find(org => org.username == username || (org.alias && org.alias == username));
+    //     return sfdx.AuthInfo.create( { username: username } );
+    // }
 
     // public static async authorizeNewOrg(instanceUrl: string, alias?: string) {
     // }
 
-    public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<Array<FullSalesforceOrgDetails>> {
+    public static webLogin(options: { instanceUrl: string, alias?: string }) {
+        return sfdx.auth.webLogin({ instanceurl: options.instanceUrl, setalias: options.alias });
+    }
+
+    public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<salesforce.AuthInfo[]> {
         const configs = await SfdxUtil.getAllValidatedConfigs();
-        return [ ...configs.scratchOrgs.values(), ...includeScratchOrgs ? configs.nonScratchOrgs.values() : []];
+        return configs;
     }
 
-    public static async getAllValidatedConfigs() : Promise<{
-        scratchOrgs: Map<string, FullSalesforceOrgDetails>,
-        nonScratchOrgs: Map<string, FullSalesforceOrgDetails>,
-        devHubs: Map<string, FullSalesforceOrgDetails>
-    }> {
-        const userDataFiles = await Org.readAllUserFilenames();
-        const locallyValidatedConfigs = await Org.readLocallyValidatedMetaConfigsGroupedByOrgType(userDataFiles, 10, null);
-        return locallyValidatedConfigs;
+    public static async getAllValidatedConfigs() : Promise<salesforce.AuthInfo[]> {
+        try {
+            const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
+            return Promise.all(authFiles.map(authFile => salesforce.AuthInfo.create( { username: path.parse(authFile).name } )));
+        } catch(err) {
+            return [];
+        }
     }
 
-    public static async getOrg(username?: string) : Promise<sfdx.Org> {
-        const org = await sfdx.Org.create({
-            connection: await sfdx.Connection.create({
-                authInfo: await sfdx.AuthInfo.create({ username })
+    public static async getOrg(username?: string) : Promise<salesforce.Org> {
+        const org = await salesforce.Org.create({
+            connection: await salesforce.Connection.create({
+                authInfo: await salesforce.AuthInfo.create({ username })
             })
         });
         await org.refreshAuth();

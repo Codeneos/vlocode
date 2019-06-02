@@ -19,7 +19,7 @@ const loggerMapping = {
  * @param logger Logger to use by Vlocity NodeJS package
  * @param includeCallerDetails Include filename and line number from where the logging call originated
  */
-export function setVlocityLogger(logger : Logger, includeCallerDetails: Boolean = false){
+export function setVlocityLogger(logger : Logger, includeCallerDetails: boolean = false){
     const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
         if (includeCallerDetails) {
             let callerFrame = util.getStackFrameDetails(2);

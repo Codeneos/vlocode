@@ -1,16 +1,18 @@
 import * as vscode from 'vscode';
-import * as sfdx from 'sfdx-node';
+import { AuthInfo } from '@salesforce/core';
 import { CommandBase } from './commandBase';
-import SfdxUtil, { FullSalesforceOrgDetails } from 'sfdxUtil';
+import SfdxUtil from 'sfdxUtil';
+
+type SelectOrgQuickPickItem = vscode.QuickPickItem & { authInfo?: AuthInfo, instanceUrl?: string };
 
 export default class SelectOrgCommand extends CommandBase {
 
-    private readonly newOrgOption : (vscode.QuickPickItem & sfdx.SalesforceOrgDetails) = { 
+    private readonly newOrgOption : SelectOrgQuickPickItem = { 
         label: '$(key) Authorize new org',
         description: 'You will be prompted for the login url'
     };
 
-    private readonly salesforceOrgTypes : (vscode.QuickPickItem & { instanceUrl?: string })[] = [{ 
+    private readonly salesforceOrgTypes : SelectOrgQuickPickItem[] = [{ 
         label: '$(microscope) Sandbox',
         description: 'https://test.salesforce.com',
         instanceUrl: 'https://test.salesforce.com'
@@ -41,28 +43,25 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async getAuthorizedOrgs() : Promise<(vscode.QuickPickItem & FullSalesforceOrgDetails)[]> {
+    protected async getAuthorizedOrgs() : Promise<SelectOrgQuickPickItem[]> {
         const orgList = await SfdxUtil.getAllKnownOrgDetails(); 
-        return orgList.map(org => 
-            Object.assign({}, org, <vscode.QuickPickItem>{ label: org.username, description: org.instanceUrl }));
+        return orgList.map(authInfo => ({ label: authInfo.getUsername(), description: authInfo.getFields().instanceUrl, authInfo }));
     }
 
     protected async selectOrg() : Promise<void> {
         const knownOrgs = await this.showProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
-        let selectedOrg : FullSalesforceOrgDetails = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
+        const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
         if (!selectedOrg) {
             return;
         }
 
-        if (selectedOrg.connectedStatus != 'Connected') {
-            selectedOrg = await this.authorizeNewOrg();
-        }
+        const selectedAuthInfo = selectedOrg.authInfo || await this.authorizeNewOrg();
 
-        if (selectedOrg) {
-            this.logger.log(`Set ${selectedOrg.username} as target org for Vlocity deploy/refresh operations`);
-            this.vloService.config.sfdxUsername = selectedOrg.username;
+        if (selectedAuthInfo) {
+            this.logger.log(`Set ${selectedAuthInfo.getUsername()} as target org for Vlocity deploy/refresh operations`);
+            this.vloService.config.sfdxUsername = selectedAuthInfo.getUsername();
             this.vloService.config.password = undefined;
             this.vloService.config.username = undefined;
             this.vloService.config.instanceUrl = undefined;
@@ -70,7 +69,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async authorizeNewOrg() : Promise<sfdx.SalesforceOrgDetails> {        
+    protected async authorizeNewOrg() : Promise<AuthInfo | undefined> {        
         let newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
             { placeHolder: 'Select the type of org you want to authorize' });
         
@@ -78,36 +77,37 @@ export default class SelectOrgCommand extends CommandBase {
             return;
         }
 
-        var instanceUrl = newOrgType.instanceUrl;
-        if (!instanceUrl) {
-            instanceUrl = await vscode.window.showInputBox({ 
-                placeHolder: 'Enter the login URL of the instance the org lives on',
-                validateInput: this.salesforceUrlValidator
-            });
-        } 
+        let instanceUrl = newOrgType.instanceUrl || await vscode.window.showInputBox({ 
+            placeHolder: 'Enter the login URL of the instance the org lives on',
+            validateInput: this.salesforceUrlValidator
+        });
 
         if (!instanceUrl) {
             return;
         }
 
         this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
-        let loginTask =  () => sfdx.auth.webLogin({ instanceurl: instanceUrl });
-        let loginResult = await vscode.window.withProgress({
+        const authInfo = await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: 'Authorizing new org...', 
             cancellable: true
-        }, loginTask);
+        }, async () => {
+            const loginResult = await SfdxUtil.webLogin({ instanceUrl });
+            if (loginResult && loginResult.accessToken) {
+                return await AuthInfo.create({ username: loginResult.username });
+            }
+        });
 
-        if (loginResult && loginResult.accessToken) {
-            let successMessage = `Successfully authorized ${loginResult.username}, you can now close the browser`;
+        if (authInfo) {
+            const successMessage = `Successfully authorized ${authInfo.getUsername()}, you can now close the browser`;
             this.logger.log(successMessage);
             vscode.window.showInformationMessage(successMessage);
-            return loginResult;
+            return authInfo;
         }
 
-        this.logger.error(`Unable to authorize at '${instanceUrl}': `, loginResult);
+        this.logger.error(`Unable to authorize at '${instanceUrl}'`);
         vscode.window.showErrorMessage('Failed to authorize with Salesforce, please verify you are connected to the internet');
-        return null;
+        return;
     }
 }
 

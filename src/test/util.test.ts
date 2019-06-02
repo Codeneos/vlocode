@@ -9,7 +9,6 @@ import * as vscode from 'vscode';
 import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
 import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel } from '../util';
 
-declare var VlocityUtils: any;
 describe('util', () => {   
 
     describe('#sanitizePath', () => { 

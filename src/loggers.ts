@@ -20,10 +20,10 @@ export class LogWriter {
 }
 
 class LogManagerImplementation {
-    private activeLoggers : { [key: string]: any } = {};
+    private readonly activeLoggers : { [key: string]: any } = {};
     private globalLogLevel: LogLevel = LogLevel.info;
-    private detailedLogLevels: { [log: string]: LogLevel } = {};
-    private logFilters: { [log: string]: LogFilter } = {};
+    private readonly detailedLogLevels: { [log: string]: LogLevel } = {};
+    private readonly logFilters: { [log: string]: LogFilter } = {};
 
     public get<T>(type: (new (...args: any[]) => T) | string) : Logger {
         const name = typeof type === 'string' ? type : type.name;
@@ -69,9 +69,9 @@ export const LogManager = new LogManagerImplementation();
 
 export class Logger {
     constructor(
-        private manager: LogManagerImplementation,
-        private name: string, 
-        private writer: LogWriter) {
+        private readonly manager: LogManagerImplementation,
+        private readonly name: string, 
+        private readonly writer: LogWriter) {
     }
 
     public log(...args: any[]) : void { this.write(LogLevel.info, ...args); }
@@ -101,7 +101,7 @@ export class Logger {
 // ----------------------------------------------
 
 export class FormatProxy<T extends LogWriter> implements LogWriter {    
-    constructor(private writer: T) {
+    constructor(private readonly writer: T) {
     }
 
     public write(level: LogLevel, ...args: any[]) : void {
@@ -122,7 +122,7 @@ export class FormatProxy<T extends LogWriter> implements LogWriter {
 }
 
 export class LogFilterProxy<T extends LogWriter> implements LogWriter {    
-    constructor(private writer: T, private filter : (args: any[]) => boolean) {
+    constructor(private readonly writer: T, private readonly filter : (args: any[]) => boolean) {
     }
 
     public write(level: LogLevel, ...args: any[]) : void {
@@ -138,7 +138,7 @@ export class LogFilterProxy<T extends LogWriter> implements LogWriter {
 // ----------------------------------------------
 
 export class OutputChannelWriter implements LogWriter {
-    constructor(private channel: vscode.OutputChannel) {
+    constructor(private readonly channel: vscode.OutputChannel) {
         return <OutputChannelWriter><any>new FormatProxy(this);
     }
 
@@ -148,7 +148,7 @@ export class OutputChannelWriter implements LogWriter {
 }
 
 export class TerminalWriter implements LogWriter {
-    constructor(private terminal: vscode.Terminal) {
+    constructor(private readonly terminal: vscode.Terminal) {
         return <TerminalWriter><any>new FormatProxy(this);
     }
 
@@ -173,7 +173,7 @@ export class ConsoleWriter implements LogWriter {
 }
 
 export class WriterChain implements LogWriter {
-    private _chain: LogWriter[];
+    private readonly _chain: LogWriter[];
 
     constructor(...args: LogWriter[]) {
         this._chain = args;
