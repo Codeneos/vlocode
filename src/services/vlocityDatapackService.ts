@@ -144,20 +144,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     private async createVlocityInstance() : Promise<vlocity> {
         const connection = await this.connectionProvider.getJsForceConnection();
-        const vlocityNamespace = await this.salesforceService.getInstalledPackageNamespace(/vlocity/i);
         const vlocityInstanceParams = { 
             accessToken: connection.accessToken,
             instanceUrl: connection.instanceUrl,
-            vlocityNamespace
         };
         const buildTools = new vlocity(<VlocodeConfiguration>Object.assign({}, this.config, vlocityInstanceParams));
         buildTools.jsForceConnection = connection;
-        buildTools.namespace = vlocityNamespace;
-        buildTools.utilityservice.login = () => {};
-        buildTools.utilityservice.sfdxLogin = () => {};
+        buildTools.utilityservice.login = async () => {};
+        buildTools.utilityservice.sfdxLogin = async () => {};
         buildTools.datapacksutils.printJobStatus = () => {};
         buildTools.datapacksutils.saveCurrentJobInfo = () => {};
         buildTools.datapacksexportbuildfile.saveFile = () => {};
+        await buildTools.utilityservice.checkLogin();
         return buildTools;
     }
 
@@ -248,7 +246,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
             projectPath: exportFolder,
             fullManifest: exportManifest,
             skipQueries: exportQueries.length == 0,
-            maxDepth: maxDepth
+            maxDepth: maxDepth,
+            initialized: true // avoid project initialization when exporting
         });
     }
 

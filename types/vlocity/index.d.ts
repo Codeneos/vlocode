@@ -28,7 +28,7 @@ declare module 'vlocity' {
         readonly datapacksutils: vlocity.DataPacksUtils;    
         readonly datapacksexportbuildfile: vlocity.DataPacksExportBuildFile;
         readonly datapacksbuilder: vlocity.DataPacksBuilder;
-        readonly utilityservice: any;
+        readonly utilityservice: vlocity.UtilityService;
 
         readonly PackageVersion : string; 
         readonly PackageMajorVersion : string;
@@ -98,7 +98,13 @@ declare module 'vlocity' {
             printJobStatus(jobInfo: JobInfo) : void;
         }
 
-        export class UtilityService {                
+        export class UtilityService {            
+            /**
+             * Setups the connection depended properties, ensure is is called before doing any command.
+             * Internally calls `getNamespace`, `getPackageVersion` and updates the expand definitions.
+             */
+            checkLogin(): Promise<void>;
+
             /**
              * Sets `namespace` and `namespacePrefix` property.
              */
@@ -108,6 +114,10 @@ declare module 'vlocity' {
              * Sets `PackageVersion`, `PackageMajorVersion`, `PackageMinorVersion` and `BuildToolSettingVersion`
              */
             getPackageVersion(): Promise<void>;
+            
+            login(): Promise<void>;
+
+            sfdxLogin(): Promise<void>;
         }
 
         export class DataPacksBuilder {

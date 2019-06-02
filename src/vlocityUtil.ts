@@ -4,7 +4,12 @@ import * as vlocityPackageManifest from "vlocity/package.json";
 import 'vlocity';
 
 // Import VlocityUtils as global from Vlocity NodeJS module
-declare var VlocityUtils: any;
+declare var VlocityUtils: {
+    [key: string]: any;
+    silence?: boolean;
+    output: (loggingMethod: string, color: string, args: IArguments) => void;
+    fatal: (...args: any[]) => void;
+};
 
 const loggerMapping = {
     report: Logger.prototype.info,
@@ -21,6 +26,9 @@ const loggerMapping = {
  */
 export function setVlocityLogger(logger : Logger, includeCallerDetails: boolean = false){
     const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
+        if (VlocityUtils.silence === true) {
+            return;
+        }
         if (includeCallerDetails) {
             let callerFrame = util.getStackFrameDetails(2);
             args.push(`(${callerFrame.fileName}:${callerFrame.lineNumber})`);
