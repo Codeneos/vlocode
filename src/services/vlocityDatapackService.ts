@@ -173,9 +173,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     public async getQueryDefinitions() : Promise<QueryDefinitions> {
         const customJobOptions = await this.getCustomJobOptions();
-        const customQueries = customJobOptions.customQueries.reduce((map, val) => 
-            Object.assign(map, {[val.VlocityDataPackType]: val}) , {});
-        return Object.assign(customQueries, exportQueryDefinitions);
+        if (customJobOptions && customJobOptions.customQueries) {
+            const customQueries = customJobOptions.customQueries.reduce((map, val) => 
+                Object.assign(map, {[val.VlocityDataPackType]: val}) , {});
+            return Object.assign(customQueries, exportQueryDefinitions);
+        }
+        return exportQueryDefinitions;
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {

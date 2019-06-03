@@ -1,12 +1,15 @@
 # Changelog Vlocode
 
-## [0.10.2] - 2019-06-03
+## [0.10.4] - 2019-06-03
+### Fixed
+ - Fix datapack explorer doesn't when there is no custom deploy YAML
+
+## [0.10.3] - 2019-06-03
 ### Fixed
  - Fix open in salesforce command to not work for datapacks with versions.
  - Fix export using only direct dependencies is treated as cancellation.
  - Fix `validate` not being called when a command was invoked through the `CommandExecutor`
  - Fix error stack not logged for exceptions
- 
 ### Changed
  - Update vlocity tools to 1.10.0
  - Change code to use new `@salesforce/core` libraries instead of `Salesforce-ALM` where possible
