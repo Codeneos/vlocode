@@ -244,14 +244,24 @@
                     "group": "inline"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.openSalesforce",
-                    "when": "viewItem == vlocity:datapack:object",
+                    "command": "vlocity.datapackExplorer.export",
+                    "when": "viewItem == vlocity:datapack:category",
                     "group": "inline"
                 },
                 {
                     "command": "vlocity.datapackExplorer.export",
                     "when": "viewItem == vlocity:datapack:object",
                     "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.datapackExplorer.export",
+                    "when": "viewItem == vlocity:datapack:category",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.datapackExplorer.openSalesforce",
+                    "when": "viewItem == vlocity:datapack:object",
+                    "group": "inline"
                 },
                 {
                     "command": "vlocity.datapackExplorer.openSalesforce",

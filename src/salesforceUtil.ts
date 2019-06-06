@@ -7,13 +7,23 @@ import { stringEquals } from './util';
  * @param record SF Like record object
  */
 export function createRecordProxy(record: SObjectRecord) : SObjectRecord {
+    const getPropertyKey = (target, name) => Object.keys(target).find(key => {
+        return stringEquals(removeNamespacePrefix(key), name.toString(), true);
+    });
+
     return new Proxy(record, {
         get: (target, name) => {
-            const key = Object.keys(target).find(key => {
-                return stringEquals(removeNamespacePrefix(key), name.toString(), true);
-            });
+            const key = getPropertyKey(target, name);
             return key ? target[key] || target[name.toString()] : target[name.toString()];
-        }
+        },
+        getOwnPropertyDescriptor: (target, name) => {
+            const key = getPropertyKey(target, name);
+            return key ? { configurable: true, enumerable: true, writable: false } : undefined;
+        },
+        has: (target, name) => getPropertyKey(target, name) !== undefined,
+        enumerate: (target) => Object.getOwnPropertySymbols(target),
+        ownKeys: (target) => Object.keys(target),
+        isExtensible: (target) => false
     });
 }
 

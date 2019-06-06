@@ -15,11 +15,18 @@ export enum LogLevel {
 
 export type LogFilter = (severity: LogLevel, ...args: any[]) => boolean;
 
-export class LogWriter {
-    public write(level: LogLevel, ...args: any[]) : void { }
+export interface LogEntry {
+    level: LogLevel;
+    time?: Date;
+    category: string;
+    message: string;
 }
 
-class LogManagerImplementation {
+export class LogWriter {
+    public write(entry: LogEntry) : void { }
+}
+
+export const LogManager = new class {
     private readonly activeLoggers : { [key: string]: any } = {};
     private globalLogLevel: LogLevel = LogLevel.info;
     private readonly detailedLogLevels: { [log: string]: LogLevel } = {};
@@ -64,12 +71,12 @@ class LogManagerImplementation {
     private createLogger(name: string) : Logger {
         return new Logger(this, name, container.get(LogWriter));
     }
-}
-export const LogManager = new LogManagerImplementation();
+}();
 
 export class Logger {
+
     constructor(
-        private readonly manager: LogManagerImplementation,
+        private readonly manager: typeof LogManager,
         private readonly name: string, 
         private readonly writer: LogWriter) {
     }
@@ -91,27 +98,16 @@ export class Logger {
             return;
         }
         if (this.writer) {
-            this.writer.write(level, ...args);
+            this.writer.write({ 
+                category: this.name, 
+                level, 
+                time: new Date(),
+                message: args.map(this.formatArg).join(' ') 
+            });
         }
     }
-}
 
-// ----------------------------------------------
-// Proxies 
-// ----------------------------------------------
-
-export class FormatProxy<T extends LogWriter> implements LogWriter {    
-    constructor(private readonly writer: T) {
-    }
-
-    public write(level: LogLevel, ...args: any[]) : void {
-        const logLevel = LogLevel[level] || 'unknown';
-        const time = moment(new Date()).format(constants.LOG_DATE_FORMAT);
-        const message = args.map(this.formatArg).join(' ');
-        this.writer.write(level, `[${time}] ${logLevel.substr(0,1)}: ${message}`);
-    }
-
-    public formatArg(arg: any) : string | any {
+    private formatArg(arg: any) : string | any {
         if (arg instanceof Error) {
             return arg.stack;
         } else if (isObject(arg)) {
@@ -121,15 +117,22 @@ export class FormatProxy<T extends LogWriter> implements LogWriter {
     }
 }
 
-export class LogFilterProxy<T extends LogWriter> implements LogWriter {    
-    constructor(private readonly writer: T, private readonly filter : (args: any[]) => boolean) {
+// ----------------------------------------------
+// Filters 
+// ----------------------------------------------
+
+export class MessageVisibilityFilter<T extends LogWriter> implements LogWriter {    
+    private constructor(private readonly writer: T, private readonly predicate : (entry: LogEntry) => boolean) {
     }
 
-    public write(level: LogLevel, ...args: any[]) : void {
-        if (!this.filter(args)) {
-            return;
+    public static apply<T extends LogWriter>(writer: T, predicate : (entry: LogEntry) => boolean) : T {
+        return Object.assign(writer, new this(writer, predicate));
+    }
+
+    public write(entry : LogEntry) : void {
+        if (this.predicate(entry)) {
+            this.writer.write(entry);
         }
-        this.writer.write(level, ...args);
     }
 }
 
@@ -139,47 +142,33 @@ export class LogFilterProxy<T extends LogWriter> implements LogWriter {
 
 export class OutputChannelWriter implements LogWriter {
     constructor(private readonly channel: vscode.OutputChannel) {
-        return <OutputChannelWriter><any>new FormatProxy(this);
     }
 
-    public write(level: LogLevel, ...args: any[]) : void {
-        this.channel.appendLine(args[0]);
-    }
-}
-
-export class TerminalWriter implements LogWriter {
-    constructor(private readonly terminal: vscode.Terminal) {
-        return <TerminalWriter><any>new FormatProxy(this);
-    }
-
-    public write(level: LogLevel, ...args: any[]) : void {
-        this.terminal.show(true);
-        this.terminal.sendText(args[0]);
+    public write({level, time, category, message} : LogEntry) : void {
+        const levelPrefix = (LogLevel[level] || 'unknown').substr(0,1);
+        this.channel.appendLine(`[${moment(time).format(constants.LOG_DATE_FORMAT)}] ${levelPrefix}: ${message}`);
     }
 }
 
 export class ConsoleWriter implements LogWriter {
-    constructor() {
-        return <ConsoleWriter><any>new FormatProxy(this);
-    }
-
-    public write(level: LogLevel, ...args: any[]) : void {
+    public write({ level, time, category, message } : LogEntry) : void {
+        const formatedMessage = `${moment(time).format(constants.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}]: ${message}`;
         switch(level) {
-            case LogLevel.warn: return console.warn(...args);
-            case LogLevel.error: return console.error(...args);
-            default: return console.info(...args);
+            case LogLevel.warn: return console.warn(formatedMessage);
+            case LogLevel.error: return console.error(formatedMessage);
+            default: return console.info(formatedMessage);
         }
     }
 }
 
-export class WriterChain implements LogWriter {
+export class ChainWriter implements LogWriter {
     private readonly _chain: LogWriter[];
 
     constructor(...args: LogWriter[]) {
         this._chain = args;
     }
 
-    public write(level: LogLevel, ...args: any[]): void {
-        this._chain.forEach(writer => writer.write(level, ...args));
+    public write(entry : LogEntry): void {
+        this._chain.forEach(writer => writer.write(entry));
     }
 }

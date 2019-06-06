@@ -2,31 +2,43 @@ import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
-import { LogManager, LogWriter, WriterChain, ConsoleWriter, OutputChannelWriter, LogLevel }  from './loggers';
+import { LogManager, LogWriter, ChainWriter, ConsoleWriter, OutputChannelWriter, LogLevel }  from './loggers';
 import CommandRouter from './services/commandRouter';
 import DatapackExplorer from 'datapackExplorer';
 import Commands from 'commands';
 import { container } from 'serviceContainer';
 import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 import * as vlocityUtil from 'vlocityUtil';
+import * as fs from 'fs-extra';
 
-export function activate(context: vscode.ExtensionContext) : Promise<void> {
+const getLogger = () => LogManager.get('vlocode');
 
-    // All SFDX and Vloctiy commands work better when we are running from the workspace folder    
-    process.chdir(vscode.workspace.rootPath);
+function setWorkingDirectory() {
+    if (vscode.workspace.workspaceFolders.length > 0) {
+        getLogger().verbose(`Updating Vlocode workspace folder to: ${vscode.workspace.workspaceFolders[0].uri.fsPath}`);
+        process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+    } else {
+        getLogger().warn(`No workspace folders detected; Vlocode will not work properly without an active workspace`);
+    }
+}
+
+export async function activate(context: vscode.ExtensionContext) : Promise<void> {
+    // All SFDX and Vloctiy commands work better when we are running from the workspace folder
+    vscode.workspace.onDidChangeWorkspaceFolders(setWorkingDirectory);
+    setWorkingDirectory();
     
     // Init logging and register services
     let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);
     let vloService = container.register(VlocodeService, new VlocodeService(container, context, vloConfig));
 
     // logging setup
-    container.register(LogWriter, new WriterChain(new ConsoleWriter(), new OutputChannelWriter(vloService.outputChannel)));
+    container.register(LogWriter, new ChainWriter(new ConsoleWriter(), new OutputChannelWriter(vloService.outputChannel)));
     LogManager.setGlobalLogLevel(vloConfig.verbose ? LogLevel.verbose : LogLevel.info); // todo: support more log levels from config section    
     vloConfig.watch(c => LogManager.setGlobalLogLevel(c.verbose ? LogLevel.verbose : LogLevel.info));
 
-    LogManager.get('vlocode').info(`Vlocode version ${constants.VERSION} started`);
-    LogManager.get('vlocode').info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);
-    LogManager.get('vlocode').verbose(`Verbose logging enabled`);
+    getLogger().info(`Vlocode version ${constants.VERSION} started`);
+    getLogger().info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);
+    getLogger().verbose(`Verbose logging enabled`);
 
     // setup Vlocity logger and filters
     const vlocityLogFilterRegex = [
@@ -43,7 +55,10 @@ export function activate(context: vscode.ExtensionContext) : Promise<void> {
 
     // register commands and windows
     container.get(CommandRouter).registerAll(Commands);
-    vloService.registerDisposable(vscode.window.registerTreeDataProvider('datapackExplorer', new DatapackExplorer(container)));
+    vloService.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
+        treeDataProvider: new DatapackExplorer(container), 
+        showCollapseAll: true 
+    }));
     vloService.registerDisposable(new DatapackSavedEventHandler(vscode.workspace.onDidSaveTextDocument));
 }
 

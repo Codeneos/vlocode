@@ -17,13 +17,13 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     public async execute(...args: any[]) : Promise<void>  {
-        if (args != null && args.length == 1 && this.isExportableObjectEntry(args[0])) {
-            return this.exportObjects(args[0]);
+        if (args != null) {
+            return this.exportObjects(args.filter(this.isExportableObjectEntry));
         } 
         return this.exportWizard();
     }
 
-    protected isExportableObjectEntry(obj : any) {
+    protected isExportableObjectEntry(obj: any) : boolean {
         return 'sobjectType' in obj && 
                'datapackType' in obj &&
                'id' in obj;
@@ -51,13 +51,13 @@ export default class ExportDatapackCommand extends DatapackCommand {
         }
         
         // Select object
-        let recordToExport = await this.showRecordSelection(records, datapackType);
+        const recordToExport = await this.showRecordSelection(records, datapackType);
         if (!recordToExport) {
             return; // selection cancelled;
         }
 
         // With dependencies?
-        let dependencyExportDepth = await this.showDependencySelection();
+        const dependencyExportDepth = await this.showDependencySelection();
         if (dependencyExportDepth === undefined) {
             return; // selection cancelled;
         }
