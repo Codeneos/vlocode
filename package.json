@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Vlocode",
     "description": "Vlocity datapack development and deployment extension",
-    "version": "0.10.4",
+    "version": "0.10.5",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
