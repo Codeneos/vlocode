@@ -1,5 +1,16 @@
 # Changelog Vlocode
 
+## [0.10.6] - 2019-06-14
+### Fixed
+ - Fix export from server command fails
+
+## [0.10.5] - 2019-06-05
+### NewA
+ - Add support for exporting all datapacks of a particular type through datapack explorer.
+### Changed
+ - Expend Salesforce record Proxy
+ - Change logger to process entries allowing for more flexible logging
+
 ## [0.10.4] - 2019-06-03
 ### Fixed
  - Fix datapack explorer doesn't when there is no custom deploy YAML

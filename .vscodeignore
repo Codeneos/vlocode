@@ -13,9 +13,13 @@ patches/**
 types/**
 node_modules/**/*.js.map
 node_modules/**/*.md
+node_modules/**/*.markdown
 node_modules/**/LICENSE
+node_modules/**/LICENSE.txt
 node_modules/**/license
-node_modules/**/License
+node_modules/**/License.txt
+node_modules/**/changelog
+node_modules/**/changelog.txt
 node_modules/**/docs
 node_modules/**/doc
 node_modules/**/samples
@@ -30,6 +34,9 @@ node_modules/**/qs/dist
 node_modules/**/qs/test
 node_modules/**/vlocity/test
 node_modules/**/ajv/dist
+node_modules/**/.idea
+node_modules/**/.travis.yml
+node_modules/**/.zuul.yml
 *.json
 *.js
 !package.json

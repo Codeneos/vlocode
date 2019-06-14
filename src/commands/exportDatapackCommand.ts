@@ -17,7 +17,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     public async execute(...args: any[]) : Promise<void>  {
-        if (args != null) {
+        if (args.length > 0) {
             return this.exportObjects(args.filter(this.isExportableObjectEntry));
         } 
         return this.exportWizard();
