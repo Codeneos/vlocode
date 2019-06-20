@@ -1,5 +1,11 @@
 # Changelog Vlocode
 
+## [0.10.7] - 2019-06-20
+### Changed
+ - Update Vlocity package to 1.11.1
+### Fixed
+ - FPatch VLocity package to avoid partial exports for datapacks with more then 10 dependencies
+
 ## [0.10.6] - 2019-06-14
 ### Fixed
  - Fix export from server command fails

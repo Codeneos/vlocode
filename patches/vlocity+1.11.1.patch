@@ -1,0 +1,88 @@
+patch-package
+--- a/node_modules/vlocity/lib/datapacks.js
++++ b/node_modules/vlocity/lib/datapacks.js
+@@ -208,16 +208,17 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+                 result.Total = 1;
+             }    
+ 
+-            if (result.Total > 0 
+-                && !result.Async 
+-                && dataPackData.processType == "Export" 
+-                && result.Status != "Complete"
+-                && (!options.maxDepth 
+-                    || options.maxDepth == -1)
+-                && options.exportPacksMaxSize 
+-                && result.Total > options.exportPacksMaxSize) {
+-                    result.Status = "Complete";
+-            }
++            // Disable this as it causes dependencies to be ommited resulting in partial exports.
++            // if (result.Total > 0 
++            //     && !result.Async 
++            //     && dataPackData.processType == "Export" 
++            //     && result.Status != "Complete"
++            //     && (!options.maxDepth 
++            //         || options.maxDepth == -1)
++            //     && options.exportPacksMaxSize 
++            //     && result.Total > options.exportPacksMaxSize) {
++            //         result.Status = "Complete";
++            // }
+ 
+             if (result.Total > 0 && result.Async && result.Total == result.Finished) {
+                 result.Finished--;
+--- a/node_modules/vlocity/lib/datapacksbuilder.js
++++ b/node_modules/vlocity/lib/datapacksbuilder.js
+@@ -688,12 +688,19 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
+                                 return;
+                             }
+ 
+-                            if (jobInfo.currentStatus[parentKey] != null 
+-                                && !(jobInfo.currentStatus[parentKey] == 'Success' 
++                            if (jobInfo.currentStatus[parentKey] != null ) {
++                                if (jobInfo.currentStatus[parentKey] == 'Success' 
+                                     || jobInfo.currentStatus[parentKey] == 'Header' 
+-                                    || jobInfo.currentStatus[parentKey] == 'AddedHeader') 
+-                                && currentDataPackKeysInImport[parentKey] != true) {
+-                                needsParents = true;
++                                    || jobInfo.currentStatus[parentKey] == 'AddedHeader')  {
++                                    VlocityUtils.verbose(`Parent deployed (datapack: ${dataPackKey}): ${parentKey}`);
++                                } else if (currentDataPackKeysInImport[parentKey] == true) {                                    
++                                    VlocityUtils.verbose(`Parent in current import (datapack: ${dataPackKey}): ${parentKey}`);
++                                } else {
++                                    VlocityUtils.verbose(`Skipping over ${dataPackKey}; parent not yet deployed: ${parentKey}; parent status: ${jobInfo.currentStatus[parentKey]}`);
++                                    needsParents = true;
++                                }
++                            } else {
++                                VlocityUtils.verbose(`Skipping unknown dependency ${parentKey} from datapack: ${dataPackKey}`);
+                             }
+                         });
+ 
+@@ -751,6 +758,7 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
+                                 && jobInfo.currentStatus[referenceKey] 
+                                 && !(jobInfo.currentStatus[referenceKey] == 'Success' 
+                                 || jobInfo.currentStatus[referenceKey] == 'Header')) {
++                                VlocityUtils.log(`Skipping over ${dataPackKey}; refernce not yet deployed: ${referenceKey}`);
+                                 hasReference = true;
+                             }
+                         }
+--- a/node_modules/vlocity/lib/datapacksjob.js
++++ b/node_modules/vlocity/lib/datapacksjob.js
+@@ -2034,7 +2034,7 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
+             throw e;
+         }
+ 
+-        VlocityUtils.error('Error', 'Deploying Pack', e.stack);
++        VlocityUtils.error('Error', 'Deploying Pack', e.stack || e);
+     }
+ }
+ 
+--- a/node_modules/vlocity/lib/utilityservice.js
++++ b/node_modules/vlocity/lib/utilityservice.js
+@@ -382,7 +382,7 @@ UtilityService.prototype.getPackageVersion = async function() {
+     
+     VlocityUtils.verbose('Get Package Version');
+ 
+-    if (!this.vlocity.packageVersion) {
++    if (!this.vlocity.PackageVersion) {
+         var result = await this.vlocity.jsForceConnection.query("SELECT DurableId, Id, IsSalesforce, MajorVersion, MinorVersion, Name, NamespacePrefix FROM Publisher where NamespacePrefix = \'" + this.vlocity.namespace + "\' LIMIT 1");
+ 
+         this.vlocity.buildToolsVersionSettings = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "buildToolsVersionSettings.yaml"), 'utf8'));
