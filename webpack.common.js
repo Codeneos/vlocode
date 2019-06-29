@@ -154,7 +154,7 @@ const views = {
 };
 
 module.exports = {
-    extestion: merge(common, vscodeExtension),
+    extension: merge(common, vscodeExtension),
     tests: merge(common, tests),
     views: merge(common, views)
 };

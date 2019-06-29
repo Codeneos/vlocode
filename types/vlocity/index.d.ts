@@ -96,6 +96,8 @@ declare module 'vlocity' {
             saveCurrentJobInfo(djobInfo: JobInfo) : void;
             loadCurrentJobInfo(jobInfon: JobInfo) : void;
             printJobStatus(jobInfo: JobInfo) : void;
+            overrideExpandedDefinition(overrides : any) : void;
+            isGuaranteedParentKey(parentKey : any) : boolean;
         }
 
         export class UtilityService {            

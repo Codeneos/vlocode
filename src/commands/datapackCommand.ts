@@ -37,8 +37,10 @@ export abstract class DatapackCommand extends CommandBase {
         let progressCounter = 0;
         const headerFiles = await this.getDatapackHeaders(files);
         return mapAsync(headerFiles, async header => {
-            !onProgress || onProgress(header, ++progressCounter / headerFiles.length);
-            const datapack = await this.datapackService.loadDatapack(header);                
+            if (onProgress) {
+                onProgress(header, ++progressCounter / headerFiles.length);
+            }
+            const datapack = await  this.datapackService.loadDatapack(header);                
             return datapack;
         });
     }

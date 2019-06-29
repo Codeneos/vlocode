@@ -29,9 +29,6 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
             // Clear current warnings
             this.diagnostics.clear();
 
-            // ensure we are logged in
-            await this.datapackService.ensureConnected();
-
             // load all datapacks in the workspace
             progressToken.report('reading workspace...');
             const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();
@@ -43,23 +40,15 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 return dp.getProvidedRecordKeys().reduce((keyMap, key) => Object.assign(keyMap, { [key]: dp }), keyMap);
             }, {});
 
-            // // resolve parent keys
-            // const parentKeyMap = datapacks.reduce((parentKeyMap, dp) => { 
-            //     const parentKeys = dp.getParentRecordKeys();
-            //     const resolvedKeys = parentKeys.map(parentKey => datapackProvidedKeyMap[parentKey]).filter(key => !!key);
-            //     //const parentRefKeys = resolvedKeys.map(dp => this.datapackService.getDatapackReferenceKey(dp));
-            //     //this.logger.info(`Resolved keys for ${dp.key} -> ${JSON.stringify(parentRefKeys)}`);
-            //     return Object.assign(resolvedKeys, {
-            //         [dp.headerFile]: resolvedKeys
-            //     });
-            // }, {});
-
             const allUnresolvedParents = [];
 
             for (const dp of datapacks) {
-                const parentKeys = dp.getParentRecordKeys().filter(key => !key.match('VlocityRecordSourceKey'));
+                const parentKeys = dp.getParentRecordKeys();//.filter(key => !key.match('VlocityRecordSourceKey'));
                 const resolvedParents = parentKeys.map(parentKey => keyToDatapack[parentKey]).filter(dp => !!dp);
-                const missingParents = parentKeys.filter(parentKey => !keyToDatapack[parentKey]);
+                const missingParents = parentKeys
+                    .filter(parentKey => !keyToDatapack[parentKey])
+                    .filter(parentKey => parentKey.startsWith('RecordType/'))
+                    .filter(parentKey => this.datapackService.isGuaranteedParentKey(parentKey));
 
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(

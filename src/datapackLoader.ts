@@ -22,7 +22,7 @@ type DatapackLoaderRule = { rule: RegExp, load: (fileName: string) => Promise<an
 
 export default class DatapackLoader {    
 
-    private loaders : DatapackLoaderRule[] = [
+    private readonly loaders : DatapackLoaderRule[] = [
         { rule: /\.json$/i, load: this.loadJson },
         { rule: /.*/, load: this.loadRaw }
     ];
@@ -47,9 +47,9 @@ export default class DatapackLoader {
 
         await Promise.all(Object.keys(datapack).map(async key => {
             try {
-                datapack[key] = await this.loadProperty(baseDir, datapack[key]);
+                datapack[key] = await this.loadProperty(baseDir, key, datapack[key]);
             } catch(err) {
-                this.logger.info(`Failed to load datapack property ${key}: ${err}`);
+                this.logger.error(`Failed to load datapack property ${key}: ${err}`);
             }
         }));
 
@@ -60,22 +60,24 @@ export default class DatapackLoader {
         return getDocumentBodyAsString(fileName);
     }
 
-    private async loadProperty(baseDir: string, fieldValue: any) : Promise<any> {
+    private async loadProperty(baseDir: string, propertyName: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
             let fileName = fieldValue.split(/\\|\//i).pop();
             let loader = this.loaders.find(loader => loader.rule.test(fileName));
             if (loader) {
                 try {
-                    return await loader.load.call(this, path.join(baseDir, fileName));
+                    const value = await loader.load.call(this, path.join(baseDir, fileName));
+                    //this.logger.verbose(`Load ${propertyName} using ${loader.load.name} (rule: ${loader.rule})`);
+                    return value;
                 } catch(err) { 
                     return fieldValue;
                 }                
             }
         } else if (Array.isArray(fieldValue)) {
-            return Promise.all(fieldValue.map(value => this.loadProperty(baseDir, value)));
+            return Promise.all(fieldValue.map((value, i) => this.loadProperty(baseDir, `${propertyName}|${i}`, value)));
         } else if (isObject(fieldValue)) {
             await Promise.all(Object.keys(fieldValue).map(
-                async key => fieldValue[key] = await this.loadProperty(baseDir, fieldValue[key])));
+                async key => fieldValue[key] = await this.loadProperty(baseDir, key, fieldValue[key])));
         }
         return Promise.resolve(fieldValue);
     }

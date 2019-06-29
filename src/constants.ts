@@ -11,8 +11,6 @@ export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
 
-export const exportQueryDefinitions = require("exportQueryDefinitions.yaml");
-
 export enum VlocodeCommand {
     refreshDatapack = 'vlocity.refreshDatapack',
     deployDatapack = 'vlocity.deployDatapack',
@@ -21,6 +19,8 @@ export enum VlocodeCommand {
     selectOrg = 'vlocity.selectOrg',
     buildDatapack  = 'vlocity.buildDatapack',
     openInSalesforce  = 'vlocity.openSalesforce',
+    renameDatapack  = 'vlocity.renameDatapack',
+    cloneDatapack  = 'vlocity.cloneDatapack',
     buildParentKeyFiles  = 'vlocity.buildParentKeyFiles',
     adminCommands  = 'vlocity.adminCommands',
     refreshPriceBook  = 'vlocity.admin.refreshPriceBook',

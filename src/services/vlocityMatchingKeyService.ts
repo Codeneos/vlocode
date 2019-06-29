@@ -53,7 +53,7 @@ export default class VlocityMatchingKeyService {
     }
 
     /**
-     * Build a specific select query for a 
+     * Build a specific select query for 
      * @param type Type of object for which to build a select query
      * @param entry Datapack or SObjectRecord like map of fields to substitute in the query conditions
      */

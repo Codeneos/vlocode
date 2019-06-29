@@ -12,7 +12,7 @@ const devModeConfig = {
 }
 
 module.exports = [
-    merge(common.extestion, devModeConfig),
+    merge(common.extension, devModeConfig),
     merge(common.tests, devModeConfig),
     merge(common.views, devModeConfig)
 ];

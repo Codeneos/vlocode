@@ -11,7 +11,7 @@ export class ProgressToken {
     constructor(
         private readonly progressResolve : () => void, 
         private readonly progressReject :  (reason?: any) => void, 
-        private readonly progress : vscode.Progress<{ message?: string }>) {
+        private readonly progress : vscode.Progress<{ message?: string, increment?: number }>) {
     }
 
     public complete() : void {
@@ -21,9 +21,15 @@ export class ProgressToken {
         }
     }
 
-    public report(message: string) : void {
+    public report(message: string, progress?: number ) : void {
         if (!this.resolved) {
-            this.progress.report({ message: message });
+            this.progress.report({ message: message, increment: progress });
+        }
+    }
+
+    public increment(amount: number) : void {
+        if (!this.resolved) {
+            this.progress.report({ increment: amount });
         }
     }
 }
@@ -60,10 +66,10 @@ export abstract class CommandBase implements Command {
         return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
     }
 
-    protected async startProgress(title: string) : Promise<ProgressToken> {
+    protected async startProgress(title: string, cancellable: boolean) : Promise<ProgressToken> {
         return new Promise<ProgressToken>(progressTokenResolve => {
             vscode.window.withProgress(
-                {location: vscode.ProgressLocation.Notification, title: title, cancellable: false }, 
+                {location: vscode.ProgressLocation.Notification, title, cancellable }, 
                 p => new Promise<void>((resolve, reject) => { 
                     progressTokenResolve(new ProgressToken(resolve, reject, p));
                 }));

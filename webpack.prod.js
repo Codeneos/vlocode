@@ -2,7 +2,7 @@ const merge = require('webpack-merge').smart;
 const common = require('./webpack.common.js');
 const TerserPlugin = require('terser-webpack-plugin');
 
-const minizerOptions = {
+const minimizerOptions = {
     ecma: 6,
     warnings: true,
     parse: {},
@@ -21,12 +21,12 @@ const prodModeConfig = {
     devtool: 'none',
     optimization: {
         mergeDuplicateChunks: true,
-        minimizer: [new TerserPlugin({terserOptions: minizerOptions})]
+        minimizer: [new TerserPlugin({terserOptions: minimizerOptions})]
     }
 }
 
 module.exports = [
-    merge(common.extestion, prodModeConfig),
+    merge(common.extension, prodModeConfig),
     merge(common.tests, prodModeConfig),
     merge(common.views, prodModeConfig)
 ];

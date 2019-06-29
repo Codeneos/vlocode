@@ -17,6 +17,7 @@ import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 import DatapackLoader from 'datapackLoader';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
+import * as DataPacksExpand from "vlocity/lib/datapacksexpand";
 
 export interface ManifestEntry {
     datapackType: string;
@@ -156,6 +157,14 @@ export default class VlocityDatapackService implements vscode.Disposable {
         buildTools.datapacksutils.saveCurrentJobInfo = () => {};
         buildTools.datapacksexportbuildfile.saveFile = () => {};
         await buildTools.utilityservice.checkLogin();
+
+        // Making sure that any override definitions so that offline operations (expand) also uses the correct
+        // custom definitions when defined -- do this after the login check to ensure we have namespaces set correctly
+        const customJobOptions = await this.getCustomJobOptions();
+        if (customJobOptions.OverrideSettings) {
+            buildTools.datapacksutils.overrideExpandedDefinition(customJobOptions.OverrideSettings);
+        }
+
         return buildTools;
     }
 
@@ -185,6 +194,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this.connectionProvider.getJsForceConnection();
     }
 
+    public isGuaranteedParentKey(key: string) {
+        return this.vlocityBuildTools.datapacksutils.isGuaranteedParentKey(key);
+    }
+
     // Todo: get vlocity namespace earlier
     // instead 
     private async getVlocityNamespace() : Promise<string> {
@@ -204,6 +217,20 @@ export default class VlocityDatapackService implements vscode.Disposable {
      */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
         return container.get(DatapackLoader).loadFrom(file.fsPath);
+    }
+
+    /**
+     * Expands a datapack into multiple files according to the specified expand definitions
+     * @param datapack The datapack to save and expand
+     * @param targetPath The path to expand to
+     */
+    public async expandDatapack(datapack: VlocityDatapack, targetPath: string) : Promise<void> {
+        const expander = new DataPacksExpand(this.vlocityBuildTools);
+        expander.targetPath = targetPath;
+        const jobOptions = Object.assign({}, await this.getCustomJobOptions(), this.config);
+        const parentName = expander.getDataPackFolder(datapack.datapackType, datapack.VlocityRecordSObjectType, datapack);
+        this.logger.verbose(`Expanding datapack ${parentName} (${datapack.datapackType})`);
+        await expander.processDataPackData(datapack.datapackType, parentName, undefined, datapack.data, false, jobOptions);
     }
 
     public getDatapackReferenceKey(datapack : VlocityDatapack) {

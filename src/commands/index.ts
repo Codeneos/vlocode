@@ -8,6 +8,8 @@ import AdminCommands from "./vlocityAdminCommand";
 import { VlocodeCommand } from "../constants";
 import BuildParentKeyFilesCommand from "./buildParentKeyFiles";
 import OpenSalesforceCommand from "./openSalesforceCommand";
+import RenameDatapackCommand from "./renameDatapackCommand";
+import CloneDatapackCommand from "./cloneDatapackCommand";
 
 export default {
     [VlocodeCommand.refreshDatapack]: RefreshDatapackCommand,
@@ -17,5 +19,7 @@ export default {
     [VlocodeCommand.selectOrg]: SelectOrgCommand,
     [VlocodeCommand.buildParentKeyFiles]: BuildParentKeyFilesCommand,
     [VlocodeCommand.openInSalesforce]: OpenSalesforceCommand,
+    [VlocodeCommand.renameDatapack]: RenameDatapackCommand,
+    [VlocodeCommand.cloneDatapack]: CloneDatapackCommand,
     ...AdminCommands
 };

@@ -46,28 +46,62 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         });
     }
 
+    public rename(name : string) {
+        if (this.sourceKey.endsWith(this.name)) {
+            this.updateSourceKey(this.sourceKey.replace(this.name, name));
+        }
+        this.data['Name'] = name;
+    }
+
+    public updateSourceKey(newKey: string): any {
+        const currentSourceKey = this.sourceKey;
+        this.forEachProperty(this.data, (key, data) => {
+            const value = data[key];
+            if (typeof value !== 'string') {
+                return;
+            }
+            if (/^Vlocity(Matching|)RecordSourceKey$/i.test(key)) {
+                if (value.endsWith(currentSourceKey)) {
+                    data[key] = newKey;
+                }
+            }
+        });
+    }
+
     public getParentRecordKeys() : string[] {
-        const requiredKeys = this.getPropertyValuesMatching<string>(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
+        const requiredKeys = this.getPropertiesMatching<string>(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
         const providedKeys = this.getProvidedRecordKeys();  
         return [...new Set(requiredKeys.filter(k => !providedKeys.includes(k)))];
     }
 
     public getProvidedRecordKeys() : string[] {
-        const providedKeys = this.getPropertyValuesMatching<string>(this.data, key => key == 'VlocityRecordSourceKey');
+        const providedKeys = this.getPropertiesMatching<string>(this.data, key => key == 'VlocityRecordSourceKey');
         return [...new Set(providedKeys)];
     }
 
-    private getPropertyValuesMatching<T>(record : any, matcher: (key : string) => boolean, keys : T[] = []) : T[] {
+    private getPropertiesMatching<T>(record : any, matcher: (key : string) => boolean, keys : T[] = []) : T[] {
         return Object.keys(record || {}).reduce((keys, key) => {
             if (matcher(key)) {
                 keys.push(record[key]);
             } else if (Array.isArray(record[key])) {
-                record[key].forEach(item => this.getPropertyValuesMatching(item, matcher, keys));
+                record[key].forEach(item => this.getPropertiesMatching(item, matcher, keys));
             } else if (typeof record[key] == 'object') {
-                this.getPropertyValuesMatching(record[key], matcher, keys);
+                this.getPropertiesMatching(record[key], matcher, keys);
             } 
             return keys;
         }, keys);
+    }
+
+    private forEachProperty(root: any, executer: (key : string, parent: any) => any) {
+        return Object.keys(root || {}).forEach(key => {
+            if (Array.isArray(root[key])) {
+                root[key].forEach(item => this.forEachProperty(item, executer));
+            } else if (typeof root[key] == 'object') {
+                this.forEachProperty(root[key], executer);
+            } else {
+                executer(key, root);
+            }
+        });
     }
 
     private getProperty(name: string | number | symbol) : any {
