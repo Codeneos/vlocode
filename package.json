@@ -234,7 +234,7 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.openSalesforce", 
+                    "command": "vlocity.openSalesforce",
                     "group": "v_vlocity2"
                 }
             ],

@@ -161,7 +161,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         // Making sure that any override definitions so that offline operations (expand) also uses the correct
         // custom definitions when defined -- do this after the login check to ensure we have namespaces set correctly
         const customJobOptions = await this.getCustomJobOptions();
-        if (customJobOptions.OverrideSettings) {
+        if (customJobOptions && customJobOptions.OverrideSettings) {
             buildTools.datapacksutils.overrideExpandedDefinition(customJobOptions.OverrideSettings);
         }
 
