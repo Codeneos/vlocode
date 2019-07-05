@@ -7,14 +7,14 @@ import CommandRouter from './services/commandRouter';
 import DatapackExplorer from 'datapackExplorer';
 import Commands from 'commands';
 import { container } from 'serviceContainer';
-import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 import * as vlocityUtil from 'vlocityUtil';
 import * as fs from 'fs-extra';
+import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
 
 const getLogger = () => LogManager.get('vlocode');
 
 function setWorkingDirectory() {
-    if (vscode.workspace.workspaceFolders.length > 0) {
+    if ((vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) > 0) {
         getLogger().verbose(`Updating Vlocode workspace folder to: ${vscode.workspace.workspaceFolders[0].uri.fsPath}`);
         process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
     } else {
