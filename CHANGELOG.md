@@ -1,10 +1,19 @@
 # Changelog Vlocode
 
+## [0.11.0] - 2019-07-08
+### New
+ - Added support for renaming and cloning datapacks.
+ - Update for compatibility with VSCode 1.36.0.
+ - Update vsce ignore file in an attempt to reduce final bundle size.
+### Fixed
+ - Fix crash on datappack service loading whithout setting an override project file.
+ - Remove old datapack builder code and related test cases.
+
 ## [0.10.7] - 2019-06-20
 ### Changed
  - Update Vlocity package to 1.11.1
 ### Fixed
- - FPatch VLocity package to avoid partial exports for datapacks with more then 10 dependencies
+ - Patch VLocity package to avoid partial exports for datapacks with more then 10 dependencies
 
 ## [0.10.6] - 2019-06-14
 ### Fixed
