@@ -2,7 +2,7 @@
  * Simple service container
  */
 export default class ServiceContainer {
-    private _instances : { [key: string]: any } = { };
+    private readonly _instances : { [key: string]: any } = { };
 
     constructor() {
         console.log('# Initializing new ServiceContainer');

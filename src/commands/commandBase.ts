@@ -66,7 +66,7 @@ export abstract class CommandBase implements Command {
         return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
     }
 
-    protected async startProgress(title: string, cancellable: boolean) : Promise<ProgressToken> {
+    protected async startProgress(title: string, cancellable?: boolean) : Promise<ProgressToken> {
         return new Promise<ProgressToken>(progressTokenResolve => {
             vscode.window.withProgress(
                 {location: vscode.ProgressLocation.Notification, title, cancellable }, 

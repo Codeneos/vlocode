@@ -1,22 +1,10 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as constants from './constants';
-import ServiceContainer from 'serviceContainer';
-import VlocodeService from './services/vlocodeService';
-import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
-import SObjectRecord from './models/sobjectRecord';
-import ExportDatapackCommand from './commands/exportDatapackCommand';
-import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
-import DatapackUtil, { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
-import { groupBy, evalExpr, getDocumentBodyAsString } from './util';
+import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
+import { getDocumentBodyAsString } from './util';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { createRecordProxy } from 'salesforceUtil';
 import { VlocityDatapack } from 'models/datapack';
 import { isObject } from 'util';
-import handleExceptions from 'decorators/handleExceptions';
 
 type DatapackLoaderRule = { rule: RegExp, load: (fileName: string) => Promise<any> };
 

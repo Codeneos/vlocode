@@ -3,6 +3,7 @@ const merge = require('webpack-merge').smart;
 const packageJson = require("./package.json");
 const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { DuplicatesPlugin } = require("inspectpack/plugin");
 
 const externals = [
    // In order to run tests the main test frameworks need to be marked
@@ -12,7 +13,10 @@ const externals = [
    'sinon',
    // VSCode is an external that we do not want to package
    'vscode', 
-   'vscode-languageclient'
+   'vscode-languageclient',
+   // these do not want to package
+   'electron',
+   'sass.js'
 ];
 const packageExternals = [...Object.keys(packageJson.dependencies), ...externals];
 
@@ -24,25 +28,10 @@ const common = {
         rules: [
             {
                 test: /\.ts$/,
-                enforce: 'pre',
-                use: [
-                    {
-                        loader: 'tslint-loader',
-                        options: { 
-                            fix: true,
-                            typeCheck: false,
-                            tsConfigFile: 'tsconfig.json'
-                        }
-                    }
-                ]
-            },
-            {
-                test: /\.ts$/,
                 use: [
                     {
                         loader: 'ts-loader',
                         options: {
-                            transpileOnly: true,
                             experimentalWatchApi: true
                         },
                     },
@@ -75,7 +64,7 @@ const common = {
         filename: '[name].js',
         chunkFilename: '[id].js',
         devtoolModuleFilenameTemplate: '[absolute-resource-path]',
-        pathinfo: false
+        pathinfo: true
     },
     mode: 'development',
     externals: 
@@ -100,8 +89,25 @@ const vscodeExtension = {
     devtool: 'source-map',
     output: {
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out')
-    }
+        path: path.resolve(__dirname, 'out'),
+    },
+    node: {
+        process: false,
+        __dirname: true
+    },
+    // plugins: [
+    //     new DuplicatesPlugin({
+    //         // Emit compilation warning or error? (Default: `false`)
+    //         emitErrors: false,
+    //         // Display full duplicates information? (Default: `false`)
+    //         verbose: false
+    //     })
+    // ],
+    // resolve: {
+    //     alias: {
+    //         'js-force': path.resolve(__dirname, 'node_modules', 'js-force')
+    //     }
+    // }
 };
 
 /**@type {import('webpack').Configuration}*/

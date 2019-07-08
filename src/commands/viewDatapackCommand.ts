@@ -50,7 +50,7 @@ export default class ViewDatapackCommand extends DatapackCommand {
 
 class DatapackView {
     
-    private webview: vscode.Webview;
+    private readonly webview: vscode.Webview;
     private readonly _onReadyEmitter = new vscode.EventEmitter<DatapackView>();
     public readonly onReady : vscode.Event<DatapackView> = this._onReadyEmitter.event;
 
