@@ -4,9 +4,13 @@
         "target": "es6",
         "outDir": "out",
         "lib": [
+            "dom",
+            "dom.iterable",
+            "scripthost",
             "es6",
             "es2017",
-            "dom"
+            "es2018",
+            "es2019",
         ],
         "sourceMap": true,
         "rootDir": "src", 

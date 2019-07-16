@@ -1,16 +1,6 @@
-import * as vscode from 'vscode';
-import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
-import * as path from 'path';
-import * as process from 'process';
-import ServiceContainer, { default as s } from 'serviceContainer';
-import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, getStackFrameDetails, forEachProperty, getProperties, existsAsync, stringEquals } from '../util';
-import { LogManager, Logger } from 'loggers';
-import { VlocityDatapack } from 'models/datapack';
-import VlocodeConfiguration from 'models/vlocodeConfiguration';
-import { FSWatcher, PathLike } from 'fs';
-import { runInThisContext } from 'vm';
+import { stringEquals } from '../util';
+import { LogManager } from 'loggers';
 import SalesforceService from 'services/salesforceService';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
@@ -38,7 +28,6 @@ export default class VlocityMatchingKeyService {
         .build();
 
     constructor(
-        private readonly container : ServiceContainer, 
         private readonly vlocityNamespace: string,
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider)) {

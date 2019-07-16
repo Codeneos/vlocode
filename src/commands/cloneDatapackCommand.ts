@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import { DatapackResultCollection } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import * as path from 'path';
 
 export default class CloneDatapackCommand extends DatapackCommand {
 

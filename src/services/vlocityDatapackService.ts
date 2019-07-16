@@ -205,7 +205,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(this.container, await this.getVlocityNamespace(), this));
+        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(await this.getVlocityNamespace(), this, this.salesforceService));
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {

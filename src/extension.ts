@@ -59,7 +59,7 @@ export async function activate(context: vscode.ExtensionContext) : Promise<void>
         treeDataProvider: new DatapackExplorer(container), 
         showCollapseAll: true 
     }));
-    vloService.registerDisposable(new DatapackSavedEventHandler(vscode.workspace.onDidSaveTextDocument));
+    vloService.registerDisposable(new DatapackSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
 }
 
 export function deactivate() { }

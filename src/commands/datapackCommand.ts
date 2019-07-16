@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 
-import VlocodeService from 'services/vlocodeService';
-import VlocityDatapackService, * as vds from 'services/vlocityDatapackService';
+import VlocityDatapackService from 'services/vlocityDatapackService';
 import { CommandBase } from "commands/commandBase";
-import { unique, mapAsync } from '../util';
+import { mapAsync } from '../util';
 import { ManifestEntry } from 'services/vlocityDatapackService';
 import { VlocityDatapack } from 'models/datapack';
 import { getDatapackHeaders, getDatapackManifestKey } from 'datapackUtil';
@@ -22,8 +21,8 @@ export abstract class DatapackCommand extends CommandBase {
         }
     }
 
-    protected async getDatapackHeaders(files: vscode.Uri[], reportErrors: boolean = true) : Promise<vscode.Uri[]> {
-        const headerFiles = await getDatapackHeaders(...files.map(f => f.fsPath));
+    protected async getDatapackHeaders(files: vscode.Uri[]) : Promise<vscode.Uri[]> {
+        const headerFiles = await getDatapackHeaders(files.map(f => f.fsPath), true);
         return headerFiles.map(header => vscode.Uri.file(header));
     }
 

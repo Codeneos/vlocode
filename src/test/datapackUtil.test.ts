@@ -48,10 +48,14 @@ describe('datapackUtil', () => {
             expect(headers[0]).equals(path.join('folder1', 'datapack.json'));
         });
         it("should find all datapack.json's in folder and sub-folders", async function() {
-            const headers = await dp.getDatapackHeaders('folder2');
+            const headers = await dp.getDatapackHeaders('folder2', true);
             expect(headers.length).equals(2);
             expect(headers).includes(path.join('folder2', 'folder2a', 'datapack.json'));
             expect(headers).includes(path.join('folder2', 'folder2b', 'datapack.json'));
+        });
+        it("should not find datapack.json's in sub-folders when running in non-recusive mode", async function() {
+            const headers = await dp.getDatapackHeaders('folder2', false);
+            expect(headers.length).equals(0);
         });
         it("should find no datapack.json for folders without datapacks", async function() {
             const headers = await dp.getDatapackHeaders('folder3');

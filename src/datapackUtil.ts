@@ -1,13 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as constants from './constants';
-import ServiceConatiner from 'serviceContainer';
-import VlocodeService from './services/vlocodeService';
-import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
-import SObjectRecord from './models/sobjectRecord';
-import ExportDatapackCommand from './commands/exportDatapackCommand';
-import CommandRouter from './services/commandRouter';
 import { LogManager, Logger } from 'loggers';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
@@ -18,8 +11,8 @@ import { mapAsyncParallel, filterAsyncParallel, getDocumentBodyAsString } from '
  * Gets a list of datapack headers 
  * @param file Path to the file to check
  */
-export async function getDatapackHeaders(...paths: string[]) : Promise<string[]> {
-    const folderSet = await mapAsyncParallel(paths, async pathStr => {
+export async function getDatapackHeaders(paths: string[] | string, recursive: boolean = false) : Promise<string[]> {
+    const folderSet = await mapAsyncParallel(Array.isArray(paths) ? paths : [paths] , async pathStr => {
         const stat = await fs.stat(pathStr);
         if (!stat.isDirectory()) {
             return path.dirname(pathStr);
@@ -29,11 +22,15 @@ export async function getDatapackHeaders(...paths: string[]) : Promise<string[]>
 
     const results = await mapAsyncParallel(folderSet, async pathStr => {
         const files = (await fs.readdir(pathStr)).map(file => path.join(pathStr, file));
-        const datapackHeaders = files.filter(name => /DataPack.json$/i.test(name));
-        const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
-        return [...datapackHeaders, ... await getDatapackHeaders(...folders)];
+        let datapackHeaders = files.filter(name => /DataPack.json$/i.test(name));
+        if (recursive) {
+            const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
+            datapackHeaders.push(...(await getDatapackHeaders(folders, true)));
+        }         
+        return datapackHeaders;
+        
     });
-    return [].concat(...results);
+    return results.flat();
 }
 
 /**
@@ -42,7 +39,6 @@ export async function getDatapackHeaders(...paths: string[]) : Promise<string[]>
 export async function getDatapackHeadersInWorkspace() : Promise<vscode.Uri[]> {
     return await vscode.workspace.findFiles('**/*_DataPack.json');
 }
-
 
 /**
  * Simple datapack key resolution based on the folder structure
@@ -92,8 +88,16 @@ export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Prom
     return null;
 }
 
+/**
+ * Check if the specified file is part of a datapack.
+ * @param fspath File path to verrify if it is part of a datapack
+ */
+export async function isPartOfDatapack(fspath: string) : Promise<boolean> {
+    return (await getDatapackHeaders(fspath)).length > 0;
+}
+
 export default class DatapackUtil {
-    
+
     private static get logger() : Logger {
         return LogManager.get(DatapackUtil);
     }

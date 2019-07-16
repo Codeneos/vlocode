@@ -2,9 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 
-import { DatapackResultCollection } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import { groupBy, mapAsyncParallel, mapAsync, getDocumentBodyAsString } from '../util';
+import { getDocumentBodyAsString } from '../util';
 import * as DatapackUtil from 'datapackUtil';
 import { VlocityDatapack } from 'models/datapack';
 
@@ -19,10 +18,10 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
     }
 
     public execute(...args: any[]) : Promise<void> {
-       return this.buildParentKeyFiles(args[1] || [args[0] || this.currentOpenDocument]);
+       return this.buildParentKeyFiles();
     }
 
-    protected async buildParentKeyFiles(selectedFiles: vscode.Uri[]) : Promise<void> {
+    protected async buildParentKeyFiles() : Promise<void> {
 
         const progressToken = await this.startProgress('Building parent keys');
         try {
