@@ -1,5 +1,10 @@
 # Changelog Vlocode
 
+## [0.11.1] - 2019-07-17
+### Fixed
+ - Fix export does not correctly evaluate expression
+ - Improve handling of on-save-deploy events
+
 ## [0.11.0] - 2019-07-08
 ### New
  - Added support for renaming and cloning datapacks.
