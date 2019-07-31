@@ -2,6 +2,7 @@ import { ManifestEntry, ObjectEntry } from "services/vlocityDatapackService";
 import { isBuffer, isString, isObject } from "util";
 import { LogManager } from "loggers";
 import { unique } from "../util";
+import { createRecordProxy } from "salesforceUtil";
 
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
@@ -109,12 +110,8 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             return undefined;
         } else if (name in this && (<any>this)[name] !== undefined){
             return (<any>this)[name];
-        } else if (this.data[name] !== undefined) {
-            return this.data[name];
-        } else if (isString(name) && this.data['%vlocity_namespace%__' + name]  !== undefined) {
-            return this.data['%vlocity_namespace%__' + name];
-        }
-        return undefined;
+        } 
+        return createRecordProxy(this.data)[name];
     }
 
     private setProperty(name: string | number | symbol, value : any) : boolean {
@@ -122,11 +119,8 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             return false;
         } else if (name in this){
             (<any>this)[name] = value;
-        } else if (isString(name) && this.data['%vlocity_namespace%__' + name]) {
-            this.data['%vlocity_namespace%__' + name] = value;
-        } else {
-            this.data[name] = value;
         } 
+        createRecordProxy(this.data, true)[name] = value;
         return true;
     }
 }

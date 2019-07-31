@@ -1,5 +1,11 @@
 # Changelog Vlocode
 
+## [0.11.2] - 2019-07-32
+ - Improve build parent keys algorithm.
+ - Added detection for UI templates for OmniScript when scanning for datapack parents.
+ - Added DataPack clone to context menu.
+ - Better handling of multi level Salesforce Records.
+
 ## [0.11.1] - 2019-07-17
 ### Fixed
  - Fix export does not correctly evaluate expression

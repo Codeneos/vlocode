@@ -42,12 +42,32 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
             const allUnresolvedParents = [];
 
             for (const dp of datapacks) {
-                const parentKeys = dp.getParentRecordKeys();//.filter(key => !key.match('VlocityRecordSourceKey'));
+                const parentKeys = dp.getParentRecordKeys();
+
+                // Handle OmniScript template referneces
+                if (dp.datapackType === 'OmniScript') {
+                    // Find any custom templates
+                    let customTemplateReferences : string[] = dp.element__c
+                        .filter(elem => elem.propertySet__c && elem.propertySet__c.HTMLTemplateId)
+                        .map(elem => elem.propertySet__c.HTMLTemplateId);
+                    
+                    // exlcude templates defined in the TestHTMLTemplates__c
+                    if (dp.TestHTMLTemplates__c) {
+                        customTemplateReferences = customTemplateReferences.filter(
+                            templateId => !dp.TestHTMLTemplates__c.includes(templateId));
+                    }
+
+                    // add template parent referneces to datapack
+                    parentKeys.push(...customTemplateReferences.map(templateId => `%vlocity_namespace%__VlocityUITemplate__c/${templateId}`));
+                }
+
                 const resolvedParents = parentKeys.map(parentKey => keyToDatapack[parentKey]).filter(dp => !!dp);
                 const missingParents = parentKeys
-                    .filter(parentKey => !keyToDatapack[parentKey])
-                    .filter(parentKey => parentKey.startsWith('RecordType/'))
-                    .filter(parentKey => this.datapackService.isGuaranteedParentKey(parentKey));
+                    .filter(parentKey => !this.datapackService.isGuaranteedParentKey(parentKey))
+                    .filter(parentKey => !keyToDatapack[parentKey]);
+
+                // collect parent key references
+                const parentKeyRefereces = resolvedParents.map(dp => this.datapackService.getDatapackReferenceKey(dp));
 
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(
@@ -61,8 +81,8 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 allUnresolvedParents.push(...missingParents);
 
                 // write parent key file
-                if (resolvedParents.length > 0) {
-                    await this.updateParentKeysFile(dp.headerFile, resolvedParents.map(dp => this.datapackService.getDatapackReferenceKey(dp)));
+                if (parentKeyRefereces.length > 0) {
+                    await this.updateParentKeysFile(dp.headerFile, parentKeyRefereces);
                 }
             }
 

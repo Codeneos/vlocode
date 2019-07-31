@@ -131,7 +131,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
         const results = await connection.queryAll<SObjectRecord>(query);            
         this.logger.log(`Found ${results.totalSize} exportable datapacks form type ${datapackType}`);
 
-        return results.totalSize == 0 ? null : results.records.map(createRecordProxy);
+        return results.totalSize == 0 ? null : results.records.map(record => createRecordProxy(record));
     }
 
     private async getQuery(datapackType: string) {

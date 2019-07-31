@@ -85,7 +85,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             if (results.totalSize === 0) {
                 return; // no results
             }
-            return results.records.map(createRecordProxy);
+            return results.records.map(record => createRecordProxy(record));
         } finally {
             queryProgress.complete();
         }

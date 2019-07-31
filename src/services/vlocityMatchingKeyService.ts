@@ -127,7 +127,7 @@ export default class VlocityMatchingKeyService {
         const connection = await this.connectionProvider.getJsForceConnection();
         const matchingKeyQuery = this.matchingKeyQuery.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
         const queryResult = await connection.queryAll<SObjectRecord>(matchingKeyQuery);
-        const matchingKeyObjects = queryResult.records.map(createRecordProxy).map(record => {
+        const matchingKeyObjects = queryResult.records.map(record => createRecordProxy(record)).map(record => {
             return {
                 sobjectType: record.ObjectAPIName__c,
                 datapackType: DatapackUtil.getDatapackType(record.ObjectAPIName__c),

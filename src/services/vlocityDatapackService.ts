@@ -195,7 +195,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public isGuaranteedParentKey(key: string) {
-        return this.vlocityBuildTools.datapacksutils.isGuaranteedParentKey(key);
+        return key.startsWith('RecordType/') || this.vlocityBuildTools.datapacksutils.isGuaranteedParentKey(key);
     }
 
     // Todo: get vlocity namespace earlier
