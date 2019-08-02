@@ -177,12 +177,13 @@ export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Thenabl
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function mapAsyncParallel<T,R>(array: Iterable<T>, callback: (item: T) => Thenable<R>) : Promise<R[]> {
-    let tasks : Thenable<R>[] = [];
+export function mapAsyncParallel<T,R>(array: Iterable<T>, callback: (item: T) => Thenable<R>, parallism = 2) : Promise<R[]> {
+    let tasks : Thenable<R[]>[] = new Array(parallism).fill(Promise.resolve(new Array<R>()));
+    let taskCounter = 0;
     for (const value of array) {
-        tasks.push(callback(value));
+        tasks[taskCounter++ % parallism].then(async result => result.concat(await callback(value)));
     }
-    return Promise.all(tasks);
+    return Promise.all(tasks).then(results => results.flat());
 }
 
 /**

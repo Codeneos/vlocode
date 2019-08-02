@@ -42,7 +42,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
             const allUnresolvedParents = [];
 
             for (const dp of datapacks) {
-                const parentKeys = dp.getParentRecordKeys();
+                const parentKeys = dp.getParentRecordKeys().filter(parentKey => !this.datapackService.isGuaranteedParentKey(parentKey));
 
                 // Handle OmniScript template referneces
                 if (dp.datapackType === 'OmniScript') {
@@ -62,9 +62,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 }
 
                 const resolvedParents = parentKeys.map(parentKey => keyToDatapack[parentKey]).filter(dp => !!dp);
-                const missingParents = parentKeys
-                    .filter(parentKey => !this.datapackService.isGuaranteedParentKey(parentKey))
-                    .filter(parentKey => !keyToDatapack[parentKey]);
+                const missingParents = parentKeys.filter(parentKey => !keyToDatapack[parentKey]);
 
                 // collect parent key references
                 const parentKeyRefereces = resolvedParents.map(dp => this.datapackService.getDatapackReferenceKey(dp));
@@ -75,7 +73,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 );
 
                 for (const [i, [file, range]] of missingKeyLocations.filter(result => !!result).entries()) {
-                    this.addWarning(file, range, `Unable to resolve dependency with key '${missingParents[i]}'`);
+                    this.addWarning(file, range, `Unable to resolve dependency with key '${missingParents[i].replace(/^%vlocity_namespace%__/,'')}'`);
                 }
 
                 allUnresolvedParents.push(...missingParents);

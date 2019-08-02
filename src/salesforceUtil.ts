@@ -16,9 +16,10 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
         get: (target, name) => {
             const key = getPropertyKey(target, name);
             const data = target[key];
-            if (Array.isArray(data)) {
-                return data.map( element => createRecordProxy(element, writable) );
-            } else if (typeof data === 'object') {                
+            if (typeof data === 'object') {
+                if (Array.isArray(data)) {
+                    return data.map(element => typeof element === 'object' ? createRecordProxy(element, writable) : element);
+                }
                 return createRecordProxy(data, writable);
             }
             return data;

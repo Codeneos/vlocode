@@ -1,6 +1,9 @@
 # Changelog Vlocode
 
-## [0.11.2] - 2019-07-32
+## [0.11.3] - 2019-08-02
+ - Fix handling of non-object types when calling createRecordProxy for incomplete datapack arrays
+
+## [0.11.2] - 2019-07-31
  - Improve build parent keys algorithm.
  - Added detection for UI templates for OmniScript when scanning for datapack parents.
  - Added DataPack clone to context menu.

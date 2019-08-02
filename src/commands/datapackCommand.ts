@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import VlocityDatapackService from 'services/vlocityDatapackService';
 import { CommandBase } from "commands/commandBase";
-import { mapAsync } from '../util';
+import { mapAsync, mapAsyncParallel } from '../util';
 import { ManifestEntry } from 'services/vlocityDatapackService';
 import { VlocityDatapack } from 'models/datapack';
 import { getDatapackHeaders, getDatapackManifestKey } from 'datapackUtil';
@@ -35,12 +35,11 @@ export abstract class DatapackCommand extends CommandBase {
     protected async loadDatapacks(files: vscode.Uri[], onProgress?: (loadedFile: vscode.Uri, progress?: number) => void) : Promise<VlocityDatapack[]> {
         let progressCounter = 0;
         const headerFiles = await this.getDatapackHeaders(files);
-        return mapAsync(headerFiles, async header => {
+        return mapAsyncParallel(headerFiles, header => {
             if (onProgress) {
                 onProgress(header, ++progressCounter / headerFiles.length);
-            }
-            const datapack = await  this.datapackService.loadDatapack(header);                
-            return datapack;
-        });
+            }             
+            return this.datapackService.loadDatapack(header);
+        }, 4);
     }
 }
