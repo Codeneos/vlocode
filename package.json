@@ -368,7 +368,7 @@
         "build:tests": "npm run prepare && webpack --config webpack.dev.js --env.tests --env.transpileOnly",
         "clean": "rimraf ./out",
         "lint": "tslint -p .",
-        "test": "npm run build:tests && node ./node_modules/vscode/bin/test",
+        "test": "npm run build:tests && node ./out/test/runTest.js",
         "bump": "npm version patch -m \"Bumping to %s\"",
         "package": "vsce package",
         "publish": "vsce publish",
