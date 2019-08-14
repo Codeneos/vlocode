@@ -3,6 +3,7 @@ const merge = require('webpack-merge').smart;
 const packageJson = require("./package.json");
 const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const glob = require('glob');
 const { DuplicatesPlugin } = require("inspectpack/plugin");
 
 const externals = [
@@ -21,7 +22,7 @@ const externals = [
 const packageExternals = [...Object.keys(packageJson.dependencies), ...externals];
 
 /**@type {import('webpack').Configuration}*/
-const common = {
+const common = env => ({
     context: __dirname,
     devtool: 'source-map',
     module: {
@@ -29,12 +30,7 @@ const common = {
             {
                 test: /\.ts$/,
                 use: [
-                    {
-                        loader: 'ts-loader',
-                        options: {
-                            experimentalWatchApi: true
-                        },
-                    },
+                    { loader: 'ts-loader', options: { transpileOnly: env.transpileOnly } }
                 ],
             },
             {
@@ -42,12 +38,7 @@ const common = {
                 exclude: /test.html/i,
                 use: [
                     { loader: 'cache-loader' },
-                    {
-                        loader: 'html-loader',
-                        options: {
-                            exportAsDefault: true
-                        }
-                    }
+                    { loader: 'html-loader', options: { exportAsDefault: true } }
                 ]
             },
             {
@@ -66,6 +57,11 @@ const common = {
         devtoolModuleFilenameTemplate: '[absolute-resource-path]',
         pathinfo: true
     },
+    node: {
+        process: false,
+        __dirname: false,
+        __dirname: false
+    },
     mode: 'development',
     externals: 
         function(context, request, callback) {
@@ -77,7 +73,7 @@ const common = {
             }
             callback();
         }
-};
+});
 
 /**@type {import('webpack').Configuration}*/
 const vscodeExtension = {
@@ -90,11 +86,7 @@ const vscodeExtension = {
     output: {
         libraryTarget: 'commonjs2',
         path: path.resolve(__dirname, 'out'),
-    },
-    node: {
-        process: false,
-        __dirname: true
-    },
+    }    
     // plugins: [
     //     new DuplicatesPlugin({
     //         // Emit compilation warning or error? (Default: `false`)
@@ -112,12 +104,14 @@ const vscodeExtension = {
 
 /**@type {import('webpack').Configuration}*/
 const tests = {
-    entry: fs.readdirSync('./src/test/')
-        .filter(file => file.match(/(.*)\.test\.ts$/))
-        .reduce((map, file) => Object.assign(map, {
-            [file.replace(/(.*\.test)\.ts$/, '$1')]: './src/test/' + file
+    entry:
+        glob.sync('./src/test/**/*.test.ts').reduce((map, file) => Object.assign(map, {
+            [file.replace(/^.*?test\/(.*\.test)\.ts$/i, '$1')]: file
         }), 
-        { index: './src/test/index.ts' }),
+        { 
+            index: './src/test/index.ts', 
+            runTest: './src/test/runTest.ts' 
+        }),
     target: 'node',
     name: 'tests',
     output: {
@@ -159,8 +153,15 @@ const views = {
     ]
 };
 
-module.exports = {
-    extension: merge(common, vscodeExtension),
-    tests: merge(common, tests),
-    views: merge(common, views)
+const configVariations = {
+    extension: vscodeExtension,
+    tests: tests,
+    views: views
+}
+
+module.exports = (env, extraConfig) => {
+    const configCommon = common(env);
+    return Object.keys(configVariations)
+        .filter(key => env[key])
+        .map(key => merge(configCommon, configVariations[key], extraConfig));
 };

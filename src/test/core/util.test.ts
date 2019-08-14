@@ -6,8 +6,8 @@ import * as fs from 'fs';
 import 'mocha';
 
 import * as vscode from 'vscode';
-import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
-import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel } from '../util';
+import vlocityDatapackService, * as vds from '../../services/vlocityDatapackService';
+import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel } from '../../util';
 
 describe('util', () => {   
 

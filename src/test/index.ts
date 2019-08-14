@@ -1,27 +1,27 @@
-//
-// PLEASE DO NOT MODIFY / DELETE UNLESS YOU KNOW WHAT YOU ARE DOING
-//
-// This file is providing the test runner to use when running extension tests.
-// By default the test runner in use is Mocha based.
-//
-// You can provide your own test runner if you want to override it by exporting
-// a function run(testRoot: string, clb: (error:Error) => void) that the extension
-// host can call to run the tests. The test runner is expected to use console.log
-// to report the results back to the caller. When the tests are finished, return
-// a possible error to the callback or null if none.
+import * as path from 'path';
+import * as Mocha from 'mocha';
+import * as glob from 'glob';
+import { promisify } from 'util';
 
-import * as testRunner from 'vscode/lib/testrunner';
-
-// You can directly control Mocha options by uncommenting the following lines
-// See https://github.com/mochajs/mocha/wiki/Using-mocha-programmatically#set-options for more info
-const testRunnerConfig = {
-    ui: 'bdd',
-    useColors: true,
+const testRunnerConfig : Mocha.MochaOptions = {
+	ui: 'bdd',
+	useColors: true,
     reporter: process.env.TEST_RESULTS_FILE ? 'mocha-sonarqube-reporter' : null,
     reporterOptions: {
         output: process.env.TEST_RESULTS_FILE
     }
 };
 
-testRunner.configure(<testRunner.MochaSetupOptions>testRunnerConfig);
-module.exports = testRunner;
+export async function run(): Promise<void> {
+	// Create the mocha test
+    const mocha = new Mocha(testRunnerConfig);
+	const testsRoot = path.resolve(__dirname);
+	const tests = await promisify(glob)('**/**.test.js', { cwd: testsRoot });
+
+	for (const test of tests) {
+		mocha.addFile(path.join(testsRoot, test));
+	}
+
+	// Run the mocha test
+	return new Promise((resolve, reject) => mocha.run(failures => failures ? reject(new Error(`${failures} tests failed.`)) : resolve()));
+}

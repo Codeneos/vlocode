@@ -40,21 +40,6 @@ export async function getDocumentBodyAsString(file: string) : Promise<string> {
     return (await fs.readFile(file)).toString();
 }
 
-export function promisify<T1, T2, T3, T4>(func: (arg1: T2, arg2: T2, arg3: T3, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
-export function promisify<T1, T2, T3>(func: (arg1: T2, arg2: T2, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2, arg2: T2) => Promise<T1>;
-export function promisify<T1, T2>(func: (arg1: T2, cb: (err: any, result?: T1) => void) => void, thisArg?: any) : (arg1: T2) => Promise<T1>;
-export function promisify<T1>(func: (...args: any[]) => void, thisArg: any = null) : (...args: any[]) => Promise<T1> {
-    return (...args: any[]) : Promise<T1> => {
-        return new Promise<T1>((resolve, reject) => { 
-            var callbackFunc = (err, ...args: any[]) => {
-                if(err) { reject(err); }
-                else { resolve.apply(null, args); }
-            };
-            func.apply(thisArg, args.concat(callbackFunc));
-        });
-    };
-}
-
 export function existsAsync(path: fs.PathLike) : Promise<boolean> {
     return new Promise(resolve => {
         fs.exists(path, result => resolve(result));
@@ -173,15 +158,26 @@ export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Thenabl
 }
 
 /**
+ * Iterable helper includes an index on the IterableIterator return value
+ * @param iterable The iterable object
+ * @yields {[number, T]}
+ */
+function* enumerateWithIndex<T>(iterable: Iterable<T>) : IterableIterator<[number, T]> {
+    let i = 0;
+    for (const x of iterable) {
+        yield [i++, x];
+    }
+}
+
+/**
  * Execute the map callback async in parallel on each of the items in the specified Iterable
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function mapAsyncParallel<T,R>(array: Iterable<T>, callback: (item: T) => Thenable<R>, parallism = 2) : Promise<R[]> {
+export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T) => Thenable<R>, parallism = 2) : Promise<R[]> {
     let tasks : Thenable<R[]>[] = new Array(parallism).fill(Promise.resolve(new Array<R>()));
-    let taskCounter = 0;
-    for (const value of array) {
-        tasks[taskCounter++ % parallism].then(async result => result.concat(await callback(value)));
+    for (const [index, value] of enumerateWithIndex(iterable)) {
+        tasks[index % parallism] = tasks[index % parallism].then(async result => result.concat(await callback(value)));
     }
     return Promise.all(tasks).then(results => results.flat());
 }

@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import 'mocha';
 
 import * as vscode from 'vscode';
-import vlocityDatapackService, * as vds from '../services/vlocityDatapackService';
+import vlocityDatapackService, * as vds from '../../services/vlocityDatapackService';
 import { fail } from 'assert';
 import { Logger } from 'loggers';
 import { makePath } from 'test/helpers';
