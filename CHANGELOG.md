@@ -1,7 +1,11 @@
 # Changelog Vlocode
 
-## [0.11.3] - 2019-08-02
- - Fix handling of non-object types when calling createRecordProxy for incomplete datapack arrays
+## [0.11.3] - 2019-08-14
+ - Fix handling of non-object types when calling createRecordProxy for incomplete datapack arrays 
+ - Fix parallel execution not correctly tracking tasks
+ - Fix vscode toolbar icon not using the correct size
+ - Migrate to new test structure
+ - Update dependencies
 
 ## [0.11.2] - 2019-07-31
  - Improve build parent keys algorithm.
