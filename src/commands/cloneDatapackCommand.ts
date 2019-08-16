@@ -31,6 +31,8 @@ export default class CloneDatapackCommand extends DatapackCommand {
             }
 
             datapack.rename(newName);
+            datapack.regenerateGlobalKey();
+            
             await this.showProgress(`Cloning ${datapack.name}...`, this.vloService.datapackService.expandDatapack(datapack, datapack.projectFolder));
         }
     }

@@ -18,9 +18,11 @@ This extension uses of the official Vlocity build tools library for executing th
 * **Retrieve & refresh** Vlocity datapacks from within Visual Studio Code simplifying your workflow
 * **Deploy** exported Vlocity datapacks with a single click from within Visual Studio Code
 * **Export** any datapack enabled object directly from within VSCode.
-![Datapack explorer](resources/exportDatapack.gif)
+![Datapack export](resources/exportDatapack.gif)
 * **Open in Salesforce** directly open any Vlocity object in Salesforce.
-* **Restore and check parentkeys** rebuild and verify your source code for missing dependencies and rebuild the dependecny graph
+* **Clone Datapack** clone any Datapack object from your IDE, usefull for cloning products or templates directly from VSCode
+* **Rename Datapack** change the name of a Datapack and rebuild the file structure to match the new name
+* **Rebuild parentkeys** rebuild and verify your source code for missing dependencies and rebuild the dependency graph
 * **Check Integrity** Check datapack integrity by finding missing references and rebuilding ParentKey files
 * **Admin Commands** Vlocode integrates common admin commands for Vlocity:
   * **Refresh Pricebook** Refreshes pricebook entries on the currently connected Salesforce org

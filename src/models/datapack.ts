@@ -1,5 +1,6 @@
 import { ManifestEntry, ObjectEntry } from "services/vlocityDatapackService";
 import { isBuffer, isString, isObject } from "util";
+import { v4 as generateGuid } from "uuid";
 import { LogManager } from "loggers";
 import { unique } from "../util";
 import { createRecordProxy } from "salesforceUtil";
@@ -48,25 +49,62 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     }
 
     public rename(name : string) {
+        const currentName = this.name;
+
         if (this.sourceKey.endsWith(this.name)) {
             this.updateSourceKey(this.sourceKey.replace(this.name, name));
         }
-        this.data['Name'] = name;
+
+        this.forEachProperty(this.data, (property, value, child)  => {
+            if (typeof value === 'string') {
+                if (property == 'Name' && value.includes(currentName)) {
+                    child[property] = value.replace(currentName, name);
+                } else if (value == currentName) {
+                    child[property] = name;
+                }                
+            }
+        });
     }
 
     public updateSourceKey(newKey: string): any {
         const currentSourceKey = this.sourceKey;
-        this.forEachProperty(this.data, (key, data) => {
-            const value = data[key];
+        this.forEachProperty(this.data, (property, value, object) => {
             if (typeof value !== 'string') {
                 return;
             }
-            if (/^Vlocity(Matching|)RecordSourceKey$/i.test(key)) {
+            if (/^Vlocity(Matching|)RecordSourceKey$/i.test(property)) {
                 if (value.endsWith(currentSourceKey)) {
-                    data[key] = newKey;
+                    object[property] = newKey;
                 }
             }
         });
+    }
+
+    public regenerateGlobalKey() {
+        // regenerate main objects global key
+        this.updateGlobalKey(this.data, generateGuid());
+
+        // update include child records that have global keys
+        this.forEachChildObject(this.data, child => {
+            if (child['VlocityDataPackType'] == 'SObject' && child['%vlocity_namespace%__GlobalKey__c']) {
+                this.updateGlobalKey(child, generateGuid());
+            }
+        });
+    }
+
+    private updateGlobalKey(object: Object, newGlobalKey: string) {
+        const oldGlobalKey = object['%vlocity_namespace%__GlobalKey__c'];
+        object['%vlocity_namespace%__GlobalKey__c'] = newGlobalKey;
+
+        if (typeof oldGlobalKey === 'string' && oldGlobalKey.trim()) {
+            this.forEachProperty(this.data, (property, value, child)  => {
+                if (typeof value === 'string' && value.endsWith(oldGlobalKey)) {
+                    child[property] = value.replace(oldGlobalKey, newGlobalKey);
+                }
+            });
+        }
+
+        return object;
     }
 
     public getParentRecordKeys() : string[] {
@@ -93,15 +131,26 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }, keys);
     }
 
-    private forEachProperty(root: any, executer: (key : string, parent: any) => any) {
-        return Object.keys(root || {}).forEach(key => {
-            if (Array.isArray(root[key])) {
-                root[key].forEach(item => this.forEachProperty(item, executer));
-            } else if (typeof root[key] == 'object') {
-                this.forEachProperty(root[key], executer);
+    private forEachProperty(object: any, executer: (property : string, value: any, object: any) => any) {
+        return Object.keys(object || {}).forEach(key => {
+            if (Array.isArray(object[key])) {
+                object[key].forEach(item => this.forEachProperty(item, executer));
+            } else if (typeof object[key] === 'object') {
+                this.forEachProperty(object[key], executer);
             } else {
-                executer(key, root);
+                executer(key, object[key], object);
             }
+        });
+    }
+
+    private forEachChildObject(object: any, executer: (object: any) => any) {
+        return Object.keys(object || {}).forEach(key => {
+            if (Array.isArray(object[key])) {
+                this.forEachChildObject(object[key], executer);
+            } else if (typeof object[key] === 'object') {
+                executer(object[key]);
+                this.forEachChildObject(object[key], executer);
+            } 
         });
     }
 
