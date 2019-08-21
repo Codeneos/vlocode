@@ -1,5 +1,10 @@
 # Changelog Vlocode
 
+## [0.11.4] - 2019-08-16
+ - Update clone and rename Datapack features
+ - Now correctly regenerate all Global Keys for the parent and the child records during Datapack cloning
+ - Fix a bug during datapack rename logic that caused properties to be replaced fully when ending on the old name.
+
 ## [0.11.3] - 2019-08-14
  - Fix handling of non-object types when calling createRecordProxy for incomplete datapack arrays 
  - Fix parallel execution not correctly tracking tasks
