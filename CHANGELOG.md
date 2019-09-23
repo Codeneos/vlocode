@@ -1,5 +1,9 @@
 # Changelog Vlocode
 
+## [0.11.5] - 2019-09-23
+ - Fix problem with project path resolution on *nix machines
+ - Use both expansion path as well as project path avoiding APEX file load errors (if project path is correctly configured)
+
 ## [0.11.4] - 2019-08-16
  - Update clone and rename Datapack features
  - Now correctly regenerate all Global Keys for the parent and the child records during Datapack cloning

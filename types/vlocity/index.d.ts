@@ -98,6 +98,8 @@ declare module 'vlocity' {
             printJobStatus(jobInfo: JobInfo) : void;
             overrideExpandedDefinition(overrides : any) : void;
             isGuaranteedParentKey(parentKey : any) : boolean;
+            loadApex(projectPath: string, filePath: string) : string;
+            runApex(projectPath: string, filePaths: string, currentContextData: any) : Promise<void>
         }
 
         export class UtilityService {            

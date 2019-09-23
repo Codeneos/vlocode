@@ -266,4 +266,21 @@ export function stringEquals(a : string, b: string, insensitive?: boolean) : boo
     return false;
 }
 
-
+/**
+ * Get all primitive non-object values in the specified object hiearchy up to the specified depth.
+ * @param obj Object from which to get the values
+ * @param depth Max object depth to go down the tree
+ */
+export function getObjectValues(obj: Object, depth = -1) : any[] {
+    let properties = [];
+    Object.keys(obj).forEach(key => {
+        if (typeof obj[key] === 'object') {
+            if (depth != 0) {
+                properties.push(...getObjectValues(obj[key], depth-1));
+            }
+        } else {
+            properties.push(obj[key]);
+        }
+    });
+    return properties;
+}

@@ -7,7 +7,7 @@ import 'mocha';
 
 import * as vscode from 'vscode';
 import vlocityDatapackService, * as vds from '../../services/vlocityDatapackService';
-import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel } from '../../util';
+import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel, getObjectValues } from '../../util';
 
 describe('util', () => {   
 
@@ -70,4 +70,24 @@ describe('util', () => {
             expect(result['3']).to.deep.equal([list[4]]);
         });
     });
+
+    describe('#getObjectValues', () => { 
+        it("should get values from array", function() {
+            const obj = [ 'foo', ['bar'] ];
+            const result = getObjectValues(obj);
+            expect(result).to.deep.equal(['foo', 'bar']);
+        });
+        it("should get values from object", function() {
+            const obj = { a: 'foo', bar: { b: 'bar' } };
+            const result = getObjectValues(obj);
+            expect(result).to.deep.equal(['foo', 'bar']);
+        });
+        it("should not get values beyond max depth", function() {
+            const obj = { a: 'foo', bar: { b: 'bar' }};
+            const result = getObjectValues(obj, 0);
+            expect(result).to.deep.equal(['foo']);
+        });
+    });
+
+    //getObjectValues
 });

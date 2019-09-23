@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
-import { existsAsync, groupBy, mapAsync, stringEquals } from '../util';
+import { existsAsync, groupBy, mapAsync, stringEquals, getObjectValues } from '../util';
 import { LogManager } from 'loggers';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
@@ -211,6 +211,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
     public async isVlocityPackageInstalled() : Promise<boolean> {
         return (await this.salesforceService.isPackageInstalled(/^vlocity/i)) !== undefined;
     }
+
+    private resolvedProjectPath() {
+        return path.resolve(this.config.projectPath || '.');
+    }
     
     /**
      * @deprecated Use `container.get(DatapackLoader).loadFrom(...)` instead
@@ -240,12 +244,14 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {
         const headersByProject = groupBy(datapackHeaders, header => getExportProjectFolder(header));
+        const projectPath = this.resolvedProjectPath();
 
         const results = await mapAsync(Object.keys(headersByProject), projectFolder => {
             const deployManifest = headersByProject[projectFolder].map(header => getDatapackManifestKey(header).key);
             return this.runCommand('Deploy', {
                 manifest: deployManifest,
-                projectPath: projectFolder,
+                projectPath: projectPath,
+                expansionPath: path.relative(projectPath, projectFolder),
                 activate: this.config.autoActivate,
                 delete: true,
                 compileOnBuild: this.config.compileOnBuild        
@@ -271,9 +277,11 @@ export default class VlocityDatapackService implements vscode.Disposable {
     public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackResultCollection>  {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportManifest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
+        const projectPath = this.resolvedProjectPath();
         return this.runCommand('Export',{
             queries: exportQueries,
-            projectPath: exportFolder,
+            projectPath: projectPath,
+            expansionPath: path.relative(projectPath, exportFolder),
             fullManifest: exportManifest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth,
@@ -318,7 +326,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     
     private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
         // collect and create job optipns
-        const localOptions = { projectPath: this.config.projectPath || '.' };
+        const localOptions = { projectPath: this.resolvedProjectPath() };
         const customOptions = await this.getCustomJobOptions();
         const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
 
