@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs-extra';
 
 import VlocityDatapackService from 'services/vlocityDatapackService';
 import { CommandBase } from "commands/commandBase";
@@ -22,8 +23,11 @@ export abstract class DatapackCommand extends CommandBase {
     }
 
     protected async getDatapackHeaders(files: vscode.Uri[]) : Promise<vscode.Uri[]> {
-        const headerFiles = await getDatapackHeaders(files.map(f => f.fsPath), true);
-        return headerFiles.map(header => vscode.Uri.file(header));
+        const headerFiles = await Promise.all(files.map(async (fileUri) => {
+            const fileStat = await fs.lstat(fileUri.fsPath);
+            return getDatapackHeaders(fileUri.fsPath, fileStat.isDirectory());
+        }));
+        return headerFiles.flat().map(header => vscode.Uri.file(header));
     }
 
     protected resolveManifestEntriesForFiles(files: vscode.Uri[]) : Promise<ManifestEntry[]> {

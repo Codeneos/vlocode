@@ -1,5 +1,8 @@
 # Changelog Vlocode
 
+## [0.11.6] - 2019-10-17
+ - Fix problem where deploy command would walk all child directories to find deployable datapacks causing all found datapacks to be deployed.
+
 ## [0.11.5] - 2019-09-23
  - Fix problem with project path resolution on *nix machines
  - Use both expansion path as well as project path avoiding APEX file load errors (if project path is correctly configured)
