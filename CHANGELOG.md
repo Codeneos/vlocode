@@ -36,7 +36,7 @@
  - Update for compatibility with VSCode 1.36.0.
  - Update vsce ignore file in an attempt to reduce final bundle size.
 ### Fixed
- - Fix crash on datappack service loading whithout setting an override project file.
+ - Fix crash on datappack service loading without setting an override project file.
  - Remove old datapack builder code and related test cases.
 
 ## [0.10.7] - 2019-06-20
@@ -107,7 +107,7 @@
 
 ## [0.8.7] - 2018-12-03
 ### Changed
- - Opimize plugin packeging
+ - Optimize plugin packaging
 
 ## [0.8.6] - 2018-11-28
 ### Security issue
