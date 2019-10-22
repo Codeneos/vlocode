@@ -10,6 +10,7 @@ import { container } from 'serviceContainer';
 import * as vlocityUtil from 'vlocityUtil';
 import * as fs from 'fs-extra';
 import DatapackSavedEventHandler from 'events/datapackSavedEventHandler';
+import JobExplorer from 'jobExplorer';
 
 const getLogger = () => LogManager.get('vlocode');
 
@@ -57,7 +58,10 @@ export async function activate(context: vscode.ExtensionContext) : Promise<void>
     container.get(CommandRouter).registerAll(Commands);
     vloService.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
         treeDataProvider: new DatapackExplorer(container), 
-        showCollapseAll: true 
+        showCollapseAll: true
+    }));
+    vloService.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
+        treeDataProvider: new JobExplorer(container)
     }));
     vloService.registerDisposable(new DatapackSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
 }

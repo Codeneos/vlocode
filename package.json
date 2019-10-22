@@ -33,6 +33,7 @@
         "onCommand:vlocity.renameDatapack",
         "onCommand:vlocity.cloneDatapack",
         "onView:datapackExplorer",
+        "onView:jobExplorer",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json"
     ],
@@ -52,6 +53,10 @@
                 {
                     "id": "datapackExplorer",
                     "name": "Datapacks"
+                },
+                {
+                    "id": "jobExplorer",
+                    "name": "Jobs"
                 }
             ]
         },
@@ -134,6 +139,14 @@
                 "icon": {
                     "light": "resources/light/external-link-small.svg",
                     "dark": "resources/dark/external-link-small.svg"
+                }
+            },
+            {
+                "command": "vlocity.jobExplorer.refresh",
+                "title": "Refresh",
+                "icon": {
+                    "light": "resources/light/refresh.svg",
+                    "dark": "resources/dark/refresh.svg"
                 }
             },
             {
@@ -264,6 +277,11 @@
                 {
                     "command": "vlocity.datapackExplorer.refresh",
                     "when": "view == datapackExplorer",
+                    "group": "navigation"
+                },
+                {
+                    "command": "vlocity.jobExplorer.refresh",
+                    "when": "view == jobExplorer",
                     "group": "navigation"
                 }
             ],

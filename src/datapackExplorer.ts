@@ -18,10 +18,14 @@ import { createRecordProxy, addFieldsToQuery } from 'salesforceUtil';
 
 export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
     
-    private readonly _onDidChangeTreeData: vscode.EventEmitter<DatapackNode | undefined> = new vscode.EventEmitter<DatapackNode | undefined>();
-    public readonly onDidChangeTreeData: vscode.Event<DatapackNode | undefined> = this._onDidChangeTreeData.event;
+    private readonly _onDidChangeTreeData: vscode.EventEmitter<DatapackNode | undefined>;
+
+    get onDidChangeTreeData(): vscode.Event<DatapackNode | undefined> {
+        return this._onDidChangeTreeData.event;
+    }
 
     constructor(private readonly container: ServiceContainer) {
+        this._onDidChangeTreeData = new vscode.EventEmitter<DatapackNode | undefined>()
         this.commands.registerAll({
             'vlocity.datapackExplorer.export': async (node) => this.onExport(node),
             'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
