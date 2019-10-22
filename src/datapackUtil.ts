@@ -13,7 +13,7 @@ import { mapAsyncParallel, filterAsyncParallel, getDocumentBodyAsString } from '
  */
 export async function getDatapackHeaders(paths: string[] | string, recursive: boolean = false) : Promise<string[]> {
     const folderSet = await mapAsyncParallel(Array.isArray(paths) ? paths : [paths] , async pathStr => {
-        const stat = await fs.stat(pathStr);
+        const stat = await fs.lstat(pathStr);
         if (!stat.isDirectory()) {
             return path.dirname(pathStr);
         }
@@ -25,7 +25,7 @@ export async function getDatapackHeaders(paths: string[] | string, recursive: bo
         let datapackHeaders = files.filter(name => /DataPack.json$/i.test(name));
         if (recursive) {
             const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
-            datapackHeaders.push(...(await getDatapackHeaders(folders, true)));
+            datapackHeaders.push(...(await getDatapackHeaders(folders, recursive)));
         }         
         return datapackHeaders;
         
@@ -96,7 +96,10 @@ export default class DatapackUtil {
             return `${sfRecordLikeObject.Type__c}/${sfRecordLikeObject.SubType__c}`;
         } else if (sfRecordLikeObject.Name) {
             return sfRecordLikeObject.Name;
-        }        
+        }
+        } else if (sfRecordLikeObject.DeveloperName) {
+            return sfRecordLikeObject.DeveloperName;
+        }
         
         DatapackUtil.logger.warn(`Object does not have common namable property`, sfRecordLikeObject);        
         if (sfRecordLikeObject.Id) {
