@@ -440,7 +440,7 @@
         "webpack-cli": "^3.3.5",
         "webpack-dev-server": "^3.7.2",
         "webpack-glob-entry": "^2.1.1",
-        "webpack-merge": "^4.2.1",
+        "webpack-merge": "^4.2.2",
         "zone.js": "^0.8.29"
     },
     "dependencies": {
