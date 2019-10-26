@@ -96,7 +96,6 @@ export default class DatapackUtil {
             return `${sfRecordLikeObject.Type__c}/${sfRecordLikeObject.SubType__c}`;
         } else if (sfRecordLikeObject.Name) {
             return sfRecordLikeObject.Name;
-        }
         } else if (sfRecordLikeObject.DeveloperName) {
             return sfRecordLikeObject.DeveloperName;
         }
