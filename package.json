@@ -403,7 +403,7 @@
         "@types/sinon": "^5.0.7",
         "@types/uuid": "^3.4.5",
         "@types/vscode": "^1.39.0",
-        "ajv": "^6.10.0",
+        "ajv": "^6.10.2",
         "angular": "^1.7.8",
         "angular-expressions": "^1.0.0",
         "cache-loader": "^2.0.1",
