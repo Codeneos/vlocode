@@ -448,6 +448,6 @@
         "jsforce": "^1.9.1",
         "salesforce-alm": "^45.18.0",
         "sfdx-node": "^1.3.2",
-        "vlocity": "1.11.1"
+        "vlocity": "1.11.9"
     }
 }
