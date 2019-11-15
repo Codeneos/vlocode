@@ -425,7 +425,7 @@
         "patch-package": "^5.1.2",
         "retire": "^2.0.3",
         "rimraf": "^2.6.3",
-        "rxjs": "^6.5.2",
+        "rxjs": "^6.5.3",
         "sinon": "^7.5.0",
         "terser-webpack-plugin": "^2.2.1",
         "ts-loader": "^6.2.1",
