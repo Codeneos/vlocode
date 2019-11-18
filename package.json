@@ -424,7 +424,7 @@
         "moment": "^2.24.0",
         "patch-package": "^5.1.2",
         "retire": "^2.0.3",
-        "rimraf": "^2.6.3",
+        "rimraf": "^3.0.0",
         "rxjs": "^6.5.3",
         "sinon": "^7.5.0",
         "terser-webpack-plugin": "^2.2.1",
