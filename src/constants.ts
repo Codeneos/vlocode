@@ -1,8 +1,11 @@
+
+
 /**
  * Default constants used in this extensipn
  */
 
 const packageJson = require('../package.json');
+import metadataTypes = require('metadataTypes.yaml');
 
 export const VERSION = packageJson.version;
 export const CONFIG_SECTION = 'vlocity';
@@ -10,6 +13,11 @@ export const OUTPUT_CHANNEL_NAME = 'Vlocity';
 export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
+export const MD_XML_OPTIONS = { xmldec: 
+    { version: '1.0', encoding: 'UTF-8' } 
+};
+export const SF_META_EXTENSIONS = [ '-meta.xml' ]
+    .concat(Object.values(metadataTypes).map(type => type.fileExtensions).flat());
 
 export enum VlocodeCommand {
     refreshDatapack = 'vlocity.refreshDatapack',
@@ -26,5 +34,7 @@ export enum VlocodeCommand {
     refreshPriceBook  = 'vlocity.admin.refreshPriceBook',
     refreshProductHierarchy  = 'vlocity.admin.refreshProductHierarchy',
     updateAllProdAttribCommand  = 'vlocity.admin.updateAllProdAttribCommand',
-    clearPlatformCache  = 'vlocity.admin.clearPlatformCache'
+    clearPlatformCache  = 'vlocity.admin.clearPlatformCache',
+    deployMetadata  = 'vlocity.deployMetadata',
+    deployMetadataExplorer  = 'vlocity.deployMetadata.explorer'
 }

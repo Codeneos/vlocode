@@ -32,6 +32,8 @@
         "onCommand:vlocity.openSalesforce",
         "onCommand:vlocity.renameDatapack",
         "onCommand:vlocity.cloneDatapack",
+        "onCommand:vlocity.deployMetadata",
+        "onCommand:vlocity.deployMetadataExplorer",
         "onView:datapackExplorer",
         "onView:jobExplorer",
         "workspaceContains:**/*_datapack.json",
@@ -156,6 +158,14 @@
             {
                 "command": "vlocity.buildParentKeyFiles",
                 "title": "Vlocity: Build Parent Key Files"
+            },
+            {
+                "command": "vlocity.deployMetadata",
+                "title": "Salesforce: Save and Deploy current file"
+            },
+            {
+                "command": "vlocity.deployMetadata.explorer",
+                "title": "Salesforce: Save and Deploy"
             }
         ],
         "menus": {
@@ -213,6 +223,11 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.deployMetadata",
+                    "when": "vlocodeSalesforceSupport",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocity.buildDatapack",
                     "when": "false"
                 },
@@ -253,6 +268,11 @@
                 {
                     "command": "vlocity.openSalesforce",
                     "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.deployMetadata.explorer",
+                    "when": "vlocodeSalesforceSupport",
+                    "group": "v_salesforce"
                 }
             ],
             "editor/context": [
@@ -271,6 +291,11 @@
                 {
                     "command": "vlocity.openSalesforce",
                     "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.deployMetadata",
+                    "when": "vlocodeSalesforceSupport",
+                    "group": "v_salesforce"
                 }
             ],
             "view/title": [
@@ -375,6 +400,11 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Automatically activate datapacks after deployment to the target org."
+                },
+                "vlocity.salesforceSupport": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable experimental support for deploying of Salesforce metadata files"
                 }
             }
         }
@@ -415,6 +445,7 @@
         "inspectpack": "^4.2.2",
         "js-yaml": "^3.13.1",
         "json-loader": "^0.5.7",
+        "jszip": "^3.2.2",
         "mocha": "^5.2.0",
         "mocha-html-reporter": "0.0.1",
         "mocha-junit-reporter": "^1.23.0",
@@ -441,6 +472,7 @@
         "webpack-dev-server": "^3.9.0",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.2.2",
+        "xml2js": "^0.4.22",
         "zone.js": "^0.10.2"
     },
     "dependencies": {

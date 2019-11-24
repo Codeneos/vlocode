@@ -25,3 +25,14 @@ declare module 'exportQueryDefinitions.yaml' {
   };
   export = exportQueryDefinitions;
 }
+
+declare module 'metadataTypes.yaml' {
+  interface MetadataType {
+    packageFolder?: string
+    fileExtensions?: string[];
+  }
+  const exportQueryDefinitions : { 
+    [metadataType: string] : MetadataType
+  };
+  export = exportQueryDefinitions;
+}

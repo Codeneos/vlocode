@@ -42,6 +42,14 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
     protected async deployDatapacks(selectedFiles: vscode.Uri[], reportErrors: boolean = true) {
         try {
+            for (const file of selectedFiles) {
+                if (this.savingDocumentsList.has(file.fsPath)) {
+                    // Deployment was triggered through on save handler; skipping it
+                    this.logger.verbose(`Deployment save loop detected; skip deploy for: ${selectedFiles.join(', ')}`);
+                    return;
+                }
+            }
+
             // prepare input
             const datapackHeaders = await this.getDatapackHeaders(selectedFiles);
             if(datapackHeaders.length == 0) {

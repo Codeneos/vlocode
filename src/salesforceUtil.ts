@@ -1,7 +1,9 @@
 
 import SObjectRecord from './models/sobjectRecord';
-import { stringEquals } from './util';
-import { write } from 'fs';
+import { stringEquals, mapAsyncParallel, filterAsyncParallel } from './util';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as constants from './constants';
 
 /**
  * Create a record proxy around a SF record removing any namespace prefixes it may contain and making all fields accessible with case-insensitive keys.
@@ -81,4 +83,51 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
         }
     }
     return firstPart + ' ' + query.substring(fromIndex);
+}
+
+/**
+ * Gets a list of Salesforce meta files.
+ * @param paths Path to get meta files from
+ */
+export async function getMetaFiles(paths: string[] | string, recursive: boolean = false) : Promise<string[]> {
+    path
+    // Determine possible meta search paths for the selected files
+    const searchPaths = [];
+    for (const file of paths) {
+        const pathParts = file.split(/\/\\/ig);
+        const fileExt = path.extname(file.toLowerCase());
+        if (fileExt == '.cls' || fileExt == '.page') {
+            searchPaths.push(file + '-meta.xml');
+        } else if (pathParts.includes('lwc')) {
+            searchPaths.push(path.dirname(file));
+        } else if (pathParts.includes('aura')) {
+            searchPaths.push(path.dirname(file));
+        } else {
+            searchPaths.push(file);
+        }
+    }
+
+    const results = await mapAsyncParallel(searchPaths, async pathStr => {
+        const stat = await fs.lstat(pathStr);
+        const files = stat.isDirectory() ? (await fs.readdir(pathStr)).map(file => path.join(pathStr, file)) : [ pathStr ];
+        let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
+
+        if (recursive) {
+            const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
+            metaFiles.push(...(await getMetaFiles(folders, recursive)));
+        }     
+
+        return metaFiles;
+        
+    });
+
+    return results.flat();
+}
+
+/**
+ * Checks if the specified file name is a known Salesforce metadata file.
+ * @param fileName file name to check
+ */
+export function isSalesforceMetadataFile(fileName: string) : boolean {
+    return constants.SF_META_EXTENSIONS.some(ext => fileName.endsWith(ext));
 }

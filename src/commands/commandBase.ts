@@ -84,9 +84,9 @@ export abstract class CommandBase implements Command {
         return showMsgWithRetry<T>(vscode.window.showWarningMessage, errorMsg, retryCallback, thisArg, args);
     }
 
-    protected showProgress<T>(title: string, task: Promise<T>) : Thenable<T> {
+    protected showProgress<T>(title: string, task: Promise<T> , cancellable = false) : Thenable<T> {
         return vscode.window.withProgress(
-            {location: vscode.ProgressLocation.Notification, title: title, cancellable: false }, 
+            { location: vscode.ProgressLocation.Notification, title: title, cancellable }, 
             p => task);
     }
 

@@ -18,7 +18,8 @@ export default class VlocodeConfiguration implements JobOptions {
         public customJobOptionsYaml?: string,
         public deployOnSave?: boolean,
         public autoActivate?: boolean,
-        public compileOnBuild?: boolean
+        public compileOnBuild?: boolean,
+        public salesforceSupport?: boolean
     ) {
         return this.load(this.sectionName);
     }
@@ -41,7 +42,7 @@ export default class VlocodeConfiguration implements JobOptions {
         return this.load(this.sectionName);
     }
 
-    public watch(watcher: (config: VlocodeConfiguration) => void | Promise<void>, thisArg?: any) : Disposable {
+    public watch(watcher: (config: VlocodeConfiguration) => any, thisArg?: any) : Disposable {
         const configListener = workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration(this.sectionName)) {
                 watcher.call(thisArg, this.reload());

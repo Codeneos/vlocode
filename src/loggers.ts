@@ -161,6 +161,20 @@ export class ConsoleWriter implements LogWriter {
     }
 }
 
+// export class TerminalWriter implements LogWriter {
+//     constructor(private readonly terminal: vscode.Terminal) {
+//     }
+
+//     public write({ level, time, category, message } : LogEntry) : void {
+//         const formatedMessage = `${moment(time).format(constants.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}]: ${message}`;
+//         switch(level) {
+//             case LogLevel.warn: return this.terminal.sendText(`echo "${formatedMessage}"`);
+//             case LogLevel.error: return this.terminal.sendText(`echo "${formatedMessage}"`);
+//             default: return this.terminal.sendText(`echo "${formatedMessage}"`);
+//         }
+//     }
+// }
+
 export class ChainWriter implements LogWriter {
     private readonly _chain: LogWriter[];
 

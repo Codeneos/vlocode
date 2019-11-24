@@ -171,5 +171,13 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 			return validationResult;
 		}
     }
+
+    public enabledSalesforceSupport(support: boolean) {
+        if (this.config.salesforceSupport !== support) {
+            this.config.salesforceSupport = support;
+        }
+        vscode.commands.executeCommand('setContext', 'vlocodeSalesforceSupport', support);
+        this.logger.info(`Salesforce support ${support ? 'enabled' : 'disabled'}`);
+    }
 }
 
