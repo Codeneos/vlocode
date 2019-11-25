@@ -19,7 +19,8 @@ export default class VlocodeConfiguration implements JobOptions {
         public deployOnSave?: boolean,
         public autoActivate?: boolean,
         public compileOnBuild?: boolean,
-        public salesforceSupport?: boolean
+        public salesforceSupport?: boolean,
+        public logInTerminal?: boolean
     ) {
         return this.load(this.sectionName);
     }

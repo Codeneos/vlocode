@@ -405,6 +405,11 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Enable experimental support for deploying of Salesforce metadata files"
+                },
+                "vlocity.logInTerminal": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable logging in `TERMINAL` tab instead of in the `OUTPUT` tab, terminal logging uses a vscode *Pseudoterminal* and has support for colors but might not work correctly on all platforms.\n\n**Note** Changing this will require you to restart for the changes to be applied."
                 }
             }
         }
@@ -425,6 +430,7 @@
     "devDependencies": {
         "@types/angular": "^1.6.54",
         "@types/chai": "^4.2.5",
+        "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
         "@types/jsforce": "^1.9.7",
@@ -438,6 +444,7 @@
         "angular-expressions": "^1.0.0",
         "cache-loader": "^4.1.0",
         "chai": "^4.2.0",
+        "chalk": "^3.0.0",
         "cpx": "^1.5.0",
         "glob": "^7.1.6",
         "html-loader": "^0.5.5",

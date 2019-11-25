@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { isObject } from 'util';
 import moment = require('moment');
+import * as chalk from 'chalk';
 import * as constants from './constants';
-import { container } from 'serviceContainer';
+import { EOL } from 'os';
 
 export enum LogLevel {    
     debug,
@@ -22,15 +23,22 @@ export interface LogEntry {
     message: string;
 }
 
-export class LogWriter {
-    public write(entry: LogEntry) : void { }
+export interface LogWriter {
+    write(entry: LogEntry) : void | Promise<void>;
 }
 
+type LogManagerMap<T> = { [logName: string]: T };
+
 export const LogManager = new class {
-    private readonly activeLoggers : { [key: string]: any } = {};
-    private globalLogLevel: LogLevel = LogLevel.info;
-    private readonly detailedLogLevels: { [log: string]: LogLevel } = {};
-    private readonly logFilters: { [log: string]: LogFilter } = {};
+
+    private readonly activeLoggers : LogManagerMap<any> = {};        
+    private readonly detailedLogLevels: LogManagerMap<LogLevel> = {};
+    private readonly logFilters: LogManagerMap<LogFilter> = {};
+    private readonly logWriters: LogManagerMap<LogWriter[]> = {}
+    private readonly logWriterChain: LogWriter[] = [];
+
+    constructor(private globalLogLevel: LogLevel) {
+    }
 
     public get<T>(type: (new (...args: any[]) => T) | string) : Logger {
         const name = typeof type === 'string' ? type : type.name;
@@ -48,30 +56,44 @@ export const LogManager = new class {
         return this.globalLogLevel;
     }
 
-    public setLogLevel(name: string, level: LogLevel) : void {
-        this.detailedLogLevels[name] = level;
+    public registerWriters(...writers: LogWriter[]) {
+        this.logWriterChain.push(...writers);
     }
 
-    public getLogLevel(name: string) : LogLevel {
-        return this.detailedLogLevels[name] || this.globalLogLevel;
+    public registerWriterFor(logName: string, ...writers: LogWriter[]) {
+        (this.logWriters[logName] || (this.logWriters[logName] = [])).push(...writers);
     }
 
-    public registerFilter(name: string, filter: LogFilter) : void {
-        if (this.logFilters[name]) {
-            const currentFilter = this.logFilters[name];
+    public setLogLevel(logName: string, level: LogLevel) : void {
+        this.detailedLogLevels[logName] = level;
+    }
+
+    public getLogLevel(logName: string) : LogLevel {
+        return this.detailedLogLevels[logName] || this.globalLogLevel;
+    }
+
+    public registerFilter(logName: string, filter: LogFilter) : void {
+        if (this.logFilters[logName]) {
+            const currentFilter = this.logFilters[logName];
             filter = (severity: LogLevel, ...args: any[]) => currentFilter(severity, ...args) && filter(severity, ...args);
         }
-        this.logFilters[name] = filter;
+        this.logFilters[logName] = filter;
     }
 
-    public getFilter(name: string) : LogFilter {
-        return this.logFilters[name];
+    public getFilter(logName: string) : LogFilter {
+        return this.logFilters[logName];
     }
 
-    private createLogger(name: string) : Logger {
-        return new Logger(this, name, container.get(LogWriter));
+    private createLogger(logName: string) : Logger {
+        return new Logger(this, logName, {
+            write: (entry) => {
+                for (const writer of this.logWriters[logName] || this.logWriterChain) {
+                    writer.write(entry);
+                }
+            }
+        });
     }
-}();
+}(LogLevel.info);
 
 export class Logger {
 
@@ -161,28 +183,124 @@ export class ConsoleWriter implements LogWriter {
     }
 }
 
-// export class TerminalWriter implements LogWriter {
-//     constructor(private readonly terminal: vscode.Terminal) {
-//     }
+export class TerminalWriter implements LogWriter {
 
-//     public write({ level, time, category, message } : LogEntry) : void {
-//         const formatedMessage = `${moment(time).format(constants.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}]: ${message}`;
-//         switch(level) {
-//             case LogLevel.warn: return this.terminal.sendText(`echo "${formatedMessage}"`);
-//             case LogLevel.error: return this.terminal.sendText(`echo "${formatedMessage}"`);
-//             default: return this.terminal.sendText(`echo "${formatedMessage}"`);
-//         }
-//     }
-// }
+    private writeEmitter : vscode.EventEmitter<string>;
+    private closeEmitter : vscode.EventEmitter<void>;
+    private currentTerminal : vscode.Terminal;
+    private queuedMessages : LogEntry[] = [];
+    private isOpened = false;
+    private chalk = new chalk.Instance({ level: 2 });
+    private colors = {
+        [LogLevel.debug]: this.chalk.magenta,
+        [LogLevel.verbose]: this.chalk.dim,
+        [LogLevel.info]: this.chalk.grey,
+        [LogLevel.warn]: this.chalk.yellowBright,
+        [LogLevel.error]: this.chalk.bold.red,
+        [LogLevel.fatal]: this.chalk.bold.red,
+    }
+
+    public get isClosed() {
+        return !this.currentTerminal;
+    }
+
+    constructor(private readonly name: string) {
+    }
+
+    private createTerminal() : vscode.Terminal {
+        if (this.writeEmitter) {
+            this.writeEmitter.dispose();
+        }
+        this.writeEmitter = new vscode.EventEmitter<string>();
+
+        if (this.closeEmitter) {
+            this.closeEmitter.dispose();
+        }
+        this.closeEmitter = new vscode.EventEmitter<void>();
+
+        if (this.currentTerminal) {
+            this.currentTerminal.dispose();
+        }
+        this.currentTerminal = vscode.window.createTerminal({ 
+            name: this.name, 
+            pty: {
+                onDidWrite: this.writeEmitter.event,
+                onDidClose: this.closeEmitter.event,
+                close: this.close.bind(this),
+                open: this.open.bind(this),
+                handleInput: () => { }
+            }
+        });
+
+        return this.currentTerminal;
+    }
+
+    private show() {
+        let terminal = this.currentTerminal;
+        if (!terminal) {
+            terminal = this.createTerminal();
+        }
+
+        setTimeout(() => {
+            if (!this.isOpened) {
+                if (this.closeEmitter) {
+                    this.closeEmitter.fire();
+                }
+                this.show();
+            }
+        }, 3000);
+    }
+
+    public open() { 
+        this.isOpened = true;
+        while(this.queuedMessages.length > 0) {
+            this.write(this.queuedMessages.shift());
+        }
+        this.focus();
+    }
+
+    public close() { 
+        this.isOpened = false;
+        if (this.currentTerminal) {
+            this.currentTerminal.dispose();
+        }
+        this.currentTerminal = null;        
+    }
+
+    public focus() { 
+        if (this.currentTerminal) {
+            this.currentTerminal.show(false);
+        }       
+    }
+
+    public async write(entry: LogEntry) {
+        if (this.isClosed) {
+            this.show();
+        }
+
+        if (!this.isOpened) {
+            this.queuedMessages.push(entry);
+        } else {
+            const logLevel = (this.colors[entry.level] || chalk.grey).bind(this.chalk)(`[${LogLevel[entry.level]}]`);
+            const formatedMessage = `[${this.chalk.green(moment(entry.time).format(constants.LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}] ${logLevel} ${entry.message}`;
+            this.writeEmitter.fire(formatedMessage + EOL);
+            this.focus();
+        }
+    }
+}
 
 export class ChainWriter implements LogWriter {
-    private readonly _chain: LogWriter[];
+    private readonly chain: LogWriter[];
 
     constructor(...args: LogWriter[]) {
-        this._chain = args;
+        this.chain = args || [];
+    }
+    
+    public append(...writers: LogWriter[]) {
+        this.chain.push(...writers);
     }
 
     public write(entry : LogEntry): void {
-        this._chain.forEach(writer => writer.write(entry));
+        this.chain.forEach(writer => writer.write(entry));
     }
 }
