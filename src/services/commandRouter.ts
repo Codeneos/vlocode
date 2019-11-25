@@ -51,7 +51,6 @@ class CommandExecutor implements Command {
         this.logger.verbose(`Invoke command ${this.name}`);
         await Promise.resolve(this.validate(...args));
         try {
-            this.vlocode.focusLog();
             await this.command.execute.apply(this.command, args);
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {

@@ -14,7 +14,7 @@ export enum LogLevel {
     fatal
 } 
 
-export type LogFilter = (severity: LogLevel, ...args: any[]) => boolean;
+export type LogFilter = ( ops: { logger: Logger, severity: LogLevel, args: any[] } ) => boolean;
 
 export interface LogEntry {
     level: LogLevel;
@@ -56,7 +56,11 @@ export const LogManager = new class {
         return this.globalLogLevel;
     }
 
-    public registerWriters(...writers: LogWriter[]) {
+    public registerWriter<T extends LogWriter>(...writers: T[]) {
+        this.logWriterChain.push(...writers);
+    }
+
+    public unregisterWriter(...writers: LogWriter[]) {
         this.logWriterChain.push(...writers);
     }
 
@@ -72,12 +76,14 @@ export const LogManager = new class {
         return this.detailedLogLevels[logName] || this.globalLogLevel;
     }
 
-    public registerFilter(logName: string, filter: LogFilter) : void {
+    public registerFilter(logger: string | Logger, filter: LogFilter | { filter: LogFilter }) : void {
+        const logName = typeof logger == 'string' ? logger : logger.name;
+        let filterFunc = typeof filter == 'function' ? filter : filter.filter;
         if (this.logFilters[logName]) {
             const currentFilter = this.logFilters[logName];
-            filter = (severity: LogLevel, ...args: any[]) => currentFilter(severity, ...args) && filter(severity, ...args);
+            filterFunc = (ops) => currentFilter(ops) && filterFunc(ops);
         }
-        this.logFilters[logName] = filter;
+        this.logFilters[logName] = filterFunc;
     }
 
     public getFilter(logName: string) : LogFilter {
@@ -99,7 +105,7 @@ export class Logger {
 
     constructor(
         private readonly manager: typeof LogManager,
-        private readonly name: string, 
+        public readonly name: string, 
         private readonly writer: LogWriter) {
     }
 
@@ -116,7 +122,7 @@ export class Logger {
             return;
         }
         const filter = this.manager.getFilter(this.name);
-        if (filter && !filter(level, ...args)) {
+        if (filter && !filter({ logger: this, severity: level, args: args })) {
             return;
         }
         if (this.writer) {
@@ -162,13 +168,26 @@ export class MessageVisibilityFilter<T extends LogWriter> implements LogWriter {
 // Output writers
 // ----------------------------------------------
 
-export class OutputChannelWriter implements LogWriter {
-    constructor(private readonly channel: vscode.OutputChannel) {
+export class OutputChannelWriter implements LogWriter, vscode.Disposable {
+
+    private _outputChannel: vscode.OutputChannel;
+    public get outputChannel(): vscode.OutputChannel {        
+        return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(this.channelName));
+    }
+
+    constructor(private readonly channelName: string) {
+    }
+
+    public dispose() {
+        if (this._outputChannel) { 
+            this._outputChannel.hide();
+            this._outputChannel.dispose();
+        }
     }
 
     public write({level, time, category, message} : LogEntry) : void {
         const levelPrefix = (LogLevel[level] || 'unknown').substr(0,1);
-        this.channel.appendLine(`[${moment(time).format(constants.LOG_DATE_FORMAT)}] ${levelPrefix}: ${message}`);
+        this.outputChannel.appendLine(`[${moment(time).format(constants.LOG_DATE_FORMAT)}] ${levelPrefix}: ${message}`);
     }
 }
 
@@ -183,7 +202,7 @@ export class ConsoleWriter implements LogWriter {
     }
 }
 
-export class TerminalWriter implements LogWriter {
+export class TerminalWriter implements LogWriter, vscode.Disposable {
 
     private writeEmitter : vscode.EventEmitter<string>;
     private closeEmitter : vscode.EventEmitter<void>;
@@ -196,8 +215,8 @@ export class TerminalWriter implements LogWriter {
         [LogLevel.verbose]: this.chalk.dim,
         [LogLevel.info]: this.chalk.grey,
         [LogLevel.warn]: this.chalk.yellowBright,
-        [LogLevel.error]: this.chalk.bold.red,
-        [LogLevel.fatal]: this.chalk.bold.red,
+        [LogLevel.error]: this.chalk.bold.redBright,
+        [LogLevel.fatal]: this.chalk.bold.redBright,
     }
 
     public get isClosed() {
@@ -205,6 +224,12 @@ export class TerminalWriter implements LogWriter {
     }
 
     constructor(private readonly name: string) {
+    }
+
+    public dispose() {
+        if (this.currentTerminal) { 
+            this.closeEmitter.fire();
+        }
     }
 
     private createTerminal() : vscode.Terminal {

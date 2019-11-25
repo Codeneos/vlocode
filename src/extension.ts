@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
 import * as constants from './constants';
-import { LogManager, LogWriter, ChainWriter, ConsoleWriter, OutputChannelWriter, LogLevel, TerminalWriter }  from './loggers';
+import { LogManager, LogFilter, ChainWriter, ConsoleWriter, OutputChannelWriter, LogLevel, TerminalWriter }  from './loggers';
 import CommandRouter from './services/commandRouter';
 import DatapackExplorer from 'datapackExplorer';
 import Commands from 'commands';
@@ -13,9 +13,28 @@ import OnSavedEventHandler from 'events/onSavedEventHandler';
 import JobExplorer from 'jobExplorer';
 import { setInterval } from 'timers';
 
+class VlocityLogFilter {
+    private readonly vlocityLogFilterRegex = [
+        /^(Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy [0-9]* Items).*/i,
+        /^(Success|Remaining|Error).*?[0-9]+$/
+    ];
+
+    constructor() {
+        return this.filter.bind(this);
+    }
+
+    public filter({ logger, args }) {
+        if (LogManager.getLogLevel(logger.name) >= LogLevel.verbose) {
+            return true;
+        }
+        return !this.vlocityLogFilterRegex.some(r => r.test(args.join(' ')));
+    }
+}
+
 export = class Vlocode {
 
     private static instance: Vlocode;
+    private service: VlocodeService;
 
     constructor() {
         if (!Vlocode.instance) {
@@ -37,66 +56,72 @@ export = class Vlocode {
         }
     }
 
+    private setupLogging() {
+        // Simple switch that decides how to log
+        const terminalWriter = this.service.registerDisposable(new TerminalWriter(`Vlocode`));
+        const outputChannelWriter = this.service.registerDisposable(new OutputChannelWriter(`Vlocode`));
+
+        LogManager.registerWriter({
+            write: (entry) => {
+                if (this.service.config.logInTerminal) {
+                    terminalWriter.write(entry);
+                } else {
+                    outputChannelWriter.write(entry);
+                }
+            }
+        }, new ConsoleWriter());
+
+        // set logging level
+        LogManager.setGlobalLogLevel(this.service.config.verbose ? LogLevel.verbose : LogLevel.info); // todo: support more log levels from config section    
+        this.service.config.watch(c => LogManager.setGlobalLogLevel(c.verbose ? LogLevel.verbose : LogLevel.info));
+
+        // setup Vlocity logger and filters
+        LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
+        vlocityUtil.setVlocityLogger(LogManager.get('vlocity'));
+    }
+
     private async activate(context: vscode.ExtensionContext) {
+        // Track time
+        const startTime = Date.now();
+
         // All SFDX and Vloctiy commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
         this.setWorkingDirectory();
         
         // Init logging and register services
         let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);
-        let vloService = container.register(VlocodeService, new VlocodeService(container, context, vloConfig));
-    
-        // Setup logging
-        if (vloConfig.logInTerminal) {
-            LogManager.registerWriters(new TerminalWriter(`Vlocode`));
-        } else {
-            LogManager.registerWriters(new OutputChannelWriter(vloService.outputChannel));
-        }
-        LogManager.registerWriters(new ConsoleWriter());
-        LogManager.setGlobalLogLevel(vloConfig.verbose ? LogLevel.verbose : LogLevel.info); // todo: support more log levels from config section    
-        vloConfig.watch(c => LogManager.setGlobalLogLevel(c.verbose ? LogLevel.verbose : LogLevel.info));
-
+        this.service = container.register(VlocodeService, new VlocodeService(container, context, vloConfig));
+        this.setupLogging();
     
         this.logger.info(`Vlocode version ${constants.VERSION} started`);
         this.logger.info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);
         this.logger.verbose(`Verbose logging enabled`);
-
-        // Pseudo terminal setup
         
-    
-        // setup Vlocity logger and filters
-        const vlocityLoggerName = 'vlocity';
-        const vlocityLogFilterRegex = [
-            /^(Initializing Project|Using SFDX|Salesforce Org|Continuing Export|Adding to File|Deploy [0-9]* Items).*/i,
-            /^(Success|Remaining|Error).*?[0-9]+$/
-        ];
-        LogManager.registerFilter(vlocityLoggerName, (_level, ...args: any[]) => {
-            if (LogManager.getLogLevel(vlocityLoggerName) >= LogLevel.verbose) {
-                return true;
-            }
-            return !vlocityLogFilterRegex.some(r => r.test(args.join(' ')));
-        });
-        vlocityUtil.setVlocityLogger(LogManager.get(vlocityLoggerName));
-
         // Salesforce support      
-        vloConfig.watch(c => vloService.enabledSalesforceSupport(c.salesforceSupport));
+        vloConfig.watch(c => this.service.enabledSalesforceSupport(c.salesforceSupport));
         if (vloConfig.salesforceSupport) {
-            vloService.enabledSalesforceSupport(true);
+            this.service.enabledSalesforceSupport(true);
         }
     
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);
-        vloService.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
+        this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
             treeDataProvider: new DatapackExplorer(container), 
             showCollapseAll: true
         }));
-        vloService.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
+        this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
             treeDataProvider: new JobExplorer(container)
         }));
-        vloService.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
+        this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
+
+        // track activation time
+        this.logger.info(`Vlocode activated in ${(Date.now() - startTime) / 1000}ms`);
     }
 
-    private async deactivate() { 
+    private async deactivate() {
+        // Log to debug as other output channels will be disposed
+        Vlocode.instance = null; // destroy instance
+        console.debug(`Vlocode extension deactivated`);
     }
 
     static activate(context: vscode.ExtensionContext) {

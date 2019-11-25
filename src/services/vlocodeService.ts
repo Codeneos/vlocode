@@ -18,20 +18,14 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private connector: JsForceConnectionProvider;
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
 
-
     // Properties
     private _datapackService: VlocityDatapackService;
-    get datapackService(): VlocityDatapackService {
+    public get datapackService(): VlocityDatapackService {
         return this._datapackService;
     }
 
-    private _outputChannel: vscode.OutputChannel;
-    get outputChannel(): vscode.OutputChannel {        
-        return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(constants.OUTPUT_CHANNEL_NAME));
-    }
-
     private _salesforceService: SalesforceService;
-    get salesforceService(): SalesforceService {
+    public get salesforceService(): SalesforceService {
         return this._salesforceService;
     }
 
@@ -118,10 +112,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             return this.showStatus(`$(gear) Select Vlocity org`, VlocodeCommand.selectOrg);
         }
         return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername || config.username}`, VlocodeCommand.selectOrg);
-    }
-    
-    public focusLog() : any {
-        this.outputChannel.show(true);
     }
 
     public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {
