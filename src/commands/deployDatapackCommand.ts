@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import { DatapackResultCollection } from '../services/vlocityDatapackService';
-import { DatapackCommand } from './datapackCommand';
-import { forEachAsyncParallel } from '../util';
+import { DatapackResultCollection } from 'services/vlocityDatapackService';
+import { DatapackCommand } from 'commands/datapackCommand';
+import { forEachAsyncParallel } from '@util';
 import * as path from 'path';
 import DatapackUtil from 'datapackUtil';
 

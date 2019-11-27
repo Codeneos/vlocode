@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '../constants';
+import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
 import { CommandBase } from './commandBase';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 

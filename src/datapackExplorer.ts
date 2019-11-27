@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as constants from './constants';
+import * as constants from '@constants';
 import ServiceContainer from 'serviceContainer';
 import VlocodeService from './services/vlocodeService';
 import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
@@ -132,7 +132,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
         const query = await this.getQuery(datapackType);
 
         this.logger.verbose(`Query: ${query}`);        
-        const results = await connection.queryAll<SObjectRecord>(query);            
+        const results = await connection.query<SObjectRecord>(query);            
         this.logger.log(`Found ${results.totalSize} exportable datapacks form type ${datapackType}`);
 
         return results.totalSize == 0 ? null : results.records.map(record => createRecordProxy(record));

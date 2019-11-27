@@ -37,7 +37,7 @@ export async function execp(cmd: string, opts : any) : Promise<ExecpResult> {
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
     if (doc) { return doc.getText(); }
-    return (await fs.readFile(file)).toString();
+    return (await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString();
 }
 
 export function existsAsync(path: fs.PathLike) : Promise<boolean> {
@@ -174,10 +174,10 @@ function* enumerateWithIndex<T>(iterable: Iterable<T>) : IterableIterator<[numbe
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T) => Thenable<R>, parallism = 2) : Promise<R[]> {
-    let tasks : Thenable<R[]>[] = new Array(parallism).fill(Promise.resolve(new Array<R>()));
+export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T) => Thenable<R>, parallelism = 2) : Promise<R[]> {
+    let tasks : Thenable<R[]>[] = new Array(parallelism).fill(Promise.resolve(new Array<R>()));
     for (const [index, value] of enumerateWithIndex(iterable)) {
-        tasks[index % parallism] = tasks[index % parallism].then(async result => result.concat(await callback(value)));
+        tasks[index % parallelism] = tasks[index % parallelism].then(async result => result.concat(await callback(value)));
     }
     return Promise.all(tasks).then(results => results.flat());
 }
@@ -187,9 +187,9 @@ export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T)
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export async function filterAsyncParallel<T>(array: Iterable<T>, callback: (item: T) => Thenable<boolean>) : Promise<T[]> {
+export async function filterAsyncParallel<T>(array: Iterable<T>, callback: (item: T) => Thenable<boolean>, parallelism = 2) : Promise<T[]> {
     const result = [];
-    await mapAsyncParallel(array, async item => !(await callback(item)) || result.push(item));
+    await mapAsyncParallel(array, async item => !(await callback(item)) || result.push(item), parallelism);
     return result;
 }
 
@@ -291,4 +291,17 @@ export function getObjectValues(obj: Object, depth = -1) : any[] {
  */
 export async function wait(ms: number) : Promise<boolean> {
     return new Promise<boolean>(resolve => { setTimeout(() => resolve(true), ms) });
+}
+
+/**
+ * Simpel check if the specified XML file starts with a valid XML header.
+ * @param file Text file to check
+ */
+export async function hasXmlHeader(file: string) {
+    let body = await getDocumentBodyAsString(file)
+    if (body) { 
+        const startsWithXmlHeader = body.trimStart().startsWith('<?xml ');
+        return startsWithXmlHeader;
+    }
+    return false;
 }

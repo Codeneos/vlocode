@@ -1,6 +1,6 @@
 
 /* Wrapper arround Angular functions */
-import * as constants from './constants';
+import * as constants from '@constants';
 
 declare var angular: ng.IAngularStatic;
 var appModule;

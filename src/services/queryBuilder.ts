@@ -1,5 +1,5 @@
 import { LogManager, Logger } from 'loggers';
-import * as constants from '../constants';
+import * as constants from '@constants';
 
 export interface QueryCondition {
     readonly field: string;

@@ -49,14 +49,19 @@ const common = env => ({
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html'],
-        modules: ['node_modules', 'src']
+        modules: ['node_modules', 'src'],
+        alias: {
+            "@constants$": path.resolve(__dirname, 'src', 'constants'),
+            "@util$": path.resolve(__dirname, 'src', 'util'),
+            'js-force': path.resolve(__dirname, 'node_modules', 'js-force')
+        }
     },
     output: {
         filename: '[name].js',
         chunkFilename: '[id].js',
         devtoolModuleFilenameTemplate: '[absolute-resource-path]',
         pathinfo: true
-    },
+    },    
     node: {
         process: false,
         __dirname: false,

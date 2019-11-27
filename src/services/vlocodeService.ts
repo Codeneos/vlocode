@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import * as constants from '../constants';
+import * as constants from '@constants';
 import VlocodeConfiguration from '../models/vlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
 import { Logger, LogManager } from '../loggers';
-import { VlocodeCommand } from '../constants';
+import { VlocodeCommand } from '@constants';
 import ServiceContainer from 'serviceContainer';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from 'connection/sfdxConnectionProvider';

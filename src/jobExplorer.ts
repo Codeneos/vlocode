@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as constants from './constants';
+import * as constants from '@constants';
 import ServiceContainer from 'serviceContainer';
 import VlocodeService from './services/vlocodeService';
 import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';

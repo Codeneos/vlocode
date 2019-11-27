@@ -8,7 +8,7 @@ import SObjectRecord from 'models/sobjectRecord';
 import { createRecordProxy } from 'salesforceUtil';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import DatapackUtil from 'datapackUtil';
-import * as constants from '../constants';
+import * as constants from '@constants';
 import QueryBuilder from './queryBuilder';
 
 export interface VlocityMatchingKey {

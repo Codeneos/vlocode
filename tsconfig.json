@@ -13,7 +13,6 @@
             "es2019",
         ],
         "sourceMap": true,
-        "rootDir": "src", 
         "strict": false, 
         "resolveJsonModule": true,
         "noUnusedLocals": false, 
@@ -21,7 +20,9 @@
         "experimentalDecorators": true,
         "baseUrl": "./src",
         "paths": {
-            "@angular/*": ["node_modules/@angular/*"]
+            "@angular/*": ["../node_modules/@angular/*"],
+            "@constants": ["constants"],
+            "@util": ["util"]
         },
         "typeRoots": [
             "node_modules/@types",

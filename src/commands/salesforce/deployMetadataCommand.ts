@@ -1,11 +1,8 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
 
-import { DatapackResultCollection } from '../services/vlocityDatapackService';
-import { forEachAsyncParallel } from '../util';
+import { forEachAsyncParallel } from '@util';
 import * as path from 'path';
-import DatapackUtil from 'datapackUtil';
-import { CommandBase } from './commandBase';
+import { CommandBase } from 'commands/commandBase';
 import SalesforceService, { ComponentFailure, MetadataManifest } from 'services/salesforceService';
 
 export default class DeployMetadataCommand extends CommandBase {
@@ -63,6 +60,9 @@ export default class DeployMetadataCommand extends CommandBase {
                 cancellable: true
             }, async (progress, token) => {
                 const manifest = await this.salesforce.buildDeploymentManifest(selectedFiles, token);
+                if (manifest.files.length == 0) {
+                    throw new Error('None of the selected files or folders can be deployed as their metadata is not known');
+                }
                 this.clearPreviousErrors(manifest);
                 const result = await this.salesforce.deployManifest(manifest, {
                     ignoreWarnings: true
@@ -70,8 +70,17 @@ export default class DeployMetadataCommand extends CommandBase {
                 return [manifest, result];
             });
 
+            const componentNames = [...new Set(Object.values(manifest.files).map(file => file.name))];
+
             if (result.details && result.details.componentFailures) {
                 this.processComponentFailures(manifest, result.details.componentFailures);
+            }
+
+            if (!result.success) {
+                this.logger.error(`Deployment ${result.status}: ${result.errorMessage}`);
+                vscode.window.showErrorMessage(`Deployment ${result.status}: ${result.errorMessage}`);
+            } else {
+                this.logger.info(`Deployment of ${componentNames.join(', ')} succeeded`);
             }
 
         } catch (err) {

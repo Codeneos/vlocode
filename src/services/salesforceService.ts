@@ -6,7 +6,7 @@ import * as ZipArchive from 'jszip';
 import * as xml2js from 'xml2js';
 import * as fs from 'fs';
 import * as process from 'process';
-import * as constants from '../constants';
+import * as constants from '@constants';
 import * as l from '../loggers';
 import * as s from '../serviceContainer';
 import * as vm from 'vm';
@@ -53,7 +53,7 @@ export interface MetadataManifest {
         [packagePath: string]: {
             type?: string;
             name?: string;
-            body?: Buffer;
+            body?: Buffer | string;
             localPath?: string;
         };
     }
@@ -156,14 +156,17 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 return null;
             }
 
-            packageZip.file(path.posix.join('src', packagePath), await getDocumentBodyAsString(info.localPath));
+            const documentBody = info.body ? info.body : await getDocumentBodyAsString(info.localPath);
+            packageZip.file(path.posix.join('src', packagePath), documentBody);
 
             // Add component to package if this is a meta like file
-            let members = metadataMembers.get(info.type);
-            if (members == null) {
-                metadataMembers.set(info.type, members = new Set<string>());
+            if (info.type) {
+                let members = metadataMembers.get(info.type);
+                if (members == null) {
+                    metadataMembers.set(info.type, members = new Set<string>());
+                }
+                members.add(info.name);
             }
-            members.add(info.name);
         }
 
         // validate API version - default to 45
@@ -187,13 +190,44 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
+     * Builds the body for a destructiveChanges.xml file
+     * @param manifest Manifest containing all files and components that should be removed
+     * @param apiVersion API Version to use
+     */
+    private async buildDestructiveChangesXml(manifest: MetadataManifest) : Promise<string> {
+         // build package XML
+         const metadataMembers = new Map<string, Set<string>>();
+ 
+         for (const info of Object.values(manifest.files)) {
+             // Add component to package if this is a meta like file
+             let members = metadataMembers.get(info.type);
+             if (members == null) {
+                 metadataMembers.set(info.type, members = new Set<string>());
+             }
+             members.add(info.name);
+         }
+
+        // Create destructive changes XML
+        const packageTypes = [...metadataMembers.entries()].map(([name, members]) => ({ name, members: [...members.values()] }));
+        const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
+        const destructiveChanges = xmlBuilder.buildObject({ 
+            Package: { 
+                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' }, 
+                version: manifest.apiVersion,
+                types: packageTypes
+            } 
+        });
+        return destructiveChanges;
+    }
+
+    /**
      * Build a Salesforce Manifest from the specified files, do not add any files that match the specified pattern.
      * @param srcDir The package directory to read the source from.
      * @param ignorePatterns A list of ignore patterns of the files to ignore.
      */
     public async buildDeploymentManifest(files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest> {
         const mdPackage : MetadataManifest = { files: {} };
-        const metaFiles =  await getMetaFiles(files.map(file => file.fsPath));
+        const metaFiles =  await getMetaFiles(files.map(file => file.fsPath), true);
 
         // Build zip archive for all expanded files
         // Note use posix paht separators when building package.zip
@@ -222,9 +256,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 const isBundle = componentType.endsWith('Bundle');
                 if (isBundle) {
                     // Classic metadata package all related files
-                    const sourceFiles = await vscode.workspace.findFiles(path.join(path.dirname(metaFile), '**/*'));
+                    const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(metaFile), '**'));
                     for (const sourceFile of sourceFiles) {
-                        const sourcePackagePath = path.posix.join(packageFolder, path.basename(sourceFile.fsPath));
+                        const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
                         Object.assign(mdPackage.files, {   
                             [sourcePackagePath]: { name: componentName, type: componentType, localPath: sourceFile.fsPath }
                         });
@@ -278,6 +312,22 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 });
         });
     }
+    
+    /**
+     * Deploy the specified destructive changes
+     * @param manifest Destructive changes to apply
+     * @param options Optional deployment options to use
+     * @param token A cancellation token to stop the process
+     */
+    public async deployDestructiveChanges(manifest: MetadataManifest, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+        const packageZip = await this.buildPackageFromManifest({ 
+            apiVersion: manifest.apiVersion, 
+            files: { 
+                'destructiveChanges.xml': { body: await this.buildDestructiveChangesXml(manifest) }
+            }
+        });
+        return this.deploy(packageZip, options, token);
+    }
 
     /**
      * Deploy the selected files to the currently selected org.
@@ -303,7 +353,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const packageZip = await this.buildPackageFromManifest(manifest, token);
         return this.deploy(packageZip, options, token);
-    }
+    }    
 
     /**
      * Deploy a package file, buffer or stream to Salesforce async and returns once the deployment is completed.
@@ -311,7 +361,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param options additional deploy options
      * @param progressOptions progress options
      */
-    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<jsforce.DeployResult> {
+    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const startTime = new Date().getTime();
         const checkInterval = 500;
         const deploymentTypeText = options && options.checkOnly ? 'Validate' : 'Deploy';

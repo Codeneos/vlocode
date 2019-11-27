@@ -1,4 +1,3 @@
-
 /**
  * Defines the queries for accessing Vlocity objects in Salesforce.
  */
@@ -28,7 +27,7 @@ declare module 'exportQueryDefinitions.yaml' {
 
 declare module 'metadataTypes.yaml' {
   interface MetadataType {
-    packageFolder?: string
+    packageFolder?: string;
     fileExtensions?: string[];
   }
   const exportQueryDefinitions : { 

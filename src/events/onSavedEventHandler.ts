@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import ServiceContainer from 'serviceContainer';
 import CommandRouter from 'services/commandRouter';
-import { VlocodeCommand } from '../constants';
+import { VlocodeCommand } from '@constants';
 import { EventHandlerBase } from 'events/eventHandlerBase';
 import { isPartOfDatapack } from 'datapackUtil';
 import { isSalesforceMetadataFile } from 'salesforceUtil';

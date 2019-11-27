@@ -1,9 +1,8 @@
 
-import SObjectRecord from './models/sobjectRecord';
-import { stringEquals, mapAsyncParallel, filterAsyncParallel } from './util';
+import { stringEquals, mapAsyncParallel, filterAsyncParallel, hasXmlHeader } from '@util';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as constants from './constants';
+import * as constants from '@constants';
 
 /**
  * Create a record proxy around a SF record removing any namespace prefixes it may contain and making all fields accessible with case-insensitive keys.
@@ -90,38 +89,42 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
  * @param paths Path to get meta files from
  */
 export async function getMetaFiles(paths: string[] | string, recursive: boolean = false) : Promise<string[]> {
-    path
+
     // Determine possible meta search paths for the selected files
     const searchPaths = [];
     for (const file of paths) {
-        const pathParts = file.split(/\/\\/ig);
-        const fileExt = path.extname(file.toLowerCase());
-        if (fileExt == '.cls' || fileExt == '.page') {
-            searchPaths.push(file + '-meta.xml');
-        } else if (pathParts.includes('lwc')) {
-            searchPaths.push(path.dirname(file));
+        const pathParts = file.split(/\/|\\/ig);
+        if (pathParts.includes('lwc')) {
+            const componentPath = pathParts.slice(0, pathParts.lastIndexOf('lwc') + 2);
+            searchPaths.push(path.join(...componentPath));
         } else if (pathParts.includes('aura')) {
-            searchPaths.push(path.dirname(file));
+            const componentPath = pathParts.slice(0, pathParts.lastIndexOf('aura') + 2);
+            searchPaths.push(path.join(...componentPath));
         } else {
             searchPaths.push(file);
+            searchPaths.push(file + '-meta.xml');
         }
     }
 
     const results = await mapAsyncParallel(searchPaths, async pathStr => {
-        const stat = await fs.lstat(pathStr);
+        const stat = await fs.lstat(pathStr).catch(e => <fs.Stats>undefined);
+        if (stat === undefined) {
+            return;
+        }
         const files = stat.isDirectory() ? (await fs.readdir(pathStr)).map(file => path.join(pathStr, file)) : [ pathStr ];
+
         let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
+        metaFiles = await filterAsyncParallel(metaFiles, hasXmlHeader, 4);
 
         if (recursive) {
             const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
             metaFiles.push(...(await getMetaFiles(folders, recursive)));
-        }     
+        }
 
-        return metaFiles;
-        
-    });
+        return metaFiles;        
+    }, 4);
 
-    return results.flat();
+    return results.flat().filter(value => !!value);
 }
 
 /**

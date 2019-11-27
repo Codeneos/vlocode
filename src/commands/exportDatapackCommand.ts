@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as constants from '../constants';
+import * as constants from '@constants';
 
 import { DatapackResultCollection, ObjectEntry } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';

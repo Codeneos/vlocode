@@ -10,7 +10,7 @@ import BuildParentKeyFilesCommand from "./buildParentKeyFiles";
 import OpenSalesforceCommand from "./openSalesforceCommand";
 import RenameDatapackCommand from "./renameDatapackCommand";
 import CloneDatapackCommand from "./cloneDatapackCommand";
-import DeployMetadataCommand from "./deployMetadataCommand";
+import DeployMetadataCommand from "./salesforce/deployMetadataCommand";
 
 export default {
     [VlocodeCommand.refreshDatapack]: RefreshDatapackCommand,

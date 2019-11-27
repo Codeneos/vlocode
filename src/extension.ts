@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
-import * as constants from './constants';
+import * as constants from '@constants';
 import { LogManager, LogFilter, ChainWriter, ConsoleWriter, OutputChannelWriter, LogLevel, TerminalWriter }  from './loggers';
 import CommandRouter from './services/commandRouter';
 import DatapackExplorer from 'datapackExplorer';

@@ -1,7 +1,7 @@
 {
     "name": "vlocode",
-    "displayName": "Vlocode",
-    "description": "Vlocity datapack development and deployment extension",
+    "displayName": "Salesforce Vlocity Integration",
+    "description": "Salesforce and Vlocity development and deployment extension for VSCode",
     "version": "0.11.6",
     "license": "MIT",
     "icon": "resources/icon.png",
@@ -64,16 +64,16 @@
         },
         "commands": [
             {
+                "command": "vlocity.selectOrg",
+                "title": "Vlocity: Select Salesforce Org"
+            },
+            {
                 "command": "vlocity.refreshDatapack",
                 "title": "Vlocity: Refresh Datapack(s)"
             },
             {
                 "command": "vlocity.deployDatapack",
                 "title": "Vlocity: Deploy Datapack(s)"
-            },
-            {
-                "command": "vlocity.viewDatapack.generic",
-                "title": "Vlocity: View Datapack"
             },
             {
                 "command": "vlocity.openSalesforce",
@@ -92,8 +92,20 @@
                 "title": "Vlocity: Export Datapack(s) from server"
             },
             {
-                "command": "vlocity.selectOrg",
-                "title": "Vlocity: Select Salesforce Org"
+                "command": "vlocity.buildParentKeyFiles",
+                "title": "Vlocity: Build Parent Key Files"
+            },
+            {
+                "command": "vlocity.buildDatapack",
+                "title": "Vlocity: Build Datapack"
+            },
+            {
+                "command": "vlocity.viewDatapack.generic",
+                "title": "Vlocity: View Datapack"
+            },
+            {
+                "command": "vlocity.adminCommands",
+                "title": "Vlocity: Administration Console"
             },
             {
                 "command": "vlocity.admin.refreshPriceBook",
@@ -116,8 +128,12 @@
                 "title": "Vlocity: Clear Platform Cache"
             },
             {
-                "command": "vlocity.adminCommands",
-                "title": "Vlocity: Administration Console"
+                "command": "vlocity.deployMetadata",
+                "title": "Salesforce: Save and Deploy current file"
+            },
+            {
+                "command": "vlocity.deployMetadata.explorer",
+                "title": "Salesforce: Save and Deploy"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -150,26 +166,14 @@
                     "light": "resources/light/refresh.svg",
                     "dark": "resources/dark/refresh.svg"
                 }
-            },
-            {
-                "command": "vlocity.buildDatapack",
-                "title": "Vlocity: Build Datapack"
-            },
-            {
-                "command": "vlocity.buildParentKeyFiles",
-                "title": "Vlocity: Build Parent Key Files"
-            },
-            {
-                "command": "vlocity.deployMetadata",
-                "title": "Salesforce: Save and Deploy current file"
-            },
-            {
-                "command": "vlocity.deployMetadata.explorer",
-                "title": "Salesforce: Save and Deploy"
             }
         ],
         "menus": {
             "commandPalette": [
+                {
+                    "command": "vlocity.selectOrg",
+                    "group": "v_vlocity"
+                },
                 {
                     "command": "vlocity.refreshDatapack",
                     "group": "v_vlocity"
@@ -179,15 +183,31 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.openSalesforce",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.renameDatapack",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.cloneDatapack",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocity.exportDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.selectOrg",
+                    "command": "vlocity.buildParentKeyFiles",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.buildParentKeyFiles",
+                    "command": "vlocity.buildDatapack",
+                    "group": "v_vlocity"
+                },
+                {
+                    "command": "vlocity.viewDatapack.generic",
                     "group": "v_vlocity"
                 },
                 {
@@ -211,41 +231,18 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.openSalesforce",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.renameDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.cloneDatapack",
-                    "group": "v_vlocity"
-                },
-                {
                     "command": "vlocity.deployMetadata",
-                    "when": "vlocodeSalesforceSupport",
-                    "group": "v_vlocity"
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.buildDatapack",
-                    "when": "false"
+                    "command": "vlocity.datapackExplorer.export"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.export",
-                    "when": "false"
+                    "command": "vlocity.datapackExplorer.refresh"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.refresh",
-                    "when": "false"
-                },
-                {
-                    "command": "vlocity.datapackExplorer.openSalesforce",
-                    "when": "false"
-                },
-                {
-                    "command": "vlocity.viewDatapack.generic",
-                    "when": "false"
+                    "command": "vlocity.datapackExplorer.openSalesforce"
                 }
             ],
             "explorer/context": [
@@ -258,6 +255,10 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.openSalesforce",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocity.renameDatapack",
                     "group": "v_vlocity"
                 },
@@ -266,13 +267,9 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.openSalesforce",
-                    "group": "v_vlocity"
-                },
-                {
                     "command": "vlocity.deployMetadata.explorer",
-                    "when": "vlocodeSalesforceSupport",
-                    "group": "v_salesforce"
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
                 }
             ],
             "editor/context": [
@@ -285,61 +282,61 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.cloneDatapack",
-                    "group": "v_vlocity"
-                },
-                {
                     "command": "vlocity.openSalesforce",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.deployMetadata",
-                    "when": "vlocodeSalesforceSupport",
-                    "group": "v_salesforce"
-                }
-            ],
-            "view/title": [
-                {
-                    "command": "vlocity.datapackExplorer.refresh",
-                    "when": "view == datapackExplorer",
-                    "group": "navigation"
+                    "command": "vlocity.cloneDatapack",
+                    "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.jobExplorer.refresh",
-                    "when": "view == jobExplorer",
-                    "group": "navigation"
+                    "command": "vlocity.deployMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
                 }
             ],
             "view/item/context": [
                 {
                     "command": "vlocity.datapackExplorer.export",
-                    "when": "viewItem == vlocity:datapack:object",
-                    "group": "inline"
+                    "group": "inline",
+                    "when": "viewItem == vlocity:datapack:object"
                 },
                 {
                     "command": "vlocity.datapackExplorer.export",
-                    "when": "viewItem == vlocity:datapack:category",
-                    "group": "inline"
+                    "group": "inline",
+                    "when": "viewItem == vlocity:datapack:category"
                 },
                 {
                     "command": "vlocity.datapackExplorer.export",
-                    "when": "viewItem == vlocity:datapack:object",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "viewItem == vlocity:datapack:object"
                 },
                 {
                     "command": "vlocity.datapackExplorer.export",
-                    "when": "viewItem == vlocity:datapack:category",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "viewItem == vlocity:datapack:category"
                 },
                 {
                     "command": "vlocity.datapackExplorer.openSalesforce",
-                    "when": "viewItem == vlocity:datapack:object",
-                    "group": "inline"
+                    "group": "inline",
+                    "when": "viewItem == vlocity:datapack:object"
                 },
                 {
                     "command": "vlocity.datapackExplorer.openSalesforce",
-                    "when": "viewItem == vlocity:datapack:object",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "viewItem == vlocity:datapack:object"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "vlocity.datapackExplorer.refresh",
+                    "group": "navigation",
+                    "when": "view == datapackExplorer"
+                },
+                {
+                    "command": "vlocity.jobExplorer.refresh",
+                    "group": "navigation",
+                    "when": "view == jobExplorer"
                 }
             ]
         },
@@ -403,7 +400,7 @@
                 },
                 "vlocity.salesforceSupport": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "markdownDescription": "Enable experimental support for deploying of Salesforce metadata files"
                 },
                 "vlocity.logInTerminal": {
@@ -415,14 +412,15 @@
         }
     },
     "scripts": {
-        "prepare": "patch-package",
+        "prepare": "patch-package && npm run prepare:commands",
+        "prepare:commands": "ts-node ./build/buildCommands.ts  ./package.json ./commands.yaml",
         "build": "npm run prepare && webpack --config webpack.prod.js --env.extension --env.views",
         "build:debug": "npm run prepare && webpack --config webpack.dev.js --env.extension --env.views",
         "build:tests": "npm run prepare && webpack --config webpack.dev.js --env.tests --env.transpileOnly",
         "clean": "rimraf ./out",
         "lint": "tslint -p .",
         "test": "npm run build:tests && node ./out/test/runTest.js",
-        "bump": "npm version patch -m \"Bumping to %s\"",
+        "bump": "ts-node ./build/bumpVersion.ts patch",
         "package": "vsce package",
         "publish": "vsce publish",
         "vscode:prepublish": "npm run clean && npm run build"
@@ -453,6 +451,7 @@
         "js-yaml": "^3.13.1",
         "json-loader": "^0.5.7",
         "jszip": "^3.2.2",
+        "log-symbols": "^3.0.0",
         "mocha": "^5.2.0",
         "mocha-html-reporter": "0.0.1",
         "mocha-junit-reporter": "^1.23.0",
@@ -467,6 +466,7 @@
         "sinon": "^7.5.0",
         "terser-webpack-plugin": "^2.2.1",
         "ts-loader": "^6.2.1",
+        "ts-node": "^8.5.2",
         "tslint": "^5.20.1",
         "tslint-loader": "^3.5.4",
         "typescript": "^3.6.4",

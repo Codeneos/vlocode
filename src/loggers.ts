@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { isObject } from 'util';
 import moment = require('moment');
 import * as chalk from 'chalk';
-import * as constants from './constants';
+import * as constants from '@constants';
 import { EOL } from 'os';
 
 export enum LogLevel {    
@@ -306,8 +306,18 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
         if (!this.isOpened) {
             this.queuedMessages.push(entry);
         } else {
-            const logLevel = (this.colors[entry.level] || chalk.grey).bind(this.chalk)(`[${LogLevel[entry.level]}]`);
-            const formatedMessage = `[${this.chalk.green(moment(entry.time).format(constants.LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}] ${logLevel} ${entry.message}`;
+            const levelColor = (this.colors[entry.level] || this.chalk.grey);
+            const logPrefix = `[${this.chalk.green(moment(entry.time).format(constants.LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}]`;
+            const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
+            
+            let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, EOL);
+            if (entry.level == LogLevel.warn) {
+                messageBody = levelColor(messageBody);
+            }if (entry.level >= LogLevel.error) {
+                messageBody = levelColor(messageBody);
+            }
+
+            const formatedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;            
             this.writeEmitter.fire(formatedMessage + EOL);
             this.focus();
         }
