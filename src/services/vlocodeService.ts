@@ -3,7 +3,7 @@ import * as jsforce from 'jsforce';
 import * as constants from '@constants';
 import VlocodeConfiguration from '../models/vlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
-import { Logger, LogManager } from '../loggers';
+import { Logger, LogManager } from '../logging';
 import { VlocodeCommand } from '@constants';
 import ServiceContainer from 'serviceContainer';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';

@@ -1,4 +1,4 @@
-import { LogManager, Logger } from 'loggers';
+import { LogManager, Logger } from 'logging';
 import * as constants from '@constants';
 
 export interface QueryCondition {

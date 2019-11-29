@@ -1,4 +1,4 @@
-import { Logger } from "loggers";
+import { Logger } from "logging";
 import * as util from "./util";
 import * as vlocityPackageManifest from "vlocity/package.json";
 import 'vlocity';

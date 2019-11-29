@@ -1,7 +1,7 @@
 import { ManifestEntry, ObjectEntry } from "services/vlocityDatapackService";
 import { isBuffer, isString, isObject } from "util";
 import { v4 as generateGuid } from "uuid";
-import { LogManager } from "loggers";
+import { LogManager } from "logging";
 import { unique } from "../util";
 import { createRecordProxy } from "salesforceUtil";
 

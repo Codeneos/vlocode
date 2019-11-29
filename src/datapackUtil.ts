@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { LogManager, Logger } from 'loggers';
+import { LogManager, Logger } from 'logging';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { removeNamespacePrefix } from 'salesforceUtil';

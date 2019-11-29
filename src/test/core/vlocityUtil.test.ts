@@ -3,7 +3,7 @@ import { spy } from 'sinon';
 import 'mocha';
 
 import * as vlocityUtil from 'vlocityUtil';
-import { Logger } from 'loggers';
+import { Logger } from 'logging';
 
 declare var VlocityUtils: any;
 

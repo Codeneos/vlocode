@@ -1,6 +1,6 @@
 
 import { container } from 'serviceContainer';
-import { Logger, LogManager } from 'loggers';
+import { Logger, LogManager } from 'logging';
 import VlocodeService from 'services/vlocodeService';
 import * as vscode from 'vscode';
 import { Command, CommandMap } from "models/command";

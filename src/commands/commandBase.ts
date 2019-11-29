@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import VlocodeService from 'services/vlocodeService';
 import { container } from 'serviceContainer';
-import { Logger, LogManager } from 'loggers';
+import { Logger, LogManager } from 'logging';
 import { Command } from 'models/command';
 
 export class ProgressToken {

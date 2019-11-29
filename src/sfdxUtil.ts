@@ -2,7 +2,7 @@ import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as salesforce from '@salesforce/core';
 import * as sfdx from 'sfdx-node';
-import { LogManager, Logger } from 'loggers';
+import { LogManager, Logger } from 'logging';
 
 export type FullSalesforceOrgDetails = {
     orgId?: string,

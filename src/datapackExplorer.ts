@@ -9,7 +9,7 @@ import SObjectRecord from './models/sobjectRecord';
 import ExportDatapackCommand from './commands/exportDatapackCommand';
 import OpenSalesforceCommand from './commands/openSalesforceCommand';
 import CommandRouter from './services/commandRouter';
-import { LogManager, Logger } from 'loggers';
+import { LogManager, Logger } from 'logging';
 import DatapackUtil from 'datapackUtil';
 import { groupBy, evalExpr } from './util';
 

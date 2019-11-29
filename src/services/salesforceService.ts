@@ -1,20 +1,14 @@
 import * as vscode from 'vscode';
-import * as vlocity from 'vlocity';
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as ZipArchive from 'jszip';
 import * as xml2js from 'xml2js';
 import * as fs from 'fs';
-import * as process from 'process';
 import * as constants from '@constants';
-import * as l from '../loggers';
-import * as s from '../serviceContainer';
-import * as vm from 'vm';
 import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, wait, mapAsyncParallel } from '../util';
+import { getDocumentBodyAsString, wait, mapAsyncParallel } from '@util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import { Stream } from 'stream';
-import { DeployResult } from 'jsforce';
 import * as metadataTypes from 'metadataTypes.yaml'
 import { getMetaFiles } from 'salesforceUtil';
 
@@ -58,6 +52,12 @@ export interface MetadataManifest {
         };
     }
 }
+
+export type DeploymentProgress = vscode.Progress<{ 
+    message?: string; 
+    increment?: number; 
+    total?: number;
+}>;
 
 export default class SalesforceService implements JsForceConnectionProvider {  
 
@@ -319,14 +319,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param options Optional deployment options to use
      * @param token A cancellation token to stop the process
      */
-    public async deployDestructiveChanges(manifest: MetadataManifest, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    public async deployDestructiveChanges(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const packageZip = await this.buildPackageFromManifest({ 
             apiVersion: manifest.apiVersion, 
             files: { 
                 'destructiveChanges.xml': { body: await this.buildDestructiveChangesXml(manifest) }
             }
         });
-        return this.deploy(packageZip, options, token);
+        return this.deploy(packageZip, options, progress, token);
     }
 
     /**
@@ -335,13 +335,13 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param options Extra deploy options
      * @param progressOptions Progress options
      */
-    public async deployFiles(files: vscode.Uri[], options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    public async deployFiles(files: vscode.Uri[], options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const packageZip = await this.buildPackageFromFiles(files, '47.0', token);
         if (!packageZip) {
             // return if the task was cancelled
             return;
         }
-        return this.deploy(packageZip, options, token);
+        return this.deploy(packageZip, options, progress, token);
     }
 
     /**
@@ -350,9 +350,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param options Extra deploy options
      * @param progressOptions Progress options
      */
-    public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const packageZip = await this.buildPackageFromManifest(manifest, token);
-        return this.deploy(packageZip, options, token);
+        return this.deploy(packageZip, options, progress, token);
     }    
 
     /**
@@ -361,12 +361,12 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param options additional deploy options
      * @param progressOptions progress options
      */
-    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const startTime = new Date().getTime();
         const checkInterval = 500;
         const deploymentTypeText = options && options.checkOnly ? 'Validate' : 'Deploy';
 
-        const deploymentTask = async (progress: vscode.Progress<{ message?: string; increment?: number }>, cancellationToken: vscode.CancellationToken) => {
+        const deploymentTask = async (progress: DeploymentProgress, cancellationToken: vscode.CancellationToken) => {
             // Convert jszip object to Buffer object
             if (zipInput instanceof ZipArchive) {
                 zipInput = await zipInput.generateAsync({
@@ -400,7 +400,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             }
         };
 
-        return deploymentTask(null, token);        
+        return deploymentTask(progress || { report() { } }, token);        
     }
 
 }

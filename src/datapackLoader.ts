@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { LogManager, Logger } from 'loggers';
+import { LogManager, Logger } from 'logging';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
 import { getDocumentBodyAsString } from './util';
 

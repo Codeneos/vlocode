@@ -6,15 +6,12 @@
         {
             "type": "npm",
             "script": "watch",
-            "isBackground": true,
+            "isBackground": false,
             "label": "build",
             "presentation": {
                 "reveal": "never"
             },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "problemMatcher": [
                 {
                     "fileLocation": "absolute",
@@ -74,6 +71,14 @@
                     }
                 }
             ]
+        },
+        {
+            "type": "npm",
+            "script": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

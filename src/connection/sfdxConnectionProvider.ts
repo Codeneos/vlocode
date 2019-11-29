@@ -2,7 +2,7 @@ import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
 import { default as sfdxUtil, FullSalesforceOrgDetails } from 'sfdxUtil';
 import JsForceConnectionProvider from './jsForceConnectionProvider';
-import { LogManager, Logger, LogLevel } from 'loggers';
+import { LogManager, Logger, LogLevel } from 'logging';
 
 
 export default class SfdxConnectionProvider implements JsForceConnectionProvider {

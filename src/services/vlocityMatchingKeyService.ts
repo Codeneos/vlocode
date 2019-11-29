@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { stringEquals } from '../util';
-import { LogManager } from 'loggers';
+import { LogManager } from 'logging';
 import SalesforceService from 'services/salesforceService';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';

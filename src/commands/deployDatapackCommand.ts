@@ -61,10 +61,11 @@ export default class DeployDatapackCommand extends DatapackCommand {
             const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
             
             let progressToken = await this.startProgress(`Deploying: ${datapackNames.join(', ')} ...`);
+            let result = null;
             try {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                var result = await this.datapackService.deploy(...datapackHeaders.map(header => header.fsPath));
+                result = await this.datapackService.deploy(...datapackHeaders.map(header => header.fsPath));
             } finally {
                 progressToken.complete();
             }

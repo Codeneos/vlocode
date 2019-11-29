@@ -6,7 +6,7 @@ import * as yaml from 'js-yaml';
 import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
 import { existsAsync, groupBy, mapAsync, stringEquals, getObjectValues } from '../util';
-import { LogManager } from 'loggers';
+import { LogManager } from 'logging';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
 import SalesforceService from 'services/salesforceService';

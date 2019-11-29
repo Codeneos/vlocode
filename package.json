@@ -37,7 +37,21 @@
         "onView:datapackExplorer",
         "onView:jobExplorer",
         "workspaceContains:**/*_datapack.json",
-        "workspaceContains:**/*_DataPack.json"
+        "workspaceContains:**/*_DataPack.json",
+        "onCommand:vlocity.buildDatapack",
+        "onCommand:vlocity.viewDatapack.generic",
+        "onCommand:vlocity.admin.refreshPriceBook",
+        "onCommand:vlocity.admin.refreshProductHierarchy",
+        "onCommand:vlocity.admin.refreshPriceBookAndProductHierarchy",
+        "onCommand:vlocity.admin.updateAllProdAttribCommand",
+        "onCommand:vlocity.admin.clearPlatformCache",
+        "onCommand:vlocity.deployMetadata.explorer",
+        "onCommand:vlocity.destoryMetadata",
+        "onCommand:vlocity.datapackExplorer.export",
+        "onCommand:vlocity.datapackExplorer.refresh",
+        "onCommand:vlocity.datapackExplorer.openSalesforce",
+        "onCommand:vlocity.jobExplorer.refresh",
+        "onCommand:vlocity.destroyMetadata"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -134,6 +148,10 @@
             {
                 "command": "vlocity.deployMetadata.explorer",
                 "title": "Salesforce: Save and Deploy"
+            },
+            {
+                "command": "vlocity.destroyMetadata",
+                "title": "Salesforce: Delete/Destroy"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -236,6 +254,11 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
+                    "command": "vlocity.destroyMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
                     "command": "vlocity.datapackExplorer.export"
                 },
                 {
@@ -270,6 +293,11 @@
                     "command": "vlocity.deployMetadata.explorer",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.destroyMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
                 }
             ],
             "editor/context": [
@@ -291,6 +319,11 @@
                 },
                 {
                     "command": "vlocity.deployMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 }
@@ -433,7 +466,7 @@
         "@types/js-yaml": "^3.12.1",
         "@types/jsforce": "^1.9.7",
         "@types/mocha": "^5.2.7",
-        "@types/node": "^8.10.49",
+        "@types/node": "^10.17.6",
         "@types/sinon": "^7.5.0",
         "@types/uuid": "^3.4.5",
         "@types/vscode": "^1.39.0",

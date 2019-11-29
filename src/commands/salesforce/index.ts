@@ -5,6 +5,5 @@ import DeleteMetadataCommand from "./deleteMetadataCommand";
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,
     [VlocodeCommand.deployMetadataExplorer]: DeployMetadataCommand,
-    [VlocodeCommand.destructMetadata]: DeleteMetadataCommand,
-    [VlocodeCommand.destructMetadataExplorer]: DeleteMetadataCommand
+    [VlocodeCommand.destroyMetadata]: DeleteMetadataCommand
 };

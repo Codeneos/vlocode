@@ -72,8 +72,10 @@ function stripUndefined<T extends Object>(obj: T) : T {
 async function updatePackageJson(packageJsonFile: string, commandFile: string) {
     console.log(`Adding VSCode commands to package...`);
 
+    const packageJson = await fs.readJSON(packageJsonFile);
     const commands = await loadCommandsMeta(commandFile);
     const contributes : PackageContributions = { commands: [], menus: {} };
+    const activationEvents = new Set<string>(packageJson.activationEvents || []);
 
     for (const [name, command] of Object.entries(commands)) {
         // Add command base structure
@@ -95,6 +97,7 @@ async function updatePackageJson(packageJsonFile: string, commandFile: string) {
         }
                 
         contributes.commands.push(stripUndefined(newCommand));
+        activationEvents.add(`onCommand:${name}`);
 
         // Build menus
         for (const menuInfo of command.menus || []) {
@@ -117,7 +120,7 @@ async function updatePackageJson(packageJsonFile: string, commandFile: string) {
     }
 
     // Update package JSON
-    const packageJson = await fs.readJSON(packageJsonFile);
+    packageJson.activationEvents = [...activationEvents];
     packageJson.contributes = Object.assign({}, packageJson.contributes, contributes);
     await fs.writeJSON(packageJsonFile, packageJson, { spaces: 4 });
     console.log(`${chalk.bold(logSymbols.success)} Added ${chalk.bold(Object.entries(commands).length)} commands`);

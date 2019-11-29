@@ -6,7 +6,7 @@ import { DatapackCommand } from './datapackCommand';
 import datapackViewTemplate from '../views/datapack.view.html';
 import webviewMessage from '../models/webviewMessage';
 import VlocodeService from '../services/vlocodeService';
-import { Logger, LogManager } from 'loggers';
+import { Logger, LogManager } from 'logging';
 import { container } from 'serviceContainer';
 
 export default class ViewDatapackCommand extends DatapackCommand {

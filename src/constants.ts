@@ -37,6 +37,5 @@ export enum VlocodeCommand {
     clearPlatformCache  = 'vlocity.admin.clearPlatformCache',
     deployMetadata  = 'vlocity.deployMetadata',
     deployMetadataExplorer  = 'vlocity.deployMetadata.explorer',
-    destructMetadata  = 'vlocity.destructMetadata',
-    destructMetadataExplorer  = 'vlocity.destructMetadata.explorer'
+    destroyMetadata  = 'vlocity.destroyMetadata'
 }
