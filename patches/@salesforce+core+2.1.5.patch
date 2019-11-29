@@ -1,0 +1,38 @@
+diff --git a/node_modules/@salesforce/core/lib/messages.js b/node_modules/@salesforce/core/lib/messages.js
+index e3e187d..483e486 100644
+--- a/node_modules/@salesforce/core/lib/messages.js
++++ b/node_modules/@salesforce/core/lib/messages.js
+@@ -169,6 +169,7 @@ class Messages {
+      * @param packageName The npm package name. Figured out from the root directory's package.json.
+      */
+     static importMessagesDirectory(moduleDirectoryPath, truncateToProjectPath = true, packageName) {
++        return;
+         let moduleMessagesDirPath = moduleDirectoryPath;
+         let projectRoot = moduleDirectoryPath;
+         if (!path.isAbsolute(moduleDirectoryPath)) {
+@@ -223,6 +224,7 @@ class Messages {
+      * @param bundleName The name of the bundle to load.
+      */
+     static loadMessages(packageName, bundleName) {
++        return new Messages(bundleName, this.getLocale(), {});
+         const key = new Key(packageName, bundleName);
+         let messages;
+         if (this.isCached(packageName, bundleName)) {
+@@ -258,7 +260,7 @@ class Messages {
+      * **See** https://nodejs.org/api/util.html#util_util_format_format_args
+      */
+     getMessage(key, tokens = []) {
+-        return this.getMessageWithMap(key, tokens, this.messages);
++        return '';
+     }
+     getMessageWithMap(key, tokens = [], map) {
+         // Allow nested keys for better grouping
+@@ -287,7 +289,7 @@ class Messages {
+  * @ignore
+  */
+ Messages._readFile = (filePath) => {
+-    return require(filePath);
++    return JSON.parse(fs.readFileSync(filePath).toString());
+ };
+ // It would be AWESOME to use Map<Key, Message> but js does an object instance comparison and doesn't let you
+ // override valueOf or equals for the === operator, which map uses. So, Use Map<String, Message>

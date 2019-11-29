@@ -1,4 +1,5 @@
-patch-package
+diff --git a/node_modules/vlocity/lib/datapacks.js b/node_modules/vlocity/lib/datapacks.js
+index 4c3b118..51bcddd 100644
 --- a/node_modules/vlocity/lib/datapacks.js
 +++ b/node_modules/vlocity/lib/datapacks.js
 @@ -208,16 +208,17 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
@@ -29,8 +30,28 @@ patch-package
  
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
+diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
+index 7ab38ff..4e7d204 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
+@@ -347,7 +347,7 @@ DataPacksBuilder.prototype.getFileData = function() {
+     return this.allFileDataMap[path.normalize(pathString).toLowerCase()];
+ }
+ 
+-DataPacksBuilder.prototype.setFileData = async function(filePath, filePath, encoding) {
++DataPacksBuilder.prototype.setFileData = async function(filePath, encoding) {
+     var data = await fs.readFile(filePath, encoding);
+ 
+     if (!this.allFileDataMap) {
+@@ -387,7 +387,7 @@ DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, da
+             encoding = 'utf8';
+         }
+         var filemapkey = path.normalize(path.join(srcpath, filename));
+-        filePromises.push(this.setFileData(filemapkey, filemapkey, encoding));
++        filePromises.push(this.setFileData(filemapkey, encoding));
+     }
+ 
+     if (filePromises.length > 0) {
 @@ -707,12 +707,19 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
                                  return;
                              }
@@ -64,6 +85,8 @@ patch-package
                                  hasReference = true;
                              }
                          }
+diff --git a/node_modules/vlocity/lib/datapacksjob.js b/node_modules/vlocity/lib/datapacksjob.js
+index b4f97c8..acbd8c2 100644
 --- a/node_modules/vlocity/lib/datapacksjob.js
 +++ b/node_modules/vlocity/lib/datapacksjob.js
 @@ -2039,7 +2039,7 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
@@ -75,6 +98,20 @@ patch-package
      }
  }
  
+diff --git a/node_modules/vlocity/lib/datapacktypes/attributecategory.js b/node_modules/vlocity/lib/datapacktypes/attributecategory.js
+index d1849c0..af04645 100644
+--- a/node_modules/vlocity/lib/datapacktypes/attributecategory.js
++++ b/node_modules/vlocity/lib/datapacktypes/attributecategory.js
+@@ -54,5 +54,5 @@ AttributeCategory.prototype.handleAttributeCategoryDisplaySequence = async funct
+     var jobInfoCopy = JSON.parse(JSON.stringify(jobInfo));
+ 
+     await this.vlocity.datapacksexpand.expand(jobInfoCopy.projectPath + '/' + jobInfoCopy.expansionPath, {dataPacks: [dataPackWithError]}, jobInfoCopy);
+-    await this.vlocity.datapacksbuilder.setFileData(filePath, filePath, "utf8");
++    await this.vlocity.datapacksbuilder.setFileData(filePath, "utf8");
+ };
+\ No newline at end of file
+diff --git a/node_modules/vlocity/lib/utilityservice.js b/node_modules/vlocity/lib/utilityservice.js
+index dafa90e..f3b6950 100644
 --- a/node_modules/vlocity/lib/utilityservice.js
 +++ b/node_modules/vlocity/lib/utilityservice.js
 @@ -400,7 +400,7 @@ UtilityService.prototype.getPackageVersion = async function() {
