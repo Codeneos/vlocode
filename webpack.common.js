@@ -57,7 +57,8 @@ const common = env => ({
             "@util$": path.resolve(__dirname, 'src', 'util'),
             'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
             '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
-            'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce')                    
+            'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
+            'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js')
         }
     },
     output: {

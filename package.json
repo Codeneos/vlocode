@@ -521,5 +521,7 @@
         "@salesforce/core": "^2.1.5",
         "salesforce-alm": "^47.9.0"
     },
-    "dependencies": {}
+    "dependencies": {
+        "sass.js": "^0.11.1"
+    }
 }
