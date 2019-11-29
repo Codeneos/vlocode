@@ -516,11 +516,10 @@
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.2.2",
         "xml2js": "^0.4.22",
-        "zone.js": "^0.10.2"
-    },
-    "dependencies": {
+        "zone.js": "^0.10.2",
+        "terser": "^4.4.0",
         "@salesforce/core": "^2.1.5",
-        "salesforce-alm": "^47.9.0",
-        "terser": "^4.4.0"
-    }
+        "salesforce-alm": "^47.9.0"
+    },
+    "dependencies": {}
 }
