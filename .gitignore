@@ -1,7 +1,7 @@
 out
 node_modules
-.vscode-test
 retire-cache
 *.vsix
-.awcache
-.sfdx
+.*
+testReports
+tslint-report.json

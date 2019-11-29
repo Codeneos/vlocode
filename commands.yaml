@@ -1,0 +1,171 @@
+# Extension setup commands
+vlocity.selectOrg:
+  title: 'Vlocity: Select Salesforce Org'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+
+# Vlocity basic commands
+vlocity.refreshDatapack:
+  title: 'Vlocity: Refresh Datapack(s)'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+    - menu: editor/context
+vlocity.deployDatapack:
+  title: 'Vlocity: Deploy Datapack(s)'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+    - menu: editor/context
+vlocity.openSalesforce:
+  title: 'Vlocity: Open in Salesforce'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+    - menu: editor/context
+vlocity.renameDatapack:
+  title: 'Vlocity: Rename datapack'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+vlocity.cloneDatapack:
+  title: 'Vlocity: Clone datapack'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+    - menu: editor/context
+vlocity.exportDatapack:
+  title: 'Vlocity: Export Datapack(s) from server'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+vlocity.buildParentKeyFiles:
+  title: 'Vlocity: Build Parent Key Files'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+
+# hidde commands
+vlocity.buildDatapack:
+  title: 'Vlocity: Build Datapack'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+      when: false
+vlocity.viewDatapack.generic:
+  title: 'Vlocity: View Datapack'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+      when: false
+      
+# Admin type commands
+vlocity.adminCommands:
+  title: 'Vlocity: Administration Console'
+vlocity.admin.refreshPriceBook:
+  title: 'Vlocity: Refresh Pricebook'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette      
+vlocity.admin.refreshProductHierarchy:
+  title: 'Vlocity: Refresh Product Hierarchy'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+vlocity.admin.refreshPriceBookAndProductHierarchy:
+  title: 'Vlocity: Refresh Pricebook and Product Hierarchy'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+vlocity.admin.updateAllProdAttribCommand:
+  title: 'Vlocity: Update Product Attributes'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+vlocity.admin.clearPlatformCache:
+  title: 'Vlocity: Clear Platform Cache'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+     
+
+# Salesforce commands
+vlocity.deployMetadata:
+  title: 'Salesforce: Save and Deploy current file'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport
+    - menu: editor/context
+      when: vlocodeSalesforceSupport
+vlocity.deployMetadata.explorer:
+  title: 'Salesforce: Save and Deploy'
+  group: v_salesforce
+  menus:
+    - menu: explorer/context      
+      when: vlocodeSalesforceSupport
+vlocity.destroyMetadata:
+  title: 'Salesforce: Delete/Destroy'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport
+    - menu: editor/context
+      when: vlocodeSalesforceSupport
+    - menu: explorer/context      
+      when: vlocodeSalesforceSupport
+
+# Data datapackExplorer commands
+vlocity.datapackExplorer.export:
+  title: Export
+  icon: resources/{type}/export.svg
+  menus:
+    - menu: commandPalette
+      when: false
+    - menu: view/item/context
+      group: inline
+      when: 
+        - viewItem == vlocity:datapack:object
+        - viewItem == vlocity:datapack:category
+    - menu: view/item/context
+      group: v_vlocity
+      when: 
+        - viewItem == vlocity:datapack:object
+        - viewItem == vlocity:datapack:category
+vlocity.datapackExplorer.refresh:
+  title: Refresh
+  icon: resources/{type}/refresh.svg
+  menus:
+    - menu: commandPalette
+      when: false
+    - menu: view/title
+      group: navigation
+      when: view == datapackExplorer
+vlocity.datapackExplorer.openSalesforce:
+  title: View in Salesforce
+  icon: resources/{type}/external-link-small.svg
+  menus:
+    - menu: commandPalette
+      when: false
+    - menu: view/item/context
+      group: inline
+      when: 'viewItem == vlocity:datapack:object'
+    - menu: view/item/context
+      group: v_vlocity
+      when: 'viewItem == vlocity:datapack:object'
+
+# Data jobExplorer commands 
+vlocity.jobExplorer.refresh:
+  title: Refresh
+  icon: resources/{type}/refresh.svg
+  menus:
+    - menu: view/title
+      group: navigation
+      when: view == jobExplorer
+
