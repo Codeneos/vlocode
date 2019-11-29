@@ -494,7 +494,7 @@
         "mocha-sonarqube-reporter": "^1.0.1",
         "mock-fs": "^4.10.1",
         "moment": "^2.24.0",
-        "patch-package": "^5.1.2",
+        "patch-package": "^6.2.0",
         "retire": "^2.0.3",
         "rimraf": "^3.0.0",
         "rxjs": "^6.5.3",
@@ -519,7 +519,8 @@
         "zone.js": "^0.10.2"
     },
     "dependencies": {
+        "@salesforce/core": "^2.1.5",
         "salesforce-alm": "^47.9.0",
-        "@salesforce/core": "^2.1.5"
+        "terser": "^4.4.0"
     }
 }
