@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { LogManager, Logger } from 'logging';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
-import { getDocumentBodyAsString } from './util';
+import { getDocumentBodyAsString, mapAsyncParallel } from './util';
 
 import { VlocityDatapack } from 'models/datapack';
 import { isObject } from 'util';
@@ -26,6 +26,10 @@ export default class DatapackLoader {
         return new VlocityDatapack(
             datapackHeader, manifestEntry.datapackType, manifestEntry.key, 
             getExportProjectFolder(datapackHeader), datapackJson);
+    }
+
+    public loadAll(datapackHeaders : string[]) : Promise<VlocityDatapack[]> {
+        return mapAsyncParallel(datapackHeaders, this.loadFrom.bind(this), 4);
     }
 
     private async loadJson(fileName : string) : Promise<any> {

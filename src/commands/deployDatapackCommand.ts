@@ -52,20 +52,25 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
             // prepare input
             const datapackHeaders = await this.getDatapackHeaders(selectedFiles);
-            if(datapackHeaders.length == 0) {
+            if (datapackHeaders.length == 0) {
                 // no datapack files found, lets pretend this didn't happen
                 return;
             }
+
+            // Reading datapack takes a long time, only read datapacks if it is a reasonable count
+            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`
+            if (datapackHeaders.length < 4) {
+                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+                const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
+                progressText = `Deploying: ${datapackNames.join(', ')} ...`
+            }
             
-            const datapacks = await Promise.all(datapackHeaders.map(header => this.datapackService.loadDatapack(header)));
-            const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
-            
-            let progressToken = await this.startProgress(`Deploying: ${datapackNames.join(', ')} ...`);
+            let progressToken = await this.startProgress(progressText);
             let result = null;
             try {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                result = await this.datapackService.deploy(...datapackHeaders.map(header => header.fsPath));
+                result = await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath));
             } finally {
                 progressToken.complete();
             }

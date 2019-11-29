@@ -1,7 +1,7 @@
 import * as jsforce from 'jsforce';
 import * as path from 'path';
 import * as salesforce from '@salesforce/core';
-import * as sfdx from 'sfdx-node';
+import AuthCommand = require('salesforce-alm/dist/lib/auth/authCommand');
 import { LogManager, Logger } from 'logging';
 
 export type FullSalesforceOrgDetails = {
@@ -17,6 +17,16 @@ export type FullSalesforceOrgDetails = {
     isDefaultDevHubUsername? : boolean,
     isDefaultUsername?: boolean
 } & { refreshToken?: string, clientSecret?: string };
+
+export type SalesforceAuthResult = {
+    orgId: string,
+    accessToken?: string,
+    instanceUrl?: string,
+    loginUrl?: string,
+    username: string,
+    clientId?: string,
+    refreshToken?: string,
+};
 
 export default class SfdxUtil {
 
@@ -41,8 +51,13 @@ export default class SfdxUtil {
     // public static async authorizeNewOrg(instanceUrl: string, alias?: string) {
     // }
 
-    public static webLogin(options: { instanceUrl: string, alias?: string }) {
-        return sfdx.auth.webLogin({ instanceurl: options.instanceUrl, setalias: options.alias });
+    public static async webLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceAuthResult> {
+        const command = new AuthCommand();
+        const result = await command.execute({
+            instanceurl: options.instanceUrl, 
+            setalias: options.alias 
+        });
+        return result;
     }
 
     public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<salesforce.AuthInfo[]> {

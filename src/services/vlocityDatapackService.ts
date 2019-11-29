@@ -224,6 +224,13 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     /**
+     * @deprecated Use `container.get(DatapackLoader).loadAll(...)` instead
+     */
+    public async loadAllDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
+        return container.get(DatapackLoader).loadAll(files.map(file => file.fsPath));
+    }
+
+    /**
      * Expands a datapack into multiple files according to the specified expand definitions
      * @param datapack The datapack to save and expand
      * @param targetPath The path to expand to
@@ -242,7 +249,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack);
     }
 
-    public async deploy(...datapackHeaders: string[]) : Promise<DatapackResultCollection>  {
+    public async deploy(datapackHeaders: string[], token?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
         const headersByProject = groupBy(datapackHeaders, header => getExportProjectFolder(header));
         const projectPath = this.resolvedProjectPath();
 
@@ -333,6 +340,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
         // clean-up build tools left overs from the last invocation
         this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
         delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
+
+        this.logger.debug(`Starting forked process: `)
 
         // run the job 
         const result = await this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions);

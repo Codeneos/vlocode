@@ -4,6 +4,7 @@ const packageJson = require("./package.json");
 const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const glob = require('glob');
+const CopyPlugin = require('copy-webpack-plugin');
 const { DuplicatesPlugin } = require("inspectpack/plugin");
 
 const externals = [
@@ -25,6 +26,7 @@ const packageExternals = [...Object.keys(packageJson.dependencies), ...externals
 const common = env => ({
     context: __dirname,
     devtool: 'source-map',
+    target: 'node',
     module: {
         rules: [
             {
@@ -48,12 +50,13 @@ const common = env => ({
         ]
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', '.html'],
+        extensions: ['.tsx', '.ts', '.js', '.html', '.json'],
         modules: ['node_modules', 'src'],
         alias: {
             "@constants$": path.resolve(__dirname, 'src', 'constants'),
             "@util$": path.resolve(__dirname, 'src', 'util'),
-            'js-force': path.resolve(__dirname, 'node_modules', 'js-force')
+            'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
+            '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core')            
         }
     },
     output: {
@@ -65,7 +68,7 @@ const common = env => ({
     node: {
         process: false,
         __dirname: false,
-        __dirname: false
+        __filename: false
     },
     mode: 'development',
     externals: 
@@ -83,15 +86,21 @@ const common = env => ({
 /**@type {import('webpack').Configuration}*/
 const vscodeExtension = {
     entry: {
-        'vlocode': './src/extension.ts'
+        'vlocode': './src/extension.ts',
+        'fork': './src/extensionFork.ts'
     },
-    target: 'node',
     name: 'vlocode',
     devtool: 'source-map',
     output: {
         libraryTarget: 'commonjs2',
         path: path.resolve(__dirname, 'out'),
-    }    
+    },    
+    plugins: [
+        new CopyPlugin([
+            { context: 'node_modules/vlocity/lib', from: '*.yaml', to: '.' },       
+            { context: 'node_modules/vlocity/lib', from: '*.json', to: '.' }
+        ]),
+    ],
     // plugins: [
     //     new DuplicatesPlugin({
     //         // Emit compilation warning or error? (Default: `false`)
@@ -117,7 +126,6 @@ const tests = {
             index: './src/test/index.ts', 
             runTest: './src/test/runTest.ts' 
         }),
-    target: 'node',
     name: 'tests',
     output: {
         libraryTarget: 'commonjs2',
