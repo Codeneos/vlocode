@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.11.6",
+    "version": "0.12.1",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -46,7 +46,6 @@
         "onCommand:vlocity.admin.updateAllProdAttribCommand",
         "onCommand:vlocity.admin.clearPlatformCache",
         "onCommand:vlocity.deployMetadata.explorer",
-        "onCommand:vlocity.destoryMetadata",
         "onCommand:vlocity.datapackExplorer.export",
         "onCommand:vlocity.datapackExplorer.refresh",
         "onCommand:vlocity.datapackExplorer.openSalesforce",
