@@ -50,7 +50,8 @@
         "onCommand:vlocity.datapackExplorer.refresh",
         "onCommand:vlocity.datapackExplorer.openSalesforce",
         "onCommand:vlocity.jobExplorer.refresh",
-        "onCommand:vlocity.destroyMetadata"
+        "onCommand:vlocity.destroyMetadata",
+        "onCommand:vlocity.jobExplorer.run"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -172,8 +173,8 @@
                 "command": "vlocity.datapackExplorer.openSalesforce",
                 "title": "View in Salesforce",
                 "icon": {
-                    "light": "resources/light/external-link-small.svg",
-                    "dark": "resources/dark/external-link-small.svg"
+                    "light": "resources/light/link-external.svg",
+                    "dark": "resources/dark/link-external.svg"
                 }
             },
             {
@@ -182,6 +183,14 @@
                 "icon": {
                     "light": "resources/light/refresh.svg",
                     "dark": "resources/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "vlocity.jobExplorer.run",
+                "title": "Run job",
+                "icon": {
+                    "light": "resources/light/start.svg",
+                    "dark": "resources/dark/start.svg"
                 }
             }
         ],
@@ -357,6 +366,11 @@
                     "command": "vlocity.datapackExplorer.openSalesforce",
                     "group": "v_vlocity",
                     "when": "viewItem == vlocity:datapack:object"
+                },
+                {
+                    "command": "vlocity.jobExplorer.run",
+                    "group": "inline",
+                    "when": "viewItem == vlocity:jobYaml"
                 }
             ],
             "view/title": [

@@ -65,15 +65,15 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 progressText = `Deploying: ${datapackNames.join(', ')} ...`
             }
             
-            let progressToken = await this.startProgress(progressText);
-            let result = null;
-            try {
+            const result = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: progressText,
+                cancellable: true
+            }, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                result = await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath));
-            } finally {
-                progressToken.complete();
-            }
+                return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
+            });
 
             // report UI progress back
             return this.showResultMessage(result);

@@ -17,6 +17,8 @@ import * as yaml from 'js-yaml';
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { createRecordProxy, addFieldsToQuery } from 'salesforceUtil';
 import VlocityJobFile from 'models/VlocityJobFile';
+import * as vlocity from 'vlocity';
+
 
 export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
     
@@ -30,48 +32,33 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
         this._onDidChangeTreeData = new vscode.EventEmitter<JobNode | undefined>()
         this.commands.registerAll({
             'vlocity.jobExplorer.run': async (node) => this.runJob(node),
-            'vlocity.jobExplorer.open': OpenSalesforceCommand,
             'vlocity.jobExplorer.refresh': () => this.refresh()
         });
-    }
+    }    
 
     private async runJob(node: JobNode) {
-        // if (node.nodeType == DatapackNodeType.Category) {
-        //     // Collect all exportable nodes
-        //     const children = await this.withProgress('Loading exportable datapacks...', this.getChildren(node));
-            
-        //     const exportableNodes = children.map(node => {
-        //         if (node instanceof DatapackObjectGroupNode) {
-        //             const record = node.records.slice(-1)[0];
-        //             return record ? <ObjectEntry>{ 
-        //                 id: record.Id, 
-        //                 datapackType: node.datapackType, 
-        //                 sobjectType: record.attributes.type
-        //             } : undefined;
-        //         } 
-        //         return node;
-        //     }).filter(node => node !== undefined);
+        const jobCommand = await vscode.window.showQuickPick([
+            { type: 'Export' , label: '$(cloud-download) Run as Export', detail: 'retrieve and save Vlocity datapacks on your local machine' },        
+            { type: 'Deploy', label: '$(cloud-upload) Run as Deploy', detail: 'upload and deploy previously exported Vlocity datapacks' }
+        ], { placeHolder: 'Select how to run this job', ignoreFocusOut: true });
+        
+        if (!jobCommand) {
+            return;
+        }
 
-        //     this.commands.execute(constants.VlocodeCommand.exportDatapack, ...exportableNodes);
-        // } else if (node.nodeType == DatapackNodeType.Object) {
-        //     this.commands.execute(constants.VlocodeCommand.exportDatapack, node);
-        // }
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Running ${path.basename(node.jobFile.fsPath)}...`,
+                cancellable: true
+            }, (progress, token) => this.datapackService.runYamlJob(<vlocity.actionType>jobCommand.type, node.jobFile.fsPath, token));
+        } catch(err) {
+            vscode.window.showErrorMessage(`Running job file ${path.basename(node.jobFile.fsPath)} resulted in an error, see the log for details.`);
+        }
     }
-
-    // private withProgress<T>(title: string, task: Thenable<T>): Thenable<T> {
-    //     return vscode.window.withProgress({ 
-    //         location: vscode.ProgressLocation.Notification, 
-    //         title: title,
-    //         cancellable: false
-    //     }, () => task);
-    // }
 
     private get datapackService() : VlocityDatapackService {
         return this.vlocode.datapackService;
-    }
-
-    private get vlocityNamespace() : string {         
-        return this.datapackService.vlocityNamespace;
     }
     
     private get vlocode() : VlocodeService {
@@ -103,6 +90,7 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
                 command: 'vscode.open',
                 arguments: [ node.jobFile ]
             },
+            contextValue: 'vlocity:jobYaml',
             tooltip: node.getItemTooltip(),
             iconPath: node.getItemIconPath(),
             description: node.getItemDescription(),
@@ -118,7 +106,7 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
     }
 
     public async getChildren(node?: JobNode): Promise<JobNode[]> {
-        const yamlFiles = await vscode.workspace.findFiles('*.yaml');
+        const yamlFiles = await vscode.workspace.findFiles('**/*.yaml');
         const yamlFilesWithBody = await Promise.all(yamlFiles.map(async file => {
             try {
                 return {

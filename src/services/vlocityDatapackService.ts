@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
-import { existsAsync, groupBy, mapAsync, stringEquals, getObjectValues } from '../util';
+import { existsAsync, groupBy, mapAsync, stringEquals, getObjectValues, getDocumentBodyAsString } from '../util';
 import { LogManager } from 'logging';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
@@ -326,6 +326,13 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }, {});
     }
 
+    public async runYamlJob(command: vlocity.actionType, yamlFile: string, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
+        const jobInfo : vlocity.JobInfo = yaml.safeLoad(await getDocumentBodyAsString(yamlFile));
+        delete jobInfo.projectPath;
+        jobInfo.initialized = true;
+        return this.runCommand(command, jobInfo, cancellationToken);
+    }
+
     public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection> {
         const jobResult = await this.datapacksJobAsync(command, jobInfo, cancellationToken);
         return new DatapackResultCollection(this.parseJobResult(jobResult));
@@ -341,14 +348,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
             jobOptions.cancellationToken = cancellationToken;
         }
 
-        // clean-up build tools left overs from the last invocation
-        this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};
-        delete this.vlocityBuildTools.datapacksbuilder.allFileDataMap;
-
-        this.logger.debug(`Starting forked process: `)
+        // Create dedicated Vlocity instance
+        const vlocityInstance = await this.createVlocityInstance();
+        vlocityInstance.datapacksexportbuildfile.currentExportFileData = {};
 
         // run the job 
-        const result = await this.vlocityBuildTools.datapacksjob.runJob(command, jobOptions);
+        const result = await vlocityInstance.datapacksjob.runJob(command, jobOptions);
         return Object.assign(result, { currentStatus: jobOptions.currentStatus });
     }
 

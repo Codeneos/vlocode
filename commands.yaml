@@ -149,7 +149,7 @@ vlocity.datapackExplorer.refresh:
       when: view == datapackExplorer
 vlocity.datapackExplorer.openSalesforce:
   title: View in Salesforce
-  icon: resources/{type}/external-link-small.svg
+  icon: resources/{type}/link-external.svg
   menus:
     - menu: commandPalette
       when: false
@@ -168,4 +168,10 @@ vlocity.jobExplorer.refresh:
     - menu: view/title
       group: navigation
       when: view == jobExplorer
-
+vlocity.jobExplorer.run:
+  title: Run job
+  icon: resources/{type}/start.svg
+  menus:
+    - menu: view/item/context
+      group: inline
+      when: viewItem == vlocity:jobYaml
