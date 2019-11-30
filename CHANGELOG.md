@@ -1,4 +1,12 @@
-# Changelog Vlocode
+# Changelog Vlocity Salesforce Integration for VSCode
+
+## [0.12.1] - 2019-11-30
+ - New experimental support for running Salesforce deploy and delete metadata commands.
+ - Optimized VSIX package by bundling all components using webpack. This significantly decreases the extension load times providing a much better overall experience.
+ - New terminal window can be used for logging messages with color support instead of the standard output channel.
+ - New ability to cancel a datapack command, this will cause the command to cancel finishing up any remaining export/import work after which it will exit.
+ - Fix an issues in the Datapack explorer that caused a null-ref-like exception when querying datapacks that did not have all props correctly set.
+ - Fix use query instead ot queryAll as the earlier one should not be cached leading the datapack UI to show outdated items.
 
 ## [0.11.6] - 2019-10-17
  - Fix problem where deploy command would walk all child directories to find deployable datapacks causing all found datapacks to be deployed.
