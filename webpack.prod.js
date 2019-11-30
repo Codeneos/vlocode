@@ -8,7 +8,7 @@ const minimizerOptions = {
     parse: {},
     compress: {
         dead_code: false,
-        inline: true,
+        inline: false,
         module: true
     },
     mangle: false,
@@ -17,16 +17,11 @@ const minimizerOptions = {
     keep_fnames: true
 }
 
-const chunkingOptions = {
-    chunks: 'all'
-}
-
 module.exports = env => common(env, {
     mode: 'production',
     devtool: 'none',
     optimization: {
         mergeDuplicateChunks: true,
-        splitChunks: chunkingOptions,
         minimizer: [new TerserPlugin({ terserOptions: minimizerOptions })]
     }
 });
