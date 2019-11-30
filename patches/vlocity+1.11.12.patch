@@ -1,8 +1,32 @@
 diff --git a/node_modules/vlocity/lib/datapacks.js b/node_modules/vlocity/lib/datapacks.js
-index 4c3b118..51bcddd 100644
+index 4c3b118..f6d4f2d 100644
 --- a/node_modules/vlocity/lib/datapacks.js
 +++ b/node_modules/vlocity/lib/datapacks.js
-@@ -208,16 +208,17 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+@@ -123,6 +123,11 @@ DataPacks.prototype.getStorageLimitExceededError = function() {
+ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+     var self = this;
+ 
++    if (options.cancellationToken && options.cancellationToken.isCancellationRequested) {
++        VlocityUtils.warn('Detected cancellation requested. Skipping further job processing.');
++        throw new Error('Operation Cancelled');
++    }
++
+     if (options && dataPackData && dataPackData.processData) {
+ 
+         Object.keys(options).forEach(function(optionKey){
+@@ -171,6 +176,11 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+ 
+             let result = await self.vlocity.jsForceConnection.apex.post(self.dataPacksEndpoint(), dataPackData);
+ 
++            if (options.cancellationToken && options.cancellationToken.isCancellationRequested) {
++                VlocityUtils.warn('Detected cancellation requested. Skipping further job processing.');
++                return { VlocityDataPackId: dataPackId, message: 'Operation Cancelled', dataPackError: true, Status: 'Cancelled' };
++            }
++
+             VlocityUtils.verbose('Result', result);
+ 
+             if (!result) {
+@@ -208,16 +218,17 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
                  result.Total = 1;
              }    
  
@@ -108,7 +132,7 @@ index f475d46..4aabfe9 100644
  
  DataPacksErrorHandling.prototype.getSanitizedErrorMessage = async function(jobInfo, dataPack) {
 diff --git a/node_modules/vlocity/lib/datapacksjob.js b/node_modules/vlocity/lib/datapacksjob.js
-index b4f97c8..121960d 100644
+index b4f97c8..f10bf9b 100644
 --- a/node_modules/vlocity/lib/datapacksjob.js
 +++ b/node_modules/vlocity/lib/datapacksjob.js
 @@ -7,8 +7,8 @@ var childProcess = require('child_process');
@@ -122,7 +146,17 @@ index b4f97c8..121960d 100644
      this.runningParallel = {};
      this.vlocity.relationMap = new Map();
      this.vlocity.insertIndexToSfIdMap = new Map();
-@@ -2039,7 +2039,7 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
+@@ -26,7 +26,8 @@ var SUPPORTED_JOB_KEY_TO_OPTION_MAP = {
+     source: 'source',
+     alreadyExportedKeys: 'alreadyExportedKeys',
+     exportPacksMaxSize: 'exportPacksMaxSize',
+-    useVlocityTriggers: 'useVlocityTriggers'
++    useVlocityTriggers: 'useVlocityTriggers',
++    cancellationToken: 'cancellationToken'
+ };
+ 
+ var MAX_PER_GROUP = 10;
+@@ -2039,7 +2040,7 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
              throw e;
          }
  

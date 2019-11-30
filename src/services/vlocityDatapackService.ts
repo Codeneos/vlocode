@@ -262,7 +262,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 activate: this.config.autoActivate,
                 delete: true,
                 compileOnBuild: this.config.compileOnBuild        
-            });
+            }, token);
         });
 
         return results.reduce((results, result) => results.join(result));
@@ -281,7 +281,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
     }
 
-    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0) : Promise<DatapackResultCollection>  {
+    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportManifest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
         const projectPath = this.resolvedProjectPath();
@@ -293,7 +293,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth,
             initialized: true // avoid project initialization when exporting
-        });
+        }, cancellationToken);
     }
 
     private createExportManifest(objects: ObjectEntryWithId[]) : ExportManifest  {
@@ -326,16 +326,20 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }, {});
     }
 
-    public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<DatapackResultCollection> {
-        const jobResult = await this.datapacksJobAsync(command, jobInfo);
+    public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection> {
+        const jobResult = await this.datapacksJobAsync(command, jobInfo, cancellationToken);
         return new DatapackResultCollection(this.parseJobResult(jobResult));
     }
     
-    private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo) : Promise<vlocity.VlocityJobResult> {
+    private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo, cancellationToken?: vscode.CancellationToken) : Promise<vlocity.VlocityJobResult> {
         // collect and create job optipns
         const localOptions = { projectPath: this.resolvedProjectPath() };
         const customOptions = await this.getCustomJobOptions();
         const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
+
+        if (cancellationToken) {
+            jobOptions.cancellationToken = cancellationToken;
+        }
 
         // clean-up build tools left overs from the last invocation
         this.vlocityBuildTools.datapacksexportbuildfile.currentExportFileData = {};

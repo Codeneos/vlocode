@@ -236,10 +236,14 @@ export default class ExportDatapackCommand extends DatapackCommand {
         }
         
         this.logger.info(`Exporting to folder: ${exportPath}`);
-        exportEntries = Array.isArray(exportEntries) ? exportEntries : [exportEntries];
-        const results = await this.showProgress(
-            `Exporting ${exportEntries.length} datapack(s)...`, 
-            this.datapackService.export(exportEntries, exportPath, maxDepth));
+        const entries = Array.isArray(exportEntries) ? exportEntries : [ exportEntries ];
+        const results = await vscode.window.withProgress({
+            title: `Exporting ${entries.length} datapack(s)...`,
+            location: vscode.ProgressLocation.Notification,
+            cancellable: true
+        }, (progress, token) => {
+            return this.datapackService.export(entries, exportPath, maxDepth, token)
+        });
 
         // report UI progress back
         this.showResultMessage(results);
