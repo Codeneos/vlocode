@@ -1,5 +1,8 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.2] - 2019-12-01
+ - Revert aggressive inline optimizarion in Teser settings preventing the extension from loading properly.
+
 ## [0.12.1] - 2019-11-30
  - New experimental support for running Salesforce deploy and delete metadata commands.
  - Optimized VSIX package by bundling all components using webpack. This significantly decreases the extension load times providing a much better overall experience.
