@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import * as constants from '@constants';
+import * as path from 'path';
 import VlocodeConfiguration from '../models/vlocodeConfiguration';
 import VlocityDatapackService, * as vds from './vlocityDatapackService';
 import { Logger, LogManager } from '../logging';
@@ -9,6 +9,9 @@ import ServiceContainer from 'serviceContainer';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from 'connection/sfdxConnectionProvider';
 import SalesforceService from './salesforceService';
+import { fork } from 'child_process';
+import VlocodeContext from 'models/vlocodeContext';
+import * as constants from '@constants';
 
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {  
 
@@ -40,10 +43,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     // Ctor + Methods
     constructor(
         private readonly container: ServiceContainer, 
-        private readonly context: vscode.ExtensionContext, 
-        public readonly config: VlocodeConfiguration) {
+        public readonly config: VlocodeConfiguration,
+        private readonly context?: VlocodeContext) {
         this.registerDisposable(this.createConfigWatcher());
-        context.subscriptions.push(this);
     }
 
     public dispose() {
@@ -100,8 +102,18 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.connector.getJsForceConnection();
     }
 
-    public getContext(): vscode.ExtensionContext {
+    public getContext(): VlocodeContext {
         return this.context;
+    }
+
+    /**
+     * Get the absolute path of a resource contained in the extension.
+     *
+     * @param relativePath A relative path to a resource contained in the extension.
+     * @return The absolute path of the resource.
+     */
+	public asAbsolutePath(relativePath: string): string {
+        return path.join(this.context.extensionPath, relativePath);
     }
 
     private updateStatusBar(config: VlocodeConfiguration) {

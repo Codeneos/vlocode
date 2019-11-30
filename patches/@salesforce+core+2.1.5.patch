@@ -1,5 +1,5 @@
 diff --git a/node_modules/@salesforce/core/lib/messages.js b/node_modules/@salesforce/core/lib/messages.js
-index e3e187d..483e486 100644
+index e3e187d..aeffb09 100644
 --- a/node_modules/@salesforce/core/lib/messages.js
 +++ b/node_modules/@salesforce/core/lib/messages.js
 @@ -169,6 +169,7 @@ class Messages {
@@ -18,16 +18,17 @@ index e3e187d..483e486 100644
          const key = new Key(packageName, bundleName);
          let messages;
          if (this.isCached(packageName, bundleName)) {
-@@ -258,7 +260,7 @@ class Messages {
+@@ -258,7 +260,8 @@ class Messages {
       * **See** https://nodejs.org/api/util.html#util_util_format_format_args
       */
      getMessage(key, tokens = []) {
 -        return this.getMessageWithMap(key, tokens, this.messages);
-+        return '';
++        console.debug(`getMessage`, key, tokens);
++        return `${key}`;
      }
      getMessageWithMap(key, tokens = [], map) {
          // Allow nested keys for better grouping
-@@ -287,7 +289,7 @@ class Messages {
+@@ -287,7 +290,7 @@ class Messages {
   * @ignore
   */
  Messages._readFile = (filePath) => {

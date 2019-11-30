@@ -53,6 +53,12 @@ export class Logger {
         }
     }
 
+    public writeEntry(entry: LogEntry) : void {
+        if (this.writer) { 
+            this.writer.write(entry);
+        }
+    }
+
     private formatArg(arg: any) : string | any {
         if (arg instanceof Error) {
             return arg.stack;

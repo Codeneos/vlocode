@@ -56,7 +56,7 @@ class DatapackView {
 
     constructor(webview: vscode.Webview){
         this.webview = webview;
-        this.webview.onDidReceiveMessage(this.handleWebviewPostMessage, this, this.extensionContext.subscriptions);
+        this.webview.onDidReceiveMessage(this.handleWebviewPostMessage, this);
     }
 
     public updateSate(state : any) : Thenable<boolean> {
@@ -69,10 +69,6 @@ class DatapackView {
     protected postMessage(msg : webviewMessage) : Thenable<boolean> {
         this.logger.verbose('DatapackView.postMessage: ' + JSON.stringify(msg));
         return this.webview.postMessage(msg);
-    }
-
-    protected get extensionContext() : vscode.ExtensionContext {
-        return container.get(VlocodeService).getContext();
     }
 
     protected get logger() : Logger {

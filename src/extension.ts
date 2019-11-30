@@ -13,6 +13,7 @@ import * as fs from 'fs-extra';
 import OnSavedEventHandler from 'events/onSavedEventHandler';
 import JobExplorer from 'jobExplorer';
 import { setInterval } from 'timers';
+import VlocodeContext from 'models/vlocodeContext';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -91,7 +92,8 @@ export = class Vlocode {
         
         // Init logging and register services
         let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);
-        this.service = container.register(VlocodeService, new VlocodeService(container, context, vloConfig));
+        this.service = container.register(VlocodeService, new VlocodeService(container, vloConfig, VlocodeContext.createFrom(context)));
+        context.subscriptions.push(this.service);
         this.setupLogging();
     
         this.logger.info(`Vlocode version ${constants.VERSION} started`);

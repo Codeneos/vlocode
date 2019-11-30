@@ -89,12 +89,6 @@ export default class CommandRouter implements CommandMap {
         return this.commands.length;
     }
 
-    constructor(commands?: { [name: string]: CommandCtor }) {
-        if(commands) {
-            this.registerAll(commands);
-        }
-    }
-
     public async execute(commandName : VlocodeCommand | string, ...args: any[]) : Promise<void> {
         const command : Command = this[commandName];
         if (command) {
@@ -103,7 +97,7 @@ export default class CommandRouter implements CommandMap {
         return vscode.commands.executeCommand(commandName, ...args);
     }
 
-    public register(name: string, commandCtor: ((...args: any[]) => void) | CommandCtor) : Command {
+    public register(name: string, commandCtor: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor) : Command {
         const command = new CommandExecutor(this.createCommand(name, commandCtor));
         const index = this.commands.push(command) - 1;
         Object.defineProperty(this, name, { get: () => this.commands[index] });
@@ -118,7 +112,7 @@ export default class CommandRouter implements CommandMap {
         return { name: name, execute: commandCtor };
     }
 
-    public registerAll(commands: { [name: string]: ((...args: any[]) => void) | CommandCtor }) : void{
+    public registerAll(commands: { [name: string]: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor }) : void{
         Object.keys(commands).forEach(key => {
             this.register(key, commands[key]);
         });

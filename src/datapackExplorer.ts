@@ -85,7 +85,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
     }
     
     public getAbsolutePath(path: string) {
-        return this.vlocode.getContext().asAbsolutePath(path);
+        return this.vlocode.asAbsolutePath(path);
     }
 
     public refresh(node?: DatapackNode): void {

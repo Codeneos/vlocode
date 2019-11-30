@@ -31,9 +31,18 @@ index 4c3b118..51bcddd 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 7ab38ff..4e7d204 100644
+index 7ab38ff..76c8b6f 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
+@@ -14,7 +14,7 @@ var DataPacksBuilder = module.exports = function(vlocity) {
+ 
+     this.compileQueue = []; // array with files that require compilation
+ 
+-    this.defaultdatapack = fs.readFileSync(path.join(__dirname, 'defaultdatapack.json'), 'utf8');
++    this.defaultdatapack = require('./defaultdatapack.json');
+ 
+     this.dataPackSizes = {};
+ 
 @@ -347,7 +347,7 @@ DataPacksBuilder.prototype.getFileData = function() {
      return this.allFileDataMap[path.normalize(pathString).toLowerCase()];
  }
@@ -85,10 +94,34 @@ index 7ab38ff..4e7d204 100644
                                  hasReference = true;
                              }
                          }
+diff --git a/node_modules/vlocity/lib/datapackserrorhandling.js b/node_modules/vlocity/lib/datapackserrorhandling.js
+index f475d46..4aabfe9 100644
+--- a/node_modules/vlocity/lib/datapackserrorhandling.js
++++ b/node_modules/vlocity/lib/datapackserrorhandling.js
+@@ -4,7 +4,7 @@ var yaml = require('js-yaml');
+ 
+ var DataPacksErrorHandling = module.exports = function(vlocity) {
+     this.vlocity = vlocity || {};
+-    this.errorHandlingDefinition = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "datapackserrorhandling.yaml"), 'utf8'));
++    this.errorHandlingDefinition = require("./datapackserrorhandling.yaml");
+ };
+ 
+ DataPacksErrorHandling.prototype.getSanitizedErrorMessage = async function(jobInfo, dataPack) {
 diff --git a/node_modules/vlocity/lib/datapacksjob.js b/node_modules/vlocity/lib/datapacksjob.js
-index b4f97c8..acbd8c2 100644
+index b4f97c8..121960d 100644
 --- a/node_modules/vlocity/lib/datapacksjob.js
 +++ b/node_modules/vlocity/lib/datapacksjob.js
+@@ -7,8 +7,8 @@ var childProcess = require('child_process');
+ var DataPacksJob = module.exports = function(vlocity) {
+     this.vlocity = vlocity || {};
+ 
+-    this.defaultJobSettings = yaml.safeLoad(fs.readFileSync(path.join(__dirname, 'defaultjobsettings.yaml'), 'utf8'));
+-    this.queryDefinitions = yaml.safeLoad(fs.readFileSync(path.join(__dirname, 'querydefinition.yaml'), 'utf8'));
++    this.defaultJobSettings = require('./defaultjobsettings.yaml');
++    this.queryDefinitions = require('./querydefinition.yaml');
+     this.runningParallel = {};
+     this.vlocity.relationMap = new Map();
+     this.vlocity.insertIndexToSfIdMap = new Map();
 @@ -2039,7 +2039,7 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
              throw e;
          }
@@ -97,6 +130,19 @@ index b4f97c8..acbd8c2 100644
 +        VlocityUtils.error('Error', 'Deploying Pack', e.stack || e);
      }
  }
+ 
+diff --git a/node_modules/vlocity/lib/datapacksutils.js b/node_modules/vlocity/lib/datapacksutils.js
+index 16b7f2e..e97f6ea 100644
+--- a/node_modules/vlocity/lib/datapacksutils.js
++++ b/node_modules/vlocity/lib/datapacksutils.js
+@@ -22,7 +22,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
+ 
+     CURRENT_INFO_FILE = path.join(vlocity.tempFolder, 'currentJobInfo.json');
+ 
+-    this.dataPacksExpandedDefinition = yaml.safeLoad(fs.readFileSync(path.join(__dirname, 'datapacksexpanddefinition.yaml'), 'utf8'));
++    this.dataPacksExpandedDefinition = require('./datapacksexpanddefinition.yaml');
+ 
+     this.runJavaScriptModules = {};
  
 diff --git a/node_modules/vlocity/lib/datapacktypes/attributecategory.js b/node_modules/vlocity/lib/datapacktypes/attributecategory.js
 index d1849c0..af04645 100644
@@ -111,10 +157,10 @@ index d1849c0..af04645 100644
  };
 \ No newline at end of file
 diff --git a/node_modules/vlocity/lib/utilityservice.js b/node_modules/vlocity/lib/utilityservice.js
-index dafa90e..f3b6950 100644
+index dafa90e..2a2ce94 100644
 --- a/node_modules/vlocity/lib/utilityservice.js
 +++ b/node_modules/vlocity/lib/utilityservice.js
-@@ -400,7 +400,7 @@ UtilityService.prototype.getPackageVersion = async function() {
+@@ -400,10 +400,10 @@ UtilityService.prototype.getPackageVersion = async function() {
      
      VlocityUtils.verbose('Get Package Version');
  
@@ -122,4 +168,21 @@ index dafa90e..f3b6950 100644
 +    if (!this.vlocity.PackageVersion) {
          var result = await this.vlocity.jsForceConnection.query("SELECT DurableId, Id, IsSalesforce, MajorVersion, MinorVersion, Name, NamespacePrefix FROM Publisher where NamespacePrefix = \'" + this.vlocity.namespace + "\' LIMIT 1");
  
-         this.vlocity.buildToolsVersionSettings = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "buildToolsVersionSettings.yaml"), 'utf8'));
+-        this.vlocity.buildToolsVersionSettings = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "buildToolsVersionSettings.yaml"), 'utf8'));
++        this.vlocity.buildToolsVersionSettings = require('./buildToolsVersionSettings.yaml');
+ 
+         this.vlocity.BuildToolSettingLatestVersion = this.vlocity.buildToolsVersionSettings.latest;
+ 
+diff --git a/node_modules/vlocity/lib/validationtest.js b/node_modules/vlocity/lib/validationtest.js
+index d85f750..6d7ed7e 100644
+--- a/node_modules/vlocity/lib/validationtest.js
++++ b/node_modules/vlocity/lib/validationtest.js
+@@ -17,7 +17,7 @@ ValidationTest.prototype.validate = async function(jobInfo, currentContextData)
+     };
+ 
+     self.jobInfo = jobInfo;
+-    self.config = yaml.safeLoad(fs.readFileSync(path.join(__dirname, 'validationtestsettings.yaml'), 'utf8'));
++    self.config = require('./validationtestsettings.yaml');
+     self.vlocityMatchingKeys = await self.vlocity.utilityservice.getDRMatchingKeyFields();
+     var allTests = self.loadAllTests();
+     var runTestData = await self.groupRunTestData(currentContextData, allTests);

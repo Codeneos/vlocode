@@ -4,6 +4,7 @@ import VlocodeService from 'services/vlocodeService';
 import { container } from 'serviceContainer';
 import { Logger, LogManager } from 'logging';
 import { Command } from 'models/command';
+import VlocodeContext from 'models/vlocodeContext';
 
 export class ProgressToken {
     private resolved = false;
@@ -94,7 +95,7 @@ export abstract class CommandBase implements Command {
         return container.get(VlocodeService);
     }
 
-    protected get extensionContext() : vscode.ExtensionContext {
+    protected get extensionContext() : VlocodeContext {
         return this.vloService.getContext();
     }
 

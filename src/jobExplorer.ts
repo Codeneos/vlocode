@@ -87,7 +87,7 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
     }
     
     public getAbsolutePath(path: string) {
-        return this.vlocode.getContext().asAbsolutePath(path);
+        return this.vlocode.asAbsolutePath(path);
     }
 
     public refresh(node?: JobNode): void {

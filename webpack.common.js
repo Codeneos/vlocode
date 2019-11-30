@@ -58,7 +58,8 @@ const common = env => ({
             'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
             '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
             'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
-            'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js')
+            'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
+            'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml')
         }
     },
     output: {
@@ -89,7 +90,7 @@ const common = env => ({
 const vscodeExtension = {
     entry: {
         'vlocode': './src/extension.ts',
-        'fork': './src/extensionFork.ts'
+        //'fork': './src/extensionFork.ts'
     },
     name: 'vlocode',
     devtool: 'source-map',
@@ -99,8 +100,9 @@ const vscodeExtension = {
     },    
     plugins: [
         new CopyPlugin([
-            { context: 'node_modules/vlocity/lib', from: '*.yaml', to: '.' },       
-            { context: 'node_modules/vlocity/lib', from: '*.json', to: '.' }
+            //{ context: 'node_modules/vlocity/lib', from: '*.yaml', to: '.' },       
+            //{ context: 'node_modules/vlocity/lib', from: '*.json', to: '.' },       
+            { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex', ignore: [ 'TestJob.cls' ] }
         ]),
     ],
     // plugins: [

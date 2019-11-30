@@ -21,10 +21,6 @@ export abstract class EventHandlerBase<T> implements vscode.Disposable {
         return this.container.get(VlocodeService);
     }
 
-    protected get extensionContext() : vscode.ExtensionContext {
-        return this.vloService.getContext();
-    }
-
     protected get logger() : Logger {
         return LogManager.get(this.constructor.name);
     }
