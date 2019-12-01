@@ -14,7 +14,7 @@ export default class RenameDatapackCommand extends DatapackCommand {
     }
 
     protected async renameDatapack(selectedFile: vscode.Uri) : Promise<any> {
-        const [datapack] = await this.showProgress('Loading datapack...', this.loadDatapacks([selectedFile]));
+        const [datapack] = await this.vloService.withProgress('Loading datapack...', () => this.loadDatapacks([selectedFile]));
 
         if (!datapack || datapack.name === undefined) {
             return vscode.window.showWarningMessage('The selected datapack does not have a Name property');
@@ -34,7 +34,7 @@ export default class RenameDatapackCommand extends DatapackCommand {
        
         // execute rename and expand into new folder structure
         datapack.rename(newName);
-        await this.showProgress(`Renaming ${datapack.name}...`, this.vloService.datapackService.expandDatapack(datapack, datapack.projectFolder));
+        await this.vloService.withProgress(`Renaming ${datapack.name}...`, () => this.vloService.datapackService.expandDatapack(datapack, datapack.projectFolder));
 
         const changes = new vscode.WorkspaceEdit();
         changes.deleteFile(vscode.Uri.file(path.dirname(datapack.headerFile)), { recursive: true, ignoreIfNotExists: false });

@@ -12,6 +12,8 @@ import SalesforceService from './salesforceService';
 import { fork } from 'child_process';
 import VlocodeContext from 'models/vlocodeContext';
 import * as constants from '@constants';
+import VlocodeActivity, { VlocodeActivityStatus } from 'models/vlocodeActivity';
+import { observeArray, ObservableArray, observeObject, Observable } from 'observer';
 
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {  
 
@@ -20,6 +22,11 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private statusBar: vscode.StatusBarItem;
     private connector: JsForceConnectionProvider;
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
+    private readonly activitiesChangedEmitter = new vscode.EventEmitter<VlocodeActivity[]>();
+
+    // Publics
+    public readonly activities: ObservableArray<Observable<VlocodeActivity>> = observeArray([]);
+    public readonly onActivitiesChanged = this.activitiesChangedEmitter.event;
 
     // Properties
     private _datapackService: VlocityDatapackService;
@@ -93,6 +100,100 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         if (this.statusBar) {
             this.statusBar.hide();
         }
+    }
+
+    /**
+     * Thin wrapper arround `vscode.window.withProgress` with location `Notification` and cancellable `false`. 
+     * @param title Title of the task
+     * @param task task to run
+     */
+    public withProgress<T>(title: string, task: ((progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>) | Promise<T>) : Promise<T> {
+        return this.withActivity({
+            progressTitle: title, 
+            cancellable: false, 
+            location: vscode.ProgressLocation.Notification
+        }, typeof task === 'function' ? task : () => task);
+    }
+
+    /**
+     * Thin wrapper arround `vscode.window.withProgress` with location `Notification` and cancellable `true`. 
+     * @param title Title of the task
+     * @param task task to run
+     */
+    public withCancelableProgress<T>(title: string, task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
+        return this.withActivity({
+            progressTitle: title, 
+            cancellable: true, 
+            location: vscode.ProgressLocation.Notification
+        }, task);
+    }
+
+    /**
+     * Thin wrapper arround `vscode.window.withProgress` with location `Window` and cancellable `false`. 
+     * @param title Title of the task
+     * @param task task to run
+     */
+    public withStatusBarProgress<T>(title: string, task: ((progress: vscode.Progress<{ message?: string }>) => Promise<T>) | Promise<T>) : Promise<T> {
+        return this.withActivity({
+            progressTitle: title, 
+            cancellable: true, 
+            location: vscode.ProgressLocation.Window
+        }, typeof task === 'function' ? task : () => task);
+    }
+
+    /**
+     * Wrapper arround `vscode.window.withProgress` that registers the task as an activity visisble in the activity exporer if used.
+     * @param options Activity options
+     * @param task Task to run
+     */
+    public withActivity<T>(
+            options: { progressTitle: string, activityTitle?: string, cancellable: boolean, location: vscode.ProgressLocation }, 
+            task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
+        
+        // Create activity record to track activity progress
+        const cancelTokenSource = options.cancellable ? new vscode.CancellationTokenSource() : undefined;
+        const onCompleteEmitter = new vscode.EventEmitter<VlocodeActivity>();
+        const activityRecord = observeObject({
+            startTime: Date.now(),
+            endTime: -1,
+            cancellable: options.cancellable,
+            title: options.activityTitle || options.progressTitle,
+            status: VlocodeActivityStatus.Pending,
+            onComplete: onCompleteEmitter.event,
+            cancel() { 
+                cancelTokenSource?.cancel();
+            },
+            dispose() {
+                cancelTokenSource?.dispose();
+                onCompleteEmitter.dispose();
+            }
+        });
+
+        // anon-function that is going to run our task
+        const taskRunner = async (progress, token: vscode.CancellationToken) => {
+            token?.onCancellationRequested(() => options.cancellable && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
+            activityRecord.status = VlocodeActivityStatus.InProgress;
+            try {                
+                const result = await task(progress, cancelTokenSource?.token); 
+                activityRecord.status = VlocodeActivityStatus.Completed;
+                return result;
+            } catch(e) {
+                activityRecord.status = VlocodeActivityStatus.Failed;
+                throw e;
+            } finally {
+                activityRecord.endTime = Date.now();
+                onCompleteEmitter.fire(activityRecord);
+            }
+        };
+
+        this.activities.push(activityRecord);
+        this.registerDisposable(activityRecord);
+
+        return <Promise<T>>vscode.window.withProgress({
+            title: options.progressTitle || options.activityTitle, 
+            cancellable: options.cancellable, 
+            location: options.location
+        }, taskRunner);
     }
     
     public getJsForceConnection() : Promise<jsforce.Connection> {

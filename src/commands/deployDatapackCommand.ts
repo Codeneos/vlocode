@@ -58,18 +58,14 @@ export default class DeployDatapackCommand extends DatapackCommand {
             }
 
             // Reading datapack takes a long time, only read datapacks if it is a reasonable count
-            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`
+            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;
             if (datapackHeaders.length < 4) {
                 const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
                 const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
-                progressText = `Deploying: ${datapackNames.join(', ')} ...`
+                progressText = `Deploying: ${datapackNames.join(', ')} ...`;
             }
             
-            const result = await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: progressText,
-                cancellable: true
-            }, async (progress, token) => {
+            const result = await this.vloService.withCancelableProgress(progressText, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
                 return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);

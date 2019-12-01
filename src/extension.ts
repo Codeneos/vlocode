@@ -14,6 +14,7 @@ import OnSavedEventHandler from 'events/onSavedEventHandler';
 import JobExplorer from 'jobExplorer';
 import { setInterval } from 'timers';
 import VlocodeContext from 'models/vlocodeContext';
+import ActivityExplorer from 'activityExplorer';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -40,7 +41,7 @@ export = class Vlocode {
 
     constructor() {
         if (!Vlocode.instance) {
-            Vlocode.instance = this
+            Vlocode.instance = this;
         }
         return Vlocode.instance;
     }
@@ -115,6 +116,9 @@ export = class Vlocode {
         this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
             treeDataProvider: new JobExplorer(container)
         }));
+        this.service.registerDisposable(vscode.window.createTreeView('activityView', { 
+            treeDataProvider: new ActivityExplorer(container)
+        }));
         this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
 
         // track activation time
@@ -134,4 +138,4 @@ export = class Vlocode {
     static deactivate() {
         return Vlocode.instance.deactivate();        
     }
-}
+};

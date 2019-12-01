@@ -12,7 +12,7 @@ export default class CloneDatapackCommand extends DatapackCommand {
     }
 
     protected async cloneDatapack(selectedFiles: vscode.Uri[]) : Promise<any> {
-        const datapacks = await this.showProgress('Loading datapack...', this.loadDatapacks(selectedFiles));
+        const datapacks = await this.vloService.withProgress('Loading datapack...', () => this.loadDatapacks(selectedFiles));
 
         for (const datapack of datapacks) {
             if (!datapack || datapack.name === undefined) {
@@ -33,7 +33,7 @@ export default class CloneDatapackCommand extends DatapackCommand {
             datapack.rename(newName);
             datapack.regenerateGlobalKey();
             
-            await this.showProgress(`Cloning ${datapack.name}...`, this.vloService.datapackService.expandDatapack(datapack, datapack.projectFolder));
+            await this.vloService.withProgress(`Cloning ${datapack.name}...`, () => this.vloService.datapackService.expandDatapack(datapack, datapack.projectFolder));
         }
     }
 }

@@ -5,11 +5,10 @@ import * as ZipArchive from 'jszip';
 import * as xml2js from 'xml2js';
 import * as fs from 'fs';
 import * as constants from '@constants';
-import { isBuffer, isString, isObject, isError } from 'util';
-import { getDocumentBodyAsString, wait, mapAsyncParallel } from '@util';
+import { getDocumentBodyAsString, wait } from '@util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import { Stream } from 'stream';
-import * as metadataTypes from 'metadataTypes.yaml'
+import * as metadataTypes from 'metadataTypes.yaml';
 import { getMetaFiles } from 'salesforceUtil';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
@@ -29,7 +28,7 @@ export interface OrganizationDetails {
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: { componentFailures?: ComponentFailure[] }
-}
+};
 
 export interface ComponentFailure {
     problem: string;
@@ -50,7 +49,7 @@ export interface MetadataManifest {
             body?: Buffer | string;
             localPath?: string;
         };
-    }
+    };
 }
 
 export type DeploymentProgress = vscode.Progress<{ 
@@ -91,7 +90,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
     public async getInstalledPackageDetails(packageName: string | RegExp) : Promise<InstalledPackageRecord | undefined> {
         const results = await this.getInstalledPackages();     
-        return results.find(packageInfo => isString(packageName) ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
+        return results.find(packageInfo => typeof packageName === 'string' ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
     }
 
     public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {

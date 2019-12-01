@@ -71,6 +71,10 @@
                     "name": "Datapacks"
                 },
                 {
+                    "id": "activityView",
+                    "name": "Activity"
+                },
+                {
                     "id": "jobExplorer",
                     "name": "Jobs"
                 }

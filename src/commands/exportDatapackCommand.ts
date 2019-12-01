@@ -234,15 +234,15 @@ export default class ExportDatapackCommand extends DatapackCommand {
             vscode.window.showErrorMessage('No project path selected; export aborted.');
             return;
         }
-        
+
         this.logger.info(`Exporting to folder: ${exportPath}`);
         const entries = Array.isArray(exportEntries) ? exportEntries : [ exportEntries ];
-        const results = await vscode.window.withProgress({
-            title: `Exporting ${entries.length} datapack(s)...`,
+        const results = await this.vloService.withActivity({
+            progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${entries[0].name || entries[0].id || entries[0].globalKey}...`,
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, (progress, token) => {
-            return this.datapackService.export(entries, exportPath, maxDepth, token)
+            return this.datapackService.export(entries, exportPath, maxDepth, token);
         });
 
         // report UI progress back
@@ -254,6 +254,6 @@ export default class ExportDatapackCommand extends DatapackCommand {
         if (results.hasErrors) {            
             return vscode.window.showErrorMessage( `One or more errors occurred while exporting the specified datapacks`);           
         }
-        return vscode.window.showInformationMessage(`Successfully exported ${results.length} datapack(s)`);
+        return vscode.window.showInformationMessage(`Successfully exported ${results.length == 1 ? [...results][0].key : results.length + ' datapacks'} `);
     }
 }

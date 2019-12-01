@@ -62,8 +62,12 @@ export class Logger {
     private formatArg(arg: any) : string | any {
         if (arg instanceof Error) {
             return arg.stack;
-        } else if (isObject(arg)) {
-            return JSON.stringify(arg);
+        } else if (arg !== null && typeof arg === 'object') {
+            try {
+                return JSON.stringify(arg);
+            } catch(err) {
+                return '{Object}';
+            }
         } 
         return arg;
     }

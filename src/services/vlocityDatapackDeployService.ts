@@ -36,7 +36,7 @@ class DatapackDeploymentRecord {
         return record;
     }
 
-};
+}
 
 // type DatapackRecordMap = { [sourceKey: string]: DatapackRecord };
 
@@ -96,7 +96,7 @@ class DefaultDependencyResolver implements IDependencyResolver {
 
     private vlocityBuildTools: vlocity;
     private matchingKeyService: VlocityMatchingKeyService;
-    private sfService: SalesforceService
+    private sfService: SalesforceService;
 
     public async resolveDependency(dep: DatapackRecordDependency) : Promise<string> {
         const matchingKey = await this.matchingKeyService.getMatchingKey(dep.VlocityDataPackType);

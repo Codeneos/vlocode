@@ -23,13 +23,27 @@ import * as vlocity from 'vlocity';
 export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
     
     private readonly _onDidChangeTreeData: vscode.EventEmitter<JobNode | undefined>;
+    private readonly jobCommandOptions = [ 
+        { 
+            type: 'Export', 
+            icon: 'cloud-download', 
+            label: 'Run as Export', 
+            detail: 'retrieve and save Vlocity datapacks on your local machine' 
+        },  
+        { 
+            type: 'Deploy', 
+            icon: 'cloud-upload', 
+            label: 'Run as Deploy', 
+            detail: 'upload and deploy previously exported Vlocity datapacks' 
+        } 
+    ];
 
 	get onDidChangeTreeData(): vscode.Event<JobNode | undefined> {
 		return this._onDidChangeTreeData.event;
     }
     
     constructor(private readonly container: ServiceContainer) {
-        this._onDidChangeTreeData = new vscode.EventEmitter<JobNode | undefined>()
+        this._onDidChangeTreeData = new vscode.EventEmitter<JobNode | undefined>();
         this.commands.registerAll({
             'vlocity.jobExplorer.run': async (node) => this.runJob(node),
             'vlocity.jobExplorer.refresh': () => this.refresh()
@@ -37,31 +51,32 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
     }    
 
     private async runJob(node: JobNode) {
-        const jobCommand = await vscode.window.showQuickPick([
-            { type: 'Export' , label: '$(cloud-download) Run as Export', detail: 'retrieve and save Vlocity datapacks on your local machine' },        
-            { type: 'Deploy', label: '$(cloud-upload) Run as Deploy', detail: 'upload and deploy previously exported Vlocity datapacks' }
-        ], { placeHolder: 'Select how to run this job', ignoreFocusOut: true });
+        const jobCommand = await vscode.window.showQuickPick(this.jobCommandOptions, { 
+            placeHolder: 'Select how to run this job', 
+            ignoreFocusOut: true 
+        });
         
         if (!jobCommand) {
             return;
         }
 
         try {
-            await vscode.window.withProgress({
+            await this.vloService.withActivity({
                 location: vscode.ProgressLocation.Notification,
-                title: `Running ${path.basename(node.jobFile.fsPath)}...`,
+                progressTitle: `${jobCommand.type}ing with ${path.basename(node.jobFile.fsPath)} ...`,
                 cancellable: true
             }, (progress, token) => this.datapackService.runYamlJob(<vlocity.actionType>jobCommand.type, node.jobFile.fsPath, token));
+            vscode.window.showInformationMessage(`Succesfully ${jobCommand.type.toLowerCase()}ed with ${path.basename(node.jobFile.fsPath)}`);
         } catch(err) {
             vscode.window.showErrorMessage(`Running job file ${path.basename(node.jobFile.fsPath)} resulted in an error, see the log for details.`);
         }
     }
 
     private get datapackService() : VlocityDatapackService {
-        return this.vlocode.datapackService;
+        return this.vloService.datapackService;
     }
     
-    private get vlocode() : VlocodeService {
+    private get vloService() : VlocodeService {
         return this.container.get(VlocodeService);
     }
 
@@ -74,7 +89,7 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
     }
     
     public getAbsolutePath(path: string) {
-        return this.vlocode.asAbsolutePath(path);
+        return this.vloService.asAbsolutePath(path);
     }
 
     public refresh(node?: JobNode): void {
@@ -112,7 +127,7 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
                 return {
                     file,
                     body: yaml.safeLoad((await fs.readFile(file.fsPath)).toString('utf8'), { filename: file.fsPath })
-                }
+                };
             } catch(err) {
                 this.logger.error(`Unable to load YAML file ${file} due to parsing error: ${err.message || err}`);
             }

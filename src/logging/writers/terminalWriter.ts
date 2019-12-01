@@ -4,8 +4,9 @@ import chalk = require("chalk");
 import moment = require("moment");
 import * as constants from "@constants";
 import { EOL } from "os";
+import { Focusable } from "interfaces/focusable";
 
-export class TerminalWriter implements LogWriter, vscode.Disposable {
+export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
 
     private writeEmitter : vscode.EventEmitter<string>;
     private closeEmitter : vscode.EventEmitter<void>;
@@ -20,14 +21,14 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
         [LogLevel.warn]: this.chalk.yellowBright,
         [LogLevel.error]: this.chalk.bold.redBright,
         [LogLevel.fatal]: this.chalk.bold.redBright,
-    }
+    };
 
     public get isClosed() {
-        return !this.currentTerminal;
+        return !this.currentTerminal && !this.isOpened;
     }
 
     public get isFocused() {
-        return this.currentTerminal && vscode.window.activeTerminal.name == this.currentTerminal.name;
+        return vscode.window.activeTerminal?.name == this.currentTerminal?.name;
     }
 
     constructor(private readonly name: string) {
@@ -40,19 +41,12 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     }
 
     private createTerminal() : vscode.Terminal {
-        if (this.writeEmitter) {
-            this.writeEmitter.dispose();
-        }
+        [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());        
+        (vscode.window.terminals.filter(term => term.name == this.name)).forEach(t => t.dispose());
+
         this.writeEmitter = new vscode.EventEmitter<string>();
-
-        if (this.closeEmitter) {
-            this.closeEmitter.dispose();
-        }
         this.closeEmitter = new vscode.EventEmitter<void>();
-
-        if (this.currentTerminal) {
-            this.currentTerminal.dispose();
-        }
+        this.isOpened = false;
         this.currentTerminal = vscode.window.createTerminal({ 
             name: this.name, 
             pty: {
@@ -68,34 +62,26 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     }
 
     private show() {
-        let terminal = this.currentTerminal;
-        if (!terminal) {
-            terminal = this.createTerminal();
-        }
-
+        (this.currentTerminal ?? this.createTerminal()).show(false);
         setTimeout(() => {
             if (!this.isOpened) {
-                if (this.closeEmitter) {
-                    this.closeEmitter.fire();
-                }
+                this.closeEmitter?.fire();
                 this.show();
             }
         }, 5000);
     }
 
-    public open() { 
+    public open() {
         this.isOpened = true;
         while(this.queuedMessages.length > 0) {
             this.write(this.queuedMessages.shift());
-        }
+        }        
         this.focus();
     }
 
     public close() { 
         this.isOpened = false;
-        if (this.currentTerminal) {
-            this.currentTerminal.dispose();
-        }
+        this.currentTerminal?.dispose();
         this.currentTerminal = null;        
     }
 

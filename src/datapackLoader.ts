@@ -67,7 +67,7 @@ export default class DatapackLoader {
             }
         } else if (Array.isArray(fieldValue)) {
             return Promise.all(fieldValue.map((value, i) => this.loadProperty(baseDir, `${propertyName}|${i}`, value)));
-        } else if (isObject(fieldValue)) {
+        } else if (fieldValue !== null && typeof fieldValue === 'object') {
             await Promise.all(Object.keys(fieldValue).map(
                 async key => fieldValue[key] = await this.loadProperty(baseDir, key, fieldValue[key])));
         }

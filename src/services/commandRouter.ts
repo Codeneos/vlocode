@@ -5,7 +5,8 @@ import VlocodeService from 'services/vlocodeService';
 import * as vscode from 'vscode';
 import { Command, CommandMap } from "models/command";
 import { VlocodeCommand } from '@constants';
-import { isError } from 'util';
+import * as util from 'util';
+import { utils } from 'mocha';
 
 type CommandCtor = (new(name: string) => Command);
 
@@ -55,7 +56,7 @@ class CommandExecutor implements Command {
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {
             this.logger.error(`Command error: ${err}`);
-            if (isError(err)) {
+            if (util.types.isNativeError(err)) {
                 this.logger.error(err);
             }
             vscode.window.showErrorMessage(`${this.name}: ${err}`);

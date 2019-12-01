@@ -4,6 +4,7 @@ import { DatapackResultCollection } from '../services/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { groupBy, mapAsyncParallel, mapAsync } from '../util';
 import ExportDatapackCommand from './exportDatapackCommand';
+import DatapackUtil from 'datapackUtil';
 
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
     
@@ -16,16 +17,17 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
+        const datapacksByProject = await this.vloService.withStatusBarProgress('Loading datapacks...', 
+                async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
+
         // call
-        const progressToken = await this.startProgress('Refreshing selected datapacks');
-        try {
-            const datapacksByProject = groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder);
-            var results = await mapAsync(Object.keys(datapacksByProject),
-                projectFolder => this.datapackService.export(datapacksByProject[projectFolder], projectFolder, 0)
+        const flatDatapackList = Object.values(datapacksByProject).flat();
+        const progressTitle = flatDatapackList.length > 1 ? `Refreshing ${flatDatapackList.length} datapacks...` :  `Refreshing ${DatapackUtil.getLabel(flatDatapackList[0])}...`;
+        const results = await this.vloService.withCancelableProgress(progressTitle, async (progress, cancelToken) => {
+            return await mapAsync(Object.keys(datapacksByProject),
+                projectFolder => this.datapackService.export(datapacksByProject[projectFolder], projectFolder, 0, cancelToken)
             );
-        } finally {
-            progressToken.complete();
-        }
+        });
 
         // report UI progress back
         this.showRefreshResult(results.reduce((results, result) => results.join(result)));

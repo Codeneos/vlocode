@@ -25,7 +25,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
     }
 
     constructor(private readonly container: ServiceContainer) {
-        this._onDidChangeTreeData = new vscode.EventEmitter<DatapackNode | undefined>()
+        this._onDidChangeTreeData = new vscode.EventEmitter<DatapackNode | undefined>();
         this.commands.registerAll({
             'vlocity.datapackExplorer.export': async (node) => this.onExport(node),
             'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
@@ -36,7 +36,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
     private async onExport(node: DatapackNode) {
         if (node.nodeType == DatapackNodeType.Category) {
             // Collect all exportable nodes
-            const children = await this.withProgress('Loading exportable datapacks...', this.getChildren(node));
+            const children = await this.vlocode.withStatusBarProgress('Loading exportable datapacks...', () => this.getChildren(node));
             
             const exportableNodes = children.map(node => {
                 if (node instanceof DatapackObjectGroupNode) {

@@ -61,17 +61,14 @@ class VlocityAdminCommand extends CommandBase {
             return; 
         }
 
-        let progress = await this.startProgress(`Running ${selectedCommand.title}...`);
-        try {
+        await this.vloService.withProgress(`Running ${selectedCommand.title}...`, async () => {
             if (selectedCommand.batchJob) {
                 await this.executeBatch(selectedCommand.batchJob);
             }
             if (selectedCommand.method) {
                 await this.executeAdminMethod(selectedCommand.method);
             }
-        } finally {
-            progress.complete();
-        }
+        });
     }
 
     private executeBatch(batchClass: string) : Promise<void> {   

@@ -12,7 +12,12 @@ export class ProgressToken {
     constructor(
         private readonly progressResolve : () => void, 
         private readonly progressReject :  (reason?: any) => void, 
-        private readonly progress : vscode.Progress<{ message?: string, increment?: number }>) {
+        private readonly progress : vscode.Progress<{ message?: string, increment?: number }>, 
+        private readonly cancelToken : vscode.CancellationToken) {
+    }
+    
+    public get cancellationToken() : vscode.CancellationToken {
+        return this.cancelToken;
     }
 
     public complete() : void {
@@ -69,11 +74,15 @@ export abstract class CommandBase implements Command {
 
     protected async startProgress(title: string, cancellable?: boolean) : Promise<ProgressToken> {
         return new Promise<ProgressToken>(progressTokenResolve => {
-            vscode.window.withProgress(
-                {location: vscode.ProgressLocation.Notification, title, cancellable }, 
-                p => new Promise<void>((resolve, reject) => { 
-                    progressTokenResolve(new ProgressToken(resolve, reject, p));
-                }));
+            this.vloService.withActivity({
+                    location: vscode.ProgressLocation.Notification, 
+                    progressTitle: title, 
+                    cancellable 
+                }, (porgress, cancelToken) => {
+                    return new Promise<void>((resolve, reject) => { 
+                        progressTokenResolve(new ProgressToken(resolve, reject, porgress, cancelToken));
+                    });
+                });
         });
     }
 
@@ -83,12 +92,6 @@ export abstract class CommandBase implements Command {
     
     protected showWarningWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
         return showMsgWithRetry<T>(vscode.window.showWarningMessage, errorMsg, retryCallback, thisArg, args);
-    }
-
-    protected showProgress<T>(title: string, task: Promise<T> , cancellable = false) : Thenable<T> {
-        return vscode.window.withProgress(
-            { location: vscode.ProgressLocation.Notification, title: title, cancellable }, 
-            p => task);
     }
 
     protected get vloService() : VlocodeService {

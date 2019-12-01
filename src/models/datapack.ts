@@ -1,8 +1,6 @@
 import { ManifestEntry, ObjectEntry } from "services/vlocityDatapackService";
-import { isBuffer, isString, isObject } from "util";
 import { v4 as generateGuid } from "uuid";
 import { LogManager } from "logging";
-import { unique } from "../util";
 import { createRecordProxy } from "salesforceUtil";
 
 /**
@@ -25,17 +23,17 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         public readonly key: string, 
         public readonly projectFolder: string,
         public readonly data?: any) {
-        if (isBuffer(data)) {
+        if (Buffer.isBuffer(data)) {
             data = data.toString();
         }        
-        if (isString(data)) {
+        if (typeof data === 'string') {
             try {
                 this.data = JSON.parse(data);
             } catch (err) {
                 LogManager.get(VlocityDatapack).error('Unable to parse datapack JSON: ' + (err.message || err));
             }
-        } else if (isObject(data)) {
-            this.data = data;
+        } else if (typeof data === 'object') {
+            this.data = data ?? {};
         } else {
             this.data = {};
         }

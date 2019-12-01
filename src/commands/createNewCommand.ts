@@ -53,7 +53,7 @@ export default class CreateNewCommand extends DatapackCommand {
 
         Object.keys(selectedType.properties).map(async key => {
             let prop = selectedType.properties[key];
-            if (isObject(prop)) {
+            if (prop !== null && typeof prop === 'object') {
                 if (prop.type == 'input') {
                     return await vscode.window.showInputBox(prop.options);
                 }

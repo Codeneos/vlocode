@@ -18,8 +18,8 @@ export default class DeleteMetadataCommand extends MetadataCommand {
 
         try {
 
-            const [manifest, result] = await vscode.window.withProgress({
-                title: progressTitle, 
+            const [manifest, result] = await this.vloService.withActivity({
+                progressTitle: progressTitle,
                 location: vscode.ProgressLocation.Window,
                 cancellable: true
             }, async (progress, token) => {

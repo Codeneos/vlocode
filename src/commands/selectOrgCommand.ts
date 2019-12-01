@@ -49,7 +49,7 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     protected async selectOrg() : Promise<void> {
-        const knownOrgs = await this.showProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
+        const knownOrgs = await this.vloService.withStatusBarProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
         const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
@@ -61,11 +61,15 @@ export default class SelectOrgCommand extends CommandBase {
 
         if (selectedAuthInfo) {
             this.logger.log(`Set ${selectedAuthInfo.getUsername()} as target org for Vlocity deploy/refresh operations`);
-            this.vloService.config.sfdxUsername = selectedAuthInfo.getUsername();
-            this.vloService.config.password = undefined;
-            this.vloService.config.username = undefined;
-            this.vloService.config.instanceUrl = undefined;
-            this.vloService.config.loginUrl = undefined;
+            if (this.vloService.config.sfdxUsername != selectedAuthInfo.getUsername()) {
+                this.vloService.config.sfdxUsername = selectedAuthInfo.getUsername();
+                this.vloService.config.password = undefined;
+                this.vloService.config.username = undefined;
+                this.vloService.config.instanceUrl = undefined;
+                this.vloService.config.loginUrl = undefined;
+            } else {
+                await this.vloService.initialize();
+            }
         }
     }
 
@@ -87,10 +91,10 @@ export default class SelectOrgCommand extends CommandBase {
         }
 
         this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
-        const authInfo = await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: 'Authorizing new org...', 
-            cancellable: true
+        const authInfo = await this.vloService.withActivity({
+            location: vscode.ProgressLocation.Window,
+            progressTitle: 'Authorizing new org...', 
+            cancellable: false
         }, async () => {
             const loginResult = await SfdxUtil.webLogin({ instanceUrl });
             if (loginResult && loginResult.accessToken) {

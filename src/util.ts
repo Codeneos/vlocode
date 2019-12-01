@@ -4,36 +4,6 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as expressions from "angular-expressions";
 
-export interface ExecpResult {
-    stdout: Buffer;
-    stderr: Buffer;
-    err: Error;
-}
-
-/**
- * Start child process and capture output; returns a promise that is resolved once the child process exits
- * @param {String} cmd 
- * @param {child_process::ExecOptions} opts 
- */
-export async function execp(cmd: string, opts : any) : Promise<ExecpResult> {
-    opts || (opts = {});
-    return new Promise<ExecpResult>((resolve, reject) => {
-        const child = exec(cmd, opts,
-            (err, stdout, stderr) => resolve({
-                stdout: stdout,
-                stderr: stderr,
-                err: err
-            }));
-
-        if (opts.stdout) {
-            child.stdout.pipe(opts.stdout);
-        }
-        if (opts.stderr) {
-            child.stderr.pipe(opts.stderr);
-        }
-    });
-} 
-
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
     let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
     if (doc) { return doc.getText(); }
@@ -42,6 +12,7 @@ export async function getDocumentBodyAsString(file: string) : Promise<string> {
 
 export function existsAsync(path: fs.PathLike) : Promise<boolean> {
     return new Promise(resolve => {
+        // tslint:disable-next-line: deprecation
         fs.exists(path, result => resolve(result));
     });
 }
@@ -290,7 +261,7 @@ export function getObjectValues(obj: Object, depth = -1) : any[] {
  * @param ms Time in milliseconds to wait
  */
 export async function wait(ms: number) : Promise<boolean> {
-    return new Promise<boolean>(resolve => { setTimeout(() => resolve(true), ms) });
+    return new Promise<boolean>(resolve => { setTimeout(() => resolve(true), ms); });
 }
 
 /**
@@ -298,7 +269,7 @@ export async function wait(ms: number) : Promise<boolean> {
  * @param file Text file to check
  */
 export async function hasXmlHeader(file: string) {
-    let body = await getDocumentBodyAsString(file)
+    let body = await getDocumentBodyAsString(file);
     if (body) { 
         const startsWithXmlHeader = body.trimStart().startsWith('<?xml ');
         return startsWithXmlHeader;

@@ -68,6 +68,7 @@ export class DatapackResultCollection implements Iterable<DatapackResult> {
         return this.results.find(result => result.key.toLowerCase() == key.toLowerCase());
     }
 
+
     public add(...results: DatapackResult[]) {
         this.results.push(...results);
     }

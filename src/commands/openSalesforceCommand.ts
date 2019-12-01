@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 import { DatapackCommand } from './datapackCommand';
-import { isString } from 'util';
 import { evalExpr } from '../util';
 
 import { ObjectEntry } from 'services/vlocityDatapackService';
@@ -43,7 +42,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         // Build URL
         const queryDefinitions = await this.datapackService.getQueryDefinitions();
         let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'${objectId}'`;
-        salesforceUrl = isString(salesforceUrl) ? { path: salesforceUrl } : salesforceUrl;
+        salesforceUrl = typeof salesforceUrl === 'string' ? { path: salesforceUrl } : salesforceUrl;
 
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
         const salesforcePath = evalExpr(salesforceUrl.path, { id: objectId, type: datapackType, namespace: namespace });
