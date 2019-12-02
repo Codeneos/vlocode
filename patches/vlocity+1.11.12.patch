@@ -55,10 +55,20 @@ index 4c3b118..f6d4f2d 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 7ab38ff..d19bced 100644
+index 7ab38ff..0b1ab61 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
-@@ -14,7 +14,7 @@ var DataPacksBuilder = module.exports = function(vlocity) {
+@@ -1,8 +1,7 @@
+-var yaml = require('js-yaml');
+ var path = require('path');
+ var fs = require('fs-extra');
+-var sass = require('sass.js');
+ var stringify = require('json-stable-stringify');
++var sass = null;
+ 
+ var UTF8_EXTENSIONS = [ "css", "json", "yaml", "scss", "html", "js", "xml"];
+ 
+@@ -14,7 +13,7 @@ var DataPacksBuilder = module.exports = function(vlocity) {
  
      this.compileQueue = []; // array with files that require compilation
  
@@ -67,7 +77,7 @@ index 7ab38ff..d19bced 100644
  
      this.dataPackSizes = {};
  
-@@ -347,34 +347,53 @@ DataPacksBuilder.prototype.getFileData = function() {
+@@ -347,34 +346,53 @@ DataPacksBuilder.prototype.getFileData = function() {
      return this.allFileDataMap[path.normalize(pathString).toLowerCase()];
  }
  
@@ -105,11 +115,7 @@ index 7ab38ff..d19bced 100644
 +            return fileData;
 +        }
 +    });
- 
--            if (dataPack instanceof Array) {
--                for (data of dataPack) {
--                    if (data.VlocityRecordSourceKey) {
--                        this.recordSourceKeyToFilePath[data.VlocityRecordSourceKey] = path.normalize(filePath);    
++
 +    if (isDatapackMeta) {
 +        try {
 +            var dataPack = JSON.parse(this.allFileDataMap[fileKey]);
@@ -117,7 +123,11 @@ index 7ab38ff..d19bced 100644
 +                if (!this.recordSourceKeyToFilePath) {
 +                    this.recordSourceKeyToFilePath = {};
 +                }
-+                
+                 
+-            if (dataPack instanceof Array) {
+-                for (data of dataPack) {
+-                    if (data.VlocityRecordSourceKey) {
+-                        this.recordSourceKeyToFilePath[data.VlocityRecordSourceKey] = path.normalize(filePath);    
 +                if (dataPack instanceof Array) {
 +                    for (data of dataPack) {
 +                        if (data.VlocityRecordSourceKey) {
@@ -138,7 +148,7 @@ index 7ab38ff..d19bced 100644
  }
  
  DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, dataPackKey) {
-@@ -387,7 +406,7 @@ DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, da
+@@ -387,7 +405,7 @@ DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, da
              encoding = 'utf8';
          }
          var filemapkey = path.normalize(path.join(srcpath, filename));
@@ -147,7 +157,7 @@ index 7ab38ff..d19bced 100644
      }
  
      if (filePromises.length > 0) {
-@@ -707,12 +726,19 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
+@@ -707,12 +725,19 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
                                  return;
                              }
  
@@ -172,7 +182,7 @@ index 7ab38ff..d19bced 100644
                              }
                          });
  
-@@ -770,6 +796,7 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
+@@ -770,6 +795,7 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
                                  && jobInfo.currentStatus[referenceKey] 
                                  && !(jobInfo.currentStatus[referenceKey] == 'Success' 
                                  || jobInfo.currentStatus[referenceKey] == 'Header')) {
@@ -180,6 +190,18 @@ index 7ab38ff..d19bced 100644
                                  hasReference = true;
                              }
                          }
+@@ -1083,6 +1109,11 @@ DataPacksBuilder.prototype.compile = function(lang, source, options, cb) {
+     // add addtional languages here to support more compilation types    
+     switch(lang) {
+         case 'scss': {
++            // Lazy load SASS module; sass module is rather heavy; lazy loading it has a benefit
++            // as to not load the full 3MB JS code up front but instead only when required for the first time 
++            // by our datapack builder
++            sass = (sass || require('sass.js'));
++
+             // intercept file loading requests from libsass
+             sass.importer((request, done) => {
+                 // (object) request
 diff --git a/node_modules/vlocity/lib/datapackserrorhandling.js b/node_modules/vlocity/lib/datapackserrorhandling.js
 index f475d46..4aabfe9 100644
 --- a/node_modules/vlocity/lib/datapackserrorhandling.js
