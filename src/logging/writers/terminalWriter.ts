@@ -6,6 +6,8 @@ import * as constants from "@constants";
 import { EOL } from "os";
 import { Focusable } from "interfaces/focusable";
 
+const TERMINAL_EOL = '\r\n';
+
 export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
 
     private writeEmitter : vscode.EventEmitter<string>;
@@ -103,7 +105,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
             const logPrefix = `[${this.chalk.green(moment(entry.time).format(constants.LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}]`;
             const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
             
-            let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, EOL);
+            let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, TERMINAL_EOL);
             if (entry.level == LogLevel.warn) {
                 messageBody = levelColor(messageBody);
             }if (entry.level >= LogLevel.error) {
@@ -111,7 +113,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
             }
 
             const formatedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;            
-            this.writeEmitter.fire(formatedMessage + EOL);
+            this.writeEmitter.fire(formatedMessage + TERMINAL_EOL);
         }
     }
 }

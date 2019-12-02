@@ -55,7 +55,7 @@ index 4c3b118..f6d4f2d 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 7ab38ff..0b1ab61 100644
+index 7ab38ff..50a3dbf 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
 @@ -1,8 +1,7 @@
@@ -141,7 +141,7 @@ index 7ab38ff..0b1ab61 100644
 -                this.recordSourceKeyToFilePath[dataPack.VlocityRecordSourceKey] = path.normalize(filePath);
              }
 +        } catch (e) {
-+            VlocityUtils.error(`Unable to parse datapack meta file: ${path.basename(filePath)}`, e)
++            VlocityUtils.error(`Unable to parse ${path.basename(filePath)} >> ${e.message || e}`);
          }
 -    } catch (e) {}
 +    }
@@ -271,7 +271,7 @@ index b4f97c8..b0b3b7c 100644
  }
  
 diff --git a/node_modules/vlocity/lib/datapacksutils.js b/node_modules/vlocity/lib/datapacksutils.js
-index 16b7f2e..18493f0 100644
+index 16b7f2e..547ae47 100644
 --- a/node_modules/vlocity/lib/datapacksutils.js
 +++ b/node_modules/vlocity/lib/datapacksutils.js
 @@ -22,7 +22,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
@@ -283,7 +283,15 @@ index 16b7f2e..18493f0 100644
  
      this.runJavaScriptModules = {};
  
-@@ -975,6 +975,9 @@ DataPacksUtils.prototype.getDisplayName = function(dataPack) {
+@@ -619,6 +619,7 @@ DataPacksUtils.prototype.loadApex = async function(projectPath, filePath) {
+     var possiblePaths = [
+         path.join(projectPath, filePath),
+         path.join(__dirname, '..', 'apex', filePath),
++        path.join(__dirname, 'apex', filePath),
+         filePath
+     ];
+ 
+@@ -975,6 +976,9 @@ DataPacksUtils.prototype.getDisplayName = function(dataPack) {
          dataPackKey = dataPack.VlocityDataPackKey.substring(dataPack.VlocityDataPackKey.indexOf('/') + 1);
      } else if (dataPack.VlocityDataPackKeyForManifest) {
          dataPackKey = dataPack.VlocityDataPackKeyForManifest.substring(dataPack.VlocityDataPackKeyForManifest.indexOf('/') + 1);
