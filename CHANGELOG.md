@@ -1,5 +1,15 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+
+## [0.12.4] - 2019-12-19
+ - Report past and running operations in the new activity screen
+ - Better handling of export errors by setting ignoreAllErrors property which prevents exports from failing when a dependency fails.
+ - Better handling of deploy errors.
+ - More descriptive error message and better displaying of them in the UI.
+ - More descriptive status messages during deploy or refresh operations
+ - Fix Terminal Logging line endings do not appear correctly on mac; mac and *nix systems also use /r/n in VSCode terminals for ending lines instead of just /n
+ - Fix issues with paths for post and pre job APEX; paths are slightly different due to the way VSCode resolves paths causing a deployment error for Templates and Products using default job settings.
+
 ## [0.12.2] - 2019-12-01
  - Revert aggressive inline optimizarion in Teser settings preventing the extension from loading properly.
 

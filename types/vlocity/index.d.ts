@@ -128,21 +128,24 @@ declare module 'vlocity' {
             allFileDataMap: {[key: string] : any};
         }
 
-        export type VlocityJobStatus = 'Error' | 'Success' ;
-
         export interface VlocityJobResult {
-            action?: string;
-            records?: VlocityDatapackRecord[];
-            status?: VlocityJobStatus;
-            message?: string;
-            data?: any;            
+            action: string;
+            records: VlocityDatapackRecord[];
+            status: 'error' | 'success';
+            message: string;       
         }
-        
+
         export interface VlocityDatapackRecord {
+            /** Optional error message; only set if `VlocityDataPackStatus == 'Error'` */
             ErrorMessage?: string;
-            VlocityDataPackKey?: string;
-            VlocityDataPackStatus?: VlocityJobStatus;
-            VlocityDataPackDisplayLabel?: string;
+            /** Datapack Manifest key in the, for example: OmniScript/MACD_FDO */
+            VlocityDataPackKey: string;
+            /** Type of the datapack; or example 'OmniScript', 'DataRaptor', etc */
+            VlocityDataPackType: string;
+            /** Status of the export; can either be Success or Error */
+            VlocityDataPackStatus: 'Error' | 'Success' | 'Ready';
+            /** Display label based on the datapack label settings */
+            VlocityDataPackDisplayLabel: string;
         }
 
         export interface JobOptions {

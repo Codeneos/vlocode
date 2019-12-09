@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.12.3",
+    "version": "0.12.4",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -476,6 +476,7 @@
         "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
+        "@babel/core": "^7.7.5",
         "@salesforce/core": "^2.1.5",
         "@types/angular": "^1.6.54",
         "@types/chai": "^4.2.5",
@@ -506,6 +507,7 @@
         "json-loader": "^0.5.7",
         "jszip": "^3.2.2",
         "log-symbols": "^3.0.0",
+        "memory-fs": "^0.5.0",
         "mocha": "^5.2.0",
         "mocha-html-reporter": "0.0.1",
         "mocha-junit-reporter": "^1.23.0",

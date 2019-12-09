@@ -7,7 +7,7 @@ import ExportDatapackCommand from './exportDatapackCommand';
 import DatapackUtil from 'datapackUtil';
 
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
-    
+
     constructor(name : string) {
         super(name);
     }
@@ -17,7 +17,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
-        const datapacksByProject = await this.vloService.withStatusBarProgress('Loading datapacks...', 
+        const datapacksByProject = await this.vloService.withStatusBarProgress('Loading datapacks...',
                 async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
 
         // call
@@ -30,15 +30,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
         });
 
         // report UI progress back
-        this.showRefreshResult(results.reduce((results, result) => results.join(result)));
-    }
-
-    private showRefreshResult(results : DatapackResultCollection) : Thenable<any> {
-        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.message}`));
-        if (results.hasErrors) {            
-            return vscode.window.showErrorMessage( `One or more errors occurred while refreshing the selected datapacks`);           
-        }
-        return vscode.window.showInformationMessage(`Successfully refreshed ${results.length} datapack(s)`);
+        this.showResultMessage(results.reduce((results, result) => results.join(result)));
     }
 }
 

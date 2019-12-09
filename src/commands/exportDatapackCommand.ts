@@ -19,12 +19,12 @@ export default class ExportDatapackCommand extends DatapackCommand {
     public async execute(...args: any[]) : Promise<void>  {
         if (args.length > 0) {
             return this.exportObjects(args.filter(this.isExportableObjectEntry));
-        } 
+        }
         return this.exportWizard();
     }
 
     protected isExportableObjectEntry(obj: any) : boolean {
-        return 'sobjectType' in obj && 
+        return 'sobjectType' in obj &&
                'datapackType' in obj &&
                'id' in obj;
     }
@@ -35,21 +35,21 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
         const queryDef = exportQueryDefinitions[datapackType];
-        
+
         // query available records
         let records = await this.queryExportableRecords(datapackType);
         if (!records) {
             vscode.window.showWarningMessage(`No exportable records for ${datapackType}`);
             return;
         }
-        
+
         if (queryDef.groupKey) {
             records = await this.showGroupSelection(records, datapackType);
             if (!records) {
                 return; // selection cancelled;
             }
         }
-        
+
         // Select object
         const recordToExport = await this.showRecordSelection(records, datapackType);
         if (!recordToExport) {
@@ -77,8 +77,8 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     protected async queryExportableRecords(datapackType : string) : Promise<SObjectRecord[] | undefined> {
-        // query available records        
-        let queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');        
+        // query available records
+        let queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');
         try {
             const connection = await this.datapackService.getJsForceConnection();
             const results = await connection.queryAll<SObjectRecord>(this.getExportQuery(datapackType));
@@ -101,7 +101,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
                 return {
                     label: queryDef.VlocityDataPackType,
                     detail: queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER, 'vlocity'),
-                    datapackType: queryDef.VlocityDataPackType 
+                    datapackType: queryDef.VlocityDataPackType
                 };
             }
         );
@@ -123,9 +123,9 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         // grouped records support
         const groupedRecords = groupBy(records, r => evalExpr(queryDef.groupKey, r));
-        const groupOptions = Object.keys(groupedRecords).map(key => { 
+        const groupOptions = Object.keys(groupedRecords).map(key => {
             const groupRecord = createRecordProxy({ count: groupedRecords[key].length, ...groupedRecords[key][0]});
-            return { 
+            return {
                 label: evalExpr(queryDef.groupName, groupRecord),
                 description: queryDef.groupDescription ? evalExpr(queryDef.groupDescription, groupRecord) : `version(s) ${groupedRecords[key].length}`,
                 records: groupedRecords[key]
@@ -160,9 +160,9 @@ export default class ExportDatapackCommand extends DatapackCommand {
         // get the query def for the object type
         const queryDef = exportQueryDefinitions[datapackType];
 
-        // Select object        
-        let objectOptions =  records.map(r => { 
-            return { 
+        // Select object
+        let objectOptions =  records.map(r => {
+            return {
                 label: queryDef.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
                 description: r.attributes.url,
                 record: r
@@ -198,18 +198,18 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return objectSelection.record;
     }
 
-    protected async showExportPathSelection() : Promise<string> { 
-        const projectFolderSelection = await vscode.window.showQuickPick([ 
-            { value: 2, label: 'Configure project folder for export', description: 'set the default Vlocity project folder and continue' },            
+    protected async showExportPathSelection() : Promise<string> {
+        const projectFolderSelection = await vscode.window.showQuickPick([
+            { value: 2, label: 'Configure project folder for export', description: 'set the default Vlocity project folder and continue' },
             { value: 1, label: 'Set folder just for this export', description: 'select a folder only for this export'  },
-            { value: 0, label: 'No, stop the export' } 
+            { value: 0, label: 'No, stop the export' }
         ], {
             placeHolder: 'A project folder is required to export datapacks from Salesforce, set one up now?'
         });
         if (!projectFolderSelection || !projectFolderSelection.value) {
             return;
         }
-        
+
         const firstWorkspace = vscode.workspace.workspaceFolders.slice(0,1).pop();
         const selectedFolder = await vscode.window.showOpenDialog({
             defaultUri: firstWorkspace ? firstWorkspace.uri : undefined,
@@ -218,19 +218,19 @@ export default class ExportDatapackCommand extends DatapackCommand {
             canSelectFolders: true,
             canSelectMany: false
         });
-        if(!selectedFolder) {            
+        if(!selectedFolder) {
             return;
-        }        
+        }
         if (projectFolderSelection.value == 2) {
             this.logger.info(`Updating Vlocity project path to: ${selectedFolder[0].fsPath}`);
             this.vloService.config.projectPath = selectedFolder[0].fsPath;
-        }        
+        }
         return selectedFolder[0].fsPath;
     }
 
     protected async exportObjects(exportEntries: ObjectEntry | ObjectEntry[], maxDepth: number = 0) : Promise<void> {
         let exportPath = this.vloService.config.projectPath;
-        if (!exportPath && !(exportPath = await this.showExportPathSelection())) {            
+        if (!exportPath && !(exportPath = await this.showExportPathSelection())) {
             vscode.window.showErrorMessage('No project path selected; export aborted.');
             return;
         }
@@ -238,7 +238,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         this.logger.info(`Exporting to folder: ${exportPath}`);
         const entries = Array.isArray(exportEntries) ? exportEntries : [ exportEntries ];
         const results = await this.vloService.withActivity({
-            progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${entries[0].name || entries[0].id || entries[0].globalKey}...`,
+            progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${DatapackUtil.getLabel(entries[0]) || entries[0].id}...`,
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, (progress, token) => {
@@ -249,11 +249,16 @@ export default class ExportDatapackCommand extends DatapackCommand {
         this.showResultMessage(results);
     }
 
-    private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
-        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.message}`));
-        if (results.hasErrors) {            
-            return vscode.window.showErrorMessage( `One or more errors occurred while exporting the specified datapacks`);           
+    protected showResultMessage(results : DatapackResultCollection) {
+        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.errorMessage || 'No error message'}`));
+        if (results.hasErrors) {
+            const errors = results.getErrors();
+            const errorMessage = errors.find(e => e.errorMessage)?.errorMessage ?? 'Unknown error';
+            errors.forEach((rec, i) => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
+            vscode.window.showErrorMessage(`Failed to export ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`);
+        } else {
+            const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
+            vscode.window.showInformationMessage(`Successfully exported ${resultSummary}`);
         }
-        return vscode.window.showInformationMessage(`Successfully exported ${results.length == 1 ? [...results][0].key : results.length + ' datapacks'} `);
     }
 }

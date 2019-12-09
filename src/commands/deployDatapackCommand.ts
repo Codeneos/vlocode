@@ -9,11 +9,11 @@ import DatapackUtil from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
-    /** 
+    /**
      * In order to prevent a loop with the on save handler keep a list of documents that we are currently saving
      * and ignore any deloyment command that comes in for these.
      */
-    private readonly savingDocumentsList = new Set<string>(); 
+    private readonly savingDocumentsList = new Set<string>();
 
     constructor(name : string) {
         super(name, args => this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
@@ -33,7 +33,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
                     .reduce((arr, readdirResults) => arr.concat(...readdirResults), [])
         );
         const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && datapackFiles.has(d.uri.fsPath));
-        
+
         // keep track of all documents that we intend to save in a set to prevent
         // a second deployment from being triggered by the onDidSaveHandler.
         openDocuments.forEach(doc => this.savingDocumentsList.add(doc.uri.fsPath));
@@ -64,7 +64,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
                 progressText = `Deploying: ${datapackNames.join(', ')} ...`;
             }
-            
+
             const result = await this.vloService.withCancelableProgress(progressText, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
@@ -72,7 +72,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
             });
 
             // report UI progress back
-            return this.showResultMessage(result);
+            this.showResultMessage(result);
 
         } catch (err) {
             this.logger.error(err);
@@ -80,11 +80,16 @@ export default class DeployDatapackCommand extends DatapackCommand {
         }
     }
 
-    private showResultMessage(results : DatapackResultCollection) : Thenable<any> {
-        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.message}`));
-        if (results.hasErrors) {            
-            return vscode.window.showErrorMessage( `One or more errors occurred during the deployment the selected datapacks`);           
+    protected showResultMessage(results : DatapackResultCollection) {
+        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.errorMessage || 'No error message'}`));
+        const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
+        if (results.hasErrors) {
+            const errors = results.getErrors();
+            const errorMessage = errors.find(e => e.errorMessage)?.errorMessage || 'Unknown error';
+            errors.forEach((rec, i) => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
+            vscode.window.showErrorMessage(`Failed to deploy ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`);
+        } else {
+            vscode.window.showInformationMessage(`Successfully deployed ${resultSummary}`);
         }
-        return vscode.window.showInformationMessage(`Successfully deployed ${results.length} datapack(s)`);
     }
 }
