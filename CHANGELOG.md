@@ -1,5 +1,8 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.5] - 2019-12-19
+ - Fixed circular json error during export from datapack explorer.
+ - Added activity explorer icons.
 
 ## [0.12.4] - 2019-12-19
  - Report past and running operations in the new activity screen
