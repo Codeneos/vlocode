@@ -1,10 +1,16 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.6] - 2019-12-19
+ - Fixed build error
+ - Added option to select max depth during refresh and explorer export
+ - Optimize datapack loading
+ - Fix issue with content version query definition from Vlocity
+
 ## [0.12.5] - 2019-12-19
  - Fixed circular json error during export from datapack explorer.
  - Added activity explorer icons.
 
-## [0.12.4] - 2019-12-19
+## [0.12.4] - 2019-12-18
  - Report past and running operations in the new activity screen
  - Better handling of export errors by setting ignoreAllErrors property which prevents exports from failing when a dependency fails.
  - Better handling of deploy errors.

@@ -244,7 +244,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, async (progress, token) => {
-            const results = await this.datapackService.export(entries, exportPath, maxDepth, token);
+            const results = await this.datapackService.export(entries, exportPath, dependencyExportDepth, token);
             this.showResultMessage(results);
         });
         
