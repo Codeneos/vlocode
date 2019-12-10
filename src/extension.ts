@@ -1,3 +1,5 @@
+const startTime = Date.now(); // Track start up performance
+
 import * as vscode from 'vscode';
 import VlocodeConfiguration from './models/vlocodeConfiguration';
 import VlocodeService from './services/vlocodeService';
@@ -5,16 +7,16 @@ import * as constants from '@constants';
 import { LogManager, LogFilter, LogLevel }  from 'logging';
 import { ConsoleWriter, OutputChannelWriter, TerminalWriter }  from 'logging/writers';
 import CommandRouter from './services/commandRouter';
-import DatapackExplorer from 'datapackExplorer';
 import Commands from 'commands';
 import { container } from 'serviceContainer';
 import * as vlocityUtil from 'vlocityUtil';
 import * as fs from 'fs-extra';
 import OnSavedEventHandler from 'events/onSavedEventHandler';
-import JobExplorer from 'jobExplorer';
 import { setInterval } from 'timers';
 import VlocodeContext from 'models/vlocodeContext';
-import ActivityExplorer from 'activityExplorer';
+import DatapackProvider from 'treeDataProviders/datapackDataProvider';
+import JobDataProvider from 'treeDataProviders/jobExplorer';
+import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -84,9 +86,6 @@ export = class Vlocode {
     }
 
     private async activate(context: vscode.ExtensionContext) {
-        // Track time
-        const startTime = Date.now();
-
         // All SFDX and Vloctiy commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
         this.setWorkingDirectory();
@@ -110,19 +109,19 @@ export = class Vlocode {
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);
         this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
-            treeDataProvider: new DatapackExplorer(container), 
+            treeDataProvider: new DatapackProvider(container), 
             showCollapseAll: true
         }));
         this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
-            treeDataProvider: new JobExplorer(container)
+            treeDataProvider: new JobDataProvider(container)
         }));
         this.service.registerDisposable(vscode.window.createTreeView('activityView', { 
-            treeDataProvider: new ActivityExplorer(container)
+            treeDataProvider: new ActivityDataProvider(container)
         }));
         this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
 
         // track activation time
-        this.logger.info(`Vlocode activated in ${(Date.now() - startTime) / 1000}ms`);
+        this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);
     }
 
     private async deactivate() {

@@ -1,37 +1,17 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as constants from '@constants';
-import ServiceContainer from 'serviceContainer';
-import VlocodeService from './services/vlocodeService';
-import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
-import SObjectRecord from './models/sobjectRecord';
-import ExportDatapackCommand from './commands/exportDatapackCommand';
-import OpenSalesforceCommand from './commands/openSalesforceCommand';
-import CommandRouter from './services/commandRouter';
+import VlocityDatapackService, { ObjectEntry } from '../services/vlocityDatapackService';
+import SObjectRecord from '../models/sobjectRecord';
+import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import { LogManager, Logger } from 'logging';
 import DatapackUtil from 'datapackUtil';
-import { groupBy, evalExpr } from './util';
+import { groupBy, evalExpr } from '../util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { createRecordProxy, addFieldsToQuery } from 'salesforceUtil';
+import BaseDataProvider from './baseDataProvider';
 
-export default class DatapackExplorer implements vscode.TreeDataProvider<DatapackNode> {
-    
-    private readonly _onDidChangeTreeData: vscode.EventEmitter<DatapackNode | undefined>;
-
-    get onDidChangeTreeData(): vscode.Event<DatapackNode | undefined> {
-        return this._onDidChangeTreeData.event;
-    }
-
-    constructor(private readonly container: ServiceContainer) {
-        this._onDidChangeTreeData = new vscode.EventEmitter<DatapackNode | undefined>();
-        this.commands.registerAll({
-            'vlocity.datapackExplorer.export': async (node) => this.onExport(node),
-            'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
-            'vlocity.datapackExplorer.refresh': () => this.refresh()
-        });
-    }
+export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
 
     private async onExport(node: DatapackNode) {
         if (node.nodeType == DatapackNodeType.Category) {
@@ -50,18 +30,18 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
                 return node;
             }).filter(node => node !== undefined);
 
-            this.commands.execute(constants.VlocodeCommand.exportDatapack, ...exportableNodes);
+            this.executeCommand(constants.VlocodeCommand.exportDatapack, ...exportableNodes);
         } else if (node.nodeType == DatapackNodeType.Object) {
-            this.commands.execute(constants.VlocodeCommand.exportDatapack, node);
+            this.executeCommand(constants.VlocodeCommand.exportDatapack, node);
         }
     }
 
-    private withProgress<T>(title: string, task: Thenable<T>): Thenable<T> {
-        return vscode.window.withProgress({ 
-            location: vscode.ProgressLocation.Notification, 
-            title: title,
-            cancellable: false
-        }, () => task);
+    protected getCommands() {
+        return {
+            'vlocity.datapackExplorer.export': async (node) => this.onExport(node),
+            'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
+            'vlocity.datapackExplorer.refresh': () => this.refresh()
+        };
     }
 
     private get datapackService() : VlocityDatapackService {
@@ -71,29 +51,16 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
     private get vlocityNamespace() : string {         
         return this.datapackService.vlocityNamespace;
     }
-    
-    private get vlocode() : VlocodeService {
-        return this.container.get(VlocodeService);
-    }
-
-    private get logger() : Logger {
-        return LogManager.get(DatapackExplorer);
-    }
-    
-    private get commands() : CommandRouter {
-        return this.container.get(CommandRouter);
-    }
-    
-    public getAbsolutePath(path: string) {
-        return this.vlocode.asAbsolutePath(path);
-    }
-
-    public refresh(node?: DatapackNode): void {
-        this._onDidChangeTreeData.fire(node);
-    }
 
     public getTreeItem(node: DatapackNode): vscode.TreeItem {
-        return node.getTreeItem();
+        return {
+            label: node.getItemLabel(),
+            tooltip: node.getItemTooltip(),
+            iconPath: this.getItemIconPath(node.icon),
+            description: node.getItemDescription(),
+            contextValue: `vlocity:datapack:${node.nodeType}`,
+            collapsibleState: node.expandable ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+        };
     }
 
     public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
@@ -102,7 +69,7 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
         
         if (!node) {
             return Object.keys(await this.datapackService.getQueryDefinitions()).map(
-                dataPackType => new DatapackCategoryNode(this, dataPackType)
+                dataPackType => new DatapackCategoryNode(dataPackType)
             ).sort(nodeSorter);
         } else if (node instanceof DatapackCategoryNode) {            
             const records = await this.getExportableRecords(node.datapackType);
@@ -138,6 +105,10 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
         return results.totalSize == 0 ? null : results.records.map(record => createRecordProxy(record));
     }
 
+    protected get logger() : Logger {
+        return LogManager.get(DatapackDataProvider);
+    }
+
     private async getQuery(datapackType: string) {
         const queryDefinitions = await this.datapackService.getQueryDefinitions();
         const queryString = addFieldsToQuery(queryDefinitions[datapackType].query, 'Name');
@@ -147,13 +118,13 @@ export default class DatapackExplorer implements vscode.TreeDataProvider<Datapac
     private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
         const groupedRecords = groupBy(records, r => evalExpr(groupByKey, r));
         return Object.keys(groupedRecords).map(
-            key => new DatapackObjectGroupNode(this, groupedRecords[key], datapackType)
+            key => new DatapackObjectGroupNode(groupedRecords[key], datapackType)
         );
     }
 
     private createDatapackObjectNodes(records: SObjectRecord[], datapackType: string) : DatapackNode[] {
         return records.map(
-            record => new DatapackObjectNode(this, record, datapackType)
+            record => new DatapackObjectNode(record, datapackType)
         );
     }
 }
@@ -166,7 +137,6 @@ enum DatapackNodeType {
 
 abstract class DatapackNode {    
     constructor(
-        private readonly explorer: DatapackExplorer,
         public readonly nodeType: DatapackNodeType,
         public expandable: boolean = false,
         public icon: { light: string, dark: string } | string = undefined
@@ -175,40 +145,11 @@ abstract class DatapackNode {
     public abstract getItemLabel() : string;
     public abstract getItemTooltip() : string;
     public abstract getItemDescription() : string;
-
-    private getItemIconPath() : { light: string, dark: string } | string | undefined {
-        if(!this.icon) {
-            return undefined;
-        }
-        if (typeof this.icon === 'string') {
-            return this.explorer.getAbsolutePath(this.icon);
-        }
-        if (typeof this.icon === 'object') {
-            return {
-                light: this.explorer.getAbsolutePath(this.icon.light),
-                dark: this.explorer.getAbsolutePath(this.icon.dark)
-            };
-        }
-    }
-
-    public getTreeItem(): vscode.TreeItem {
-        return <vscode.TreeItem><any>{
-            label: this.getItemLabel(),
-            tooltip: this.getItemTooltip(),
-            iconPath: this.getItemIconPath(),
-            description: this.getItemDescription(),
-            contextValue: `vlocity:datapack:${this.nodeType}`,
-            collapsibleState: this.expandable ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
-        };
-    }    
 }
 
 class DatapackCategoryNode extends DatapackNode {
-    constructor(
-        explorer: DatapackExplorer,
-        public datapackType: string
-    ) {
-        super(explorer, DatapackNodeType.Category, true);
+    constructor(public datapackType: string) {
+        super(DatapackNodeType.Category, true);
     }
 
     public getItemLabel() {
@@ -226,15 +167,14 @@ class DatapackCategoryNode extends DatapackNode {
 
 class DatapackObjectGroupNode extends DatapackNode {
     constructor(
-        explorer: DatapackExplorer,
         public records: SObjectRecord[],
         public datapackType: string,
         public icon = {
-            light: 'resources/light/datapack.svg',
-            dark: 'resources/dark/datapack.svg'
+            light: 'resources/light/package.svg',
+            dark: 'resources/dark/package.svg'
         }
     ) {
-        super(explorer, DatapackNodeType.ObjectGroup, true);
+        super(DatapackNodeType.ObjectGroup, true);
     }
 
     public getItemLabel() {
@@ -264,15 +204,14 @@ class DatapackObjectGroupNode extends DatapackNode {
 
 class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     constructor(
-        explorer: DatapackExplorer,
         public record: SObjectRecord,
         public datapackType: string,
         public icon = {
-            light: 'resources/light/datapack.svg',
-            dark: 'resources/dark/datapack.svg'
+            light: 'resources/light/package.svg',
+            dark: 'resources/dark/package.svg'
         }
     ) {
-        super(explorer, DatapackNodeType.Object, false);
+        super(DatapackNodeType.Object, false);
     }
 
     public getItemLabel() {

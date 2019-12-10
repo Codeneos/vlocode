@@ -4,6 +4,8 @@
 **/*.ts
 **/*.vsix
 **/.*
+retire-cache
+testReports
 out/test/**
 out/**/*.test.*
 out/**/*.map
@@ -53,4 +55,6 @@ node_modules/@types
 node_modules/@sinonjs
 *.json
 *.js
+*.yaml
+.*
 !package.json

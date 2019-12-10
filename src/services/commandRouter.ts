@@ -8,14 +8,14 @@ import { VlocodeCommand } from '@constants';
 import * as util from 'util';
 import { utils } from 'mocha';
 
-type CommandCtor = (new(name: string) => Command);
+export type CommandType = (new(name: string) => Command);
 
 class LazyCommand implements Command {
     private instance: Command;
 
     constructor(
         public readonly name: string,
-        private readonly ctor: CommandCtor) {
+        private readonly ctor: CommandType) {
     }
 
     public execute(... args: any[]){
@@ -98,7 +98,7 @@ export default class CommandRouter implements CommandMap {
         return vscode.commands.executeCommand(commandName, ...args);
     }
 
-    public register(name: string, commandCtor: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor) : Command {
+    public register(name: string, commandCtor: ((...args: any[]) => void) | Promise<CommandType> | CommandType) : Command {
         const command = new CommandExecutor(this.createCommand(name, commandCtor));
         const index = this.commands.push(command) - 1;
         Object.defineProperty(this, name, { get: () => this.commands[index] });
@@ -113,7 +113,7 @@ export default class CommandRouter implements CommandMap {
         return { name: name, execute: commandCtor };
     }
 
-    public registerAll(commands: { [name: string]: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor }) : void{
+    public registerAll(commands: { [name: string]: ((...args: any[]) => void) | Promise<CommandType> | CommandType }) : void{
         Object.keys(commands).forEach(key => {
             this.register(key, commands[key]);
         });

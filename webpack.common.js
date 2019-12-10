@@ -90,7 +90,6 @@ const common = env => ({
 const vscodeExtension = {
     entry: {
         'vlocode': './src/extension.ts',
-        //'fork': './src/extensionFork.ts'
     },
     name: 'vlocode',
     devtool: 'source-map',
@@ -99,25 +98,10 @@ const vscodeExtension = {
         path: path.resolve(__dirname, 'out'),
     },    
     plugins: [
-        new CopyPlugin([
-            //{ context: 'node_modules/vlocity/lib', from: '*.yaml', to: '.' },       
-            //{ context: 'node_modules/vlocity/lib', from: '*.json', to: '.' },       
+        new CopyPlugin([     
             { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex', ignore: [ 'TestJob.cls' ] }
         ]),
-    ],
-    // plugins: [
-    //     new DuplicatesPlugin({
-    //         // Emit compilation warning or error? (Default: `false`)
-    //         emitErrors: false,
-    //         // Display full duplicates information? (Default: `false`)
-    //         verbose: false
-    //     })
-    // ],
-    // resolve: {
-    //     alias: {
-    //         'js-force': path.resolve(__dirname, 'node_modules', 'js-force')
-    //     }
-    // }
+    ]
 };
 
 /**@type {import('webpack').Configuration}*/

@@ -1,28 +1,16 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as constants from '@constants';
-import ServiceContainer from 'serviceContainer';
-import VlocodeService from './services/vlocodeService';
-import VlocityDatapackService, { ObjectEntry } from './services/vlocityDatapackService';
-import SObjectRecord from './models/sobjectRecord';
-import ExportDatapackCommand from './commands/exportDatapackCommand';
-import OpenSalesforceCommand from './commands/openSalesforceCommand';
-import CommandRouter from './services/commandRouter';
+import VlocityDatapackService, { ObjectEntry } from '../services/vlocityDatapackService';
 import { LogManager, Logger } from 'logging';
-import DatapackUtil from 'datapackUtil';
-import { groupBy, evalExpr } from './util';
 import * as yaml from 'js-yaml';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { createRecordProxy, addFieldsToQuery } from 'salesforceUtil';
 import VlocityJobFile from 'models/VlocityJobFile';
 import * as vlocity from 'vlocity';
+import BaseDataProvider from './baseDataProvider';
 
-
-export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
+export default class JobDataProvider extends BaseDataProvider<JobNode> {
     
-    private readonly _onDidChangeTreeData: vscode.EventEmitter<JobNode | undefined>;
     private readonly jobCommandOptions = [ 
         { 
             type: 'Export', 
@@ -38,17 +26,12 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
         } 
     ];
 
-	get onDidChangeTreeData(): vscode.Event<JobNode | undefined> {
-		return this._onDidChangeTreeData.event;
-    }
-    
-    constructor(private readonly container: ServiceContainer) {
-        this._onDidChangeTreeData = new vscode.EventEmitter<JobNode | undefined>();
-        this.commands.registerAll({
+    protected getCommands() {
+        return {
             'vlocity.jobExplorer.run': async (node) => this.runJob(node),
             'vlocity.jobExplorer.refresh': () => this.refresh()
-        });
-    }    
+        };
+    }
 
     private async runJob(node: JobNode) {
         const jobCommand = await vscode.window.showQuickPick(this.jobCommandOptions, { 
@@ -61,44 +44,28 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
         }
 
         try {
-            await this.vloService.withActivity({
+            await this.vlocode.withActivity({
                 location: vscode.ProgressLocation.Notification,
                 progressTitle: `${jobCommand.type}ing with ${path.basename(node.jobFile.fsPath)} ...`,
                 cancellable: true
             }, (progress, token) => this.datapackService.runYamlJob(<vlocity.actionType>jobCommand.type, node.jobFile.fsPath, token));
-            vscode.window.showInformationMessage(`Succesfully ${jobCommand.type.toLowerCase()}ed with ${path.basename(node.jobFile.fsPath)}`);
+            vscode.window.showInformationMessage(`Successfully ${jobCommand.type.toLowerCase()}ed with ${path.basename(node.jobFile.fsPath)}`);
         } catch(err) {
             vscode.window.showErrorMessage(`Running job file ${path.basename(node.jobFile.fsPath)} resulted in an error, see the log for details.`);
         }
     }
 
     private get datapackService() : VlocityDatapackService {
-        return this.vloService.datapackService;
-    }
-    
-    private get vloService() : VlocodeService {
-        return this.container.get(VlocodeService);
+        return this.vlocode.datapackService;
     }
 
     private get logger() : Logger {
-        return LogManager.get(JobExplorer);
-    }
-    
-    private get commands() : CommandRouter {
-        return this.container.get(CommandRouter);
-    }
-    
-    public getAbsolutePath(path: string) {
-        return this.vloService.asAbsolutePath(path);
-    }
-
-    public refresh(node?: JobNode): void {
-        this._onDidChangeTreeData.fire(node);
+        return LogManager.get(JobDataProvider);
     }
 
     public getTreeItem(node: JobNode): vscode.TreeItem {
         return {
-            label: node.getItemLabel(),
+            label: node.label,
             resourceUri: node.jobFile,
             command: {
                 title: 'Open',                
@@ -106,9 +73,8 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
                 arguments: [ node.jobFile ]
             },
             contextValue: 'vlocity:jobYaml',
-            tooltip: node.getItemTooltip(),
-            iconPath: node.getItemIconPath(),
-            description: node.getItemDescription(),
+            tooltip: node.tooltip,
+            description: node.description,
             collapsibleState: vscode.TreeItemCollapsibleState.None
         };
     }
@@ -139,42 +105,24 @@ export default class JobExplorer implements vscode.TreeDataProvider<JobNode> {
         this.logger.info(`Displaying ${validJobFiles.length} valid Job files in Job explorer`);
         
         //await this.vlocode.validateAll(true);
-        return validJobFiles.map(({ file, body }) => new JobNode(this, file, body));
+        return validJobFiles.map(({ file }) => new JobNode( file ));
     }
 }
 
 class JobNode {    
     constructor(
-        private readonly explorer: JobExplorer,
-        public readonly jobFile: vscode.Uri,
-        public readonly job: VlocityJobFile,
-        public icon: { light: string, dark: string } | string = undefined
+        public readonly jobFile: vscode.Uri
     ) { }
 
-    public getItemLabel() : string {
+    public get label() : string {
         return path.basename(this.jobFile.fsPath);
     }
 
-    public getItemTooltip() : string {
+    public get tooltip() : string {
         return this.jobFile.fsPath;
     }
 
-    public getItemDescription() : string {
+    public get description() : string {
         return vscode.workspace.asRelativePath(this.jobFile);
-    }
-
-    public getItemIconPath() : { light: string, dark: string } | string | undefined {
-        if(!this.icon) {
-            return undefined;
-        }
-        if (typeof this.icon === 'string') {
-            return this.explorer.getAbsolutePath(this.icon);
-        }
-        if (typeof this.icon === 'object') {
-            return {
-                light: this.explorer.getAbsolutePath(this.icon.light),
-                dark: this.explorer.getAbsolutePath(this.icon.dark)
-            };
-        }
     }
 }

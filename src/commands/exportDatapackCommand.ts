@@ -238,7 +238,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         this.logger.info(`Exporting to folder: ${exportPath}`);
         const entries = Array.isArray(exportEntries) ? exportEntries : [ exportEntries ];
         const results = await this.vloService.withActivity({
-            progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${DatapackUtil.getLabel(entries[0]) || entries[0].id}...`,
+            progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${entries[0].name || entries[0].globalKey || entries[0].id}...`,
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, (progress, token) => {
