@@ -99,19 +99,19 @@
             },
             {
                 "command": "vlocity.renameDatapack",
-                "title": "Vlocity: Rename datapack"
+                "title": "Vlocity: Rename Datapack"
             },
             {
                 "command": "vlocity.cloneDatapack",
-                "title": "Vlocity: Clone datapack"
+                "title": "Vlocity: Clone Datapack"
             },
             {
                 "command": "vlocity.exportDatapack",
-                "title": "Vlocity: Export Datapack(s) from server"
+                "title": "Vlocity: Export Datapack from Salesforce"
             },
             {
                 "command": "vlocity.buildParentKeyFiles",
-                "title": "Vlocity: Build Parent Key Files"
+                "title": "Vlocity: Repair Datapack dependencies"
             },
             {
                 "command": "vlocity.buildDatapack",
@@ -147,11 +147,7 @@
             },
             {
                 "command": "vlocity.deployMetadata",
-                "title": "Salesforce: Save and Deploy current file"
-            },
-            {
-                "command": "vlocity.deployMetadata.explorer",
-                "title": "Salesforce: Save and Deploy"
+                "title": "Salesforce: Save/Deploy"
             },
             {
                 "command": "vlocity.destroyMetadata",
@@ -241,6 +237,10 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocity.adminCommands",
+                    "when": "false"
+                },
+                {
                     "command": "vlocity.admin.refreshPriceBook",
                     "group": "v_vlocity"
                 },
@@ -278,6 +278,14 @@
                 },
                 {
                     "command": "vlocity.datapackExplorer.openSalesforce"
+                },
+                {
+                    "command": "vlocity.jobExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocity.jobExplorer.run",
+                    "when": "false"
                 }
             ],
             "explorer/context": [
@@ -302,7 +310,7 @@
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.deployMetadata.explorer",
+                    "command": "vlocity.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },

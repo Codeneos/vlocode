@@ -6,7 +6,7 @@ import * as yaml from 'js-yaml';
 import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
 import { existsAsync, groupBy, mapAsync, stringEquals, getObjectValues, getDocumentBodyAsString } from '../util';
-import { LogManager } from 'logging';
+import { LogManager, Logger } from 'logging';
 import { VlocityDatapack } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
 import SalesforceService from 'services/salesforceService';
@@ -15,7 +15,7 @@ import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from 'models/sobjectRecord';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
-import DatapackLoader from 'datapackLoader';
+import DatapackLoader, { CachedFileSystem } from 'datapackLoader';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import * as DataPacksExpand from "vlocity/lib/datapacksexpand";
 
@@ -248,14 +248,14 @@ export default class VlocityDatapackService implements vscode.Disposable {
      * @deprecated Use `container.get(DatapackLoader).loadFrom(...)` instead
      */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
-        return container.get(DatapackLoader).loadFrom(file.fsPath);
+        return new DatapackLoader().loadFrom(file.fsPath);
     }
 
     /**
      * @deprecated Use `container.get(DatapackLoader).loadAll(...)` instead
      */
     public async loadAllDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
-        return container.get(DatapackLoader).loadAll(files.map(file => file.fsPath));
+        return new DatapackLoader().loadAll(files.map(file => file.fsPath));
     }
 
     /**

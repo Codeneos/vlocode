@@ -28,25 +28,25 @@ vlocity.openSalesforce:
     - menu: explorer/context
     - menu: editor/context
 vlocity.renameDatapack:
-  title: 'Vlocity: Rename datapack'
+  title: 'Vlocity: Rename Datapack'
   group: v_vlocity
   menus:
     - menu: commandPalette
     - menu: explorer/context
 vlocity.cloneDatapack:
-  title: 'Vlocity: Clone datapack'
+  title: 'Vlocity: Clone Datapack'
   group: v_vlocity
   menus:
     - menu: commandPalette
     - menu: explorer/context
     - menu: editor/context
 vlocity.exportDatapack:
-  title: 'Vlocity: Export Datapack(s) from server'
+  title: 'Vlocity: Export Datapack from Salesforce'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocity.buildParentKeyFiles:
-  title: 'Vlocity: Build Parent Key Files'
+  title: 'Vlocity: Repair Datapack dependencies'
   group: v_vlocity
   menus:
     - menu: commandPalette
@@ -97,17 +97,13 @@ vlocity.admin.clearPlatformCache:
 
 # Salesforce commands
 vlocity.deployMetadata:
-  title: 'Salesforce: Save and Deploy current file'
+  title: 'Salesforce: Save/Deploy'
   group: v_salesforce
-  menus:
+  menus:    
     - menu: commandPalette      
       when: vlocodeSalesforceSupport
     - menu: editor/context
       when: vlocodeSalesforceSupport
-vlocity.deployMetadata.explorer:
-  title: 'Salesforce: Save and Deploy'
-  group: v_salesforce
-  menus:
     - menu: explorer/context      
       when: vlocodeSalesforceSupport
 vlocity.destroyMetadata:

@@ -6,7 +6,7 @@ import { DatapackCommand } from './datapackCommand';
 import { getDocumentBodyAsString } from '../util';
 import * as DatapackUtil from 'datapackUtil';
 import { VlocityDatapack } from 'models/datapack';
-import DatapackLoader from 'datapackLoader';
+import DatapackLoader, { directFileSystem, CachedFileSystem } from 'datapackLoader';
 import { Logger } from 'logging';
 
 export default class BuildParentKeyFilesCommand extends DatapackCommand {
@@ -24,7 +24,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
     }
 
     protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; increment?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
-        const datapackLoader = new DatapackLoader(Logger.null);
+        const datapackLoader = new DatapackLoader(null, new CachedFileSystem());
         const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();        
         const loadedDatapacks = [];
 
@@ -54,7 +54,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
     protected async buildParentKeyFiles() : Promise<void> {
 
-        await this.vloService.withCancelableProgress(`Building parent keys`, async (progress, token) => {
+        await this.vloService.withCancelableProgress(`Repairing datapack dependencies`, async (progress, token) => {
             // Clear current warnings
             this.diagnostics.clear();
 
@@ -117,10 +117,11 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
             }
 
             if (allUnresolvedParents.length > 0) {
-                throw `Unable to resolve ${allUnresolvedParents.length} dependencies see problems tab for details.`;
-            } 
-
-            vscode.window.showInformationMessage(`Successfully resolved all datapack dependencies and updated ParentKey files.`);
+                vscode.window.showWarningMessage(`Unable to resolve ${allUnresolvedParents.length} dependencies see problems tab for details.`);
+            } else {
+                vscode.window.showInformationMessage(`Successfully resolved all datapack dependencies and updated ParentKey files.`);
+            }
+           
         });
     }
 

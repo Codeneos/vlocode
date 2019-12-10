@@ -175,10 +175,12 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             activityRecord.status = VlocodeActivityStatus.InProgress;
             try {                
                 const result = await task(progress, cancelTokenSource?.token); 
-                activityRecord.status = VlocodeActivityStatus.Completed;
+                activityRecord.status = cancelTokenSource?.token.isCancellationRequested 
+                    ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Completed;
                 return result;
             } catch(e) {
-                activityRecord.status = VlocodeActivityStatus.Failed;
+                activityRecord.status = cancelTokenSource?.token.isCancellationRequested 
+                    ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Failed;
                 throw e;
             } finally {
                 activityRecord.endTime = Date.now();

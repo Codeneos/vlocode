@@ -99,6 +99,20 @@ async function updatePackageJson(packageJsonFile: string, commandFile: string) {
         contributes.commands.push(stripUndefined(newCommand));
         activationEvents.add(`onCommand:${name}`);
 
+        // Has menus?
+        if (!command.menus) {
+            command.menus = [];
+        }
+
+        // visible in command pallet?
+        const inCommandPallet = command.menus.some(menu => menu.menu == 'commandPalette');
+        if (!inCommandPallet) {
+            command.menus.push({
+                menu: 'commandPalette',
+                when: 'false'
+            });
+        }
+
         // Build menus
         for (const menuInfo of command.menus || []) {
             const menu = contributes.menus[menuInfo.menu] || (contributes.menus[menuInfo.menu] = []);
