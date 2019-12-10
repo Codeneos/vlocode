@@ -55,7 +55,7 @@ index 4c3b118..f6d4f2d 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 7ab38ff..50a3dbf 100644
+index 7ab38ff..a45df0d 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
 @@ -1,8 +1,7 @@
@@ -123,7 +123,7 @@ index 7ab38ff..50a3dbf 100644
 +                if (!this.recordSourceKeyToFilePath) {
 +                    this.recordSourceKeyToFilePath = {};
 +                }
-                 
+             
 -            if (dataPack instanceof Array) {
 -                for (data of dataPack) {
 -                    if (data.VlocityRecordSourceKey) {
@@ -133,7 +133,7 @@ index 7ab38ff..50a3dbf 100644
 +                        if (data.VlocityRecordSourceKey) {
 +                            this.recordSourceKeyToFilePath[data.VlocityRecordSourceKey] = path.normalize(filePath);    
 +                        }   
-                     }
+                     }   
 +                } else if (dataPack.VlocityRecordSourceKey){
 +                    this.recordSourceKeyToFilePath[dataPack.VlocityRecordSourceKey] = path.normalize(filePath);
                  }
@@ -313,6 +313,19 @@ index d1849c0..af04645 100644
 +    await this.vlocity.datapacksbuilder.setFileData(filePath, "utf8");
  };
 \ No newline at end of file
+diff --git a/node_modules/vlocity/lib/querydefinition.yaml b/node_modules/vlocity/lib/querydefinition.yaml
+index 76f5366..c448ab5 100644
+--- a/node_modules/vlocity/lib/querydefinition.yaml
++++ b/node_modules/vlocity/lib/querydefinition.yaml
+@@ -19,7 +19,7 @@ Catalog:
+   query: Select Id, Name from %vlocity_namespace%__Catalog__c     
+ ContentVersion:
+   VlocityDataPackType: ContentVersion
+-  query: Select Id, Name, Title, %vlocity_namespace%__GlobalKey__c from ContentVersion where %vlocity_namespace%__GlobalKey__c != null
++  query: Select Id, Title, %vlocity_namespace%__GlobalKey__c from ContentVersion where %vlocity_namespace%__GlobalKey__c != null
+   manifestOnly: true
+ ContextAction:
+   VlocityDataPackType: ContextAction
 diff --git a/node_modules/vlocity/lib/utilityservice.js b/node_modules/vlocity/lib/utilityservice.js
 index dafa90e..2a2ce94 100644
 --- a/node_modules/vlocity/lib/utilityservice.js

@@ -21,6 +21,17 @@ export interface LogWriter {
 
 export class Logger {
 
+    /**
+     * Null logger, logs straight to /dev/null
+     */
+    static null = new class extends Logger {
+        constructor() {
+            super(null, null, null);
+        }
+        public write(...args: any[]) { }
+        public writeEntry(...args: any[]) { }
+    }();
+
     constructor(
         private readonly manager: LogManager,
         public readonly name: string, 

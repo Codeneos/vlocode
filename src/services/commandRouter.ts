@@ -55,11 +55,12 @@ class CommandExecutor implements Command {
             await this.command.execute.apply(this.command, args);
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {
-            this.logger.error(`Command error: ${err}`);
+            const message = err || err.message;
+            this.logger.error(`Command error: ${message}`);
             if (util.types.isNativeError(err)) {
                 this.logger.error(err);
             }
-            vscode.window.showErrorMessage(`${this.name}: ${err}`);
+            vscode.window.showErrorMessage(message);
         }
     }
 

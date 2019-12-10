@@ -56,17 +56,11 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
 
-        // With dependencies?
-        const dependencyExportDepth = await this.showDependencySelection();
-        if (dependencyExportDepth === undefined) {
-            return; // selection cancelled;
-        }
-
         return this.exportObjects({
             id: recordToExport.Id,
             sobjectType: recordToExport.attributes.type,
             datapackType: datapackType
-        }, dependencyExportDepth);
+        });
     }
 
     private getExportQuery(datapackType: string, vlocityNamespace?: string) : string | undefined {
@@ -108,6 +102,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         let datapackToExport = await vscode.window.showQuickPick(datapackOptions, {
             matchOnDetail: true,
+            ignoreFocusOut: true,
             placeHolder: 'Select datapack types to export'
         });
         if (!datapackToExport) {
@@ -133,7 +128,8 @@ export default class ExportDatapackCommand extends DatapackCommand {
         }).sort((a,b) => a.label.localeCompare(b.label));
 
         const objectGroupSelection = await vscode.window.showQuickPick(groupOptions, {
-            placeHolder: 'Select datapack object to export'
+            placeHolder: 'Select datapack object to export',
+            ignoreFocusOut: true
         });
         if (!objectGroupSelection) {
             return; // selection cancelled;
@@ -147,7 +143,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             { label: 'None', description: 'Do not export any dependencies, only export the selected object', maxDepth: 0 },
             { label: 'Direct', description: 'Include only direct dependencies, up to 1 level deep', maxDepth: 1  },
             { label: 'All', description: 'Include all depending objects', maxDepth: -1  }
-        ], { placeHolder: 'Export object dependencies' });
+        ], { placeHolder: 'Export object dependencies', ignoreFocusOut: true });
 
         if (!withDependencies) {
             return; // selection cancelled;
@@ -228,7 +224,13 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return selectedFolder[0].fsPath;
     }
 
-    protected async exportObjects(exportEntries: ObjectEntry | ObjectEntry[], maxDepth: number = 0) : Promise<void> {
+    protected async exportObjects(exportEntries: ObjectEntry | ObjectEntry[], maxDepth?: number) : Promise<void> {
+        // With dependencies?
+        const dependencyExportDepth = maxDepth ?? await this.showDependencySelection();
+        if (dependencyExportDepth === undefined) {
+            return; // selection cancelled;
+        }
+        
         let exportPath = this.vloService.config.projectPath;
         if (!exportPath && !(exportPath = await this.showExportPathSelection())) {
             vscode.window.showErrorMessage('No project path selected; export aborted.');
@@ -237,16 +239,15 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         this.logger.info(`Exporting to folder: ${exportPath}`);
         const entries = Array.isArray(exportEntries) ? exportEntries : [ exportEntries ];
-        const results = await this.vloService.withActivity({
+        await this.vloService.withActivity({
             progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${entries[0].name || entries[0].globalKey || entries[0].id}...`,
             location: vscode.ProgressLocation.Notification,
             cancellable: true
-        }, (progress, token) => {
-            return this.datapackService.export(entries, exportPath, maxDepth, token);
+        }, async (progress, token) => {
+            const results = await this.datapackService.export(entries, exportPath, maxDepth, token);
+            this.showResultMessage(results);
         });
-
-        // report UI progress back
-        this.showResultMessage(results);
+        
     }
 
     protected showResultMessage(results : DatapackResultCollection) {
@@ -255,10 +256,9 @@ export default class ExportDatapackCommand extends DatapackCommand {
             const errors = results.getErrors();
             const errorMessage = errors.find(e => e.errorMessage)?.errorMessage ?? 'Unknown error';
             errors.forEach((rec, i) => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
-            vscode.window.showErrorMessage(`Failed to export ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`);
-        } else {
-            const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
-            vscode.window.showInformationMessage(`Successfully exported ${resultSummary}`);
-        }
+            throw `Failed to export ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`;
+        }         
+        const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
+        vscode.window.showInformationMessage(`Successfully exported ${resultSummary}`);
     }
 }

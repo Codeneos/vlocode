@@ -17,20 +17,27 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
+        // Depth
+        const dependencyExportDepth = await this.showDependencySelection();
+        if (dependencyExportDepth === undefined) {
+            this.logger.error(`Export cancelled; no dependency depth selected.`)
+            return; // selection cancelled;
+        }
+
         const datapacksByProject = await this.vloService.withStatusBarProgress('Loading datapacks...',
                 async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
 
         // call
         const flatDatapackList = Object.values(datapacksByProject).flat();
         const progressTitle = flatDatapackList.length > 1 ? `Refreshing ${flatDatapackList.length} datapacks...` :  `Refreshing ${DatapackUtil.getLabel(flatDatapackList[0])}...`;
-        const results = await this.vloService.withCancelableProgress(progressTitle, async (progress, cancelToken) => {
-            return await mapAsync(Object.keys(datapacksByProject),
-                projectFolder => this.datapackService.export(datapacksByProject[projectFolder], projectFolder, 0, cancelToken)
-            );
-        });
 
-        // report UI progress back
-        this.showResultMessage(results.reduce((results, result) => results.join(result)));
+        await this.vloService.withCancelableProgress(progressTitle, async (progress, cancelToken) => {
+            const results = await mapAsync(Object.keys(datapacksByProject),
+                projectFolder => this.datapackService.export(datapacksByProject[projectFolder], projectFolder, dependencyExportDepth, cancelToken)
+            );
+            // report UI progress back
+            this.showResultMessage(results.reduce((results, result) => results.join(result)));
+        });
     }
 }
 

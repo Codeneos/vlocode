@@ -83,3 +83,8 @@ AttributeCategory:
   salesforceUrl:
     namespace: vlocity
     path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__VlocityAttributeCategoryEdit?id=' + id "
+
+ContentVersion:
+  salesforceUrl:
+    namespace: vlocity
+    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__VlocityAttributeCategoryEdit?id=' + id "

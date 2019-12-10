@@ -6,6 +6,8 @@ import { DatapackCommand } from './datapackCommand';
 import { getDocumentBodyAsString } from '../util';
 import * as DatapackUtil from 'datapackUtil';
 import { VlocityDatapack } from 'models/datapack';
+import DatapackLoader from 'datapackLoader';
+import { Logger } from 'logging';
 
 export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
@@ -21,20 +23,50 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
        return this.buildParentKeyFiles();
     }
 
+    protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; increment?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
+        const datapackLoader = new DatapackLoader(Logger.null);
+        const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();        
+        const loadedDatapacks = [];
+
+        let progress = 0;
+        let lastReportedProgress = 0;
+
+        for (const header of datapackHeaders) {
+            if (cancelToken.isCancellationRequested) {
+                progressToken.report({ message: 'cancelled' });
+                return []; 
+            }
+
+            loadedDatapacks.push(await datapackLoader.loadFrom(header.fsPath));
+
+            const newProgress = Math.floor((++progress / datapackHeaders.length) * 100);
+            if (newProgress > lastReportedProgress + 1) {
+                progressToken.report({ 
+                    message: 'loading datapacks',
+                    increment: newProgress - lastReportedProgress 
+                });
+                lastReportedProgress = newProgress;
+            }            
+        }
+
+        return loadedDatapacks;
+    }
+
     protected async buildParentKeyFiles() : Promise<void> {
 
-        const progressToken = await this.startProgress('Building parent keys');
-        try {
+        await this.vloService.withCancelableProgress(`Building parent keys`, async (progress, token) => {
             // Clear current warnings
             this.diagnostics.clear();
 
             // load all datapacks in the workspace
-            progressToken.report('reading workspace...');
-            const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();
-            const datapacks = await this.loadDatapacks(datapackHeaders, file => progressToken.report(`${path.basename(file.fsPath)}...`));
+            const datapacks = await this.loadAllDatapacks(progress, token);
+
+            if (token.isCancellationRequested) {
+                return;
+            }
 
             // create parent key to datapack map
-            progressToken.report('resolving keys...');
+            progress.report({ message: 'resolving keys...' });
             const keyToDatapack : { [key: string] : VlocityDatapack } = datapacks.reduce((keyMap, dp) => {
                 return dp.getProvidedRecordKeys().reduce((keyMap, key) => Object.assign(keyMap, { [key]: dp }), keyMap);
             }, {});
@@ -84,15 +116,12 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 }
             }
 
-            if(allUnresolvedParents.length > 0) {
-                vscode.window.showWarningMessage(`Unable to resolve ${allUnresolvedParents.length} dependencies see problems tab for details.`);
-            } else {
-                vscode.window.showInformationMessage(`Successfully resolved all datapack dependencies and updated ParentKey files.`);
-            }
+            if (allUnresolvedParents.length > 0) {
+                throw `Unable to resolve ${allUnresolvedParents.length} dependencies see problems tab for details.`;
+            } 
 
-        } finally {
-            progressToken.complete();
-        }
+            vscode.window.showInformationMessage(`Successfully resolved all datapack dependencies and updated ParentKey files.`);
+        });
     }
 
     private async updateParentKeysFile(datapackHeader: string, parentKeys: string[]) : Promise<void> {

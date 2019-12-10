@@ -76,7 +76,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
         } catch (err) {
             this.logger.error(err);
-            vscode.window.showErrorMessage(`Vlocode encountered an error while deploying the selected datapacks, see the log for details.`);
+            throw `Vlocode encountered an error while deploying the selected datapacks, see the log for details.`;
         }
     }
 
@@ -87,7 +87,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
             const errors = results.getErrors();
             const errorMessage = errors.find(e => e.errorMessage)?.errorMessage || 'Unknown error';
             errors.forEach((rec, i) => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
-            vscode.window.showErrorMessage(`Failed to deploy ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`);
+            throw `Failed to deploy ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`;
         } else {
             vscode.window.showInformationMessage(`Successfully deployed ${resultSummary}`);
         }

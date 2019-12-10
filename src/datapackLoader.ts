@@ -5,22 +5,22 @@ import { getDocumentBodyAsString, mapAsyncParallel } from './util';
 
 import { VlocityDatapack } from 'models/datapack';
 import { isObject } from 'util';
+import * as fs from 'fs-extra';
 
 type DatapackLoaderRule = { rule: RegExp, load: (fileName: string) => Promise<any> };
 
 export default class DatapackLoader {    
 
     private readonly loaders : DatapackLoaderRule[] = [
-        { rule: /\.json$/i, load: this.loadJson },
-        { rule: /.*/, load: this.loadRaw }
+        { rule: /\.json$/i, load: file => this.loadJson(file) },
+        { rule: /\..*$/, load: file => this.loadRaw(file) }
     ];
 
-    private get logger() : Logger {
-        return LogManager.get(DatapackLoader);
+    constructor(private logger: Logger = LogManager.get(DatapackLoader)) {        
     }
 
     public async loadFrom(datapackHeader : string) : Promise<VlocityDatapack> {
-        this.logger.log(`Loading datapack: ${datapackHeader}`);
+        this.logger.verbose(`Loading datapack: ${datapackHeader}`);
         const manifestEntry = getDatapackManifestKey(datapackHeader);
         const datapackJson = await this.loadJson(datapackHeader);
         return new VlocityDatapack(
@@ -33,44 +33,45 @@ export default class DatapackLoader {
     }
 
     private async loadJson(fileName : string) : Promise<any> {
-        const datapackJson = await getDocumentBodyAsString(fileName);
+        const datapackJson = await fs.readFile(fileName);
         const baseDir = path.dirname(fileName);
-        let datapack = JSON.parse(datapackJson.toString());
+        const datapack = JSON.parse(datapackJson.toString());
 
-        await Promise.all(Object.keys(datapack).map(async key => {
+        for (const [key, value] of Object.entries(datapack)) {
             try {
-                datapack[key] = await this.loadProperty(baseDir, key, datapack[key]);
+                datapack[key] = await this.resolveValue(baseDir, value);
             } catch(err) {
                 this.logger.error(`Failed to load datapack property ${key}: ${err}`);
             }
-        }));
+        }
 
         return datapack;
     }
 
-    private loadRaw(fileName : string) : Promise<any> {
-        return getDocumentBodyAsString(fileName);
+    private async loadRaw(fileName : string) : Promise<any> {
+        if (fs.existsSync(fileName)) {
+            return (await fs.readFile(fileName)).toString();
+        }
+        return fileName;
     }
 
-    private async loadProperty(baseDir: string, propertyName: string, fieldValue: any) : Promise<any> {
+    private async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
-            let fileName = fieldValue.split(/\\|\//i).pop();
-            let loader = this.loaders.find(loader => loader.rule.test(fileName));
+            const fileName = fieldValue.split(/\\|\//i).pop();
+            const loader = this.loaders.find(loader => loader.rule.test(fileName));            
             if (loader) {
                 try {
-                    const value = await loader.load.call(this, path.join(baseDir, fileName));
-                    //this.logger.verbose(`Load ${propertyName} using ${loader.load.name} (rule: ${loader.rule})`);
-                    return value;
+                    return await loader.load(path.join(baseDir, fileName));
                 } catch(err) { 
-                    return fieldValue;
-                }                
+                    // ingore loader errors; if the loader fails it will return teh default value
+                }
             }
         } else if (Array.isArray(fieldValue)) {
-            return Promise.all(fieldValue.map((value, i) => this.loadProperty(baseDir, `${propertyName}|${i}`, value)));
+            return Promise.all(fieldValue.map((value, i) => this.resolveValue(baseDir, value)));
         } else if (fieldValue !== null && typeof fieldValue === 'object') {
             await Promise.all(Object.keys(fieldValue).map(
-                async key => fieldValue[key] = await this.loadProperty(baseDir, key, fieldValue[key])));
+                async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key])));
         }
-        return Promise.resolve(fieldValue);
+        return fieldValue;
     }
 }
