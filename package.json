@@ -483,7 +483,7 @@
         "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
-        "@types/jsforce": "^1.9.7",
+        "@types/jsforce": "^1.9.12",
         "@types/mocha": "^5.2.7",
         "@types/node": "^10.17.6",
         "@types/sinon": "^7.5.0",
