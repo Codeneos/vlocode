@@ -1,0 +1,23 @@
+diff --git a/node_modules/jsforce/lib/api/metadata.js b/node_modules/jsforce/lib/api/metadata.js
+index 66bf93a..1935477 100644
+--- a/node_modules/jsforce/lib/api/metadata.js
++++ b/node_modules/jsforce/lib/api/metadata.js
+@@ -561,6 +561,18 @@ Metadata.prototype.checkDeployStatus = function(id, includeDetails, callback) {
+   }).thenCall(callback);
+ };
+ 
++/**
++ * Cancel a deployment previously started by a call to deploy()
++ *
++ * @param {String} id - Async process id returned from deploy request
++ * @param {Callback.<Metadata~AsyncResult>} [callback] - Callback function
++ * @returns {Promise.<Metadata~AsyncResult>}
++ */
++Metadata.prototype.cancelDeploy = function(id, callback) {
++  var res = this._invoke("cancelDeploy", { asyncProcessId: id });
++  return new AsyncResultLocator(this, res).thenCall(callback);
++};
++
+ 
+ /*--------------------------------------------*/
+ 

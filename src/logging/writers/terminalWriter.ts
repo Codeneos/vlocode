@@ -13,10 +13,10 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
     private writeEmitter : vscode.EventEmitter<string>;
     private closeEmitter : vscode.EventEmitter<void>;
     private currentTerminal : vscode.Terminal;
-    private queuedMessages : LogEntry[] = [];
     private isOpened = false;
-    private chalk = new chalk.Instance({ level: 2 });
-    private colors = {
+    private readonly queuedMessages : LogEntry[] = [];
+    private readonly chalk = new chalk.Instance({ level: 2 });
+    private readonly colors = {
         [LogLevel.debug]: this.chalk.magenta,
         [LogLevel.verbose]: this.chalk.dim,
         [LogLevel.info]: this.chalk.grey,
@@ -44,7 +44,10 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
 
     private createTerminal() : vscode.Terminal {
         [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());        
-        (vscode.window.terminals.filter(term => term.name == this.name)).forEach(t => t.dispose());
+        (vscode.window.terminals.filter(term => term.name == this.name)).forEach(t => { 
+            t.hide(); 
+            setTimeout(t.dispose.bind(t), 500);
+        });
 
         this.writeEmitter = new vscode.EventEmitter<string>();
         this.closeEmitter = new vscode.EventEmitter<void>();
@@ -63,12 +66,12 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
         return this.currentTerminal;
     }
 
-    private show() {
-        (this.currentTerminal ?? this.createTerminal()).show(false);
+    private show() { 
+        (this.currentTerminal || this.createTerminal()).show(false);
         setTimeout(() => {
             if (!this.isOpened) {
-                this.closeEmitter?.fire();
-                this.show();
+                this.close();
+                setTimeout(this.show.bind(this), 500);
             }
         }, 5000);
     }
@@ -83,8 +86,11 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
 
     public close() { 
         this.isOpened = false;
-        this.currentTerminal?.dispose();
-        this.currentTerminal = null;        
+        if (this.currentTerminal) {
+            this.currentTerminal.hide();
+            setTimeout(this.currentTerminal.dispose.bind(this.currentTerminal), 500);
+            this.currentTerminal = null;        
+        }
     }
 
     public focus() { 

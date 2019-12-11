@@ -58,6 +58,86 @@ export type DeploymentProgress = vscode.Progress<{
     total?: number;
 }>;
 
+interface RetrieveResult extends jsforce.RetrieveResult {
+    done: boolean;
+    success: boolean;
+    errorMessage?: string;
+    errorStatusCode?: string;
+    status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
+}
+
+/**
+ * Object that describe the salesforce package XML, can be converted into a package.xml file body or JSON structure
+ */
+class PackageXml {
+
+    private readonly metadataMembers = new Map<string, Set<string>>();
+
+    constructor(public readonly version : string) {
+        if (!/^\d{2,3}\.\d$/.test(version)) {
+            throw new Error(`Invalid API version: ${version}`);
+        }
+    }
+
+    /**
+     * Add a new memeber to te package XML manifest
+     * @param type Type of component to add
+     * @param member Name of the component to add
+     */
+    public add(type: string, member: string) : void {
+        if (!type) {
+            throw new Error(`Type cannot be an empty or null string`);
+        }
+        if (!member) {
+            throw new Error(`member cannot be an empty or null string`);
+        }
+        // Add component to package if this is a meta like file
+        let members = this.metadataMembers.get(type);
+        if (members == null) {
+            this.metadataMembers.set(type, members = new Set<string>());
+        }
+        members.add(member);
+    }
+
+    /**
+     * Converts the contents of the package to a JSON structure that can be use for retrieval 
+     */
+    public toJson() : {
+        version: string;
+        types: { name: string, members: string[] }[]
+    } {
+        return { 
+            version: this.version,
+            types: [...this.metadataMembers.entries()].map(([name, members]) => ({ name, members: [...members.values()] }))
+        };
+    }
+
+    /**
+     * Converts the contents of the package to XML that can be saved into a package.xml file
+     */
+    public toXml() : string {
+        const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
+        return xmlBuilder.buildObject({ 
+            Package: { 
+                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' }, 
+                ...this.toJson()
+            }
+        });
+    }
+
+    /**
+     * Creates a package XML structure object from a MetadataManifest
+     * @param manifest The manifest to create a PackageXML from
+     */
+    static from(manifest: MetadataManifest) : PackageXml {
+        const packageXml = new PackageXml(manifest.apiVersion); 
+        for (const info of Object.values(manifest.files)) {
+            packageXml.add(info.type, info.name);
+        }
+        return packageXml;
+    }    
+}
+
 export default class SalesforceService implements JsForceConnectionProvider {  
 
     private readonly describeCache = new Map<string, jsforce.DescribeSObjectResult>();
@@ -146,7 +226,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      */
     public async buildPackageFromManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<ZipArchive> {
         // build package XML
-        const metadataMembers = new Map<string, Set<string>>();
+        const packageXml = new PackageXml(manifest.apiVersion || '45.0');
         const packageZip = new ZipArchive();
 
         for (const [packagePath, info] of Object.entries(manifest.files)) {
@@ -157,66 +237,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
             const documentBody = info.body ? info.body : await getDocumentBodyAsString(info.localPath);
             packageZip.file(path.posix.join('src', packagePath), documentBody);
-
-            // Add component to package if this is a meta like file
+            
             if (info.type) {
-                let members = metadataMembers.get(info.type);
-                if (members == null) {
-                    metadataMembers.set(info.type, members = new Set<string>());
-                }
-                members.add(info.name);
+                packageXml.add(info.type, info.name);
             }
         }
 
-        // validate API version - default to 45
-        const apiVersion = manifest.apiVersion || '45.0';
-        if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
-            throw new Error(`Invalid API version: ${apiVersion}`);
-        }
-
-        // Build package.xml
-        const packageTypes = [...metadataMembers.entries()].map(([name, members]) => ({ name, members: [...members.values()] }));
-        const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
-        const packageXml = xmlBuilder.buildObject({ 
-            Package: { 
-                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' }, 
-                version: apiVersion,
-                types: packageTypes
-            } 
-        });
-
-        return packageZip.file(`src/package.xml`, packageXml);
-    }
-
-    /**
-     * Builds the body for a destructiveChanges.xml file
-     * @param manifest Manifest containing all files and components that should be removed
-     * @param apiVersion API Version to use
-     */
-    private async buildDestructiveChangesXml(manifest: MetadataManifest) : Promise<string> {
-         // build package XML
-         const metadataMembers = new Map<string, Set<string>>();
- 
-         for (const info of Object.values(manifest.files)) {
-             // Add component to package if this is a meta like file
-             let members = metadataMembers.get(info.type);
-             if (members == null) {
-                 metadataMembers.set(info.type, members = new Set<string>());
-             }
-             members.add(info.name);
-         }
-
-        // Create destructive changes XML
-        const packageTypes = [...metadataMembers.entries()].map(([name, members]) => ({ name, members: [...members.values()] }));
-        const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
-        const destructiveChanges = xmlBuilder.buildObject({ 
-            Package: { 
-                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' }, 
-                version: manifest.apiVersion,
-                types: packageTypes
-            } 
-        });
-        return destructiveChanges;
+        // Add package.xml
+        return packageZip.file(`src/package.xml`, packageXml.toXml());
     }
 
     /**
@@ -322,7 +350,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         const packageZip = await this.buildPackageFromManifest({ 
             apiVersion: manifest.apiVersion, 
             files: { 
-                'destructiveChanges.xml': { body: await this.buildDestructiveChangesXml(manifest) }
+                'destructiveChanges.xml': { body: PackageXml.from(manifest).toXml() }
             }
         });
         return this.deploy(packageZip, options, progress, token);
@@ -385,6 +413,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             while (await wait(checkInterval)) {            
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
                     // we can't cancel a deploy through JSForce right now
+                    const result = await (<any>connection.metadata).cancelDeploy(deployJob.id);
                     throw new Error(`${deploymentTypeText} cancelled`);
                 }
 
@@ -401,5 +430,43 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
         return deploymentTask(progress || { report() { } }, token);        
     }
+
+    /**
+     * Retrieve the files specified in the Manifest from the currently connected org.
+     * @param files Files to deploy
+     * @param options Extra deploy options
+     * @param progressOptions Progress options
+     */
+    public async retrieveManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<RetrieveResult> {
+        const startTime = new Date().getTime();
+        const checkInterval = 500;
+
+        const retrieveTask = async (cancellationToken: vscode.CancellationToken) => {
+            // Create package
+            const packageXml = PackageXml.from(manifest);
+
+            // Start deploy            
+            const connection = await this.getJsForceConnection();        
+            const retrieveJob = await connection.metadata.retrieve({
+                singlePackage: false,
+                unpackaged: packageXml.toJson()
+            }, undefined);
+
+            // Wait for deploy
+            while (await wait(checkInterval)) {            
+                if (cancellationToken && cancellationToken.isCancellationRequested) {
+                    // we can't cancel a retrieve
+                    throw new Error(`Retrieve request cancelled`);
+                }
+
+                const status = <RetrieveResult>await connection.metadata.checkRetrieveStatus(retrieveJob.id);
+                if (status.done) {
+                    return status;
+                }
+            }
+        };
+
+        return retrieveTask(token);
+    }   
 
 }

@@ -17,26 +17,22 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {
         const progressTitle = selectedFiles.length == 1 
-            ? `Deploying ${path.basename(selectedFiles[0].fsPath)}...` 
-            : `Deploying ${selectedFiles.length} files...`;
+            ? `${path.basename(selectedFiles[0].fsPath)}` 
+            : `${selectedFiles.length} components`;
 
-        try {
-
-            const [manifest, result] = await this.vloService.withActivity({
-                progressTitle: progressTitle, 
-                location: vscode.ProgressLocation.Window,
-                cancellable: true
-            }, async (progress, token) => {
-                const manifest = await this.salesforce.buildDeploymentManifest(selectedFiles, token);
-                if (manifest.files.length == 0) {
-                    throw new Error('None of the selected files or folders can be deployed as their metadata is not known');
-                }
-                this.clearPreviousErrors(manifest);
-                const result = await this.salesforce.deployManifest(manifest, {
-                    ignoreWarnings: true
-                }, progress, token);
-                return [manifest, result];
-            });
+        await this.vloService.withActivity({
+            progressTitle: `Deploying ${progressTitle}...`, 
+            location: vscode.ProgressLocation.Notification,
+            cancellable: true
+        }, async (progress, token) => {
+            const manifest = await this.salesforce.buildDeploymentManifest(selectedFiles, token);
+            if (manifest.files.length == 0) {
+                throw new Error('None of the selected files or folders can be deployed as their metadata is not known');
+            }
+            this.clearPreviousErrors(manifest);
+            const result = await this.salesforce.deployManifest(manifest, {
+                ignoreWarnings: true
+            }, progress, token);
 
             const componentNames = [...new Set(Object.values(manifest.files).map(file => file.name))];
 
@@ -45,15 +41,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
             }
 
             if (!result.success) {
-                this.logger.error(`Deployment ${result.status}: ${result.errorMessage}`);
-                vscode.window.showErrorMessage(`Deployment ${result.status}: ${result.errorMessage}`);
-            } else {
-                this.logger.info(`Deployment of ${componentNames.join(', ')} succeeded`);
-            }
-
-        } catch (err) {
-            this.logger.error(err);
-            vscode.window.showErrorMessage(`Vlocode encountered an error while deploying the selected metadata, see the log for details.`);
-        }
+                throw new Error(`Deployment ${result.status}: ${result.errorMessage}`);
+            } 
+            
+            this.logger.info(`Deployment of ${componentNames.join(', ')} succeeded`);
+            vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
+        });
     }
 }

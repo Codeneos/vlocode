@@ -70,9 +70,11 @@ DataRaptor:
     path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__drmapper?id=' + id"
 
 DocumentTemplate:
+  query: Select Id, Name, %vlocity_namespace%__TemplateContentFormat__c, %vlocity_namespace%__VersionNumber__c, %vlocity_namespace%__Status__c from %vlocity_namespace%__DocumentTemplate__c where %vlocity_namespace%__Status__c = 'Active'
+  description: "(IsActive__c ? 'Active' : null)"
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__documenttemplate?templateId=' + id + '&templateType=web'"
+    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__documenttemplate?templateId=' + id + '&templateType=' + ( TemplateContentFormat__c == 'Microsoft Word .DOCX Template' ? 'docx' : (TemplateContentFormat__c == 'Microsoft Powerpoint .PPTX Template' ? 'pptx' : 'web') )"
 
 DocumentClause:
   salesforceUrl:

@@ -38,14 +38,14 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         return this.openIdInSalesforce(salesforceId, obj.datapackType);
     }
 
-    protected async openIdInSalesforce(objectId: string, datapackType: string) {    
+    protected async openIdInSalesforce(objectId: string, datapackType: string, extraFields?: any) {    
         // Build URL
         const queryDefinitions = await this.datapackService.getQueryDefinitions();
         let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'${objectId}'`;
         salesforceUrl = typeof salesforceUrl === 'string' ? { path: salesforceUrl } : salesforceUrl;
 
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
-        const salesforcePath = evalExpr(salesforceUrl.path, { id: objectId, type: datapackType, namespace: namespace });
+        const salesforcePath = evalExpr(salesforceUrl.path, {...extraFields, id: objectId, type: datapackType, namespace: namespace });
 
         const url = await this.vloService.salesforceService.getPageUrl(salesforcePath);
         this.logger.info(`Opening URL: ${salesforcePath}`);

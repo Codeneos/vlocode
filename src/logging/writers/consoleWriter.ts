@@ -1,4 +1,4 @@
-import * as constants from '@constants'
+import * as constants from '@constants';
 import { LogWriter, LogEntry, LogLevel } from "logging";
 import moment = require('moment');
 

@@ -1,8 +1,9 @@
 {
 	"rules": {
-		"no-string-throw": true,
+		"no-string-throw": false,
 		"no-unused-expression": true,
 		"no-duplicate-variable": true,
+		"no-debugger": true,
 		"curly": true,
 		"class-name": true,
 		"semicolon": [
@@ -12,7 +13,10 @@
 		"triple-equals": false,
 		"use-isnan": true,
 		"deprecation": true,
-		"prefer-readonly": true
+		"prefer-readonly": true,
+		"prefer-const": true,
+		"prefer-for-of": true,
+		"cyclomatic-complexity": true
 	},
 	"defaultSeverity": "warning"
 }
