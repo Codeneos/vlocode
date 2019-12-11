@@ -519,7 +519,7 @@
         "retire": "^2.0.3",
         "rimraf": "^3.0.0",
         "rxjs": "^6.5.3",
-        "salesforce-alm": "^47.9.0",
+        "salesforce-alm": "^47.10.0",
         "sinon": "^7.5.0",
         "terser": "^4.4.2",
         "terser-webpack-plugin": "^2.2.1",
