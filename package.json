@@ -513,7 +513,7 @@
         "mocha-junit-reporter": "^1.23.0",
         "mocha-simple-html-reporter": "^1.1.0",
         "mocha-sonarqube-reporter": "^1.0.1",
-        "mock-fs": "^4.10.1",
+        "mock-fs": "^4.10.4",
         "moment": "^2.24.0",
         "patch-package": "^6.2.0",
         "retire": "^2.0.3",
