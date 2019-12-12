@@ -522,7 +522,7 @@
         "salesforce-alm": "^47.10.0",
         "sinon": "^7.5.0",
         "terser": "^4.4.2",
-        "terser-webpack-plugin": "^2.2.3",
+        "terser-webpack-plugin": "^2.3.0",
         "ts-loader": "^6.2.1",
         "ts-node": "^8.5.4",
         "tslint": "^5.20.1",
