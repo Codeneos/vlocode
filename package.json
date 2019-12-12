@@ -479,7 +479,7 @@
         "@babel/core": "^7.7.5",
         "@salesforce/core": "^2.1.5",
         "@types/angular": "^1.6.57",
-        "@types/chai": "^4.2.5",
+        "@types/chai": "^4.2.7",
         "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
