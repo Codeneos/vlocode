@@ -15,6 +15,15 @@ import * as constants from '@constants';
 import VlocodeActivity, { VlocodeActivityStatus } from 'models/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'observer';
 
+type ActivityOptions = { 
+    progressTitle: string, 
+    activityTitle?: string, 
+    cancellable: boolean, 
+    location: vscode.ProgressLocation,
+    /** Task runner throws exceptions back to so they can be caught by the called */
+    propagateExceptions?: boolean
+};
+
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {  
 
     // Privates
@@ -147,7 +156,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param task Task to run
      */
     public withActivity<T>(
-            options: { progressTitle: string, activityTitle?: string, cancellable: boolean, location: vscode.ProgressLocation }, 
+            options: ActivityOptions, 
             task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
         
         // Create activity record to track activity progress
@@ -181,7 +190,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             } catch(e) {
                 activityRecord.status = cancelTokenSource?.token.isCancellationRequested 
                     ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Failed;
-                throw e;
+                if (options.propagateExceptions !== false) {
+                    throw e;
+                }
             } finally {
                 activityRecord.endTime = Date.now();
                 onCompleteEmitter.fire(activityRecord);

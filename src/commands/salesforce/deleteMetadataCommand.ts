@@ -22,7 +22,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             cancellable: true
         }, async (progress, token) => {  
 
-            const manifest = await this.salesforce.buildDeploymentManifest(selectedFiles, token);
+            const manifest = await this.salesforce.buildManifest(selectedFiles, token);
             const result = await this.salesforce.deployDestructiveChanges(manifest, {
                 ignoreWarnings: true
             }, null, token);
@@ -31,7 +31,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
 
             if (!result.success) {
                 this.logger.error(`Destruct failed ${result.status}: ${result.errorMessage}`);
-                throw `Destruct failed: ${result.errorMessage}`;
+                throw new Error(`Destruct failed: ${result.errorMessage}`);
             }
             
             this.logger.info(`Destruct ${componentNames.join(', ')} succeeded`);

@@ -59,8 +59,8 @@ export type DeploymentProgress = vscode.Progress<{
 }>;
 
 interface RetrieveResult extends jsforce.RetrieveResult {
-    done: boolean;
-    success: boolean;
+    done: boolean | string;
+    success: boolean | string;
     errorMessage?: string;
     errorStatusCode?: string;
     status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
@@ -130,12 +130,66 @@ class PackageXml {
      * @param manifest The manifest to create a PackageXML from
      */
     static from(manifest: MetadataManifest) : PackageXml {
-        const packageXml = new PackageXml(manifest.apiVersion); 
+        const packageXml = new PackageXml(manifest.apiVersion || '45.0'); 
         for (const info of Object.values(manifest.files)) {
             packageXml.add(info.type, info.name);
         }
         return packageXml;
     }    
+}
+
+interface ExtendedFileProperties extends jsforce.FileProperties { 
+    packagedFileName: string;
+    hasMetaFile: boolean;
+    getBuffer(): Promise<Buffer>;
+    getStream(): NodeJS.ReadableStream;
+    getMetaBuffer(): Promise<Buffer>;
+    getMetaStream(): NodeJS.ReadableStream;
+}
+
+/**
+ * Wraps arround a RetrieveResult Object and allows easy iteration over the files contained in it.
+ */
+export class RetrieveResultPackage {
+
+    public get success() : boolean {
+        return !!this.result.zipFile;
+    }
+    
+    constructor(private readonly result: jsforce.RetrieveResult, private readonly zip : ZipArchive) {
+    }
+
+    public getFiles() : Array<ExtendedFileProperties> {
+        return this.result.fileProperties.map(file => {
+            const packagedFileName = file.fileName;
+            const metaFileName = `${file.fileName}-meta.xml`;
+            return Object.assign(file, {
+                packagedFileName: packagedFileName,
+                hasMetaFile: this.zip.file(metaFileName) !== null,
+                fileName: file.fileName.split('/').slice(1).join('/'),
+                getBuffer: () => this.zip.file(packagedFileName).async('nodebuffer'),
+                getStream: () => this.zip.file(packagedFileName).nodeStream(),
+                getMetaBuffer: () => this.zip.file(metaFileName)?.async('nodebuffer'),
+                getMetaStream: () => this.zip.file(metaFileName)?.nodeStream(),
+            });
+        });
+    }
+
+    public getFileProperties(packageFile: string) : ExtendedFileProperties {
+        return this.getFiles().find(f => f.packagedFileName.toLowerCase().endsWith(packageFile.toLowerCase()));
+    }
+
+    public async unpackFile(packageFile: string, targetPath: string) : Promise<void> {
+        const [ file ] = this.zip.filter(f => f.toLowerCase().endsWith(packageFile.toLowerCase()));
+        if (!file) {
+            throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
+        }
+        return new Promise((resolve, reject) => {
+            file.nodeStream().pipe(fs.createWriteStream(targetPath, { flags: 'w' }))
+                .on('finish', () => resolve())
+                .on('error', e => reject(e));
+        });        
+    }
 }
 
 export default class SalesforceService implements JsForceConnectionProvider {  
@@ -252,7 +306,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param srcDir The package directory to read the source from.
      * @param ignorePatterns A list of ignore patterns of the files to ignore.
      */
-    public async buildDeploymentManifest(files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest> {
+    public async buildManifest(files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest> {
         const mdPackage : MetadataManifest = { files: {} };
         const metaFiles =  await getMetaFiles(files.map(file => file.fsPath), true);
 
@@ -304,7 +358,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 // other meta data type add only the meta file
                 const packagePath = path.posix.join(packageFolder, path.basename(metaFile));
                 Object.assign(mdPackage.files, {   
-                    [packagePath]: { name: componentName, type: componentType, localPath: metaFile }
+                    [packagePath]: { name: componentName.split('.').slice(0,-1).join('.'), type: componentType, localPath: metaFile }
                 });
             }
         }
@@ -318,7 +372,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param ignorePatterns A list of ignore patterns of the files to ignore.
      */
     private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken) : Promise<ZipArchive> {
-        const manifest = await this.buildDeploymentManifest(files, token);
+        const manifest = await this.buildManifest(files, token);
         manifest.apiVersion = apiVersion;
         return this.buildPackageFromManifest(manifest, token);
     }
@@ -412,8 +466,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
             // Wait for deploy
             while (await wait(checkInterval)) {            
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
-                    // we can't cancel a deploy through JSForce right now
-                    const result = await (<any>connection.metadata).cancelDeploy(deployJob.id);
+                    // Cancel deployment; we don't really care if the cancel is successfull or not
+                    (<any>connection.metadata).cancelDeploy(deployJob.id);
                     throw new Error(`${deploymentTypeText} cancelled`);
                 }
 
@@ -437,7 +491,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param options Extra deploy options
      * @param progressOptions Progress options
      */
-    public async retrieveManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<RetrieveResult> {
+    public async retrieveManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<RetrieveResultPackage> {
         const startTime = new Date().getTime();
         const checkInterval = 500;
 
@@ -460,13 +514,13 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 }
 
                 const status = <RetrieveResult>await connection.metadata.checkRetrieveStatus(retrieveJob.id);
-                if (status.done) {
-                    return status;
+                if (status.done === true || status.done === 'true') {
+                    const zip = status.zipFile ? await new ZipArchive().loadAsync(Buffer.from(status.zipFile, 'base64')) : null;
+                    return new RetrieveResultPackage(status, zip);
                 }
             }
         };
 
         return retrieveTask(token);
-    }   
-
+    }
 }

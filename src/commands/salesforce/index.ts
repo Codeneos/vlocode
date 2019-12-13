@@ -1,9 +1,10 @@
 import { VlocodeCommand } from "@constants";
 import DeployMetadataCommand from "./deployMetadataCommand";
 import DeleteMetadataCommand from "./deleteMetadataCommand";
+import RefreshMetadataCommand from './refreshMetadataCommand';
 
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,
-    [VlocodeCommand.deployMetadataExplorer]: DeployMetadataCommand,
-    [VlocodeCommand.destroyMetadata]: DeleteMetadataCommand
+    [VlocodeCommand.destroyMetadata]: DeleteMetadataCommand,
+    [VlocodeCommand.refreshMetadata]: RefreshMetadataCommand
 };

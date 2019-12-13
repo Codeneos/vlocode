@@ -51,7 +51,8 @@
         "onCommand:vlocity.datapackExplorer.openSalesforce",
         "onCommand:vlocity.jobExplorer.refresh",
         "onCommand:vlocity.destroyMetadata",
-        "onCommand:vlocity.jobExplorer.run"
+        "onCommand:vlocity.jobExplorer.run",
+        "onCommand:vlocity.refreshMetadata"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -152,6 +153,10 @@
             {
                 "command": "vlocity.destroyMetadata",
                 "title": "Salesforce: Delete/Destroy"
+            },
+            {
+                "command": "vlocity.refreshMetadata",
+                "title": "Salesforce: Refresh"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -271,6 +276,11 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
+                    "command": "vlocity.refreshMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
                     "command": "vlocity.datapackExplorer.export"
                 },
                 {
@@ -318,6 +328,11 @@
                     "command": "vlocity.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.refreshMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
                 }
             ],
             "editor/context": [
@@ -344,6 +359,11 @@
                 },
                 {
                     "command": "vlocity.destroyMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 }
@@ -473,7 +493,7 @@
         "prepare": "patch-package && npm run prepare:commands",
         "prepare:commands": "ts-node ./build/buildCommands.ts  ./package.json ./commands.yaml",
         "build": "npm run prepare && webpack --config webpack.prod.js --env.extension --env.views",
-        "build:debug": "npm run prepare && webpack --config webpack.dev.js --env.extension --env.views",
+        "build:debug": "npm run prepare && webpack --config webpack.dev.js --env.extension ",
         "build:tests": "npm run prepare && webpack --config webpack.dev.js --env.tests --env.transpileOnly",
         "clean": "rimraf ./out",
         "lint": "tslint -p .",
@@ -492,6 +512,7 @@
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
         "@types/jsforce": "^1.9.12",
+        "@types/jszip": "^3.1.6",
         "@types/mocha": "^5.2.7",
         "@types/node": "^10.17.6",
         "@types/sinon": "^7.5.1",

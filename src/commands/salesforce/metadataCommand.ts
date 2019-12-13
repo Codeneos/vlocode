@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel } from '@util';
+import { forEachAsyncParallel, getDocumentBodyAsString } from '@util';
 import * as path from 'path';
 import { CommandBase } from 'commands/commandBase';
 import SalesforceService, { ComponentFailure, MetadataManifest } from 'services/salesforceService';
@@ -15,8 +15,15 @@ export default abstract class MetadataCommand extends CommandBase {
      * and ignore any deployment command that comes in for these.
      */
     private readonly savingDocumentsList = new Set<string>(); 
-    
 
+    /**
+     * Problem matcher functions
+     */
+    private readonly problemMatchers = [
+        { test: /(?<message>.*):\s*(?<token>.*)/, handler: this.tokenProblemHandler.bind(this) },
+        { test: /.+/, handler: this.genericProblemHandler.bind(this) }
+    ];
+    
     private get diagnostics() : vscode.DiagnosticCollection {
         return this.vloService.getDiagnostics('salesforce');
     }
@@ -55,11 +62,51 @@ export default abstract class MetadataCommand extends CommandBase {
         for (const failure of failures.filter(failure => failure && !!failure.fileName)) {
             const info = manifest.files[failure.fileName.replace(/^src\//i, '')];
             if (info && info.localPath) {
-                // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference
-                const startPosition = new vscode.Position(parseInt(failure.lineNumber) - 1, parseInt(failure.columnNumber) - 1);
-                this.addError(vscode.Uri.file(info.localPath), new vscode.Range(startPosition, startPosition.translate(0,1)), failure.problem);
+                // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference                
+                this.handleComponentFailure(vscode.Uri.file(info.localPath), failure);
             }
         }
+        // Log all failures to the console even those that have no file info
+        for (const failure of failures.filter(failure => failure)) {
+            this.logger.warn(`${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
+        }
+    }
+
+    private async handleComponentFailure(localPath: vscode.Uri, failure: ComponentFailure) {
+        // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference     
+        const startPosition = new vscode.Position(parseInt(failure.lineNumber) - 1, parseInt(failure.columnNumber) - 1);
+        const fileBody = await getDocumentBodyAsString(localPath.fsPath);
+        
+        for (const matcher of this.problemMatchers) {
+            const match = failure.problem.match(matcher.test);
+            if(!match) {
+                continue;
+            }
+            try {
+                const range = matcher.handler(fileBody, failure.problem, startPosition, match);
+                if (range) {
+                    this.addError(localPath, range, failure.problem);
+                    return;
+                } 
+            } catch(e) {
+                this.logger.error(`Problem matcher error: ${e.message || e}`);
+            }
+        }
+
+        // Only reaches here in case non of the problem matcher work,
+        this.logger.warn(`All problem matchers failed, falling back to basic single character match`);
+        this.addError(localPath, new vscode.Range(startPosition, startPosition.translate(0,1)), failure.problem);
+    }
+
+    private tokenProblemHandler(content: string, problem: string, start: vscode.Position, match: RegExpMatchArray) : vscode.Range {
+        // look ahead for the token
+        return this.findSubstring(content, start.line, start.character, match.groups['token']) || 
+            this.findSubstring(content, start.line, 0, match.groups['token']);
+    }
+
+    private genericProblemHandler(content: string, problem: string, start: vscode.Position) : vscode.Range {
+        // look for a termination character
+        return this.findTerminator(content, start.line, start.character);
     }
 
     /**
@@ -96,5 +143,29 @@ export default abstract class MetadataCommand extends CommandBase {
     protected addMessage(severity: vscode.DiagnosticSeverity, file: vscode.Uri, range : vscode.Range, message : string) : void {
         const currentMessages = this.diagnostics.get(file) || [];
         this.diagnostics.set(file, [...currentMessages, new vscode.Diagnostic(range, message, severity)]);
+    }
+
+    private findSubstring(content: string, lineNumber: number, index: number, needle: string) : vscode.Range | undefined {
+        const lines = content.split('\n');
+        const column = lines[lineNumber]?.indexOf(needle, index);
+
+        if (column && column != -1) {
+            return new vscode.Range(
+                new vscode.Position(lineNumber, column),
+                new vscode.Position(lineNumber, column+needle.length)
+            );
+        }
+    }
+
+    private findTerminator(content: string, lineNumber: number, index: number, terminationPattern: RegExp = /\W{1}/i) : vscode.Range | undefined {
+        const lines = content.split('\n');
+        const match = lines[lineNumber]?.substr(index).match(terminationPattern);
+
+        if (match) {
+            return new vscode.Range(
+                new vscode.Position(lineNumber, index),
+                new vscode.Position(lineNumber, index + match.index)
+            );
+        }
     }
 }

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import MetadataCommand from './metadataCommand';
+import * as fs from 'fs';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
@@ -12,9 +13,16 @@ export default class RefreshMetadataCommand extends MetadataCommand {
     }
 
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {
-        const progressTitle = selectedFiles.length == 1 
-            ? `${path.basename(selectedFiles[0].fsPath)}` 
-            : `${selectedFiles.length} components`;
+        // Build manifest
+        const manifest = await this.salesforce.buildManifest(selectedFiles);
+        if (manifest.files.length == 0) {
+            return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
+        }
+        this.clearPreviousErrors(manifest);
+
+        // Get task title
+        const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
+        const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${selectedFiles.length} components`;
 
         await this.vloService.withActivity({
             progressTitle: `Refreshing ${progressTitle}...`,
@@ -22,20 +30,36 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             cancellable: true
         }, async (progress, token) => {  
 
-            const manifest = await this.salesforce.buildDeploymentManifest(selectedFiles, token);
-            const result = await this.salesforce.deployDestructiveChanges(manifest, {
-                ignoreWarnings: true
-            }, null, token);
-            
-            const componentNames = [...new Set(Object.values(manifest.files).map(file => file.name))];
-
+            const result = await this.salesforce.retrieveManifest(manifest, token);
+  
             if (!result.success) {
-                this.logger.error(`Refresh failed ${result.status}: ${result.errorMessage}`);
-                throw `Refresh failed: ${result.errorMessage}`;
+                throw new Error(`Refresh failed`);
             }
-            
-            this.logger.info(`Refreshed ${componentNames.join(', ')} succeeded`);
-            vscode.window.showInformationMessage(`Refreshed ${progressTitle}`);
+
+            const componentsNotFound = [];
+            for (const [requestedFile, info] of Object.entries(manifest.files)) {
+                try {
+                    await result.unpackFile(requestedFile, info.localPath);
+                } catch(err) {
+                    this.logger.error(`${info.name} -- ${err.message || err}`);
+                    componentsNotFound.push(info.name);
+                }
+            }
+
+            if (uniqueComponents.length - componentsNotFound.length <= 0) {
+                throw new Error(`Unable to retrieve any of the requested components; it could be that the requested components are not deployed on the target org.`);
+            }
+
+            if (componentsNotFound.length > 0) {
+                this.logger.warn(`Unable to refresh: ${componentsNotFound.join(', ')}`);
+            }  
+            this.logger.info(`Refreshed ${uniqueComponents.filter(name => !componentsNotFound.includes(name)).join(', ')} succeeded`);          
+
+            if (componentsNotFound.length > 0) {
+                vscode.window.showWarningMessage(`Refreshed ${uniqueComponents.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);
+            } else {
+                vscode.window.showInformationMessage(`Refreshed ${progressTitle}`);
+            }
         });
     }
 }

@@ -15,36 +15,39 @@ export default class DeployMetadataCommand extends MetadataCommand {
         super(name, args => this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
     }
 
-    protected async deployMetadata(selectedFiles: vscode.Uri[]) {
-        const progressTitle = selectedFiles.length == 1 
-            ? `${path.basename(selectedFiles[0].fsPath)}` 
-            : `${selectedFiles.length} components`;
+    protected async deployMetadata(selectedFiles: vscode.Uri[]) {        
+        // Build manifest
+        const manifest = await this.salesforce.buildManifest(selectedFiles);
+        if (manifest.files.length == 0) {
+            return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
+        }
+        this.clearPreviousErrors(manifest);
+
+        // Get task title
+        const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
+        const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${selectedFiles.length} components`;
 
         await this.vloService.withActivity({
             progressTitle: `Deploying ${progressTitle}...`, 
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, async (progress, token) => {
-            const manifest = await this.salesforce.buildDeploymentManifest(selectedFiles, token);
-            if (manifest.files.length == 0) {
-                throw new Error('None of the selected files or folders can be deployed as their metadata is not known');
-            }
-            this.clearPreviousErrors(manifest);
             const result = await this.salesforce.deployManifest(manifest, {
                 ignoreWarnings: true
             }, progress, token);
 
-            const componentNames = [...new Set(Object.values(manifest.files).map(file => file.name))];
-
             if (result.details && result.details.componentFailures) {
+                this.clearPreviousErrors(manifest);
                 this.showComponentFailures(manifest, result.details.componentFailures);
             }
 
             if (!result.success) {
-                throw new Error(`Deployment ${result.status}: ${result.errorMessage}`);
+                const errors = result.details.componentFailures.filter(err => err && err.problemType == 'Error');
+                const errorMessage = errors.length == 1 ? errors[0].problem : `Deployment failed with ${errors.length} errors`;
+                throw new Error(errorMessage);
             } 
             
-            this.logger.info(`Deployment of ${componentNames.join(', ')} succeeded`);
+            this.logger.info(`Deployment of ${uniqueComponents.join(', ')} succeeded`);
             vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
         });
     }
