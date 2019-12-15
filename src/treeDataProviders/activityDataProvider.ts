@@ -34,12 +34,12 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
                 dark: 'resources/dark/loading.svg'
             };
             case VlocodeActivityStatus.Completed: return {
-                light: 'resources/light/check.svg',
-                dark: 'resources/dark/check.svg'
+                light: 'resources/light/checked.svg',
+                dark: 'resources/dark/checked.svg'
             };
             case VlocodeActivityStatus.Cancelled: return {
-                light: 'resources/light/close.svg',
-                dark: 'resources/dark/close.svg'
+                light: 'resources/light/error.svg',
+                dark: 'resources/dark/error.svg'
             };
             case VlocodeActivityStatus.Failed: return {
                 light: 'resources/light/warning.svg',

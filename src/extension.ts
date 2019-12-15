@@ -105,7 +105,7 @@ export = class Vlocode {
         if (vloConfig.salesforceSupport) {
             this.service.enabledSalesforceSupport(true);
         }
-    
+  
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);
         this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
