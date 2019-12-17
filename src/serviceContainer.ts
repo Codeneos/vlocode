@@ -1,3 +1,5 @@
+import { asSingleton } from '@util';
+
 /**
  * Simple service container
  */
@@ -25,7 +27,8 @@ export default class ServiceContainer {
     }
 }
 
+
 /**
  * Application default static container.
  */
-export const container = new ServiceContainer();
+export const container = asSingleton('ServiceContainer', () => new ServiceContainer());

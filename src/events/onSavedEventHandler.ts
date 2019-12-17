@@ -18,9 +18,11 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
     }
    
     protected async handleEvent(document: vscode.TextDocument): Promise<void> {   
-        if (!this.vloService.config.deployOnSave) { 
+        if (!this.vloService.config.deployOnSave && 
+            !this.vloService.config.salesforce.deployOnSave) { 
             return;
         }        
+
         if (!vscode.workspace.getWorkspaceFolder(document.uri) || 
             this.ignoredPaths.some(path => new RegExp(path).test(document.fileName))) {
             this.logger.verbose(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
@@ -28,9 +30,9 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
         }
 
         if (await isPartOfDatapack(document.fileName)) {
-            return this.deployAsDatapack(document)
+            return this.deployAsDatapack(document);
         } else if(isSalesforceMetadataFile(document.fileName)) {
-            return this.deployAsMetadata(document)
+            return this.deployAsMetadata(document);
         }
     }
 
@@ -40,8 +42,11 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
     }
 
     protected deployAsMetadata(document: vscode.TextDocument) : Promise<any> {
-        if (!this.vloService.config.salesforceSupport) {
+        if (!this.vloService.config.salesforce.enabled) {
             this.logger.warn(`Skip deployment; enabled Salesforce support in Vlocode configuration to deploy Salesforce metadata`);
+            return;
+        }
+        if (!this.vloService.config.salesforce.deployOnSave) {
             return;
         }
         this.logger.verbose(`Requesting metadata deploy for: ${document.uri.fsPath}`);

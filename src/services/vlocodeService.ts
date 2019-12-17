@@ -14,6 +14,7 @@ import VlocodeContext from 'models/vlocodeContext';
 import * as constants from '@constants';
 import VlocodeActivity, { VlocodeActivityStatus } from 'models/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'observer';
+import { ConfigurationManager } from './configurationManager';
 
 type ActivityOptions = { 
     progressTitle: string, 
@@ -247,7 +248,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     private createConfigWatcher() : vscode.Disposable {
         this.updateStatusBar(this.config);
-        return this.config.watch(c => {
+        return ConfigurationManager.watch(this.config, c => {
             this.showStatus(`$(sync) Processing config changes...`, VlocodeCommand.selectOrg);
             this.initialize();
         });
@@ -288,9 +289,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 		}
     }
 
-    public enabledSalesforceSupport(support: boolean) {
-        if (this.config.salesforceSupport !== support) {
-            this.config.salesforceSupport = support;
+    public enableSalesforceSupport(support: boolean) {
+        if (this.config.salesforce.enabled !== support) {
+            this.config.salesforce.enabled = support;
         }
         vscode.commands.executeCommand('setContext', 'vlocodeSalesforceSupport', support);
         this.logger.info(`Salesforce support ${support ? 'enabled' : 'disabled'}`);

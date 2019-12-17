@@ -17,6 +17,7 @@ import VlocodeContext from 'models/vlocodeContext';
 import DatapackProvider from 'treeDataProviders/datapackDataProvider';
 import JobDataProvider from 'treeDataProviders/jobExplorer';
 import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
+import { ConfigurationManager } from 'services/configurationManager';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -78,7 +79,7 @@ export = class Vlocode {
 
         // set logging level
         LogManager.setGlobalLogLevel(this.service.config.verbose ? LogLevel.verbose : LogLevel.info); // todo: support more log levels from config section    
-        this.service.config.watch(c => LogManager.setGlobalLogLevel(c.verbose ? LogLevel.verbose : LogLevel.info));
+        ConfigurationManager.watchProperties(this.service.config, [ 'verbose' ], config => LogManager.setGlobalLogLevel(config.verbose ? LogLevel.verbose : LogLevel.info));
 
         // setup Vlocity logger and filters
         LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
@@ -91,7 +92,7 @@ export = class Vlocode {
         this.setWorkingDirectory();
         
         // Init logging and register services
-        let vloConfig = new VlocodeConfiguration(constants.CONFIG_SECTION);
+        const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);
         this.service = container.register(VlocodeService, new VlocodeService(container, vloConfig, VlocodeContext.createFrom(context)));
         context.subscriptions.push(this.service);
         this.setupLogging();
@@ -101,10 +102,12 @@ export = class Vlocode {
         this.logger.verbose(`Verbose logging enabled`);
         
         // Salesforce support      
-        vloConfig.watch(c => this.service.enabledSalesforceSupport(c.salesforceSupport));
-        if (vloConfig.salesforceSupport) {
-            this.service.enabledSalesforceSupport(true);
+        ConfigurationManager.watchProperties(vloConfig, [ 'salesforce.enabled' ], c => this.service.enableSalesforceSupport(c.salesforce.enabled));
+        if (vloConfig.salesforce.enabled) {
+            this.service.enableSalesforceSupport(true);
         }
+        vloConfig.salesforce.enabled = true;
+        vloConfig.salesforce.deployOnSave = true;
   
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);

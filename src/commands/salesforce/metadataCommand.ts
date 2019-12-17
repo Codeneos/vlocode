@@ -59,15 +59,20 @@ export default abstract class MetadataCommand extends CommandBase {
      * @param failures Array of component failures
      */
     protected async showComponentFailures(manifest : MetadataManifest, failures : ComponentFailure[]) {
-        for (const failure of failures.filter(failure => failure && !!failure.fileName)) {
+        // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
+        // these are not usefull to display so we instead filter these out
+        const filterFailures = failures.filter(failure => !failure.problem.startsWith(`An unexpected error occurred.`));
+
+        for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
             const info = manifest.files[failure.fileName.replace(/^src\//i, '')];
             if (info && info.localPath) {
                 // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference                
                 this.handleComponentFailure(vscode.Uri.file(info.localPath), failure);
             }
         }
+        
         // Log all failures to the console even those that have no file info
-        for (const failure of failures.filter(failure => failure)) {
+        for (const failure of filterFailures.filter(failure => failure)) {
             this.logger.warn(`${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
         }
     }

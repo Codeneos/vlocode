@@ -18,7 +18,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
             ], 
-            "preLaunchTask": "npm: build:debug",
+            "preLaunchTask": "build",
             "stopOnEntry": false,
             "sourceMaps": true
         },
@@ -35,7 +35,7 @@
             "outFiles": [
                 "${workspaceFolder}/out/test/**/*.js"
             ], 
-            "preLaunchTask": "npm: build:tests",
+            "preLaunchTask": "build",
             "stopOnEntry": false,
             "sourceMaps": true
         }

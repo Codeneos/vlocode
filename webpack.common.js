@@ -1,11 +1,9 @@
 const path = require('path');
 const merge = require('webpack-merge').smart;
 const packageJson = require("./package.json");
-const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const glob = require('glob');
 const CopyPlugin = require('copy-webpack-plugin');
-const { DuplicatesPlugin } = require("inspectpack/plugin");
 
 const externals = [
    // In order to run tests the main test frameworks need to be marked
@@ -21,6 +19,23 @@ const externals = [
    'sass.js'
 ];
 const packageExternals = [...Object.keys(packageJson.dependencies), ...externals];
+const webpackBuildWatchPlugin = {
+    buildCounter: 0,
+    apply(compiler) {
+        // Create text markers in webpacks output to make it easier
+        // for VSCode to detect errors during the build in watch mode
+        compiler.hooks.compile.tap('WatchMarker', () => {
+            if (this.buildCounter++ == 0) {
+                console.log(`Webpack: build starting...`);
+            }
+        });
+        [compiler.hooks.failed, compiler.hooks.afterEmit].forEach(e => e.tap('WatchMarker', () => {
+            if (--this.buildCounter == 0) {
+                console.log(`Webpack: build completed!`);
+            }
+        }));
+    }
+}; 
 
 /**@type {import('webpack').Configuration}*/
 const common = env => ({
@@ -68,6 +83,7 @@ const common = env => ({
         devtoolModuleFilenameTemplate: '[absolute-resource-path]',
         pathinfo: true
     },    
+    plugins: [ webpackBuildWatchPlugin ],
     node: {
         process: false,
         __dirname: false,

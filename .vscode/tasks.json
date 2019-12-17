@@ -6,10 +6,10 @@
         {
             "type": "npm",
             "script": "watch",
-            "isBackground": false,
+            "isBackground": true,
             "label": "build",
             "presentation": {
-                "reveal": "never"
+                "reveal": "always"
             },
             "group": "build",
             "problemMatcher": [
@@ -33,10 +33,10 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": {
-                            "regexp": "Compilation.+?starting…"
+                            "regexp": "^Webpack: build starting"
                         },
                         "endsPattern": {
-                            "regexp": "Compilation.+?finished"
+                            "regexp": "^Webpack: build completed"
                         }
                     }
                 },
@@ -63,22 +63,14 @@
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": {
-                            "regexp": "Compilation.+?starting…"
+                            "regexp": "^Webpack: build starting"
                         },
                         "endsPattern": {
-                            "regexp": "Compilation.+?finished"
+                            "regexp": "^Webpack: build completed"
                         }
                     }
                 }
             ]
-        },
-        {
-            "type": "npm",
-            "script": "build",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
         }
     ]
 }

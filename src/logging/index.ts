@@ -1,5 +1,6 @@
 
 import { default as LogManagerImpl } from './logManager';
+import { asSingleton } from '@util';
 
 /**
  * Describes the log levels supported by the logging framework
@@ -16,4 +17,7 @@ export enum LogLevel {
 export * from './logger';
 export * from './logManager';
 
-export const LogManager = new LogManagerImpl(LogLevel.info);
+/**
+ * Instantiate log manager as singleton
+ */
+export const LogManager = asSingleton('LogManager', () => new LogManagerImpl(LogLevel.info));

@@ -276,3 +276,16 @@ export async function hasXmlHeader(file: string) {
     }
     return false;
 }
+
+/**
+ * Simple function that registers any instance of a class as single and creates it when it is not existing. Instances are stored as globals which is the closest we can get to a real singleton. *
+ * @param indent The unique indemnifier under which this property can be accessed.
+ * @param factory The factory method that creates the instance when it does not exist.
+ */
+export function asSingleton<T>(indent: string, factory: () => T) :T {
+    const singletonGlobalKey = `$asSingleton.vlocode.${indent}`;
+    if (!global[singletonGlobalKey]) {
+        global[singletonGlobalKey] = factory();
+    }
+    return global[singletonGlobalKey];
+}

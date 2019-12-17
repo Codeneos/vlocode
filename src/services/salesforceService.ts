@@ -139,7 +139,7 @@ class PackageXml {
 }
 
 interface ExtendedFileProperties extends jsforce.FileProperties { 
-    packagedFileName: string;
+    packageName: string;
     hasMetaFile: boolean;
     getBuffer(): Promise<Buffer>;
     getStream(): NodeJS.ReadableStream;
@@ -156,19 +156,22 @@ export class RetrieveResultPackage {
         return !!this.result.zipFile;
     }
     
-    constructor(private readonly result: jsforce.RetrieveResult, private readonly zip : ZipArchive) {
+    constructor(private readonly result: jsforce.RetrieveResult, private readonly singlePackage: boolean, private readonly zip : ZipArchive) {
     }
 
     public getFiles() : Array<ExtendedFileProperties> {
         return this.result.fileProperties.map(file => {
-            const packagedFileName = file.fileName;
+            const fullFileName = file.fileName;
+            const fileName = this.singlePackage ? file.fileName : file.fileName.split('/').slice(1).join('/');
+            const packageName = this.singlePackage ? file.fileName.split('/').shift() : undefined;
             const metaFileName = `${file.fileName}-meta.xml`;
             return Object.assign(file, {
-                packagedFileName: packagedFileName,
+                packageName: packageName,
+                fullFileName: fullFileName,
+                fileName: fileName,
                 hasMetaFile: this.zip.file(metaFileName) !== null,
-                fileName: file.fileName.split('/').slice(1).join('/'),
-                getBuffer: () => this.zip.file(packagedFileName).async('nodebuffer'),
-                getStream: () => this.zip.file(packagedFileName).nodeStream(),
+                getBuffer: () => this.zip.file(fullFileName).async('nodebuffer'),
+                getStream: () => this.zip.file(fullFileName).nodeStream(),
                 getMetaBuffer: () => this.zip.file(metaFileName)?.async('nodebuffer'),
                 getMetaStream: () => this.zip.file(metaFileName)?.nodeStream(),
             });
@@ -176,11 +179,11 @@ export class RetrieveResultPackage {
     }
 
     public getFileProperties(packageFile: string) : ExtendedFileProperties {
-        return this.getFiles().find(f => f.packagedFileName.toLowerCase().endsWith(packageFile.toLowerCase()));
+        return this.getFiles().find(f => f.fileName.toLowerCase().endsWith(packageFile.toLowerCase()));
     }
 
     public async unpackFile(packageFile: string, targetPath: string) : Promise<void> {
-        const [ file ] = this.zip.filter(f => f.toLowerCase().endsWith(packageFile.toLowerCase()));
+        const [ file ] = this.zip.filter(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
         if (!file) {
             throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
         }
@@ -290,7 +293,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             }
 
             const documentBody = info.body ? info.body : await getDocumentBodyAsString(info.localPath);
-            packageZip.file(path.posix.join('src', packagePath), documentBody);
+            packageZip.file(packagePath, documentBody);
             
             if (info.type) {
                 packageXml.add(info.type, info.name);
@@ -298,7 +301,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         }
 
         // Add package.xml
-        return packageZip.file(`src/package.xml`, packageXml.toXml());
+        return packageZip.file(`package.xml`, packageXml.toXml());
     }
 
     /**
@@ -461,7 +464,17 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
             // Start deploy            
             const connection = await this.getJsForceConnection();        
-            const deployJob = await connection.metadata.deploy(zipInput, options || {});
+            const deployJob = await connection.metadata.deploy(zipInput, {
+                singlePackage: true, 
+                performRetrieve: true, 
+                ignoreWarnings: false,
+                autoUpdatePackage: false,
+                allowMissingFiles: false,
+                // We asssume we only run on developer orgs, as such set these options to true by default
+                purgeOnDelete: true,
+                rollbackOnError: false,
+                ...options
+            });
 
             // Wait for deploy
             while (await wait(checkInterval)) {            
@@ -498,12 +511,12 @@ export default class SalesforceService implements JsForceConnectionProvider {
         const retrieveTask = async (cancellationToken: vscode.CancellationToken) => {
             // Create package
             const packageXml = PackageXml.from(manifest);
+            const singlePackage = true;
 
             // Start deploy            
             const connection = await this.getJsForceConnection();        
             const retrieveJob = await connection.metadata.retrieve({
-                singlePackage: false,
-                unpackaged: packageXml.toJson()
+                singlePackage, unpackaged: packageXml.toJson()
             }, undefined);
 
             // Wait for deploy
@@ -516,7 +529,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 const status = <RetrieveResult>await connection.metadata.checkRetrieveStatus(retrieveJob.id);
                 if (status.done === true || status.done === 'true') {
                     const zip = status.zipFile ? await new ZipArchive().loadAsync(Buffer.from(status.zipFile, 'base64')) : null;
-                    return new RetrieveResultPackage(status, zip);
+                    return new RetrieveResultPackage(status, singlePackage, zip);
                 }
             }
         };

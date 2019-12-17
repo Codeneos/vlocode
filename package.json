@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.12.6",
+    "version": "0.12.8",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -151,12 +151,12 @@
                 "title": "Salesforce: Save/Deploy"
             },
             {
-                "command": "vlocity.destroyMetadata",
-                "title": "Salesforce: Delete/Destroy"
-            },
-            {
                 "command": "vlocity.refreshMetadata",
                 "title": "Salesforce: Refresh"
+            },
+            {
+                "command": "vlocity.destroyMetadata",
+                "title": "Salesforce: Delete/Destroy"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -271,12 +271,12 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.destroyMetadata",
+                    "command": "vlocity.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.refreshMetadata",
+                    "command": "vlocity.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
@@ -325,11 +325,6 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.destroyMetadata",
-                    "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
-                },
-                {
                     "command": "vlocity.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
@@ -358,12 +353,12 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.destroyMetadata",
+                    "command": "vlocity.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.refreshMetadata",
+                    "command": "vlocity.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 }
@@ -476,10 +471,15 @@
                     "default": true,
                     "markdownDescription": "Automatically activate datapacks after deployment to the target org."
                 },
-                "vlocity.salesforceSupport": {
+                "vlocity.salesforce.enabled": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Enable experimental support for deploying of Salesforce metadata files"
+                    "markdownDescription": "Enables support for **Salesforce commands** such as _Deploy_ and _Refresh_ of Salesforce Metadata Objects through Vlocode"
+                },
+                "vlocity.salesforce.deployOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Automatically deploy metadata files to Salesforce when saved."
                 },
                 "vlocity.logInTerminal": {
                     "type": "boolean",
@@ -495,6 +495,7 @@
         "build": "npm run prepare && webpack --config webpack.prod.js --env.extension --env.views",
         "build:debug": "npm run prepare && webpack --config webpack.dev.js --env.extension ",
         "build:tests": "npm run prepare && webpack --config webpack.dev.js --env.tests --env.transpileOnly",
+        "watch": "webpack --watch --config webpack.dev.js --env.extension --env.tests",
         "clean": "rimraf ./out",
         "lint": "tslint -p .",
         "test": "npm run build:tests && node ./out/test/runTest.js",
@@ -557,6 +558,7 @@
         "tslint": "^5.20.1",
         "tslint-loader": "^3.5.4",
         "typescript": "^3.7.3",
+        "unibeautify": "^0.17.0",
         "uuid": "^3.3.3",
         "vlocity": "^1.11.12",
         "vsce": "^1.71.0",
