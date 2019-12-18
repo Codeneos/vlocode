@@ -52,7 +52,8 @@
         "onCommand:vlocity.jobExplorer.refresh",
         "onCommand:vlocity.destroyMetadata",
         "onCommand:vlocity.jobExplorer.run",
-        "onCommand:vlocity.refreshMetadata"
+        "onCommand:vlocity.refreshMetadata",
+        "onCommand:vlocity.selectApiVersion"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -157,6 +158,10 @@
             {
                 "command": "vlocity.destroyMetadata",
                 "title": "Salesforce: Delete/Destroy"
+            },
+            {
+                "command": "vlocity.selectApiVersion",
+                "title": "Salesforce: Select API Version"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -277,6 +282,11 @@
                 },
                 {
                     "command": "vlocity.destroyMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.selectApiVersion",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
@@ -427,19 +437,23 @@
                     "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
                 },
                 "vlocity.username": {
+                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
                     "type": "string",
                     "markdownDescription": "Salesforce username"
                 },
                 "vlocity.password": {
+                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
                     "type": "string",
                     "markdownDescription": "Salesforce account password appended with your Salesforce security token"
                 },
                 "vlocity.loginUrl": {
+                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
                     "type": "string",
                     "pattern": "(^http(s){0,1}:\\/\\/[^/]+\\.[a-z]+(:[0-9]+|)$)|(^\\s*$)",
                     "markdownDescription": "Login URL for salesforce, i.e: <https://test.salesforce.com>"
                 },
                 "vlocity.instanceUrl": {
+                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
                     "type": "string",
                     "pattern": "(^http(s){0,1}:\\/\\/[^/]+\\.[a-z]+(:[0-9]+|)$)|(^\\s*$)",
                     "markdownDescription": "Instance URL for salesforce, i.e: <https://test.salesforce.com>"
@@ -475,6 +489,18 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Enables support for **Salesforce commands** such as _Deploy_ and _Refresh_ of Salesforce Metadata Objects through Vlocode"
+                },
+                "vlocity.salesforce.apiVersion": {
+                    "type": "string",
+                    "pattern": "^\\d{2,3}\\.\\d$",
+                    "examples": [
+                        "38.0",
+                        "45.0",
+                        "46.0",
+                        "47.0"
+                    ],
+                    "default": "45.0",
+                    "markdownDescription": "The API version used for Salesforce deployments and refresh operations. Invalid API versions will cause all Salesforce related commands to fail."
                 },
                 "vlocity.salesforce.deployOnSave": {
                     "type": "boolean",

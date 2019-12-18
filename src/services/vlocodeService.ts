@@ -30,6 +30,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     // Privates
     private disposables: {dispose() : any}[] = [];
     private statusBar: vscode.StatusBarItem;
+    private apiStatus: vscode.StatusBarItem;
     private connector: JsForceConnectionProvider;
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly activitiesChangedEmitter = new vscode.EventEmitter<VlocodeActivity[]>();
@@ -77,16 +78,24 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     public async initialize() {
         this.showStatus(`$(sync) Connecting to Salesforce...`);
         try {
-            this.connector = null;            
+            this.connector = null;  
+            this._salesforceService = null;          
             if (this._datapackService) {
                 this._datapackService.dispose();
+                this._datapackService = null;            
             }
-            this._salesforceService = new SalesforceService(this);
-            this._datapackService = await new VlocityDatapackService(this.container, this, this.config, this.salesforceService).initialize();
+            if (this.config.sfdxUsername) {
+                this._salesforceService = new SalesforceService(this);
+                this._datapackService = await new VlocityDatapackService(this.container, this, this.config, this.salesforceService).initialize();
+            }
             this.updateStatusBar(this.config);
         } catch (err) {
-            this.logger.error(err);
-            this.showStatus(`$(alert) Could not connect to Salesforce`, VlocodeCommand.selectOrg);
+            this.logger.error(err.message);
+            if (err?.message == 'NamedOrgNotFound') {
+                this.showStatus(`$(error) Unknown Salesforce user: ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+            } else {
+                this.showStatus(`$(alert) Could not connect to Salesforce`, VlocodeCommand.selectOrg);
+            }
         }
     }
 
@@ -104,6 +113,15 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.statusBar.command = command;
         this.statusBar.text = text;
         this.statusBar.show();
+    }
+
+    private showApiVersionStatusItem() : void {
+        if (!this.apiStatus) {
+            this.apiStatus = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9));
+        }
+        this.apiStatus.command = VlocodeCommand.selectApiVersion;
+        this.apiStatus.text = this.config.salesforce.apiVersion || 'Select Salesforce API Version';
+        this.apiStatus.show();
     }
 
     public hideStatus() : void {
@@ -248,9 +266,11 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     private createConfigWatcher() : vscode.Disposable {
         this.updateStatusBar(this.config);
-        return ConfigurationManager.watch(this.config, c => {
+        this.showApiVersionStatusItem();
+        return ConfigurationManager.watch(this.config, newCondig => {
             this.showStatus(`$(sync) Processing config changes...`, VlocodeCommand.selectOrg);
             this.initialize();
+            this.showApiVersionStatusItem();
         });
     }
 

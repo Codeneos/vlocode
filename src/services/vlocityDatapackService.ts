@@ -327,7 +327,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     private createExportManifest(objects: ObjectEntryWithId[]) : ExportManifest  {
-        let manifest = objects.reduce((manifest, entry) => {
+        return objects.reduce((manifest, entry) => {
             manifest[entry.datapackType] = manifest[entry.datapackType] || {};
             manifest[entry.datapackType][entry.id] = {
                 Id: entry.id,
@@ -336,7 +336,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
             };
             return manifest;
         }, {});
-        return manifest;
     }
 
     private async createExportQueries(objects: ObjectEntry[]) : Promise<Array<ExportQuery>> {

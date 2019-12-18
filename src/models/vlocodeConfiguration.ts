@@ -1,6 +1,7 @@
 export interface VlocodeSalesforceConfiguration {
     enabled: boolean;
     deployOnSave: boolean;
+    apiVersion: string;
 }
 
 export default interface Vlocodefiguration {

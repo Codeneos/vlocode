@@ -25,7 +25,7 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
                 // test
                 try {
                     this.logger.verbose('Obtained SFDX org details; testing connection...');
-                    let accountQuery = await this.connection.query<{Id: string}>(`SELECT Id FROM Account LIMIT 1`);
+                    const accountQuery = await this.connection.query<{Id: string}>(`SELECT Id FROM Account LIMIT 1`);
                     this.logger.verbose(`Success, you are connected! (${accountQuery.records[0].Id})`);   
                     this.lastConnectionTest = Date.now();
                     return this.connection;

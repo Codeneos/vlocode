@@ -59,8 +59,8 @@ export const ConfigurationManager = asSingleton('ConfigurationManager', () => ne
                 return value;
             },
             set(target, key, value, receiver) {
-                const parentUpdate = { ...target, [key]: value };
-                parent[propertyName] = parentUpdate;
+                //const parentUpdate = { ...target, [key]: value };
+                parent[`${propertyName.toString()}.${key.toString()}`] = value;
                 return true;
             }
         });
@@ -108,7 +108,7 @@ export const ConfigurationManager = asSingleton('ConfigurationManager', () => ne
             // deep compare on object property
             if (typeof oldValue === 'object') {
                 changedProps.push(...this.getPropertiesChanges(oldValue, newValue).map(p => `${key}.${p}`));
-            }  else if(newValue !== oldValue) {
+            }  else if(newValue != oldValue) {
                 changedProps.push(key);
             }
         }

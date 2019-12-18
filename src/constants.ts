@@ -37,5 +37,6 @@ export enum VlocodeCommand {
     clearPlatformCache  = 'vlocity.admin.clearPlatformCache',
     deployMetadata  = 'vlocity.deployMetadata',
     destroyMetadata  = 'vlocity.destroyMetadata',
-    refreshMetadata  = 'vlocity.refreshMetadata'
+    refreshMetadata  = 'vlocity.refreshMetadata',
+    selectApiVersion  = 'vlocity.selectApiVersion'
 }
