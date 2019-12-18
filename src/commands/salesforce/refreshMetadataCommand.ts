@@ -24,6 +24,9 @@ export default class RefreshMetadataCommand extends MetadataCommand {
         const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
         const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${selectedFiles.length} components`;
 
+        // Use config provided API version
+        manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
+
         await this.vloService.withActivity({
             progressTitle: `Refreshing ${progressTitle}...`,
             location: vscode.ProgressLocation.Window,

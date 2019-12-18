@@ -23,6 +23,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
         }, async (progress, token) => {  
 
             const manifest = await this.salesforce.buildManifest(selectedFiles, token);
+            manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
             const result = await this.salesforce.deployDestructiveChanges(manifest, {
                 ignoreWarnings: true
             }, null, token);

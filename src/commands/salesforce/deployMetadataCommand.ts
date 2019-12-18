@@ -31,6 +31,9 @@ export default class DeployMetadataCommand extends MetadataCommand {
         const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
         const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${uniqueComponents.length} components`;
 
+        // Use config provided API version
+        manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
+
         await this.vloService.withActivity({
             progressTitle: `Deploying ${progressTitle}...`, 
             location: vscode.ProgressLocation.Notification,

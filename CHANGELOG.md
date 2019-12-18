@@ -1,5 +1,15 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.9] - 2019-12-19
+ - Support for Salesforce Refresh data from server
+ - Fix issue with deploying certain metadata types
+ - Deprecated old configuration for setting the username and password manually.
+ - Added seperate option for deploy on save that only affects Salesforce metadata.
+ - Switch dpeloyment mode to single-package by default
+ - Filter out `Unexpected error` messages during Salesforce deployments.
+ - Change UI Icon for completed activities.
+ - Store Salesforce prefered API version in config.
+
 ## [0.12.6] - 2019-12-19
  - Fixed build error
  - Added option to select max depth during refresh and explorer export
