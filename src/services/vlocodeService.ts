@@ -253,10 +253,10 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length == 0) {
             return this.hideStatus();
         }
-        if (!config.sfdxUsername && !config.username) {
+        if (!config.sfdxUsername ) {
             return this.showStatus(`$(gear) Select Vlocity org`, VlocodeCommand.selectOrg);
         }
-        return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername || config.username}`, VlocodeCommand.selectOrg);
+        return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
     }
 
     public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {
@@ -286,9 +286,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }
         if (!await this.datapackService.isVlocityPackageInstalled()) {
             return 'The Vlocity managed package is not installed on your Salesforce instance; select a different Salesforce instance or install Vlocity';
-        }
-        if (this.config.username || this.config.password) {
-            vscode.window.showWarningMessage('You have have configured an SFDX username but did not remove the Salesforce username or password');
         }
     }
 

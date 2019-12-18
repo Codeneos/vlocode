@@ -63,10 +63,6 @@ export default class SelectOrgCommand extends CommandBase {
             this.logger.log(`Set ${selectedAuthInfo.getUsername()} as target org for Vlocity deploy/refresh operations`);
             if (this.vloService.config.sfdxUsername != selectedAuthInfo.getUsername()) {
                 this.vloService.config.sfdxUsername = selectedAuthInfo.getUsername();
-                this.vloService.config.password = undefined;
-                this.vloService.config.username = undefined;
-                this.vloService.config.instanceUrl = undefined;
-                this.vloService.config.loginUrl = undefined;
             } else {
                 await this.vloService.initialize();
             }
@@ -74,14 +70,14 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     protected async authorizeNewOrg() : Promise<AuthInfo | undefined> {        
-        let newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
+        const newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
             { placeHolder: 'Select the type of org you want to authorize' });
         
         if (!newOrgType) {
             return;
         }
 
-        let instanceUrl = newOrgType.instanceUrl || await vscode.window.showInputBox({ 
+        const instanceUrl = newOrgType.instanceUrl || await vscode.window.showInputBox({ 
             placeHolder: 'Enter the login URL of the instance the org lives on',
             validateInput: this.salesforceUrlValidator
         });
