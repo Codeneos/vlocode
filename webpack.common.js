@@ -14,9 +14,7 @@ const externals = [
    // VSCode is an external that we do not want to package
    'vscode', 
    'vscode-languageclient',
-   // these do not want to package
-   'electron',
-   'sass.js'
+   'electron'
 ];
 const packageExternals = [...Object.keys(packageJson.dependencies), ...externals];
 const webpackBuildWatchPlugin = {

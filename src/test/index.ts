@@ -6,9 +6,15 @@ import { promisify } from 'util';
 const testRunnerConfig : Mocha.MochaOptions = {
 	ui: 'bdd',
 	useColors: true,
-    reporter: process.env.TEST_RESULTS_FILE ? 'mocha-sonarqube-reporter' : null,
+    reporter: 'mocha-multi-reporters',
     reporterOptions: {
-        output: process.env.TEST_RESULTS_FILE
+		reporterEnabled: "spec, mocha-junit-reporter, mocha-sonarqube-reporter",
+		mochaJunitReporterReporterOptions: {
+			mochaFile: path.join(__dirname, "../../junit.xml")
+		},
+		mochaSonarqubeReporterReporterOptions: {
+			output: path.join(__dirname, "../../testReport.xml")
+		}
     }
 };
 
