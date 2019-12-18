@@ -106,8 +106,6 @@ export = class Vlocode {
         if (vloConfig.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
-        vloConfig.salesforce.enabled = true;
-        vloConfig.salesforce.deployOnSave = true;
   
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);

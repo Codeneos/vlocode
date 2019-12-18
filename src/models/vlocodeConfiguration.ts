@@ -8,10 +8,6 @@ export default interface Vlocodefiguration {
     verbose: boolean;
     debug: boolean;
     sfdxUsername?: string;
-    username?: string;
-    password?: string;
-    loginUrl?: string;
-    instanceUrl?: string;
     httpProxy?: string;
     additionalOptions?: any;
     projectPath?: string;
