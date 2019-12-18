@@ -1,6 +1,9 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
-## [0.12.9] - 2019-12-19
+## [0.12.10] - 2019-12-18
+ - Fix icon missing for succesful actions in activity view
+ 
+## [0.12.9] - 2019-12-18
  - Support for Salesforce Refresh data from server
  - Fix issue with deploying certain metadata types
  - Deprecated old configuration for setting the username and password manually.
@@ -10,17 +13,17 @@
  - Change UI Icon for completed activities.
  - Store Salesforce prefered API version in config.
 
-## [0.12.6] - 2019-12-19
+## [0.12.6] - 2019-12-09
  - Fixed build error
  - Added option to select max depth during refresh and explorer export
  - Optimize datapack loading
  - Fix issue with content version query definition from Vlocity
 
-## [0.12.5] - 2019-12-19
+## [0.12.5] - 2019-12-09
  - Fixed circular json error during export from datapack explorer.
  - Added activity explorer icons.
 
-## [0.12.4] - 2019-12-18
+## [0.12.4] - 2019-12-08
  - Report past and running operations in the new activity screen
  - Better handling of export errors by setting ignoreAllErrors property which prevents exports from failing when a dependency fails.
  - Better handling of deploy errors.
