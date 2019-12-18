@@ -591,7 +591,7 @@
         "vsce": "^1.71.0",
         "vscode-languageclient": "^5.2.1",
         "vscode-test": "^1.2.3",
-        "webpack": "^4.41.2",
+        "webpack": "^4.41.3",
         "webpack-cli": "^3.3.10",
         "webpack-dev-server": "^3.9.0",
         "webpack-glob-entry": "^2.1.1",
