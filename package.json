@@ -593,7 +593,7 @@
         "vscode-test": "^1.2.3",
         "webpack": "^4.41.3",
         "webpack-cli": "^3.3.10",
-        "webpack-dev-server": "^3.9.0",
+        "webpack-dev-server": "^3.10.1",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^4.2.2",
         "xml2js": "^0.4.22",
