@@ -587,7 +587,7 @@
         "typescript": "^3.7.3",
         "unibeautify": "^0.17.0",
         "uuid": "^3.3.3",
-        "vlocity": "^1.11.12",
+        "vlocity": "^1.11.18",
         "vsce": "^1.71.0",
         "vscode-languageclient": "^5.2.1",
         "vscode-test": "^1.2.3",
