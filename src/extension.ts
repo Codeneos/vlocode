@@ -18,6 +18,9 @@ import DatapackProvider from 'treeDataProviders/datapackDataProvider';
 import JobDataProvider from 'treeDataProviders/jobExplorer';
 import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
 import { ConfigurationManager } from 'services/configurationManager';
+import { ApexLexer } from 'apex/ApexLexer';
+import OnClassFileDeleted from 'events/onClassFileDeleted';
+import OnClassFileCreated from 'events/onClassFileCreated';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -106,6 +109,38 @@ export = class Vlocode {
         if (vloConfig.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
+
+        // vscode.languages.registerDocumentRangeFormattingEditProvider([
+        //     { scheme: 'file', language: 'Apex' },
+        //     { scheme: 'file', language: 'apex' },
+        //     { pattern: '**/*.cls' },
+        //     { pattern: '**/*.apex' }
+        // ], {
+        //     async provideDocumentRangeFormattingEdits(document, range, provider, token) {        
+        //         const lexer = new ApexLexer();
+        //         for (const token of lexer.parse(document.getText(range))) {
+        //             console.log(token);
+        //         }
+        //         const prettydiff = require("prettydiff");        
+        //         const text = document.getText(range);
+        //         const options = Object.assign(prettydiff.options, {
+        //             source: text,
+        //             languag:'Java',
+        //             mode: 'beautify',
+        //             brace_style: 'collapse',
+        //             ternary_line: true,
+        //             quote_convert: 'single',
+        //             preserve: 1,
+        //             preserve_comment: true
+        //         });               
+        //         const output = prettydiff();
+        //         return [new vscode.TextEdit(
+        //             range, output
+        //         )];
+        //     }
+        // });
+
+        
   
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);
@@ -119,7 +154,13 @@ export = class Vlocode {
         this.service.registerDisposable(vscode.window.createTreeView('activityView', { 
             treeDataProvider: new ActivityDataProvider(container)
         }));
-        this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container));
+
+        this.service.registerDisposable(
+            new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container)
+        );
+        const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/src/classes/*.cls', false, true, false));
+        this.service.registerDisposable(new OnClassFileCreated(apexClassWatcher.onDidCreate, container));
+        this.service.registerDisposable(new OnClassFileDeleted(apexClassWatcher.onDidDelete, container));
 
         // track activation time
         this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);

@@ -7,7 +7,7 @@ import * as fs from 'fs-extra';
 import ServiceContainer, { default as s, container } from 'serviceContainer';
 import { existsAsync, groupBy, mapAsync, stringEquals, getObjectValues, getDocumentBodyAsString } from '../util';
 import { LogManager, Logger } from 'logging';
-import { VlocityDatapack } from 'models/datapack';
+import { VlocityDatapack, VlocityDatapackReference } from 'models/datapack';
 import VlocodeConfiguration from 'models/vlocodeConfiguration';
 import SalesforceService from 'services/salesforceService';
 
@@ -394,24 +394,22 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
         if (!this._customSettings) {
             // parse any custom job options from the custom yaml
-            let yamlPaths = vscode.workspace.workspaceFolders.map(root => path.join(root.uri.fsPath, this.config.customJobOptionsYaml));
-            let existsResults = await Promise.all(yamlPaths.map(p => existsAsync(p)));
-            yamlPaths = yamlPaths.filter((_p,i) => existsResults[i]);
-            if (yamlPaths.length == 0) {
+            const yamlFullPath = await this.getWorkspacePath(this.config.customJobOptionsYaml);           
+            if (!yamlFullPath) {
                 this.logger.warn(`The specified custom YAML file '${this.config.customJobOptionsYaml}' does not exists`);
                 return;
             }
 
             // watch for changes or deletes of the custom YAML
             if (!this._customSettingsWatcher) {
-                this._customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlPaths[0]);
+                this._customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
                 this._customSettingsWatcher.onDidChange(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
                 this._customSettingsWatcher.onDidCreate(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
                 this._customSettingsWatcher.onDidDelete(_e => this._customSettings = null);
             }
 
             // load settings
-            this._customSettings = await this.loadCustomSettingsFrom(yamlPaths[0]);
+            this._customSettings = await this.loadCustomSettingsFrom(yamlFullPath);
         }
 
         return this._customSettings;
@@ -431,6 +429,19 @@ export default class VlocityDatapackService implements vscode.Disposable {
             };
         } catch(err) {
             this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${err.message || err}`);
+        }
+    }
+
+    /**
+     * Get the first existing path for the specified file 
+     * @param file Path to resolve relative to the current loaded workspace folders
+     */
+    private async getWorkspacePath(file: string) : Promise<string> | undefined {
+        const pathCandidates = [...vscode.workspace.workspaceFolders.map(root => path.join(root.uri.fsPath, file)), file];
+        for (const pathCandidate of pathCandidates) {
+            if (existsAsync(pathCandidate)) {
+                return pathCandidate;
+            }
         }
     }
 }

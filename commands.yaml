@@ -130,6 +130,12 @@ vlocity.selectApiVersion:
   menus:
     - menu: commandPalette      
       when: vlocodeSalesforceSupport
+vlocity.createMetadataCommand:
+  title: 'Salesforce: New APEX Class'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport
 
 # Data datapackExplorer commands
 vlocity.datapackExplorer.export:

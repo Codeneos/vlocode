@@ -35,3 +35,15 @@ declare module 'metadataTypes.yaml' {
   };
   export = exportQueryDefinitions;
 }
+
+declare module 'newItemTemplates.yaml' {
+  const TemplateItem : {
+    label: string;
+    description?: string;
+    files: {
+      path: string,
+      template: string
+    }[];
+  }[]
+  export = TemplateItem;
+}

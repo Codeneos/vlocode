@@ -5,7 +5,7 @@ import * as fs from 'fs-extra';
 import { DatapackCommand } from './datapackCommand';
 import { getDocumentBodyAsString } from '../util';
 import * as DatapackUtil from 'datapackUtil';
-import { VlocityDatapack } from 'models/datapack';
+import { VlocityDatapack, VlocityDatapackReference } from 'models/datapack';
 import DatapackLoader, { directFileSystem, CachedFileSystem } from 'datapackLoader';
 import { Logger } from 'logging';
 
@@ -67,52 +67,46 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
             // create parent key to datapack map
             progress.report({ message: 'resolving keys...' });
-            const keyToDatapack : { [key: string] : VlocityDatapack } = datapacks.reduce((keyMap, dp) => {
-                return dp.getProvidedRecordKeys().reduce((keyMap, key) => Object.assign(keyMap, { [key]: dp }), keyMap);
-            }, {});
+            const resolvedDatapacks = new Map<string, VlocityDatapack>();
+            for (const datapack of datapacks) {
+                for (const sourceKey of datapack.getSourceKeys()) {
+                    resolvedDatapacks.set(sourceKey.VlocityRecordSourceKey, datapack);
+                }
+            }
 
             const allUnresolvedParents = [];
 
-            for (const dp of datapacks) {
-                const parentKeys = dp.getParentRecordKeys().filter(parentKey => !this.datapackService.isGuaranteedParentKey(parentKey));
+            for (const datapack of datapacks) {
 
-                // Handle OmniScript template referneces
-                if (dp.datapackType === 'OmniScript') {
-                    // Find any custom templates
-                    let customTemplateReferences : string[] = dp.element__c
-                        .filter(elem => elem.propertySet__c && elem.propertySet__c.HTMLTemplateId)
-                        .map(elem => elem.propertySet__c.HTMLTemplateId);
-                    
-                    // exlcude templates defined in the TestHTMLTemplates__c
-                    if (dp.TestHTMLTemplates__c) {
-                        customTemplateReferences = customTemplateReferences.filter(
-                            templateId => !dp.TestHTMLTemplates__c.includes(templateId));
+                // Map resolved and unresolved keys
+                const missingRefs : VlocityDatapackReference[] = [];
+                const resolvedRefs : VlocityDatapack[] = [];
+                for (const ref of this.getExternalReferences(datapack)) {
+                    const sourceKey = ref.VlocityLookupRecordSourceKey || ref.VlocityMatchingRecordSourceKey;
+                    const resolvedRef = resolvedDatapacks.get(sourceKey);
+                    if (resolvedRef) {
+                        resolvedRefs.push(resolvedRef);
+                    } else {
+                        missingRefs.push(ref);
                     }
-
-                    // add template parent referneces to datapack
-                    parentKeys.push(...customTemplateReferences.map(templateId => `%vlocity_namespace%__VlocityUITemplate__c/${templateId}`));
                 }
 
-                const resolvedParents = parentKeys.map(parentKey => keyToDatapack[parentKey]).filter(dp => !!dp);
-                const missingParents = parentKeys.filter(parentKey => !keyToDatapack[parentKey]);
-
                 // collect parent key references
-                const parentKeyRefereces = resolvedParents.map(dp => this.datapackService.getDatapackReferenceKey(dp));
+                const parentKeyReferences = resolvedRefs.map(dp => this.datapackService.getDatapackReferenceKey(dp));
+                const missingParents = missingRefs.map(ref => ref.VlocityLookupRecordSourceKey || ref.VlocityMatchingRecordSourceKey);
 
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(
-                    missingParents.map(async parentKey => await this.findInFiles(path.dirname(dp.headerFile), parentKey))
+                    missingParents.map(async parentKey => await this.findInFiles(path.dirname(datapack.headerFile), parentKey))
                 );
-
                 for (const [i, [file, range]] of missingKeyLocations.filter(result => !!result).entries()) {
                     this.addWarning(file, range, `Unable to resolve dependency with key '${missingParents[i].replace(/^%vlocity_namespace%__/,'')}'`);
                 }
-
                 allUnresolvedParents.push(...missingParents);
 
                 // write parent key file
-                if (parentKeyRefereces.length > 0) {
-                    await this.updateParentKeysFile(dp.headerFile, parentKeyRefereces);
+                if (parentKeyReferences.length > 0) {
+                    await this.updateParentKeysFile(datapack.headerFile, parentKeyReferences);
                 }
             }
 
@@ -125,12 +119,40 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         });
     }
 
+    private *getExternalReferences(datapack: VlocityDatapack) {
+        if (datapack.datapackType === 'OmniScript') {
+            yield* this.resolveOmniScriptReferences(datapack)[Symbol.iterator]();
+        }                    
+        yield* datapack.getExternalReferences();
+    }
+
+    private resolveOmniScriptReferences(omniScript: VlocityDatapack) : VlocityDatapackReference[] {
+        // Find any custom templates
+        let customTemplateReferences = [...new Set<string>(omniScript.element__c
+            .filter(elem => elem.propertySet__c && elem.propertySet__c.HTMLTemplateId)
+            .map(elem => elem.propertySet__c.HTMLTemplateId))];
+
+        // exlcude templates defined in the TestHTMLTemplates__c
+        if (omniScript.TestHTMLTemplates__c) {
+            customTemplateReferences = customTemplateReferences.filter(
+                templateId => !omniScript.TestHTMLTemplates__c.includes(templateId));
+        }
+
+        // add template parent references to datapack
+        return customTemplateReferences.map(templateId => ({
+            Name: templateId,
+            VlocityRecordSObjectType: '%vlocity_namespace%__VlocityUITemplate__c',
+            VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+            VlocityLookupRecordSourceKey: `%vlocity_namespace%__VlocityUITemplate__c/${templateId}`
+        }));
+    }
+
     private async updateParentKeysFile(datapackHeader: string, parentKeys: string[]) : Promise<void> {
         const [datapackFilePrefix] = path.basename(datapackHeader).split(/_datapack/i);
         const parentKeyFile = path.join(path.dirname(datapackHeader), datapackFilePrefix + '_ParentKeys.json');
         const currentParentKeys = await this.tryReadJson(parentKeyFile);
 
-        let newParentKeys = [ ...parentKeys ];        
+        const newParentKeys = [ ...parentKeys ];
         if (currentParentKeys && Array.isArray(currentParentKeys)) {
             newParentKeys.push(...currentParentKeys);
         }

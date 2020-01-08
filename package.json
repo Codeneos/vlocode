@@ -53,7 +53,8 @@
         "onCommand:vlocity.destroyMetadata",
         "onCommand:vlocity.jobExplorer.run",
         "onCommand:vlocity.refreshMetadata",
-        "onCommand:vlocity.selectApiVersion"
+        "onCommand:vlocity.selectApiVersion",
+        "onCommand:vlocity.createMetadataCommand"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -162,6 +163,10 @@
             {
                 "command": "vlocity.selectApiVersion",
                 "title": "Salesforce: Select API Version"
+            },
+            {
+                "command": "vlocity.createMetadataCommand",
+                "title": "Salesforce: New APEX Class"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -287,6 +292,11 @@
                 },
                 {
                     "command": "vlocity.selectApiVersion",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.createMetadataCommand",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
@@ -554,6 +564,7 @@
         "chunks-webpack-plugin": "^3.2.0",
         "copy-webpack-plugin": "^5.1.0",
         "cpx": "^1.5.0",
+        "gelex": "0.0.7",
         "glob": "^7.1.6",
         "html-loader": "^0.5.5",
         "html-webpack-plugin": "^3.2.0",
@@ -585,7 +596,6 @@
         "tslint": "^5.20.1",
         "tslint-loader": "^3.5.4",
         "typescript": "^3.7.3",
-        "unibeautify": "^0.17.0",
         "uuid": "^3.3.3",
         "vlocity": "^1.11.12",
         "vsce": "^1.71.0",

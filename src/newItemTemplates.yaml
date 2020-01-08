@@ -1,0 +1,64 @@
+# New APEX class item
+- label: '$(file-code) New APEX Class'
+  description: 'Create new public APEX class'
+  input:
+    name:
+      placeholder: The name of the APEX class to create
+      type: text
+  files: 
+    - path: ./src/classes/${name}.cls
+      template: | 
+        public class ${name} {
+            
+        }
+    - &apex-meta 
+      path: ./src/classes/${name}.cls-meta.xml
+      template: | 
+        <?xml version="1.0" encoding="UTF-8"?>
+            <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com">
+            <apiVersion>{{apiVersion}}</apiVersion>
+            <status>Active</status>
+        </ApexClass>
+
+# New APEX interface
+- label: '$(file-code) New APEX Interface Class'
+  description: 'Create new Interface class'
+  input:
+    name:
+      placeholder: The name of the interface class to create
+      type: text
+  files: 
+    - path: ./src/classes/${name}.cls
+      template: | 
+        public interface ${name} {
+            
+        }
+    - <<: *apex-meta
+
+# New APEX unit test
+- label: '$(beaker) New APEX Unit Test'
+  description: Create new APEX unit test class
+  input:
+    name:
+      placeholder: _Note the name you enter here will be post fixed with Test_
+      type: text
+  files: 
+    - path: ./src/classes/${name}Test.cls
+      template: | 
+        @isTest
+        class ${name}Test {
+            
+            @isTest
+            static void methodName_shouldDoSomething() {
+                // Arrange
+                //...
+
+                // Test
+                //...
+
+                // Assert
+                //System.assertEquals(expected, result);
+            }
+        }
+    - <<: *apex-meta
+      path: ./src/classes/${name}Test.cls-meta.xml

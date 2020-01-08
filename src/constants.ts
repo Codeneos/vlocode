@@ -13,8 +13,9 @@ export const OUTPUT_CHANNEL_NAME = 'Vlocity';
 export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
-export const MD_XML_OPTIONS = { xmldec: 
-    { version: '1.0', encoding: 'UTF-8' } 
+export const MD_XML_OPTIONS = { 
+    xmldec: { version: '1.0', encoding: 'UTF-8' },
+    renderOpts: { pretty: true, indent: '    ', newline: '\n' }
 };
 export const SF_META_EXTENSIONS = [ '-meta.xml' ]
     .concat(Object.values(metadataTypes).map(type => type.fileExtensions).flat());
@@ -38,5 +39,6 @@ export enum VlocodeCommand {
     deployMetadata  = 'vlocity.deployMetadata',
     destroyMetadata  = 'vlocity.destroyMetadata',
     refreshMetadata  = 'vlocity.refreshMetadata',
-    selectApiVersion  = 'vlocity.selectApiVersion'
+    selectApiVersion  = 'vlocity.selectApiVersion',
+    createMetadataCommand  = 'vlocity.createMetadataCommand'
 }

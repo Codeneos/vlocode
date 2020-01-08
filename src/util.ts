@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as expressions from "angular-expressions";
 
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
-    let doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
+    const doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
     if (doc) { return doc.getText(); }
     return (await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString();
 }
@@ -18,10 +18,10 @@ export function existsAsync(path: fs.PathLike) : Promise<boolean> {
 }
 
 export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
-    let unqiueSet = new Set();
+    const uniqueSet = new Set();
     return arr.filter(item => {
-        let k = uniqueKeyFunc(item);
-        return unqiueSet.has(k) ? false : unqiueSet.add(k);
+        const k = uniqueKeyFunc(item);
+        return uniqueSet.has(k) ? false : uniqueSet.add(k);
     });
 }
 

@@ -3,6 +3,17 @@ import { v4 as generateGuid } from "uuid";
 import { LogManager } from "logging";
 import { createRecordProxy } from "salesforceUtil";
 
+export type VlocityDatapackReference = { 
+    [key: string]: string;
+    VlocityRecordSObjectType: string 
+} & ({
+    VlocityDataPackType: 'VlocityLookupMatchingKeyObject';
+    VlocityLookupRecordSourceKey: string; 
+} | {
+    VlocityDataPackType: 'VlocityMatchingKeyObject';
+    VlocityMatchingRecordSourceKey: string; 
+});
+
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
  */
@@ -53,29 +64,29 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             this.updateSourceKey(this.sourceKey.replace(this.name, name));
         }
 
-        this.forEachProperty(this.data, (property, value, child)  => {
+        for (const [property, value, owner] of this.getProperties()) {
             if (typeof value === 'string') {
                 if (property == 'Name' && value.includes(currentName)) {
-                    child[property] = value.replace(currentName, name);
+                    owner[property] = value.replace(currentName, name);
                 } else if (value == currentName) {
-                    child[property] = name;
+                    owner[property] = name;
                 }                
             }
-        });
+        }
     }
 
     public updateSourceKey(newKey: string): any {
-        const currentSourceKey = this.sourceKey;
-        this.forEachProperty(this.data, (property, value, object) => {
+        const currentSourceKey = this.sourceKey;        
+        for (const [property, value, owner] of this.getProperties()) {
             if (typeof value !== 'string') {
                 return;
             }
             if (/^Vlocity(Matching|)RecordSourceKey$/i.test(property)) {
                 if (value.endsWith(currentSourceKey)) {
-                    object[property] = newKey;
+                    owner[property] = newKey;
                 }
             }
-        });
+        }
     }
 
     public regenerateGlobalKey() {
@@ -83,11 +94,11 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         this.updateGlobalKey(this.data, generateGuid());
 
         // update include child records that have global keys
-        this.forEachChildObject(this.data, child => {
+        for (const child of this.getChildObjects()) {
             if (child['VlocityDataPackType'] == 'SObject' && child['%vlocity_namespace%__GlobalKey__c']) {
                 this.updateGlobalKey(child, generateGuid());
             }
-        });
+        }
     }
 
     private updateGlobalKey(object: Object, newGlobalKey: string) {
@@ -95,50 +106,119 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         object['%vlocity_namespace%__GlobalKey__c'] = newGlobalKey;
 
         if (typeof oldGlobalKey === 'string' && oldGlobalKey.trim()) {
-            this.forEachProperty(this.data, (property, value, child)  => {
+            for (const [property, value, owner] of this.getProperties()) {
                 if (typeof value === 'string' && value.endsWith(oldGlobalKey)) {
-                    child[property] = value.replace(oldGlobalKey, newGlobalKey);
+                    owner[property] = value.replace(oldGlobalKey, newGlobalKey);
                 }
-            });
+            }
         }
 
         return object;
     }
 
-    public getParentRecordKeys() : string[] {
-        const requiredKeys = this.getPropertiesMatching<string>(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
-        const providedKeys = this.getProvidedRecordKeys();  
-        return [...new Set(requiredKeys.filter(k => !providedKeys.includes(k)))];
-    }
+    // public getParentRecordKeys() : string[] {
+    //     const requiredKeys = this.getPropertiesMatching<string>(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
+    //     const providedKeys = this.getProvidedRecordKeys();  
+    //     return [...new Set(requiredKeys.filter(k => !providedKeys.includes(k)))];
+    // }
 
-    public getProvidedRecordKeys() : string[] {
-        const providedKeys = this.getPropertiesMatching<string>(this.data, key => key == 'VlocityRecordSourceKey');
-        return [...new Set(providedKeys)];
-    }
+    // public getProvidedRecordKeys() : string[] {
+    //     const providedKeys = this.getPropertiesMatching<string>(this.data, key => key == 'VlocityRecordSourceKey');
+    //     return [...new Set(providedKeys)];
+    // }
 
-    private getPropertiesMatching<T>(record : any, matcher: (key : string) => boolean, keys : T[] = []) : T[] {
-        return Object.keys(record || {}).reduce((keys, key) => {
-            if (matcher(key)) {
-                keys.push(record[key]);
-            } else if (Array.isArray(record[key])) {
-                record[key].forEach(item => this.getPropertiesMatching(item, matcher, keys));
-            } else if (typeof record[key] == 'object') {
-                this.getPropertiesMatching(record[key], matcher, keys);
-            } 
-            return keys;
-        }, keys);
-    }
+    // private getPropertiesMatching<T>(record : any, matcher: (key : string) => boolean, keys : T[] = []) : T[] {
+    //     return Object.keys(record || {}).reduce((keys, key) => {
+    //         if (matcher(key)) {
+    //             keys.push(record[key]);
+    //         } else if (Array.isArray(record[key])) {
+    //             record[key].forEach(item => this.getPropertiesMatching(item, matcher, keys));
+    //         } else if (typeof record[key] == 'object') {
+    //             this.getPropertiesMatching(record[key], matcher, keys);
+    //         } 
+    //         return keys;
+    //     }, keys);
+    // }
 
-    private forEachProperty(object: any, executer: (property : string, value: any, object: any) => any) {
-        return Object.keys(object || {}).forEach(key => {
-            if (Array.isArray(object[key])) {
-                object[key].forEach(item => this.forEachProperty(item, executer));
-            } else if (typeof object[key] === 'object') {
-                this.forEachProperty(object[key], executer);
-            } else {
-                executer(key, object[key], object);
+    /**
+     * Iterate over the source keys provided by this datapack
+     */
+    public *getSourceKeys() : Generator<{ VlocityRecordSObjectType: string, VlocityRecordSourceKey: string }, void> {
+        for (const child of this.getChildObjects()) {
+            if (child.VlocityRecordSourceKey) {
+                yield {
+                    VlocityRecordSourceKey: child.VlocityRecordSourceKey,
+                    VlocityRecordSObjectType: child.VlocityRecordSObjectType
+                };
             }
-        });
+        }
+    }
+
+    /**
+     * Iterate over the relationship from this datapack to other objects; the generator yields all references found and does not remove any duplicates
+     */
+    public *getReferences() : Generator<VlocityDatapackReference, void> {
+        for (const child of this.getChildObjects()) {
+            const type = child.VlocityDataPackType;
+            if (type && /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(type)) {
+                yield <VlocityDatapackReference>child;
+            }
+        }
+    }
+
+    /**
+     * Iterate over the relationship from this datapack to other objects
+     */
+    public getExternalReferences() : IterableIterator<VlocityDatapackReference> {
+        const externalReferences = new Map<string, VlocityDatapackReference>();
+        const sourceKeys = new Set([...this.getSourceKeys()].map(sourceKey => sourceKey.VlocityRecordSourceKey));
+
+        for(const reference of this.getReferences()) {
+            const referenceKey = reference.VlocityLookupRecordSourceKey || reference.VlocityMatchingRecordSourceKey;
+            if (!sourceKeys.has(referenceKey)) {
+                externalReferences.set(referenceKey, reference);
+            }
+        }
+
+        return externalReferences.values();
+    }
+    
+    /**
+     * Recursively iterate over the properties of this datapack and it's child objects
+     * @param object Object to iterate over
+     */
+    private* getProperties(object : Object = this.data) : Generator<[ string, string, any ]> {
+        for (const [key, value] of Object.entries(object)) {            
+            if (Array.isArray(value)) {
+                for (const arrayValue of value) {
+                    if (typeof arrayValue === 'object') {
+                        yield* this.getProperties(arrayValue);
+                    } else {
+                        yield [ key, arrayValue, value ];
+                    }
+                }
+            } else if (typeof value === 'object') {
+                yield* this.getProperties(value);
+            } else {
+                yield [ key, value, object ];
+            }
+        }
+    }
+
+    /**
+     * Recursively iterate over this datapack and child objects
+     * @param object Object
+     */
+    private* getChildObjects(object = this.data) : Generator<any, void> {
+        for (const [key, value] of Object.entries(object)) {
+            if (typeof value !== 'object' || value === null || value === undefined) {
+                continue;
+            }
+            if (!Array.isArray(value)) {
+                yield value;
+            }       
+            yield* this.getChildObjects(value);
+        }
     }
 
     private forEachChildObject(object: any, executer: (object: any) => any) {
