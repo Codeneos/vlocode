@@ -84,6 +84,12 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 for (const ref of this.getExternalReferences(datapack)) {
                     const sourceKey = ref.VlocityLookupRecordSourceKey || ref.VlocityMatchingRecordSourceKey;
                     const resolvedRef = resolvedDatapacks.get(sourceKey);
+
+                    if (this.datapackService.isGuaranteedParentKey(sourceKey)) {
+                        // Some keys are garantueed and should be ignored
+                        continue;
+                    }   
+
                     if (resolvedRef) {
                         resolvedRefs.push(resolvedRef);
                     } else {
@@ -97,7 +103,10 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(
-                    missingParents.map(async parentKey => await this.findInFiles(path.dirname(datapack.headerFile), parentKey))
+                    missingParents.map(async parentKey => 
+                        await this.findInFiles(path.dirname(datapack.headerFile), parentKey) || 
+                        await this.findInFiles(path.dirname(datapack.headerFile), parentKey.split('/').pop())
+                    )
                 );
                 for (const [i, [file, range]] of missingKeyLocations.filter(result => !!result).entries()) {
                     this.addWarning(file, range, `Unable to resolve dependency with key '${missingParents[i].replace(/^%vlocity_namespace%__/,'')}'`);

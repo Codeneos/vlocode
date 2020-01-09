@@ -42,7 +42,7 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
 
     protected async createMetaDataFileFor(document: vscode.Uri): Promise<void> {
         const metaXml = new XmlBuilder(constants.MD_XML_OPTIONS).buildObject({ 
-            Package: { 
+            ApexClass: { 
                 $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' }, 
                 status: 'Active',
                 apiVersion: this.vloService.config.salesforce?.apiVersion

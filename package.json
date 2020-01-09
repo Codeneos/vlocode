@@ -245,15 +245,17 @@
                 },
                 {
                     "command": "vlocity.buildDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "false"
                 },
                 {
                     "command": "vlocity.viewDatapack.generic",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "false"
                 },
                 {
                     "command": "vlocity.adminCommands",
-                    "when": "false"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocity.admin.refreshPriceBook",

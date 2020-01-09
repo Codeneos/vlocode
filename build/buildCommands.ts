@@ -107,6 +107,7 @@ async function updatePackageJson(packageJsonFile: string, commandFile: string) {
         // visible in command pallet?
         const inCommandPallet = command.menus.some(menu => menu.menu == 'commandPalette');
         if (!inCommandPallet) {
+            console.log(`Hide command in command pallette: ${command.title}`);
             command.menus.push({
                 menu: 'commandPalette',
                 when: 'false'

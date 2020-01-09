@@ -15,8 +15,8 @@
       path: ./src/classes/${name}.cls-meta.xml
       template: | 
         <?xml version="1.0" encoding="UTF-8"?>
-            <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com">
-            <apiVersion>{{apiVersion}}</apiVersion>
+        <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com">
+            <apiVersion>${apiVersion}</apiVersion>
             <status>Active</status>
         </ApexClass>
 

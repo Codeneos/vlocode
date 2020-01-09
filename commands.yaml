@@ -55,19 +55,16 @@ vlocity.buildParentKeyFiles:
 vlocity.buildDatapack:
   title: 'Vlocity: Build Datapack'
   group: v_vlocity
-  menus:
-    - menu: commandPalette
-      when: false
 vlocity.viewDatapack.generic:
   title: 'Vlocity: View Datapack'
   group: v_vlocity
-  menus:
-    - menu: commandPalette
-      when: false
       
 # Admin type commands
 vlocity.adminCommands:
   title: 'Vlocity: Administration Console'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette  
 vlocity.admin.refreshPriceBook:
   title: 'Vlocity: Refresh Pricebook'
   group: v_vlocity

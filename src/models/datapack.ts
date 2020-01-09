@@ -144,7 +144,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
      * Iterate over the source keys provided by this datapack
      */
     public *getSourceKeys() : Generator<{ VlocityRecordSObjectType: string, VlocityRecordSourceKey: string }, void> {
-        for (const child of this.getChildObjects()) {
+        for (const child of this.getChildObjects([ this.data ])) {
             if (child.VlocityRecordSourceKey) {
                 yield {
                     VlocityRecordSourceKey: child.VlocityRecordSourceKey,
@@ -158,9 +158,13 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
      * Iterate over the relationship from this datapack to other objects; the generator yields all references found and does not remove any duplicates
      */
     public *getReferences() : Generator<VlocityDatapackReference, void> {
-        for (const child of this.getChildObjects()) {
+        for (const child of this.getChildObjects([ this.data ])) {
             const type = child.VlocityDataPackType;
-            if (type && /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(type)) {
+            if (type && /^Vlocity(LookupMatching|Matching)KeyObject$/i.test(type)) {
+                // RecordTypes are part of SF deployment and should not be considered
+                if (child.VlocityRecordSObjectType == 'RecordType') {
+                    continue;
+                }
                 yield <VlocityDatapackReference>child;
             }
         }
@@ -210,7 +214,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
      * @param object Object
      */
     private* getChildObjects(object = this.data) : Generator<any, void> {
-        for (const [key, value] of Object.entries(object)) {
+        for (const value of Object.values(object)) {
             if (typeof value !== 'object' || value === null || value === undefined) {
                 continue;
             }
