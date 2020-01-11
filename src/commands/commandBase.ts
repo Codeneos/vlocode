@@ -72,6 +72,12 @@ export abstract class CommandBase implements Command {
         return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
     }
 
+    protected get selectedText() : string {
+        return vscode.window.activeTextEditor && vscode.window.activeTextEditor.selection 
+            ? vscode.window.activeTextEditor.document.getText(vscode.window.activeTextEditor.selection) 
+            : undefined;
+    }
+
     protected async startProgress(title: string, cancellable?: boolean) : Promise<ProgressToken> {
         return new Promise<ProgressToken>(progressTokenResolve => {
             this.vloService.withActivity({

@@ -40,5 +40,6 @@ export enum VlocodeCommand {
     destroyMetadata  = 'vlocity.destroyMetadata',
     refreshMetadata  = 'vlocity.refreshMetadata',
     selectApiVersion  = 'vlocity.selectApiVersion',
-    createMetadataCommand  = 'vlocity.createMetadataCommand'
+    createMetadataCommand  = 'vlocity.createMetadataCommand',
+    execAnonymousCommand = 'vlocity.execAnonymousCommand'
 }

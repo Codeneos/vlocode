@@ -86,7 +86,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                     const resolvedRef = resolvedDatapacks.get(sourceKey);
 
                     if (this.datapackService.isGuaranteedParentKey(sourceKey)) {
-                        // Some keys are garantueed and should be ignored
+                        // Some keys are guaranteed and should be ignored
                         continue;
                     }   
 

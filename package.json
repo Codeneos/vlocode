@@ -54,7 +54,8 @@
         "onCommand:vlocity.jobExplorer.run",
         "onCommand:vlocity.refreshMetadata",
         "onCommand:vlocity.selectApiVersion",
-        "onCommand:vlocity.createMetadataCommand"
+        "onCommand:vlocity.createMetadataCommand",
+        "onCommand:vlocity.execAnonymousCommand"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -166,7 +167,11 @@
             },
             {
                 "command": "vlocity.createMetadataCommand",
-                "title": "Salesforce: New APEX Class"
+                "title": "Salesforce: New File/Quick Create"
+            },
+            {
+                "command": "vlocity.execAnonymousCommand",
+                "title": "Salesforce: Execute as Anonymous APEX"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -299,6 +304,11 @@
                 },
                 {
                     "command": "vlocity.createMetadataCommand",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.execAnonymousCommand",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },

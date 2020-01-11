@@ -128,7 +128,13 @@ vlocity.selectApiVersion:
     - menu: commandPalette      
       when: vlocodeSalesforceSupport
 vlocity.createMetadataCommand:
-  title: 'Salesforce: New APEX Class'
+  title: 'Salesforce: New File/Quick Create'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport
+vlocity.execAnonymousCommand:
+  title: 'Salesforce: Execute as Anonymous APEX'
   group: v_salesforce
   menus:
     - menu: commandPalette      

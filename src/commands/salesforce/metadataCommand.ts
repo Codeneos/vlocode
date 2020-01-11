@@ -24,7 +24,7 @@ export default abstract class MetadataCommand extends CommandBase {
         { test: /.+/, handler: this.genericProblemHandler.bind(this) }
     ];
     
-    private get diagnostics() : vscode.DiagnosticCollection {
+    protected getDiagnostics() : vscode.DiagnosticCollection {
         return this.vloService.getDiagnostics('salesforce');
     }
 
@@ -67,7 +67,7 @@ export default abstract class MetadataCommand extends CommandBase {
             const info = manifest.files[failure.fileName.replace(/^src\//i, '')];
             if (info && info.localPath) {
                 // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference                
-                this.handleComponentFailure(vscode.Uri.file(info.localPath), failure);
+                this.reportProblem(vscode.Uri.file(info.localPath), failure);
             }
         }
         
@@ -77,7 +77,7 @@ export default abstract class MetadataCommand extends CommandBase {
         }
     }
 
-    private async handleComponentFailure(localPath: vscode.Uri, failure: ComponentFailure) {
+    protected async reportProblem(localPath: vscode.Uri, failure: { problem: string, lineNumber: any, columnNumber: any }) {
         // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference     
         const startPosition = new vscode.Position(parseInt(failure.lineNumber) - 1, parseInt(failure.columnNumber) - 1);
         const fileBody = await getDocumentBodyAsString(localPath.fsPath);
@@ -131,9 +131,9 @@ export default abstract class MetadataCommand extends CommandBase {
      * @param file 
      */
     protected clearMessages(file: vscode.Uri) : void {
-        const currentMessages = this.diagnostics.get(file);
+        const currentMessages = this.getDiagnostics().get(file);
         if (currentMessages) {
-            this.diagnostics.set(file, []);
+            this.getDiagnostics().set(file, []);
         }
     }
 
@@ -146,8 +146,8 @@ export default abstract class MetadataCommand extends CommandBase {
     }
 
     protected addMessage(severity: vscode.DiagnosticSeverity, file: vscode.Uri, range : vscode.Range, message : string) : void {
-        const currentMessages = this.diagnostics.get(file) || [];
-        this.diagnostics.set(file, [...currentMessages, new vscode.Diagnostic(range, message, severity)]);
+        const currentMessages = this.getDiagnostics().get(file) || [];
+        this.getDiagnostics().set(file, [...currentMessages, new vscode.Diagnostic(range, message, severity)]);
     }
 
     private findSubstring(content: string, lineNumber: number, index: number, needle: string) : vscode.Range | undefined {
