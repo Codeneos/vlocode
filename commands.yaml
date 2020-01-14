@@ -134,7 +134,7 @@ vlocity.createMetadataCommand:
     - menu: commandPalette      
       when: vlocodeSalesforceSupport
 vlocity.execAnonymousCommand:
-  title: 'Salesforce: Execute as Anonymous APEX'
+  title: 'Salesforce: Execute Anonymous APEX'
   group: v_salesforce
   menus:
     - menu: commandPalette      
