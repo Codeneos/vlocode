@@ -5,11 +5,12 @@ import * as ZipArchive from 'jszip';
 import * as xml2js from 'xml2js';
 import * as fs from 'fs';
 import * as constants from '@constants';
-import { getDocumentBodyAsString, wait } from '@util';
+import { getDocumentBodyAsString, wait, requestAsync } from '@util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import { Stream } from 'stream';
 import * as metadataTypes from 'metadataTypes.yaml';
 import { getMetaFiles } from 'salesforceUtil';
+import { stripPrefix } from 'xml2js/lib/processors';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -64,6 +65,72 @@ interface RetrieveResult extends jsforce.RetrieveResult {
     errorMessage?: string;
     errorStatusCode?: string;
     status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
+}
+
+interface ApexLogLevels {
+    ApexCode: 'None' | 'Error' | 'Warn' | 'Info' | 'Debug' | 'Fine' | 'Finer' | 'Finest';
+    ApexProfiling: 'None' | 'Info' | 'Fine' | 'Finest' ;
+    Callout: 'None' | 'Info' | 'Finest';
+    Database: 'None' | 'Info' | 'Finest';
+    Validation: 'Info' | 'None';
+    Visualforce: 'None' | 'Info' | 'Fine' | 'Finest' ;
+    Workflow: 'None' | 'Error' | 'Warn' | 'Info' |  'Fine' | 'Finer' ;    
+    System: 'None' | 'Info' | 'Debug' | 'Fine' ;
+}
+
+type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
+export type SoapDebuggingHeader = {
+    Db?: SoapDebuggingLevel
+    Workflow?: SoapDebuggingLevel
+    Validation?: SoapDebuggingLevel
+    Callout?: SoapDebuggingLevel
+    Apex_code?: SoapDebuggingLevel
+    Apex_profiling?: SoapDebuggingLevel
+    Visualforce?: SoapDebuggingLevel
+    System?: SoapDebuggingLevel
+    All?: SoapDebuggingLevel
+};
+
+
+/**
+ * Simple Salesforce SOAP request formatter
+ */
+class SoapRequest {
+    
+    constructor(
+        public readonly method : string, 
+        public readonly namespace : string, 
+        public readonly debuggingHeader: SoapDebuggingHeader = {}) {        
+    }
+
+    /**
+     * Converts the contents of the package to XML that can be saved into a package.xml file
+     */
+    public toXml(requestBody: Object, sessionId: string) : string {
+        const soapRequestObject = { 
+            'soap:Envelope': {
+                $: {
+                    "xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/",
+                    "xmlns": this.namespace
+                },
+                'soap:Header': {
+                    CallOptions: {
+                        client: constants.API_CLIENT_NAME
+                    },
+                    DebuggingHeader: {
+                        categories: Object.entries(this.debuggingHeader).map(([category, level]) => ({ category, level }))
+                    },
+                    SessionHeader: {
+                        sessionId: sessionId
+                    }
+                },
+                'soap:Body': {
+                    [this.method]: requestBody,
+                }
+            }
+        }; 
+        return new xml2js.Builder(constants.MD_XML_OPTIONS).buildObject(soapRequestObject);
+    }
 }
 
 /**
@@ -536,4 +603,81 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
         return retrieveTask(token);
     }
+
+    private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any, debugLog?: any }> {
+        const connection = await this.getJsForceConnection();
+        const soapRequest = new SoapRequest(methodName, "http://soap.sforce.com/2006/08/apex", debuggingHeader);
+        const endpoint = `${connection.instanceUrl}/services/Soap/s/${connection.version}`;
+        const result = await requestAsync({
+            method: 'POST',
+            url: endpoint,
+            headers: {
+                'SOAPAction': '""',
+                'Content-Type':  'text/xml;charset=UTF-8'
+            },
+            body: soapRequest.toXml(request, connection.accessToken)
+        });
+
+        const response : { 
+            Envelope: {
+                Header?: any,
+                Body?: {
+                    Fault?: {
+                        faultcode: string,
+                        faultstring: string
+                    },
+                    [key: string]: any
+                }
+            }
+         } = await xml2js.parseStringPromise(result.response, {
+            tagNameProcessors: [ stripPrefix ],            
+            attrNameProcessors: [ stripPrefix ],
+            explicitArray: false
+        });
+
+        if (response.Envelope.Body?.Fault) {
+            throw new Error(`SOAP API Fault: ${response.Envelope.Body.Fault?.faultstring}`);
+        }
+
+        return {
+            body: response.Envelope.Body,
+            debugLog: response.Envelope?.Header?.DebuggingInfo.debugLog,
+        };
+    }
+
+    /**
+     * Executes the specified APEX using the SOAP API and returns the result.
+     * @param apex APEX code to execute
+     * @param logLevels Optional debug log levels to use
+     */
+    public async executeAnonymous(apex: string, logLevels?: SoapDebuggingHeader) : Promise<jsforce.ExecuteAnonymousResult & { debugLog?: string }> {
+        const response = await this.soapToolingRequest('executeAnonymous', {
+            String: apex
+        }, logLevels);
+        return {
+            ...response.body.executeAnonymousResponse.result,
+            debugLog: response.debugLog
+        };
+    }
+
+    // public async getDeveloperLogs(numberOfLogs = 10) {
+    //     const connection = await this.getJsForceConnection();
+    //     const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];
+    //     const toolingQuery = `Select ${selectFields.join(',')} From ApexLog Order By StartTime${numberOfLogs ? ` DESC LIMIT ${numberOfLogs}` : ''}`;
+    //     const toolingUrl = `${connection.instanceUrl}/services/data/v${connection.version}/tooling/query/?q=${toolingQuery.replace(' ', '+')}`;
+    //     const results1 = await connection.tooling.query(toolingQuery);
+    //     const results2 = <any>await connection.request(toolingQuery);
+    //     return results2?.records;
+    // }
+
+    // public async setLogLevel(name: string, logLevels: ApexLogLevels) {
+    //     connection.tooling.create('traceFlag', records)
+    //     const connection = await this.getJsForceConnection();
+    //     const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];
+    //     const toolingQuery = `Select ${selectFields.join(',')} From ApexLog Order By StartTime${numberOfLogs ? ` DESC LIMIT ${numberOfLogs}` : ''}`;
+    //     const toolingUrl = `${connection.instanceUrl}/services/data/v${connection.version}/tooling/query/?q=${toolingQuery.replace(' ', '+')}`;
+    //     const results1 = await connection.tooling.query(toolingQuery);
+    //     const results2 = <any>await connection.request(toolingQuery);
+    //     return results2?.records;
+    // }
 }

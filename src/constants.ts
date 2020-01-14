@@ -8,6 +8,7 @@ const packageJson = require('../package.json');
 import metadataTypes = require('metadataTypes.yaml');
 
 export const VERSION = packageJson.version;
+export const API_CLIENT_NAME = 'Vlocode SOAP client';
 export const CONFIG_SECTION = 'vlocity';
 export const OUTPUT_CHANNEL_NAME = 'Vlocity';
 export const NG_APP_NAME = 'Vlocode';

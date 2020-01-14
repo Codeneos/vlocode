@@ -3,6 +3,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as expressions from "angular-expressions";
+import * as https from 'https';
+import * as http from 'http';
 
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
     const doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
@@ -288,4 +290,68 @@ export function asSingleton<T>(indent: string, factory: () => T) :T {
         global[singletonGlobalKey] = factory();
     }
     return global[singletonGlobalKey];
+}
+
+/**
+ * Make an request and parse the response as JSON.
+ * @param {string} url Url to request
+ * @param {RequestOptions} options Extra request options
+ * @returns {Promise<string>} returns a promise containing the response body
+ */
+export function requestAsync(request: { url: string, method?: string, body?: any, contentType?: string, headers?: http.OutgoingHttpHeaders }): Promise<{
+    response?: string,
+    statusCode: number,
+    statusMessage?: string
+}> {
+    
+    const requestOptions : https.RequestOptions = {
+        rejectUnauthorized: false,
+        agent: false,
+        method: request.method || 'GET'
+    };
+    let requestBody = request.body;
+
+    // assign required headers
+    requestOptions.headers = {
+        ...request.headers
+    };
+
+    if (requestBody) {
+        if (typeof requestBody === 'object') {
+            requestOptions['Content-Type'] = 'application/json';
+            requestBody = JSON.stringify(requestBody);
+        }
+        requestOptions.headers['Content-Length'] = requestBody.length;
+    }
+
+    if (request.contentType) {
+        requestOptions.headers['Content-Type'] = request.contentType;
+    }
+
+    // Do request
+    return new Promise(
+        (resolve, reject) => {
+            const clientRequest = https.request(request.url, requestOptions, resp => {
+                let data = '';
+                // A chunk of data has been recieved.
+                resp.on('data', chunk => { 
+                    data += chunk;
+                });
+                resp.on('end', _ => {
+                    try {
+                        resolve({
+                            response: data,
+                            statusCode: resp.statusCode,
+                            statusMessage: resp.statusMessage
+                        });
+                    } catch(err) {
+                        reject(err);
+                    }
+                });
+            }).on("error", err => {
+                reject(err);
+            });
+            clientRequest.end(requestBody);
+        }
+    );
 }
