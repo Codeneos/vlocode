@@ -1,7 +1,14 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.10] - 2019-01-14
+ - Improve repair datapack dependencies command
+ - Fix Admin Commands hidden in command pallette 
+ - Add support for auto generation of -meta.xml files for APEX classes
+ - Add quick create command for Salesforce files
+ - Add execute anonymous support for APEX
+
 ## [0.12.10] - 2019-12-18
- - Fix icon missing for succesful actions in activity view
+ - Fix icon missing for successful actions in activity view
  
 ## [0.12.9] - 2019-12-18
  - Support for Salesforce Refresh data from server

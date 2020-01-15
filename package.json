@@ -171,7 +171,7 @@
             },
             {
                 "command": "vlocity.execAnonymousCommand",
-                "title": "Salesforce: Execute as Anonymous APEX"
+                "title": "Salesforce: Execute Anonymous APEX"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -511,6 +511,11 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Enables support for **Salesforce commands** such as _Deploy_ and _Refresh_ of Salesforce Metadata Objects through Vlocode"
+                },
+                "vlocity.salesforce.manageMetaXmlFiles": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enables auto renaming and creation of _-meta.xml_ files for APEX classes. _Note: only has effect when **vlocity.salesforce.enabled** is enabled_"
                 },
                 "vlocity.salesforce.apiVersion": {
                     "type": "string",

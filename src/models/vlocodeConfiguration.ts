@@ -2,6 +2,7 @@ export interface VlocodeSalesforceConfiguration {
     enabled: boolean;
     deployOnSave: boolean;
     apiVersion: string;
+    manageMetaXmlFiles: boolean;
 }
 
 export default interface Vlocodefiguration {
