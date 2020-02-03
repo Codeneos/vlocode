@@ -9,11 +9,10 @@ import DatapackUtil from 'datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
-    /**
-     * In order to prevent a loop with the on save handler keep a list of documents that we are currently saving
-     * and ignore any deloyment command that comes in for these.
+    /** 
+     * In order to prevent double deployment keep a list of files recently saved by this command
      */
-    private readonly savingDocumentsList = new Set<string>();
+    private readonly savingDocumentsList = new Set<string>(); 
 
     constructor(name : string) {
         super(name, args => this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
@@ -36,22 +35,30 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
         // keep track of all documents that we intend to save in a set to prevent
         // a second deployment from being triggered by the onDidSaveHandler.
-        openDocuments.forEach(doc => this.savingDocumentsList.add(doc.uri.fsPath));
-        return forEachAsyncParallel(openDocuments, doc => doc.save().then(_ => this.savingDocumentsList.delete(doc.uri.fsPath)));
+        const openDocumentPaths = openDocuments.map(doc => doc.uri.fsPath);
+        openDocumentPaths.forEach(fsPath => this.savingDocumentsList.add(fsPath));
+
+        // Ensure that the documents put in the savingDocumentsList are cleaned up after 5 seconds to 
+        // avoid bugs that could be caused by deployDatapacks never being called
+        setTimeout(() => openDocumentPaths.forEach(fsPath => this.savingDocumentsList.delete(fsPath)), 5000);
+
+        return forEachAsyncParallel(openDocuments, doc => doc.save());
     }
 
     protected async deployDatapacks(selectedFiles: vscode.Uri[], reportErrors: boolean = true) {
         try {
-            for (const file of selectedFiles) {
+            const filesForDeployment = selectedFiles.filter(file => {
                 if (this.savingDocumentsList.has(file.fsPath)) {
                     // Deployment was triggered through on save handler; skipping it
-                    this.logger.verbose(`Deployment save loop detected; skip deploy for: ${selectedFiles.join(', ')}`);
-                    return;
+                    this.logger.verbose(`Deployment loop detected; skipping deployment requested for: ${file.fsPath}`);
+                    this.savingDocumentsList.delete(file.fsPath);
+                    return false;
                 }
-            }
+                return true;
+            });
 
             // prepare input
-            const datapackHeaders = await this.getDatapackHeaders(selectedFiles);
+            const datapackHeaders = await this.getDatapackHeaders(filesForDeployment);
             if (datapackHeaders.length == 0) {
                 // no datapack files found, lets pretend this didn't happen
                 return;

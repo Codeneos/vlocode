@@ -11,8 +11,23 @@ import MetadataCommand from './metadataCommand';
  */
 export default class DeployMetadataCommand extends MetadataCommand {
 
+    /** 
+     * In order to prevent double deployment keep a list of pending deploy ops
+     */
+    private readonly pendingDeployments = new Set<string>(); 
+
     constructor(name : string) {
         super(name, args => this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
+    }
+    
+    /**
+     * Saved all unsaved changes in the files related to each of the selected datapack files.
+     * @param datapackHeaders The datapack header files.
+     */
+    private async saveUnsavedChanges(manifest: MetadataManifest) : Promise<vscode.TextDocument[]> {
+        const filesToSave = new Set(Object.values(manifest.files).filter(info => !!info.localPath).map(info => info.localPath));
+        const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && filesToSave.has(d.uri.fsPath));
+        return forEachAsyncParallel(openDocuments, doc => doc.save());
     }
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {        

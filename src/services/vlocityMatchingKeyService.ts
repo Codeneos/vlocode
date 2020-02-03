@@ -18,11 +18,10 @@ export interface VlocityMatchingKey {
     readonly returnField: string;
 }
 
-type Map<T> = { [key: string] : T };
 
 export default class VlocityMatchingKeyService {  
 
-    private matchingKeys: Map<VlocityMatchingKey>;
+    private matchingKeys: Promise<Map<String, VlocityMatchingKey>>;
     private readonly matchingKeyQuery = new QueryBuilder('vlocity_namespace__DRMatchingKey__mdt')
         .select('vlocity_namespace__MatchingKeyFields__c', 'vlocity_namespace__ObjectAPIName__c', 'vlocity_namespace__ReturnKeyField__c')
         .build();
@@ -46,7 +45,7 @@ export default class VlocityMatchingKeyService {
      * @param type Type of object for which to build a select query
      * @param entry Datapack or SObjectRecord like map of fields to substitute in the query conditions
      */
-    public async getQuery(type: string, entry: Map<any>) : Promise<string> {
+    public async getQuery(type: string, entry: { [key: string] : any }) : Promise<string> {
         const matchingKey = await this.getMatchingKey(type);
         if (!matchingKey) {
             throw new Error(`Object type ${type} does not have a matching key specified in Salesforce.`);
@@ -102,23 +101,30 @@ export default class VlocityMatchingKeyService {
      */
     public async getMatchingKey(type: string) : Promise<VlocityMatchingKey | undefined> {
         if (!this.matchingKeys) {
-            this.matchingKeys = [
-                    ...await this.queryMatchingKeys(), 
-                    ...this.loadMatchingKeysFromQueryDefinitions()
-                ].reduce((map, key) =>  {
-                    map[key.sobjectType] = key;                
-                    if (constants.NAMESPACE_PLACEHOLDER.test(key.sobjectType)) {
-                        // make matching keys accessible without namespace prefix
-                        map[key.sobjectType.replace(constants.NAMESPACE_PLACEHOLDER,'').replace(/^__/,'')] = key;
-                    }
-                    if (key.datapackType) {
-                        // make matching keys accessible through datapack type
-                        map[key.datapackType] = key;
-                    }
-                    return map;
-                }, {});
+            this.matchingKeys = this.loadAllMatchingKeys();
         }
-        return this.matchingKeys[type];
+        return (await this.matchingKeys)[type];
+    }
+
+    private async loadAllMatchingKeys() : Promise<Map<string, VlocityMatchingKey>> {
+        const matchingKeys = [ ...await this.queryMatchingKeys(), ...this.loadMatchingKeysFromQueryDefinitions() ];
+        const values = new Map<string, VlocityMatchingKey>();
+        
+        for (const value of matchingKeys) {
+            values.set(value.sobjectType, value);
+
+            if (constants.NAMESPACE_PLACEHOLDER.test(value.sobjectType)) {
+                // make matching keys accessible without namespace prefix
+                values.set(value.sobjectType.replace(constants.NAMESPACE_PLACEHOLDER,'').replace(/^__/,''), value);
+            }
+
+            if (value.datapackType) {
+                // make matching keys accessible through datapack type
+                values.set(value.datapackType, value);
+            }            
+        }
+
+        return values;
     }
 
     private async queryMatchingKeys() : Promise<Array<VlocityMatchingKey>> {        
@@ -126,7 +132,7 @@ export default class VlocityMatchingKeyService {
         
         const connection = await this.connectionProvider.getJsForceConnection();
         const matchingKeyQuery = this.matchingKeyQuery.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
-        const queryResult = await connection.queryAll<SObjectRecord>(matchingKeyQuery);
+        const queryResult = await connection.query<SObjectRecord>(matchingKeyQuery);
         const matchingKeyObjects = queryResult.records.map(record => createRecordProxy(record)).map(record => {
             return {
                 sobjectType: record.ObjectAPIName__c,

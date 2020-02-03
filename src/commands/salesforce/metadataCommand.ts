@@ -10,12 +10,6 @@ import SalesforceService, { ComponentFailure, MetadataManifest } from 'services/
  */
 export default abstract class MetadataCommand extends CommandBase {
 
-    /** 
-     * In order to prevent a loop with the on save handler keep a list of documents that we are currently saving
-     * and ignore any deployment command that comes in for these.
-     */
-    private readonly savingDocumentsList = new Set<string>(); 
-
     /**
      * Problem matcher functions
      */
@@ -37,20 +31,6 @@ export default abstract class MetadataCommand extends CommandBase {
         if (validationMessage) {
             throw validationMessage;
         }
-    }
-
-    /**
-     * Saved all unsaved changes in the files related to each of the selected datapack files.
-     * @param datapackHeaders The datapack header files.
-     */
-    protected async saveUnsavedChanges(manifest: MetadataManifest) : Promise<vscode.TextDocument[]> {
-        const filesToSave = new Set(Object.values(manifest.files).filter(info => !!info.localPath).map(info => info.localPath));
-        const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && filesToSave.has(d.uri.fsPath));
-        
-        // keep track of all documents that we intend to save in a set to prevent
-        // a second deployment from being triggered by the onDidSaveHandler.
-        openDocuments.forEach(doc => this.savingDocumentsList.add(doc.uri.fsPath));
-        return forEachAsyncParallel(openDocuments, doc => doc.save().then(_ => this.savingDocumentsList.delete(doc.uri.fsPath)));
     }
 
     /**

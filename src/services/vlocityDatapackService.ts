@@ -233,7 +233,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(await this.getVlocityNamespace(), this, this.salesforceService));
+        const vlocityNamespace = await this.getVlocityNamespace();
+        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(vlocityNamespace, this, this.salesforceService));
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
@@ -306,7 +307,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         const salesforceConn = await this.getJsForceConnection();
         // query all objects even if they have an Id already; it is up to the caller to filter out objects with an Id if they
         // do not want to query them
-        const results = await Promise.all(exportQueries.map(query => salesforceConn.queryAll<SObjectRecord>(query.query)));
+        const results = await Promise.all(exportQueries.map(query => salesforceConn.query<SObjectRecord>(query.query)));
         return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
     }
 

@@ -72,10 +72,10 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
     protected async queryExportableRecords(datapackType : string) : Promise<SObjectRecord[] | undefined> {
         // query available records
-        let queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');
+        const queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');
         try {
             const connection = await this.datapackService.getJsForceConnection();
-            const results = await connection.queryAll<SObjectRecord>(this.getExportQuery(datapackType));
+            const results = await connection.query<SObjectRecord>(this.getExportQuery(datapackType));
             if (results.totalSize === 0) {
                 return; // no results
             }
@@ -86,7 +86,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     protected async showDatapackTypeSelection() : Promise<string | undefined> {
-        let datapackOptions = Object.keys(exportQueryDefinitions).map(
+        const datapackOptions = Object.keys(exportQueryDefinitions).map(
             option => {
                 const queryDef = exportQueryDefinitions[option];
                 if(!queryDef.query) {
@@ -100,7 +100,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             }
         );
 
-        let datapackToExport = await vscode.window.showQuickPick(datapackOptions, {
+        const datapackToExport = await vscode.window.showQuickPick(datapackOptions, {
             matchOnDetail: true,
             ignoreFocusOut: true,
             placeHolder: 'Select datapack types to export'
@@ -139,7 +139,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
     protected async showDependencySelection() : Promise<number | undefined> {
         // With dependencies?
-        let withDependencies = await vscode.window.showQuickPick([
+        const withDependencies = await vscode.window.showQuickPick([
             { label: 'None', description: 'Do not export any dependencies, only export the selected object', maxDepth: 0 },
             { label: 'Direct', description: 'Include only direct dependencies, up to 1 level deep', maxDepth: 1  },
             { label: 'All', description: 'Include all depending objects', maxDepth: -1  }
@@ -157,7 +157,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         const queryDef = exportQueryDefinitions[datapackType];
 
         // Select object
-        let objectOptions =  records.map(r => {
+        const objectOptions =  records.map(r => {
             return {
                 label: queryDef.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
                 description: r.attributes.url,
