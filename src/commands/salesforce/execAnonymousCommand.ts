@@ -37,10 +37,10 @@ export default class ExecAnonymousCommand extends MetadataCommand {
         const selectedDocument = vscode.window.activeTextEditor.document;
         const documentSelection = !vscode.window.activeTextEditor.selection?.isEmpty ? vscode.window.activeTextEditor.selection : undefined;
         const documentOffset = documentSelection?.start || new vscode.Position(0, 0);
-        let codeToExecute = selectedDocument.getText(documentSelection);
+        let codeToExecute = selectedDocument.getText(documentSelection).trim();
 
         // Append a semi-column to the code snippet when required
-        if (!codeToExecute.endsWith(';')) {
+        if (!/(}|;)$/m.test(codeToExecute)) {
             codeToExecute += ';';
         }
 
@@ -73,18 +73,18 @@ export default class ExecAnonymousCommand extends MetadataCommand {
                 throw new Error(`Failed to compile APEX: ${result.compileProblem}`);
             } 
 
-            if (!result.success) {
-                throw new Error(`Execution failed: ${result.exceptionMessage}`);
-            } 
-
-            vscode.window.showInformationMessage(`Execution successful`);
-
             if (result.debugLog) {
                 const debugLog = await vscode.workspace.openTextDocument({ language: 'apexlog', content: this.getExecutionLog(result.debugLog) });
                 if (debugLog) {
                     vscode.window.showTextDocument(debugLog);
                 }
-            }            
+            }
+
+            if (!result.success) {
+                throw new Error(`Execution failed: ${result.exceptionMessage}`);
+            }
+
+            vscode.window.showInformationMessage(`Execution successful`);
         });
     }
 

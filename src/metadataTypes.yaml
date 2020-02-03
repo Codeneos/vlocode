@@ -191,3 +191,8 @@ LightningComponentBundle:
   fileExtensions:
   - ".js-meta.xml"
   packageFolder: lwc
+ApprovalProcess:
+  fileExtensions:
+  - ".approvalProcess"
+  packageFolder: approvalProcesses
+ 

@@ -28,6 +28,17 @@ export type SalesforceAuthResult = {
     refreshToken?: string,
 };
 
+export type SalesforceOrgInfo = {
+    orgId: string,
+    accessToken?: string,
+    instanceUrl?: string,
+    loginUrl?: string,
+    username: string,
+    alias?: string,
+    clientId?: string,
+    refreshToken?: string,
+};
+
 export default class SfdxUtil {
 
     // public static async getDefaultUsername(includeScratchOrgs = true) : Promise<string> {
@@ -57,24 +68,43 @@ export default class SfdxUtil {
             instanceurl: options.instanceUrl, 
             setalias: options.alias 
         });
+        
         return result;
     }
 
-    public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<salesforce.AuthInfo[]> {
-        const configs = await SfdxUtil.getAllValidatedConfigs();
+    public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<SalesforceOrgInfo[]> {
+        const configs = [];
+        for await (const config of this.getAllValidatedConfigs()) {
+            configs.push(config);
+        }
         return configs;
     }
 
-    public static async getAllValidatedConfigs() : Promise<salesforce.AuthInfo[]> {
+    public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {
         try {
             const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
-            return Promise.all(authFiles.map(authFile => salesforce.AuthInfo.create( { username: path.parse(authFile).name } )));
+            const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
+            for (const authFile of authFiles) {
+                const authInfo = await salesforce.AuthInfo.create( { username: path.parse(authFile).name });
+                const authFields = authInfo.getFields();
+                yield {
+                    orgId: authFields.orgId,
+                    accessToken: authFields.accessToken,
+                    instanceUrl: authFields.instanceUrl,
+                    loginUrl: authFields.loginUrl,
+                    username: authFields.username,
+                    clientId: authFields.clientId,
+                    refreshToken: authFields.refreshToken,
+                    alias: aliases?.getKeysByValue(authFields.username)[0]
+                };
+            }
         } catch(err) {
-            return [];
+            this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
         }
     }
 
-    public static async getOrg(username?: string) : Promise<salesforce.Org> {
+    public static async getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {
+        const username = await this.resolveAlias(usernameOrAlias) || usernameOrAlias;
         const org = await salesforce.Org.create({
             connection: await salesforce.Connection.create({
                 authInfo: await salesforce.AuthInfo.create({ username })
@@ -82,6 +112,10 @@ export default class SfdxUtil {
         });
         await org.refreshAuth();
         return org;
+    }
+
+    public static resolveAlias(alias?: string) : Promise<string | undefined> {
+        return salesforce.Aliases.fetch(alias);
     }
 
     public static async getJsForceConnection(username?: string) : Promise<jsforce.Connection> {

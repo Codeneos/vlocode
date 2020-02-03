@@ -5,12 +5,13 @@ import * as ZipArchive from 'jszip';
 import * as xml2js from 'xml2js';
 import * as fs from 'fs';
 import * as constants from '@constants';
-import { getDocumentBodyAsString, wait, requestAsync } from '@util';
+import { getDocumentBodyAsString, wait } from '@util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import { Stream } from 'stream';
 import * as metadataTypes from 'metadataTypes.yaml';
 import { getMetaFiles } from 'salesforceUtil';
-import { stripPrefix } from 'xml2js/lib/processors';
+import { stripPrefix, parseNumbers } from 'xml2js/lib/processors';
+import axios from 'axios';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -132,6 +133,22 @@ class SoapRequest {
         return new xml2js.Builder(constants.MD_XML_OPTIONS).buildObject(soapRequestObject);
     }
 }
+
+/**
+ * Simple SOAP response
+ */
+interface SoapResponse { 
+    Envelope: {
+        Header?: any,
+        Body?: {
+            Fault?: {
+                faultcode: string,
+                faultstring: string
+            },
+            [key: string]: any
+        }
+    };
+ }
 
 /**
  * Object that describe the salesforce package XML, can be converted into a package.xml file body or JSON structure
@@ -391,7 +408,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
             const metaFileExt = path.extname(metaFile).toLowerCase();
             const metaFolderName = path.dirname(metaFile).split(/\/|\\/).pop();
-            const componentName = path.basename(metaFile).replace(/\.\S+\-meta\.xml/ig, '');
+            const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
+            const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
 
             const metaFileBody = await getDocumentBodyAsString(metaFile);
             const metaXml = await xml2js.parseStringPromise(metaFileBody);
@@ -428,7 +446,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 // other meta data type add only the meta file
                 const packagePath = path.posix.join(packageFolder, path.basename(metaFile));
                 Object.assign(mdPackage.files, {   
-                    [packagePath]: { name: componentName.split('.').slice(0,-1).join('.'), type: componentType, localPath: metaFile }
+                    [packagePath]: { name: componentName, type: componentType, localPath: metaFile }
                 });
             }
         }
@@ -604,36 +622,67 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return retrieveTask(token);
     }
 
+    /** export interface AxiosRequestConfig {
+  url?: string;
+  method?: Method;
+  baseURL?: string;
+  transformRequest?: AxiosTransformer | AxiosTransformer[];
+  transformResponse?: AxiosTransformer | AxiosTransformer[];
+  headers?: any;
+  params?: any;
+  paramsSerializer?: (params: any) => string;
+  data?: any;
+  timeout?: number;
+  timeoutErrorMessage?: string;
+  withCredentials?: boolean;
+  adapter?: AxiosAdapter;
+  auth?: AxiosBasicCredentials;
+  responseType?: ResponseType;
+  xsrfCookieName?: string;
+  xsrfHeaderName?: string;
+  onUploadProgress?: (progressEvent: any) => void;
+  onDownloadProgress?: (progressEvent: any) => void;
+  maxContentLength?: number;
+  validateStatus?: (status: number) => boolean;
+  maxRedirects?: number;
+  socketPath?: string | null;
+  httpAgent?: any;
+  httpsAgent?: any;
+  proxy?: AxiosProxyConfig | false;
+  cancelToken?: CancelToken;
+} */
+
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any, debugLog?: any }> {
         const connection = await this.getJsForceConnection();
         const soapRequest = new SoapRequest(methodName, "http://soap.sforce.com/2006/08/apex", debuggingHeader);
         const endpoint = `${connection.instanceUrl}/services/Soap/s/${connection.version}`;
-        const result = await requestAsync({
+        const result = await axios({
             method: 'POST',
             url: endpoint,
             headers: {
                 'SOAPAction': '""',
                 'Content-Type':  'text/xml;charset=UTF-8'
             },
-            body: soapRequest.toXml(request, connection.accessToken)
-        });
-
-        const response : { 
-            Envelope: {
-                Header?: any,
-                Body?: {
-                    Fault?: {
-                        faultcode: string,
-                        faultstring: string
-                    },
-                    [key: string]: any
-                }
-            }
-         } = await xml2js.parseStringPromise(result.response, {
-            tagNameProcessors: [ stripPrefix ],            
-            attrNameProcessors: [ stripPrefix ],
-            explicitArray: false
-        });
+            transformResponse: (data: any, headers?: any) => {
+                return xml2js.parseStringPromise(data, {
+                    tagNameProcessors: [ stripPrefix ],            
+                    attrNameProcessors: [ stripPrefix ],
+                    valueProcessors: [
+                        (value) => {
+                            if (/^[0-9]+(\.[0-9]+){0,1}$/i.test(value)) {
+                                return parseFloat(value);
+                            } else if (/^true|false$/i.test(value)) {
+                                return value.localeCompare('true', undefined, { sensitivity: 'base' }) === 0;
+                            }
+                            return value;
+                        }
+                    ],
+                    explicitArray: false
+                });
+            },
+            data: soapRequest.toXml(request, connection.accessToken)
+        });        
+        const response = <SoapResponse>(await result.data);
 
         if (response.Envelope.Body?.Fault) {
             throw new Error(`SOAP API Fault: ${response.Envelope.Body.Fault?.faultstring}`);
@@ -657,6 +706,19 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return {
             ...response.body.executeAnonymousResponse.result,
             debugLog: response.debugLog
+        };
+    }
+
+    /**
+     * Compiles the specified class bodies on the server
+     * @param apexClassBody APEX classes to compile
+     */
+    public async compileClasses(apexClassBody: string[]) : Promise<any> {
+        const response = await this.soapToolingRequest('compileClasses', {
+            scripts: apexClassBody
+        });
+        return {
+            ...response.body.compileClassesResponse
         };
     }
 

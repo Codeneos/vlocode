@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
-import { AuthInfo } from '@salesforce/core';
 import { CommandBase } from './commandBase';
-import SfdxUtil from 'sfdxUtil';
+import SfdxUtil, { SalesforceOrgInfo } from 'sfdxUtil';
 
-type SelectOrgQuickPickItem = vscode.QuickPickItem & { authInfo?: AuthInfo, instanceUrl?: string };
+type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo, instanceUrl?: string };
 
 export default class SelectOrgCommand extends CommandBase {
 
@@ -45,7 +44,7 @@ export default class SelectOrgCommand extends CommandBase {
 
     protected async getAuthorizedOrgs() : Promise<SelectOrgQuickPickItem[]> {
         const orgList = await SfdxUtil.getAllKnownOrgDetails(); 
-        return orgList.map(authInfo => ({ label: authInfo.getUsername(), description: authInfo.getFields().instanceUrl, authInfo }));
+        return orgList.map(orgInfo => ({ label: orgInfo.alias || orgInfo.username, description: orgInfo.instanceUrl, orgInfo }));
     }
 
     protected async selectOrg() : Promise<void> {
@@ -57,19 +56,19 @@ export default class SelectOrgCommand extends CommandBase {
             return;
         }
 
-        const selectedAuthInfo = selectedOrg.authInfo || await this.authorizeNewOrg();
+        const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();
 
-        if (selectedAuthInfo) {
-            this.logger.log(`Set ${selectedAuthInfo.getUsername()} as target org for Vlocity deploy/refresh operations`);
-            if (this.vloService.config.sfdxUsername != selectedAuthInfo.getUsername()) {
-                this.vloService.config.sfdxUsername = selectedAuthInfo.getUsername();
+        if (selectedOrgInfo) {
+            this.logger.log(`Set ${selectedOrgInfo.username} as target org for Vlocity deploy/refresh operations`);
+            if (this.vloService.config.sfdxUsername != selectedOrgInfo.username) {
+                this.vloService.config.sfdxUsername = selectedOrgInfo.username;
             } else {
                 await this.vloService.initialize();
             }
         }
     }
 
-    protected async authorizeNewOrg() : Promise<AuthInfo | undefined> {        
+    protected async authorizeNewOrg() : Promise<SalesforceOrgInfo | undefined> {        
         const newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
             { placeHolder: 'Select the type of org you want to authorize' });
         
@@ -94,12 +93,12 @@ export default class SelectOrgCommand extends CommandBase {
         }, async () => {
             const loginResult = await SfdxUtil.webLogin({ instanceUrl });
             if (loginResult && loginResult.accessToken) {
-                return await AuthInfo.create({ username: loginResult.username });
+                return loginResult;
             }
         });
 
         if (authInfo) {
-            const successMessage = `Successfully authorized ${authInfo.getUsername()}, you can now close the browser`;
+            const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
             this.logger.log(successMessage);
             vscode.window.showInformationMessage(successMessage);
             return authInfo;

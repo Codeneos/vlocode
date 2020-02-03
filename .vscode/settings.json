@@ -8,6 +8,5 @@
     },
     "typescript.tsc.autoDetect": "off",
     "debug.node.autoAttach": "on",
-    "typescript.tsdk": "node_modules\\typescript\\lib",
-    "vlocity.sfdxUsername": "peter.van.gulik@accenture.com.b2b.dev10"
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }

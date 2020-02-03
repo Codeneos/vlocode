@@ -1,10 +1,7 @@
-import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as expressions from "angular-expressions";
-import * as https from 'https';
-import * as http from 'http';
 
 export async function getDocumentBodyAsString(file: string) : Promise<string> {
     const doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
@@ -110,7 +107,7 @@ export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, 
  * @param callback The callback to execute for each item
  */
 export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<any>) : Promise<T[]> {
-    let tasks : Thenable<any>[] = [];
+    const tasks : Thenable<any>[] = [];
     for (let i = 0; i < array.length; i++) {
         tasks.push(callback(array[i], i, array));
     }
@@ -148,7 +145,7 @@ function* enumerateWithIndex<T>(iterable: Iterable<T>) : IterableIterator<[numbe
  * @param callback The callback to execute for each item
  */
 export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T) => Thenable<R>, parallelism = 2) : Promise<R[]> {
-    let tasks : Thenable<R[]>[] = new Array(parallelism).fill(Promise.resolve(new Array<R>()));
+    const tasks : Thenable<R[]>[] = new Array(parallelism).fill(Promise.resolve(new Array<R>()));
     for (const [index, value] of enumerateWithIndex(iterable)) {
         tasks[index % parallelism] = tasks[index % parallelism].then(async result => result.concat(await callback(value)));
     }
@@ -245,7 +242,7 @@ export function stringEquals(a : string, b: string, insensitive?: boolean) : boo
  * @param depth Max object depth to go down the tree
  */
 export function getObjectValues(obj: Object, depth = -1) : any[] {
-    let properties = [];
+    const properties = [];
     Object.keys(obj).forEach(key => {
         if (typeof obj[key] === 'object') {
             if (depth != 0) {
@@ -271,7 +268,7 @@ export async function wait(ms: number) : Promise<boolean> {
  * @param file Text file to check
  */
 export async function hasXmlHeader(file: string) {
-    let body = await getDocumentBodyAsString(file);
+    const body = await getDocumentBodyAsString(file);
     if (body) { 
         const startsWithXmlHeader = body.trimStart().startsWith('<?xml ');
         return startsWithXmlHeader;
@@ -290,68 +287,4 @@ export function asSingleton<T>(indent: string, factory: () => T) :T {
         global[singletonGlobalKey] = factory();
     }
     return global[singletonGlobalKey];
-}
-
-/**
- * Make an request and parse the response as JSON.
- * @param {string} url Url to request
- * @param {RequestOptions} options Extra request options
- * @returns {Promise<string>} returns a promise containing the response body
- */
-export function requestAsync(request: { url: string, method?: string, body?: any, contentType?: string, headers?: http.OutgoingHttpHeaders }): Promise<{
-    response?: string,
-    statusCode: number,
-    statusMessage?: string
-}> {
-    
-    const requestOptions : https.RequestOptions = {
-        rejectUnauthorized: false,
-        agent: false,
-        method: request.method || 'GET'
-    };
-    let requestBody = request.body;
-
-    // assign required headers
-    requestOptions.headers = {
-        ...request.headers
-    };
-
-    if (requestBody) {
-        if (typeof requestBody === 'object') {
-            requestOptions['Content-Type'] = 'application/json';
-            requestBody = JSON.stringify(requestBody);
-        }
-        requestOptions.headers['Content-Length'] = requestBody.length;
-    }
-
-    if (request.contentType) {
-        requestOptions.headers['Content-Type'] = request.contentType;
-    }
-
-    // Do request
-    return new Promise(
-        (resolve, reject) => {
-            const clientRequest = https.request(request.url, requestOptions, resp => {
-                let data = '';
-                // A chunk of data has been recieved.
-                resp.on('data', chunk => { 
-                    data += chunk;
-                });
-                resp.on('end', _ => {
-                    try {
-                        resolve({
-                            response: data,
-                            statusCode: resp.statusCode,
-                            statusMessage: resp.statusMessage
-                        });
-                    } catch(err) {
-                        reject(err);
-                    }
-                });
-            }).on("error", err => {
-                reject(err);
-            });
-            clientRequest.end(requestBody);
-        }
-    );
 }
