@@ -226,15 +226,11 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return key.startsWith('RecordType/') || this.vlocityBuildTools.datapacksutils.isGuaranteedParentKey(key);
     }
 
-    // Todo: get vlocity namespace earlier
-    // instead
-    private async getVlocityNamespace() : Promise<string> {
-        return this.vlocityNamespace;
-    }
-
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        const vlocityNamespace = await this.getVlocityNamespace();
-        return this._matchingKeyService || (this._matchingKeyService = new VlocityMatchingKeyService(vlocityNamespace, this, this.salesforceService));
+        if (!this._matchingKeyService) {
+            this._matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this, this.salesforceService);
+        }
+        return this._matchingKeyService;
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {

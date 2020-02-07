@@ -113,8 +113,8 @@ export async function getMetaFiles(paths: string[] | string, recursive: boolean 
         }
         const files = stat.isDirectory() ? (await fs.readdir(pathStr)).map(file => path.join(pathStr, file)) : [ pathStr ];
 
-        let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
-        metaFiles = await filterAsyncParallel(metaFiles, hasXmlHeader, 4);
+        //let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
+        const metaFiles = await filterAsyncParallel(files, hasXmlHeader, 4);
 
         if (recursive) {
             const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());

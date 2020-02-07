@@ -9,9 +9,12 @@ import { getDocumentBodyAsString, wait } from '@util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import { Stream } from 'stream';
 import * as metadataTypes from 'metadataTypes.yaml';
-import { getMetaFiles } from 'salesforceUtil';
+import { getMetaFiles, createRecordProxy } from 'salesforceUtil';
 import { stripPrefix, parseNumbers } from 'xml2js/lib/processors';
 import axios from 'axios';
+import SObjectRecord from 'models/sobjectRecord';
+import Lazy from 'util/lazy';
+import cache from 'util/cache';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -282,7 +285,7 @@ export class RetrieveResultPackage {
 export default class SalesforceService implements JsForceConnectionProvider {  
 
     private readonly describeCache = new Map<string, jsforce.DescribeSObjectResult>();
-    private packageCache: InstalledPackageRecord[];
+    private readonly vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
     
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
@@ -301,6 +304,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${page.replace(/^\/+/, '')}`);
     }
 
+    @cache(-1)
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
         const installedPackage = await this.getInstalledPackageDetails(packageName);
         if (!installedPackage) {
@@ -309,19 +313,16 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return installedPackage.namespacePrefix;
     }
 
+    @cache(-1)
     public async getInstalledPackageDetails(packageName: string | RegExp) : Promise<InstalledPackageRecord | undefined> {
         const results = await this.getInstalledPackages();     
         return results.find(packageInfo => typeof packageName === 'string' ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
     }
 
+    @cache(-1)
     public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {
-        if (this.packageCache) {
-            return this.packageCache;
-        }
         const con = await this.getJsForceConnection();
-        const results = await con.metadata.list( { type: 'InstalledPackage' });        
-        this.packageCache = <InstalledPackageRecord[]>results;
-        return this.packageCache;
+        return con.metadata.list( { type: 'InstalledPackage' }) as Promise<InstalledPackageRecord[]>;
     }
 
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
@@ -358,6 +359,17 @@ export default class SalesforceService implements JsForceConnectionProvider {
             throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
         }
         return field;
+    }
+
+    /**
+     * Returns a list of records. All records are mapped to record proxy object 
+     * @param query SOQL Query to execute
+     */
+    public async query<T extends SObjectRecord>(query: string) : Promise<T[]> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const actualQuery = query.replace(constants.NAMESPACE_PLACEHOLDER, await this.vlocityNamespace);
+        const queryResult = await connection.query<T>(actualQuery);
+        return queryResult.records.map(record => createRecordProxy<T>(record));
     }
 
     /**
@@ -398,7 +410,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         const metaFiles =  await getMetaFiles(files.map(file => file.fsPath), true);
 
         // Build zip archive for all expanded files
-        // Note use posix paht separators when building package.zip
+        // Note use posix path separators when building package.zip
         for (const metaFile of metaFiles) {
 
             // Stop directly and return null
@@ -621,36 +633,6 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
         return retrieveTask(token);
     }
-
-    /** export interface AxiosRequestConfig {
-  url?: string;
-  method?: Method;
-  baseURL?: string;
-  transformRequest?: AxiosTransformer | AxiosTransformer[];
-  transformResponse?: AxiosTransformer | AxiosTransformer[];
-  headers?: any;
-  params?: any;
-  paramsSerializer?: (params: any) => string;
-  data?: any;
-  timeout?: number;
-  timeoutErrorMessage?: string;
-  withCredentials?: boolean;
-  adapter?: AxiosAdapter;
-  auth?: AxiosBasicCredentials;
-  responseType?: ResponseType;
-  xsrfCookieName?: string;
-  xsrfHeaderName?: string;
-  onUploadProgress?: (progressEvent: any) => void;
-  onDownloadProgress?: (progressEvent: any) => void;
-  maxContentLength?: number;
-  validateStatus?: (status: number) => boolean;
-  maxRedirects?: number;
-  socketPath?: string | null;
-  httpAgent?: any;
-  httpsAgent?: any;
-  proxy?: AxiosProxyConfig | false;
-  cancelToken?: CancelToken;
-} */
 
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any, debugLog?: any }> {
         const connection = await this.getJsForceConnection();

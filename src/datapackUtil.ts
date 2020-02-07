@@ -2,9 +2,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { LogManager, Logger } from 'logging';
-
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { removeNamespacePrefix } from 'salesforceUtil';
 import { mapAsyncParallel, filterAsyncParallel, getDocumentBodyAsString } from './util';
 
 /**
@@ -121,29 +118,5 @@ export default class DatapackUtil {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Gets the datapack name for the specified SObject type, namespaces prefixes are replaced with %vlocity_namespace% when applicable
-     * @param sobjectType Salesforce object type
-     */
-    public static getDatapackType(sobjectType: string) : string | undefined {
-        const sobjectTypeWithoutNamespace = removeNamespacePrefix(sobjectType);
-        const regex = new RegExp(`from (${sobjectType}|%vlocity_namespace%__${sobjectTypeWithoutNamespace})`,'ig');
-        return Object.keys(exportQueryDefinitions).find(type =>  regex.test(exportQueryDefinitions[type].query));
-    }
-
-    /**
-     * Gets the SObject type for the specified Datapack, namespaces are returned with a replaceable prefix %vlocity_namespace%
-     * @param sobjectType Datapack type
-     */
-    public static getSObjectType(datapackType: string) : string | undefined {
-        const queryDef = exportQueryDefinitions[datapackType];
-        if (queryDef) {
-            const match = queryDef.query.match(/from ([^\s]+)/im);
-            if (match) {
-                return match[1];
-            }
-        }
     }
 }

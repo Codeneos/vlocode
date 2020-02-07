@@ -5,11 +5,13 @@ import SalesforceService from 'services/salesforceService';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from 'models/sobjectRecord';
-import { createRecordProxy } from 'salesforceUtil';
+import { createRecordProxy, removeNamespacePrefix } from 'salesforceUtil';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import DatapackUtil from 'datapackUtil';
 import * as constants from '@constants';
 import QueryBuilder from './queryBuilder';
+import cache from 'util/cache';
+import Lazy from 'util/lazy';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
@@ -21,15 +23,23 @@ export interface VlocityMatchingKey {
 
 export default class VlocityMatchingKeyService {  
 
-    private matchingKeys: Promise<Map<String, VlocityMatchingKey>>;
+    //private matchingKeys = new Lazy(() => this.loadAllMatchingKeys());
     private readonly matchingKeyQuery = new QueryBuilder('vlocity_namespace__DRMatchingKey__mdt')
-        .select('vlocity_namespace__MatchingKeyFields__c', 'vlocity_namespace__ObjectAPIName__c', 'vlocity_namespace__ReturnKeyField__c')
+        .select('Name', 'vlocity_namespace__MatchingKeyFields__c', 'vlocity_namespace__ObjectAPIName__c', 'vlocity_namespace__ReturnKeyField__c')
+        .build();
+    private readonly datapackConfigQuery = new QueryBuilder('vlocity_namespace__VlocityDataPackConfiguration_mdt')
+        .select('Name', 'vlocity_namespace__PrimarySObjectType__c')
         .build();
 
     constructor(
         private readonly vlocityNamespace: string,
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider)) {
+    }
+
+    @cache(-1)
+    private get matchingKeys() {
+        return this.loadAllMatchingKeys();
     }
 
     private get queryDefinitions() {
@@ -100,9 +110,6 @@ export default class VlocityMatchingKeyService {
      * @param type The datapack type or SObject type for which to get the matching key record
      */
     public async getMatchingKey(type: string) : Promise<VlocityMatchingKey | undefined> {
-        if (!this.matchingKeys) {
-            this.matchingKeys = this.loadAllMatchingKeys();
-        }
         return (await this.matchingKeys)[type];
     }
 
@@ -129,14 +136,16 @@ export default class VlocityMatchingKeyService {
 
     private async queryMatchingKeys() : Promise<Array<VlocityMatchingKey>> {        
         this.logger.log(`Querying matching keys from Salesforce`);
-        
-        const connection = await this.connectionProvider.getJsForceConnection();
-        const matchingKeyQuery = this.matchingKeyQuery.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
-        const queryResult = await connection.query<SObjectRecord>(matchingKeyQuery);
-        const matchingKeyObjects = queryResult.records.map(record => createRecordProxy(record)).map(record => {
+
+        const [ datapackConfigResults, matchingKeyResults ] = await Promise.all([ 
+            this.salesforceService.query(this.datapackConfigQuery), 
+            this.salesforceService.query(this.matchingKeyQuery) 
+        ]);
+
+        const matchingKeyObjects = matchingKeyResults.map(record => {
             return {
                 sobjectType: record.ObjectAPIName__c,
-                datapackType: DatapackUtil.getDatapackType(record.ObjectAPIName__c),
+                datapackType: this.getDatapackType(record.ObjectAPIName__c) ?? record.Name,
                 fields: record.MatchingKeyFields__c.split(',').map(s => s.trim()),
                 returnField: record.ReturnKeyField__c
             };
@@ -152,7 +161,7 @@ export default class VlocityMatchingKeyService {
         
         const matchingKeyObjects = Object.values(this.queryDefinitions).filter(qd => qd.matchingKey).map(qd => {
             return {
-                sobjectType: DatapackUtil.getSObjectType(qd.VlocityDataPackType),
+                sobjectType: this.getSObjectType(qd.VlocityDataPackType),
                 datapackType: qd.VlocityDataPackType,
                 fields: qd.matchingKey.fields,
                 returnField: qd.matchingKey.returnField || 'Id'
@@ -162,5 +171,36 @@ export default class VlocityMatchingKeyService {
         this.logger.verbose(`Found ${matchingKeyObjects.length} matching keys:`, matchingKeyObjects);
 
         return matchingKeyObjects;
+    }
+
+    private async query<T extends SObjectRecord>(query: string) : Promise<T[]> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const actualQuery = query.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
+        const queryResult = await connection.query<T>(actualQuery);
+        return queryResult.records.map(record => createRecordProxy<T>(record));
+    }
+
+    /**
+     * Gets the datapack name for the specified SObject type, namespaces prefixes are replaced with %vlocity_namespace% when applicable
+     * @param sobjectType Salesforce object type
+     */
+    private getDatapackType(sobjectType: string) : string | undefined {
+        const sobjectTypeWithoutNamespace = removeNamespacePrefix(sobjectType);
+        const regex = new RegExp(`from (${sobjectType}|(%|)vlocity_namespace(%|)__${sobjectTypeWithoutNamespace})`,'ig');
+        return Object.keys(this.queryDefinitions).find(type => regex.test(this.queryDefinitions[type].query));
+    }
+
+    /**
+     * Gets the SObject type for the specified Datapack, namespaces are returned with a replaceable prefix %vlocity_namespace%
+     * @param sobjectType Datapack type
+     */
+    private getSObjectType(datapackType: string) : string | undefined {
+        const queryDef = this.queryDefinitions[datapackType];
+        if (queryDef) {
+            const match = queryDef.query.match(/from ([^\s]+)/im);
+            if (match) {
+                return match[1];
+            }
+        }
     }
 }
