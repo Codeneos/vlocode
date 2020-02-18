@@ -576,7 +576,7 @@
         "@types/xml2js": "^0.4.5",
         "ajv": "^6.10.2",
         "angular": "^1.7.9",
-        "angular-expressions": "^1.0.0",
+        "angular-expressions": "^1.0.1",
         "axios": "^0.19.1",
         "cache-loader": "^4.1.0",
         "chai": "^4.2.0",
