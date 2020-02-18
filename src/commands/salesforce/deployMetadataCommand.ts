@@ -31,23 +31,28 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {        
+        // Prevent prod deployment if not intended
+        if (await this.vloService.salesforceService.isProductionOrg()) {
+            if (!await this.showProductionWarning(false)) {
+                return;
+            }
+        }
+
         // Build manifest
         const manifest = await vscode.window.withProgress({ 
             title: "Building Deployment Manifest",
             location: vscode.ProgressLocation.Window,
         }, () => this.salesforce.buildManifest(selectedFiles));
-
-        if (manifest.files.length == 0) {
-            return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
-        }
-        this.clearPreviousErrors(manifest);
+        manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
 
         // Get task title
         const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
         const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${uniqueComponents.length} components`;
 
-        // Use config provided API version
-        manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
+        if (uniqueComponents.length == 0) {
+            return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
+        }
+        this.clearPreviousErrors(manifest);
 
         await this.vloService.withActivity({
             progressTitle: `Deploying ${progressTitle}...`, 
@@ -60,7 +65,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
             if (result.details && result.details.componentFailures) {
                 this.clearPreviousErrors(manifest);
-                this.showComponentFailures(manifest, result.details.componentFailures);
+                await this.showComponentFailures(manifest, result.details.componentFailures);
             }
 
             if (!result.success) {

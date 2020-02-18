@@ -92,6 +92,26 @@ export abstract class CommandBase implements Command {
         });
     }
 
+    /**
+     * Show a warning message about making changes to a production org allowing the user to cancel the operation in case it was unintended
+     * @param throwException Throw an exception instead of returning a boolean; default behavior is throwing an exception
+     */
+    protected async showProductionWarning(throwException = true) : Promise<never | Boolean> {
+        const productionWarning = await vscode.window.showQuickPick([
+            { continue: false, label: '$(circle-slash) No', description: 'cancel the current operation' },
+            { continue: true, label: '$(check) Yes', description: 'continue and make changes to the connected Production instance' }
+        ], { placeHolder: 'Make changes to connected Production instance?' });
+
+        if(!productionWarning || productionWarning.continue !== true ) {
+            if (throwException) {
+                throw new Error('Operation cancelled by user after making changes to production warning');
+            }
+            return false;
+        }
+
+        return true;
+    }
+
     protected showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
         return showMsgWithRetry<T>(vscode.window.showErrorMessage, errorMsg, retryCallback, thisArg, args);
     }

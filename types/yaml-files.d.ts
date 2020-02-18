@@ -29,6 +29,8 @@ declare module 'metadataTypes.yaml' {
   interface MetadataType {
     packageFolder?: string;
     fileExtensions?: string[];
+    packageType?: string;    
+    retainFolderStructure?: boolean;
   }
   const exportQueryDefinitions : { 
     [metadataType: string] : MetadataType

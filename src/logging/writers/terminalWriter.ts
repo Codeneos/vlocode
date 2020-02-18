@@ -44,11 +44,6 @@ export class TerminalWriter implements LogWriter, vscode.Disposable, Focusable {
 
     private createTerminal() : vscode.Terminal {
         [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());        
-        (vscode.window.terminals.filter(term => term.name == this.name)).forEach(t => { 
-            t.hide(); 
-            setTimeout(t.dispose.bind(t), 500);
-        });
-
         this.writeEmitter = new vscode.EventEmitter<string>();
         this.closeEmitter = new vscode.EventEmitter<void>();
         this.isOpened = false;

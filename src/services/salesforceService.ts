@@ -15,6 +15,8 @@ import axios from 'axios';
 import SObjectRecord from 'models/sobjectRecord';
 import Lazy from 'util/lazy';
 import cache from 'util/cache';
+import { LogManager, Logger } from 'logging';
+import chalk = require('chalk');
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -22,13 +24,13 @@ export interface InstalledPackageRecord extends jsforce.FileProperties {
 }
 
 export interface OrganizationDetails {
-    Id: string;
-    Name: string;
-    PrimaryContact: string;
-    InstanceName: string;
-    IsSandbox: Boolean;
-    OrganizationType: string;
-    NamespacePrefix: string;
+    id: string;
+    name: string;
+    primaryContact: string;
+    instanceName: string;
+    isSandbox: Boolean;
+    organizationType: string;
+    namespacePrefix: string;
 }
 
 export type DetailedDeployResult = jsforce.DeployResult & {
@@ -290,6 +292,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
 
+    protected get logger() : Logger {
+        return LogManager.get(SalesforceService);
+    }
+
+    public async isProductionOrg() : Promise<Boolean> {
+        return (await this.getOrganizationDetails()).isSandbox !== true;
+    }
+
     public getJsForceConnection() : Promise<jsforce.Connection> {
         return this.connectionProvider.getJsForceConnection();
     }
@@ -325,10 +335,10 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return con.metadata.list( { type: 'InstalledPackage' }) as Promise<InstalledPackageRecord[]>;
     }
 
+    @cache(-1)
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
-        const con = await this.getJsForceConnection();
-        const results = await con.query('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
-        return <OrganizationDetails>results.records[0];
+        const results = await this.query<OrganizationDetails>('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
+        return results[0];
     }
 
     public async getRecordPrefixes() : Promise<{ [key: string]: string }> {
@@ -365,7 +375,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * Returns a list of records. All records are mapped to record proxy object 
      * @param query SOQL Query to execute
      */
-    public async query<T extends SObjectRecord>(query: string) : Promise<T[]> {
+    public async query<T extends Partial<SObjectRecord>>(query: string) : Promise<T[]> {
         const connection = await this.connectionProvider.getJsForceConnection();
         const actualQuery = query.replace(constants.NAMESPACE_PLACEHOLDER, await this.vlocityNamespace);
         const queryResult = await connection.query<T>(actualQuery);
@@ -388,8 +398,13 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 return null;
             }
 
-            const documentBody = info.body ? info.body : await getDocumentBodyAsString(info.localPath);
-            packageZip.file(packagePath, documentBody);
+            try {
+                const documentBody = info.body ? info.body : await getDocumentBodyAsString(info.localPath);
+                packageZip.file(packagePath, documentBody);
+            } catch(err) {
+                this.logger.warn(`Unable to read data from path ${chalk.underline(info.localPath)} when building metadata package`);
+                continue;
+            }
             
             if (info.type) {
                 packageXml.add(info.type, info.name);
@@ -418,20 +433,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 return null;
             }
 
-            const metaFileExt = path.extname(metaFile).toLowerCase();
-            const metaFolderName = path.dirname(metaFile).split(/\/|\\/).pop();
-            const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
-            const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
-
-            const metaFileBody = await getDocumentBodyAsString(metaFile);
-            const metaXml = await xml2js.parseStringPromise(metaFileBody);
-            let componentType = Object.keys(metaXml)[0];            
-            const packageFolder = metadataTypes[componentType] && metadataTypes[componentType].packageFolder || metaFolderName;
-
-            // Alternate component type for settings
-            if (metaFileExt == '.settings') {
-                componentType = 'Settings';
-            }
+            const componentType = await this.getComponentType(metaFile);
+            const packageFolder = this.getPackageFolder(metaFile, componentType);
+            const componentName = this.getPackageComponentName(metaFile, componentType);
 
             if (metaFile.toLowerCase().endsWith('-meta.xml')) {
                 const isBundle = componentType.endsWith('Bundle');
@@ -464,6 +468,51 @@ export default class SalesforceService implements JsForceConnectionProvider {
         }
 
         return mdPackage;
+    }
+
+    private getPackageComponentName(metaFile: string, componentType: string) : string {
+        const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
+        const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
+        const packageFolder = this.getPackageFolder(metaFile, componentType);
+
+        if (packageFolder.includes(path.posix.sep)) {
+            return packageFolder.split(path.posix.sep).slice(1).concat([ componentName ]).join(path.posix.sep);
+        }
+
+        return componentName;
+    }
+
+    private getPackageFolder(fullSourcePath: string, componentType: string) : string {
+        const componentTypeInfo = metadataTypes[componentType];
+        const retainFolderStructure = !!(componentTypeInfo && componentTypeInfo.retainFolderStructure);
+        const componentPackageFolder = componentTypeInfo && componentTypeInfo.packageFolder;
+
+        if (retainFolderStructure) {
+            const packageParts = path.dirname(fullSourcePath).split(/\/|\\/);
+            const packageFolderIndex = packageParts.indexOf(componentPackageFolder);
+            return packageParts.slice(packageFolderIndex).join(path.posix.sep);
+        }
+        
+        return componentPackageFolder || path.dirname(fullSourcePath).split(/\/|\\/).pop();
+    }
+
+    private async getComponentType(metaFile: string) {
+        const metaFileExt = path.extname(metaFile).toLowerCase();
+
+        // Alternate component type for settings
+        if (metaFileExt == '.settings') {
+            return 'Settings';
+        } 
+
+        const metaXml = await xml2js.parseStringPromise(await getDocumentBodyAsString(metaFile));
+        const metaBodyTag = Object.keys(metaXml)[0];
+        const componentTypeInfo = metadataTypes[metaBodyTag];
+
+        if (componentTypeInfo && componentTypeInfo.packageType) {
+            return componentTypeInfo.packageType;
+        }
+
+        return metaBodyTag;
     }
 
     /**
@@ -584,7 +633,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 const status = await connection.metadata.checkDeployStatus(deployJob.id, true);
                 if (status.done) {
                     const details : any = status.details;
-                    if (!Array.isArray(details.componentFailures)) {
+                    if (details.componentFailures && !Array.isArray(details.componentFailures)) {
                         details.componentFailures = [ details.componentFailures ];
                     }
                     return status;

@@ -21,12 +21,17 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
         if (!this.vloService.config.deployOnSave && 
             !this.vloService.config.salesforce.deployOnSave) { 
             return;
-        }        
+        }
 
         if (!vscode.workspace.getWorkspaceFolder(document.uri) || 
             this.ignoredPaths.some(path => new RegExp(path).test(document.fileName))) {
             this.logger.verbose(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
             return; // ignore these
+        }
+
+        if (this.vloService.salesforceService && await this.vloService.salesforceService.isProductionOrg()) {
+            // Never auto deploy to production orgs
+            return;
         }
 
         if (await isPartOfDatapack(document.fileName)) {

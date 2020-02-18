@@ -64,6 +64,13 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 return;
             }
 
+            // Prevent prod deployment if not intended
+            if (await this.vloService.salesforceService.isProductionOrg()) {
+                if (!await this.showProductionWarning(false)) {
+                    return;
+                }
+            }
+
             // Reading datapack takes a long time, only read datapacks if it is a reasonable count
             let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;
             if (datapackHeaders.length < 4) {

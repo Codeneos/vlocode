@@ -268,10 +268,14 @@ export async function wait(ms: number) : Promise<boolean> {
  * @param file Text file to check
  */
 export async function hasXmlHeader(file: string) {
-    const body = await getDocumentBodyAsString(file);
-    if (body) { 
-        const startsWithXmlHeader = body.trimStart().startsWith('<?xml ');
-        return startsWithXmlHeader;
+    try {
+        const body = await getDocumentBodyAsString(file);
+        if (body) { 
+            const startsWithXmlHeader = body.trimStart().startsWith('<?xml ');
+            return startsWithXmlHeader;
+        }
+    } catch {
+        // Avoid erroring out in case we ty this on an invalid path
     }
     return false;
 }

@@ -37,6 +37,11 @@ DuplicateRule:
   packageFolder: duplicateRules
 Document:
   packageFolder: documents
+  retainFolderStructure: true
+DocumentFolder:
+  packageFolder: documents
+  packageType: Document
+  retainFolderStructure: true
 FlexiPage:
   fileExtensions:
   - ".flexipage"
@@ -187,6 +192,11 @@ EmailTemplate:
   - ".email"
   - ".email-meta.xml"
   packageFolder: email
+  retainFolderStructure: true
+EmailFolder:
+  packageType: EmailTemplate
+  packageFolder: email
+  retainFolderStructure: true
 LightningComponentBundle:
   fileExtensions:
   - ".js-meta.xml"

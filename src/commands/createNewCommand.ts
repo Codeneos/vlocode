@@ -45,7 +45,7 @@ export default class CreateNewCommand extends DatapackCommand {
         let selectedType = await vscode.window.showQuickPick(this.newItemTypes,
             { placeHolder: 'Select the type of item to create' });
 
-        let orgName = (await this.vloService.salesforceService.getOrganizationDetails()).Name;
+        let orgName = (await this.vloService.salesforceService.getOrganizationDetails()).name;  
         let vlocityNamespace = this.vloService.datapackService.vlocityNamespace;
 
         this.logger.info(`orgName: ${orgName}`);

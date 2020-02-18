@@ -10,7 +10,6 @@ import CommandRouter from './services/commandRouter';
 import Commands from 'commands';
 import { container } from 'serviceContainer';
 import * as vlocityUtil from 'vlocityUtil';
-import * as fs from 'fs-extra';
 import OnSavedEventHandler from 'events/onSavedEventHandler';
 import { setInterval } from 'timers';
 import VlocodeContext from 'models/vlocodeContext';
@@ -18,7 +17,6 @@ import DatapackProvider from 'treeDataProviders/datapackDataProvider';
 import JobDataProvider from 'treeDataProviders/jobExplorer';
 import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
 import { ConfigurationManager } from 'services/configurationManager';
-import { ApexLexer } from 'apex/ApexLexer';
 import OnClassFileDeleted from 'events/onClassFileDeleted';
 import OnClassFileCreated from 'events/onClassFileCreated';
 
@@ -109,38 +107,6 @@ export = class Vlocode {
         if (vloConfig.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
-
-        // vscode.languages.registerDocumentRangeFormattingEditProvider([
-        //     { scheme: 'file', language: 'Apex' },
-        //     { scheme: 'file', language: 'apex' },
-        //     { pattern: '**/*.cls' },
-        //     { pattern: '**/*.apex' }
-        // ], {
-        //     async provideDocumentRangeFormattingEdits(document, range, provider, token) {        
-        //         const lexer = new ApexLexer();
-        //         for (const token of lexer.parse(document.getText(range))) {
-        //             console.log(token);
-        //         }
-        //         const prettydiff = require("prettydiff");        
-        //         const text = document.getText(range);
-        //         const options = Object.assign(prettydiff.options, {
-        //             source: text,
-        //             languag:'Java',
-        //             mode: 'beautify',
-        //             brace_style: 'collapse',
-        //             ternary_line: true,
-        //             quote_convert: 'single',
-        //             preserve: 1,
-        //             preserve_comment: true
-        //         });               
-        //         const output = prettydiff();
-        //         return [new vscode.TextEdit(
-        //             range, output
-        //         )];
-        //     }
-        // });
-
-        
   
         // register commands and windows
         container.get(CommandRouter).registerAll(Commands);
