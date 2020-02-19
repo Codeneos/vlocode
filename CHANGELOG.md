@@ -1,5 +1,10 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.13] - 2019-02-19
+ - Fix refresh datapack error
+ - More logging for Salesforce deployments
+ - Force all production deployment requests to check only
+
 ## [0.12.12] - 2019-02-19
  - Auto create and delete `-meta.xml` files for classes
  - Auto create boiler plate code for APEX classes and interfaces

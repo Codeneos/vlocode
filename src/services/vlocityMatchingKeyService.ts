@@ -25,10 +25,10 @@ export default class VlocityMatchingKeyService {
 
     //private matchingKeys = new Lazy(() => this.loadAllMatchingKeys());
     private readonly matchingKeyQuery = new QueryBuilder('vlocity_namespace__DRMatchingKey__mdt')
-        .select('Name', 'vlocity_namespace__MatchingKeyFields__c', 'vlocity_namespace__ObjectAPIName__c', 'vlocity_namespace__ReturnKeyField__c')
+        .select('Label', 'vlocity_namespace__MatchingKeyFields__c', 'vlocity_namespace__ObjectAPIName__c', 'vlocity_namespace__ReturnKeyField__c')
         .build();
-    private readonly datapackConfigQuery = new QueryBuilder('vlocity_namespace__VlocityDataPackConfiguration_mdt')
-        .select('Name', 'vlocity_namespace__PrimarySObjectType__c')
+    private readonly datapackConfigQuery = new QueryBuilder('vlocity_namespace__VlocityDataPackConfiguration__mdt')
+        .select('Label', 'vlocity_namespace__PrimarySObjectType__c')
         .build();
 
     constructor(
@@ -145,7 +145,7 @@ export default class VlocityMatchingKeyService {
         const matchingKeyObjects = matchingKeyResults.map(record => {
             return {
                 sobjectType: record.ObjectAPIName__c,
-                datapackType: this.getDatapackType(record.ObjectAPIName__c) ?? record.Name,
+                datapackType: this.getDatapackType(record.ObjectAPIName__c) ?? record.Label,
                 fields: record.MatchingKeyFields__c.split(',').map(s => s.trim()),
                 returnField: record.ReturnKeyField__c
             };

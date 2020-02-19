@@ -54,7 +54,7 @@ export default function cache(ttl: number = 60) {
             const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? ''), name);
             const cachedValue = cache.get(key);
             if (cachedValue) {
-                logger().verbose(`Cache HIT -> ${name}`);
+                logger().debug(`Load response from cache -> ${name}`);
                 return cachedValue;
             }
             // Exceptions cause
@@ -62,12 +62,12 @@ export default function cache(ttl: number = 60) {
             if (ttl > 0) {
                 setTimeout(() => cache.delete(key), ttl * 1000);
             }
-            logger().verbose(`Cache MISS -> ${name}`);
+            logger().debug(`Cache miss, retrieve value from source -> ${name}`);
             cache.set(key, newValue);
             if (isPromise(newValue)) {
                 // Remove invalid results from the cache
                 newValue.catch(err => { 
-                    logger().verbose(`Cache exception -> ${name}`);
+                    logger().debug(`Delete cached promise on exception -> ${name}`);
                     cache.delete(key);
                     // Rethrow the exceptions so the original handler can handle it
                     throw err;

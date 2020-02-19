@@ -392,6 +392,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
         const packageXml = new PackageXml(manifest.apiVersion || '45.0');
         const packageZip = new ZipArchive();
 
+        // Log
+        this.logger.verbose(`Building metadata ZIP package API ${packageXml.version}`);
+
         for (const [packagePath, info] of Object.entries(manifest.files)) {
             // Stop directly and return null
             if (token && token.isCancellationRequested) {
@@ -423,6 +426,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
     public async buildManifest(files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest> {
         const mdPackage : MetadataManifest = { files: {} };
         const metaFiles =  await getMetaFiles(files.map(file => file.fsPath), true);
+
+        this.logger.verbose(`Building package manifest for ${files.length} selected files/folders`);
 
         // Build zip archive for all expanded files
         // Note use posix path separators when building package.zip
@@ -594,6 +599,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const startTime = new Date().getTime();
         const checkInterval = 500;
+        const logInterval = 5000;
         const deploymentTypeText = options && options.checkOnly ? 'Validate' : 'Deploy';
 
         const deploymentTask = async (progress: DeploymentProgress, cancellationToken: vscode.CancellationToken) => {
@@ -608,36 +614,57 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 });
             }
 
-            // Start deploy            
-            const connection = await this.getJsForceConnection();        
-            const deployJob = await connection.metadata.deploy(zipInput, {
+            // Set deploy options passed to JSforce; options arg can override the defaults
+            const deployOptions = {
                 singlePackage: true, 
                 performRetrieve: true, 
-                ignoreWarnings: false,
+                ignoreWarnings: true,
                 autoUpdatePackage: false,
                 allowMissingFiles: false,
-                // We asssume we only run on developer orgs, as such set these options to true by default
+                // We assume we only run on developer orgs by default
                 purgeOnDelete: true,
                 rollbackOnError: false,
                 ...options
-            });
+            };
+
+            if (await this.isProductionOrg()) {
+                this.logger.warn(`Production deployment detected; running as validate/checkOnly`);
+                // Always check only for production
+                deployOptions.rollbackOnError = true;
+                deployOptions.purgeOnDelete = false;
+                deployOptions.checkOnly = true;
+            }
+
+            // Start deploy            
+            const connection = await this.getJsForceConnection();        
+            const deployJob = await connection.metadata.deploy(zipInput, deployOptions);
 
             // Wait for deploy
+            let lastConsoleLog = 0;
             while (await wait(checkInterval)) {            
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
-                    // Cancel deployment; we don't really care if the cancel is successfull or not
+                    // Cancel deployment; we don't really care if the cancel is successfully or not
                     (<any>connection.metadata).cancelDeploy(deployJob.id);
                     throw new Error(`${deploymentTypeText} cancelled`);
                 }
 
                 const status = await connection.metadata.checkDeployStatus(deployJob.id, true);
+
+                if (Date.now() - lastConsoleLog > logInterval) {
+                    // do not create seperate interval for logging but use the main status check loop
+                    this.logger.info(
+                        `Deployment ${status.id} - ${status.status} ` + 
+                        `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})`);
+                    lastConsoleLog = Date.now();
+                }
+
                 if (status.done) {
                     const details : any = status.details;
                     if (details.componentFailures && !Array.isArray(details.componentFailures)) {
                         details.componentFailures = [ details.componentFailures ];
                     }
                     return status;
-                }
+                }                
             }
         };
 
