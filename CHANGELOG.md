@@ -1,5 +1,19 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.12] - 2019-02-19
+ - Auto create and delete `-meta.xml` files for classes
+ - Auto create boiler plate code for APEX classes and interfaces
+ - Better metadata deployment support for structured data such as email templates and documents
+ - Deploy to production warning messages
+ - Caching of server side info using cache decorators to speed up commands
+ - Fix bug causing errors in metadata dpeloyments from not being awaited
+ - Support execute anonymous APEX from vscode using SOAP API
+ - Fix problems with repair data pack keys command
+ - Fix Admin commands not showing
+ - Update readme with more info on supported salesforce commands.
+ - By default enabled Salesforce commands (can be disabled trough settings)
+ - Bump all dependencies to the latest version
+
 ## [0.12.10] - 2019-01-14
  - Improve repair datapack dependencies command
  - Fix Admin Commands hidden in command pallette 

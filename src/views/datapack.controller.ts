@@ -1,6 +1,5 @@
 
 import WebviewMessage from '../models/webviewMessage';
-import { debug } from 'util';
 
 declare var acquireVsCodeApi: () => IVsCodeApi;
 
