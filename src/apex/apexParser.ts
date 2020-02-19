@@ -1,4 +1,4 @@
-import { ApexLexer } from './ApexLexer';
+import { ApexLexer } from './apexLexer';
 
 interface ParserNode {
     type: string;

@@ -5,7 +5,7 @@ import VlocityDatapackService, { ObjectEntry } from '../services/vlocityDatapack
 import { LogManager, Logger } from 'logging';
 import * as yaml from 'js-yaml';
 
-import VlocityJobFile from 'models/vlocityJobFile';
+import VlocityJobFile from '../models/vlocityJobFile';
 import * as vlocity from 'vlocity';
 import BaseDataProvider from './baseDataProvider';
 

@@ -26,12 +26,12 @@ export default interface VlocityJobFile {
         Deploy: {
             [datapackType: string]: string;
         }
-    },
+    };
     postStepApex?: {
         Deploy: {
             [datapackType: string]: string;
         }
-    }
+    };
 }
 
 export interface VlocityQueryDefinition {
@@ -50,8 +50,8 @@ export interface VlocityOverrideSettings {
  * Object configuration template
  */
 export interface VlocityObjectConfiguration {
-    NonUnique?: boolean,
-    RemoveNullValues?: boolean,
+    NonUnique?: boolean;
+    RemoveNullValues?: boolean;
     ListFileName?: string | String[];
     FolderName?: string | String[];
     FilterFields?: string | String[];
@@ -93,6 +93,6 @@ export interface VlocityDatapackConfiguration {
     MaxDeploy?: number;
     PaginationActions?: {
         [fieldName: string]: string[];
-    }
+    };
     [objectName: string]: VlocityObjectConfiguration | any;
 }
