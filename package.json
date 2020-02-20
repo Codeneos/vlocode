@@ -558,7 +558,7 @@
         "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
-        "@salesforce/core": "^2.1.5",
+        "@salesforce/core": "^2.2.0",
         "@types/angular": "^1.6.57",
         "@types/chai": "^4.2.7",
         "@types/chalk": "^2.2.0",
