@@ -564,7 +564,7 @@
         "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
-        "@types/jsforce": "^1.9.12",
+        "@types/jsforce": "^1.9.13",
         "@types/jszip": "^3.1.6",
         "@types/mocha": "^5.2.7",
         "@types/node": "^10.17.6",
