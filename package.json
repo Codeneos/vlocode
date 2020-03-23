@@ -653,7 +653,7 @@
         "tslint-loader": "^3.5.4",
         "typescript": "^3.7.3",
         "uuid": "^3.3.3",
-        "vlocity": "^1.11.12",
+        "vlocity": "^1.11.24",
         "vsce": "^1.71.0",
         "vscode-languageclient": "^5.2.1",
         "vscode-test": "^1.3.0",
