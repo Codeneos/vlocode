@@ -55,7 +55,11 @@
         "onCommand:vlocity.refreshMetadata",
         "onCommand:vlocity.selectApiVersion",
         "onCommand:vlocity.createMetadataCommand",
-        "onCommand:vlocity.execAnonymousCommand"
+        "onCommand:vlocity.execAnonymousCommand",
+        "onCommand:vlocity.viewInSalesforce",
+        "onCommand:vlocity.previewLwc",
+        "onCommand:vlocity.createLwc",
+        "onCommand:vlocity.createApexClass"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -167,11 +171,23 @@
             },
             {
                 "command": "vlocity.createMetadataCommand",
-                "title": "Salesforce: New File/Quick Create"
+                "title": "Salesforce: New component"
             },
             {
                 "command": "vlocity.execAnonymousCommand",
                 "title": "Salesforce: Execute Anonymous APEX"
+            },
+            {
+                "command": "vlocity.viewInSalesforce",
+                "title": "Salesforce: View in Salesforce"
+            },
+            {
+                "command": "vlocity.createLwc",
+                "title": "Salesforce: New Lightning Web Component (LWC)"
+            },
+            {
+                "command": "vlocity.createApexClass",
+                "title": "Salesforce: New APEX class"
             },
             {
                 "command": "vlocity.datapackExplorer.export",
@@ -313,6 +329,21 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
+                    "command": "vlocity.viewInSalesforce",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i"
+                },
+                {
+                    "command": "vlocity.createLwc",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.createApexClass",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
                     "command": "vlocity.datapackExplorer.export"
                 },
                 {
@@ -391,6 +422,11 @@
                 },
                 {
                     "command": "vlocity.destroyMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocity.viewInSalesforce",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 }
@@ -558,6 +594,7 @@
         "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
+        "@lwc/compiler": "^1.3.2",
         "@salesforce/core": "^2.1.5",
         "@types/angular": "^1.6.57",
         "@types/chai": "^4.2.7",

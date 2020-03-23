@@ -5,6 +5,7 @@ import RefreshMetadataCommand from './refreshMetadataCommand';
 import SelectApiVersion from './selectApiVersionCommand';
 import CreateMetadataCommand from './createMetadataCommand';
 import ExecAnonymousCommand from './execAnonymousCommand';
+import ViewInSalesforceCommand from './viewInSalesforce';
 
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,
@@ -12,5 +13,8 @@ export default {
     [VlocodeCommand.refreshMetadata]: RefreshMetadataCommand,
     [VlocodeCommand.selectApiVersion]: SelectApiVersion,
     [VlocodeCommand.createMetadataCommand]: CreateMetadataCommand,
-    [VlocodeCommand.execAnonymousCommand]: ExecAnonymousCommand
+    [VlocodeCommand.execAnonymousCommand]: ExecAnonymousCommand,
+    [VlocodeCommand.viewInSalesforce] : ViewInSalesforceCommand,
+    [VlocodeCommand.createApexCLass] : new CreateMetadataCommand('apexClass'),
+    [VlocodeCommand.createLwc] : new CreateMetadataCommand('lwc')
 };

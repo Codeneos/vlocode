@@ -30,12 +30,14 @@ vlocity.openSalesforce:
 vlocity.renameDatapack:
   title: 'Vlocity: Rename Datapack'
   group: v_vlocity
+  when: resourceExtname ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
 vlocity.cloneDatapack:
   title: 'Vlocity: Clone Datapack'
   group: v_vlocity
+  when: resourceExtname ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -128,13 +130,33 @@ vlocity.selectApiVersion:
     - menu: commandPalette      
       when: vlocodeSalesforceSupport
 vlocity.createMetadataCommand:
-  title: 'Salesforce: New File/Quick Create'
+  title: 'Salesforce: New component'
   group: v_salesforce
   menus:
     - menu: commandPalette      
       when: vlocodeSalesforceSupport
 vlocity.execAnonymousCommand:
   title: 'Salesforce: Execute Anonymous APEX'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport
+vlocity.viewInSalesforce:
+  title: 'Salesforce: View in Salesforce'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i
+    - menu: editor/context
+      when: vlocodeSalesforceSupport
+vlocity.createLwc:
+  title: 'Salesforce: New Lightning Web Component (LWC)'
+  group: v_salesforce
+  menus:
+    - menu: commandPalette      
+      when: vlocodeSalesforceSupport
+vlocity.createApexClass:
+  title: 'Salesforce: New APEX class'
   group: v_salesforce
   menus:
     - menu: commandPalette      

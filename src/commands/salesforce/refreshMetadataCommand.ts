@@ -8,8 +8,8 @@ import * as fs from 'fs';
  */
 export default class RefreshMetadataCommand extends MetadataCommand {
 
-    constructor(name : string) {
-        super(name, args => this.refreshMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
+    public execute(...args: any[]): Promise<void> {
+        return this.refreshMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
     }
 
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {

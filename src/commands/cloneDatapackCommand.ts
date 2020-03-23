@@ -3,8 +3,8 @@ import { DatapackCommand } from './datapackCommand';
 
 export default class CloneDatapackCommand extends DatapackCommand {
 
-    constructor(name : string) {
-        super(name);
+    constructor() {
+        super();
     }
 
     public execute(...args: any[]) : Promise<void> {

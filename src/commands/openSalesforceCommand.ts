@@ -11,11 +11,11 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         'vlocity': () => this.datapackService.vlocityNamespace
     };
 
-    constructor(name : string) {
-        super(name, args => this.openInSalesforce(args[0] || this.currentOpenDocument));
+    public execute(...args: any[]): void | Promise<void> {
+        return this.openInSalesforce(args[0] || this.currentOpenDocument);
     }
 
-    protected async openInSalesforce(input: vscode.Uri | ObjectEntry) {     
+    protected openInSalesforce(input: vscode.Uri | ObjectEntry) {     
         if (input instanceof vscode.Uri){
             return this.openFileInSalesforce(input);
         }
@@ -39,9 +39,14 @@ export default class OpenSalesforceCommand extends DatapackCommand {
     }
 
     protected async openIdInSalesforce(objectId: string, datapackType: string, extraFields?: any) {    
+        if (!objectId) {
+            vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; it might not be deployed on the connected org.');
+            return;
+        }
+
         // Build URL
         const queryDefinitions = await this.datapackService.getQueryDefinitions();
-        let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'${objectId}'`;
+        let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'lightning/r/${objectId}/view'`;
         salesforceUrl = typeof salesforceUrl === 'string' ? { path: salesforceUrl } : salesforceUrl;
 
         const namespace = this.resolveNamespace(salesforceUrl.namespace);

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import ServiceContainer from 'serviceContainer';
 import VlocodeService from 'services/vlocodeService';
-import CommandRouter, { CommandType } from 'services/commandRouter';
+import CommandRouter, { CommandCtor } from 'services/commandRouter';
 
 /**
  * Base tree data provider
@@ -39,7 +39,7 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
     }
     
     protected getCommands() : {
-        [name: string]: ((...args: any[]) => void) | Promise<CommandType> | CommandType 
+        [name: string]: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor 
     } {
         return {};
     }

@@ -31,10 +31,6 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    constructor(name : string) {
-        super(name, _ => this.selectOrg());
-    }
-
     public validate() : void {
         const validationMessage = this.vloService.validateWorkspaceFolder();
         if (validationMessage) {
@@ -47,7 +43,7 @@ export default class SelectOrgCommand extends CommandBase {
         return orgList.map(orgInfo => ({ label: orgInfo.alias || orgInfo.username, description: orgInfo.instanceUrl, orgInfo }));
     }
 
-    protected async selectOrg() : Promise<void> {
+    public async execute() : Promise<void> {
         const knownOrgs = await this.vloService.withStatusBarProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
         const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });

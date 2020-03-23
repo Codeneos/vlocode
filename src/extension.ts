@@ -63,7 +63,7 @@ export = class Vlocode {
         }
     }
 
-    private setupLogging() {
+    private startLogger() {
         // Simple switch that decides how to log
         const terminalWriter = this.service.registerDisposable(new TerminalWriter(`Vlocode`));
         const outputChannelWriter = this.service.registerDisposable(new OutputChannelWriter(`Vlocode`));
@@ -96,7 +96,7 @@ export = class Vlocode {
         const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);
         this.service = container.register(VlocodeService, new VlocodeService(container, vloConfig, VlocodeContext.createFrom(context)));
         context.subscriptions.push(this.service);
-        this.setupLogging();
+        this.startLogger();
     
         this.logger.info(`Vlocode version ${constants.VERSION} started`);
         this.logger.info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);

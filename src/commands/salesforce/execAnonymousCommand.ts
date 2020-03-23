@@ -24,15 +24,11 @@ export default class ExecAnonymousCommand extends MetadataCommand {
         { label: 'Finest', description: 'All log levels set to FINEST', debugHeader: { Apex_code: 'FINEST', Db: 'FINEST', System: 'FINEST', All: 'FINEST' , Apex_profiling: 'FINEST' } }
     ];
 
-    constructor(name : string) {
-        super(name, args => this.executeAnonymous());
-    }
-
     protected getDiagnostics() : vscode.DiagnosticCollection {
         return this.vloService.getDiagnostics('salesforce-anon-apex');
     }
 
-    protected async executeAnonymous() {        
+    public async execute() {        
         // What to execute
         const selectedDocument = vscode.window.activeTextEditor.document;
         const documentSelection = !vscode.window.activeTextEditor.selection?.isEmpty ? vscode.window.activeTextEditor.selection : undefined;

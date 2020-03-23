@@ -15,8 +15,8 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         return this.vloService.getDiagnostics('Datapack Dependencies');
     }
 
-    constructor(name : string) {
-        super(name);
+    constructor() {
+        super();
     }
 
     public execute(...args: any[]) : Promise<void> {

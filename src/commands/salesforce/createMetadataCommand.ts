@@ -33,15 +33,14 @@ type NewItemQuickPickItem = vscode.QuickPickItem & {
  */
 export default class CreateMetadataCommand extends MetadataCommand {
 
-    private readonly itemTemplates : NewItemQuickPickItem[] = require('newItemTemplates.yaml');
+    private readonly itemTemplates : { [name: string] : NewItemQuickPickItem } = require('newItemTemplates.yaml');
 
-    constructor(name : string) {
-        super(name, _ => this.createMetadata());
+    constructor(private readonly typeName?: string) {
+        super();
     }
 
-    protected async createMetadata() : Promise<any> {
-        const newItemType = await vscode.window.showQuickPick(this.itemTemplates,
-            { placeHolder: 'Select the type of file you want to create' });
+    public async execute() : Promise<void> {
+        const newItemType = await this.getItemTemplate();
 
         if (!newItemType) {
             return;
@@ -69,9 +68,10 @@ export default class CreateMetadataCommand extends MetadataCommand {
             const fileUri = vscode.Uri.file(path.join(primaryWorkspace, filePath));
             
             try {
+                await fs.ensureDir(path.dirname(fileUri.fsPath));
                 await fs.writeFile(fileUri.fsPath, fileBody, { flag: 'wx' });
             } catch(e) {
-                return vscode.window.showErrorMessage(`Unable to create the specified item; a file with the same name already exists: ${fileUri.fsPath}`);
+                vscode.window.showErrorMessage(`Unable to create the specified item; a file with the same name already exists: ${fileUri.fsPath}`);
             }
 
             if (index == '0') {
@@ -81,6 +81,18 @@ export default class CreateMetadataCommand extends MetadataCommand {
         }
 
         vscode.window.showInformationMessage(newItemType.successNotification || `Successfully created new item`);
+    }
+
+    protected async getItemTemplate() : Promise<NewItemQuickPickItem> {
+        if (this.typeName) {
+            if (this.itemTemplates[this.typeName]) {
+                return this.itemTemplates[this.typeName];
+            }
+            this.logger.warn(`The pre-specified template ${this.typeName} does not exist; defaulting to type selection`);
+        }
+
+        return vscode.window.showQuickPick(Object.values(this.itemTemplates),
+            { placeHolder: 'Select the type of file you want to create' });
     }
 
     protected async getUserValue(input: NewItemInputType) : Promise<any> {

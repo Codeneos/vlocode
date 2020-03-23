@@ -5,10 +5,6 @@ import * as path from 'path';
 
 export default class RenameDatapackCommand extends DatapackCommand {
 
-    constructor(name : string) {
-        super(name);
-    }
-
     public execute(...args: any[]) : Promise<void> {
        return this.renameDatapack(args[0] || this.currentOpenDocument);
     }

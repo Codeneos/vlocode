@@ -56,16 +56,9 @@ async function showMsgWithRetry<T>(
 
 export abstract class CommandBase implements Command {
 
-    constructor(
-        public readonly name: string, 
-        private readonly executor?: (... args: any[]) => void) {
-    }
+    public abstract execute(...args: any[]): void | Promise<void>;
 
-    public execute(... args: any[]): void {
-        return this.executor(args);
-    }
-
-    public validate(... args: any[]): void {
+    public validate?(...args: any[]): void | Promise<void> {        
     }
 
     protected get currentOpenDocument() : vscode.Uri | undefined {
@@ -129,7 +122,11 @@ export abstract class CommandBase implements Command {
     }
 
     protected get logger() : Logger {
-        return LogManager.get(this.name);
+        return LogManager.get(this.getName());
+    }
+
+    private getName() : string {
+        return this['name'] || this.constructor?.name || 'Command';
     }
 }
 

@@ -12,8 +12,8 @@ import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 
 export default class ExportDatapackCommand extends DatapackCommand {
 
-    constructor(name : string) {
-        super(name);
+    constructor() {
+        super();
     }
 
     public async execute(...args: any[]) : Promise<void>  {

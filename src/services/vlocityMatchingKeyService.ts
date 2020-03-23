@@ -110,7 +110,7 @@ export default class VlocityMatchingKeyService {
      * @param type The datapack type or SObject type for which to get the matching key record
      */
     public async getMatchingKey(type: string) : Promise<VlocityMatchingKey | undefined> {
-        return (await this.matchingKeys)[type];
+        return (await this.matchingKeys).get(type);
     }
 
     private async loadAllMatchingKeys() : Promise<Map<string, VlocityMatchingKey>> {

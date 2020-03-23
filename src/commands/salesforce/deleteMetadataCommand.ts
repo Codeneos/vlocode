@@ -7,8 +7,8 @@ import MetadataCommand from './metadataCommand';
  */
 export default class DeleteMetadataCommand extends MetadataCommand {
 
-    constructor(name : string) {
-        super(name, args => this.deleteMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
+    public execute(...args: any[]): void | Promise<void> {
+        return this.deleteMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
     }
 
     protected async deleteMetadata(selectedFiles: vscode.Uri[]) {

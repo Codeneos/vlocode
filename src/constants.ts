@@ -35,6 +35,7 @@ export enum VlocodeCommand {
     adminCommands  = 'vlocity.adminCommands',
     refreshPriceBook  = 'vlocity.admin.refreshPriceBook',
     refreshProductHierarchy  = 'vlocity.admin.refreshProductHierarchy',
+    refreshPriceBookAndProductHierarchy  = 'vlocity.admin.refreshPriceBookAndProductHierarchy',
     updateAllProdAttribCommand  = 'vlocity.admin.updateAllProdAttribCommand',
     clearPlatformCache  = 'vlocity.admin.clearPlatformCache',
     deployMetadata  = 'vlocity.deployMetadata',
@@ -42,5 +43,8 @@ export enum VlocodeCommand {
     refreshMetadata  = 'vlocity.refreshMetadata',
     selectApiVersion  = 'vlocity.selectApiVersion',
     createMetadataCommand  = 'vlocity.createMetadataCommand',
-    execAnonymousCommand = 'vlocity.execAnonymousCommand'
+    execAnonymousCommand = 'vlocity.execAnonymousCommand',
+    viewInSalesforce = 'vlocity.viewInSalesforce',
+    createApexCLass = 'vlocity.createApexCLass',
+    createLwc = 'vlocity.createLwc'
 }

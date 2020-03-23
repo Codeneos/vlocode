@@ -37,10 +37,6 @@ class VlocityAdminCommand extends CommandBase {
         }
     ];
 
-    constructor(name : string) {
-        super(name);        
-    }
-
     protected get connectionProvider() : JsForceConnectionProvider {
         return this.vloService.datapackService;
     }
@@ -97,10 +93,14 @@ class VlocityAdminCommand extends CommandBase {
 
 export default {
     [VlocodeCommand.adminCommands]: VlocityAdminCommand,
- ...[VlocodeCommand.refreshPriceBook, 
+    [VlocodeCommand.refreshPriceBookAndProductHierarchy]: async () => {
+        await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshPriceBook);        
+        await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshProductHierarchy);
+    },
+    ...[VlocodeCommand.refreshPriceBook, 
      VlocodeCommand.refreshProductHierarchy, 
      VlocodeCommand.clearPlatformCache, 
      VlocodeCommand.clearPlatformCache].reduce( 
-       (map, command) => Object.assign(map, { [command]: _ => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
+       (map, command) => Object.assign(map, { [command]: () => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
     )
 };

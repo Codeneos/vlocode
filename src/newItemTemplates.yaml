@@ -1,5 +1,6 @@
 # New APEX class item
-- label: '$(file-code) New APEX Class'
+apexClass:
+  label: '$(file-code) New APEX Class'
   description: 'Create new public APEX class'
   input:
     name:
@@ -15,13 +16,14 @@
       path: ./src/classes/${name}.cls-meta.xml
       template: | 
         <?xml version="1.0" encoding="UTF-8"?>
-        <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com">
+        <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com" fqn="${name}">
             <apiVersion>${apiVersion}</apiVersion>
             <status>Active</status>
         </ApexClass>
 
 # New APEX interface
-- label: '$(file-code) New APEX Interface Class'
+apexInterface:
+  label: '$(file-code) New APEX Interface Class'
   description: 'Create new Interface class'
   input:
     name:
@@ -36,17 +38,18 @@
     - <<: *apex-meta
 
 # New APEX unit test
-- label: '$(beaker) New APEX Unit Test'
+apexUnitTest:
+  label: '$(beaker) New APEX Unit Test'
   description: Create new APEX unit test class
   input:
     name:
-      placeholder: _Note the name you enter here will be post fixed with Test_
+      placeholder: _Note the name of the test class_
       type: text
   files: 
-    - path: ./src/classes/${name}Test.cls
+    - path: ./src/classes/${name}.cls
       template: | 
         @isTest
-        class ${name}Test {
+        class ${name} {
             
             @isTest
             static void methodName_shouldDoSomething() {
@@ -61,4 +64,69 @@
             }
         }
     - <<: *apex-meta
-      path: ./src/classes/${name}Test.cls-meta.xml
+      path: ./src/classes/${name}.cls-meta.xml
+
+# New LWC component
+lwc:
+  label: '$(zap) New LWC Component'
+  description: Create new Lightning Web Component
+  input:
+    name:
+      placeholder: _Name for the new component_
+      type: text
+    masterLabel:
+      placeholder: Label as displayed in in Salesforce for the new component; *you can use spaces here* 
+      type: text
+  files: 
+    - path: ./src/lwc/${name}/${name}.js
+      template: | 
+        import { api, track, LightningElement } from 'lwc';
+
+        export default class ${name} extends LightningElement {
+
+            @api recordId;
+            @api objectApiName;
+
+            // This is an example of a variable tracked by LWC
+            // the layout is rerednered if any tracked variable is changed
+            @track variable = null;
+
+            /**
+             * Executed when the component is added to the DOM.
+             * @returns {Promise<void> | void} 
+             */
+            async connectedCallback() {
+                // Todo: remove me or add code
+            }
+
+            /**
+             * Executed by the framework when the LWC component is removed 
+             * from the DOM; use this to put any clean-up code when required
+             * @returns {Promise<void> | void} 
+             */
+            disconnectedCallback() {
+                // Todo: remove me or add code
+            }
+        }
+    - path: ./src/lwc/${name}/${name}.html
+      template: | 
+        <template>
+            <lightning-card title="Hello Vlocode" icon-name="standard:account">
+                <lightning-button label="New" slot="actions"></lightning-button>
+                <p class="slds-p-horizontal_small">Card Body (custom component)</p>
+                <p slot="footer">Card Footer</p>
+            </lightning-card>
+        </template>
+    - path: ./src/lwc/${name}/${name}.css
+      template: | 
+        :host {
+        }
+    - path: ./src/lwc/${name}/${name}.js-meta.xml
+      template: | 
+        <?xml version="1.0" encoding="UTF-8"?>
+        <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="${name}">
+            <apiVersion>${apiVersion}</apiVersion>
+            <isExposed>true</isExposed>
+            <masterLabel>${masterLabel}</masterLabel>
+        </LightningComponentBundle>
+

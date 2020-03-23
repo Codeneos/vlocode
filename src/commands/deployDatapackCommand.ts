@@ -14,8 +14,8 @@ export default class DeployDatapackCommand extends DatapackCommand {
      */
     private readonly savingDocumentsList = new Set<string>(); 
 
-    constructor(name : string) {
-        super(name, args => this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
+    public execute(...args: any[]): void | Promise<void> {
+        return this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
     }
 
     /**

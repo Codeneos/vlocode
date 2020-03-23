@@ -308,11 +308,27 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return (await this.getInstalledPackageDetails(packageName)) !== undefined;
     }
 
-    public async getPageUrl(page : string, namespacePrefix? : string) {
+    public async getPageUrl(page : string, ops?: { namespacePrefix? : string, useFrontdoor?: boolean}) {
         const con = await this.getJsForceConnection();
-        const urlNamespace = namespacePrefix ? '--' + namespacePrefix.replace(/_/i, '-') : '';
-        return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${page.replace(/^\/+/, '')}`);
+        let relativeUrl = page.replace(/^\/+/, '');
+        if (relativeUrl.startsWith('apex/')) {
+            // build lightning URL
+            const state = { 
+                componentDef: 'one:alohaPage', 
+                attributes: {
+                    address: `${con.instanceUrl}/${relativeUrl}`
+                },
+                state: { }
+            };
+            relativeUrl = 'one/one.app#' + Buffer.from(JSON.stringify(state)).toString('base64');
+        }
+        if (ops?.useFrontdoor) {
+            relativeUrl = `secur/frontdoor.jsp?sid=${encodeURIComponent(con.accessToken)}&retURL=${encodeURIComponent(relativeUrl)}`;
+        }
+        const urlNamespace = ops?.namespacePrefix ? '--' + ops.namespacePrefix.replace(/_/i, '-') : '';
+        return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${relativeUrl}`);
     }
+
 
     @cache(-1)
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
@@ -778,6 +794,20 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return {
             ...response.body.compileClassesResponse
         };
+    }
+    
+    /**
+     * Get a list of available API version on the connected server
+     */
+    @cache(-1)
+    public async getApiVersions(count: number = 10) {
+        const connection = await this.getJsForceConnection();
+        const version = parseFloat(connection.version);
+        const versions = [];
+        for (let i = 0; i < count; i++) {
+            versions.push((version - i).toFixed(1));
+        }
+        return versions;
     }
 
     // public async getDeveloperLogs(numberOfLogs = 10) {

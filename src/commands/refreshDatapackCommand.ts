@@ -8,10 +8,6 @@ import DatapackUtil from 'datapackUtil';
 
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
 
-    constructor(name : string) {
-        super(name);
-    }
-
     public execute(...args: any[]) : Promise<void> {
        return this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]);
     }

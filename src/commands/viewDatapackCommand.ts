@@ -11,11 +11,7 @@ import { container } from 'serviceContainer';
 
 export default class ViewDatapackCommand extends DatapackCommand {
     
-    constructor(name : string) {
-        super(name, args => this.viewDatapack(args[0]));
-    }
-
-    protected async viewDatapack(selectedFile: vscode.Uri) {
+    public async execute(selectedFile: vscode.Uri) {
         let viewsRoot = vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'out', 'views'));
         let html = datapackViewTemplate.replace(/(vscode-resource:)/ig, `${viewsRoot.with({ scheme: 'vscode-resource' })}`);
         const panel = vscode.window.createWebviewPanel(

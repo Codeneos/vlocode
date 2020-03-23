@@ -10,14 +10,15 @@ import MetadataCommand from './metadataCommand';
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
 export default class DeployMetadataCommand extends MetadataCommand {
+    
 
     /** 
      * In order to prevent double deployment keep a list of pending deploy ops
      */
     private readonly pendingDeployments = new Set<string>(); 
 
-    constructor(name : string) {
-        super(name, args => this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]));
+    public execute(...args: any[]): Promise<void> {
+        return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
     }
     
     /**

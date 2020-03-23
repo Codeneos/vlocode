@@ -5,7 +5,7 @@ include: [ ./node_modules/vlocity/lib/querydefinition.yaml ]
 VlocityUILayout:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__carddesignernew?id=' + id"
+    path: "'/apex/' + namespace + '__carddesignernew?id=' + id"
   query: Select Id, Name, %vlocity_namespace%__Version__c, %vlocity_namespace%__Author__c, %vlocity_namespace%__Active__c from %vlocity_namespace%__VlocityUILayout__c
   <<: &basicGroupProps
     groupKey: Name
@@ -18,7 +18,7 @@ VlocityUILayout:
 VlocityUITemplate:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__uitemplatedesigner?id=' + id"
+    path: "'/apex/' + namespace + '__uitemplatedesigner?id=' + id"
   query: Select Id, Name, %vlocity_namespace%__Version__c, %vlocity_namespace%__Author__c, %vlocity_namespace%__Active__c from %vlocity_namespace%__VlocityUITemplate__c
   <<: *basicGroupProps
   matchingKey: 
@@ -27,7 +27,7 @@ VlocityUITemplate:
 VlocityCard:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__carddesignernew?id=' + id"
+    path: "'/apex/' + namespace + '__carddesignernew?id=' + id"
   query: SELECT Id, Name, LastModifiedDate, %vlocity_namespace%__Version__c, %vlocity_namespace%__Active__c, %vlocity_namespace%__Author__c FROM %vlocity_namespace%__VlocityCard__c
   <<: *basicGroupProps
   matchingKey: 
@@ -36,7 +36,7 @@ VlocityCard:
 OmniScript:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__omniscriptdesigner?id=' + id"
+    path: "'/apex/' + namespace + '__omniscriptdesigner?id=' + id"
   query: Select Id, Name, LastModifiedDate, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Language__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = false
   <<: *basicGroupProps
   groupKey: Type__c + SubType__c + Language__c
@@ -52,7 +52,7 @@ OmniScript:
 IntegrationProcedure:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__integrationproceduredesigner?id=' + id"
+    path: "'/apex/' + namespace + '__integrationproceduredesigner?id=' + id"
   query: Select Id, Name, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = true  
   <<: *basicGroupProps
   groupKey: Type__c + SubType__c
@@ -67,26 +67,21 @@ IntegrationProcedure:
 DataRaptor:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__drmapper?id=' + id"
+    path: "'/apex/' + namespace + '__drmapper?id=' + id"
 
 DocumentTemplate:
   query: Select Id, Name, %vlocity_namespace%__TemplateContentFormat__c, %vlocity_namespace%__VersionNumber__c, %vlocity_namespace%__Status__c from %vlocity_namespace%__DocumentTemplate__c where %vlocity_namespace%__Status__c = 'Active'
   description: "(IsActive__c ? 'Active' : null)"
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__documenttemplate?templateId=' + id + '&templateType=' + ( TemplateContentFormat__c == 'Microsoft Word .DOCX Template' ? 'docx' : (TemplateContentFormat__c == 'Microsoft Powerpoint .PPTX Template' ? 'pptx' : 'web') )"
+    path: "'/apex/' + namespace + '__documenttemplate?templateId=' + id + '&templateType=' + ( TemplateContentFormat__c == 'Microsoft Word .DOCX Template' ? 'docx' : (TemplateContentFormat__c == 'Microsoft Powerpoint .PPTX Template' ? 'pptx' : 'web') )"
 
 DocumentClause:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__DocumentClause?id=' + id "
+    path: "'/apex/' + namespace + '__DocumentClause?id=' + id "
 
 AttributeCategory:
   salesforceUrl:
     namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__VlocityAttributeCategoryEdit?id=' + id "
-
-ContentVersion:
-  salesforceUrl:
-    namespace: vlocity
-    path: "'/one/one.app#/alohaRedirect/apex/' + namespace + '__VlocityAttributeCategoryEdit?id=' + id "
+    path: "'/apex/' + namespace + '__VlocityAttributeCategoryEdit?id=' + id "
