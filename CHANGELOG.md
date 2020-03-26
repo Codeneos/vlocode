@@ -1,5 +1,9 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.12.14] - 2019-03-26
+ - Fix lookup datapac keys typo.
+ - Fix sonar cloud token error in travis config.
+
 ## [0.12.13] - 2019-02-19
  - Fix refresh datapack error
  - More logging for Salesforce deployments

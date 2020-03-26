@@ -205,4 +205,8 @@ ApprovalProcess:
   fileExtensions:
   - ".approvalProcess"
   packageFolder: approvalProcesses
+EntitlementProcess:
+  fileExtensions:
+  - ".entitlementProcess"
+  packageFolder: entitlementProcesses
  
