@@ -10,8 +10,7 @@ addons:
       - libsecret-1-dev
   sonarcloud:
     organization: $SONAR_ORG
-    token:
-      secure: $SONAR_TOKEN
+    token: $SONAR_TOKEN
 
 env:
   global:
