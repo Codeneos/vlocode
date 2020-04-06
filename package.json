@@ -597,7 +597,7 @@
         "@lwc/compiler": "^1.3.2",
         "@salesforce/core": "^2.1.5",
         "@types/angular": "^1.6.57",
-        "@types/chai": "^4.2.7",
+        "@types/chai": "^4.2.11",
         "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
