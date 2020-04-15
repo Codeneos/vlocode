@@ -647,7 +647,7 @@
         "sinon": "^9.0.1",
         "terser": "^4.6.3",
         "terser-webpack-plugin": "^2.3.1",
-        "ts-loader": "^6.2.1",
+        "ts-loader": "^7.0.0",
         "ts-node": "^8.5.4",
         "tslint": "^5.20.1",
         "tslint-loader": "^3.5.4",
