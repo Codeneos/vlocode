@@ -643,7 +643,7 @@
         "retire": "^2.0.3",
         "rimraf": "^3.0.0",
         "rxjs": "^6.5.5",
-        "salesforce-alm": "^47.10.0",
+        "salesforce-alm": "^48.10.0",
         "sinon": "^9.0.1",
         "terser": "^4.6.3",
         "terser-webpack-plugin": "^2.3.1",
