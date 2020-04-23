@@ -640,7 +640,7 @@
         "moment": "^2.24.0",
         "patch-package": "^6.2.0",
         "request": "^2.88.0",
-        "retire": "^2.0.3",
+        "retire": "^2.2.1",
         "rimraf": "^3.0.0",
         "rxjs": "^6.5.5",
         "salesforce-alm": "^47.10.0",
