@@ -622,7 +622,7 @@
         "gelex": "0.0.7",
         "glob": "^7.1.6",
         "html-loader": "^0.5.5",
-        "html-webpack-plugin": "^3.2.0",
+        "html-webpack-plugin": "^4.3.0",
         "inspectpack": "^4.2.2",
         "js-yaml": "^3.13.1",
         "jsforce": "^1.9.3",
