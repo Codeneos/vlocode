@@ -1,24 +1,31 @@
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel } from '@util';
+import { forEachAsyncParallel, wait } from '@util';
 import * as path from 'path';
 import { CommandBase } from 'commands/commandBase';
 import SalesforceService, { ComponentFailure, MetadataManifest } from 'services/salesforceService';
 import MetadataCommand from './metadataCommand';
+import Task, { TaskPromise } from 'util/task';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
 export default class DeployMetadataCommand extends MetadataCommand {
-    
 
     /** 
      * In order to prevent double deployment keep a list of pending deploy ops
      */
-    private readonly pendingDeployments = new Set<string>(); 
+    private readonly filesPendingDeployment = new Set<vscode.Uri>();
+    private currentDeploymentTask : TaskPromise = null;
 
     public execute(...args: any[]): Promise<void> {
         return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
+    }
+
+    private popPendingFiles() : vscode.Uri[] {
+        const files = [...this.filesPendingDeployment];
+        this.filesPendingDeployment.clear();
+        return files;
     }
     
     /**
@@ -31,7 +38,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         return forEachAsyncParallel(openDocuments, doc => doc.save());
     }
 
-    protected async deployMetadata(selectedFiles: vscode.Uri[]) {        
+    protected async deployMetadata(selectedFiles: vscode.Uri[]) {
         // Prevent prod deployment if not intended
         if (await this.vloService.salesforceService.isProductionOrg()) {
             if (!await this.showProductionWarning(false)) {
@@ -39,11 +46,34 @@ export default class DeployMetadataCommand extends MetadataCommand {
             }
         }
 
+        const deploymentTask = new Task(this.deployMetadataTask, this);
+        if (this.currentDeploymentTask == null || this.currentDeploymentTask.isFinished) {
+            try {
+                await (this.currentDeploymentTask = deploymentTask.start(selectedFiles));
+            } catch(e) {
+                this.logger.error(e);
+            }
+
+            // schedule new deployment with all pending files 
+            // Maybe consider using a task queue; reusing the old task "feels wrong"
+            const files = this.popPendingFiles();
+            if (files.length > 0) {
+                deploymentTask.start(files);
+            }
+        } else {
+            // Deployment already queue current request files and wait for pending deploy to complete
+            selectedFiles.forEach(this.filesPendingDeployment.add, this.filesPendingDeployment);
+            this.logger.info(`Deployment queued till after pending deployment completes`);
+            await vscode.window.showInformationMessage(`Deployment queued till after current deployment completes`);
+        }
+    }
+
+    protected async deployMetadataTask(files: vscode.Uri[]) {
         // Build manifest
         const manifest = await vscode.window.withProgress({ 
             title: "Building Deployment Manifest",
             location: vscode.ProgressLocation.Window,
-        }, () => this.salesforce.buildManifest(selectedFiles));
+        }, () => this.salesforce.buildManifest(files));
         manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
 
         // Get task title
