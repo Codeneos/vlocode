@@ -56,7 +56,7 @@ export default class VlocityMatchingKeyService {
      * @param entry Datapack or SObjectRecord like map of fields to substitute in the query conditions
      */
     public async getQuery(type: string, entry: { [key: string] : any }) : Promise<string> {
-        const matchingKey = await this.getMatchingKey(type);
+        const matchingKey = await this.getMatchingKeyDefinition(type);
         if (!matchingKey) {
             throw new Error(`Object type ${type} does not have a matching key specified in Salesforce.`);
         }
@@ -104,12 +104,24 @@ export default class VlocityMatchingKeyService {
         }
         return undefined;
     }
+
+    /**
+     * Gets the VlocityMatchingKey object for the specified datapack or SObject type
+     * @param type The datapack type or SObject type for which to get the matching key record
+     */
+    public async getMatchingKey(type: string, data: any) : Promise<string | undefined> {
+        const matchingKeyDef = await this.getMatchingKeyDefinition(type);
+        if (matchingKeyDef == null) {
+            return;
+        }
+        return matchingKeyDef.fields.filter(field => !!data[field]).map(field => data[field]).join('_') || undefined;
+    }
     
     /**
      * Gets the VlocityMatchingKey object for the specified datapack or SObject type
      * @param type The datapack type or SObject type for which to get the matching key record
      */
-    public async getMatchingKey(type: string) : Promise<VlocityMatchingKey | undefined> {
+    public async getMatchingKeyDefinition(type: string) : Promise<VlocityMatchingKey | undefined> {
         return (await this.matchingKeys).get(type);
     }
 
@@ -120,9 +132,10 @@ export default class VlocityMatchingKeyService {
         for (const value of matchingKeys) {
             values.set(value.sobjectType, value);
 
-            if (constants.NAMESPACE_PLACEHOLDER.test(value.sobjectType)) {
+            const objectWithoutPrefix = removeNamespacePrefix(value.sobjectType);
+            if (objectWithoutPrefix !== value.sobjectType) {
                 // make matching keys accessible without namespace prefix
-                values.set(value.sobjectType.replace(constants.NAMESPACE_PLACEHOLDER,'').replace(/^__/,''), value);
+                values.set(objectWithoutPrefix, value);
             }
 
             if (value.datapackType) {

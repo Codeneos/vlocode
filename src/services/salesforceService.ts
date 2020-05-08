@@ -9,7 +9,7 @@ import { getDocumentBodyAsString, wait } from '@util';
 import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
 import { Stream } from 'stream';
 import * as metadataTypes from 'metadataTypes.yaml';
-import { getMetaFiles, createRecordProxy } from 'salesforceUtil';
+import { getMetaFiles, createRecordProxy } from 'util/salesforce';
 import { stripPrefix, parseNumbers } from 'xml2js/lib/processors';
 import axios from 'axios';
 import SObjectRecord from 'models/sobjectRecord';
@@ -17,6 +17,7 @@ import Lazy from 'util/lazy';
 import cache from 'util/cache';
 import { LogManager, Logger } from 'logging';
 import chalk = require('chalk');
+import SalesforceSchemaService from './salesforceSchemaService';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -286,7 +287,6 @@ export class RetrieveResultPackage {
 
 export default class SalesforceService implements JsForceConnectionProvider {  
 
-    private readonly describeCache = new Map<string, jsforce.DescribeSObjectResult>();
     private readonly vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
     
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
@@ -296,7 +296,12 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return LogManager.get(SalesforceService);
     }
 
-    public async isProductionOrg() : Promise<Boolean> {
+    @cache(-1)
+    public get schema() : SalesforceSchemaService {
+        return new SalesforceSchemaService(this);
+    }
+
+    public async isProductionOrg() : Promise<boolean> {
         return (await this.getOrganizationDetails()).isSandbox !== true;
     }
 
@@ -304,7 +309,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return this.connectionProvider.getJsForceConnection();
     }
 
-    public async isPackageInstalled(packageName: string | RegExp) : Promise<Boolean> {
+    public async isPackageInstalled(packageName: string | RegExp) : Promise<boolean> {
         return (await this.getInstalledPackageDetails(packageName)) !== undefined;
     }
 
@@ -355,36 +360,6 @@ export default class SalesforceService implements JsForceConnectionProvider {
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
         const results = await this.query<OrganizationDetails>('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
         return results[0];
-    }
-
-    public async getRecordPrefixes() : Promise<{ [key: string]: string }> {
-        const con = await this.getJsForceConnection();
-        const result = await con.describeGlobal();
-        return result.sobjects.filter(rec => !!rec.keyPrefix)
-                              .reduce((map: {}, rec) => map[rec.keyPrefix] = rec.name, {});
-    }
-
-    public async describeSObject(type: string) : Promise<jsforce.DescribeSObjectResult> {
-        let result = this.describeCache.get(type);
-        if (!result) {
-            const con = await this.getJsForceConnection();
-            try {
-                result = await con.describe(type);
-            } catch(err) {
-                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
-            }
-            this.describeCache.set(type, result);
-        }
-        return result;
-    }
-
-    public async getSObjectField(type: string, fieldName: string) : Promise<jsforce.Field> {
-        const result = await this.describeSObject(type);
-        const field = result.fields.find(field => field.name.toLowerCase() == fieldName.toLowerCase());
-        if (!field) {
-            throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
-        }
-        return field;
     }
 
     /**
