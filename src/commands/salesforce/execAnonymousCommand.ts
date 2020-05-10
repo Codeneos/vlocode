@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel, getDocumentBodyAsString } from '@util';
-import * as path from 'path';
-import { CommandBase } from 'commands/commandBase';
-import SalesforceService, { SoapDebuggingHeader } from 'services/salesforceService';
+import { SoapDebuggingHeader } from 'lib/salesforce/salesforceService';
 import MetadataCommand from './metadataCommand';
 
 type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader };
@@ -25,7 +22,7 @@ export default class ExecAnonymousCommand extends MetadataCommand {
     ];
 
     protected getDiagnostics() : vscode.DiagnosticCollection {
-        return this.vloService.getDiagnostics('salesforce-anon-apex');
+        return this.vlocode.getDiagnostics('salesforce-anon-apex');
     }
 
     public async execute() {        
@@ -50,7 +47,7 @@ export default class ExecAnonymousCommand extends MetadataCommand {
         // Clear diagnostics
         this.getDiagnostics().clear();
 
-        await this.vloService.withActivity({
+        await this.vlocode.withActivity({
             progressTitle: `Executing anonymous APEX...`, 
             location: vscode.ProgressLocation.Notification,
             cancellable: false

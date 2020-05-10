@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import MetadataCommand from './metadataCommand';
-import { formatString } from '@util';
+import { formatString } from 'lib/util/string';
 import * as fs from 'fs-extra';
 
 type NewItemInputType = {
@@ -29,7 +29,7 @@ type NewItemQuickPickItem = vscode.QuickPickItem & {
 };
 
 /**
- * Command for handling deletion of Metadata components in Salesforce
+ * Command for handling creation of Metadata components in Salesforce
  */
 export default class CreateMetadataCommand extends MetadataCommand {
 
@@ -47,7 +47,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
         }
 
         const contextValues = { 
-            apiVersion: this.vloService.config.salesforce?.apiVersion
+            apiVersion: this.vlocode.config.salesforce?.apiVersion
         };
 
         for (const [key, input] of Object.entries(newItemType.input ?? {})) {

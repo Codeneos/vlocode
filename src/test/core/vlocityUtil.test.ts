@@ -2,20 +2,21 @@ import { expect } from 'chai';
 import { spy } from 'sinon';
 import 'mocha';
 
-import * as vlocityUtil from 'vlocityUtil';
-import { Logger } from 'logging';
+import * as vlocityLogging from 'lib/vlocity/vlocityLogging';
+import { Logger } from 'lib/logging';
 
 declare var VlocityUtils: any;
 
-describe('vlocityUtil', () => {   
+describe('vlocityLogging', () => {   
 
-    describe('#setVlocityLogger', () => {
+    describe('#setLogger', () => {
         it("should intercept all logging calls", () => {
             const logSpy = spy();
-            vlocityUtil.setVlocityLogger(Object.assign(
+            vlocityLogging.setLogger(Object.assign(
                 new Logger(null, null, null), 
                 { write: logSpy } )
             );
+
             VlocityUtils.verboseLogging = true;
             VlocityUtils.log('b', 'a');
             VlocityUtils.report('b', 'a');
@@ -29,7 +30,7 @@ describe('vlocityUtil', () => {
         });
         it("should format log messages", () => {
             const logSpy = spy();
-            vlocityUtil.setVlocityLogger(<any>{ log: logSpy });
+            vlocityLogging.setLogger(<any>{ log: logSpy });
             VlocityUtils.log('b', 'a', 'c');
 
             // assert

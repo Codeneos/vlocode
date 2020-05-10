@@ -6,11 +6,11 @@ import * as fs from 'fs';
 import 'mocha';
 
 import * as vscode from 'vscode';
-import vlocityDatapackService, * as vds from '../../services/vlocityDatapackService';
+import vlocityDatapackService, * as vds from '../../lib/vlocity/vlocityDatapackService';
 import { fail } from 'assert';
-import { Logger } from 'logging';
+import { Logger } from 'lib/logging';
 import { makePath } from 'test/helpers';
-import VlocodeConfiguration from 'models/vlocodeConfiguration';
+import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 
 declare var VlocityUtils: any;
 

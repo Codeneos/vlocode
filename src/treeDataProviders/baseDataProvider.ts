@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import ServiceContainer from 'serviceContainer';
-import VlocodeService from 'services/vlocodeService';
-import CommandRouter, { CommandCtor } from 'services/commandRouter';
+import VlocodeService from 'lib/vlocodeService';
+import { CommandCtor } from 'lib/commandRouter';
+import { getContext } from 'lib/vlocodeContext';
 
 /**
  * Base tree data provider
@@ -14,24 +14,16 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
 		return this.dataChangedEmitter.event;
     }
     
-    constructor(private readonly container: ServiceContainer) {
-        this.commandRouter.registerAll(this.getCommands()); 
+    constructor(protected readonly vlocode: VlocodeService) {
+        this.vlocode.commands.registerAll(this.getCommands()); 
     }    
 
-    protected get vlocode() : VlocodeService {
-        return this.container.get(VlocodeService);
-    }
-        
-    protected get commandRouter() : CommandRouter {
-       return this.container.get(CommandRouter);
-    }
-    
     protected getAbsolutePath(path: string) {
-        return this.vlocode.asAbsolutePath(path);
+        return getContext().asAbsolutePath(path);
     }
 
-    protected executeCommand(commandName: string, ... args: any[]) : Promise<any> {
-        return this.commandRouter.execute(commandName, ...args);
+    protected executeCommand(commandName: string, ... args: any[]) : Thenable<any> {
+        return this.vlocode.commands.execute(commandName, ...args);
      }
 
     public refresh(node?: T): void {

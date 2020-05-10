@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 import { DatapackCommand } from './datapackCommand';
-import { evalExpr } from '../util';
+import { evalExpr } from 'lib/util/string';
 
-import { ObjectEntry } from 'services/vlocityDatapackService';
+import { ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
 
 export default class OpenSalesforceCommand extends DatapackCommand {
 
@@ -52,7 +52,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
         const salesforcePath = evalExpr(salesforceUrl.path, {...extraFields, id: objectId, type: datapackType, namespace: namespace });
 
-        const url = await this.vloService.salesforceService.getPageUrl(salesforcePath);
+        const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath);
         this.logger.info(`Opening URL: ${salesforcePath}`);
         vscode.env.openExternal(vscode.Uri.parse(url));
     }

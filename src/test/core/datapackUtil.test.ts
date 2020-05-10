@@ -3,7 +3,7 @@ import * as mockFs from 'mock-fs';
 import * as path from 'path';
 import 'mocha';
 
-import * as dp from 'datapackUtil';
+import * as dp from 'lib/vlocity/datapackUtil';
 
 describe('datapackUtil', () => {   
     describe("#getDatapackHeaders", function () {

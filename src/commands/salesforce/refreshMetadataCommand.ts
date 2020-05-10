@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import MetadataCommand from './metadataCommand';
-import * as fs from 'fs';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
@@ -14,7 +12,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
 
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {
         // Build manifest
-        const manifest = await this.salesforce.buildManifest(selectedFiles);
+        const manifest = await this.salesforce.deploy.buildManifest(selectedFiles);
         if (manifest.files.length == 0) {
             return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
         }
@@ -25,15 +23,15 @@ export default class RefreshMetadataCommand extends MetadataCommand {
         const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${selectedFiles.length} components`;
 
         // Use config provided API version
-        manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
+        manifest.apiVersion = this.vlocode.config.salesforce?.apiVersion;
 
-        await this.vloService.withActivity({
+        await this.vlocode.withActivity({
             progressTitle: `Refreshing ${progressTitle}...`,
             location: vscode.ProgressLocation.Window,
             cancellable: true
         }, async (progress, token) => {  
 
-            const result = await this.salesforce.retrieveManifest(manifest, token);
+            const result = await this.salesforce.deploy.retrieveManifest(manifest, token);
   
             if (!result.success) {
                 throw new Error(`Refresh failed`);

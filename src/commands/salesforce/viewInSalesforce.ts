@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
-import { evalExpr } from '@util';
+import { evalExpr } from 'lib/util/string';
 
 export default class ViewInSalesforceCommand extends MetadataCommand {
 
@@ -24,7 +24,7 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
 
     protected async openFileInSalesforce(selectedFile: vscode.Uri) {     
         // Resolve datapack        
-        const manifestFileInfo = Object.values((await this.salesforce.buildManifest([selectedFile])).files).shift();
+        const manifestFileInfo = Object.values((await this.salesforce.deploy.buildManifest([selectedFile])).files).shift();
         const urlFormat = this.getUrlFormat(selectedFile);
         if (!urlFormat || !manifestFileInfo) {
             throw 'Cannot open the specified file in Salesforce; url format not defined.';
@@ -37,7 +37,7 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
             type: manifestFileInfo.type 
         });
 
-        const url = await this.vloService.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true });
+        const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true });
         this.logger.info(`Opening URL: ${salesforcePath}`);
         vscode.env.openExternal(vscode.Uri.parse(url));
     }

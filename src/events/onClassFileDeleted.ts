@@ -1,13 +1,8 @@
 import * as vscode from 'vscode';
-import ServiceContainer from 'serviceContainer';
 import { EventHandlerBase } from 'events/eventHandlerBase';
 import * as path from 'path';
 
 export default class OnClassFileDeleted extends EventHandlerBase<vscode.Uri> {
-
-    constructor(event: vscode.Event<vscode.Uri>, container: ServiceContainer) {
-        super(event, container);
-    }
     
     public get enabled() : boolean {
         return !!(this.vloService.config?.salesforce?.enabled && this.vloService.config?.salesforce.manageMetaXmlFiles);

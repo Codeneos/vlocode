@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
 
-import { DatapackResultCollection, ObjectEntry } from '../services/vlocityDatapackService';
+import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import SObjectRecord from '../models/sobjectRecord';
-import DatapackUtil from 'datapackUtil';
-import { groupBy, evalExpr } from '../util';
-import { createRecordProxy } from 'salesforceUtil';
+import SObjectRecord from '../lib/salesforce/sobjectRecord';
+import DatapackUtil from 'lib/vlocity/datapackUtil';
+import { groupBy } from 'lib/util/collection';
+import { createRecordProxy } from 'lib/util/salesforce';
+import { evalExpr } from 'lib/util/string';
+
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 
@@ -38,7 +40,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         // query available records
         let records = await this.queryExportableRecords(datapackType);
-        if (!records) {
+        if (records.length == 0) {
             vscode.window.showWarningMessage(`No exportable records for ${datapackType}`);
             return;
         }
@@ -74,12 +76,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         // query available records
         const queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');
         try {
-            const connection = await this.datapackService.getJsForceConnection();
-            const results = await connection.query<SObjectRecord>(this.getExportQuery(datapackType));
-            if (results.totalSize === 0) {
-                return; // no results
-            }
-            return results.records.map(record => createRecordProxy(record));
+            return await this.salesforce.query<SObjectRecord>(this.getExportQuery(datapackType));
         } finally {
             queryProgress.complete();
         }
@@ -219,7 +216,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         }
         if (projectFolderSelection.value == 2) {
             this.logger.info(`Updating Vlocity project path to: ${selectedFolder[0].fsPath}`);
-            this.vloService.config.projectPath = selectedFolder[0].fsPath;
+            this.vlocode.config.projectPath = selectedFolder[0].fsPath;
         }
         return selectedFolder[0].fsPath;
     }
@@ -231,7 +228,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             return; // selection cancelled;
         }
         
-        let exportPath = this.vloService.config.projectPath;
+        let exportPath = this.vlocode.config.projectPath;
         if (!exportPath && !(exportPath = await this.showExportPathSelection())) {
             vscode.window.showErrorMessage('No project path selected; export aborted.');
             return;
@@ -239,7 +236,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
         this.logger.info(`Exporting to folder: ${exportPath}`);
         const entries = Array.isArray(exportEntries) ? exportEntries : [ exportEntries ];
-        await this.vloService.withActivity({
+        await this.vlocode.withActivity({
             progressTitle: entries.length != 1 ? `Exporting ${entries.length} datapacks...` : `Exporting ${entries[0].name || entries[0].globalKey || entries[0].id}...`,
             location: vscode.ProgressLocation.Notification,
             cancellable: true

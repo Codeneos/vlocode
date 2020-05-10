@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import VlocityDatapackService, { ObjectEntry } from '../services/vlocityDatapackService';
-import { LogManager, Logger } from 'logging';
+import VlocityDatapackService, { ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
+import { LogManager, Logger } from 'lib/logging';
 import * as yaml from 'js-yaml';
 
-import VlocityJobFile from '../models/vlocityJobFile';
+import VlocityJobFile from 'lib/vlocity/vlocityJobFile';
 import * as vlocity from 'vlocity';
 import BaseDataProvider from './baseDataProvider';
 

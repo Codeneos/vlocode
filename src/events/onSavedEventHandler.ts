@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
-import ServiceContainer from 'serviceContainer';
-import CommandRouter from 'services/commandRouter';
+import CommandRouter from 'lib/commandRouter';
 import { VlocodeCommand } from '@constants';
 import { EventHandlerBase } from 'events/eventHandlerBase';
-import { isPartOfDatapack } from 'datapackUtil';
-import { isSalesforceMetadataFile } from 'salesforceUtil';
+import { isPartOfDatapack } from 'lib/vlocity/datapackUtil';
+import { isSalesforceMetadataFile } from 'lib/util/salesforce';
 
 export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [
@@ -13,10 +12,6 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
         '\.git'
     ];
 
-    constructor(event: vscode.Event<vscode.TextDocument>, container: ServiceContainer) {
-        super(event, container);
-    }
-   
     protected async handleEvent(document: vscode.TextDocument): Promise<void> {   
         if (!this.vloService.config.deployOnSave && 
             !this.vloService.config.salesforce.deployOnSave) { 
@@ -43,7 +38,7 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
 
     protected deployAsDatapack(document: vscode.TextDocument) : Promise<any> {
         this.logger.verbose(`Requesting datapack deploy for: ${document.uri.fsPath}`);
-        return this.container.get(CommandRouter).execute(VlocodeCommand.deployDatapack, document.uri, null, false);
+        return this.vloService.commands.execute(VlocodeCommand.deployDatapack, document.uri, null, false);
     }
 
     protected deployAsMetadata(document: vscode.TextDocument) : Promise<any> {
@@ -55,6 +50,6 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
             return;
         }
         this.logger.verbose(`Requesting metadata deploy for: ${document.uri.fsPath}`);
-        return this.container.get(CommandRouter).execute(VlocodeCommand.deployMetadata, document.uri, null, false);
+        return this.vloService.commands.execute(VlocodeCommand.deployMetadata, document.uri, null, false);
     }
 }

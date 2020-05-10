@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CommandBase } from './commandBase';
-import SfdxUtil, { SalesforceOrgInfo } from 'sfdxUtil';
+import SfdxUtil, { SalesforceOrgInfo } from 'lib/util/sfdx';
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo, instanceUrl?: string };
 
@@ -32,7 +32,7 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     public validate() : void {
-        const validationMessage = this.vloService.validateWorkspaceFolder();
+        const validationMessage = this.vlocode.validateWorkspaceFolder();
         if (validationMessage) {
             throw validationMessage;
         }
@@ -44,7 +44,7 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     public async execute() : Promise<void> {
-        const knownOrgs = await this.vloService.withStatusBarProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
+        const knownOrgs = await this.vlocode.withStatusBarProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
         const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
@@ -56,10 +56,10 @@ export default class SelectOrgCommand extends CommandBase {
 
         if (selectedOrgInfo) {
             this.logger.log(`Set ${selectedOrgInfo.username} as target org for Vlocity deploy/refresh operations`);
-            if (this.vloService.config.sfdxUsername != selectedOrgInfo.username) {
-                this.vloService.config.sfdxUsername = selectedOrgInfo.username;
+            if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
+                this.vlocode.config.sfdxUsername = selectedOrgInfo.username;
             } else {
-                await this.vloService.initialize();
+                await this.vlocode.initialize();
             }
         }
     }
@@ -82,7 +82,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
 
         this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
-        const authInfo = await this.vloService.withActivity({
+        const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Window,
             progressTitle: 'Authorizing new org...', 
             cancellable: false

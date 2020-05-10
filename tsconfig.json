@@ -23,7 +23,9 @@
         "paths": {
             "@angular/*": ["../node_modules/@angular/*"],
             "@constants": ["constants"],
-            "@util": ["util"]
+            "@util": ["lib/util"],
+            "@lib": ["lib"],
+            "@logging": ["lib/logging"]
         },
         "typeRoots": [
             "node_modules/@types",

@@ -1,11 +1,9 @@
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel, wait } from '@util';
-import * as path from 'path';
-import { CommandBase } from 'commands/commandBase';
-import SalesforceService, { ComponentFailure, MetadataManifest } from 'services/salesforceService';
+import { forEachAsyncParallel } from 'lib/util/collection';
+import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
 import MetadataCommand from './metadataCommand';
-import Task, { TaskPromise } from 'util/task';
+import Task, { TaskPromise } from 'lib/util/task';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -40,7 +38,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {
         // Prevent prod deployment if not intended
-        if (await this.vloService.salesforceService.isProductionOrg()) {
+        if (await this.salesforce.isProductionOrg()) {
             if (!await this.showProductionWarning(false)) {
                 return;
             }
@@ -73,8 +71,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
         const manifest = await vscode.window.withProgress({ 
             title: "Building Deployment Manifest",
             location: vscode.ProgressLocation.Window,
-        }, () => this.salesforce.buildManifest(files));
-        manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
+        }, () => this.salesforce.deploy.buildManifest(files));
+        manifest.apiVersion = this.vlocode.config.salesforce?.apiVersion;
 
         // Get task title
         const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
@@ -85,12 +83,12 @@ export default class DeployMetadataCommand extends MetadataCommand {
         }
         this.clearPreviousErrors(manifest);
 
-        await this.vloService.withActivity({
+        await this.vlocode.withActivity({
             progressTitle: `Deploying ${progressTitle}...`, 
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, async (progress, token) => {
-            const result = await this.salesforce.deployManifest(manifest, {
+            const result = await this.salesforce.deploy.deployManifest(manifest, {
                 ignoreWarnings: true
             }, progress, token);
 
