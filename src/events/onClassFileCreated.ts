@@ -1,17 +1,12 @@
 import * as vscode from 'vscode';
-import ServiceContainer from 'serviceContainer';
 import { EventHandlerBase } from 'events/eventHandlerBase';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { Builder as XmlBuilder } from 'xml2js';
 import * as constants from '@constants';
-import { getDocumentBodyAsString } from '@util';
+import { getDocumentBodyAsString } from 'lib/util/fs';
 
 export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
-
-    constructor(event: vscode.Event<vscode.Uri>, container: ServiceContainer) {
-        super(event, container);
-    }
 
     public get enabled() : boolean {
         return !!(this.vloService.config?.salesforce?.enabled && this.vloService.config?.salesforce.manageMetaXmlFiles);

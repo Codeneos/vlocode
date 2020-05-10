@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import { DatapackResultCollection } from 'services/vlocityDatapackService';
+import { DatapackResultCollection } from 'lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from 'commands/datapackCommand';
-import { forEachAsyncParallel } from '@util';
+import { forEachAsyncParallel } from 'lib/util/collection';
 import * as path from 'path';
-import DatapackUtil from 'datapackUtil';
+import DatapackUtil from 'lib/vlocity/datapackUtil';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -65,7 +65,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
             }
 
             // Prevent prod deployment if not intended
-            if (await this.vloService.salesforceService.isProductionOrg()) {
+            if (await this.vlocode.salesforceService.isProductionOrg()) {
                 if (!await this.showProductionWarning(false)) {
                     return;
                 }
@@ -79,7 +79,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 progressText = `Deploying: ${datapackNames.join(', ')} ...`;
             }
 
-            const result = await this.vloService.withCancelableProgress(progressText, async (progress, token) => {
+            const result = await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
                 return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);

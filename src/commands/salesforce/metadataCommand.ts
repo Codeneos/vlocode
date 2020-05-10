@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel, getDocumentBodyAsString } from '@util';
-import * as path from 'path';
+import { getDocumentBodyAsString } from 'lib/util/fs';
 import { CommandBase } from 'commands/commandBase';
-import SalesforceService, { ComponentFailure, MetadataManifest } from 'services/salesforceService';
+import SalesforceService from 'lib/salesforce/salesforceService';
+import { ComponentFailure } from 'lib/salesforce/salesforceDeployService';
+import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
+import command from 'command';
 
 /**
  * Salesfoece metadata base command 
@@ -19,15 +21,15 @@ export default abstract class MetadataCommand extends CommandBase {
     ];
     
     protected getDiagnostics() : vscode.DiagnosticCollection {
-        return this.vloService.getDiagnostics('salesforce');
+        return this.vlocode.getDiagnostics('salesforce');
     }
 
     protected get salesforce() : SalesforceService {
-        return this.vloService.salesforceService;
+        return this.vlocode.salesforceService;
     }
 
     public async validate() : Promise<void> {
-        const validationMessage = await this.vloService.validateSalesforceConnectivity();
+        const validationMessage = await this.vlocode.validateSalesforceConnectivity();
         if (validationMessage) {
             throw validationMessage;
         }

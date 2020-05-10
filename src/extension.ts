@@ -1,24 +1,22 @@
 const startTime = Date.now(); // Track start up performance
 
 import * as vscode from 'vscode';
-import VlocodeConfiguration from './models/vlocodeConfiguration';
-import VlocodeService from './services/vlocodeService';
+import VlocodeConfiguration from './lib/vlocodeConfiguration';
+import VlocodeService from './lib/vlocodeService';
 import * as constants from '@constants';
-import { LogManager, LogFilter, LogLevel }  from 'logging';
-import { ConsoleWriter, OutputChannelWriter, TerminalWriter }  from 'logging/writers';
-import CommandRouter from './services/commandRouter';
+import { LogManager, LogFilter, LogLevel }  from 'lib/logging';
+import { ConsoleWriter, OutputChannelWriter, TerminalWriter }  from 'lib/logging/writers';
 import Commands from 'commands';
-import { container } from 'serviceContainer';
-import * as vlocityUtil from 'vlocityUtil';
+import * as vlocityUtil from 'lib/vlocity/vlocityLogging';
 import OnSavedEventHandler from 'events/onSavedEventHandler';
-import { setInterval } from 'timers';
-import VlocodeContext from 'models/vlocodeContext';
+import { initializeContext } from 'lib/vlocodeContext';
 import DatapackProvider from 'treeDataProviders/datapackDataProvider';
 import JobDataProvider from 'treeDataProviders/jobExplorer';
 import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
-import { ConfigurationManager } from 'services/configurationManager';
+import { ConfigurationManager } from 'lib/configurationManager';
 import OnClassFileDeleted from 'events/onClassFileDeleted';
 import OnClassFileCreated from 'events/onClassFileCreated';
+import * as vlocityPackageManifest from "vlocity/package.json";
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -84,7 +82,7 @@ export = class Vlocode {
 
         // setup Vlocity logger and filters
         LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
-        vlocityUtil.setVlocityLogger(LogManager.get('vlocity'));
+        vlocityUtil.setLogger(LogManager.get('vlocity'));
     }
 
     private async activate(context: vscode.ExtensionContext) {
@@ -93,13 +91,15 @@ export = class Vlocode {
         this.setWorkingDirectory();
         
         // Init logging and register services
-        const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);
-        this.service = container.register(VlocodeService, new VlocodeService(container, vloConfig, VlocodeContext.createFrom(context)));
+        const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);        
+        this.service = new VlocodeService(vloConfig);        
         context.subscriptions.push(this.service);
+
+        initializeContext(context, this.service);
         this.startLogger();
     
         this.logger.info(`Vlocode version ${constants.VERSION} started`);
-        this.logger.info(`Using built tools version ${vlocityUtil.getBuildToolsVersion()}`);
+        this.logger.info(`Using built tools version ${vlocityPackageManifest.version}`);
         this.logger.verbose(`Verbose logging enabled`);
         
         // Salesforce support      
@@ -109,24 +109,24 @@ export = class Vlocode {
         }
   
         // register commands and windows
-        container.get(CommandRouter).registerAll(Commands);
+        this.service.commands.registerAll(Commands);
         this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
-            treeDataProvider: new DatapackProvider(container), 
+            treeDataProvider: new DatapackProvider(this.service), 
             showCollapseAll: true
         }));
         this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
-            treeDataProvider: new JobDataProvider(container)
+            treeDataProvider: new JobDataProvider(this.service)
         }));
         this.service.registerDisposable(vscode.window.createTreeView('activityView', { 
-            treeDataProvider: new ActivityDataProvider(container)
+            treeDataProvider: new ActivityDataProvider(this.service)
         }));
 
         this.service.registerDisposable(
-            new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, container)
+            new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, this.service)
         );
         const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/src/classes/*.cls', false, true, false));
-        this.service.registerDisposable(new OnClassFileCreated(apexClassWatcher.onDidCreate, container));
-        this.service.registerDisposable(new OnClassFileDeleted(apexClassWatcher.onDidDelete, container));
+        this.service.registerDisposable(new OnClassFileCreated(apexClassWatcher.onDidCreate, this.service));
+        this.service.registerDisposable(new OnClassFileDeleted(apexClassWatcher.onDidDelete, this.service));
 
         // track activation time
         this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);

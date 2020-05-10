@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 
-import VlocodeService from 'services/vlocodeService';
-import { container } from 'serviceContainer';
-import { Logger, LogManager } from 'logging';
-import { Command } from 'models/command';
-import VlocodeContext from 'models/vlocodeContext';
+import VlocodeService from 'lib/vlocodeService';
+import { Logger, LogManager } from 'lib/logging';
+import { Command } from 'lib/command';
+import { getContext } from 'lib/vlocodeContext';
+import cache from 'lib/util/cache';
+import SalesforceService from 'lib/salesforce/salesforceService';
 
 export class ProgressToken {
     private resolved = false;
@@ -40,20 +41,6 @@ export class ProgressToken {
     }
 }
 
-type ShowMessageFunction<T> = (msg : string, options: vscode.MessageOptions, ...args: vscode.MessageItem[]) => Thenable<T>;
-async function showMsgWithRetry<T>(
-    msgFunc : ShowMessageFunction<T>, errorMsg : string, retryCallback: (...args: any[]) => Promise<T>, 
-    thisArg?: any, args? : any[]) : Promise<T> {            
-    const value = await msgFunc(errorMsg, { modal: false }, { title: 'Retry' });
-    if (value) {
-        if (args !== undefined) {
-            return retryCallback.apply(thisArg || null, args || []);
-        }
-        return retryCallback();
-    }
-    return value;
-}
-
 export abstract class CommandBase implements Command {
 
     public abstract execute(...args: any[]): void | Promise<void>;
@@ -73,7 +60,7 @@ export abstract class CommandBase implements Command {
 
     protected async startProgress(title: string, cancellable?: boolean) : Promise<ProgressToken> {
         return new Promise<ProgressToken>(progressTokenResolve => {
-            this.vloService.withActivity({
+            this.vlocode.withActivity({
                     location: vscode.ProgressLocation.Notification, 
                     progressTitle: title, 
                     cancellable 
@@ -105,24 +92,14 @@ export abstract class CommandBase implements Command {
         return true;
     }
 
-    protected showErrorWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
-        return showMsgWithRetry<T>(vscode.window.showErrorMessage, errorMsg, retryCallback, thisArg, args);
-    }
-    
-    protected showWarningWithRetry<T>(errorMsg : string, retryCallback: (...args) => Promise<T>, thisArg?: any, ...args : any[]) : Thenable<T> {
-        return showMsgWithRetry<T>(vscode.window.showWarningMessage, errorMsg, retryCallback, thisArg, args);
-    }
-
-    protected get vloService() : VlocodeService {
-        return container.get(VlocodeService);
-    }
-
-    protected get extensionContext() : VlocodeContext {
-        return this.vloService.getContext();
-    }
-
+    @cache(-1)
     protected get logger() : Logger {
         return LogManager.get(this.getName());
+    }
+
+    @cache(-1)
+    protected get vlocode() : VlocodeService {
+        return getContext().service;
     }
 
     private getName() : string {

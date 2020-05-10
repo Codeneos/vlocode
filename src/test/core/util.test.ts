@@ -1,18 +1,17 @@
-import { expect } from 'chai';
-import { spy } from 'sinon';
 import * as path from 'path';
-import * as mockFs from 'mock-fs';
-import * as fs from 'fs';
+
+import { expect } from 'chai';
 import 'mocha';
 
-import * as vscode from 'vscode';
-import vlocityDatapackService, * as vds from '../../services/vlocityDatapackService';
-import { sanitizePath, formatString, groupBy, evalExpr, filterAsyncParallel, getObjectValues } from '../../util';
+import { sanitizePath } from 'lib/util/fs';
+import { filterAsyncParallel, groupBy } from 'lib/util/collection';
+import { formatString, evalExpr } from 'lib/util/string';
+import { getObjectValues as getValues } from 'lib/util/object';
 
 describe('util', () => {   
 
     describe('#sanitizePath', () => { 
-        let s = path.sep;
+        const s = path.sep;
         it("should remove double path separators from input", function() {
             expect(sanitizePath('a\\\\/b\\\\\\/c\\\\/d')).equals(`a${s}b${s}c${s}d`);
         });
@@ -71,23 +70,22 @@ describe('util', () => {
         });
     });
 
-    describe('#getObjectValues', () => { 
+    describe('#getValues', () => { 
         it("should get values from array", function() {
             const obj = [ 'foo', ['bar'] ];
-            const result = getObjectValues(obj);
+            const result = getValues(obj);
             expect(result).to.deep.equal(['foo', 'bar']);
         });
         it("should get values from object", function() {
             const obj = { a: 'foo', bar: { b: 'bar' } };
-            const result = getObjectValues(obj);
+            const result = getValues(obj);
             expect(result).to.deep.equal(['foo', 'bar']);
         });
         it("should not get values beyond max depth", function() {
             const obj = { a: 'foo', bar: { b: 'bar' }};
-            const result = getObjectValues(obj, 0);
+            const result = getValues(obj, 0);
             expect(result).to.deep.equal(['foo']);
         });
     });
 
-    //getObjectValues
 });

@@ -1,14 +1,15 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
-import VlocityDatapackService, { ObjectEntry } from '../services/vlocityDatapackService';
-import SObjectRecord from '../models/sobjectRecord';
+import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
+import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
-import { LogManager, Logger } from 'logging';
-import DatapackUtil from 'datapackUtil';
-import { groupBy, evalExpr } from '../util';
+import { LogManager, Logger } from 'lib/logging';
+import DatapackUtil from 'lib/vlocity/datapackUtil';
+import { evalExpr } from 'lib/util/string';
+import { groupBy } from 'lib/util/collection';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { createRecordProxy, addFieldsToQuery } from 'salesforceUtil';
+import { createRecordProxy, addFieldsToQuery } from 'lib/util/salesforce';
 import BaseDataProvider from './baseDataProvider';
 
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
@@ -95,14 +96,10 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
     private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {        
-        const connection = await this.datapackService.getJsForceConnection();
-        const query = await this.getQuery(datapackType);
-
-        this.logger.verbose(`Query: ${query}`);        
-        const results = await connection.query<SObjectRecord>(query);            
-        this.logger.log(`Found ${results.totalSize} exportable datapacks form type ${datapackType}`);
-
-        return results.totalSize == 0 ? null : results.records.map(record => createRecordProxy(record));
+        const query = await this.getQuery(datapackType);            
+        const results = await this.vlocode.salesforceService.query<SObjectRecord>(query);            
+        this.logger.log(`Found ${results.length} exportable datapacks form type ${datapackType}`);
+        return results;
     }
 
     protected get logger() : Logger {

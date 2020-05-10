@@ -2,17 +2,19 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 
+import { getDocumentBodyAsString } from 'lib/util/fs';
 import { DatapackCommand } from './datapackCommand';
-import { getDocumentBodyAsString } from '../util';
-import * as DatapackUtil from 'datapackUtil';
-import { VlocityDatapack, VlocityDatapackReference } from 'models/datapack';
-import DatapackLoader, { directFileSystem, CachedFileSystem } from 'datapackLoader';
-import { Logger } from 'logging';
+import * as DatapackUtil from 'lib/vlocity/datapackUtil';
+import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
+import DatapackLoader, { directFileSystem, CachedFileSystem } from 'lib/vlocity/datapackLoader';
+import { VlocodeCommand } from "../constants";
+import command from 'command';
+
 
 export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
     private get diagnostics() : vscode.DiagnosticCollection {
-        return this.vloService.getDiagnostics('Datapack Dependencies');
+        return this.vlocode.getDiagnostics('Datapack Dependencies');
     }
 
     constructor() {
@@ -54,7 +56,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
     protected async buildParentKeyFiles() : Promise<void> {
 
-        await this.vloService.withCancelableProgress(`Repairing datapack dependencies`, async (progress, token) => {
+        await this.vlocode.withCancelableProgress(`Repairing datapack dependencies`, async (progress, token) => {
             // Clear current warnings
             this.diagnostics.clear();
 

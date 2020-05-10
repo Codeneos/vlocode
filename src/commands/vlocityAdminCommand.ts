@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
 import { CommandBase } from './commandBase';
-import JsForceConnectionProvider from 'connection/jsForceConnectionProvider';
+import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 
 class VlocityAdminCommand extends CommandBase {
 
@@ -38,11 +38,11 @@ class VlocityAdminCommand extends CommandBase {
     ];
 
     protected get connectionProvider() : JsForceConnectionProvider {
-        return this.vloService.datapackService;
+        return this.vlocode.datapackService;
     }
 
     public async validate() : Promise<void> {
-        const validationMessage = await this.vloService.validateSalesforceConnectivity();
+        const validationMessage = await this.vlocode.validateSalesforceConnectivity();
         if (validationMessage) {
             throw validationMessage;
         }
@@ -57,7 +57,7 @@ class VlocityAdminCommand extends CommandBase {
             return; 
         }
 
-        await this.vloService.withProgress(`Running ${selectedCommand.title}...`, async () => {
+        await this.vlocode.withProgress(`Running ${selectedCommand.title}...`, async () => {
             if (selectedCommand.batchJob) {
                 await this.executeBatch(selectedCommand.batchJob);
             }
@@ -81,7 +81,7 @@ class VlocityAdminCommand extends CommandBase {
     private async executeAnonymous(apex: string) : Promise<void> {   
         this.logger.verbose('Execute Anonymous:', apex);
         const connection = await this.connectionProvider.getJsForceConnection();
-        const result = await connection.tooling.executeAnonymous(apex.replace(NAMESPACE_PLACEHOLDER, this.vloService.datapackService.vlocityNamespace));
+        const result = await connection.tooling.executeAnonymous(apex.replace(NAMESPACE_PLACEHOLDER, this.vlocode.datapackService.vlocityNamespace));
         if (!result.compiled) {
             throw new Error(`${result.compileProblem} at ${result.line}:${result.column}`);
         }

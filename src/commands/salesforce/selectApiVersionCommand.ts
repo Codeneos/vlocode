@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { AuthInfo } from '@salesforce/core';
 import { CommandBase } from '../commandBase';
-import SfdxUtil from 'sfdxUtil';
+import SfdxUtil from 'lib/util/sfdx';
 import { version } from 'punycode';
 
 type ApiVersionQuickPickItem = vscode.QuickPickItem & { version?: string };
@@ -9,7 +9,7 @@ type ApiVersionQuickPickItem = vscode.QuickPickItem & { version?: string };
 export default class SelectApiVersion extends CommandBase {
 
     public async validate() : Promise<void> {
-        const validationMessage = await this.vloService.validateSalesforceConnectivity();
+        const validationMessage = await this.vlocode.validateSalesforceConnectivity();
         if (validationMessage) {
             throw validationMessage;
         }
@@ -44,12 +44,12 @@ export default class SelectApiVersion extends CommandBase {
 
         // Update the config and show a nice message to our user
         vscode.window.showInformationMessage(`Using Salesforce API version ${newApiVersion}`);
-        this.vloService.config.salesforce.apiVersion = newApiVersion;
+        this.vlocode.config.salesforce.apiVersion = newApiVersion;
     }
 
     private async getApiVersions() {
-        const currentApiVersion = this.vloService.config.salesforce.apiVersion;
-        const versions = (await this.vloService.salesforceService.getApiVersions(7)).map(version => ({ 
+        const currentApiVersion = this.vlocode.config.salesforce.apiVersion;
+        const versions = (await this.vlocode.salesforceService.getApiVersions(7)).map(version => ({ 
             label: (currentApiVersion == version ? `$(primitive-dot) ` : '') + `Salesforce API Version ${version}`, 
             version 
         }));

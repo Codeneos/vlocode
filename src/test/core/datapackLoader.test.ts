@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import * as mockFs from 'mock-fs';
 import 'mocha';
-import DatapackLoader from 'datapackLoader';
+import DatapackLoader from 'lib/vlocity/datapackLoader';
 
 describe('datapackLoader', () => {   
     describe.skip("#loadFrom", function () {

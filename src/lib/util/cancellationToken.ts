@@ -1,0 +1,1 @@
+export type { CancellationToken } from 'vscode';

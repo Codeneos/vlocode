@@ -16,15 +16,15 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             ? `${path.basename(selectedFiles[0].fsPath)}` 
             : `${selectedFiles.length} components`;
 
-        await this.vloService.withActivity({
+        await this.vlocode.withActivity({
             progressTitle: `Destruct ${progressTitle}...`,
             location: vscode.ProgressLocation.Window,
             cancellable: true
         }, async (progress, token) => {  
 
-            const manifest = await this.salesforce.buildManifest(selectedFiles, token);
-            manifest.apiVersion = this.vloService.config.salesforce?.apiVersion;
-            const result = await this.salesforce.deployDestructiveChanges(manifest, {
+            const manifest = await this.salesforce.deploy.buildManifest(selectedFiles, token);
+            manifest.apiVersion = this.vlocode.config.salesforce?.apiVersion;
+            const result = await this.salesforce.deploy.deployDestructiveChanges(manifest, {
                 ignoreWarnings: true
             }, null, token);
             

@@ -1,26 +1,31 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import VlocityDatapackService from 'services/vlocityDatapackService';
+import VlocityDatapackService from 'lib/vlocity/vlocityDatapackService';
 import { CommandBase } from "commands/commandBase";
-import { mapAsync, mapAsyncParallel } from '../util';
-import { ManifestEntry } from 'services/vlocityDatapackService';
-import { VlocityDatapack } from 'models/datapack';
-import { getDatapackHeaders, getDatapackManifestKey } from 'datapackUtil';
+import { mapAsync, mapAsyncParallel } from 'lib/util/collection';
+import { ManifestEntry } from 'lib/vlocity/vlocityDatapackService';
+import { VlocityDatapack } from 'lib/vlocity/datapack';
+import { getDatapackHeaders, getDatapackManifestKey } from 'lib/vlocity/datapackUtil';
+import SalesforceService from 'lib/salesforce/salesforceService';
 
 export abstract class DatapackCommand extends CommandBase {
 
     protected get datapackService() : VlocityDatapackService {
-        return this.vloService.datapackService;
+        return this.vlocode.datapackService;
+    }
+
+    protected get salesforce() : SalesforceService {
+        return this.vlocode.salesforceService;
     }
 
     public async validate() : Promise<void> {
-        const validationMessage = this.vloService.validateWorkspaceFolder() ||
-                                  await this.vloService.validateSalesforceConnectivity();
+        const validationMessage = this.vlocode.validateWorkspaceFolder() ||
+                                  await this.vlocode.validateSalesforceConnectivity();
         if (validationMessage) {
             throw validationMessage;
         }
-    }
+    }    
 
     protected async getDatapackHeaders(files: vscode.Uri[]) : Promise<vscode.Uri[]> {
         const headerFiles = await Promise.all(files.map(async (fileUri) => {

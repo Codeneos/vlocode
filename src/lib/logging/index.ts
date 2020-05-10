@@ -1,0 +1,29 @@
+
+import { default as LogManagerImpl } from './logManager';
+import { singleton } from 'lib/util/singleton';
+
+/**
+ * Describes the log levels supported by the logging framework
+ */
+export enum LogLevel {    
+    debug,
+    verbose,
+    info,
+    warn,
+    error,
+    fatal
+}
+
+export * from './logger';
+export * from './logManager';
+
+export function withLogger<T extends { new (...args: any[]): {} }>(constructor: T) {
+    return class extends constructor {
+        readonly logger = LogManager.get(constructor);        
+    };
+}
+
+/**
+ * Instantiate log manager as singleton
+ */
+export const LogManager = singleton(LogManagerImpl, LogLevel.info);

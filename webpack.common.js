@@ -135,43 +135,9 @@ const tests = {
     }
 };
 
-/**@type {import('webpack').Configuration}*/
-const views = {
-    entry: {
-        'script': './src/views/vlocode.ts'
-    },
-    name: 'views',
-    output: {
-        path: path.resolve(__dirname, 'out', 'views'),
-        publicPath: '/'
-    },
-    optimization: {
-        splitChunks: {
-            cacheGroups: {
-                commons: {
-                    test: /[\\/]node_modules[\\/]/,
-                    name: 'vendor',
-                    chunks: 'all'
-                }
-            }
-        }
-    },
-    devServer: {
-        contentBase: path.join(__dirname, 'out', 'views'),
-        compress: true,
-        port: 9000
-    },
-    plugins: [
-        new HtmlWebpackPlugin({
-            template: './src/test/test.html.tpl'
-        })
-    ]
-};
-
 const configVariations = {
     extension: vscodeExtension,
-    tests: tests,
-    views: views
+    tests: tests
 }
 
 module.exports = (env, extraConfig) => {

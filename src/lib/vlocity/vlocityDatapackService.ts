@@ -1,0 +1,444 @@
+import * as vscode from 'vscode';
+import * as vlocity from 'vlocity';
+import * as jsforce from 'jsforce';
+import * as path from 'path';
+import * as yaml from 'js-yaml';
+import * as fs from 'fs-extra';
+
+import { LogManager, Logger } from 'lib/logging';
+import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
+import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import SalesforceService from 'lib/salesforce/salesforceService';
+
+import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import SObjectRecord from 'lib/salesforce/sobjectRecord';
+import VlocityMatchingKeyService from './vlocityMatchingKeyService';
+import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
+import DatapackLoader, { CachedFileSystem } from 'lib/vlocity/datapackLoader';
+import { groupBy, mapAsync } from 'lib/util/collection';
+import { getDocumentBodyAsString } from 'lib/util/fs';
+import * as DataPacksExpand from "vlocity/lib/datapacksexpand";
+
+export interface ManifestEntry {
+    datapackType: string;
+    key: string;
+}
+
+export interface ObjectEntry {
+    sobjectType: string;
+    datapackType: string;
+    globalKey?: string;
+    name?: string;
+    id?: string;
+}
+
+type ObjectEntryWithId = ObjectEntry & { id: string; };
+
+type QueryDefinitions = typeof import('exportQueryDefinitions.yaml');
+
+export type DatapackResult = { key: string, label: string, success: boolean, errorMessage?: string };
+
+export class DatapackResultCollection implements Iterable<DatapackResult> {
+
+    constructor(private results : DatapackResult[] = []) {
+    }
+
+    /**
+     * Convert a `vlocity.VlocityJobResult` into a `DatapackResultCollection`
+     * @param result The datapack job result to create the result collection from
+     */
+    public static fromJobResult(result: vlocity.VlocityJobResult) : DatapackResultCollection {
+        const records : DatapackResult[] = (result.records || []).map(record => ({
+            key: record.VlocityDataPackKey,
+            label: record.VlocityDataPackDisplayLabel,
+            success: record.VlocityDataPackStatus == 'Success',
+            errorMessage: record.ErrorMessage?.trim()
+        }));
+        return new DatapackResultCollection(records);
+    }
+
+    /**
+     * Get the total number of records in this collection
+     */
+    public get length() : number {
+        return this.results.length;
+    }
+
+    /**
+     * Are there any failed records in this collection?
+     */
+    public get hasErrors() : boolean {
+        return this.results.some(result => !result.success);
+    }
+
+    [Symbol.iterator](): Iterator<DatapackResult> {
+        return this.results[Symbol.iterator]();
+    }
+
+    /**
+     * Get all failed records and their error from this collection
+     */
+    public getErrors() : DatapackResult[] {
+        return this.results.filter(result => !result.success);
+    }
+
+    /**
+     * Get a single result record for the specified datapack key
+     * @param key Datapack key
+     */
+    public getResult(key : string) : DatapackResult {
+        return this.results.find(result => result.key.toLowerCase() == key.toLowerCase());
+    }
+
+    /**
+     * Push additional records to this collection.
+     * @param results The records to add.
+     */
+    public add(...results: DatapackResult[]) : this {
+        this.results.push(...results);
+        return this;
+    }
+
+    /**
+     * Merge/concat this collection with another collection, changes this collection and returns the merged result.
+     * @param results The collection to merge
+     */
+    public join(results: Iterable<DatapackResult>) : DatapackResultCollection {
+        this.results.push(...results);
+        return this;
+    }
+
+    /** Clear all results fom this collection */
+    public clear() {
+        this.results = [];
+    }
+}
+
+type ExportManifest = {
+    [type: string] : {
+        [id: string] : {
+            Id: string,
+            VlocityDataPackType: string,
+            VlocityRecordSObjectType: string
+        }
+    }
+};
+
+type ExportQuery = {
+    VlocityDataPackType: string,
+    query: string
+};
+
+type CustomJobYaml = {
+    customQueries: [{VlocityDataPackType: string, query: string}],
+    OverrideSettings: any,
+    preStepApex: any,
+    postStepApex: any,
+    postJobApex: any,
+    [key: string] : any
+};
+
+export interface VlocityMatchingKey {
+    sobjectType: string;
+    fields: Array<string>;
+    returnField: string;
+}
+
+export default class VlocityDatapackService implements vscode.Disposable {
+
+    private vlocityBuildTools: vlocity;
+    private _matchingKeyService: VlocityMatchingKeyService;
+    private _customSettings: any; // load from yaml when needed
+    private _customSettingsWatcher: vscode.FileSystemWatcher;
+
+    constructor(
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly config: VlocodeConfiguration,
+        private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider)
+        ) {
+    }
+
+    public dispose(){
+        if (this._customSettingsWatcher) {
+            this._customSettingsWatcher.dispose();
+            this._customSettingsWatcher = null;
+        }
+    }
+
+    public async initialize() : Promise<VlocityDatapackService> {
+        this.vlocityBuildTools = await this.createVlocityInstance();
+        return this;
+    }
+
+    private async createVlocityInstance() : Promise<vlocity> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const vlocityInstanceParams = {
+            accessToken: connection.accessToken,
+            instanceUrl: connection.instanceUrl,
+        };
+        const buildTools = new vlocity(<VlocodeConfiguration>Object.assign({}, this.config, vlocityInstanceParams));
+        buildTools.jsForceConnection = connection;
+        buildTools.utilityservice.login = async () => {};
+        buildTools.utilityservice.sfdxLogin = async () => {};
+        buildTools.datapacksutils.printJobStatus = () => {};
+        buildTools.datapacksutils.saveCurrentJobInfo = () => {};
+        buildTools.datapacksexportbuildfile.saveFile = () => {};
+        await buildTools.utilityservice.checkLogin();
+
+        // Making sure that any override definitions so that offline operations (expand) also uses the correct
+        // custom definitions when defined -- do this after the login check to ensure we have namespaces set correctly
+        const customJobOptions = await this.getCustomJobOptions();
+        if (customJobOptions && customJobOptions.OverrideSettings) {
+            buildTools.datapacksutils.overrideExpandedDefinition(customJobOptions.OverrideSettings);
+        }
+
+        return buildTools;
+    }
+
+    public get vlocityNamespace() : string {
+        return this.vlocityBuildTools.namespace;
+    }
+
+    public get queryDefinitions() {
+        return exportQueryDefinitions;
+    }
+
+    private get logger() {
+        return LogManager.get(VlocityDatapackService);
+    }
+
+    public async getQueryDefinitions() : Promise<QueryDefinitions> {
+        const customJobOptions = await this.getCustomJobOptions();
+        if (customJobOptions && customJobOptions.customQueries) {
+            const customQueries = customJobOptions.customQueries.reduce((map, val) =>
+                Object.assign(map, {[val.VlocityDataPackType]: val}) , {});
+            return Object.assign(customQueries, exportQueryDefinitions);
+        }
+        return exportQueryDefinitions;
+    }
+
+    public async getJsForceConnection() : Promise<jsforce.Connection> {
+        return this.connectionProvider.getJsForceConnection();
+    }
+
+    public isGuaranteedParentKey(key: string) {
+        return key.startsWith('RecordType/') || this.vlocityBuildTools.datapacksutils.isGuaranteedParentKey(key);
+    }
+
+    public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
+        if (!this._matchingKeyService) {
+            this._matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this, this.salesforceService);
+        }
+        return this._matchingKeyService;
+    }
+
+    public async isVlocityPackageInstalled() : Promise<boolean> {
+        return (await this.salesforceService.isPackageInstalled(/^vlocity/i)) !== undefined;
+    }
+
+    private resolvedProjectPath() {
+        return path.resolve(this.config.projectPath || '.');
+    }
+
+    /**
+     * @deprecated Use `container.get(DatapackLoader).loadFrom(...)` instead
+     */
+    public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
+        return new DatapackLoader().loadFrom(file.fsPath);
+    }
+
+    /**
+     * @deprecated Use `container.get(DatapackLoader).loadAll(...)` instead
+     */
+    public async loadAllDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
+        return new DatapackLoader().loadAll(files.map(file => file.fsPath));
+    }
+
+    /**
+     * Expands a datapack into multiple files according to the specified expand definitions
+     * @param datapack The datapack to save and expand
+     * @param targetPath The path to expand to
+     */
+    public async expandDatapack(datapack: VlocityDatapack, targetPath: string) : Promise<void> {
+        const expander = new DataPacksExpand(this.vlocityBuildTools);
+        expander.targetPath = targetPath;
+        const jobOptions = Object.assign({}, await this.getCustomJobOptions(), this.config);
+        const parentName = expander.getDataPackFolder(datapack.datapackType, datapack.VlocityRecordSObjectType, datapack);
+        this.logger.verbose(`Expanding datapack ${parentName} (${datapack.datapackType})`);
+        await expander.processDataPackData(datapack.datapackType, parentName, undefined, datapack.data, false, jobOptions);
+    }
+
+    public getDatapackReferenceKey(datapack : VlocityDatapack) {
+        return datapack.datapackType + '/' +
+               this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack);
+    }
+
+    public async deploy(datapackHeaders: string[], token?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
+        const headersByProject = groupBy(datapackHeaders, header => getExportProjectFolder(header));
+        const projectPath = this.resolvedProjectPath();
+
+        const results = await mapAsync(Object.keys(headersByProject), projectFolder => {
+            const deployManifest = headersByProject[projectFolder].map(header => getDatapackManifestKey(header).key);
+            return this.runCommand('Deploy', {
+                manifest: deployManifest,
+                projectPath: projectPath,
+                expansionPath: path.relative(projectPath, projectFolder),
+                activate: this.config.autoActivate,
+                continueAfterError: true, // avoids problems with interrupted deploys when a single export fails
+                delete: true,
+                compileOnBuild: this.config.compileOnBuild
+            }, token);
+        });
+
+        return results.reduce((results, result) => results.join(result));
+    }
+
+    /**
+     * Gets the first matching Salesforce ID for the specified Vlocity object.
+     * @param entries Objects to query for Salesforce IDs
+     */
+    public async getSalesforceIds(entries: ObjectEntry[]) : Promise<string[]>  {
+        const exportQueries = await this.createExportQueries(entries);
+        const salesforceConn = await this.getJsForceConnection();
+        // query all objects even if they have an Id already; it is up to the caller to filter out objects with an Id if they
+        // do not want to query them
+        const results = await Promise.all(exportQueries.map(query => salesforceConn.query<SObjectRecord>(query.query)));
+        return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
+    }
+
+    public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
+        const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
+        const exportManifest = this.createExportManifest(<ObjectEntryWithId[]>entries.filter(e => !!e.id));
+        const projectPath = this.resolvedProjectPath();
+        return this.runCommand('Export',{
+            queries: exportQueries,
+            projectPath: projectPath,
+            expansionPath: path.relative(projectPath, exportFolder),
+            ignoreAllErrors: true, // avoid the export to stop when there is a dependency error -- for example missing template
+            fullManifest: exportManifest,
+            skipQueries: exportQueries.length == 0,
+            maxDepth: maxDepth,
+            initialized: true // avoid project initialization when exporting
+        }, cancellationToken);
+    }
+
+    private createExportManifest(objects: ObjectEntryWithId[]) : ExportManifest  {
+        return objects.reduce((manifest, entry) => {
+            manifest[entry.datapackType] = manifest[entry.datapackType] || {};
+            manifest[entry.datapackType][entry.id] = {
+                Id: entry.id,
+                VlocityDataPackType: entry.datapackType,
+                VlocityRecordSObjectType: entry.sobjectType
+            };
+            return manifest;
+        }, {});
+    }
+
+    private async createExportQueries(objects: ObjectEntry[]) : Promise<Array<ExportQuery>> {
+        return Promise.all(objects.map(async entry => {
+            return {
+                VlocityDataPackType: entry.datapackType,
+                query: await (await this.getMatchingKeyService()).getQuery(entry.datapackType, entry)
+            };
+        }));
+    }
+
+    private createDeployManifest(objects: ManifestEntry[]) : any {
+        return objects.reduce((mf, item) => {
+            mf[item.datapackType] = mf[item.datapackType] || [];
+            mf[item.datapackType].push(item.key);
+            return mf;
+        }, {});
+    }
+
+    public async runYamlJob(command: vlocity.actionType, yamlFile: string, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
+        const jobInfo : vlocity.JobInfo = yaml.safeLoad(await getDocumentBodyAsString(yamlFile));
+        delete jobInfo.projectPath;
+        jobInfo.initialized = true;
+        return this.runCommand(command, jobInfo, cancellationToken);
+    }
+
+    public async runCommand(command: vlocity.actionType, jobInfo : vlocity.JobInfo, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection> {
+        const jobResult = await this.datapacksJobAsync(command, jobInfo, cancellationToken);
+        return DatapackResultCollection.fromJobResult(jobResult);
+    }
+
+    private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo, cancellationToken?: vscode.CancellationToken) : Promise<vlocity.VlocityJobResult> {
+        // collect and create job optipns
+        const localOptions = { projectPath: this.resolvedProjectPath() };
+        const customOptions = await this.getCustomJobOptions();
+        const jobOptions = Object.assign({}, customOptions, this.config, localOptions, jobInfo);
+
+        if (cancellationToken) {
+            jobOptions.cancellationToken = cancellationToken;
+        }
+
+        // Create dedicated Vlocity instance
+        const vlocityInstance = await this.createVlocityInstance();
+        vlocityInstance.datapacksexportbuildfile.currentExportFileData = {};
+
+        // run the job
+        const result = await vlocityInstance.datapacksjob.runJob(command, jobOptions);
+        return Object.assign(result, { currentStatus: jobOptions.currentStatus });
+    }
+
+    public async getCustomJobOptions() : Promise<CustomJobYaml> {
+        if (!this.config.customJobOptionsYaml) {
+            // when no YAML file is specified skip this step
+            return;
+        }
+
+        if (!this._customSettings) {
+            // parse any custom job options from the custom yaml
+            const yamlFullPath = await this.getWorkspacePath(this.config.customJobOptionsYaml);           
+            if (!yamlFullPath) {
+                this.logger.warn(`The specified custom YAML file '${this.config.customJobOptionsYaml}' does not exists`);
+                return;
+            }
+
+            // watch for changes or deletes of the custom YAML
+            if (!this._customSettingsWatcher) {
+                this._customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
+                this._customSettingsWatcher.onDidChange(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this._customSettingsWatcher.onDidCreate(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this._customSettingsWatcher.onDidDelete(_e => this._customSettings = null);
+            }
+
+            // load settings
+            this._customSettings = await this.loadCustomSettingsFrom(yamlFullPath);
+        }
+
+        return this._customSettings;
+    }
+
+    private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml> {
+        try {
+            // parse and watch Custom YAML
+            const customSettings = yaml.safeLoad((await fs.readFile(yamlFile)).toString());
+            this.logger.info(`Loaded custom settings from YAML file: ${yamlFile}`);
+            return  {
+                OverrideSettings: customSettings.OverrideSettings,
+                preStepApex: customSettings.preStepApex,
+                postStepApex: customSettings.postStepApex,
+                postJobApex: customSettings.postJobApex,
+                customQueries: customSettings.queries
+            };
+        } catch(err) {
+            this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${err.message || err}`);
+        }
+    }
+
+    /**
+     * Get the first existing path for the specified file 
+     * @param file Path to resolve relative to the current loaded workspace folders
+     */
+    private async getWorkspacePath(file: string) : Promise<string> | undefined {
+        const pathCandidates = [...vscode.workspace.workspaceFolders.map(root => path.join(root.uri.fsPath, file)), file];
+        for (const pathCandidate of pathCandidates) {
+            if (fs.existsSync(pathCandidate)) {
+                return pathCandidate;
+            }
+        }
+    }
+}

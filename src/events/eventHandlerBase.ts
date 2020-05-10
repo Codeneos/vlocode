@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
-import ServiceContainer from 'serviceContainer';
-import VlocodeService from 'services/vlocodeService';
-import { LogManager, Logger } from 'logging';
+import VlocodeService from 'lib/vlocodeService';
+import { LogManager, Logger } from 'lib/logging';
 
 export abstract class EventHandlerBase<T> implements vscode.Disposable {
     private eventListner : vscode.Disposable;
 
-    constructor(event: vscode.Event<T>, protected readonly container: ServiceContainer) {
+    constructor(event: vscode.Event<T>, protected vloService: VlocodeService) {
         this.eventListner = event(this.handleEventAsync, this);
     }
 
@@ -15,10 +14,6 @@ export abstract class EventHandlerBase<T> implements vscode.Disposable {
             this.eventListner.dispose();
             this.eventListner = null;
         }
-    }
-
-    protected get vloService() : VlocodeService {
-        return this.container.get(VlocodeService);
     }
 
     protected get logger() : Logger {
