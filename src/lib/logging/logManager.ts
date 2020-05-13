@@ -11,7 +11,7 @@ export default class LogManager {
     private readonly activeLoggers : LogManagerMap<any> = {};        
     private readonly detailedLogLevels: LogManagerMap<LogLevel> = {};
     private readonly logFilters: LogManagerMap<LogFilter> = {};
-    private readonly logWriters: LogManagerMap<LogWriter[]> = {}
+    private readonly logWriters: LogManagerMap<LogWriter[]> = {};
     private readonly logWriterChain: LogWriter[] = [];
 
     constructor(private globalLogLevel: LogLevel) {

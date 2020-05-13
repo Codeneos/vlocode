@@ -5,7 +5,7 @@ interface LexerScanner {
     scan(): string;
     seek(position: number): void;
     psoition(): number;
-};
+}
 
 interface LexerRule {
     first(): string;
@@ -28,7 +28,7 @@ interface GrammarDefinition {
 class ApexInlineSoqlRule implements LexerRule {
     public first() { 
         return '['; 
-    };
+    }
 
     public match (scanner : LexerScanner) {
         if (scanner.peek() !== '[') {
@@ -61,7 +61,7 @@ class ApexInlineSoqlRule implements LexerRule {
             return result.trim(); 
         }
         return null;
-    };
+    }
 }
 
 /**

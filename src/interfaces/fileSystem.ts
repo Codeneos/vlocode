@@ -19,4 +19,4 @@ export type FileSystem = {
      * @param path Directory
      */
     readdir(path: string): Promise<string[]>;
-}
+};
