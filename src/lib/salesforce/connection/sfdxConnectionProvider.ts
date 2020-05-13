@@ -4,45 +4,52 @@ import { default as sfdxUtil, FullSalesforceOrgDetails } from 'lib/util/sfdx';
 import JsForceConnectionProvider from './jsForceConnectionProvider';
 import { LogManager, Logger, LogLevel } from 'lib/logging';
 
+interface PooledJsforceConnection extends jsforce.Connection {
+    _logger?: any;
+    _lastTested: number;
+}
 
 export default class SfdxConnectionProvider implements JsForceConnectionProvider {
 
-    private connection: jsforce.Connection & { _logger?: any };
-    private lastConnectionTest : number = 0;
+    private connection: PooledJsforceConnection;
     private readonly testInterval : number = 60 * 1000;
 
-    constructor(
-        private readonly username: string,
-        private readonly maxConnectionAttempts = 4) {
+    constructor(private readonly username: string) {
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
-        for(let i = 0; i < this.maxConnectionAttempts; i++) {
-            if (this.connection) {    
-                if (this.lastConnectionTest + this.testInterval > Date.now()) {
-                    return this.connection;
-                }
-                // test
-                try {
-                    this.logger.verbose('Obtained SFDX org details; testing connection...');
-                    const accountQuery = await this.connection.query<{Id: string}>(`SELECT Id FROM Account LIMIT 1`);
-                    this.logger.verbose(`Success, you are connected! (${accountQuery.records[0].Id})`);   
-                    this.lastConnectionTest = Date.now();
-                    return this.connection;
-                } catch(e) {
-                    this.logger.error(`Unable to obtain connection (try: ${i+1}): ${e}`);
-                    this.connection = null;
-                    this.lastConnectionTest  = null;
-                }  
+       if (this.connection) {    
+            if (this.connection._lastTested + this.testInterval > Date.now()) {
+                return this.connection;
             }
-
-            // create connection
-            this.connection = await sfdxUtil.getJsForceConnection(this.username);
-            this.connection._logger = this.createJsForceLogger(LogManager.get('jsforce.Connection'));
-            this.connection.tooling._logger = this.createJsForceLogger(LogManager.get('jsforce.Tooling'));
-            return this.connection;
+            if (await this.testConnection(this.connection)) {
+                return this.connection;
+            }
         }
-        throw Error(`Unable to obtain salesforce connection after ${this.maxConnectionAttempts} tries`);
+
+        // create new connection
+        this.connection = await this.createConnection();
+        return this.connection;
+    }
+
+    private async createConnection() {
+        const connection = await sfdxUtil.getJsForceConnection(this.username) as PooledJsforceConnection;
+        connection._logger = this.createJsForceLogger(LogManager.get('jsforce.Connection'));
+        connection.tooling._logger = this.createJsForceLogger(LogManager.get('jsforce.Tooling'));
+        connection._lastTested = Date.now();
+        return this.connection;
+    }
+
+    private async testConnection(connection: jsforce.Connection) {
+        try {
+            this.logger.verbose('Testing stored connection...');
+            const userQuery = await connection.query<{Id: string}>(`SELECT Id FROM User LIMIT 1`);
+            this.logger.verbose(`Success, you are connected! (${userQuery.records[0].Id})`); 
+            return true;
+        } catch(e) {
+            this.logger.error(`Connection test failed with error: ${e}`);
+        }
+        return false;
     }
 
     protected createJsForceLogger(regularLogger : Logger) : { log(level: number, ...args : any[]): void } {

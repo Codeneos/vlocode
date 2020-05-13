@@ -14,7 +14,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
         // Depth
         const dependencyExportDepth = await this.showDependencySelection();
         if (dependencyExportDepth === undefined) {
-            this.logger.error(`Export cancelled; no dependency depth selected.`)
+            this.logger.error(`Export cancelled; no dependency depth selected.`);
             return; // selection cancelled;
         }
 
