@@ -19,7 +19,8 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
        if (this.connection) {    
-            if (this.connection._lastTested + this.testInterval > Date.now()) {
+            if (Date.now() < this.connection._lastTested + this.testInterval) {
+                this.connection._lastTested = Date.now();
                 return this.connection;
             }
             if (await this.testConnection(this.connection)) {
@@ -37,13 +38,14 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
         connection._logger = this.createJsForceLogger(LogManager.get('jsforce.Connection'));
         connection.tooling._logger = this.createJsForceLogger(LogManager.get('jsforce.Tooling'));
         connection._lastTested = Date.now();
-        return this.connection;
+        return connection;
     }
 
     private async testConnection(connection: jsforce.Connection) {
         try {
             this.logger.verbose('Testing stored connection...');
             const userQuery = await connection.query<{Id: string}>(`SELECT Id FROM User LIMIT 1`);
+            this.connection._lastTested = Date.now();
             this.logger.verbose(`Success, you are connected! (${userQuery.records[0].Id})`); 
             return true;
         } catch(e) {

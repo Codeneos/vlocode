@@ -20,7 +20,7 @@ export async function getDatapackHeaders(paths: string[] | string, recursive: bo
 
     const results = await mapAsyncParallel(folderSet, async pathStr => {
         const files = (await fs.readdir(pathStr)).map(file => path.join(pathStr, file));
-        let datapackHeaders = files.filter(name => /DataPack.json$/i.test(name));
+        const datapackHeaders = files.filter(name => /DataPack.json$/i.test(name));
         if (recursive) {
             const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
             datapackHeaders.push(...(await getDatapackHeaders(folders, recursive)));
@@ -35,7 +35,7 @@ export async function getDatapackHeaders(paths: string[] | string, recursive: bo
  * Get all datapack header file in the current workspace folders.
  */
 export async function getDatapackHeadersInWorkspace() : Promise<vscode.Uri[]> {
-    return await vscode.workspace.findFiles('**/*_DataPack.json');
+    return vscode.workspace.findFiles('**/*_DataPack.json');
 }
 
 /**

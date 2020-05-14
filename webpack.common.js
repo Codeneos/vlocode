@@ -1,7 +1,6 @@
 const path = require('path');
 const merge = require('webpack-merge').smart;
 const packageJson = require("./package.json");
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const glob = require('glob');
 const CopyPlugin = require('copy-webpack-plugin');
 
@@ -47,14 +46,6 @@ const common = env => ({
                 use: [
                     { loader: 'ts-loader', options: { transpileOnly: env.transpileOnly } }
                 ],
-            },
-            {
-                test: /\.html$/,
-                exclude: /test.html/i,
-                use: [
-                    { loader: 'cache-loader' },
-                    { loader: 'html-loader', options: { exportAsDefault: true } }
-                ]
             },
             {
                 test: /\.yaml$/,

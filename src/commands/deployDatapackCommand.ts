@@ -6,6 +6,8 @@ import { DatapackCommand } from 'commands/datapackCommand';
 import { forEachAsyncParallel } from 'lib/util/collection';
 import * as path from 'path';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
+import DatapackDeployService from 'lib/vlocity/datapackDeployService';
+import { DatapackLookupService } from 'lib/vlocity/datapackLookupService';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -72,9 +74,9 @@ export default class DeployDatapackCommand extends DatapackCommand {
             }
 
             // Reading datapack takes a long time, only read datapacks if it is a reasonable count
-            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;
-            if (datapackHeaders.length < 4) {
-                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;            
+            if (datapackHeaders.length < 4) {       
+                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);         
                 const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
                 progressText = `Deploying: ${datapackNames.join(', ')} ...`;
             }
@@ -82,11 +84,16 @@ export default class DeployDatapackCommand extends DatapackCommand {
             const result = await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
+                
+                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+                const deployer = new DatapackDeployService(this.salesforce, await this.datapackService.getMatchingKeyService());
+                const deployment = await deployer.deploy(datapacks);
+                await deployment.start();
+                //return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
             });
 
             // report UI progress back
-            this.showResultMessage(result);
+            //this.showResultMessage(result);
 
         } catch (err) {
             this.logger.error(err);

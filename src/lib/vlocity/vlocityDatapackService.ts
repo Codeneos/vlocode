@@ -37,6 +37,8 @@ type ObjectEntryWithId = ObjectEntry & { id: string; };
 
 type QueryDefinitions = typeof import('exportQueryDefinitions.yaml');
 
+type DatapacksExpandDefinitions = typeof import('datapacksexpanddefinition.yaml');
+
 export type DatapackResult = { key: string, label: string, success: boolean, errorMessage?: string };
 
 export class DatapackResultCollection implements Iterable<DatapackResult> {
@@ -145,24 +147,92 @@ export interface VlocityMatchingKey {
     returnField: string;
 }
 
+interface ExpandDefinitionProvider {
+    /**
+     * Get the expand definition for a datapack
+     * @param key Setting name to get the definition for
+     * @param target Target object
+     */
+    getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object;
+    
+    getSObjectExpandDefinition(key: string, target: { datapackType: string, sobjectType: string }) : boolean | string | Array<string> | object;
+}
+
+class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {    
+    constructor(private readonly vlocityBuildTools: vlocity) {        
+    }
+
+    /**
+     * Get the expand definition for a datapack
+     * @param key Setting name to get the definition for
+     * @param target Target object
+     */
+    public getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object {
+        return this.vlocityBuildTools.datapacksutils.getExpandedDefinition(target.datapackType, null, key);
+    }
+
+    public getSObjectExpandDefinition(key: string, target: { datapackType: string, sobjectType: string }) : boolean | string | Array<string> | object {
+        return this.vlocityBuildTools.datapacksutils.getExpandedDefinition(target.datapackType, target.sobjectType, key);
+    }
+}
+
+class LocalExpandDefinitionProvider implements ExpandDefinitionProvider {
+    private getExpandDefinitions() : DatapacksExpandDefinitions {
+        return null;
+    }
+
+    /**
+     * Get the expand definition for a datapack
+     * @param key Setting name to get the definition for
+     * @param target Target object
+     */
+    public getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object {
+        const expandDef = this.getExpandDefinitions();
+        if (expandDef.DataPacks[target.datapackType]?.[key]) {
+            return expandDef.DataPacks[target.datapackType][key];
+        }
+        return expandDef.DataPacksDefault[key];
+    }
+
+    public getSObjectExpandDefinition(key: string, target: { datapackType: string, sobjectType: string }) : boolean | string | Array<string> | object {
+        const expandDef = this.getExpandDefinitions();
+        const expandOrder = [
+            expandDef.DataPacks[target.datapackType]?.[target.sobjectType],
+            expandDef.SObjects[target.sobjectType],
+            expandDef.SObjectsDefault
+        ];
+
+        for (const obj of expandOrder) {
+            if (obj?.[key]) {
+                return obj[key];
+            }
+        }
+
+        return null;
+    }
+}
+
 export default class VlocityDatapackService implements vscode.Disposable {
 
     private vlocityBuildTools: vlocity;
-    private _matchingKeyService: VlocityMatchingKeyService;
-    private _customSettings: any; // load from yaml when needed
-    private _customSettingsWatcher: vscode.FileSystemWatcher;
+
+    #expandProvider: ExpandDefinitionProvider;
+    #matchingKeyService: VlocityMatchingKeyService;
+    #customSettings: any; // load from yaml when needed
+    #customSettingsWatcher: vscode.FileSystemWatcher;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly config: VlocodeConfiguration,
-        private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider)
+        private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider),
+        private readonly loader: DatapackLoader = new DatapackLoader()
         ) {
     }
 
     public dispose(){
-        if (this._customSettingsWatcher) {
-            this._customSettingsWatcher.dispose();
-            this._customSettingsWatcher = null;
+        if (this.#customSettingsWatcher) {
+            this.#customSettingsWatcher.dispose();
+            this.#customSettingsWatcher = null;
         }
     }
 
@@ -193,6 +263,9 @@ export default class VlocityDatapackService implements vscode.Disposable {
             buildTools.datapacksutils.overrideExpandedDefinition(customJobOptions.OverrideSettings);
         }
 
+        // Init expand provider
+        this.#expandProvider = new BuildToolsExpandDefinitionProvider(this.vlocityBuildTools);
+
         return buildTools;
     }
 
@@ -218,6 +291,41 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return exportQueryDefinitions;
     }
 
+    /**
+     * Expanded value for a specific datapack setting
+     * @param key Setting name
+     * @param datapack Datapack
+     */
+    public getExpandedValue(key: string, datapack: VlocityDatapack) : string {
+        let definition = this.#expandProvider.getSObjectExpandDefinition(key, datapack);
+        //let definition = this.vlocityBuildTools.datapacksutils.getExpandedDefinition(key, datapack.datapackType, datapack.sobjectType);
+        if (typeof definition === 'string') {
+            definition = [ definition ];
+        }
+        if (definition && Array.isArray(definition)) {       
+            const resolveValue = (field: string) => {
+
+                // Statics; remove the prefix and returns string as is
+                if (field.startsWith('_')) {
+                    return field.substr(0);
+                }
+
+                // References; use the reference value 
+                if (typeof datapack[field] === 'object') {
+                    if (datapack[field].VlocityDataPackType?.endsWith('MatchingKeyObject')) {
+                        return datapack[field].VlocityMatchingRecordSourceKey || 
+                               datapack[field].VlocityLookupRecordSourceKey;
+                    }
+                }
+
+                return datapack[field];
+            };
+
+            return definition.map(resolveValue).filter(v => !!v).join('_');
+        } 
+        return null;
+    }
+
     public async getJsForceConnection() : Promise<jsforce.Connection> {
         return this.connectionProvider.getJsForceConnection();
     }
@@ -227,10 +335,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        if (!this._matchingKeyService) {
-            this._matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this, this.salesforceService);
+        if (!this.#matchingKeyService) {
+            this.#matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this.salesforceService);
         }
-        return this._matchingKeyService;
+        return this.#matchingKeyService;
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
@@ -242,17 +350,17 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     /**
-     * @deprecated Use `container.get(DatapackLoader).loadFrom(...)` instead
+     * Loads a datapack from the specified file.
      */
     public async loadDatapack(file: vscode.Uri) : Promise<VlocityDatapack> {
-        return new DatapackLoader().loadFrom(file.fsPath);
+        return this.loader.loadFrom(file.fsPath);
     }
 
     /**
-     * @deprecated Use `container.get(DatapackLoader).loadAll(...)` instead
+     * Loads all datapacks from the specified folder
      */
     public async loadAllDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
-        return new DatapackLoader().loadAll(files.map(file => file.fsPath));
+        return this.loader.loadAll(files.map(file => file.fsPath));
     }
 
     /**
@@ -300,11 +408,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
      */
     public async getSalesforceIds(entries: ObjectEntry[]) : Promise<string[]>  {
         const exportQueries = await this.createExportQueries(entries);
-        const salesforceConn = await this.getJsForceConnection();
         // query all objects even if they have an Id already; it is up to the caller to filter out objects with an Id if they
         // do not want to query them
-        const results = await Promise.all(exportQueries.map(query => salesforceConn.query<SObjectRecord>(query.query)));
-        return results.map(result => result.totalSize > 0 ? result.records[0].Id : null);
+        const results = await Promise.all(exportQueries.map(query => this.salesforceService.query<SObjectRecord>(query.query)));
+        return results.map(result => result[0]?.Id);
     }
 
     public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
@@ -389,7 +496,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             return;
         }
 
-        if (!this._customSettings) {
+        if (!this.#customSettings) {
             // parse any custom job options from the custom yaml
             const yamlFullPath = await this.getWorkspacePath(this.config.customJobOptionsYaml);           
             if (!yamlFullPath) {
@@ -398,18 +505,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
             }
 
             // watch for changes or deletes of the custom YAML
-            if (!this._customSettingsWatcher) {
-                this._customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
-                this._customSettingsWatcher.onDidChange(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
-                this._customSettingsWatcher.onDidCreate(e => this._customSettings = this.loadCustomSettingsFrom(e.fsPath));
-                this._customSettingsWatcher.onDidDelete(_e => this._customSettings = null);
+            if (!this.#customSettingsWatcher) {
+                this.#customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
+                this.#customSettingsWatcher.onDidChange(e => this.#customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this.#customSettingsWatcher.onDidCreate(e => this.#customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this.#customSettingsWatcher.onDidDelete(_e => this.#customSettings = null);
             }
 
             // load settings
-            this._customSettings = await this.loadCustomSettingsFrom(yamlFullPath);
+            this.#customSettings = await this.loadCustomSettingsFrom(yamlFullPath);
         }
 
-        return this._customSettings;
+        return this.#customSettings;
     }
 
     private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml> {

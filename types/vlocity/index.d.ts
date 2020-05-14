@@ -97,6 +97,7 @@ declare module 'vlocity' {
             loadCurrentJobInfo(jobInfon: JobInfo) : void;
             printJobStatus(jobInfo: JobInfo) : void;
             overrideExpandedDefinition(overrides : any) : void;
+            getExpandedDefinition(datapack: string, sobject: string, key: string) : any;
             isGuaranteedParentKey(parentKey : any) : boolean;
             loadApex(projectPath: string, filePath: string) : string;
             runApex(projectPath: string, filePaths: string, currentContextData: any) : Promise<void>

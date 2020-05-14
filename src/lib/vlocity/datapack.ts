@@ -1,7 +1,8 @@
 import { ManifestEntry, ObjectEntry } from "lib/vlocity/vlocityDatapackService";
 import { v4 as generateGuid } from "uuid";
 import { LogManager } from "../logging";
-import { createRecordProxy } from "lib/util/salesforce";
+import { createRecordProxy, normalizeSalesforceName, removeNamespacePrefix } from "lib/util/salesforce";
+import { transformPropertyProxy, PropertyTransformHandler } from 'lib/util/object';
 
 export type VlocityDatapackReference = { 
     [key: string]: string;
@@ -27,13 +28,15 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public get sobjectType(): string { return this.data['VlocityRecordSObjectType']; }
     public get sourceKey(): string { return this.data['VlocityRecordSourceKey']; }
     public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
+    public readonly data: object;    
+    #dataProxy: object;
     
     constructor(
         public readonly headerFile: string, 
         public readonly datapackType: string, 
         public readonly key: string, 
         public readonly projectFolder: string,
-        public readonly data?: any) {
+        data?: any) {
         if (Buffer.isBuffer(data)) {
             data = data.toString();
         }        
@@ -60,17 +63,15 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public rename(name : string) {
         const currentName = this.name;
 
-        if (this.sourceKey.endsWith(this.name)) {
-            this.updateSourceKey(this.sourceKey.replace(this.name, name));
+        if (this.sourceKey.endsWith(currentName)) {
+            this.updateSourceKey(this.sourceKey.replace(currentName, name));
         }
 
         for (const [property, value, owner] of this.getProperties()) {
             if (typeof value === 'string') {
-                if (property == 'Name' && value.includes(currentName)) {
+                if (value.endsWith(currentName) || value.startsWith(currentName)) {
                     owner[property] = value.replace(currentName, name);
-                } else if (value == currentName) {
-                    owner[property] = name;
-                }                
+                }             
             }
         }
     }
@@ -115,30 +116,6 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
 
         return object;
     }
-
-    // public getParentRecordKeys() : string[] {
-    //     const requiredKeys = this.getPropertiesMatching<string>(this.data, key => /^Vlocity(Matching|Lookup)RecordSourceKey$/i.test(key));
-    //     const providedKeys = this.getProvidedRecordKeys();  
-    //     return [...new Set(requiredKeys.filter(k => !providedKeys.includes(k)))];
-    // }
-
-    // public getProvidedRecordKeys() : string[] {
-    //     const providedKeys = this.getPropertiesMatching<string>(this.data, key => key == 'VlocityRecordSourceKey');
-    //     return [...new Set(providedKeys)];
-    // }
-
-    // private getPropertiesMatching<T>(record : any, matcher: (key : string) => boolean, keys : T[] = []) : T[] {
-    //     return Object.keys(record || {}).reduce((keys, key) => {
-    //         if (matcher(key)) {
-    //             keys.push(record[key]);
-    //         } else if (Array.isArray(record[key])) {
-    //             record[key].forEach(item => this.getPropertiesMatching(item, matcher, keys));
-    //         } else if (typeof record[key] == 'object') {
-    //             this.getPropertiesMatching(record[key], matcher, keys);
-    //         } 
-    //         return keys;
-    //     }, keys);
-    // }
 
     /**
      * Iterate over the source keys provided by this datapack
@@ -191,7 +168,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
      * Recursively iterate over the properties of this datapack and it's child objects
      * @param object Object to iterate over
      */
-    private* getProperties(object : Object = this.data) : Generator<[ string, string, any ]> {
+    private* getProperties(object: object = this.data) : Generator<[ string, string, any ]> {
         for (const [key, value] of Object.entries(object)) {            
             if (Array.isArray(value)) {
                 for (const arrayValue of value) {
@@ -236,13 +213,25 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         });
     }
 
+    private getDataProxy() {
+        if (!this.#dataProxy) {
+            const nameTransformer = (name: string) => removeNamespacePrefix(name).replace('_', '').toLowerCase();
+            const getPropertyKey = (target: object, name: string | number | symbol) => {
+                const normalizedName = nameTransformer(name.toString());
+                return Object.keys(target).find(key => nameTransformer(key) == normalizedName);
+            };
+            this.#dataProxy = new Proxy(this.data, new PropertyTransformHandler(getPropertyKey));
+        }
+        return this.#dataProxy;        
+    }
+
     private getProperty(name: string | number | symbol) : any {
         if (name === undefined || name === null){
             return undefined;
         } else if (name in this && (<any>this)[name] !== undefined){
             return (<any>this)[name];
         } 
-        return createRecordProxy(this.data)[name];
+        return this.getDataProxy()[name];
     }
 
     private setProperty(name: string | number | symbol, value : any) : boolean {
@@ -251,7 +240,6 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         } else if (name in this){
             (<any>this)[name] = value;
         } 
-        createRecordProxy(this.data, true)[name] = value;
-        return true;
+        return this.getDataProxy()[name] = value;
     }
 }
