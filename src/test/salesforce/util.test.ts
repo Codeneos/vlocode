@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { spy } from 'sinon';
 import 'mocha';
 
-import { removeNamespacePrefix, norm } from 'lib/util/salesforce';
+import { removeNamespacePrefix } from 'lib/util/salesforce';
 
 declare var VlocityUtils: any;
 describe('salesforceUtil', () => {   

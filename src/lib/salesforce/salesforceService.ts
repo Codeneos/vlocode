@@ -11,6 +11,8 @@ import { LogManager, Logger } from 'lib/logging';
 import SalesforceSchemaService from './salesforceSchemaService';
 import SalesforceDeployService from './salesforceDeployService';
 import QueryService from './queryService';
+import SalesforceLookupService from './salesforceLookupService';
+import { PropertyAccessor } from 'lib/utilityTypes';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -51,11 +53,7 @@ export type SoapDebuggingHeader = {
     All?: SoapDebuggingLevel
 };
 
-
-export type PropertyAccessor = string | number | symbol;
-
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
-
 
 /**
  * Simple Salesforce SOAP request formatter
@@ -116,11 +114,12 @@ interface SoapResponse {
 
 export default class SalesforceService implements JsForceConnectionProvider {  
 
-    private readonly vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
+    #vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
     
     public readonly schema = new SalesforceSchemaService(this.connectionProvider);
     public readonly deploy = new SalesforceDeployService(this);
-    
+    public readonly lookupService = new SalesforceLookupService(this.connectionProvider, this.schema, this.queryService);
+
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider, 
         private readonly queryService = new QueryService(connectionProvider),
@@ -192,9 +191,23 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * Returns a list of records. All records are mapped to record proxy object 
      * @param query SOQL Query to execute
      */
-    public async query<T extends Partial<SObjectRecord>>(query: string) : Promise<T[]> {
+    public async query<T extends Partial<SObjectRecord>>(query: string, useCache = true) : Promise<T[]> {
         return this.queryService.query(
-            query.replace(constants.NAMESPACE_PLACEHOLDER, await this.vlocityNamespace)
+            query.replace(constants.NAMESPACE_PLACEHOLDER, await this.#vlocityNamespace), useCache
+        );
+    }
+
+    /**
+     * Query multiple records based on the where condition. The filter condition can either be a string or a complex filter object.
+     * @param type SObject type
+     * @param filter Object filter or Where conditional string 
+     * @param lookupFields fields to lookup on the record
+     * @param limit limit the number of results
+     * @param useCache use the query cache
+     */
+    public async lookup<T, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string, lookupFields?: K[] | 'all', limit?: number, useCache = true): Promise<QueryResult<T, K>[]>  {
+        return this.lookupService.lookup(
+            type.replace(constants.NAMESPACE_PLACEHOLDER, await this.#vlocityNamespace), filter, lookupFields, limit, useCache
         );
     }
 

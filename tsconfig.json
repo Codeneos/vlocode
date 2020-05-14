@@ -1,18 +1,9 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es6",
+        "target": "es2019",
         "outDir": "out",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "scripthost",
-            "es6",
-            "es2015",
-            "es2017",
-            "es2018",
-            "es2019",
-        ],
+        "lib": ["es2019", "es2020.bigint", "es2020.string", "es2020.symbol.wellknown"],
         "sourceMap": true,
         "strict": false, 
         "resolveJsonModule": true,
@@ -21,7 +12,6 @@
         "experimentalDecorators": true,
         "baseUrl": "./src",
         "paths": {
-            "@angular/*": ["../node_modules/@angular/*"],
             "@constants": ["constants"],
             "@util": ["lib/util"],
             "@lib": ["lib"],

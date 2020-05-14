@@ -56,14 +56,14 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, ttl:
     }
     
     const name = target.name;
-    const logger = () => LogManager.get('CacheDecorator');
+    const logger = LogManager.get('CacheDecorator');
 
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(this ?? target);
         const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? ''), name);
         const cachedValue = cache.get(key);
         if (cachedValue) {
-            logger().debug(`Load response from cache -> ${name}`);
+            logger.debug(`Load response from cache -> ${name}`);
             return cachedValue;
         }
         // Exceptions cause
@@ -71,12 +71,12 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, ttl:
         if (ttl > 0) {
             setTimeout(() => cache.delete(key), ttl * 1000);
         }
-        logger().debug(`Cache miss, retrieve value from source -> ${name}`);
+        logger.debug(`Cache miss, retrieve value from source -> ${name}`);
         cache.set(key, newValue);
         if (isPromise(newValue)) {
             // Remove invalid results from the cache
             newValue.catch(err => { 
-                logger().debug(`Delete cached promise on exception -> ${name}`);
+                logger.debug(`Delete cached promise on exception -> ${name}`, err);
                 cache.delete(key);
                 // Rethrow the exceptions so the original handler can handle it
                 throw err;

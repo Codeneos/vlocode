@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import * as path from 'path';
 import VlocodeConfiguration from './vlocodeConfiguration';
-import VlocityDatapackService, * as vds from './vlocity/vlocityDatapackService';
+import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { Logger, LogManager } from './logging';
 import { VlocodeCommand } from '@constants';
 import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
@@ -12,7 +11,6 @@ import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import { ConfigurationManager } from './configurationManager';
 import CommandRouter from './commandRouter';
-import { singletonMixin } from './util/singleton';
 
 type ActivityOptions = { 
     progressTitle: string, 
@@ -265,7 +263,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private createConfigWatcher() : vscode.Disposable {
         this.updateStatusBar(this.config);
         this.showApiVersionStatusItem();
-        return ConfigurationManager.watch(this.config, newCondig => {
+        return ConfigurationManager.watch(this.config, () => {
             this.showStatus(`$(sync) Processing config changes...`, VlocodeCommand.selectOrg);
             this.initialize();
             this.showApiVersionStatusItem();

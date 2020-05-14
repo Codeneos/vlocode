@@ -12,7 +12,7 @@ import { FileSystem } from 'interfaces/fileSystem';
 export const directFileSystem : FileSystem = {
     readFile: nodeFs.promises.readFile,
     readdir: nodeFs.promises.readdir,
-    pathExists: path => nodeFs.promises.access(path).catch(() => false).then(() => true)
+    pathExists: path => Promise.resolve(nodeFs.existsSync(path))
 }
 
 /**
@@ -64,19 +64,19 @@ export default class DatapackLoader {
     }    
 
     public addLoader(test: RegExp, loader: DatapackLoaderFunc) {
-        this.loaders.push({
-            test: test,
-            load: loader
-        });
+        this.loaders.push({ test, load: loader });
     }
 
-    public async loadFrom(datapackHeader : string) : Promise<VlocityDatapack> {
-        this.logger?.verbose(`Loading datapack: ${datapackHeader}`);
+    public async loadFrom(datapackHeader: string) : Promise<VlocityDatapack> {
         const manifestEntry = getDatapackManifestKey(datapackHeader);
+        this.logger.info(`Loading datapack: ${manifestEntry.key}`);
         const datapackJson = await this.loadJson(datapackHeader);
-        return new VlocityDatapack(
-            datapackHeader, manifestEntry.datapackType, manifestEntry.key, 
-            getExportProjectFolder(datapackHeader), datapackJson);
+        return new VlocityDatapack(datapackHeader, 
+            manifestEntry.datapackType, 
+            manifestEntry.key, 
+            getExportProjectFolder(datapackHeader), 
+            datapackJson
+        );
     }
 
     public loadAll(datapackHeaders : string[]) : Promise<VlocityDatapack[]> {
@@ -100,7 +100,7 @@ export default class DatapackLoader {
     }
 
     protected async loadRaw(fileName : string) : Promise<any> {
-        if (this.fileSystem.pathExists(fileName)) {
+        if (await this.fileSystem.pathExists(fileName)) {
             return (await this.fileSystem.readFile(fileName)).toString();
         }
         return fileName;
