@@ -144,7 +144,7 @@ export default class VlocityMatchingKeyService {
     }
 
     private async loadAllMatchingKeys() : Promise<Map<string, VlocityMatchingKey>> {
-        const matchingKeys = [ ...await this.queryMatchingKeys(), ...this.loadMatchingKeysFromQueryDefinitions() ];
+        const matchingKeys = [ ...await this.queryMatchingKeys(), ...await this.loadMatchingKeysFromQueryDefinitions() ];
         const values = new Map<string, VlocityMatchingKey>();
         
         for (const value of matchingKeys) {
@@ -165,7 +165,7 @@ export default class VlocityMatchingKeyService {
         return values;
     }
 
-    private async queryMatchingKeys() : Promise<Array<VlocityMatchingKey>> {        
+    private async queryMatchingKeys(): Promise<Array<VlocityMatchingKey>> {        
         this.logger.verbose(`Querying matching keys from Salesforce`);
 
         const [ matchingKeyResults ] = await Promise.all([ 
@@ -173,35 +173,54 @@ export default class VlocityMatchingKeyService {
             this.salesforce.lookup('vlocity_namespace__DRMatchingKey__mdt', null, 'all')
         ]);
 
-        const matchingKeyObjects = matchingKeyResults.map(record => {
+        const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
+            const fields = record.matchingKeyFields.split(',').map(s => s.trim());
             return {
                 sobjectType: record.objectAPIName,
                 datapackType: this.getDatapackType(record.objectAPIName) ?? record.Label,
-                fields: record.matchingKeyFields.split(',').map(s => s.trim()),
+                fields: await this.validateMatchingKeyFields(record.objectAPIName, fields),
                 returnField: record.returnKeyField
             };
-        }).map(Object.seal);
+        }));
 
         this.logger.log(`Loaded ${matchingKeyObjects.length} matching keys definitions from Salesforce`);
-
         return matchingKeyObjects;
     }
 
-    private loadMatchingKeysFromQueryDefinitions() : Array<VlocityMatchingKey> {        
+    private async loadMatchingKeysFromQueryDefinitions(): Promise<Array<VlocityMatchingKey>> {        
         this.logger.verbose(`Loading extra matching keys from QueryDefinitions`);
-        
-        const matchingKeyObjects = Object.values(this.queryDefinitions).filter(qd => qd.matchingKey).map(qd => {
-            return {
-                sobjectType: this.getSObjectType(qd.VlocityDataPackType),
-                datapackType: qd.VlocityDataPackType,
-                fields: qd.matchingKey.fields,
+
+        const matchingKeys: VlocityMatchingKey[] = [];
+        for (const qd of Object.values(this.queryDefinitions)) {
+            const sobjectType = this.getSObjectType(qd.VlocityDataPackType);
+            if (!sobjectType || !qd.matchingKey) {
+                continue;
+            }
+            const fields = await this.validateMatchingKeyFields(sobjectType, qd.matchingKey.fields);
+            if (!fields.length) {
+                continue;
+            }
+            matchingKeys.push({
+                sobjectType, fields,
+                datapackType: qd.VlocityDataPackType,                
                 returnField: qd.matchingKey.returnField || 'Id'
-            };
-        }).map(Object.seal);
+            });
+        }
 
-        this.logger.log(`Loaded ${matchingKeyObjects.length} matching keys from QueryDefinitions`);
+        this.logger.log(`Loaded ${matchingKeys.length} matching keys from QueryDefinitions`);
+        return matchingKeys;
+    }
 
-        return matchingKeyObjects;
+    private async validateMatchingKeyFields(sobjectType: string, fields: string[]) {  
+        const validFields = await Promise.all(fields.map(field => 
+            this.salesforce.schema.describeSObjectField(sobjectType, field, false)
+        ));
+        for (const [i, field] of validFields.entries()) {
+            if (!field) {
+                this.logger.warn(`${sobjectType} has a matching key field ${fields[i]} which is not accessible`);
+            }
+        }
+        return validFields.filter(field => !!field).map(field => field.name);
     }
 
     /**

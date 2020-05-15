@@ -24,7 +24,7 @@ export default class SalesforceLookupService {
      * @param limit limit the number of results
      * @param useCache use the query cache or not; redirects and follows settings from teh query service
      */
-    public async lookup<T, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string, lookupFields?: K[] | 'all', limit?: number , useCache?: boolean): Promise<QueryResult<T, K>[]>  {
+    public async lookup<T, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
         const lookupFilter = await this.filterToWhereClause(type, filter);
         return await this.lookupWhere(type, lookupFilter, lookupFields || "all", limit, useCache);
     }
