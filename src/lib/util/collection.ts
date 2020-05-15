@@ -23,12 +23,15 @@ export function flatten<T>(array: T[], depth: number = 1) : T {
  * @param arr Array
  * @param uniqueKeyFunc Filter that determines uniqueness of an item
  */
-export function unique<T>(arr: T[], uniqueKeyFunc: (item: T) => any = item => item) : T[] {
-    const uniqueSet = new Set();
-    return arr.filter(item => {
+export function *unique<T, K>(itr: Iterable<T>, uniqueKeyFunc: (item: T) => K) : Generator<T> {
+    const uniqueSet = new Set<K>();
+    for (const item of itr) {
         const k = uniqueKeyFunc(item);
-        return uniqueSet.has(k) ? false : uniqueSet.add(k);
-    });
+        if (!uniqueSet.has(k)) {
+            yield item;
+            uniqueSet.add(k);
+        }
+    }
 }
 
 /**

@@ -103,7 +103,7 @@ export default class DatapackLoader {
         if (await this.fileSystem.pathExists(fileName)) {
             return (await this.fileSystem.readFile(fileName)).toString();
         }
-        return fileName;
+        throw new Error('Cannot load invalid file');
     }
 
     protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {

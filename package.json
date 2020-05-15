@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.14.1",
+    "version": "0.14.3",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -602,7 +602,7 @@
         "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
         "@types/js-yaml": "^3.12.1",
-        "@types/jsforce": "^1.9.12",
+        "@types/jsforce": "^1.9.18",
         "@types/jszip": "^3.1.7",
         "@types/mocha": "^5.2.7",
         "@types/node": "^10.17.6",

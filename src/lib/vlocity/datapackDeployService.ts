@@ -6,12 +6,15 @@ import QueryService from 'lib/salesforce/queryService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import { LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import { SuccessResult, Field, Connection, RecordResult } from 'jsforce';
+import { Field, Connection, RecordResult, BatchInfo, Job, Bulk } from 'jsforce';
 import { DatapackLookupService } from './datapackLookupService';
 import moment = require('moment');
-import { CancellationToken } from 'vscode';
+import { CancellationToken, Disposable } from 'vscode';
 import { Await, AwaitReturnType } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
+import { promisify } from 'util';
+import { rejects } from 'assert';
+import { unique } from 'lib/util/collection';
 
 export interface DatapackRecordDependency {
     VlocityDataPackType: 'VlocityLookupMatchingKeyObject' | 'VlocityMatchingKeyObject';
@@ -107,32 +110,66 @@ export class DatapackDeploymentRecord {
     }
 }
 
+type RecordOperationType = 'update' | 'insert';
+
+type BatchResultRecord = { 
+    ref: string;
+    success: boolean; 
+    error?: string; 
+    recordId: string;
+} & 
+(
+    { success: true; recordId: string; } | 
+    {success: false | null | undefined; error?: string; }
+);
+
+/** @private type to @see RecordBatch class */
+interface RecordBatchChunk {
+    operation: 'insert' | 'update';
+    sobjectType: string; 
+    records: object[]; 
+    refs: string[];
+}
+
+interface BatchProgressCallback {
+    (args: {processed: number, failed: number, total: number}): void;
+}
+
 class RecordBatch {
 
     private readonly insert = new Map<string, { ref: string, data: any }[]>();
     private readonly update = new Map<string, { ref: string, data: any }[]>();
+    private progressReporter: BatchProgressCallback;
+    private isExecuting: boolean;
+
+    private recordCount = 0;
+    private processedCount = 0;
+    private failedCount = 0;
+
+    private bulkPollInterval = 2000;
+    private bulkPollTimeout = 60000;
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,
         private readonly logger = LogManager.get(RecordBatch)){
     }
 
-    public async getRecords(type: 'update' | 'insert' | 'all', count: number) : Promise<{type: typeof type, sobjectType: string, records: object[], refs: string[]} | undefined> {
-        const getRecords = async (store: typeof RecordBatch.prototype.insert) => {
-            for (const [sobjectType, records] of store) {
+    public async getRecords(operation: 'update' | 'insert' | 'all', count?: number) : Promise<RecordBatchChunk | undefined> {
+        const getRecords = async (operation: 'update' | 'insert') => {
+            for (const [sobjectType, records] of this[operation]) {
                 let resultRecords: { ref: string, data: any }[];
-                if (count >= records.length) {
+                if (!count || count >= records.length) {
                     resultRecords = records;
-                    store.delete(sobjectType);                
+                    this[operation].delete(sobjectType);                
                 } else {
                     resultRecords = records.splice(0, count);
                 }
                 
-                const recordData = Promise.all(resultRecords.map((record) => this.validateRecordData(sobjectType, record.data, type as any)));
+                const recordData = Promise.all(resultRecords.map((record) => this.validateRecordData(sobjectType, record.data, operation as any)));
                 const refs = resultRecords.map((record) => record.ref);
     
                 return { 
-                    type,
+                    operation,
                     sobjectType, 
                     refs,
                     records: await recordData
@@ -140,17 +177,150 @@ class RecordBatch {
             }
         };
         
-        if (type === 'insert' || type === 'update') {
-            return getRecords(this[type]);
+        if (operation === 'insert' || operation === 'update') {
+            return getRecords(operation);
         }
         return await this.getRecords('insert', count) || this.getRecords('update', count);
     }
 
-    public async *yieldRecords(type: 'update' | 'insert' | 'all', count: number) {
+    public async *yieldRecords(operation: 'update' | 'insert' | 'all', count: number): AsyncGenerator<AwaitReturnType<RecordBatch["getRecords"]>> {
         let records: AwaitReturnType<RecordBatch["getRecords"]>;
-        while (records = await this.getRecords(type, count)) {
+        while (records = await this.getRecords(operation, count)) {
             yield records;
         }
+    }
+
+    public async* execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {   
+        if (this.isExecuting) {
+            throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
+        }     
+        
+        // Periodically report progress back on the progress callback
+        const timer = new Timer();
+        this.isExecuting = true;
+        this.progressReporter = onProgress;
+        const reporter = onProgress && setInterval(this.reportProgress.bind(this), this.bulkPollInterval);
+        
+        try {
+            while (true) {
+                // --START 
+                // Canot use for await due to a bug in TS/NodeJS
+                // for now us this work arround try for await again in the future.
+                const chunk = await this.getRecords('all');
+                if (!chunk) {
+                    return;
+                }
+                // -- END 
+
+                if (cancelToken?.isCancellationRequested) {
+                    break;
+                }
+
+                // Record count lower then 50 use the normal collections API
+                const executionApiFunc = chunk.records.length > 50? 'executeWithBulkApi' : 'executeWithCollectionApi';
+                const results = await this[executionApiFunc](connection, chunk, cancelToken);
+
+                // Process and yield results
+                for (let i = 0; i < results.length; i++) {
+                    const result = results[i];
+                    yield {
+                        ref: chunk.refs[i],
+                        success: result.success,
+                        recordId: result.success === true ? result.id : undefined,
+                        error: result.success === false ? result.errors.join(',') : undefined,
+                    };                    
+                }         
+                
+                if (cancelToken?.isCancellationRequested) {
+                    break;
+                }
+            }
+        } finally {
+            reporter && clearInterval(reporter);
+            this.isExecuting = false;
+            this.progressReporter = null;
+        }
+
+        if (cancelToken?.isCancellationRequested) {
+            this.logger.warn(`Batch cancelled at ${this.processedCount}/${this.recordCount} records (failed: ${this.failedCount}) [${timer.stop()}]`);
+            return;
+        }
+    }
+
+    public async executeWithCollectionApi(connection: Connection, chunk: AwaitReturnType<RecordBatch["getRecords"]>, cancelToken?: CancellationToken): Promise<RecordResult[]> {        
+        const timer = new Timer();
+        const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, { 
+            allOrNone: false, 
+            allowRecursive: false 
+        }) as RecordResult[];
+        this.logger.info(`Deployed ${chunk.records.length} ${chunk.sobjectType} records (Collections API) [${timer.stop()}]`);
+
+        // Process results
+        const failedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
+        this.failedCount += failedCount;
+        this.processedCount += results.length - failedCount;
+
+        return results;
+    }
+
+    public async executeWithBulkApi(connection: Connection, chunk: AwaitReturnType<RecordBatch["getRecords"]>, cancelToken?: CancellationToken): Promise<RecordResult[]> { 
+        const bulkJob = connection.bulk.createJob(chunk.sobjectType, chunk.operation);
+        const batchJob = bulkJob.createBatch();
+        let processedCount = 0;
+        let failedCount = 0;
+
+        cancelToken?.onCancellationRequested(() => bulkJob.abort());
+        batchJob.once('queue', () => batchJob.poll(this.bulkPollInterval, this.bulkPollTimeout));
+        batchJob.on('progress', (result: BatchInfo) => {
+            // Increment the progress by comparing it to the last state
+            // track in class to allow correct parallel job reporting
+            this.failedCount -= failedCount;
+            this.processedCount -= processedCount;
+            processedCount = parseInt(result.numberRecordsProcessed, 10);
+            failedCount = parseInt(result.numberRecordsFailed, 10);
+            this.failedCount += failedCount;
+            this.processedCount += processedCount;
+        });
+
+        try {
+            const timer = new Timer();
+            const results = await new Promise((resolved, rejected) => {
+                cancelToken?.onCancellationRequested(() => resolved(null));
+                batchJob.execute(chunk.records, (err, result) => {
+                    if (err) { 
+                        return rejected(err);
+                    }
+                    resolved(result as RecordResult[]);
+                });
+            }) as RecordResult[];
+
+            if (cancelToken?.isCancellationRequested) {
+                // TODO actually check number of inserted records reported
+                this.logger.warn(`${chunk.sobjectType} bulk cancelled at ${processedCount}/${chunk.records.length} [${timer.stop()}]`);
+                return [];
+            }
+            this.logger.info(`Deployed ${chunk.records.length} ${chunk.sobjectType} records (Bulk API) [${timer.stop()}]`);
+
+            //const results = await promisify(batchJob.execute)(chunk.records) as RecordResult[];
+            // increment counters yield sp that parallel jobs can run
+            const batchFailedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
+            this.failedCount += -failedCount - (batchFailedCount);
+            this.processedCount += -processedCount + (results.length - failedCount);
+            return results;
+        } finally {
+            bulkJob.close();
+        }
+    }
+
+    private reportProgress() {
+        if (!this.isExecuting) {
+            return;
+        }
+        this.progressReporter({ 
+            failed: this.failedCount, 
+            processed: this.processedCount, 
+            total: this.recordCount 
+        });
     }
 
     public add(type: string, data: any, ref?: string): this {
@@ -164,6 +334,7 @@ class RecordBatch {
         const records = this.update.get(type) || this.update.set(type, []).get(type);
         data.Id = id;
         records.push({ ref, data });
+        this.recordCount++;
         return this;
     }
 
@@ -171,6 +342,7 @@ class RecordBatch {
         const records = this.insert.get(type) || this.insert.set(type, []).get(type);
         delete data.Id;
         records.push({ ref, data });
+        this.recordCount++;
         return this;
     }
 
@@ -206,6 +378,19 @@ class RecordBatch {
 
             if (fieldInfo.type === 'string' && typeof value === 'string' && value.length > fieldInfo.length) {
                 value = value.substring(0, fieldInfo.length);
+            }
+
+            if (fieldInfo.type === 'date' || fieldInfo.type === 'datetime') {
+                if (value instanceof Date) {
+                    try {
+                        value = value.toISOString();
+                    } catch(err) {
+                        value = null;
+                    }                    
+                } else if (value != null && value != undefined) {
+                    this.logger.warn(`Skip invalid date value: ${value}`);
+                    continue;
+                }                
             }
             
             recordData[field] = value;
@@ -257,6 +442,14 @@ export class DatapackDeployment implements DependencyResolver {
     public async start(cancelToken?: CancellationToken) {
         const timer = new Timer();
         let deployableRecords: ReturnType<DatapackDeployment["getDeployableRecords"]>;
+
+        // prime cache for bigger jobs
+        if (this.records.size > 50) {
+            this.logger.log(`Priming lookup cache...`);
+            for (const [,{ sobjectType }] of unique(this.records, ([,item]) => item.sobjectType)) {
+                await this.lookupService.refreshCache(sobjectType);
+            }
+        }        
 
         while (deployableRecords = this.getDeployableRecords()) {
             this.logger.log(`Queuing ${deployableRecords.size} records for deployment`);
@@ -348,45 +541,18 @@ export class DatapackDeployment implements DependencyResolver {
 
         // process batch in chuncks
         const connection = await this.connectionProvider.getJsForceConnection();
-        while (true) {
-            // --START 
-            // Canot use for await due to a bug in TS/NodeJS
-            // for now us this work arround try for await again in the future.
-            const chunk = await batch.getRecords('all', 100);
-            if (!chunk) {
-                return;
-            }
-            const { type, sobjectType, records, refs } = chunk;
-            // -- END
-     
-            if (cancelToken && cancelToken.isCancellationRequested) {
-                return;
-            }
+        for await (const result of batch.execute(connection, null, cancelToken)) {
+            const datapack = datapacks.get(result.ref);
 
-            // Update datapack status just before deploy to get most accurate stats
-            for (const ref of refs) {
-                datapacks.get(ref).updateStatus(DeploymentStatus.InProgress);
-            }
-            
-            const timer = new Timer();
-            const results = await connection[type](sobjectType, records) as RecordResult[];
-            this.logger.log(`Deployed ${records.length} ${sobjectType} records [${timer.stop()}]`);
-
-            // Process results
-            for (let i = 0; i < results.length; i++) {
-                const datapack = datapacks.get(refs[i]);
-                const result = results[i];
-
-                // Update datapack record statuses
-                if (result.success === true) {
-                    datapack.updateStatus(DeploymentStatus.Deployed, result.id);
-                    this.logger.verbose(`Deployed ${datapack.sourceKey} [${Math.floor(datapack.deployTime / results.length)}ms]`);
-                    this.deployedRecords++;
-                } else if (result.success === false) {
-                    datapack.updateStatus(DeploymentStatus.Failed, result.errors.join(', '));
-                    this.logger.error(`Failed ${datapack.sourceKey} - ${datapack.statusMessage}`);
-                    this.failedRecords++;
-                }
+            // Update datapack record statuses
+            if (result.success === true) {
+                datapack.updateStatus(DeploymentStatus.Deployed, result.recordId);
+                this.logger.verbose(`Deployed ${datapack.sourceKey}`);
+                this.deployedRecords++;
+            } else if (result.success === false) {
+                datapack.updateStatus(DeploymentStatus.Failed, result.error);
+                this.logger.error(`Failed ${datapack.sourceKey} - ${datapack.statusMessage}`);
+                this.failedRecords++;
             }
         }
     }
