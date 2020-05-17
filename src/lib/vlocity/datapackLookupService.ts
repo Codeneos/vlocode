@@ -37,17 +37,40 @@ export class DatapackLookupService implements DependencyResolver {
      * @param sobjectType Sobject type for which to cache the record ID's into the cache
      */
     public async refreshCache(sobjectType: string) {
-        const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
         const timer = new Timer();
         // Query all records of a type to prime the lookup cache
-        const results = await this.lookupService.lookup(sobjectType, null, [...matchingKey.fields, matchingKey.returnField], null, false); 
         const beforeSize = this.lookupCache.size;
-        for (const record of results) {
-            const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, record);
-            this.lookupCache.set(lookupKey.toLowerCase(), record.Id);
+        for (const [key, id] of (await this.lookupAll(sobjectType)).entries()) {
+            this.lookupCache.set(key, id);
         }
         this.logger.log(`Cached ${this.lookupCache.size - beforeSize} ${sobjectType} lookup records [${timer.stop()}]`);
         return undefined;
+    }
+
+    public async lookupIds(records: Array<{ sobjectType: string, data: object }>): Promise<string[]> {
+        const lookupTypes = new Map<string, Array<[number, object]>>();
+        for (const [i, { sobjectType, data }] of records.entries()) {
+            (lookupTypes.get(sobjectType) ?? lookupTypes.set(sobjectType, []).get(sobjectType)).push([i, data]);            
+        }
+
+        for (const [sobjectType, entries] of lookupTypes.entries()) {
+            if (entries.length > 10) {
+                
+            }
+        }
+    }
+
+    private async lookupAll(sobjectType: string) {
+        const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
+        const lookupMap = new Map<string, string>();
+        const results = await this.lookupService.lookup(sobjectType, null, [...matchingKey.fields, matchingKey.returnField], null, false); 
+
+        for (const record of results) {
+            const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, record);
+            lookupMap.set(lookupKey.toLowerCase(), record.Id);
+        }
+        
+        return lookupMap;
     }
 
     /**
