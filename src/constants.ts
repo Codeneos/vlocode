@@ -20,7 +20,14 @@ export const MD_XML_OPTIONS = {
 };
 export const SF_META_EXTENSIONS = [ '-meta.xml' ]
     .concat(Object.values(metadataTypes).map(type => type.fileExtensions).flat());
-
+export const DATAPACK_RESERVED_FIELDS = [
+    'VlocityDataPackType', 
+    'VlocityMatchingRecordSourceKey', 
+    'VlocityLookupRecordSourceKey', 
+    'VlocityRecordSourceKey', 
+    'VlocityRecordSObjectType' 
+];
+    
 export enum VlocodeCommand {
     refreshDatapack = 'vlocity.refreshDatapack',
     deployDatapack = 'vlocity.deployDatapack',

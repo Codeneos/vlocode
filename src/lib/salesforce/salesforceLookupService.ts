@@ -3,6 +3,7 @@ import { LogManager, Logger } from 'lib/logging';
 import SalesforceSchemaService from './salesforceSchemaService';
 import QueryService, { QueryResult } from './queryService';
 import { PropertyAccessor } from 'lib/utilityTypes';
+import { asArray } from 'lib/util/collection';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
@@ -18,15 +19,39 @@ export default class SalesforceLookupService {
 
     /**
      * Query multiple records based on the where condition. The filter condition can either be a string or a complex filter object.
-     * @param type SObject type
-     * @param filter Object filter or Where conditional string 
-     * @param lookupFields fields to lookup on the record
-     * @param limit limit the number of results
-     * @param useCache use the query cache or not; redirects and follows settings from teh query service
+     * @param type Name of the SObject type to lookup
+     * @param filter Object filter or Where conditional string, by default the object filter uses and equals comparison (=). 
+     * A different comparison mode can be specified by prefixing the value with any of these operators:
+     * - `!=`: not equals
+     * - `>`: greater then
+     * - `<`: smaller then
+     * - `~`: like/contains
+     * 
+     * Arrays are interpreted as as `includes` operator. For example:
+     * ``` 
+     * lookup('Account', { Name: ['Peter', 'ACME'] }, ['Id', 'Name'] ) 
+     * ```
+     * will translate to the follow query: 
+     * `
+     * select Id, Name from Account where Name includes ('Peter', 'ACME')
+     * `
+     * 
+     * You can also specify multiple filters by passing an array of objects or strings:
+     * ``` 
+     * lookup('Account', [{ Name: 'Peter' }, { Name: 'ACME' }], ['Id', 'Name'] ) 
+     * ``` 
+     * Which will translate to the follow query: 
+     * `
+     * select Id, Name from Account where (Name = 'Peter') or (Name = 'ACME')
+     * `
+     * @param lookupFields fields to lookup on the record, if not field list is provided this function will lookup All fields. 
+     * Note that the Id field is always included in the results even when no fields are specified, or when a limited set is specified.
+     * @param limit limit the number of results to lookup, set to 0, null, undefined or false to not limit the lookup results.
+     * @param useCache when true instructs the QueryService to cache the result in case of a cache miss and otherwise retrive the cached response. The default behavhior depends on the @see QueryService configuration.
      */
-    public async lookup<T, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
-        const lookupFilter = await this.filterToWhereClause(type, filter);
-        return await this.lookupWhere(type, lookupFilter, lookupFields || "all", limit, useCache);
+    public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
+        const filters = await Promise.all(asArray(filter).map(f => typeof f === 'string' ? Promise.resolve(f) : this.filterToWhereClause(type, f)));
+        return await this.lookupWhere(type, filters.filter(f => !!f).map(f => `(${f})`).join(' or '), lookupFields || "all", limit, useCache);
     }
 
     private async lookupWhere<T, K extends PropertyAccessor = keyof T>(type: string, where?: string, selectFields: K[] | 'all' = 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]> {
@@ -38,7 +63,7 @@ export default class SalesforceLookupService {
                     fields.add(field.name);
                 }
             } else {
-                for (const field of selectFields) {
+                for (const field of  selectFields) {
                     const fieldPath = await this.schemaService.toSalesforceField(type, field.toString());
                     if (fieldPath == null) {
                         throw new Error(`Unable to resolve lookup field ${field} on type ${type}`);
@@ -58,7 +83,7 @@ export default class SalesforceLookupService {
         const lookupFilters = [];
 
         for (let [field, value] of Object.entries(values || [])) {
-            if (value === undefined) {
+            if (value === undefined || value == null) {
                 continue;
             }
 
@@ -95,7 +120,7 @@ export default class SalesforceLookupService {
                 }   
 
                 const fieldName = `${relationshipName ? relationshipName + '.' : ''}${salesforceField.name}`;
-                const fieldValue = this.queryService.formatFieldValue(salesforceField, value);
+                const fieldValue = QueryService.formatFieldValue(value, salesforceField);
                 lookupFilters.push(`${fieldName} ${operator} ${fieldValue}`);
             }
         }

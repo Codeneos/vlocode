@@ -7,6 +7,7 @@ import moment = require('moment');
 import { Field } from 'jsforce';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
+import { Readable } from 'request/node_modules/form-data';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
@@ -62,20 +63,55 @@ export default class QueryService {
         const promisedResult = (async () => {
             const queryTimer = new Timer();
             const connection = await this.connectionProvider.getJsForceConnection();
-            let queryResult = await connection.query<T>(query);
+            let queryResult = await connection.query<T>(query);            
             const records = queryResult.records;
             while (queryResult.nextRecordsUrl) {
                 queryResult = await connection.queryMore(queryResult.nextRecordsUrl);
                 records.push(...queryResult.records);
             }
-            this.logger.verbose(`Query: ${query} [${queryTimer.stop()}ms] [${useCache ? 'Cached' : 'Not-Cached'}]`);
+            this.logger.verbose(`Query: ${query} [records ${records.length}] [${queryTimer.stop()}] [${useCache ? 'Cached' : 'Not-Cached'}]`);
             return records.map(record => this.wrapRecord<T>(record) as QueryResult<T, K>);
-        })();
+        })().catch(err => {
+            throw new Error(err.message || err);
+        });
 
         if (enableCache) {
             this.queryCache.set(query, promisedResult);
         }
 
+        return promisedResult;
+    }
+
+    /**
+     * Query salesforce for a record
+     * @param query Query string
+     * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
+     */
+    public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {    
+        this.logger.verbose(`Bulk Query: ${query}...`);   
+        const promisedResult = (async () => {
+            const queryTimer = new Timer();
+            const [type] = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i);
+            const connection = await this.connectionProvider.getJsForceConnection();
+            const records = await new Promise<any[]>((resolve, reject) => {
+                const recordStream = connection.bulk.query(query) as Readable;   
+                const data = [];  
+                recordStream.once('error', (err) => reject(err));
+                recordStream.on('record', (record) =>{ 
+                    data.push(Object.assign(record, {
+                        attributes: { 
+                            type,
+                            url: `/${type}/${record.Id}`,
+                        }
+                    })); 
+                });
+                recordStream.once('finish', () => resolve(data));
+            });
+            this.logger.verbose(`Bulk Query: ${query} records ${records.length}] [${queryTimer.stop()}]`);
+            return records.map(record => this.wrapRecord<T>(record) as QueryResult<T, K>);
+        })().catch(err => {
+            throw new Error(err.message || err);
+        });
         return promisedResult;
     }
 
@@ -101,26 +137,42 @@ export default class QueryService {
      * Format the value of a field to match the Salesforce object schema value so it can be inserted or uploaded
      * @param type SObject Type
      * @param fieldName Field Name
+     * @param options Extra optiosn such as wrapping and escaping; both default to true
      */
-    public formatFieldValue(field: Field, value: any, options = { wrapStrings: true }) : string {
+    public static formatFieldValue(value: any, field: Field, options = { wrapStrings: true, escapeStrings: true }) : string {
         if (value === null || value === undefined) {
             return 'null';
         } 
 
         if (typeof value === 'object' && Array.isArray(value)) {
-            return `(${value.map(v => this.formatFieldValue(field, v)).join(',')})`;
+            return `(${value.map(v => this.formatFieldValue(v, field)).join(',')})`;
         } else if (typeof value === 'object') {
             throw new Error('Cannot format Object value to a valid Salesforce field value.');
         } 
         
-        if (field.type === 'date') {
-            return moment(value).format('YYYY-MM-DD');
-        } else if (field.type === 'datetime') {
-            return moment(value).format('YYYY-MM-DDThh:mm:ssZ');
+        if (field.type === 'date' || field.type === 'datetime') {
+            if (!value) {
+                return 'null';
+            }
+            const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDThh:mm:ssZ';
+            const date = moment(value);
+            if (!date.isValid()) {
+                throw new Error(`Value is not a valid date: ${value}`);
+            }
+            return moment(value).format(format);
         } else if (field.type === 'boolean') {
-            return (!!value).toString();
+            if (typeof value === 'string') { 
+                return (value.toLowerCase() === 'true').toString();
+            } else if (typeof value === 'number') { 
+                return (value > 0).toString();
+            }
+            return (!!value).toString();            
         } else if (['double', 'int', 'currency', 'percent'].includes(field.type)) {
             return value.toString().replace(/[,.]([0-9]{3})/g,'$1').toString().replace(/[.,]/, '.');                
+        }
+
+        if (options.escapeStrings && field.type === 'string') {
+            value = value.replace("\\", "\\\\").replace("'", "\\'");
         }
 
         return options.wrapStrings ? `'${value}'` : `${value}`;

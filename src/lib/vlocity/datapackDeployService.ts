@@ -6,15 +6,17 @@ import QueryService from 'lib/salesforce/queryService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import { LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import { Field, Connection, RecordResult, BatchInfo, Job, Bulk } from 'jsforce';
+import { Field, Job, Bulk } from 'jsforce';
 import { DatapackLookupService } from './datapackLookupService';
 import moment = require('moment');
 import { CancellationToken, Disposable } from 'vscode';
-import { Await, AwaitReturnType } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
-import { promisify } from 'util';
-import { rejects } from 'assert';
+import { RecordBatch } from '../salesforce/recordBatch';
+import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { unique } from 'lib/util/collection';
+import { isSalesforceId } from 'lib/util/salesforce';
+import { Iterable } from 'lib/util/iterable';
+import { DataPacks } from 'datapacksexpanddefinition.yaml';
 
 export interface DatapackRecordDependency {
     VlocityDataPackType: 'VlocityLookupMatchingKeyObject' | 'VlocityMatchingKeyObject';
@@ -95,7 +97,11 @@ export class DatapackDeploymentRecord {
     }
 
     public getDependencySourceKeys() {
-        return Object.values(this._dependencies).map(d => d.VlocityMatchingRecordSourceKey || d.VlocityLookupRecordSourceKey);
+        return this.getDependencies().map(d => d.VlocityMatchingRecordSourceKey || d.VlocityLookupRecordSourceKey);
+    }
+
+    public getDependencies() {
+        return Object.values(this._dependencies);
     }
 
     public async resolveDependencies(resolver: DependencyResolver) {
@@ -107,296 +113,6 @@ export class DatapackDeploymentRecord {
                 delete this._dependencies[field];
             }
         }
-    }
-}
-
-type RecordOperationType = 'update' | 'insert';
-
-type BatchResultRecord = { 
-    ref: string;
-    success: boolean; 
-    error?: string; 
-    recordId: string;
-} & 
-(
-    { success: true; recordId: string; } | 
-    {success: false | null | undefined; error?: string; }
-);
-
-/** @private type to @see RecordBatch class */
-interface RecordBatchChunk {
-    operation: 'insert' | 'update';
-    sobjectType: string; 
-    records: object[]; 
-    refs: string[];
-}
-
-interface BatchProgressCallback {
-    (args: {processed: number, failed: number, total: number}): void;
-}
-
-class RecordBatch {
-
-    private readonly insert = new Map<string, { ref: string, data: any }[]>();
-    private readonly update = new Map<string, { ref: string, data: any }[]>();
-    private progressReporter: BatchProgressCallback;
-    private isExecuting: boolean;
-
-    private recordCount = 0;
-    private processedCount = 0;
-    private failedCount = 0;
-
-    private bulkPollInterval = 2000;
-    private bulkPollTimeout = 60000;
-
-    constructor(
-        private readonly schemaService: SalesforceSchemaService,
-        private readonly logger = LogManager.get(RecordBatch)){
-    }
-
-    public async getRecords(operation: 'update' | 'insert' | 'all', count?: number) : Promise<RecordBatchChunk | undefined> {
-        const getRecords = async (operation: 'update' | 'insert') => {
-            for (const [sobjectType, records] of this[operation]) {
-                let resultRecords: { ref: string, data: any }[];
-                if (!count || count >= records.length) {
-                    resultRecords = records;
-                    this[operation].delete(sobjectType);                
-                } else {
-                    resultRecords = records.splice(0, count);
-                }
-                
-                const recordData = Promise.all(resultRecords.map((record) => this.validateRecordData(sobjectType, record.data, operation as any)));
-                const refs = resultRecords.map((record) => record.ref);
-    
-                return { 
-                    operation,
-                    sobjectType, 
-                    refs,
-                    records: await recordData
-                };
-            }
-        };
-        
-        if (operation === 'insert' || operation === 'update') {
-            return getRecords(operation);
-        }
-        return await this.getRecords('insert', count) || this.getRecords('update', count);
-    }
-
-    public async *yieldRecords(operation: 'update' | 'insert' | 'all', count: number): AsyncGenerator<AwaitReturnType<RecordBatch["getRecords"]>> {
-        let records: AwaitReturnType<RecordBatch["getRecords"]>;
-        while (records = await this.getRecords(operation, count)) {
-            yield records;
-        }
-    }
-
-    public async* execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {   
-        if (this.isExecuting) {
-            throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
-        }     
-        
-        // Periodically report progress back on the progress callback
-        const timer = new Timer();
-        this.isExecuting = true;
-        this.progressReporter = onProgress;
-        const reporter = onProgress && setInterval(this.reportProgress.bind(this), this.bulkPollInterval);
-        
-        try {
-            while (true) {
-                // --START 
-                // Canot use for await due to a bug in TS/NodeJS
-                // for now us this work arround try for await again in the future.
-                const chunk = await this.getRecords('all');
-                if (!chunk) {
-                    return;
-                }
-                // -- END 
-
-                if (cancelToken?.isCancellationRequested) {
-                    break;
-                }
-
-                // Record count lower then 50 use the normal collections API
-                const executionApiFunc = chunk.records.length > 50? 'executeWithBulkApi' : 'executeWithCollectionApi';
-                const results = await this[executionApiFunc](connection, chunk, cancelToken);
-
-                // Process and yield results
-                for (let i = 0; i < results.length; i++) {
-                    const result = results[i];
-                    yield {
-                        ref: chunk.refs[i],
-                        success: result.success,
-                        recordId: result.success === true ? result.id : undefined,
-                        error: result.success === false ? result.errors.join(',') : undefined,
-                    };                    
-                }         
-                
-                if (cancelToken?.isCancellationRequested) {
-                    break;
-                }
-            }
-        } finally {
-            reporter && clearInterval(reporter);
-            this.isExecuting = false;
-            this.progressReporter = null;
-        }
-
-        if (cancelToken?.isCancellationRequested) {
-            this.logger.warn(`Batch cancelled at ${this.processedCount}/${this.recordCount} records (failed: ${this.failedCount}) [${timer.stop()}]`);
-            return;
-        }
-    }
-
-    public async executeWithCollectionApi(connection: Connection, chunk: AwaitReturnType<RecordBatch["getRecords"]>, cancelToken?: CancellationToken): Promise<RecordResult[]> {        
-        const timer = new Timer();
-        const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, { 
-            allOrNone: false, 
-            allowRecursive: false 
-        }) as RecordResult[];
-        this.logger.info(`Deployed ${chunk.records.length} ${chunk.sobjectType} records (Collections API) [${timer.stop()}]`);
-
-        // Process results
-        const failedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
-        this.failedCount += failedCount;
-        this.processedCount += results.length - failedCount;
-
-        return results;
-    }
-
-    public async executeWithBulkApi(connection: Connection, chunk: AwaitReturnType<RecordBatch["getRecords"]>, cancelToken?: CancellationToken): Promise<RecordResult[]> { 
-        const bulkJob = connection.bulk.createJob(chunk.sobjectType, chunk.operation);
-        const batchJob = bulkJob.createBatch();
-        let processedCount = 0;
-        let failedCount = 0;
-
-        cancelToken?.onCancellationRequested(() => bulkJob.abort());
-        batchJob.once('queue', () => batchJob.poll(this.bulkPollInterval, this.bulkPollTimeout));
-        batchJob.on('progress', (result: BatchInfo) => {
-            // Increment the progress by comparing it to the last state
-            // track in class to allow correct parallel job reporting
-            this.failedCount -= failedCount;
-            this.processedCount -= processedCount;
-            processedCount = parseInt(result.numberRecordsProcessed, 10);
-            failedCount = parseInt(result.numberRecordsFailed, 10);
-            this.failedCount += failedCount;
-            this.processedCount += processedCount;
-        });
-
-        try {
-            const timer = new Timer();
-            const results = await new Promise((resolved, rejected) => {
-                cancelToken?.onCancellationRequested(() => resolved(null));
-                batchJob.execute(chunk.records, (err, result) => {
-                    if (err) { 
-                        return rejected(err);
-                    }
-                    resolved(result as RecordResult[]);
-                });
-            }) as RecordResult[];
-
-            if (cancelToken?.isCancellationRequested) {
-                // TODO actually check number of inserted records reported
-                this.logger.warn(`${chunk.sobjectType} bulk cancelled at ${processedCount}/${chunk.records.length} [${timer.stop()}]`);
-                return [];
-            }
-            this.logger.info(`Deployed ${chunk.records.length} ${chunk.sobjectType} records (Bulk API) [${timer.stop()}]`);
-
-            //const results = await promisify(batchJob.execute)(chunk.records) as RecordResult[];
-            // increment counters yield sp that parallel jobs can run
-            const batchFailedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
-            this.failedCount += -failedCount - (batchFailedCount);
-            this.processedCount += -processedCount + (results.length - failedCount);
-            return results;
-        } finally {
-            bulkJob.close();
-        }
-    }
-
-    private reportProgress() {
-        if (!this.isExecuting) {
-            return;
-        }
-        this.progressReporter({ 
-            failed: this.failedCount, 
-            processed: this.processedCount, 
-            total: this.recordCount 
-        });
-    }
-
-    public add(type: string, data: any, ref?: string): this {
-        if (data.Id || data.id) {
-            return this.addUpdate(type, data, data.Id, ref);
-        }
-        return this.addInsert(type, data, ref); 
-    }
-
-    public addUpdate(type: string, data: any, id: string, ref?: string): this {
-        const records = this.update.get(type) || this.update.set(type, []).get(type);
-        data.Id = id;
-        records.push({ ref, data });
-        this.recordCount++;
-        return this;
-    }
-
-    public addInsert(type: string, data: any, ref?: string): this {
-        const records = this.insert.get(type) || this.insert.set(type, []).get(type);
-        delete data.Id;
-        records.push({ ref, data });
-        this.recordCount++;
-        return this;
-    }
-
-    /**
-     * Validate if the specified record data can be inserted; if not drop any fields that cannot be inserted or updated
-     * depending on the mode property specified.
-     * @param sobjectType SObject type
-     * @param values Values of the record
-     * @param mode Check for update or insert
-     */
-    private async validateRecordData(sobjectType: string, values: object, mode: 'update' | 'insert') {    
-        const recordData = {};    
-
-        for (let [field, value] of Object.entries(values)) {
-            const fieldInfo = await this.schemaService.describeSObjectField(sobjectType, field);
-            if (mode == 'update' && fieldInfo.type !== 'id' && !fieldInfo.updateable) {
-                continue;
-            } else if (mode == 'insert' && !fieldInfo.createable) {
-                continue;
-            } else if (fieldInfo.calculated) {
-                continue;
-            } else if (!fieldInfo.nillable && (value === null || value === undefined)) {
-                if (mode == 'update') {
-                    continue;
-                } else {
-                    if (fieldInfo.defaultValue !== null && fieldInfo.defaultValue !== undefined) {
-                        value = fieldInfo.defaultValue;
-                    } else {
-                        this.logger.warn(`Field ${field} is not nullable but has no value; insert might fail`);   
-                    }
-                }                
-            }
-
-            if (fieldInfo.type === 'string' && typeof value === 'string' && value.length > fieldInfo.length) {
-                value = value.substring(0, fieldInfo.length);
-            }
-
-            if (fieldInfo.type === 'date' || fieldInfo.type === 'datetime') {
-                if (value instanceof Date) {
-                    try {
-                        value = value.toISOString();
-                    } catch(err) {
-                        value = null;
-                    }                    
-                } else if (value != null && value != undefined) {
-                    this.logger.warn(`Skip invalid date value: ${value}`);
-                    continue;
-                }                
-            }
-            
-            recordData[field] = value;
-        }
-
-        return recordData;
     }
 }
 
@@ -444,15 +160,14 @@ export class DatapackDeployment implements DependencyResolver {
         let deployableRecords: ReturnType<DatapackDeployment["getDeployableRecords"]>;
 
         // prime cache for bigger jobs
-        if (this.records.size > 50) {
-            this.logger.log(`Priming lookup cache...`);
-            for (const [,{ sobjectType }] of unique(this.records, ([,item]) => item.sobjectType)) {
-                await this.lookupService.refreshCache(sobjectType);
-            }
-        }        
+        // if (this.records.size > 50) {
+        //     this.logger.log(`Priming lookup cache...`);
+        //     for (const [,{ sobjectType }] of unique(this.records, ([,item]) => item.sobjectType)) {
+        //         await this.lookupService.refreshCache(sobjectType);
+        //     }
+        // }        
 
         while (deployableRecords = this.getDeployableRecords()) {
-            this.logger.log(`Queuing ${deployableRecords.size} records for deployment`);
             await this.deployRecords(deployableRecords, cancelToken);
         }
 
@@ -515,10 +230,27 @@ export class DatapackDeployment implements DependencyResolver {
         // Todo: this need to be configured somewhere
     }
 
-    private async deployRecords(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+    private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>) {
         // prepare batch
         const batch = new RecordBatch(this.schemaService);
+        const records = [...datapacks.values()];
 
+        this.logger.verbose(`Resolving existing IDs for ${datapacks.size} records`);        
+        const ids = await this.lookupService.lookupIds(records, 50);
+
+        for (const [i, datapack] of records.entries()) {
+            const existingId = ids[i];            
+            if (existingId) {
+                batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
+            } else {
+                batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);
+            }
+        }
+
+        return batch;
+    }
+
+    private async resolveDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         for (const datapack of datapacks.values()) {
             if (cancelToken && cancelToken.isCancellationRequested) {
@@ -527,21 +259,24 @@ export class DatapackDeployment implements DependencyResolver {
 
             if (datapack.hasUnresolvedDependencies) {
                 await datapack.resolveDependencies(this);
-                await datapack.resolveDependencies(this.lookupService);
-            }
 
-            const existingId = await this.lookupService.lookupId(datapack.sobjectType, datapack.values);
-            
-            if (existingId) {
-                batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
-            } else {
-                batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);
+                if (datapack.hasUnresolvedDependencies) {
+                    this.logger.warn(`Record ${datapack.sourceKey} has ${datapack.getDependencies().length} unresolvable dependencies: ${datapack.getDependencies().join(', ')}`);
+                }
             }
         }
+    }
 
-        // process batch in chuncks
-        const connection = await this.connectionProvider.getJsForceConnection();
-        for await (const result of batch.execute(connection, null, cancelToken)) {
+    private async deployRecords(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        // prepare batch
+        await this.resolveDependencies(datapacks, cancelToken);
+        const batch = await this.createDeploymentBatch(datapacks);
+        
+        // execute batch
+        const connection = await this.connectionProvider.getJsForceConnection();  
+        this.logger.log(`Deploying ${datapacks.size} records...`);
+
+        for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
             const datapack = datapacks.get(result.ref);
 
             // Update datapack record statuses
@@ -556,11 +291,13 @@ export class DatapackDeployment implements DependencyResolver {
             }
         }
     }
+
+    private handleProgressReport({ processed, total }) {
+        this.logger.verbose(`Deployment in progress ${processed}/${total}...`);
+    }
 }
 
 export default class VlocityDatapackDeployService {
-
-    #datapackReservedFields = [ 'VlocityDataPackType', 'VlocityRecordSourceKey', 'VlocityRecordSObjectType' ];
 
     constructor(
         private readonly connectionProvider: SalesforceService,
@@ -568,11 +305,11 @@ export default class VlocityDatapackDeployService {
         private readonly schemaService = connectionProvider instanceof SalesforceService ? connectionProvider.schema : null, 
         private readonly logger = LogManager.get(DatapackDeployment)) {
             if (!schemaService) {
-                throw new Error('Lookup and Schema service are required constructor parameters and cannot be empty')
+                throw new Error('Schema service is required constructor parameters and cannot be empty');
             }
     }
 
-    public async deploy(datapacks: VlocityDatapack[]) {
+    public async createDeployment(datapacks: VlocityDatapack[]) {
         const queryService = new QueryService(this.connectionProvider).setCacheDefault(true);
         const lookupService = new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService);
         const datapackLookup = new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService);
@@ -580,8 +317,12 @@ export default class VlocityDatapackDeployService {
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
-        for (const datapack of datapacks) {            
-            deployment.add(await this.toSalesforceRecords(datapack));
+        for (const datapack of datapacks) {      
+            try {
+                deployment.add(await this.toSalesforceRecords(datapack));
+            } catch(err) {
+                this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
+            }            
         }
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
 
@@ -602,7 +343,7 @@ export default class VlocityDatapackDeployService {
             const field = await this.schemaService.describeSObjectField(sobject.name, key, false);
 
             // skip datapack fields
-            if (this.#datapackReservedFields.includes(key)) {
+            if (DATAPACK_RESERVED_FIELDS.includes(key)) {
                 continue;
             }
 
@@ -625,7 +366,7 @@ export default class VlocityDatapackDeployService {
                     } else if (item.VlocityDataPackType) {
                         this.logger.warn(`Unsupported datapack type ${item.VlocityDataPackType}`);
                     } else {
-                        record.values[field.name] = this.convertValue(JSON.stringify(value, null, 4), field);
+                        record.values[field.name] = this.convertValue(value, field);
                     }
                 }
 
@@ -645,63 +386,66 @@ export default class VlocityDatapackDeployService {
         return records;
     }
 
-    private convertValue(value: any, field: Field): any {
-        if (value === undefined || value === null) {
-            return value;
-        }
-
-        if (field.type === "double" || field.type === "currency" || field.type === "percent") {
-            if (typeof value === "number") {
-                return value;
-            } else if (typeof value === "string") {
-                if (!value){
-                    return null;
-                }
-                try {
-                    return parseFloat(value);
-                } catch (err) {
-                    this.logger.warn(`Unable to convert ${value} to a double; defaulting to null value`);
-                    return null;
-                }
-            }
-
-            this.logger.warn(`Unsupported numeric value passed ${typeof value}; defaulting to null value`);
+    private convertValue(value: any, field: Field) : string | boolean | number {
+        if (value === null || value === undefined) {
             return null;
         }
 
-        if (field.type === "date" || field.type === "datetime") {
-            if (value instanceof Date) {
-                return value;
-            } else if (typeof value === "string") {
+        switch(field.type) {
+            case 'boolean': {                
+                if (typeof value === 'string') {
+                    if (!value) {
+                        return null;
+                    }
+                    return value.toLowerCase() === 'true';
+                }
+                return !!value;
+            } 
+            case 'datetime':
+            case 'date': {
                 if (!value) {
                     return null;
                 }
-                try {
-                    // should actually use Inavlid date check
-                    // this doesn't work
-                    return new Date(value);
-                } catch (err) {
-                    this.logger.warn(`Unable to convert ${value} to a date; defaulting to null value`);
-                    return null;
+                const dateFormat = {
+                    'date': 'YYYY-MM-DD',
+                    'datetime': 'YYYY-MM-DDThh:mm:ssZ'
+                };
+                const date = moment(value);
+                if (!date.isValid()) {
+                    throw new Error(`Value is not a valid date: ${value}`);
                 }
+                return date.format(dateFormat[field.type]);
             }
-
-            this.logger.warn(`Unsupported date-value passed ${typeof value}; defaulting to null value`);
-            return null;
-        } 
-        
-        if (field.type === "boolean") {
-            if (typeof value === "boolean") {
-                return value;
-            } else if (typeof value === "number") {
-                return value > 0;
-            } else if (typeof value === "string") {
-                return value.toLowerCase().trim() === 'true';
+            case 'percent':
+            case 'currency':
+            case 'double':
+            case 'int': {    
+                if (typeof value === 'string') {
+                    if (!value) {
+                        return null;
+                    }
+                    return parseFloat(value);
+                } else if (typeof value === 'number') {
+                    return value;
+                }
+                throw new Error(`Value is not a valid number: ${value}`);
+            } 
+            case 'reference': {    
+                if (typeof value === 'string') {
+                    if (!value) {
+                        return null;
+                    }
+                    return isSalesforceId(value);
+                } 
+                throw new Error(`Value is not a valid Salesforce ID: ${value}`);
+            }             
+            case 'string': 
+            default: {    
+                if (typeof value === 'object') {
+                    return JSON.stringify(value);
+                } 
+                return `${value}`;
             }
-            // Anything else is false when null by double negation
-            return !!value;
         }
-
-        return value;
     }
 }

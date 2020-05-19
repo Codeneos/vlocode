@@ -87,7 +87,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 
                 const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
                 const deployer = new DatapackDeployService(this.salesforce, await this.datapackService.getMatchingKeyService());
-                const deployment = await deployer.deploy(datapacks);
+                const deployment = await deployer.createDeployment(datapacks);
                 await deployment.start();
                 //return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
             });

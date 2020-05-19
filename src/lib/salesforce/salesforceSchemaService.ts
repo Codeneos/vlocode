@@ -5,15 +5,12 @@ import { removeNamespacePrefix, normalizeSalesforceName } from 'lib/util/salesfo
 import cache from 'lib/util/cache';
 import moment = require('moment');
 import { LogManager } from 'lib/logging';
+import Timer from 'lib/util/timer';
 
 /**
  * Provices access to Database Schema methods like describe.
  */
 export default class SalesforceSchemaService {
-
-    private readonly namespacePlaceholders = {
-        vlocity: { sobject: 'OmniScript__c', placeholder: constants.NAMESPACE_PLACEHOLDER, value: null }
-    };
 
     constructor(
             private readonly connectionProvider: JsForceConnectionProvider,
@@ -29,23 +26,25 @@ export default class SalesforceSchemaService {
 
     @cache(-1)
     public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<jsforce.DescribeSObjectResult> {
-        await this.initializeNamespaces();
         const con = await this.connectionProvider.getJsForceConnection();
+        const timer = new Timer();
         try {
-            return await con.describe(this.updateNamespaces(type));
+            return await con.describe(type);
         } catch(err) {
             if (throwWhenNotFound) {
                 throw Error(`No such object with name ${type} exists in this Salesforce instance`);
             }
+        } finally {
+            this.logger.verbose(`Described ${type} [${timer.stop()}]`);
         }
     }
 
     @cache(-1)
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field> {    
         const result = await this.describeSObject(type, throwWhenNotFound);
+        const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
         // First find a field with namespace, secondly without
-        const field = result?.fields.find(field => field.name.toLowerCase() == this.updateNamespaces(fieldName).toLowerCase()) ||
-                      result?.fields.find(field => removeNamespacePrefix(field.name.toLowerCase()) == fieldName.toLowerCase());
+        const field = result?.fields.find(field => removeNamespacePrefix(field.name.toLowerCase()) == normalizedFieldName);
         if (!field) {
             if (throwWhenNotFound) {
                 throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
@@ -75,22 +74,6 @@ export default class SalesforceSchemaService {
     public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.FieldType> {
         return (await this.describeSObjectField(type, fieldName, throwWhenNotFound)).type;
     }    
-
-    private updateNamespaces(name: string) {
-        // only call this after calling: `initializeNamespaces()`
-        return Object.values(this.namespacePlaceholders).reduce((name, ns) => name.replace(ns.placeholder, ns.value), name);
-    }
-
-    @cache(-1)
-    private async initializeNamespaces() {   
-        // This call is cached and will only be executed once per instance even when called 
-        // multiple times
-        for (const [name, ns] of Object.entries(this.namespacePlaceholders)) {
-            const vlocityObject = (await this.describeSObjects()).find(obj => obj.name.endsWith('OmniScript__c'));
-            ns.value = vlocityObject?.name.split('__', 1)[0];
-            this.logger.log(`Initialize ${name} namespace to ${ns.value}`);
-        }
-    }
 
     /**
      * Transforms a property like Salesforce field to a valid Salesforce field or field path, for exampled
