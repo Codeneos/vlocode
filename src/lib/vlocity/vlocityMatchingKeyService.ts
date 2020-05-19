@@ -175,10 +175,11 @@ export default class VlocityMatchingKeyService {
 
         const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
             const fields = record.matchingKeyFields.split(',').map(s => s.trim());
+            const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
             return {
                 sobjectType: record.objectAPIName,
                 datapackType: this.getDatapackType(record.objectAPIName) ?? record.Label,
-                fields: await this.validateMatchingKeyFields(record.objectAPIName, fields),
+                fields: validFields,
                 returnField: record.returnKeyField
             };
         }));

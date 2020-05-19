@@ -1,14 +1,13 @@
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
-import { normalizeSalesforceName } from 'lib/util/salesforce';
 import { LogManager } from 'lib/logging';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import * as constants from '@constants';
-import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import Timer from 'lib/util/timer';
 
 export class DatapackLookupService implements DependencyResolver {
-    private readonly lookupCache = new Map<string, string>();
+    
+    private readonly lookupCache = new Map<string, { refreshed?: number, entries: Map<string, string> }>();
     private readonly lastRefresh: Date = null;
 
     constructor(
@@ -24,11 +23,26 @@ export class DatapackLookupService implements DependencyResolver {
      */
     public async resolveDependency(dependency: DatapackRecordDependency): Promise<string> {
         const lookupKey = this.getLookupKey(dependency);
-        const resolved = this.lookupCache.get(lookupKey.toLowerCase());
-        if (resolved) {
-            return resolved;
+        const filter = {};
+        
+        for (const field of Object.keys(dependency)) {
+            if (constants.DATAPACK_RESERVED_FIELDS.includes(field)) {
+                continue;
+            }
+            filter[this.updateNamespace(field)] = dependency[field];
         }
-        return this.lookupId(dependency.VlocityRecordSObjectType, dependency, lookupKey);
+
+        if (Object.keys(filter).length == 0) {
+            this.logger.warn(`None of the dependencies lookup fields have values; skipping lookup as it will fail`);
+            return;
+        }
+
+        return this.getCachedEntry(dependency.VlocityRecordSObjectType, lookupKey, async () => {
+            const result = await this.lookupService.lookup(dependency.VlocityRecordSObjectType, filter, [ 'Id' ], 1, false);
+            if (result && result.length > 0) {
+                return result[0].Id;
+            }
+        });
     }
 
     /**
@@ -38,39 +52,42 @@ export class DatapackLookupService implements DependencyResolver {
      */
     public async refreshCache(sobjectType: string) {
         const timer = new Timer();
-        // Query all records of a type to prime the lookup cache
-        const beforeSize = this.lookupCache.size;
-        for (const [key, id] of (await this.lookupAll(sobjectType)).entries()) {
-            this.lookupCache.set(key, id);
+
+        const cache = this.getCache(sobjectType);
+        const beforeSize = cache.entries.size;       
+        const filter = {
+            lastModifiedDate: `>${new Date(cache.refreshed).toISOString()}`
+        };
+
+        for (const [key, id] of (await this.lookupAll(sobjectType, filter)).entries()) {
+            this.updateCachedEntry(sobjectType, key, id);           
         }
-        this.logger.log(`Cached ${this.lookupCache.size - beforeSize} ${sobjectType} lookup records [${timer.stop()}]`);
-        return undefined;
+        
+        this.logger.log(`Refreshed ${sobjectType} lookup cache with ${cache.entries.size - beforeSize} new records [${timer.stop()}]`);
+        cache.refreshed = Date.now() - timer.elapsed;
     }
 
-    public async lookupIds(records: Array<{ sobjectType: string, data: object }>): Promise<string[]> {
-        const lookupTypes = new Map<string, Array<[number, object]>>();
-        for (const [i, { sobjectType, data }] of records.entries()) {
-            (lookupTypes.get(sobjectType) ?? lookupTypes.set(sobjectType, []).get(sobjectType)).push([i, data]);            
-        }
-
-        for (const [sobjectType, entries] of lookupTypes.entries()) {
-            if (entries.length > 10) {
-                
-            }
-        }
-    }
-
-    private async lookupAll(sobjectType: string) {
+    private async lookupAll(sobjectType: string, filter?: object) {
         const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
         const lookupMap = new Map<string, string>();
-        const results = await this.lookupService.lookup(sobjectType, null, [...matchingKey.fields, matchingKey.returnField], null, false); 
+        const results = await this.lookupService.lookup(sobjectType, filter, [...matchingKey.fields, matchingKey.returnField], null, false); 
 
         for (const record of results) {
             const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, record);
-            lookupMap.set(lookupKey.toLowerCase(), record.Id);
+            lookupMap.set(lookupKey.toLowerCase(), this.updateCachedEntry(sobjectType, lookupKey, record.id));
         }
         
         return lookupMap;
+    }
+
+    /**
+     * Lookup the ID of a Datapack Record in the local cache based on the matching keys configured in Vlocity
+     * @param sobjectType SObject type
+     * @param data Data of the datapack to lookup
+     * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
+     */
+    public async lookupIdFromCache(sobjectType: string, data: object): Promise<string> {
+        return this.lookupId(sobjectType, data, true);
     }
 
     /**
@@ -79,13 +96,89 @@ export class DatapackLookupService implements DependencyResolver {
      * @param data Data of the datapack to lookup
      * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
      */
-    public async lookupId(sobjectType: string, data: object, lookupKey?: string): Promise<string> {
-        const normalizedData = new Map(Object.entries(data).map(([key, value]) => ([normalizeSalesforceName(key), value])));
+    public async lookupId(sobjectType: string, data: object, cacheOnly?: boolean): Promise<string> {
         const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
+        const filter = this.buildFilter(data, matchingKey.fields);
+
+        if (Object.keys(filter).length == 0) {
+            this.logger.warn(`Skipping lookup; none matching fields (${matchingKey.fields.join(', ')}) for ${sobjectType} have values`);
+            return;
+        }
+
+        const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, filter);
+        return this.getCachedEntry(sobjectType, lookupKey, cacheOnly ? undefined : async () => {
+            const result = await this.lookupService.lookup(sobjectType, filter, [matchingKey.returnField], 1, false);
+            if (result && result.length > 0) {
+                return result[0].Id;
+            }
+        });
+    }
+
+    /**
+     * Bulk lookup of records in Salesforce using the current matching key configuration
+     * @param records 
+     */
+    public async lookupIds(records: Array<{ sobjectType: string, values: object }>, batchSize: 50): Promise<string[]> {
+        const ids = [];
+        const indexMap = new Map<string, number>();
+        const lookupTypes = new Map<string, object[]>();
+        
+        // Group lookups by sobject type and creat a mapping from input index to 
+        // matching key so we can translate this back to the original input in the lookup phase of this call
+        for (const [i, { sobjectType, values }] of records.entries()) {
+            const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
+            const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, values);
+            const id = this.getCachedEntry(sobjectType, lookupKey);
+
+            if (id) {
+                ids[i] = id;
+                continue;
+            }
+            
+            const entries = (lookupTypes.get(sobjectType) ?? lookupTypes.set(sobjectType, []).get(sobjectType));
+            indexMap.set(lookupKey, i);
+            entries.push(this.buildFilter(values, matchingKey.fields));
+        }
+
+        for (const [sobjectType, entries] of lookupTypes.entries()) {
+            // time whole operation
+            const timer = new Timer();
+            const total = entries.length; 
+            let found = 0;
+            const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
+            this.logger.verbose(`Looking up Id for ${entries.length} records of type ${sobjectType}`);
+
+            // Split up lookup in chunks @see batchSize records at a time - otherwise we might overflow our SOQL limit
+            do {
+                const lookupEntries = entries.splice(0, batchSize);                
+                const results = await this.lookupService.lookup(sobjectType, lookupEntries, [ 'Id', ...matchingKey.fields ], null, false);
+                found += results.length;
+
+                for (const rec of results) {
+                    const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, rec);                
+                    const index = indexMap.get(lookupKey);
+                    this.updateCachedEntry(sobjectType, lookupKey, rec.Id);
+
+                    if (index !== undefined) {
+                        ids[index] = rec.Id;
+                    } else {
+                        this.logger.warn(`Got result for record that was never requested: ${lookupKey}`);
+                    }
+                }
+                
+            } while(entries.length > 0);
+
+            this.logger.log(`Found ${found}/${total} requested ${sobjectType} records [${timer.stop()}]`);
+        }
+
+        return ids;
+    }
+
+    private buildFilter(data: object, fields: string[]) {
         const filter = {};
         
-        for (const field of matchingKey.fields) {
-            const value = normalizedData.get(normalizeSalesforceName(field));
+        for (const field of fields) {
+            const value = data[field];
             if (value !== undefined) {
                 // Values can contain references to objects, if they do we need to make sure we replace it
                 // with the actual Vlocity namespace; that is what the update namespace method does
@@ -96,33 +189,16 @@ export class DatapackLookupService implements DependencyResolver {
             }
         }
 
-        if (Object.keys(filter).length == 0) {
-            this.logger.warn(`None of the matching key fields have values; skipping lookup as it will fail`);
-            return;
-        }
-
-        if (!lookupKey) {            
-            lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, filter).toLowerCase();
-            if (this.lookupCache.has(lookupKey)) {
-                return this.lookupCache.get(lookupKey);
-            }
-        }
-
-        const result = await this.lookupService.lookup(sobjectType, filter, [matchingKey.returnField], 1, false);
-        if (result && result.length == 1) {
-            const resolved = result[0].Id;
-            this.lookupCache.set(lookupKey.toLowerCase(), resolved);
-            return resolved;
-        }
-
-        return undefined;
+        return filter;
     }
 
     private buildLookupKey(sobjectType: string, fields: Array<string>, data: object): string {
-        const normalizedData = new Map(Object.entries(data).map(([key, value]) => [normalizeSalesforceName(key), value]));
-        const values = fields.map(field => normalizedData.get(normalizeSalesforceName(field))).filter(v => v !== undefined && v !== null);
+        const values = fields.map(field => data[field]).filter(v => v !== undefined && v !== null);
         // As opposed to querying lookup keys should not contain a VLocity package namespace as they 
         // are org independent, as such we replace the namespace; if present back with the place holder
+        if (!values.length) {
+            debugger;
+        }
         return values.length && `${sobjectType}/${values.join('/')}`.replace(this.vlocityNamespace, '%vlocity_namespace%');
     }
 
@@ -135,5 +211,44 @@ export class DatapackLookupService implements DependencyResolver {
             return name?.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
         }
         return name?.replace(constants.NAMESPACE_PLACEHOLDER, '').replace(/^__/, '');
+    }
+
+    private getCachedEntry(sobjectType: string, key: string): string;
+    private getCachedEntry(sobjectType: string, key: object): Promise<string>;
+    private getCachedEntry(sobjectType: string, key: string | object, resolver?: (key: string) => string | Promise<string>): Promise<string>;
+    private getCachedEntry(sobjectType: string, key: string | object, resolver?: (key: string) => string | Promise<string>): Promise<string> | string {
+        if (typeof key === 'object') {
+            return this.matchingKeyService.getMatchingKeyDefinition(sobjectType).then(matchingKey => 
+                this.getCachedEntry(sobjectType, this.buildLookupKey(sobjectType, matchingKey.fields, resolver))
+            );
+        }
+
+        const resolved = this.getCache(sobjectType).entries.get(key.toLowerCase());
+        if (!resolved && resolver) {
+            return Promise.resolve(resolver(key)).then(result => 
+                this.updateCachedEntry(sobjectType, key, result)
+            );
+        }
+        return resolved;
+    }
+
+    private updateCachedEntry(sobjectType: string, key: string, id: string) : string;
+    private updateCachedEntry(sobjectType: string, key: object, id: string) : Promise<string>;
+    private updateCachedEntry(sobjectType: string, key: string | object, id: string) : Promise<string> | string {
+        if (typeof key === 'object') {
+            return this.matchingKeyService.getMatchingKeyDefinition(sobjectType).then(matchingKey => 
+                this.updateCachedEntry(sobjectType, this.buildLookupKey(sobjectType, matchingKey.fields, key), id)
+            );
+        }
+        this.getCache(sobjectType).entries.set(key.toLowerCase(), id);
+        return id;
+    }
+
+    private getCache(sobjectType: string) {
+        let cache = this.lookupCache.get(sobjectType.toLowerCase());
+        if (!cache) {
+            this.lookupCache.set(sobjectType.toLowerCase(), cache = { refreshed: 0, entries: new Map() });
+        }
+        return cache; 
     }
 }

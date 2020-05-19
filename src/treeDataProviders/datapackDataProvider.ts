@@ -109,7 +109,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     private async getQuery(datapackType: string) {
         const queryDefinitions = await this.datapackService.getQueryDefinitions();
         const queryString = addFieldsToQuery(queryDefinitions[datapackType].query, 'Name');
-        return queryString.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);    
+        return queryString;    
     }
 
     private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
@@ -228,11 +228,11 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public getItemTooltip() {
-        return this.record.attributes.url;
+        return this.record.attributes?.url;
     }
 
     public get sobjectType(): string {
-        return this.record.attributes.type;
+        return this.record.attributes?.type;
     }
 
     public get id(): string {    

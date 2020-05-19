@@ -205,7 +205,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param limit limit the number of results
      * @param useCache use the query cache
      */
-    public async lookup<T, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string, lookupFields?: K[] | 'all', limit?: number, useCache = true): Promise<QueryResult<T, K>[]>  {
+    public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache = true): Promise<QueryResult<T, K>[]>  {
         return this.lookupService.lookup(
             type.replace(constants.NAMESPACE_PLACEHOLDER, await this.#vlocityNamespace), filter, lookupFields, limit, useCache
         );

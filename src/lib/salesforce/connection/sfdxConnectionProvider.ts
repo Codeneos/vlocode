@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { default as sfdxUtil, FullSalesforceOrgDetails } from 'lib/util/sfdx';
 import JsForceConnectionProvider from './jsForceConnectionProvider';
 import { LogManager, Logger, LogLevel } from 'lib/logging';
+import { HookManager } from 'lib/util/hookManager';
 
 interface PooledJsforceConnection extends jsforce.Connection {
     _logger?: any;

@@ -3,14 +3,18 @@ import * as jsforce from 'jsforce';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { Logger, LogManager } from './logging';
-import { VlocodeCommand } from '@constants';
+import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
 import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from './salesforce/connection/sfdxConnectionProvider';
-import SalesforceService from './salesforce/salesforceService';
+import SalesforceService, { InstalledPackageRecord } from './salesforce/salesforceService';
 import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import { ConfigurationManager } from './configurationManager';
 import CommandRouter from './commandRouter';
+import { HookManager } from './util/hookManager';
+import { Hook } from 'mocha';
+import Timer from './util/timer';
+import chalk = require('chalk');
 
 type ActivityOptions = { 
     progressTitle: string, 
@@ -28,9 +32,11 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private statusBar: vscode.StatusBarItem;
     private apiStatus: vscode.StatusBarItem;
     private connector: JsForceConnectionProvider;
+    private readonly connectionHooks = new HookManager<jsforce.Connection>();
     private readonly commandRouter = new CommandRouter(this);
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly activitiesChangedEmitter = new vscode.EventEmitter<VlocodeActivity[]>();
+    private readonly namespaceSymbol = Symbol();
 
     // Publics
     public readonly activities: ObservableArray<Observable<VlocodeActivity>> = observeArray([]);
@@ -62,6 +68,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     // Ctor + Methods
     constructor(public readonly config: VlocodeConfiguration) {
         this.registerDisposable(this.createConfigWatcher());
+        this.connectionHooks.registerHook({ pre: this.updateNamespaceHook.bind(this) });
     }
 
     public dispose() {
@@ -226,11 +233,65 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }, taskRunner);
     }
     
-    public getJsForceConnection() : Promise<jsforce.Connection> {
+    public async getJsForceConnection() : Promise<jsforce.Connection> {
         if (this.connector == null) {
-            this.connector = new SfdxConnectionProvider(this.config.sfdxUsername);
+            const connectorHooks = new HookManager<SfdxConnectionProvider>().registerHook({
+                    post: (args) => {
+                        if (args.name === 'getJsForceConnection') {
+                            args.returnValue = args.returnValue
+                                .then(connection => {
+                                    const result = this.initializeNamespace(connection);
+                                    return result;
+                                })
+                                .then(connection => {
+                                    const result = this.connectionHooks.attach(connection);
+                                    return result;
+                                });
+                        }
+                    }
+                }                
+            );
+            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername));
         }
-        return this.connector.getJsForceConnection();
+        const conn = await this.connector.getJsForceConnection();
+        return conn;
+    }
+
+    private async initializeNamespace(connection: jsforce.Connection) {
+        if (connection[this.namespaceSymbol]) {
+            // Namespace is already initialized directly return our connection
+            return connection;
+        }
+
+        // Init namespace by query a Vlocity class similair as to what is done in the build tools
+        const timer = new Timer();
+        const results = await connection.query<{ NamespacePrefix: string }>(`select NamespacePrefix from ApexClass where name = 'DRDataPackService' limit 1`);
+        
+        if (results.totalSize == 0) {
+            // This usually happens when there is no VLocity package installed
+            this.logger.warn(`Unable to detect Vlocity Managed Package on target org, is Vlocity installed?`);
+        } else {
+            // Define a readonly property that cannot be overwritten or changed using
+            // a unique symbol only known to this class instance
+            Object.defineProperty(connection, this.namespaceSymbol, {
+                value: results.records[0].NamespacePrefix,
+                writable: false,
+                configurable: false
+            });
+            this.logger.info(`Initialized Vlocity namespace to ${chalk.bold(results.records[0].NamespacePrefix)} [${timer.stop()}]`);
+        }
+
+        return connection;
+    }
+
+    private updateNamespaceHook({ target, args }) {
+        if (target[this.namespaceSymbol]) {
+            for (let i = 0; i < args.length; i++) {
+                if (typeof args[i] === 'string') {
+                    args[i] = args[i].replace(NAMESPACE_PLACEHOLDER, target[this.namespaceSymbol]);
+                }
+            }
+        }
     }
 
     /**

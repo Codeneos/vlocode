@@ -1,5 +1,7 @@
 // File contains several functions for manipulating or accessing collectiong like objects such as: Set, Map and Array
 
+import { Iterable } from './iterable';
+
 /**
  * Polyfill for array.flat
  * @param array Array to flatten
@@ -23,10 +25,10 @@ export function flatten<T>(array: T[], depth: number = 1) : T {
  * @param arr Array
  * @param uniqueKeyFunc Filter that determines uniqueness of an item
  */
-export function *unique<T, K>(itr: Iterable<T>, uniqueKeyFunc: (item: T) => K) : Generator<T> {
-    const uniqueSet = new Set<K>();
+export function *unique<T, K>(itr: Iterable<T>, uniqueKeyFunc?: (item: T) => K) : Generator<T> {
+    const uniqueSet = new Set();
     for (const item of itr) {
-        const k = uniqueKeyFunc(item);
+        const k = uniqueKeyFunc ? uniqueKeyFunc(item) : item;
         if (!uniqueSet.has(k)) {
             yield item;
             uniqueSet.add(k);
@@ -147,4 +149,26 @@ export function arrayMapPush<T, K>(map: Map<K, Array<T>>, key: K, value: T) : nu
  */
 export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> {
     return (map.get(key) || map.set(key, new Set<T>()).get(key)).add(value);
+}
+
+/**
+ * Converts specified array-like arguments to a single array; may return original parameter if only a single param is specified and that 
+ * param is already an array. Otherwise the provided parameters are copied to a new array.
+ * @param elements 
+ */
+export function asArray<T>(...elements: Array<T[] | T | Iterable<T>>) : T[] {
+    if (elements.length == 1 && Array.isArray(elements[0])) {
+        //return elements[0];
+    }
+    const results : T[] = [];
+    for (const element of elements) {
+        if (Array.isArray(element)) {
+            results.push(...element);
+        } else if (Iterable.isIterable(element)) {
+            results.push(...element);
+        } else {
+            results.push(element);
+        }
+    }
+    return results;
 }
