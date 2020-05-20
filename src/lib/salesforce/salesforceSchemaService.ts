@@ -24,16 +24,24 @@ export default class SalesforceSchemaService {
         return sobjects;
     }
 
-    @cache(-1)
     public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<jsforce.DescribeSObjectResult> {
+        try {
+            return await this.describeSObjectCached(type);
+        } catch(err) {
+            if (throwWhenNotFound) {
+                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
+            }
+        }
+    }
+
+    @cache(-1)
+    private async describeSObjectCached(type: string) : Promise<jsforce.DescribeSObjectResult> {
         const con = await this.connectionProvider.getJsForceConnection();
         const timer = new Timer();
         try {
             return await con.describe(type);
         } catch(err) {
-            if (throwWhenNotFound) {
-                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
-            }
+            return null;
         } finally {
             this.logger.verbose(`Described ${type} [${timer.stop()}]`);
         }
