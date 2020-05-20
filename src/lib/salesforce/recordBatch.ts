@@ -33,7 +33,7 @@ export interface BatchProgressCallback {
 /**
  * Inserts and updates a set records and transparently selects either the collections or bulk API.
  */
-export class RecordBatch {
+export default class RecordBatch {
 
     private readonly insert = new Map<string, { ref: string; data: any; }[]>();
     private readonly update = new Map<string, { ref: string; data: any; }[]>();

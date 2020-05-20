@@ -218,7 +218,7 @@ export default class VlocityMatchingKeyService {
         ));
         for (const [i, field] of validFields.entries()) {
             if (!field) {
-                this.logger.warn(`${sobjectType} has a matching key field ${fields[i]} which is not accessible`);
+                this.logger.warn(`${sobjectType} matching key field '${fields[i]}' is not accessible`);
             }
         }
         return validFields.filter(field => !!field).map(field => field.name);
