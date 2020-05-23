@@ -6,7 +6,7 @@ import { LogWriter, LogEntry, LogLevel } from 'lib/logging';
 export class OutputChannelWriter implements LogWriter, vscode.Disposable {
 
     private _outputChannel: vscode.OutputChannel;
-    public get outputChannel(): vscode.OutputChannel {        
+    public get outputChannel(): vscode.OutputChannel {
         return this._outputChannel || (this._outputChannel = vscode.window.createOutputChannel(this.channelName));
     }
 
@@ -14,7 +14,7 @@ export class OutputChannelWriter implements LogWriter, vscode.Disposable {
     }
 
     public dispose() {
-        if (this._outputChannel) { 
+        if (this._outputChannel) {
             this._outputChannel.hide();
             this._outputChannel.dispose();
         }

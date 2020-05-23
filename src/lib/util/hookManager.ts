@@ -1,10 +1,10 @@
 import uuid = require('uuid');
 
-interface CallHookOptions<T = any> { 
-    target: T; 
-    name: Symbol | string; 
-    args: any[]; 
-    returnValue?: any; 
+interface CallHookOptions<T = any> {
+    target: T;
+    name: symbol | string;
+    args: any[];
+    returnValue?: any;
 }
 
 export interface CallHook<T = any> {
@@ -77,10 +77,6 @@ export class HookManager<T extends object> {
             // run post Hooks
             return this.executeHooks('post', options).returnValue;
         };
-    }
-
-    private isPromise(v: object): v is PromiseLike<any> {
-        return v && typeof v['then'] === 'function';
     }
 
     private executeHooks(type: 'pre' | 'post', options: CallHookOptions): CallHookOptions {

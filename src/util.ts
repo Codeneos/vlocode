@@ -1,22 +1,22 @@
-// import * as vscode from 'vscode';
+// Import * as vscode from 'vscode';
 // import * as fs from 'fs-extra';
 // import * as path from 'path';
 // import * as expressions from "angular-expressions";
 
-// export async function getDocumentBodyAsString(file: string) : Promise<string> {
+// Export async function getDocumentBodyAsString(file: string) : Promise<string> {
 //     const doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
 //     if (doc) { return doc.getText(); }
 //     return (await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString();
 // }
 
-// export function existsAsync(path: fs.PathLike) : Promise<boolean> {
+// Export function existsAsync(path: fs.PathLike) : Promise<boolean> {
 //     return new Promise(resolve => {
-//         // tslint:disable-next-line: deprecation
+// eslint-disable-line import/no-deprecated
 //         fs.exists(path, result => resolve(result));
 //     });
 // }
 
-// export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
+// Export function unique<T>(arr: T[], uniqueKeyFunc: (T) => any) : T[] {
 //     const uniqueSet = new Set();
 //     return arr.filter(item => {
 //         const k = uniqueKeyFunc(item);
@@ -37,7 +37,7 @@
 //     return pathStr;
 // }
 
-// export interface StackFrame {
+// Export interface StackFrame {
 //     functionName: string;
 //     modulePath: string;
 //     fileName: string;
@@ -79,7 +79,7 @@
 //     });
 // }
 
-// export function getProperties(obj: any) : { readonly key: string, readonly value: any }[] {
+// Export function getProperties(obj: any) : { readonly key: string, readonly value: any }[] {
 //     return Object.keys(obj).map(key => { 
 //         return Object.defineProperties({},{
 //             key: { value: key, },

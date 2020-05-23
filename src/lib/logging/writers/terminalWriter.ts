@@ -1,9 +1,8 @@
-import { LogLevel, LogWriter, LogEntry } from "lib/logging";
+import { LogLevel, LogWriter, LogEntry } from 'lib/logging';
 import * as vscode from 'vscode';
-import chalk = require("chalk");
-import moment = require("moment");
-import * as constants from "@constants";
-import { EOL } from "os";
+import chalk = require('chalk');
+import moment = require('moment');
+import * as constants from '@constants';
 
 const TERMINAL_EOL = '\r\n';
 
@@ -36,18 +35,18 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     }
 
     public dispose() {
-        if (this.currentTerminal) { 
+        if (this.currentTerminal) {
             this.closeEmitter.fire();
         }
     }
 
     private createTerminal() : vscode.Terminal {
-        [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());        
+        [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());
         this.writeEmitter = new vscode.EventEmitter<string>();
         this.closeEmitter = new vscode.EventEmitter<void>();
         this.isOpened = false;
-        this.currentTerminal = vscode.window.createTerminal({ 
-            name: this.name, 
+        this.currentTerminal = vscode.window.createTerminal({
+            name: this.name,
             pty: {
                 onDidWrite: this.writeEmitter.event,
                 onDidClose: this.closeEmitter.event,
@@ -60,7 +59,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
         return this.currentTerminal;
     }
 
-    private show() { 
+    private show() {
         (this.currentTerminal || this.createTerminal()).show(false);
         setTimeout(() => {
             if (!this.isOpened) {
@@ -74,26 +73,26 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
         this.isOpened = true;
         while(this.queuedMessages.length > 0) {
             this.write(this.queuedMessages.shift());
-        }        
+        }
         this.focus();
     }
 
-    public close() { 
+    public close() {
         this.isOpened = false;
         if (this.currentTerminal) {
             this.currentTerminal.hide();
             setTimeout(this.currentTerminal.dispose.bind(this.currentTerminal), 500);
-            this.currentTerminal = null;        
+            this.currentTerminal = null;
         }
     }
 
-    public focus() { 
+    public focus() {
         if (this.currentTerminal && !this.isFocused) {
             this.currentTerminal.show(false);
-        }       
+        }
     }
 
-    public async write(entry: LogEntry) {
+    public write(entry: LogEntry) {
         if (this.isClosed) {
             this.show();
         }
@@ -104,7 +103,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
             const levelColor = (this.colors[entry.level] || this.chalk.grey);
             const logPrefix = `[${this.chalk.green(moment(entry.time).format(constants.LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}]`;
             const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
-            
+
             let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, TERMINAL_EOL);
             if (entry.level == LogLevel.warn) {
                 messageBody = levelColor(messageBody);
@@ -112,7 +111,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
                 messageBody = levelColor(messageBody);
             }
 
-            const formatedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;            
+            const formatedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;
             this.writeEmitter.fire(formatedMessage + TERMINAL_EOL);
         }
     }

@@ -1,22 +1,22 @@
-import * as vscode from 'vscode';
-import * as jsforce from 'jsforce';
-import * as path from 'path';
-import * as ZipArchive from 'jszip';
-import * as xml2js from 'xml2js';
-import * as fs from 'fs-extra';
-import { getDocumentBodyAsString } from 'lib/util/fs';
-import { wait } from 'lib/util/async';
-import { Stream } from 'stream';
-import * as metadataTypes from 'metadataTypes.yaml';
-import { mapAsyncParallel, filterAsyncParallel } from 'lib/util/collection';
-import { LogManager, Logger } from 'lib/logging';
 import chalk = require('chalk');
-import { PackageXml, MetadataManifest } from './deploy/packageXml';
+import * as path from 'path';
+import { Stream } from 'stream';
+import * as fs from 'fs-extra';
+import * as jsforce from 'jsforce';
+import * as ZipArchive from 'jszip';
+import { Logger, LogManager } from 'lib/logging';
+import { wait } from 'lib/util/async';
+import { filterAsyncParallel, mapAsyncParallel } from 'lib/util/collection';
+import { getDocumentBodyAsString } from 'lib/util/fs';
+import * as metadataTypes from 'metadataTypes.yaml';
+import * as vscode from 'vscode';
+import * as xml2js from 'xml2js';
+import { MetadataManifest, PackageXml } from './deploy/packageXml';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import SalesforceService from './salesforceService';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
-    details?: { componentFailures?: ComponentFailure[] }
+    details?: { componentFailures?: ComponentFailure[] };
 };
 
 export interface ComponentFailure {
@@ -29,9 +29,9 @@ export interface ComponentFailure {
     fullName: string;
 }
 
-export type DeploymentProgress = vscode.Progress<{ 
-    message?: string; 
-    increment?: number; 
+export type DeploymentProgress = vscode.Progress<{
+    message?: string;
+    increment?: number;
     total?: number;
 }>;
 
@@ -43,7 +43,7 @@ interface RetrieveStatus extends jsforce.RetrieveResult {
     status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
 }
 
-export default class SalesforceDeployService {  
+export default class SalesforceDeployService {
 
     constructor(private readonly salesforce: SalesforceService) {
     }
@@ -58,7 +58,7 @@ export default class SalesforceDeployService {
      * @param token Optional cancellation token
      */
     public async buildPackageFromManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<ZipArchive> {
-        // build package XML
+        // Build package XML
         const packageXml = new PackageXml(manifest.apiVersion || '45.0');
         const packageZip = new ZipArchive();
 
@@ -78,14 +78,14 @@ export default class SalesforceDeployService {
                 this.logger.warn(`Unable to read data from path ${chalk.underline(info.localPath)} when building metadata package`);
                 continue;
             }
-            
+
             if (info.type) {
                 packageXml.add(info.type, info.name);
             }
         }
 
         // Add package.xml
-        return packageZip.file(`package.xml`, packageXml.toXml());
+        return packageZip.file('package.xml', packageXml.toXml());
     }
 
     /**
@@ -119,24 +119,24 @@ export default class SalesforceDeployService {
                     const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(metaFile), '**'));
                     for (const sourceFile of sourceFiles) {
                         const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
-                        Object.assign(mdPackage.files, {   
+                        Object.assign(mdPackage.files, {
                             [sourcePackagePath]: { name: componentName, type: componentType, localPath: sourceFile.fsPath }
                         });
                     }
-                } else {                    
+                } else {
                     const sourceFile = metaFile.replace(/\-meta\.xml/ig, '');
                     const sourcePackagePath = path.posix.join(packageFolder, path.basename(sourceFile));
                     const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
 
-                    Object.assign(mdPackage.files, {   
-                        [sourcePackagePath]: { name: componentName, type: componentType, localPath: sourceFile },                    
-                        [metaPackagePath]: { name: componentName, type: componentType, localPath: metaFile },    
+                    Object.assign(mdPackage.files, {
+                        [sourcePackagePath]: { name: componentName, type: componentType, localPath: sourceFile },
+                        [metaPackagePath]: { name: componentName, type: componentType, localPath: metaFile },
                     });
                 }
             } else {
-                // other meta data type add only the meta file
+                // Other meta data type add only the meta file
                 const packagePath = path.posix.join(packageFolder, path.basename(metaFile));
-                Object.assign(mdPackage.files, {   
+                Object.assign(mdPackage.files, {
                     [packagePath]: { name: componentName, type: componentType, localPath: metaFile }
                 });
             }
@@ -167,7 +167,7 @@ export default class SalesforceDeployService {
             const packageFolderIndex = packageParts.indexOf(componentPackageFolder);
             return packageParts.slice(packageFolderIndex).join(path.posix.sep);
         }
-        
+
         return componentPackageFolder || path.dirname(fullSourcePath).split(/\/|\\/).pop();
     }
 
@@ -177,7 +177,7 @@ export default class SalesforceDeployService {
         // Alternate component type for settings
         if (metaFileExt == '.settings') {
             return 'Settings';
-        } 
+        }
 
         const metaXml = await xml2js.parseStringPromise(await getDocumentBodyAsString(metaFile));
         const metaBodyTag = Object.keys(metaXml)[0];
@@ -212,12 +212,12 @@ export default class SalesforceDeployService {
                 .pipe(fs.createWriteStream(zipFile))
                 .on('finish', () => {
                     resolve();
-                }).on('error', function (err) {
+                }).on('error', err => {
                     reject(err);
                 });
         });
     }
-    
+
     /**
      * Deploy the specified destructive changes
      * @param manifest Destructive changes to apply
@@ -225,9 +225,9 @@ export default class SalesforceDeployService {
      * @param token A cancellation token to stop the process
      */
     public async deployDestructiveChanges(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
-        const packageZip = await this.buildPackageFromManifest({ 
-            apiVersion: manifest.apiVersion, 
-            files: { 
+        const packageZip = await this.buildPackageFromManifest({
+            apiVersion: manifest.apiVersion,
+            files: {
                 'destructiveChanges.xml': { body: PackageXml.from(manifest).toXml() }
             }
         });
@@ -243,7 +243,7 @@ export default class SalesforceDeployService {
     public async deployFiles(files: vscode.Uri[], options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const packageZip = await this.buildPackageFromFiles(files, '47.0', token);
         if (!packageZip) {
-            // return if the task was cancelled
+            // Return if the task was cancelled
             return;
         }
         return this.deploy(packageZip, options, progress, token);
@@ -258,7 +258,7 @@ export default class SalesforceDeployService {
     public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         const packageZip = await this.buildPackageFromManifest(manifest, token);
         return this.deploy(packageZip, options, progress, token);
-    }    
+    }
 
     /**
      * Deploy a package file, buffer or stream to Salesforce async and returns once the deployment is completed.
@@ -276,8 +276,8 @@ export default class SalesforceDeployService {
             // Convert jszip object to Buffer object
             if (zipInput instanceof ZipArchive) {
                 zipInput = await zipInput.generateAsync({
-                    type: "nodebuffer",
-                    compression: "DEFLATE",
+                    type: 'nodebuffer',
+                    compression: 'DEFLATE',
                     compressionOptions: {
                         level: 7
                     }
@@ -286,8 +286,8 @@ export default class SalesforceDeployService {
 
             // Set deploy options passed to JSforce; options arg can override the defaults
             const deployOptions = {
-                singlePackage: true, 
-                performRetrieve: true, 
+                singlePackage: true,
+                performRetrieve: true,
                 ignoreWarnings: true,
                 autoUpdatePackage: false,
                 allowMissingFiles: false,
@@ -298,7 +298,7 @@ export default class SalesforceDeployService {
             };
 
             if (await this.salesforce.isProductionOrg()) {
-                this.logger.warn(`Production deployment detected; running as validate/checkOnly`);
+                this.logger.warn('Production deployment detected; running as validate/checkOnly');
                 // Always check only for production
                 deployOptions.rollbackOnError = true;
                 deployOptions.purgeOnDelete = false;
@@ -306,24 +306,24 @@ export default class SalesforceDeployService {
             }
 
             // Start deploy            
-            const connection = await this.salesforce.getJsForceConnection();        
+            const connection = await this.salesforce.getJsForceConnection();
             const deployJob = await connection.metadata.deploy(zipInput, deployOptions);
 
             // Wait for deploy
             let lastConsoleLog = 0;
-            while (await wait(checkInterval)) {            
+            while (await wait(checkInterval)) {
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
                     // Cancel deployment; we don't really care if the cancel is successfully or not
-                    (<any>connection.metadata).cancelDeploy(deployJob.id);
+                    (connection.metadata as any).cancelDeploy(deployJob.id);
                     throw new Error(`${deploymentTypeText} cancelled`);
                 }
 
                 const status = await connection.metadata.checkDeployStatus(deployJob.id, true);
 
                 if (Date.now() - lastConsoleLog > logInterval) {
-                    // do not create seperate interval for logging but use the main status check loop
+                    // Do not create seperate interval for logging but use the main status check loop
                     this.logger.info(
-                        `Deployment ${status.id} - ${status.status} ` + 
+                        `Deployment ${status.id} - ${status.status} ` +
                         `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})`);
                     lastConsoleLog = Date.now();
                 }
@@ -334,11 +334,11 @@ export default class SalesforceDeployService {
                         details.componentFailures = [ details.componentFailures ];
                     }
                     return status;
-                }                
+                }
             }
         };
 
-        return deploymentTask(progress || { report() { } }, token);        
+        return deploymentTask(progress || { report() { } }, token);
     }
 
     /**
@@ -357,16 +357,16 @@ export default class SalesforceDeployService {
             const singlePackage = true;
 
             // Start deploy            
-            const connection = await this.salesforce.getJsForceConnection();        
+            const connection = await this.salesforce.getJsForceConnection();
             const retrieveJob = await connection.metadata.retrieve({
                 singlePackage, unpackaged: packageXml.toJson()
             }, undefined);
 
             // Wait for deploy
-            while (await wait(checkInterval)) {            
+            while (await wait(checkInterval)) {
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
-                    // we can't cancel a retrieve
-                    throw new Error(`Retrieve request cancelled`);
+                    // We can't cancel a retrieve
+                    throw new Error('Retrieve request cancelled');
                 }
 
                 const status = await connection.metadata.checkRetrieveStatus(retrieveJob.id) as RetrieveStatus;
@@ -387,7 +387,7 @@ export default class SalesforceDeployService {
     private async hasXmlHeader(file: string) {
         try {
             const body = await getDocumentBodyAsString(file);
-            if (body) { 
+            if (body) {
                 const startsWithXmlHeader = body.trimStart().startsWith('<?xml ');
                 return startsWithXmlHeader;
             }
@@ -415,18 +415,18 @@ export default class SalesforceDeployService {
                 searchPaths.push(path.join(...componentPath));
             } else {
                 searchPaths.push(file);
-                searchPaths.push(file + '-meta.xml');
+                searchPaths.push(`${file  }-meta.xml`);
             }
         }
 
         const results = await mapAsyncParallel(searchPaths, async pathStr => {
-            const stat = await fs.lstat(pathStr).catch(e => <fs.Stats>undefined);
+            const stat = await fs.lstat(pathStr).catch(e => undefined as fs.Stats);
             if (stat === undefined) {
                 return;
             }
             const files = stat.isDirectory() ? (await fs.readdir(pathStr)).map(file => path.join(pathStr, file)) : [ pathStr ];
 
-            //let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
+            // Let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
             const metaFiles = await filterAsyncParallel(files, file => this.hasXmlHeader(file), 4);
 
             if (recursive) {
@@ -434,7 +434,7 @@ export default class SalesforceDeployService {
                 metaFiles.push(...(await this.getMetaFiles(folders, recursive)));
             }
 
-            return metaFiles;        
+            return metaFiles;
         }, 4);
 
         return results.flat().filter(value => !!value);

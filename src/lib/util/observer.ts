@@ -1,8 +1,8 @@
-import { EventEmitter, Event, Disposable } from "vscode";
+import { EventEmitter, Event, Disposable } from 'vscode';
 
 export interface PropertyChangedEventArgs {
-    property: Symbol | string | number; 
-    newValue?: any; 
+    property: symbol | string | number;
+    newValue?: any;
     oldValue?: any;
 }
 
@@ -11,7 +11,7 @@ export type Observable<T extends Object> = T & { onPropertyChanged: Event<Proper
 export interface ArrayChangedEventArgs<T> {
     type: 'add' | 'remove' | 'replace';
     index: number;
-    newValues?: T[]; 
+    newValues?: T[];
     oldValues?: T[];
 }
 
@@ -23,11 +23,11 @@ export type ObservableArray<T> = Array<T> & { onArrayChanged: Event<ArrayChanged
  */
 export function observeObject<T extends Object>(obj: T) : Observable<T> {
     const eventEmitter = new EventEmitter<PropertyChangedEventArgs>();
-    return <Observable<T>>new Proxy(obj, {
-        get(target, property) { 
-            if (property === "onPropertyChanged") {
+    return new Proxy(obj, {
+        get(target, property) {
+            if (property === 'onPropertyChanged') {
                 return eventEmitter.event;
-            } else if (property === "dispose") {
+            } else if (property === 'dispose') {
                 return function () {
                     eventEmitter.dispose();
                     if (target[property]) {
@@ -39,14 +39,14 @@ export function observeObject<T extends Object>(obj: T) : Observable<T> {
 
             if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
                 const observable = observeObject(value);
-                observable["onPropertyChanged"](data => eventEmitter.fire(data));
+                observable.onPropertyChanged(data => eventEmitter.fire(data));
                 return observable;
             }
 
             return value;
         },
         set(target, property, newValue) {
-            if (property === "onPropertyChanged") {
+            if (property === 'onPropertyChanged') {
                 return false;
             }
             const oldValue = target[property];
@@ -54,7 +54,7 @@ export function observeObject<T extends Object>(obj: T) : Observable<T> {
             eventEmitter.fire({ property, oldValue, newValue });
             return true;
         }
-    });
+    }) as Observable<T>;
 }
 
 /**
@@ -63,11 +63,11 @@ export function observeObject<T extends Object>(obj: T) : Observable<T> {
  */
 export function observeArray<T>(obj: T[]) : ObservableArray<T> {
     const eventEmitter = new EventEmitter<ArrayChangedEventArgs<T>>();
-    return <ObservableArray<T>>new Proxy(obj, {
-        get(target, property) { 
-            if (property === "onArrayChanged") {
+    return new Proxy(obj, {
+        get(target, property) {
+            if (property === 'onArrayChanged') {
                 return eventEmitter.event;
-            } else if (property === "dispose") {
+            } else if (property === 'dispose') {
                 return eventEmitter.dispose.bind(eventEmitter);
             }
             const value = target[property];
@@ -99,20 +99,20 @@ export function observeArray<T>(obj: T[]) : ObservableArray<T> {
                         return result;
                     };
                 }
-            } 
+            }
 
             return value;
         },
         set(target, property, newValue) {
-            if (property === "onPropertyChanged") {
+            if (property === 'onPropertyChanged') {
                 return false;
             }
             const oldValue = target[property];
             target[property] = newValue;
-            if (typeof property === 'number') {                
-                eventEmitter.fire({ type: 'replace', index: property, oldValues: [ oldValue ], newValues: [ newValue ] });                
-            }   
-            return true;    
+            if (typeof property === 'number') {
+                eventEmitter.fire({ type: 'replace', index: property, oldValues: [ oldValue ], newValues: [ newValue ] });
+            }
+            return true;
         }
-    });
+    }) as ObservableArray<T>;
 }

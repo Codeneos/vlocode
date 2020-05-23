@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
-import BaseDataProvider from './baseDataProvider';
 import VlocodeService from 'lib/vlocodeService';
+import BaseDataProvider from './baseDataProvider';
 
 /**
  * Provides a list of recently executed or executing activities 
  */
 export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivity> {
-    
+
     constructor(service: VlocodeService) {
         super(service);
-        this.vlocode.activities.onArrayChanged(e => { 
-            e.newValues?.map(v => v.onPropertyChanged(e => this.dataChangedEmitter.fire(v)));
+        this.vlocode.activities.onArrayChanged(event => {
+            event.newValues?.map(v => v.onPropertyChanged(() => this.dataChangedEmitter.fire(v)));
             this.dataChangedEmitter.fire();
         });
     }
@@ -27,7 +27,7 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
         };
     }
 
-    public getIcon(node: VlocodeActivity): { light: string, dark: string } {
+    public getIcon(node: VlocodeActivity): { light: string; dark: string } {
         switch (node.status) {
             case VlocodeActivityStatus.InProgress: return {
                 light: 'resources/light/loading.svg',

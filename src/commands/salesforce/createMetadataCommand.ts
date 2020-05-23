@@ -1,12 +1,10 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
-import MetadataCommand from './metadataCommand';
+import * as vscode from 'vscode';
 import { formatString } from 'lib/util/string';
 import * as fs from 'fs-extra';
+import MetadataCommand from './metadataCommand';
 
 type NewItemInputType = {
-     type: string;
-} & ({
     type: 'text';
     placeholder?: string;
     prompt?: string;
@@ -14,17 +12,17 @@ type NewItemInputType = {
     type: 'select';
     placeholder?: string;
     prompt?: string;
-    options: { label: string, value?: any }[];
-});
+    options: { label: string; value?: any }[];
+};
 
-type NewItemQuickPickItem = vscode.QuickPickItem & { 
+type NewItemQuickPickItem = vscode.QuickPickItem & {
     successNotification?: string;
     files: {
-        path: string,
-        template: string
+        path: string;
+        template: string;
     }[];
-    input: { 
-        [key: string]: NewItemInputType 
+    input: {
+        [key: string]: NewItemInputType;
     };
 };
 
@@ -46,7 +44,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
             return;
         }
 
-        const contextValues = { 
+        const contextValues = {
             apiVersion: this.vlocode.config.salesforce?.apiVersion
         };
 
@@ -58,7 +56,6 @@ export default class CreateMetadataCommand extends MetadataCommand {
             contextValues[key] = value;
         }
 
-        const workspaceEdit = new vscode.WorkspaceEdit();
         // Todo: correctly detect the preferred workspace folder
         const primaryWorkspace = vscode.workspace.workspaceFolders[0]?.uri.fsPath;
 
@@ -66,21 +63,21 @@ export default class CreateMetadataCommand extends MetadataCommand {
             const filePath = formatString(file.path, contextValues).trim();
             const fileBody = formatString(file.template, contextValues).trim();
             const fileUri = vscode.Uri.file(path.join(primaryWorkspace, filePath));
-            
+
             try {
                 await fs.ensureDir(path.dirname(fileUri.fsPath));
                 await fs.writeFile(fileUri.fsPath, fileBody, { flag: 'wx' });
             } catch(e) {
-                vscode.window.showErrorMessage(`Unable to create the specified item; a file with the same name already exists: ${fileUri.fsPath}`);
+                void vscode.window.showErrorMessage(`Unable to create the specified item; a file with the same name already exists: ${fileUri.fsPath}`);
             }
 
             if (index == '0') {
                 const document = await vscode.workspace.openTextDocument(fileUri);
-                vscode.window.showTextDocument(document);
+                void vscode.window.showTextDocument(document);
             }
         }
 
-        vscode.window.showInformationMessage(newItemType.successNotification || `Successfully created new item`);
+        void vscode.window.showInformationMessage(newItemType.successNotification || 'Successfully created new item');
     }
 
     protected async getItemTemplate() : Promise<NewItemQuickPickItem> {
@@ -99,11 +96,9 @@ export default class CreateMetadataCommand extends MetadataCommand {
         if (input.type === 'text') {
             return vscode.window.showInputBox({
                 prompt: input.prompt,
-                placeHolder: input.placeholder 
+                placeHolder: input.placeholder
             });
-        } 
-        
-        if (input.type === 'select') {
+        } else if (input.type === 'select') {
             const value = await vscode.window.showQuickPick(
                 input.options,
                 { placeHolder: input.placeholder }
@@ -116,6 +111,8 @@ export default class CreateMetadataCommand extends MetadataCommand {
             return value.value || value.label;
         }
 
-        throw new Error(`The specified input type is not supported: ${(<any>input).type}`);
+        // @ts-ignore inputs are loaded froma YAML file so a type could cause this to be hit yet TS insist
+        // it can't happen based on it's view on the world
+        throw new Error(`The specified input type is not supported: ${input.type}`);
     }
 }

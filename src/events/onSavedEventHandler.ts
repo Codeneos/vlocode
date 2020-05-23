@@ -1,7 +1,7 @@
+import { EventHandlerBase } from 'events/eventHandlerBase';
 import * as vscode from 'vscode';
 import CommandRouter from 'lib/commandRouter';
 import { VlocodeCommand } from '@constants';
-import { EventHandlerBase } from 'events/eventHandlerBase';
 import { isPartOfDatapack } from 'lib/vlocity/datapackUtil';
 import { isSalesforceMetadataFile } from 'lib/util/salesforce';
 
@@ -12,13 +12,13 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
         '\.git'
     ];
 
-    protected async handleEvent(document: vscode.TextDocument): Promise<void> {   
-        if (!this.vloService.config.deployOnSave && 
-            !this.vloService.config.salesforce.deployOnSave) { 
+    protected async handleEvent(document: vscode.TextDocument): Promise<void> {
+        if (!this.vloService.config.deployOnSave &&
+            !this.vloService.config.salesforce.deployOnSave) {
             return;
         }
 
-        if (!vscode.workspace.getWorkspaceFolder(document.uri) || 
+        if (!vscode.workspace.getWorkspaceFolder(document.uri) ||
             this.ignoredPaths.some(path => new RegExp(path).test(document.fileName))) {
             this.logger.verbose(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
             return; // ignore these
@@ -43,7 +43,7 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
 
     protected deployAsMetadata(document: vscode.TextDocument) : Promise<any> {
         if (!this.vloService.config.salesforce.enabled) {
-            this.logger.warn(`Skip deployment; enable Salesforce support in Vlocode configuration to deploy Salesforce metadata`);
+            this.logger.warn('Skip deployment; enable Salesforce support in Vlocode configuration to deploy Salesforce metadata');
             return;
         }
         if (!this.vloService.config.salesforce.deployOnSave) {

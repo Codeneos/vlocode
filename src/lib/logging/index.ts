@@ -1,11 +1,10 @@
-
-import { default as LogManagerImpl } from './logManager';
 import { singleton } from 'lib/util/singleton';
+import { default as LogManagerImpl } from './logManager';
 
 /**
  * Describes the log levels supported by the logging framework
  */
-export enum LogLevel {    
+export enum LogLevel {
     debug,
     verbose,
     info,
@@ -19,7 +18,7 @@ export * from './logManager';
 
 export function withLogger<T extends { new (...args: any[]): {} }>(constructor: T) {
     return class extends constructor {
-        readonly logger = LogManager.get(constructor);        
+        readonly logger = LogManager.get(constructor);
     };
 }
 

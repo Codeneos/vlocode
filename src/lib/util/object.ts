@@ -1,5 +1,5 @@
-import { stringEquals } from './string';
 import uuid = require('uuid');
+import { stringEquals } from './string';
 
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
 const proxyTargetSymbol = Symbol('[[proxyTarget]]');
@@ -46,7 +46,7 @@ export class PropertyTransformHandler<T extends Object> implements ProxyHandler<
         return this.transformProperty(target, name) !== undefined;
     }
 
-    public enumerate(target: T) { 
+    public enumerate(target: T) {
         return Object.keys(target);
     }
 
@@ -75,12 +75,12 @@ export class PropertyTransformHandler<T extends Object> implements ProxyHandler<
 
     private wrapArray(array: any[]) : any[] {
         if (array[proxyIdentitySymbol] == this.proxyIdentity) {
-            // prevent double wrapping
+            // Prevent double wrapping
             return array;
         }
 
         return new Proxy(array, {
-            get: (target, name) => { 
+            get: (target, name) => {
                 if (name === proxyIdentitySymbol) {
                     return this.proxyIdentity;
                 } else if (name === proxyTargetSymbol) {

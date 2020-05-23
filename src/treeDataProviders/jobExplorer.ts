@@ -1,6 +1,6 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import * as path from 'path';
 import VlocityDatapackService, { ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
 import { LogManager, Logger } from 'lib/logging';
 import * as yaml from 'js-yaml';
@@ -10,35 +10,35 @@ import * as vlocity from 'vlocity';
 import BaseDataProvider from './baseDataProvider';
 
 export default class JobDataProvider extends BaseDataProvider<JobNode> {
-    
-    private readonly jobCommandOptions = [ 
-        { 
-            type: 'Export', 
-            icon: 'cloud-download', 
-            label: 'Run as Export', 
-            detail: 'retrieve and save Vlocity datapacks on your local machine' 
-        },  
-        { 
-            type: 'Deploy', 
-            icon: 'cloud-upload', 
-            label: 'Run as Deploy', 
-            detail: 'upload and deploy previously exported Vlocity datapacks' 
-        } 
+
+    private readonly jobCommandOptions = [
+        {
+            type: 'Export',
+            icon: 'cloud-download',
+            label: 'Run as Export',
+            detail: 'retrieve and save Vlocity datapacks on your local machine'
+        },
+        {
+            type: 'Deploy',
+            icon: 'cloud-upload',
+            label: 'Run as Deploy',
+            detail: 'upload and deploy previously exported Vlocity datapacks'
+        }
     ];
 
     protected getCommands() {
         return {
-            'vlocity.jobExplorer.run': async (node) => this.runJob(node),
+            'vlocity.jobExplorer.run': async (node: JobNode) => this.runJob(node),
             'vlocity.jobExplorer.refresh': () => this.refresh()
         };
     }
 
     private async runJob(node: JobNode) {
-        const jobCommand = await vscode.window.showQuickPick(this.jobCommandOptions, { 
-            placeHolder: 'Select how to run this job', 
-            ignoreFocusOut: true 
+        const jobCommand = await vscode.window.showQuickPick(this.jobCommandOptions, {
+            placeHolder: 'Select how to run this job',
+            ignoreFocusOut: true
         });
-        
+
         if (!jobCommand) {
             return;
         }
@@ -48,10 +48,10 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
                 location: vscode.ProgressLocation.Notification,
                 progressTitle: `${jobCommand.type}ing with ${path.basename(node.jobFile.fsPath)} ...`,
                 cancellable: true
-            }, (progress, token) => this.datapackService.runYamlJob(<vlocity.actionType>jobCommand.type, node.jobFile.fsPath, token));
-            vscode.window.showInformationMessage(`Successfully ${jobCommand.type.toLowerCase()}ed with ${path.basename(node.jobFile.fsPath)}`);
+            }, (progress, token) => this.datapackService.runYamlJob(jobCommand.type as vlocity.actionType, node.jobFile.fsPath, token));
+            void vscode.window.showInformationMessage(`Successfully ${jobCommand.type.toLowerCase()}ed with ${path.basename(node.jobFile.fsPath)}`);
         } catch(err) {
-            vscode.window.showErrorMessage(`Running job file ${path.basename(node.jobFile.fsPath)} resulted in an error, see the log for details.`);
+            void vscode.window.showErrorMessage(`Running job file ${path.basename(node.jobFile.fsPath)} resulted in an error, see the log for details.`);
         }
     }
 
@@ -68,7 +68,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
             label: node.label,
             resourceUri: node.jobFile,
             command: {
-                title: 'Open',                
+                title: 'Open',
                 command: 'vscode.open',
                 arguments: [ node.jobFile ]
             },
@@ -100,16 +100,16 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
         }));
 
         // remote any non-job files
-        this.logger.info(`Found ${yamlFilesWithBody.length} YAML files in workspace folders`);        
-        const validJobFiles = yamlFilesWithBody.filter((file) => file && this.isValidJob(file.body));
+        this.logger.info(`Found ${yamlFilesWithBody.length} YAML files in workspace folders`);
+        const validJobFiles = yamlFilesWithBody.filter(file => file && this.isValidJob(file.body));
         this.logger.info(`Displaying ${validJobFiles.length} valid Job files in Job explorer`);
-        
-        //await this.vlocode.validateAll(true);
+
+        // await this.vlocode.validateAll(true);
         return validJobFiles.map(({ file }) => new JobNode( file ));
     }
 }
 
-class JobNode {    
+class JobNode {
     constructor(
         public readonly jobFile: vscode.Uri
     ) { }

@@ -1,18 +1,18 @@
-import { ManifestEntry, ObjectEntry } from "lib/vlocity/vlocityDatapackService";
-import { v4 as generateGuid } from "uuid";
-import { LogManager } from "../logging";
-import { createRecordProxy, normalizeSalesforceName, removeNamespacePrefix } from "lib/util/salesforce";
-import { transformPropertyProxy, PropertyTransformHandler } from 'lib/util/object';
+import { PropertyTransformHandler, transformPropertyProxy } from 'lib/util/object';
+import { createRecordProxy, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
+import { ManifestEntry, ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
+import { v4 as generateGuid } from 'uuid';
+import { LogManager } from '../logging';
 
-export type VlocityDatapackReference = { 
+export type VlocityDatapackReference = {
     [key: string]: string;
-    VlocityRecordSObjectType: string 
+    VlocityRecordSObjectType: string;
 } & ({
     VlocityDataPackType: 'VlocityLookupMatchingKeyObject';
-    VlocityLookupRecordSourceKey: string; 
+    VlocityLookupRecordSourceKey: string;
 } | {
     VlocityDataPackType: 'VlocityMatchingKeyObject';
-    VlocityMatchingRecordSourceKey: string; 
+    VlocityMatchingRecordSourceKey: string;
 });
 
 /**
@@ -24,34 +24,34 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
 
     public get hasGlobalKey(): boolean { return this.globalKey !== undefined && this.globalKey !== null; }
     public get globalKey(): string { return this.data['%vlocity_namespace%__GlobalKey__c']; }
-    public get name(): string { return this.data['Name']; }
-    public get sobjectType(): string { return this.data['VlocityRecordSObjectType']; }
-    public get sourceKey(): string { return this.data['VlocityRecordSourceKey']; }
+    public get name(): string { return this.data.Name; }
+    public get sobjectType(): string { return this.data.VlocityRecordSObjectType; }
+    public get sourceKey(): string { return this.data.VlocityRecordSourceKey; }
     public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
-    public readonly data: object;    
-    #dataProxy: object;
-    
+    public readonly data: any;
+    #dataProxy: any;
+
     constructor(
-        public readonly headerFile: string, 
-        public readonly datapackType: string, 
-        public readonly key: string, 
+        public readonly headerFile: string,
+        public readonly datapackType: string,
+        public readonly key: string,
         public readonly projectFolder: string,
         data?: any) {
         if (Buffer.isBuffer(data)) {
             data = data.toString();
-        }        
+        }
         if (typeof data === 'string') {
             try {
                 this.data = JSON.parse(data);
             } catch (err) {
-                LogManager.get(VlocityDatapack).error('Unable to parse datapack JSON: ' + (err.message || err));
+                LogManager.get(VlocityDatapack).error(`Unable to parse datapack JSON: ${  err.message || err}`);
             }
         } else if (typeof data === 'object') {
             this.data = data ?? {};
         } else {
             this.data = {};
         }
-        
+
         // Proxies allow us to intercept all property calls
         // allowing us to simulate an indexer ([]) overload 
         return new Proxy(this, {
@@ -71,13 +71,13 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             if (typeof value === 'string') {
                 if (value.endsWith(currentName) || value.startsWith(currentName)) {
                     owner[property] = value.replace(currentName, name);
-                }             
+                }
             }
         }
     }
 
     public updateSourceKey(newKey: string): any {
-        const currentSourceKey = this.sourceKey;        
+        const currentSourceKey = this.sourceKey;
         for (const [property, value, owner] of this.getProperties()) {
             if (typeof value !== 'string') {
                 return;
@@ -91,12 +91,12 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     }
 
     public regenerateGlobalKey() {
-        // regenerate main objects global key
+        // Regenerate main objects global key
         this.updateGlobalKey(this.data, generateGuid());
 
-        // update include child records that have global keys
+        // Update include child records that have global keys
         for (const child of this.getChildObjects()) {
-            if (child['VlocityDataPackType'] == 'SObject' && child['%vlocity_namespace%__GlobalKey__c']) {
+            if (child.VlocityDataPackType == 'SObject' && child['%vlocity_namespace%__GlobalKey__c']) {
                 this.updateGlobalKey(child, generateGuid());
             }
         }
@@ -120,7 +120,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     /**
      * Iterate over the source keys provided by this datapack
      */
-    public *getSourceKeys() : Generator<{ VlocityRecordSObjectType: string, VlocityRecordSourceKey: string }, void> {
+    public *getSourceKeys() : Generator<{ VlocityRecordSObjectType: string; VlocityRecordSourceKey: string }, void> {
         for (const child of this.getChildObjects([ this.data ])) {
             if (child.VlocityRecordSourceKey) {
                 yield {
@@ -142,7 +142,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
                 if (child.VlocityRecordSObjectType == 'RecordType') {
                     continue;
                 }
-                yield <VlocityDatapackReference>child;
+                yield child as VlocityDatapackReference;
             }
         }
     }
@@ -163,13 +163,13 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
 
         return externalReferences.values();
     }
-    
+
     /**
      * Recursively iterate over the properties of this datapack and it's child objects
      * @param object Object to iterate over
      */
     private* getProperties(object: object = this.data) : Generator<[ string, string, any ]> {
-        for (const [key, value] of Object.entries(object)) {            
+        for (const [key, value] of Object.entries(object)) {
             if (Array.isArray(value)) {
                 for (const arrayValue of value) {
                     if (typeof arrayValue === 'object') {
@@ -197,7 +197,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             }
             if (!Array.isArray(value)) {
                 yield value;
-            }       
+            }
             yield* this.getChildObjects(value);
         }
     }
@@ -209,7 +209,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             } else if (typeof object[key] === 'object') {
                 executer(object[key]);
                 this.forEachChildObject(object[key], executer);
-            } 
+            }
         });
     }
 
@@ -222,15 +222,15 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             };
             this.#dataProxy = new Proxy(this.data, new PropertyTransformHandler(getPropertyKey));
         }
-        return this.#dataProxy;        
+        return this.#dataProxy;
     }
 
     private getProperty(name: string | number | symbol) : any {
         if (name === undefined || name === null){
             return undefined;
-        } else if (name in this && (<any>this)[name] !== undefined){
-            return (<any>this)[name];
-        } 
+        } else if (name in this && (this as any)[name] !== undefined){
+            return (this as any)[name];
+        }
         return this.getDataProxy()[name];
     }
 
@@ -238,8 +238,8 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         if (name == undefined || name == null){
             return false;
         } else if (name in this){
-            (<any>this)[name] = value;
-        } 
+            (this as any)[name] = value;
+        }
         return this.getDataProxy()[name] = value;
     }
 }

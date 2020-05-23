@@ -1,16 +1,15 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
 
-import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
-import { DatapackCommand } from './datapackCommand';
-import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import { groupBy } from 'lib/util/collection';
 import { createRecordProxy } from 'lib/util/salesforce';
 import { evalExpr } from 'lib/util/string';
 
-
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import SObjectRecord from '../lib/salesforce/sobjectRecord';
+import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
+import { DatapackCommand } from './datapackCommand';
 
 export default class ExportDatapackCommand extends DatapackCommand {
 
@@ -41,7 +40,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         // query available records
         let records = await this.queryExportableRecords(datapackType);
         if (records.length == 0) {
-            vscode.window.showWarningMessage(`No exportable records for ${datapackType}`);
+            void vscode.window.showWarningMessage(`No exportable records for ${datapackType}`);
             return;
         }
 
@@ -68,7 +67,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
     private getExportQuery(datapackType: string, vlocityNamespace?: string) : string | undefined {
         if (exportQueryDefinitions[datapackType]) {
             return exportQueryDefinitions[datapackType].query
-                    .replace(constants.NAMESPACE_PLACEHOLDER, vlocityNamespace || this.datapackService.vlocityNamespace);
+                .replace(constants.NAMESPACE_PLACEHOLDER, vlocityNamespace || this.datapackService.vlocityNamespace);
         }
     }
 
@@ -227,10 +226,10 @@ export default class ExportDatapackCommand extends DatapackCommand {
         if (dependencyExportDepth === undefined) {
             return; // selection cancelled;
         }
-        
+
         let exportPath = this.vlocode.config.projectPath;
         if (!exportPath && !(exportPath = await this.showExportPathSelection())) {
-            vscode.window.showErrorMessage('No project path selected; export aborted.');
+            void vscode.window.showErrorMessage('No project path selected; export aborted.');
             return;
         }
 
@@ -244,7 +243,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
             const results = await this.datapackService.export(entries, exportPath, dependencyExportDepth, token);
             this.showResultMessage(results);
         });
-        
+
     }
 
     protected showResultMessage(results : DatapackResultCollection) {
@@ -254,8 +253,8 @@ export default class ExportDatapackCommand extends DatapackCommand {
             const errorMessage = errors.find(e => e.errorMessage)?.errorMessage ?? 'Unknown error';
             errors.forEach((rec, i) => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
             throw `Failed to export ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`;
-        }         
+        }
         const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
-        vscode.window.showInformationMessage(`Successfully exported ${resultSummary}`);
+        void vscode.window.showInformationMessage(`Successfully exported ${resultSummary}`);
     }
 }

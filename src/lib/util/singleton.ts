@@ -1,7 +1,7 @@
 /**
  * Unique symbol for storing the singleton instances
  */
-const singletonSymbol = Symbol(`$singleton`);
+const singletonSymbol = Symbol('$singleton');
 
 /**
  * Simple function that registers any instance of a class as single and creates it when it is not existing. Instances are stored as globals which is the closest we can get to a real singleton. *
@@ -31,6 +31,7 @@ export function getInstance<T extends new(...args: any) => InstanceType<T>>(type
 export function destroyAllSingletons() {
     if (global[singletonSymbol]) {
         for (const key of global[singletonSymbol]) {
+            // eslint-disable-next-line @typescript-eslint/tslint/config
             delete global[singletonSymbol][key];
         }
     }

@@ -1,19 +1,19 @@
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import { LogManager } from 'lib/logging';
-import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import * as constants from '@constants';
 import Timer from 'lib/util/timer';
+import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 
 export class DatapackLookupService implements DependencyResolver {
-    
-    private readonly lookupCache = new Map<string, { refreshed?: number, entries: Map<string, string> }>();
+
+    private readonly lookupCache = new Map<string, { refreshed?: number; entries: Map<string, string> }>();
     private readonly lastRefresh: Date = null;
 
     constructor(
         private readonly vlocityNamespace: string,
-        private readonly matchingKeyService: VlocityMatchingKeyService, 
-        private readonly lookupService: SalesforceLookupService, 
+        private readonly matchingKeyService: VlocityMatchingKeyService,
+        private readonly lookupService: SalesforceLookupService,
         private readonly logger = LogManager.get(DatapackLookupService)) {
     }
 
@@ -24,7 +24,7 @@ export class DatapackLookupService implements DependencyResolver {
     public async resolveDependency(dependency: DatapackRecordDependency): Promise<string> {
         const lookupKey = this.getLookupKey(dependency);
         const filter = {};
-        
+
         for (const field of Object.keys(dependency)) {
             if (constants.DATAPACK_RESERVED_FIELDS.includes(field)) {
                 continue;
@@ -33,7 +33,7 @@ export class DatapackLookupService implements DependencyResolver {
         }
 
         if (Object.keys(filter).length == 0) {
-            this.logger.warn(`None of the dependencies lookup fields have values; skipping lookup as it will fail`);
+            this.logger.warn('None of the dependencies lookup fields have values; skipping lookup as it will fail');
             return;
         }
 
@@ -54,15 +54,15 @@ export class DatapackLookupService implements DependencyResolver {
         const timer = new Timer();
 
         const cache = this.getCache(sobjectType);
-        const beforeSize = cache.entries.size;       
+        const beforeSize = cache.entries.size;
         const filter = {
             lastModifiedDate: `>${new Date(cache.refreshed).toISOString()}`
         };
 
         for (const [key, id] of (await this.lookupAll(sobjectType, filter)).entries()) {
-            this.updateCachedEntry(sobjectType, key, id);           
+            this.updateCachedEntry(sobjectType, key, id);
         }
-        
+
         this.logger.log(`Refreshed ${sobjectType} lookup cache with ${cache.entries.size - beforeSize} new records [${timer.stop()}]`);
         cache.refreshed = Date.now() - timer.elapsed;
     }
@@ -70,13 +70,13 @@ export class DatapackLookupService implements DependencyResolver {
     private async lookupAll(sobjectType: string, filter?: object) {
         const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
         const lookupMap = new Map<string, string>();
-        const results = await this.lookupService.lookup(sobjectType, filter, [...matchingKey.fields, matchingKey.returnField], null, false); 
+        const results = await this.lookupService.lookup(sobjectType, filter, [...matchingKey.fields, matchingKey.returnField], null, false);
 
         for (const record of results) {
             const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, record);
             lookupMap.set(lookupKey.toLowerCase(), this.updateCachedEntry(sobjectType, lookupKey, record.id));
         }
-        
+
         return lookupMap;
     }
 
@@ -118,11 +118,11 @@ export class DatapackLookupService implements DependencyResolver {
      * Bulk lookup of records in Salesforce using the current matching key configuration
      * @param records 
      */
-    public async lookupIds(records: Array<{ sobjectType: string, values: object }>, batchSize: 50): Promise<string[]> {
+    public async lookupIds(records: Array<{ sobjectType: string; values: object }>, batchSize: 50): Promise<string[]> {
         const ids = [];
         const indexMap = new Map<string, number>();
         const lookupTypes = new Map<string, object[]>();
-        
+
         // Group lookups by sobject type and creat a mapping from input index to 
         // matching key so we can translate this back to the original input in the lookup phase of this call
         for (const [i, { sobjectType, values }] of records.entries()) {
@@ -134,7 +134,7 @@ export class DatapackLookupService implements DependencyResolver {
                 ids[i] = id;
                 continue;
             }
-            
+
             const entries = (lookupTypes.get(sobjectType) ?? lookupTypes.set(sobjectType, []).get(sobjectType));
             indexMap.set(lookupKey, i);
             entries.push(this.buildFilter(values, matchingKey.fields));
@@ -143,19 +143,19 @@ export class DatapackLookupService implements DependencyResolver {
         for (const [sobjectType, entries] of lookupTypes.entries()) {
             // time whole operation
             const timer = new Timer();
-            const total = entries.length; 
+            const total = entries.length;
             let found = 0;
             const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
             this.logger.verbose(`Looking up Id for ${entries.length} records of type ${sobjectType}`);
 
             // Split up lookup in chunks @see batchSize records at a time - otherwise we might overflow our SOQL limit
             do {
-                const lookupEntries = entries.splice(0, batchSize);                
+                const lookupEntries = entries.splice(0, batchSize);
                 const results = await this.lookupService.lookup(sobjectType, lookupEntries, [ 'Id', ...matchingKey.fields ], null, false);
                 found += results.length;
 
                 for (const rec of results) {
-                    const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, rec);                
+                    const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, rec);
                     const index = indexMap.get(lookupKey);
                     this.updateCachedEntry(sobjectType, lookupKey, rec.Id);
 
@@ -165,7 +165,7 @@ export class DatapackLookupService implements DependencyResolver {
                         this.logger.warn(`Got result for record that was never requested: ${lookupKey}`);
                     }
                 }
-                
+
             } while(entries.length > 0);
 
             this.logger.log(`Found ${found}/${total} requested ${sobjectType} records [${timer.stop()}]`);
@@ -176,7 +176,7 @@ export class DatapackLookupService implements DependencyResolver {
 
     private buildFilter(data: object, fields: string[]) {
         const filter = {};
-        
+
         for (const field of fields) {
             const value = data[field];
             if (value !== undefined) {
@@ -218,14 +218,14 @@ export class DatapackLookupService implements DependencyResolver {
     private getCachedEntry(sobjectType: string, key: string | object, resolver?: (key: string) => string | Promise<string>): Promise<string>;
     private getCachedEntry(sobjectType: string, key: string | object, resolver?: (key: string) => string | Promise<string>): Promise<string> | string {
         if (typeof key === 'object') {
-            return this.matchingKeyService.getMatchingKeyDefinition(sobjectType).then(matchingKey => 
+            return this.matchingKeyService.getMatchingKeyDefinition(sobjectType).then(matchingKey =>
                 this.getCachedEntry(sobjectType, this.buildLookupKey(sobjectType, matchingKey.fields, resolver))
             );
         }
 
         const resolved = this.getCache(sobjectType).entries.get(key.toLowerCase());
         if (!resolved && resolver) {
-            return Promise.resolve(resolver(key)).then(result => 
+            return Promise.resolve(resolver(key)).then(result =>
                 this.updateCachedEntry(sobjectType, key, result)
             );
         }
@@ -236,7 +236,7 @@ export class DatapackLookupService implements DependencyResolver {
     private updateCachedEntry(sobjectType: string, key: object, id: string) : Promise<string>;
     private updateCachedEntry(sobjectType: string, key: string | object, id: string) : Promise<string> | string {
         if (typeof key === 'object') {
-            return this.matchingKeyService.getMatchingKeyDefinition(sobjectType).then(matchingKey => 
+            return this.matchingKeyService.getMatchingKeyDefinition(sobjectType).then(matchingKey =>
                 this.updateCachedEntry(sobjectType, this.buildLookupKey(sobjectType, matchingKey.fields, key), id)
             );
         }
@@ -249,6 +249,6 @@ export class DatapackLookupService implements DependencyResolver {
         if (!cache) {
             this.lookupCache.set(sobjectType.toLowerCase(), cache = { refreshed: 0, entries: new Map() });
         }
-        return cache; 
+        return cache;
     }
 }

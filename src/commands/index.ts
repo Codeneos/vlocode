@@ -1,15 +1,15 @@
 
-import RefreshDatapackCommand from "./refreshDatapackCommand";
-import DeployDatapackCommand from "./deployDatapackCommand";
-import ExportDatapackCommand from "./exportDatapackCommand";
-import SelectOrgCommand from "./selectOrgCommand";
-import AdminCommands from "./vlocityAdminCommand";
-import { VlocodeCommand } from "../constants";
-import BuildParentKeyFilesCommand from "./buildParentKeyFiles";
-import OpenSalesforceCommand from "./openSalesforceCommand";
-import RenameDatapackCommand from "./renameDatapackCommand";
-import CloneDatapackCommand from "./cloneDatapackCommand";
-import SalesforceCommand from "./salesforce";
+import { VlocodeCommand } from '../constants';
+import RefreshDatapackCommand from './refreshDatapackCommand';
+import DeployDatapackCommand from './deployDatapackCommand';
+import ExportDatapackCommand from './exportDatapackCommand';
+import SelectOrgCommand from './selectOrgCommand';
+import AdminCommands from './vlocityAdminCommand';
+import BuildParentKeyFilesCommand from './buildParentKeyFiles';
+import OpenSalesforceCommand from './openSalesforceCommand';
+import RenameDatapackCommand from './renameDatapackCommand';
+import CloneDatapackCommand from './cloneDatapackCommand';
+import SalesforceCommand from './salesforce';
 
 export default {
     [VlocodeCommand.refreshDatapack]: RefreshDatapackCommand,

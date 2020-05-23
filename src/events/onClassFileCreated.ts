@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
 import { EventHandlerBase } from 'events/eventHandlerBase';
-import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as vscode from 'vscode';
+import * as fs from 'fs-extra';
 import { Builder as XmlBuilder } from 'xml2js';
 import * as constants from '@constants';
 import { getDocumentBodyAsString } from 'lib/util/fs';
@@ -10,8 +10,8 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
 
     public get enabled() : boolean {
         return !!(this.vloService.config?.salesforce?.enabled && this.vloService.config?.salesforce.manageMetaXmlFiles);
-    }    
-   
+    }
+
     protected async handleEvent(document: vscode.Uri): Promise<void> {
         if (!this.enabled) {
             return;
@@ -35,7 +35,7 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
 
     protected getClassBody(className: string) : string {
         if (/^I[A-Z]{1}/.test(className)) {
-            return `public interface ${className} {\n\n\n}`;            
+            return `public interface ${className} {\n\n\n}`;
         }
         if (/Test$/i.test(className)) {
             return `@isTest\nclass ${className} {\n\n    @isTest\n    static void test() {\n    }\n}`;
@@ -44,18 +44,18 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
     }
 
     protected async createMetaDataFileFor(document: vscode.Uri): Promise<void> {
-        const metaXml = new XmlBuilder(constants.MD_XML_OPTIONS).buildObject({ 
-            ApexClass: { 
-                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' }, 
+        const metaXml = new XmlBuilder(constants.MD_XML_OPTIONS).buildObject({
+            ApexClass: {
+                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' },
                 status: 'Active',
                 apiVersion: this.vloService.config.salesforce?.apiVersion
             }
-        });        
+        });
 
         try {
-            await fs.writeFile(document.fsPath + '-meta.xml', metaXml, { flag: 'wx' });
+            await fs.writeFile(`${document.fsPath  }-meta.xml`, metaXml, { flag: 'wx' });
         } catch(e) {
             // Ignore error; this fails if the meta file already exists
-        }        
+        }
     }
 }

@@ -1,20 +1,20 @@
+import * as path from 'path';
+import * as fs from 'fs';
 import { expect } from 'chai';
 import { spy } from 'sinon';
-import * as path from 'path';
 import * as mockFs from 'mock-fs';
-import * as fs from 'fs';
 import 'mocha';
 
-import * as vscode from 'vscode';
-import vlocityDatapackService, * as vds from '../../lib/vlocity/vlocityDatapackService';
 import { fail } from 'assert';
+import * as vscode from 'vscode';
 import { Logger } from 'lib/logging';
 import { makePath } from 'test/helpers';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import vlocityDatapackService, * as vds from '../../lib/vlocity/vlocityDatapackService';
 
-declare var VlocityUtils: any;
+declare let VlocityUtils: any;
 
-describe('vlocityDatapackService', () => {   
+describe('vlocityDatapackService', () => {
 
     /* This test case is not sufficiently stable for cross platform builds
      * Todo: rewrite logic

@@ -1,5 +1,5 @@
-import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as fs from 'fs-extra';
 
 // Import vscode as optional module, only load it when available
 const vscode = import('vscode').catch(e => null);
@@ -12,8 +12,8 @@ export async function getDocumentBodyAsString(file: string) : Promise<string> {
     const vscodeRef = await vscode;
     if (vscodeRef) {
         const doc = vscodeRef?.workspace.textDocuments.find(doc => doc.fileName == file);
-        if (doc) { 
-            return doc.getText(); 
+        if (doc) {
+            return doc.getText();
         }
         return (await vscodeRef?.workspace.fs.readFile(vscodeRef.Uri.file(file))).toString();
     }

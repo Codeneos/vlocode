@@ -3,8 +3,8 @@ import * as mockFs from 'mock-fs';
 import 'mocha';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
 
-describe('datapackLoader', () => {   
-    describe.skip("#loadFrom", function () {
+describe('datapackLoader', () => {
+    describe.skip('#loadFrom', () => {
         beforeEach(() => {
             // setup fake FS for testing
             mockFs({
@@ -15,7 +15,7 @@ describe('datapackLoader', () => {
                 'datapack2.json': JSON.stringify({ name: 'test', nonExisting: 'non_existing.json', html: 'test.html' }),
             });
         });
-        it("should recursively include references", async function() {
+        it('should recursively include references', async () => {
             const loader = new DatapackLoader();
             const loadedDatapack = await loader.loadFrom('datapack1.json');
 
@@ -26,7 +26,7 @@ describe('datapackLoader', () => {
             expect(loadedDatapack.json1.json2.name).equals('test2');
             expect(loadedDatapack.json1.json2.html).equals('test_content');
         });
-        it("should treat non-existing references as strings", async function() {
+        it('should treat non-existing references as strings', async () => {
             const loader = new DatapackLoader();
             const loadedDatapack = await loader.loadFrom('datapack2.json');
 
@@ -36,5 +36,5 @@ describe('datapackLoader', () => {
             expect(loadedDatapack.nonExisting).equals('non_existing.json');
         });
         afterEach(mockFs.restore);
-    });    
+    });
 });

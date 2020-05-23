@@ -1,11 +1,11 @@
-import * as jsforce from 'jsforce';
 import * as constants from '@constants';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import { removeNamespacePrefix, normalizeSalesforceName } from 'lib/util/salesforce';
-import cache from 'lib/util/cache';
-import moment = require('moment');
+import * as jsforce from 'jsforce';
 import { LogManager } from 'lib/logging';
+import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import cache from 'lib/util/cache';
+import { normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
+import moment = require('moment');
 
 /**
  * Provices access to Database Schema methods like describe.
@@ -13,8 +13,8 @@ import Timer from 'lib/util/timer';
 export default class SalesforceSchemaService {
 
     constructor(
-            private readonly connectionProvider: JsForceConnectionProvider,
-            private readonly logger = LogManager.get(SalesforceSchemaService)) {
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly logger = LogManager.get(SalesforceSchemaService)) {
     }
 
     @cache(-1)
@@ -48,7 +48,7 @@ export default class SalesforceSchemaService {
     }
 
     @cache(-1)
-    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field> {    
+    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field> {
         const result = await this.describeSObject(type, throwWhenNotFound);
         const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
         // First find a field with namespace, secondly without
@@ -81,7 +81,7 @@ export default class SalesforceSchemaService {
      */
     public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.FieldType> {
         return (await this.describeSObjectField(type, fieldName, throwWhenNotFound)).type;
-    }    
+    }
 
     /**
      * Transforms a property like Salesforce field to a valid Salesforce field or field path, for exampled
@@ -95,10 +95,10 @@ export default class SalesforceSchemaService {
         for (let i = 0; i < pathSplit.length; i++) {
             const prop = pathSplit[i];
             const fields = await this.getSObjectFields(type);
-            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizeSalesforceName(prop));            
+            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizeSalesforceName(prop));
             if (!field) {
                 throw new Error(`Unable to resolve salesforce field path; unknown property ${prop} on type ${type}`);
-            }            
+            }
             const isLastField = i == pathSplit.length - 1;
             if (field.type == 'reference' && !isLastField) {
                 salesforcePath.push(field.relationshipName);

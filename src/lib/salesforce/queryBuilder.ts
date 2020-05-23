@@ -1,5 +1,5 @@
-import { LogManager, Logger } from 'lib/logging';
 import * as constants from '@constants';
+import { Logger, LogManager } from 'lib/logging';
 
 export interface QueryCondition {
     readonly field: string;
@@ -20,12 +20,12 @@ export enum SortOrder {
 /**
  * Simple salesforce SOQL builder
  */
-export default class QueryBuilder {  
+export default class QueryBuilder {
 
-    private fields: string[] = [];
-    private conditions: QueryCondition[] = [];
-    private sorting: SortCondition[] = [];
-    private limit: number;
+    private readonly fields: string[] = [];
+    private readonly conditions: QueryCondition[] = [];
+    private readonly sorting: SortCondition[] = [];
+    private readonly limit: number;
 
     constructor(
         private readonly objectType: string,
@@ -44,16 +44,16 @@ export default class QueryBuilder {
     public sortBy(...sortFields: [string, SortOrder?][] | string[]) : QueryBuilder {
         sortFields.forEach(sortField => {
             if(Array.isArray(sortField)) {
-                this.sorting.push({ 
-                    field: sortField[0], 
+                this.sorting.push({
+                    field: sortField[0],
                     order: sortField[1] || SortOrder.ASC
                 });
             } else {
-                this.sorting.push({ 
-                    field: sortField, 
+                this.sorting.push({
+                    field: sortField,
                     order: SortOrder.ASC
                 });
-            }            
+            }
         });
         return this;
     }
@@ -64,14 +64,14 @@ export default class QueryBuilder {
 
     public whereNotEq(field: string, value: any) : QueryBuilder {
         return this.where([field, '!=', value]);
-    }    
+    }
 
     public where(...conditions: [string, string, any][]) : QueryBuilder {
         conditions.forEach(condition => {
-            this.conditions.push({ 
-                field: condition[0], 
-                comparisonOperator: condition[1], 
-                value: condition[2] 
+            this.conditions.push({
+                field: condition[0],
+                comparisonOperator: condition[1],
+                value: condition[2]
             });
         });
         return this;
@@ -82,7 +82,7 @@ export default class QueryBuilder {
                   + `from ${this.objectType.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)}`;
         if (this.conditions.length > 0) {
             query += ` where ${this.conditions.map(c => this.formatCondition(c)).join(' and ')}`;
-        } 
+        }
         if (this.sorting.length > 0) {
             query += ` order by ${this.sorting.map(s => this.formatSortCondition(s)).join(',')}`;
         }

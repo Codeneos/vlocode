@@ -1,14 +1,14 @@
-import { Logger } from "lib/logging";
-import * as util from "lib/util/callStack";
-import * as vlocityPackageManifest from "vlocity/package.json";
+import { Logger } from 'lib/logging';
+import * as util from 'lib/util/callStack';
+import * as vlocityPackageManifest from 'vlocity/package.json';
 import 'vlocity';
 
 // Import VlocityUtils as global from Vlocity NodeJS module
-declare var VlocityUtils: {
+declare let VlocityUtils: {
     [key: string]: any;
     silence?: boolean;
-    output: (loggingMethod: string, color: string, args: IArguments) => void;
-    fatal: (...args: any[]) => void;
+    output(loggingMethod: string, color: string, args: IArguments): void;
+    fatal(...args: any[]): void;
 };
 
 const loggerMapping = {
@@ -26,7 +26,7 @@ const loggerMapping = {
  */
 export function setLogger(logger : Logger, includeCallerDetails: boolean = false){
     const vlocityLogFn = (logFn: (...args: any[]) => void, args: any[]) : void => {
-        if (VlocityUtils.silence === true) {
+        if (VlocityUtils.silence) {
             return;
         }
         if (includeCallerDetails) {
@@ -39,10 +39,10 @@ export function setLogger(logger : Logger, includeCallerDetails: boolean = false
     // Override all methods
     for (const [key, value] of Object.entries(loggerMapping)) {
         VlocityUtils[key] = (...args: any[]) => vlocityLogFn(value, args);
-    }    
+    }
     VlocityUtils.output = (_loggingMethod, _color: string, args: IArguments) => vlocityLogFn(logger.log, Array.from(args));
-    VlocityUtils.fatal = (...args: any[]) => { 
+    VlocityUtils.fatal = (...args: any[]) => {
         vlocityLogFn(logger.error, Array.from(args));
-        throw new Error(Array.from(args).join(' ')); 
+        throw new Error(Array.from(args).join(' '));
     };
 }

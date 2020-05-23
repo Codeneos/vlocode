@@ -4,8 +4,8 @@
  * Default constants used in this extensipn
  */
 
-const packageJson = require('../package.json');
 import metadataTypes = require('metadataTypes.yaml');
+import packageJson = require('../package.json');
 
 export const VERSION = packageJson.version;
 export const API_CLIENT_NAME = 'Vlocode SOAP client';
@@ -14,20 +14,20 @@ export const OUTPUT_CHANNEL_NAME = 'Vlocity';
 export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
-export const MD_XML_OPTIONS = { 
+export const MD_XML_OPTIONS = {
     xmldec: { version: '1.0', encoding: 'UTF-8' },
     renderOpts: { pretty: true, indent: '    ', newline: '\n' }
 };
 export const SF_META_EXTENSIONS = [ '-meta.xml' ]
     .concat(Object.values(metadataTypes).map(type => type.fileExtensions).flat());
 export const DATAPACK_RESERVED_FIELDS = [
-    'VlocityDataPackType', 
-    'VlocityMatchingRecordSourceKey', 
-    'VlocityLookupRecordSourceKey', 
-    'VlocityRecordSourceKey', 
-    'VlocityRecordSObjectType' 
+    'VlocityDataPackType',
+    'VlocityMatchingRecordSourceKey',
+    'VlocityLookupRecordSourceKey',
+    'VlocityRecordSourceKey',
+    'VlocityRecordSObjectType'
 ];
-    
+
 export enum VlocodeCommand {
     refreshDatapack = 'vlocity.refreshDatapack',
     deployDatapack = 'vlocity.deployDatapack',

@@ -1,5 +1,5 @@
 import * as constants from '@constants';
-import { LogWriter, LogEntry, LogLevel } from "lib/logging";
+import { LogWriter, LogEntry, LogLevel } from 'lib/logging';
 import moment = require('moment');
 
 export class ConsoleWriter implements LogWriter {

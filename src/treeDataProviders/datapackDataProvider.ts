@@ -1,8 +1,5 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
-import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
-import SObjectRecord from '../lib/salesforce/sobjectRecord';
-import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import { LogManager, Logger } from 'lib/logging';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import { evalExpr } from 'lib/util/string';
@@ -10,6 +7,9 @@ import { groupBy } from 'lib/util/collection';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { createRecordProxy, addFieldsToQuery } from 'lib/util/salesforce';
+import OpenSalesforceCommand from '../commands/openSalesforceCommand';
+import SObjectRecord from '../lib/salesforce/sobjectRecord';
+import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
 
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
@@ -18,28 +18,28 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         if (node.nodeType == DatapackNodeType.Category) {
             // Collect all exportable nodes
             const children = await this.vlocode.withStatusBarProgress('Loading exportable datapacks...', () => this.getChildren(node));
-            
+
             const exportableNodes = children.map(node => {
                 if (node instanceof DatapackObjectGroupNode) {
                     const record = node.records.slice(-1)[0];
-                    return record ? <ObjectEntry>{ 
-                        id: record.Id, 
-                        datapackType: node.datapackType, 
+                    return record && {
+                        id: record.Id,
+                        datapackType: node.datapackType,
                         sobjectType: record.attributes.type
-                    } : undefined;
-                } 
+                    } as ObjectEntry;
+                }
                 return node;
             }).filter(node => node !== undefined);
 
-            this.executeCommand(constants.VlocodeCommand.exportDatapack, ...exportableNodes);
+            return this.executeCommand(constants.VlocodeCommand.exportDatapack, ...exportableNodes);
         } else if (node.nodeType == DatapackNodeType.Object) {
-            this.executeCommand(constants.VlocodeCommand.exportDatapack, node);
+            return this.executeCommand(constants.VlocodeCommand.exportDatapack, node);
         }
     }
 
     protected getCommands() {
         return {
-            'vlocity.datapackExplorer.export': async (node) => this.onExport(node),
+            'vlocity.datapackExplorer.export': async node => this.onExport(node),
             'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
             'vlocity.datapackExplorer.refresh': () => this.refresh()
         };
@@ -49,7 +49,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         return this.vlocode.datapackService;
     }
 
-    private get vlocityNamespace() : string {         
+    private get vlocityNamespace() : string {
         return this.datapackService.vlocityNamespace;
     }
 
@@ -67,12 +67,12 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
         await this.vlocode.validateAll(true);
         const nodeSorter = (a: DatapackNode, b: DatapackNode) => a.getItemLabel().localeCompare(b.getItemLabel());
-        
+
         if (!node) {
             return Object.keys(await this.datapackService.getQueryDefinitions()).map(
                 dataPackType => new DatapackCategoryNode(dataPackType)
             ).sort(nodeSorter);
-        } else if (node instanceof DatapackCategoryNode) {            
+        } else if (node instanceof DatapackCategoryNode) {
             const records = await this.getExportableRecords(node.datapackType);
 
             // set node to not expand in case there are no results
@@ -91,13 +91,13 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
             return this.createDatapackObjectNodes(records, node.datapackType).sort(nodeSorter);
 
         } else if (node instanceof DatapackObjectGroupNode) {
-            return this.createDatapackObjectNodes(node.records, node.datapackType).sort(nodeSorter);            
+            return this.createDatapackObjectNodes(node.records, node.datapackType).sort(nodeSorter);
         }
     }
 
-    private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {        
-        const query = await this.getQuery(datapackType);            
-        const results = await this.vlocode.salesforceService.query<SObjectRecord>(query);            
+    private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {
+        const query = await this.getQuery(datapackType);
+        const results = await this.vlocode.salesforceService.query<SObjectRecord>(query);
         this.logger.log(`Found ${results.length} exportable datapacks form type ${datapackType}`);
         return results;
     }
@@ -109,7 +109,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     private async getQuery(datapackType: string) {
         const queryDefinitions = await this.datapackService.getQueryDefinitions();
         const queryString = addFieldsToQuery(queryDefinitions[datapackType].query, 'Name');
-        return queryString;    
+        return queryString;
     }
 
     private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
@@ -132,11 +132,11 @@ enum DatapackNodeType {
     ObjectGroup = 'objectGroup'
 }
 
-abstract class DatapackNode {    
+abstract class DatapackNode {
     constructor(
         public readonly nodeType: DatapackNodeType,
         public expandable: boolean = false,
-        public icon: { light: string, dark: string } | string = undefined
+        public icon: { light: string; dark: string } | string = undefined
     ) { }
 
     public abstract getItemLabel() : string;
@@ -177,7 +177,7 @@ class DatapackObjectGroupNode extends DatapackNode {
     public getItemLabel() {
         return evalExpr(this.getLabelFormat(), this.records[0]);
     }
-    
+
     public getItemDescription() {
         const nodeConfig = exportQueryDefinitions[this.datapackType];
         if (nodeConfig && nodeConfig.groupDescription) {
@@ -212,7 +212,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public getItemLabel() {
-        const nodeConfig = exportQueryDefinitions[this.datapackType];        
+        const nodeConfig = exportQueryDefinitions[this.datapackType];
         if (nodeConfig && nodeConfig.name) {
             return evalExpr(nodeConfig.name, this.record);
         }
@@ -220,7 +220,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public getItemDescription() {
-        const nodeConfig = exportQueryDefinitions[this.datapackType];        
+        const nodeConfig = exportQueryDefinitions[this.datapackType];
         if (nodeConfig && nodeConfig.description) {
             return evalExpr(nodeConfig.description, this.record);
         }
@@ -235,7 +235,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
         return this.record.attributes?.type;
     }
 
-    public get id(): string {    
+    public get id(): string {
         return this.record.Id;
     }
 

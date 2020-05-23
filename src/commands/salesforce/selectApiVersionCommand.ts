@@ -1,8 +1,8 @@
+import { version } from 'punycode';
 import * as vscode from 'vscode';
 import { AuthInfo } from '@salesforce/core';
-import { CommandBase } from '../commandBase';
 import SfdxUtil from 'lib/util/sfdx';
-import { version } from 'punycode';
+import { CommandBase } from '../commandBase';
 
 type ApiVersionQuickPickItem = vscode.QuickPickItem & { version?: string };
 
@@ -23,11 +23,11 @@ export default class SelectApiVersion extends CommandBase {
         if (!apiVersion) {
             return;
         }
-        
+
         let newApiVersion = apiVersion.version;
 
         if (!newApiVersion) {
-            newApiVersion = await vscode.window.showInputBox({ 
+            newApiVersion = await vscode.window.showInputBox({
                 placeHolder: 'Enter the API version number; for example: 35.0',
                 validateInput: (input: string) => {
                     if (!/^\d{2,3}\.\d$/.test(input)) {
@@ -36,25 +36,25 @@ export default class SelectApiVersion extends CommandBase {
                 },
                 ignoreFocusOut: true
             });
-            
+
             if (!newApiVersion) {
                 return;
-            }          
-        } 
+            }
+        }
 
         // Update the config and show a nice message to our user
-        vscode.window.showInformationMessage(`Using Salesforce API version ${newApiVersion}`);
+        void vscode.window.showInformationMessage(`Using Salesforce API version ${newApiVersion}`);
         this.vlocode.config.salesforce.apiVersion = newApiVersion;
     }
 
     private async getApiVersions() {
         const currentApiVersion = this.vlocode.config.salesforce.apiVersion;
-        const versions = (await this.vlocode.salesforceService.getApiVersions(7)).map(version => ({ 
-            label: (currentApiVersion == version ? `$(primitive-dot) ` : '') + `Salesforce API Version ${version}`, 
-            version 
+        const versions = (await this.vlocode.salesforceService.getApiVersions(7)).map(version => ({
+            label: `${currentApiVersion == version ? '$(primitive-dot) ' : ''  }Salesforce API Version ${version}`,
+            version
         }));
-        return versions.concat({ label: `Enter version manually`, version: null });
-    } 
+        return versions.concat({ label: 'Enter version manually', version: null });
+    }
 }
 
 

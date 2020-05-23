@@ -1,56 +1,56 @@
-import * as jsforce from 'jsforce';
 import * as path from 'path';
+import * as jsforce from 'jsforce';
 import * as salesforce from '@salesforce/core';
 import AuthCommand = require('salesforce-alm/dist/lib/auth/authCommand');
 import { LogManager, Logger } from 'lib/logging';
 
 export type FullSalesforceOrgDetails = {
-    orgId?: string,
-    accessToken?: string,
-    instanceUrl?: string,
-    loginUrl?: string,
-    username?: string,
-    clientId?: string, 
-    connectedStatus?: string,
-    lastUsed?: string,
-    alias?: string,
-    isDefaultDevHubUsername? : boolean,
-    isDefaultUsername?: boolean
-} & { refreshToken?: string, clientSecret?: string };
+    orgId?: string;
+    accessToken?: string;
+    instanceUrl?: string;
+    loginUrl?: string;
+    username?: string;
+    clientId?: string;
+    connectedStatus?: string;
+    lastUsed?: string;
+    alias?: string;
+    isDefaultDevHubUsername? : boolean;
+    isDefaultUsername?: boolean;
+} & { refreshToken?: string; clientSecret?: string };
 
-export type SalesforceAuthResult = {
-    orgId: string,
-    accessToken?: string,
-    instanceUrl?: string,
-    loginUrl?: string,
-    username: string,
-    clientId?: string,
-    refreshToken?: string,
-};
+export interface SalesforceAuthResult {
+    orgId: string;
+    accessToken?: string;
+    instanceUrl?: string;
+    loginUrl?: string;
+    username: string;
+    clientId?: string;
+    refreshToken?: string;
+}
 
-export type SalesforceOrgInfo = {
-    orgId: string,
-    accessToken?: string,
-    instanceUrl?: string,
-    loginUrl?: string,
-    username: string,
-    alias?: string,
-    clientId?: string,
-    refreshToken?: string,
-};
+export interface SalesforceOrgInfo {
+    orgId: string;
+    accessToken?: string;
+    instanceUrl?: string;
+    loginUrl?: string;
+    username: string;
+    alias?: string;
+    clientId?: string;
+    refreshToken?: string;
+}
 
 /**
  * A shim for accessing SFDX functionality
  */
 export default class SfdxUtil {
 
-    public static async webLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceAuthResult> {
+    public static async webLogin(options: { instanceUrl: string; alias?: string }) : Promise<SalesforceAuthResult> {
         const command = new AuthCommand();
         const result = await command.execute({
-            instanceurl: options.instanceUrl, 
-            setalias: options.alias 
+            instanceurl: options.instanceUrl,
+            setalias: options.alias
         });
-        
+
         return result;
     }
 
@@ -102,10 +102,10 @@ export default class SfdxUtil {
 
     public static async getJsForceConnection(username?: string) : Promise<jsforce.Connection> {
         const org = await SfdxUtil.getOrg(username);
-        const connection = org.getConnection();
-        return <jsforce.Connection><any>connection;
+        const connection = org.getConnection() as unknown;
+        return connection as jsforce.Connection;
     }
-    
+
     protected static get logger() : Logger {
         return LogManager.get(SfdxUtil);
     }

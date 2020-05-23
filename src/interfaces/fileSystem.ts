@@ -1,7 +1,7 @@
 /**
  * Basic representation of a read-only file system for reading files, checking file existence and reading directory contents.
  */
-export type FileSystem = {
+export interface FileSystem {
     /**
      * Checks if the specified path exists on the file system
      * @param path Path to check
@@ -19,4 +19,4 @@ export type FileSystem = {
      * @param path Directory
      */
     readdir(path: string): Promise<string[]>;
-};
+}

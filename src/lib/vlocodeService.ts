@@ -1,31 +1,31 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
+import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
+import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
+import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
+import { Hook } from 'mocha';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { Logger, LogManager } from './logging';
-import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
 import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from './salesforce/connection/sfdxConnectionProvider';
 import SalesforceService, { InstalledPackageRecord } from './salesforce/salesforceService';
-import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
-import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import { ConfigurationManager } from './configurationManager';
 import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
-import { Hook } from 'mocha';
 import Timer from './util/timer';
 import chalk = require('chalk');
 
-type ActivityOptions = { 
-    progressTitle: string, 
-    activityTitle?: string, 
-    cancellable: boolean, 
-    location: vscode.ProgressLocation,
+interface ActivityOptions {
+    progressTitle: string;
+    activityTitle?: string;
+    cancellable: boolean;
+    location: vscode.ProgressLocation;
     /** Task runner throws exceptions back to so they can be caught by the called */
-    propagateExceptions?: boolean
-};
+    propagateExceptions?: boolean;
+}
 
-export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {  
+export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates
     private disposables: {dispose() : any}[] = [];
@@ -81,13 +81,13 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     public async initialize() {
-        this.showStatus(`$(sync) Connecting to Salesforce...`);
+        this.showStatus('$(sync) Connecting to Salesforce...');
         try {
-            this.connector = null;  
-            this._salesforceService = null;          
+            this.connector = null;
+            this._salesforceService = null;
             if (this._datapackService) {
                 this._datapackService.dispose();
-                this._datapackService = null;            
+                this._datapackService = null;
             }
             if (this.config.sfdxUsername) {
                 this._salesforceService = new SalesforceService(this);
@@ -99,7 +99,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             if (err?.message == 'NamedOrgNotFound') {
                 this.showStatus(`$(error) Unknown Salesforce user: ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
             } else {
-                this.showStatus(`$(alert) Could not connect to Salesforce`, VlocodeCommand.selectOrg);
+                this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
         }
     }
@@ -142,8 +142,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      */
     public withProgress<T>(title: string, task: ((progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>) | Promise<T>) : Promise<T> {
         return this.withActivity({
-            progressTitle: title, 
-            cancellable: false, 
+            progressTitle: title,
+            cancellable: false,
             location: vscode.ProgressLocation.Notification
         }, typeof task === 'function' ? task : () => task);
     }
@@ -155,8 +155,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      */
     public withCancelableProgress<T>(title: string, task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
         return this.withActivity({
-            progressTitle: title, 
-            cancellable: true, 
+            progressTitle: title,
+            cancellable: true,
             location: vscode.ProgressLocation.Notification
         }, task);
     }
@@ -168,8 +168,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      */
     public withStatusBarProgress<T>(title: string, task: ((progress: vscode.Progress<{ message?: string }>) => Promise<T>) | Promise<T>) : Promise<T> {
         return this.withActivity({
-            progressTitle: title, 
-            cancellable: true, 
+            progressTitle: title,
+            cancellable: true,
             location: vscode.ProgressLocation.Window
         }, typeof task === 'function' ? task : () => task);
     }
@@ -180,9 +180,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param task Task to run
      */
     public withActivity<T>(
-            options: ActivityOptions, 
-            task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
-        
+        options: ActivityOptions,
+        task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
+
         // Create activity record to track activity progress
         const cancelTokenSource = options.cancellable ? new vscode.CancellationTokenSource() : undefined;
         const onCompleteEmitter = new vscode.EventEmitter<VlocodeActivity>();
@@ -193,7 +193,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             title: options.activityTitle || options.progressTitle,
             status: VlocodeActivityStatus.Pending,
             onComplete: onCompleteEmitter.event,
-            cancel() { 
+            cancel() {
                 cancelTokenSource?.cancel();
             },
             dispose() {
@@ -203,18 +203,18 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         });
 
         // anon-function that is going to run our task
-        const taskRunner = async (progress, token: vscode.CancellationToken) => {
+        const taskRunner = async (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => {
             token?.onCancellationRequested(() => options.cancellable && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
             activityRecord.status = VlocodeActivityStatus.InProgress;
-            try {                
-                const result = await task(progress, cancelTokenSource?.token); 
-                activityRecord.status = cancelTokenSource?.token.isCancellationRequested 
+            try {
+                const result = await task(progress, cancelTokenSource?.token);
+                activityRecord.status = cancelTokenSource?.token.isCancellationRequested
                     ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Completed;
                 return result;
             } catch(e) {
-                activityRecord.status = cancelTokenSource?.token.isCancellationRequested 
+                activityRecord.status = cancelTokenSource?.token.isCancellationRequested
                     ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Failed;
-                if (options.propagateExceptions !== false) {
+                if (options.propagateExceptions) {
                     throw e;
                 }
             } finally {
@@ -226,31 +226,30 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.activities.push(activityRecord);
         this.registerDisposable(activityRecord);
 
-        return <Promise<T>>vscode.window.withProgress({
-            title: options.progressTitle || options.activityTitle, 
-            cancellable: options.cancellable, 
+        return vscode.window.withProgress({
+            title: options.progressTitle || options.activityTitle,
+            cancellable: options.cancellable,
             location: options.location
-        }, taskRunner);
+        }, taskRunner) as Promise<T>;
     }
-    
+
     public async getJsForceConnection() : Promise<jsforce.Connection> {
         if (this.connector == null) {
             const connectorHooks = new HookManager<SfdxConnectionProvider>().registerHook({
-                    post: (args) => {
-                        if (args.name === 'getJsForceConnection') {
-                            args.returnValue = args.returnValue
-                                .then(connection => {
-                                    const result = this.initializeNamespace(connection);
-                                    return result;
-                                })
-                                .then(connection => {
-                                    const result = this.connectionHooks.attach(connection);
-                                    return result;
-                                });
-                        }
+                post: args => {
+                    if (args.name === 'getJsForceConnection') {
+                        args.returnValue = args.returnValue
+                            .then(connection => {
+                                const result = this.initializeNamespace(connection);
+                                return result;
+                            })
+                            .then(connection => {
+                                const result = this.connectionHooks.attach(connection);
+                                return result;
+                            });
                     }
-                }                
-            );
+                }
+            });
             this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername));
         }
         const conn = await this.connector.getJsForceConnection();
@@ -265,11 +264,11 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
         // Init namespace by query a Vlocity class similair as to what is done in the build tools
         const timer = new Timer();
-        const results = await connection.query<{ NamespacePrefix: string }>(`select NamespacePrefix from ApexClass where name = 'DRDataPackService' limit 1`);
-        
+        const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
+
         if (results.totalSize == 0) {
             // This usually happens when there is no VLocity package installed
-            this.logger.warn(`Unable to detect Vlocity Managed Package on target org, is Vlocity installed?`);
+            this.logger.warn('Unable to detect Vlocity Managed Package on target org, is Vlocity installed?');
         } else {
             // Define a readonly property that cannot be overwritten or changed using
             // a unique symbol only known to this class instance
@@ -300,8 +299,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      */
     public async getDocumentBodyAsString(file: string) : Promise<string> {
         const doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
-        if (doc) { 
-            return doc.getText(); 
+        if (doc) {
+            return doc.getText();
         }
         return (await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString();
     }
@@ -311,7 +310,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             return this.hideStatus();
         }
         if (!config.sfdxUsername ) {
-            return this.showStatus(`$(gear) Select Vlocity org`, VlocodeCommand.selectOrg);
+            return this.showStatus('$(gear) Select Vlocity org', VlocodeCommand.selectOrg);
         }
         return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
     }
@@ -324,9 +323,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private createConfigWatcher() : vscode.Disposable {
         this.updateStatusBar(this.config);
         this.showApiVersionStatusItem();
-        return ConfigurationManager.watch(this.config, () => {
-            this.showStatus(`$(sync) Processing config changes...`, VlocodeCommand.selectOrg);
-            this.initialize();
+        return ConfigurationManager.watch(this.config, async () => {
+            this.showStatus('$(sync) Processing config changes...', VlocodeCommand.selectOrg);
+            await this.initialize();
             this.showApiVersionStatusItem();
         });
     }
@@ -353,21 +352,20 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     public async validateAll(throwException: boolean) : Promise<string | void> {
-        const validationResult = this.validateWorkspaceFolder() || 
-								 await this.validateSalesforceConnectivity();
-		if (validationResult) {
+        const validationResult = this.validateWorkspaceFolder() || await this.validateSalesforceConnectivity();
+        if (validationResult) {
             if (throwException) {
                 throw Error(validationResult);
             }
-			return validationResult;
-		}
+            return validationResult;
+        }
     }
 
     public enableSalesforceSupport(support: boolean) {
         if (this.config.salesforce.enabled !== support) {
             this.config.salesforce.enabled = support;
         }
-        vscode.commands.executeCommand('setContext', 'vlocodeSalesforceSupport', support);
+        void vscode.commands.executeCommand('setContext', 'vlocodeSalesforceSupport', support);
         this.logger.info(`Salesforce support ${support ? 'enabled' : 'disabled'}`);
     }
 }

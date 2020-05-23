@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import VlocityDatapackService from 'lib/vlocity/vlocityDatapackService';
-import { CommandBase } from "commands/commandBase";
-import { mapAsync, mapAsyncParallel } from 'lib/util/collection';
-import { ManifestEntry } from 'lib/vlocity/vlocityDatapackService';
+import VlocityDatapackService, { ManifestEntry } from 'lib/vlocity/vlocityDatapackService';
+import { CommandBase } from 'commands/commandBase';
+import { mapAsyncParallel } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackHeaders, getDatapackManifestKey } from 'lib/vlocity/datapackUtil';
 import SalesforceService from 'lib/salesforce/salesforceService';
@@ -25,10 +24,10 @@ export abstract class DatapackCommand extends CommandBase {
         if (validationMessage) {
             throw validationMessage;
         }
-    }    
+    }
 
     protected async getDatapackHeaders(files: vscode.Uri[]) : Promise<vscode.Uri[]> {
-        const headerFiles = await Promise.all(files.map(async (fileUri) => {
+        const headerFiles = await Promise.all(files.map(async fileUri => {
             const fileStat = await fs.lstat(fileUri.fsPath);
             return getDatapackHeaders(fileUri.fsPath, fileStat.isDirectory());
         }));
@@ -36,7 +35,7 @@ export abstract class DatapackCommand extends CommandBase {
     }
 
     protected resolveManifestEntriesForFiles(files: vscode.Uri[]) : Promise<ManifestEntry[]> {
-        return this.getDatapackHeaders(files).then(headerFiles => 
+        return this.getDatapackHeaders(files).then(headerFiles =>
             Promise.all(headerFiles.map(header => getDatapackManifestKey(header.fsPath)))
         );
     }
@@ -47,7 +46,7 @@ export abstract class DatapackCommand extends CommandBase {
         return mapAsyncParallel(headerFiles, header => {
             if (onProgress) {
                 onProgress(header, ++progressCounter / headerFiles.length);
-            }             
+            }
             return this.datapackService.loadDatapack(header);
         }, 4);
     }

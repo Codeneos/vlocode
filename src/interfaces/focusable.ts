@@ -1,7 +1,7 @@
 /**
  * Describes an object that can be focused (behavioral)
  */
-export interface Focusable {    
+export interface Focusable {
     /**
      * Focuses on the specified UI element
      */

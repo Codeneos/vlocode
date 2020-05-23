@@ -1,5 +1,6 @@
-import { DatapackRecordDependency, DependencyResolver } from './datapackDeployService';
 import Timer from 'lib/util/timer';
+import { Iterable } from 'lib/util/iterable';
+import { DatapackRecordDependency, DependencyResolver } from './datapackDeployService';
 
 export enum DeploymentStatus {
     Pending,
@@ -10,10 +11,10 @@ export enum DeploymentStatus {
 
 export default class DatapackDeploymentRecord {
 
-    _dependencies : { [key: string]:DatapackRecordDependency } = {};
-    _status: DeploymentStatus = DeploymentStatus.Pending;
-    _statusDetail: string;
-    _deployTimer: Timer = new Timer();
+    private readonly _dependencies = new Map<string, DatapackRecordDependency>();
+    private readonly _deployTimer: Timer = new Timer();
+    private _status: DeploymentStatus = DeploymentStatus.Pending;
+    private _statusDetail: string;
 
     public get status(): DeploymentStatus {
         return this._status;
@@ -33,15 +34,15 @@ export default class DatapackDeploymentRecord {
 
     public get statusMessage(): string {
         return this._status !== DeploymentStatus.Deployed && this._statusDetail;
-    }    
+    }
 
     public get deployTime(): number {
         return this._deployTimer.elapsed;
-    } 
+    }
 
     public get hasUnresolvedDependencies(): boolean {
-        return Object.keys(this._dependencies).length > 0;
-    } 
+        return this._dependencies.size > 0;
+    }
 
     constructor(
         public readonly sobjectType: string,
@@ -64,15 +65,15 @@ export default class DatapackDeploymentRecord {
     }
 
     public addLookup(field: string, dependency: DatapackRecordDependency) {
-        this._dependencies[field] = dependency;
+        this._dependencies.set(field, dependency);
     }
 
     public getDependencySourceKeys() {
-        return this.getDependencies().map(d => d.VlocityMatchingRecordSourceKey || d.VlocityLookupRecordSourceKey);
+        return Iterable.map(this._dependencies.values(), d => d.VlocityMatchingRecordSourceKey || d.VlocityLookupRecordSourceKey);
     }
 
     public getDependencies() {
-        return Object.values(this._dependencies);
+        return [...this._dependencies.values()];
     }
 
     public async resolveDependencies(resolver: DependencyResolver) {
@@ -81,9 +82,8 @@ export default class DatapackDeploymentRecord {
             const resolution = await resolver.resolveDependency(dependency);
             if (resolution) {
                 this.values[field] = resolution;
-                delete this._dependencies[field];
+                this._dependencies.delete(field);
             }
         }
     }
 }
-

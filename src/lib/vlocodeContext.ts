@@ -1,18 +1,18 @@
-import type { ExtensionContext } from "vscode";
-import type VlocodeService from './vlocodeService';
-import { singleton, getInstance } from "lib/util/singleton";
 import * as path from 'path';
+import type { ExtensionContext } from 'vscode';
+import { singleton, getInstance } from 'lib/util/singleton';
+import type VlocodeService from './vlocodeService';
 
 /**
  * Minimal version of VScodes extension context.
  */
 class VlocodeContext {
 
-    constructor(      
+    constructor(
         /**
 		 * The absolute file path of the directory containing the extension.
-		 */  
-        readonly extensionPath: string, 
+		 */
+        readonly extensionPath: string,
         /**
 		 * An absolute file path of a workspace specific directory in which the extension
 		 * can store private state. The directory might not exist on disk and creation is
@@ -28,14 +28,14 @@ class VlocodeContext {
         readonly service: VlocodeService) {
     }
 
-    
+
     /**
      * Get the absolute path of a resource contained in the extension.
      *
      * @param relativePath A relative path to a resource contained in the extension.
      * @return The absolute path of the resource.
      */
-	public asAbsolutePath(relativePath: string): string {
+    public asAbsolutePath(relativePath: string): string {
         return path.join(this.extensionPath, relativePath);
     }
 

@@ -1,20 +1,19 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
 import { DatapackResultCollection } from 'lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from 'commands/datapackCommand';
 import { forEachAsyncParallel } from 'lib/util/collection';
-import * as path from 'path';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import DatapackDeployService from 'lib/vlocity/datapackDeployService';
-import { DatapackLookupService } from 'lib/vlocity/datapackLookupService';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
     /** 
      * In order to prevent double deployment keep a list of files recently saved by this command
      */
-    private readonly savingDocumentsList = new Set<string>(); 
+    private readonly savingDocumentsList = new Set<string>();
 
     public execute(...args: any[]): void | Promise<void> {
         return this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
@@ -28,10 +27,10 @@ export default class DeployDatapackCommand extends DatapackCommand {
         const datapackFolders = datapackHeaders.map(header => path.dirname(header.fsPath));
         const datapackFiles = new Set(
             (await Promise.all(datapackFolders.map(folder => fs.readdir(folder))))
-                    // prepend folder names so we have fully qualified paths
-                    .map((files, i) => files.map(file => path.join(datapackFolders[i], file)))
-                    // Could have used .flat() but that wasn't available yet
-                    .reduce((arr, readdirResults) => arr.concat(...readdirResults), [])
+            // prepend folder names so we have fully qualified paths
+                .map((files, i) => files.map(file => path.join(datapackFolders[i], file)))
+            // Could have used .flat() but that wasn't available yet
+                .reduce((arr, readdirResults) => arr.concat(...readdirResults), [])
         );
         const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && datapackFiles.has(d.uri.fsPath));
 
@@ -47,7 +46,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
         return forEachAsyncParallel(openDocuments, doc => doc.save());
     }
 
-    protected async deployDatapacks(selectedFiles: vscode.Uri[], reportErrors: boolean = true) {
+    protected async deployDatapacks(selectedFiles: vscode.Uri[]) {
         try {
             const filesForDeployment = selectedFiles.filter(file => {
                 if (this.savingDocumentsList.has(file.fsPath)) {
@@ -74,30 +73,20 @@ export default class DeployDatapackCommand extends DatapackCommand {
             }
 
             // Reading datapack takes a long time, only read datapacks if it is a reasonable count
-            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;            
-            if (datapackHeaders.length < 4) {       
-                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);         
+            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;
+            if (datapackHeaders.length < 4) {
+                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
                 const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
                 progressText = `Deploying: ${datapackNames.join(', ')} ...`;
             }
 
-            const result = await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
-                const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
-                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                
-                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-                const deployer = new DatapackDeployService(this.salesforce, await this.datapackService.getMatchingKeyService());
-                const deployment = await deployer.createDeployment(datapacks);
-                await deployment.start();
-                //return await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
-            });
 
             // report UI progress back
-            //this.showResultMessage(result);
+            // this.showResultMessage(result);
 
         } catch (err) {
             this.logger.error(err);
-            throw `Vlocode encountered an error while deploying the selected datapacks, see the log for details.`;
+            throw 'Vlocode encountered an error while deploying the selected datapacks, see the log for details.';
         }
     }
 
@@ -107,10 +96,10 @@ export default class DeployDatapackCommand extends DatapackCommand {
         if (results.hasErrors) {
             const errors = results.getErrors();
             const errorMessage = errors.find(e => e.errorMessage)?.errorMessage || 'Unknown error';
-            errors.forEach((rec, i) => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
+            errors.forEach(rec => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
             throw `Failed to deploy ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`;
         } else {
-            vscode.window.showInformationMessage(`Successfully deployed ${resultSummary}`);
+            void vscode.window.showInformationMessage(`Successfully deployed ${resultSummary}`);
         }
     }
 }

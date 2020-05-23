@@ -1,17 +1,17 @@
+import { Logger, LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import { LogManager, Logger } from 'lib/logging';
-import SalesforceSchemaService from './salesforceSchemaService';
-import QueryService, { QueryResult } from './queryService';
-import { PropertyAccessor } from 'lib/utilityTypes';
 import { asArray } from 'lib/util/collection';
+import { PropertyAccessor } from 'lib/utilityTypes';
+import QueryService, { QueryResult } from './queryService';
+import SalesforceSchemaService from './salesforceSchemaService';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
  */
-export default class SalesforceLookupService {  
+export default class SalesforceLookupService {
 
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider, 
+        private readonly connectionProvider: JsForceConnectionProvider,
         private readonly schemaService: SalesforceSchemaService = new SalesforceSchemaService(connectionProvider),
         private readonly queryService: QueryService = new QueryService(connectionProvider),
         private readonly logger = LogManager.get(SalesforceLookupService)) {
@@ -51,7 +51,7 @@ export default class SalesforceLookupService {
      */
     public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
         const filters = await Promise.all(asArray(filter).map(f => typeof f === 'string' ? Promise.resolve(f) : this.filterToWhereClause(type, f)));
-        return await this.lookupWhere(type, filters.filter(f => !!f).map(f => `(${f})`).join(' or '), lookupFields || "all", limit, useCache);
+        return this.lookupWhere(type, filters.filter(f => !!f).map(f => `(${f})`).join(' or '), lookupFields || 'all', limit, useCache);
     }
 
     private async lookupWhere<T, K extends PropertyAccessor = keyof T>(type: string, where?: string, selectFields: K[] | 'all' = 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]> {
@@ -75,7 +75,7 @@ export default class SalesforceLookupService {
 
         const realType = (await this.schemaService.describeSObject(type)).name;
         const limitClause = limit ? ` limit ${limit}` : '';
-        const whereClause = where?.trim().length ? ' where ' + where : '';
+        const whereClause = where?.trim().length ? ` where ${  where}` : '';
         return this.queryService.query(`select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`, useCache);
     }
 
@@ -91,7 +91,7 @@ export default class SalesforceLookupService {
             if (!salesforceField) {
                 throw new Error(`No such field with name ${field} found on type ${type}`);
             }
-            
+
             if (typeof value === 'object') {
                 if (salesforceField.type != 'reference') {
                     throw new Error(`Object type set for non-reference field ${field} on type ${type}`);
@@ -117,9 +117,9 @@ export default class SalesforceLookupService {
                     }
                 } else if (typeof value === 'object' && Array.isArray(value)) {
                     operator = 'includes';
-                }   
+                }
 
-                const fieldName = `${relationshipName ? relationshipName + '.' : ''}${salesforceField.name}`;
+                const fieldName = `${relationshipName ? `${relationshipName  }.` : ''}${salesforceField.name}`;
                 const fieldValue = QueryService.formatFieldValue(value, salesforceField);
                 lookupFilters.push(`${fieldName} ${operator} ${fieldValue}`);
             }

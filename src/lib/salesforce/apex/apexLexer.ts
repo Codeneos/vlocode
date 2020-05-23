@@ -21,13 +21,13 @@ interface LexerToken {
 
 interface GrammarDefinition {
     lexer(text: string): {
-       next(): LexerToken
+        next(): LexerToken;
     };
 }
 
 class ApexInlineSoqlRule implements LexerRule {
-    public first() { 
-        return '['; 
+    public first() {
+        return '[';
     }
 
     public match (scanner : LexerScanner) {
@@ -55,10 +55,10 @@ class ApexInlineSoqlRule implements LexerRule {
                 escaped = false;
             }
         }
-        
+
         // SOQL always containbs a Select statement
         if (result.match(/\s*select/mi)) {
-            return result.trim(); 
+            return result.trim();
         }
         return null;
     }
@@ -74,7 +74,7 @@ export class ApexLexer {
             this.grammer = this.initializeApexGrammar();
         }
     }
-    
+
     /**
      * Create an APEX lang definition that has a lexer function to return a token stream.
      */
@@ -103,7 +103,7 @@ export class ApexLexer {
         def.define('value.boolean', 'true|false');
         def.define('cast', '([a-zA-Z][a-zA-Z_]*)', (value: string) => value.substring(1,-1));
         def.define('ctor', 'new [a-zA-Z][a-zA-Z_]*');
-        def.define('accessor', [ '.' ]);                
+        def.define('accessor', [ '.' ]);
         def.define('annotation', '@[a-zA-Z][a-zA-Z_]*');
         def.define('name', '[a-zA-Z][a-zA-Z0-9_]*');
         return def;
@@ -118,6 +118,6 @@ export class ApexLexer {
         let token : LexerToken;
         while (token = lexer.next()) {
             yield token;
-        } 
+        }
     }
 }
