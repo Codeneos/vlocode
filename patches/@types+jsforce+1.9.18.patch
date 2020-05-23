@@ -1,0 +1,155 @@
+diff --git a/node_modules/@types/jsforce/connection.d.ts b/node_modules/@types/jsforce/connection.d.ts
+index dd182ad..dca782c 100644
+--- a/node_modules/@types/jsforce/connection.d.ts
++++ b/node_modules/@types/jsforce/connection.d.ts
+@@ -23,6 +23,31 @@ export interface RestApiOptions {
+     headers?: { [x: string]: string }
+ }
+ 
++export interface UpsertOptions extends RestApiOptions {
++    /**
++     * If true, any failed records in a call cause all changes for the call to be rolled back.
++     */
++    allOrNone?: boolean;
++}
++
++export interface DmlOptions extends RestApiOptions {
++    /**
++     * If true, any failed records in a call cause all changes for the call to be rolled back
++     */
++    allOrNone?: boolean;
++    /**
++     * If true, when records goes over the max num of collection API (=200), records are divided into several chunks and requested recursively.
++     */
++    allowRecursive?: boolean;
++}
++
++export interface RetrieveOptions extends RestApiOptions {
++    /**
++     * Fetching field names in retrieving record
++     */
++    fields?: Array<string>;
++}
++
+ // These are pulled out because according to http://jsforce.github.io/jsforce/doc/connection.js.html#line49
+ // the oauth options can either be in the `oauth2` property OR spread across the main connection
+ export interface PartialOAuth2Options {
+@@ -174,27 +199,27 @@ export abstract class BaseConnection extends EventEmitter {
+     request(info: RequestInfo | string, options?: HttpApiOptions, callback?: (err: Error, Object: object) => void): Promise<Object>;
+     query<T>(soql: string, options?: ExecuteOptions, callback?: (err: Error, result: QueryResult<T>) => void): Query<QueryResult<T>>;
+     queryMore<T>(locator: string, options?: ExecuteOptions, callback?: (err: Error, result: QueryResult<T>) => void): Promise<QueryResult<T>>;
+-    create<T>(type: string, records: Record<T> | Array<Record<T>>, options?: RestApiOptions,
++    create<T>(type: string, records: Record<T> | Array<Record<T>>, options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    create<T>(records: Record<T> | Array<Record<T>>, options?: RestApiOptions,
++    create<T>(records: Record<T> | Array<Record<T>>, options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    insert<T>(type: string, records: Record<T> | Array<Record<T>>, options?: RestApiOptions,
++    insert<T>(type: string, records: Record<T> | Array<Record<T>>, options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    retrieve<T>(type: string, ids: string | string[], options?: RestApiOptions,
++    retrieve<T>(type: string, ids: string | string[], options?: RetrieveOptions,
+         callback?: (err: Error, result: Record<T> | Array<Record<T>>) => void): Promise<(Record<T> | Array<Record<T>>)>;
+-    update<T>(type: string, records: Record<T> | Array<Record<T>>, options?: RestApiOptions,
++    update<T>(type: string, records: Record<T> | Array<Record<T>>, options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | Array<Record<T>>) => void): Promise<(RecordResult | RecordResult[])>;
+-    update<T>(records: Record<T> | Array<Record<T>>, options?: RestApiOptions,
++    update<T>(records: Record<T> | Array<Record<T>>, options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | Array<Record<T>>) => void): Promise<(RecordResult | RecordResult[])>;
+-    upsert<T>(type: string, records: Record<T> | Array<Record<T>>, extIdField: string, options?: RestApiOptions,
++    upsert<T>(type: string, records: Record<T> | Array<Record<T>>, extIdField: string, options?: UpsertOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    upsert<T>(records: Record<T> | Array<Record<T>>, extIdField: string, options?: RestApiOptions,
++    upsert<T>(records: Record<T> | Array<Record<T>>, extIdField: string, options?: UpsertOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    del<T>(type: string, ids: string | string[], options?: RestApiOptions,
++    del<T>(type: string, ids: string | string[], options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    delete<T>(type: string, ids: string | string[], options?: RestApiOptions,
++    delete<T>(type: string, ids: string | string[], options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+-    destroy<T>(type: string, ids: string | string[], options?: RestApiOptions,
++    destroy<T>(type: string, ids: string | string[], options?: DmlOptions,
+         callback?: (err: Error, result: RecordResult | RecordResult[]) => void): Promise<(RecordResult | RecordResult[])>;
+     describe$: {
+         /** Returns a value from the cache if it exists, otherwise calls Connection.describe */
+diff --git a/node_modules/@types/jsforce/record-result.d.ts b/node_modules/@types/jsforce/record-result.d.ts
+index df77ef2..bcbe7f8 100644
+--- a/node_modules/@types/jsforce/record-result.d.ts
++++ b/node_modules/@types/jsforce/record-result.d.ts
+@@ -1,7 +1,7 @@
+ import { SalesforceId } from './salesforce-id';
+ 
+ interface ErrorResult {
+-    errors: string[];
++    errors: Array<any>;
+     success: false;
+ }
+ 
+diff --git a/node_modules/@types/jsforce/salesforce-object.d.ts b/node_modules/@types/jsforce/salesforce-object.d.ts
+index 4967332..34b57f6 100644
+--- a/node_modules/@types/jsforce/salesforce-object.d.ts
++++ b/node_modules/@types/jsforce/salesforce-object.d.ts
+@@ -5,7 +5,7 @@ import { DescribeSObjectResult } from './describe-result';
+ import { Query } from './query';
+ import { Record, RecordReference } from './record';
+ import { RecordResult } from './record-result';
+-import { Connection, RestApiOptions, Callback } from './connection';
++import { Connection, Callback, DmlOptions, RetrieveOptions } from './connection';
+ import { SalesforceId } from './salesforce-id';
+ import { Batch, BatchResultInfo } from './batch';
+ import { QuickAction, QuickActionInfo } from './quick-action';
+@@ -13,21 +13,21 @@ import { QuickAction, QuickActionInfo } from './quick-action';
+ export class SObject<T> {
+     record(id: SalesforceId): RecordReference<T>;
+     retrieve(id: SalesforceId, callback?: Callback<Record<T>>): Promise<Record<T>>;
+-    retrieve(id: SalesforceId, options?: object, callback?: Callback<Record<T>>): Promise<Record<T>>;
++    retrieve(id: SalesforceId, options?: RetrieveOptions, callback?: Callback<Record<T>>): Promise<Record<T>>;
+     retrieve(ids: SalesforceId[], callback?: Callback<Array<Record<T>>>): Promise<Array<Record<T>>>;
+-    retrieve(ids: SalesforceId[], options?: object, callback?: Callback<Array<Record<T>>>): Promise<Array<Record<T>>>;
++    retrieve(ids: SalesforceId[], options?: RetrieveOptions, callback?: Callback<Array<Record<T>>>): Promise<Array<Record<T>>>;
+     // Should update require that the record Id field be provided?
+     update(record: Partial<T>, callback?: Callback<RecordResult>): Promise<RecordResult>;
+-    update(record: Partial<T>, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    update(record: Partial<T>, options?: DmlOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     update(records: Array<Partial<T>>, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+-    update(records: Array<Partial<T>>, options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    update(records: Array<Partial<T>>, options?: DmlOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     // should input really be optional? the documentation says so, but how can you actually update without it?
+     updateBulk(input?: Record[] | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     updated(start: string | Date, end: string | Date, callback?: Callback<UpdatedRecordsInfo>): Promise<UpdatedRecordsInfo>;
+     upsert(records: Record<T>, extIdField: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
+-    upsert(records: Record<T>, extIdField: string, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    upsert(records: Record<T>, extIdField: string, options?: DmlOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     upsert(records: Array<Record<T>>, extIdField: string, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+-    upsert(records: Array<Record<T>>, extIdField: string, options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    upsert(records: Array<Record<T>>, extIdField: string, options?: DmlOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     upsertBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[] | BatchResultInfo[]>): Batch;
+ 
+     find<T>(query?: object | string, callback?: Callback<Array<Record<T>>>): Query<Array<Record<T>>>;
+@@ -52,17 +52,23 @@ export class SObject<T> {
+     }
+     compactLayouts(callback?: Callback<CompactLayoutInfo>): Promise<CompactLayoutInfo>;
+     count(conditions?: object | string, callback?: Callback<number>): Query<number>;
+-    create(record: T, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    create(record: T, options?: DmlOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     create(record: T, callback?: Callback<RecordResult>): Promise<RecordResult>;
+-    create(record: Array<T>, options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    create(record: Array<T>, options?: DmlOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     create(record: Array<T>, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     createBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     del(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    del(id: string, options?: DmlOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     del(ids: string[], callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    del(ids: string[], options?: DmlOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     destroy(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    destroy(id: string, options?: DmlOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     destroy(ids: string[], callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    destroy(ids: string[], options?: DmlOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     delete(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    delete(id: string, options?: DmlOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     delete(ids: string[], callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    delete(ids: string[], options?: DmlOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     deleteBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     destroyBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     destroyHardBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
