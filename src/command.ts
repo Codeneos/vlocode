@@ -1,9 +1,9 @@
 
 export default function command<T extends new(...args: any) => InstanceType<T>>(id: string, title: string, ...args: ConstructorParameters<T>) {
-    
+
 }
 
-// function command2(attr: any) {
+// Function command2(attr: any) {
 //     return function <T extends {new(...args: any[]): {} }>(constr: T){
 //         return class extends constr {
 //             constructor(...args: any[]) {

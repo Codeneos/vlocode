@@ -1,9 +1,9 @@
 
-import { mapAsyncParallel, filterAsyncParallel } from 'lib/util/collection';
-import { stringEquals } from 'lib/util/string';
-import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as constants from '@constants';
+import * as fs from 'fs-extra';
+import { filterAsyncParallel, mapAsyncParallel } from 'lib/util/collection';
+import { stringEquals } from 'lib/util/string';
 import { cacheFunction } from './cache';
 
 /**
@@ -32,7 +32,7 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
                 const key = getPropertyKey(target, name);
                 target[key || name] = value;
                 return true;
-            } 
+            }
             return false;
         },
         getOwnPropertyDescriptor: (target, name) => {
@@ -40,9 +40,9 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
             return key ? { configurable: true, enumerable: true, writable } : undefined;
         },
         has: (target, name) => getPropertyKey(target, name) !== undefined,
-        enumerate: (target) => Object.keys(target),
-        ownKeys: (target) => Object.keys(target),
-        isExtensible: (target) => false
+        enumerate:target => Object.keys(target),
+        ownKeys:target => Object.keys(target),
+        isExtensible:target => false
     });
 }
 
@@ -54,12 +54,12 @@ export function removeNamespacePrefix(field : string) : string {
     // Also can use regex: /^(.+?__)?(?!c$|$)(.*?)(__c)?$/ replace with '$2$3'
     const namespaceIndex = field.indexOf('__');
     if (namespaceIndex > 0) {
-        // custom fields are postfixed with __c, avoid detection field name as namespace
+        // Custom fields are postfixed with __c, avoid detection field name as namespace
         const hasNamespace = namespaceIndex !== field.lastIndexOf('__');
         if (hasNamespace) {
             return field.substring(namespaceIndex+2);
         }
-    }    
+    }
     return field;
 }
 
@@ -84,7 +84,7 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
             firstPart += `,${field}`;
         }
     }
-    return firstPart + ' ' + query.substring(fromIndex);
+    return `${firstPart  } ${  query.substring(fromIndex)}`;
 }
 
 /**
@@ -100,14 +100,14 @@ export function isSalesforceMetadataFile(fileName: string) : boolean {
  * Normalizes a Salesforce field or class name by removing the namespace prefix, dropping the __c postfix and replacing
  * any underscores in the middle of the name.
  */
-export const normalizeSalesforceName = cacheFunction(function(name: string) : string {
+export const normalizeSalesforceName = cacheFunction((name: string) : string => {
     let strippedName = name.replace(/(^.*?__)?(.*?)(__(c|r)$)/gi, '$2');
     strippedName = strippedName.substring(0,1).toLowerCase() + strippedName.substring(1);
     // Some salesforce names as already in lower camel case; only convert the ones that use underscores
     if (/[\W_]+/.test(strippedName)) {
         strippedName = normalizeName(strippedName);
     }
-    // ensure we keep the __r for relationship fields
+    // Ensure we keep the __r for relationship fields
     // or whne the relationship field has an id postfix
     if (name.toLowerCase().endsWith('id__r')) {
         return strippedName.replace(/id$/i, '');
@@ -136,7 +136,7 @@ export function normalizeName(name: string) : string {
             nextUpper = false;
         } else {
             normalized += char.toLowerCase();
-        } 
+        }
     }
     return normalized;
 }

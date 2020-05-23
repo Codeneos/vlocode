@@ -7,7 +7,7 @@ export default class Lazy<T> implements Promise<T> {
 
     constructor(private readonly initializer: LazyInitializer<T>, private innerPromise: Promise<T> = null) {
     }
-    
+
     readonly [Symbol.toStringTag] = 'Lazy';
 
     private getInnerPromise() : Promise<T> {

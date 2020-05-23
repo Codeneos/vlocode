@@ -1,15 +1,15 @@
-import { VlocityDatapack } from "lib/vlocity/datapack";
+import { VlocityDatapack } from 'lib/vlocity/datapack';
 
 export interface VlocityDatapackCollection {
-    useVlocityTriggers?: boolean;//": true,
-    status? : string;//": "Complete",
-    processMultiple?: boolean;//": true,
-    primaryDataPackType? : string;//": "OmniScript",
-    primaryDataPackKey? : string;//": "2ae47763bd0479ba27a514ee2d17dc75",
-    maxDepth? : number;//h": -1,
-    isChunked? : boolean;//": false,
-    ignoreAllErrors? : boolean;//": false,
-    forceQueueable? : boolean;//": false,
+    useVlocityTriggers?: boolean;// ": true,
+    status? : string;// ": "Complete",
+    processMultiple?: boolean;// ": true,
+    primaryDataPackType? : string;// ": "OmniScript",
+    primaryDataPackKey? : string;// ": "2ae47763bd0479ba27a514ee2d17dc75",
+    maxDepth? : number;// h": -1,
+    isChunked? : boolean;// ": false,
+    ignoreAllErrors? : boolean;// ": false,
+    forceQueueable? : boolean;// ": false,
     dataPacks?: VlocityDatapackImportRecord[];
     dataPackId? : string; //  "a236E00000089hQQAQ",
     alreadyExportedKeys? : { [rel: string] : string }[]; //  [],

@@ -1,7 +1,7 @@
 /**
  * Describes the log levels supported by the logging framework
  */
-export enum LogLevel {    
+export enum LogLevel {
     debug,
     verbose,
     info,

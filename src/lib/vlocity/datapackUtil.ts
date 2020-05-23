@@ -1,9 +1,9 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import { LogManager, Logger } from 'lib/logging';
-import { mapAsyncParallel, filterAsyncParallel } from 'lib/util/collection';
+import * as fs from 'fs-extra';
+import { Logger, LogManager } from 'lib/logging';
+import { filterAsyncParallel, mapAsyncParallel } from 'lib/util/collection';
 import { getDocumentBodyAsString } from 'lib/util/fs';
+import * as vscode from 'vscode';
 
 /**
  * Gets a list of datapack headers 
@@ -24,9 +24,9 @@ export async function getDatapackHeaders(paths: string[] | string, recursive: bo
         if (recursive) {
             const folders = await filterAsyncParallel(files, async file => (await fs.stat(file)).isDirectory());
             datapackHeaders.push(...(await getDatapackHeaders(folders, recursive)));
-        }         
+        }
         return datapackHeaders;
-        
+
     });
     return results.flat();
 }
@@ -42,7 +42,7 @@ export async function getDatapackHeadersInWorkspace() : Promise<vscode.Uri[]> {
  * Simple datapack key resolution based on the folder structure
  * @param file Datapack header file path
  */
-export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackType: string, key: string } {
+export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackType: string; key: string } {
     const dirname = path.dirname(datapackHeaderPath);
     const lastPathParts = dirname.split(/\/|\\/gm).slice(-2);
     return {
@@ -65,11 +65,11 @@ export function getExportProjectFolder(datapackHeaderPath: string) : string {
  * @param file Datapack header file path
  */
 export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Promise<string> {
-    const files = (await getDatapackHeadersInWorkspace()).map(uri => uri.fsPath);    
-    for (let i = 0; i < files.length; i++) {
-        const body = await getDocumentBodyAsString(files[i]);
+    const files = (await getDatapackHeadersInWorkspace()).map(uri => uri.fsPath);
+    for (const file of files) {
+        const body = await getDocumentBodyAsString(file);
         if (body.includes(matchingKey)) {
-            return files[i];
+            return file;
         }
     }
     return null;
@@ -97,8 +97,8 @@ export default class DatapackUtil {
         } else if (sfRecordLikeObject.DeveloperName) {
             return sfRecordLikeObject.DeveloperName;
         }
-        
-        DatapackUtil.logger.warn(`Object does not have common namable property`, sfRecordLikeObject);        
+
+        DatapackUtil.logger.warn('Object does not have common namable property', sfRecordLikeObject);
         if (sfRecordLikeObject.Id) {
             // Records that do not have a name lets use the ID
             return sfRecordLikeObject.Id;
@@ -106,8 +106,8 @@ export default class DatapackUtil {
             // ... or global key
             return sfRecordLikeObject.GlobalKey__c;
         }
-        
-        // if the object has now we will throw an exception as we can't git it a name :/
+
+        // If the object has now we will throw an exception as we can't git it a name :/
         throw new Error(`The specified object does not have a name like property to use as label ${JSON.stringify(sfRecordLikeObject)}`);
     }
 

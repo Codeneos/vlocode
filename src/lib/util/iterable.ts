@@ -13,7 +13,7 @@ export namespace Iterable {
             if (Iterable.isIterable<T>(item)) {
                 yield *Iterable.flatten(item);
             } else {
-                //@ts-ignore
+                // @ts-ignore
                 yield item;
             }
         }
@@ -28,7 +28,7 @@ export namespace Iterable {
             for (const item of itr) {
                 yield item;
             }
-        }        
+        }
     }
 
     /**
@@ -41,7 +41,7 @@ export namespace Iterable {
             yield mapFunc(item);
         }
     }
-    
+
     /**
      * Checks if the specified obj is an iterable by checking if it has a callable Symbol.iterator 
      * @param obj Object to check

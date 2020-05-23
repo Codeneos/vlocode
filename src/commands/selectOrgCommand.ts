@@ -1,25 +1,25 @@
 import * as vscode from 'vscode';
-import { CommandBase } from './commandBase';
 import SfdxUtil, { SalesforceOrgInfo } from 'lib/util/sfdx';
+import { CommandBase } from './commandBase';
 
-type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo, instanceUrl?: string };
+type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
 
 export default class SelectOrgCommand extends CommandBase {
 
-    private readonly newOrgOption : SelectOrgQuickPickItem = { 
+    private readonly newOrgOption : SelectOrgQuickPickItem = {
         label: '$(key) Authorize new org',
         description: 'You will be prompted for the login url'
     };
 
-    private readonly salesforceOrgTypes : SelectOrgQuickPickItem[] = [{ 
+    private readonly salesforceOrgTypes : SelectOrgQuickPickItem[] = [{
         label: '$(microscope) Sandbox',
         description: 'https://test.salesforce.com',
         instanceUrl: 'https://test.salesforce.com'
-    }, { 
+    }, {
         label: '$(device-desktop) Production',
         description: 'https://login.salesforce.com',
         instanceUrl: 'https://login.salesforce.com'
-    }, { 
+    }, {
         label: '$(settings) Other',
         description: 'Provide a custom instance URL'
     }];
@@ -29,7 +29,7 @@ export default class SelectOrgCommand extends CommandBase {
         if (!urlRegex.test(url)) {
             return 'Please specify a valid domain URL starting with https or http';
         }
-    }
+    };
 
     public validate() : void {
         const validationMessage = this.vlocode.validateWorkspaceFolder();
@@ -39,7 +39,7 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     protected async getAuthorizedOrgs() : Promise<SelectOrgQuickPickItem[]> {
-        const orgList = await SfdxUtil.getAllKnownOrgDetails(); 
+        const orgList = await SfdxUtil.getAllKnownOrgDetails();
         return orgList.map(orgInfo => ({ label: orgInfo.alias || orgInfo.username, description: orgInfo.instanceUrl, orgInfo }));
     }
 
@@ -64,15 +64,15 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async authorizeNewOrg() : Promise<SalesforceOrgInfo | undefined> {        
+    protected async authorizeNewOrg() : Promise<SalesforceOrgInfo | undefined> {
         const newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
             { placeHolder: 'Select the type of org you want to authorize' });
-        
+
         if (!newOrgType) {
             return;
         }
 
-        const instanceUrl = newOrgType.instanceUrl || await vscode.window.showInputBox({ 
+        const instanceUrl = newOrgType.instanceUrl || await vscode.window.showInputBox({
             placeHolder: 'Enter the login URL of the instance the org lives on',
             validateInput: this.salesforceUrlValidator
         });
@@ -84,7 +84,7 @@ export default class SelectOrgCommand extends CommandBase {
         this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
         const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Window,
-            progressTitle: 'Authorizing new org...', 
+            progressTitle: 'Authorizing new org...',
             cancellable: false
         }, async () => {
             const loginResult = await SfdxUtil.webLogin({ instanceUrl });
@@ -96,12 +96,12 @@ export default class SelectOrgCommand extends CommandBase {
         if (authInfo) {
             const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
             this.logger.log(successMessage);
-            vscode.window.showInformationMessage(successMessage);
+            void vscode.window.showInformationMessage(successMessage);
             return authInfo;
         }
 
         this.logger.error(`Unable to authorize at '${instanceUrl}'`);
-        vscode.window.showErrorMessage('Failed to authorize with Salesforce, please verify you are connected to the internet');
+        void vscode.window.showErrorMessage('Failed to authorize with Salesforce, please verify you are connected to the internet');
         return;
     }
 }

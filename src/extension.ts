@@ -1,22 +1,22 @@
 const startTime = Date.now(); // Track start up performance
 
-import * as vscode from 'vscode';
-import VlocodeConfiguration from './lib/vlocodeConfiguration';
-import VlocodeService from './lib/vlocodeService';
+import OnSavedEventHandler from 'events/onSavedEventHandler';
+import OnClassFileDeleted from 'events/onClassFileDeleted';
+import OnClassFileCreated from 'events/onClassFileCreated';
 import * as constants from '@constants';
-import { LogManager, LogFilter, LogLevel }  from 'lib/logging';
-import { ConsoleWriter, OutputChannelWriter, TerminalWriter }  from 'lib/logging/writers';
+import { LogManager, LogFilter, LogLevel } from 'lib/logging';
+import { ConsoleWriter, OutputChannelWriter, TerminalWriter } from 'lib/logging/writers';
 import Commands from 'commands';
 import * as vlocityUtil from 'lib/vlocity/vlocityLogging';
-import OnSavedEventHandler from 'events/onSavedEventHandler';
 import { initializeContext } from 'lib/vlocodeContext';
 import DatapackProvider from 'treeDataProviders/datapackDataProvider';
 import JobDataProvider from 'treeDataProviders/jobExplorer';
 import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
 import { ConfigurationManager } from 'lib/configurationManager';
-import OnClassFileDeleted from 'events/onClassFileDeleted';
-import OnClassFileCreated from 'events/onClassFileCreated';
-import * as vlocityPackageManifest from "vlocity/package.json";
+import * as vscode from 'vscode';
+import * as vlocityPackageManifest from 'vlocity/package.json';
+import VlocodeService from './lib/vlocodeService';
+import VlocodeConfiguration from './lib/vlocodeConfiguration';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -50,29 +50,28 @@ export = class Vlocode {
 
     private get logger() {
         return LogManager.get('vlocode');
-    } 
+    }
 
     private setWorkingDirectory() {
         if ((vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) > 0) {
             this.logger.verbose(`Updating Vlocode workspace folder to: ${vscode.workspace.workspaceFolders[0].uri.fsPath}`);
             process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
         } else {
-            this.logger.warn(`No workspace folders detected; Vlocode will not work properly without an active workspace`);
+            this.logger.warn('No workspace folders detected; Vlocode will not work properly without an active workspace');
         }
     }
 
     private startLogger() {
         // Simple switch that decides how to log
-        const terminalWriter = this.service.registerDisposable(new TerminalWriter(`Vlocode`));
-        const outputChannelWriter = this.service.registerDisposable(new OutputChannelWriter(`Vlocode`));
+        const terminalWriter = this.service.registerDisposable(new TerminalWriter('Vlocode'));
+        const outputChannelWriter = this.service.registerDisposable(new OutputChannelWriter('Vlocode'));
 
         LogManager.registerWriter({
-            write: (entry) => {
+            write: entry => {
                 if (this.service.config.logInTerminal) {
-                    terminalWriter.write(entry);
-                } else {
-                    outputChannelWriter.write(entry);
+                    return terminalWriter.write(entry);
                 }
+                outputChannelWriter.write(entry);
             }
         }, new ConsoleWriter());
 
@@ -89,35 +88,35 @@ export = class Vlocode {
         // All SFDX and Vloctiy commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
         this.setWorkingDirectory();
-        
+
         // Init logging and register services
-        const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);        
-        this.service = new VlocodeService(vloConfig);        
+        const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);
+        this.service = new VlocodeService(vloConfig);
         context.subscriptions.push(this.service);
 
         initializeContext(context, this.service);
         this.startLogger();
-    
+
         this.logger.info(`Vlocode version ${constants.VERSION} started`);
         this.logger.info(`Using built tools version ${vlocityPackageManifest.version}`);
-        this.logger.verbose(`Verbose logging enabled`);
-        
+        this.logger.verbose('Verbose logging enabled');
+
         // Salesforce support      
         ConfigurationManager.watchProperties(vloConfig, [ 'salesforce.enabled' ], c => this.service.enableSalesforceSupport(c.salesforce.enabled));
         if (vloConfig.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
-  
+
         // register commands and windows
         this.service.commands.registerAll(Commands);
-        this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', { 
-            treeDataProvider: new DatapackProvider(this.service), 
+        this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', {
+            treeDataProvider: new DatapackProvider(this.service),
             showCollapseAll: true
         }));
-        this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', { 
+        this.service.registerDisposable(vscode.window.createTreeView('jobExplorer', {
             treeDataProvider: new JobDataProvider(this.service)
         }));
-        this.service.registerDisposable(vscode.window.createTreeView('activityView', { 
+        this.service.registerDisposable(vscode.window.createTreeView('activityView', {
             treeDataProvider: new ActivityDataProvider(this.service)
         }));
 
@@ -135,14 +134,14 @@ export = class Vlocode {
     private async deactivate() {
         // Log to debug as other output channels will be disposed
         Vlocode.instance = null; // destroy instance
-        console.debug(`Vlocode extension deactivated`);
+        console.debug('Vlocode extension deactivated');
     }
 
     static activate(context: vscode.ExtensionContext) {
-        return new Vlocode().activate(context);        
+        return new Vlocode().activate(context);
     }
 
     static deactivate() {
-        return Vlocode.instance.deactivate();        
+        return Vlocode.instance.deactivate();
     }
 };

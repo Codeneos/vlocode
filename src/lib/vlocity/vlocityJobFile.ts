@@ -17,20 +17,20 @@ export default interface VlocityJobFile {
     queries?: VlocityQueryDefinition[];
     OverrideSettings?: VlocityOverrideSettings;
     preJobApex?: {
-        Deploy: string | string[];        
+        Deploy: string | string[];
     };
     postJobApex?: {
-        Deploy: string | string[];        
+        Deploy: string | string[];
     };
     preStepApex?: {
         Deploy: {
             [datapackType: string]: string;
-        }
+        };
     };
     postStepApex?: {
         Deploy: {
             [datapackType: string]: string;
-        }
+        };
     };
 }
 
@@ -52,14 +52,14 @@ export interface VlocityOverrideSettings {
 export interface VlocityObjectConfiguration {
     NonUnique?: boolean;
     RemoveNullValues?: boolean;
-    ListFileName?: string | String[];
-    FolderName?: string | String[];
-    FilterFields?: string | String[];
-    UnhashableFields?: string | String[];
-    SourceKeyDefinition?: string | String[];
-    TitleFields?: string | String[];
-    JsonFields?: string | String[];
-    SortFields?: string | String[];
+    ListFileName?: string | string[];
+    FolderName?: string | string[];
+    FilterFields?: string | string[];
+    UnhashableFields?: string | string[];
+    SourceKeyDefinition?: string | string[];
+    TitleFields?: string | string[];
+    JsonFields?: string | string[];
+    SortFields?: string | string[];
     ReplacementFields?: {
         [fieldName: string]: string;
     };
@@ -73,7 +73,7 @@ export interface VlocityFieldConfiguration {
     /**
      * File name foe the field
      */
-    FileName?: string | String[];
+    FileName?: string | string[];
     /**
      * File Extension
      */

@@ -1,9 +1,9 @@
 import * as jsforce from 'jsforce';
 import * as vscode from 'vscode';
 import { default as sfdxUtil, FullSalesforceOrgDetails } from 'lib/util/sfdx';
-import JsForceConnectionProvider from './jsForceConnectionProvider';
 import { LogManager, Logger, LogLevel } from 'lib/logging';
 import { HookManager } from 'lib/util/hookManager';
+import JsForceConnectionProvider from './jsForceConnectionProvider';
 
 interface PooledJsforceConnection extends jsforce.Connection {
     _logger?: any;
@@ -19,7 +19,7 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
-       if (this.connection) {    
+        if (this.connection) {
             if (Date.now() < this.connection._lastTested + this.testInterval) {
                 this.connection._lastTested = Date.now();
                 return this.connection;
@@ -45,9 +45,9 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
     private async testConnection(connection: jsforce.Connection) {
         try {
             this.logger.verbose('Testing stored connection...');
-            const userQuery = await connection.query<{Id: string}>(`SELECT Id FROM User LIMIT 1`);
+            const userQuery = await connection.query<{Id: string}>('SELECT Id FROM User LIMIT 1');
             this.connection._lastTested = Date.now();
-            this.logger.verbose(`Success, you are connected! (${userQuery.records[0].Id})`); 
+            this.logger.verbose(`Success, you are connected! (${userQuery.records[0].Id})`);
             return true;
         } catch(e) {
             this.logger.error(`Connection test failed with error: ${e}`);

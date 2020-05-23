@@ -2,7 +2,7 @@
  * Describes a standard Salesforce record
  */
 export default interface SObjectRecord {
-    attributes: { 
+    attributes: {
         type: string;
         url: string;
     };

@@ -5,15 +5,15 @@ import 'mocha';
 import * as vlocityLogging from 'lib/vlocity/vlocityLogging';
 import { Logger } from 'lib/logging';
 
-declare var VlocityUtils: any;
+declare let VlocityUtils: any;
 
-describe('vlocityLogging', () => {   
+describe('vlocityLogging', () => {
 
     describe('#setLogger', () => {
-        it("should intercept all logging calls", () => {
+        it('should intercept all logging calls', () => {
             const logSpy = spy();
             vlocityLogging.setLogger(Object.assign(
-                new Logger(null, null, null), 
+                new Logger(null, null, null),
                 { write: logSpy } )
             );
 
@@ -28,9 +28,9 @@ describe('vlocityLogging', () => {
             // assert
             expect(logSpy.callCount).equals(6);
         });
-        it("should format log messages", () => {
+        it('should format log messages', () => {
             const logSpy = spy();
-            vlocityLogging.setLogger(<any>{ log: logSpy });
+            vlocityLogging.setLogger({ log: logSpy } as any);
             VlocityUtils.log('b', 'a', 'c');
 
             // assert

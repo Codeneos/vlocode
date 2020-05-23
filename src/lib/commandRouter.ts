@@ -1,15 +1,15 @@
+import * as util from 'util';
 import { Logger, LogManager } from 'lib/logging';
 import VlocodeService from 'lib/vlocodeService';
 import * as vscode from 'vscode';
-import { Command } from "lib/command";
+import { Command } from 'lib/command';
 import { VlocodeCommand } from '@constants';
-import * as util from 'util';
 import { utils } from 'mocha';
 
 export type CommandCtor = (new() => Command);
-export type CommandList = { 
-    [name: string]: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor | Command
-};
+export interface CommandList {
+    [name: string]: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor | Command;
+}
 
 class LazyCommand implements Command {
     private instance: Command;
@@ -23,9 +23,9 @@ class LazyCommand implements Command {
         return this.getCreateInstance().execute(...args);
     }
 
-    public validate(... args: any[]) {        
+    public validate(... args: any[]) {
         return this.getCreateInstance().validate(...args);
-    }    
+    }
 
     private getCreateInstance() {
         return this.instance || (this.instance = new this.ctor());
@@ -54,15 +54,15 @@ class CommandExecutor implements Command {
             if (util.types.isNativeError(err)) {
                 this.logger.verbose(err.stack);
             }
-            vscode.window.showErrorMessage(message);
+            void vscode.window.showErrorMessage(message);
         }
     }
 
-    public validate(... args: any[]) : Promise<void> | void {       
+    public validate(... args: any[]) : Promise<void> | void {
         if (this.command.validate) {
             return this.command.validate(...args);
         }
-    } 
+    }
 }
 
 /**

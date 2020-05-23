@@ -1,5 +1,5 @@
-import * as sinon from 'sinon';
 import * as path from 'path';
+import * as sinon from 'sinon';
 
 /**
  * Helper function to mock class; uses sinon
@@ -7,7 +7,7 @@ import * as path from 'path';
  * @param moduleToMock 
  * @param defaultMockValuesForMock 
  */
-/*export function mockModule<T extends { [K: string]: any }>(moduleToMock: T, defaultMockValuesForMock: Partial<{ [K in keyof T]: T[K] }>) {
+/* export function mockModule<T extends { [K: string]: any }>(moduleToMock: T, defaultMockValuesForMock: Partial<{ [K in keyof T]: T[K] }>) {
     return (sandbox: sinon.SinonSandbox, returnOverrides?: Partial<{ [K in keyof T]: T[K] }>): void => {
       const functions = Object.keys(moduleToMock);
       const returns = returnOverrides || {};
@@ -21,7 +21,7 @@ import * as path from 'path';
  * Makes cross platform compatible path string for testing using MockFS
  * @param p Path to make 
  */
-export function makePath(p : string) {    
+export function makePath(p : string) {
     if (path.sep == path.win32.sep) {
         return p.replace(/^\//i, 'c:\\').replace(/\//g, '\\');
     }

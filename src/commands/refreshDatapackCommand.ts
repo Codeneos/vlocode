@@ -1,25 +1,25 @@
 import * as vscode from 'vscode';
 
 import { groupBy, mapAsync } from 'lib/util/collection';
-import ExportDatapackCommand from './exportDatapackCommand';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
+import ExportDatapackCommand from './exportDatapackCommand';
 
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {
-       return this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]);
+        return this.refreshDatapacks(args[1] || [args[0] || this.currentOpenDocument]);
     }
 
     protected async refreshDatapacks(selectedFiles: vscode.Uri[]) : Promise<void> {
         // Depth
         const dependencyExportDepth = await this.showDependencySelection();
         if (dependencyExportDepth === undefined) {
-            this.logger.error(`Export cancelled; no dependency depth selected.`);
+            this.logger.error('Export cancelled; no dependency depth selected.');
             return; // selection cancelled;
         }
 
         const datapacksByProject = await this.vlocode.withStatusBarProgress('Loading datapacks...',
-                async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
+            async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
 
         // call
         const flatDatapackList = Object.values(datapacksByProject).flat();
@@ -30,7 +30,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
                 projectFolder => this.datapackService.export(datapacksByProject[projectFolder], projectFolder, dependencyExportDepth, cancelToken)
             );
             // report UI progress back
-            this.showResultMessage(results.reduce((results, result) => results.join(result)));
+            this.showResultMessage(results.reduce((aggregate, result) => aggregate.join(result)));
         });
     }
 }

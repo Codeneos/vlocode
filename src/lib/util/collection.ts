@@ -10,7 +10,7 @@ import { Iterable } from './iterable';
 export function flatten<T>(array: T[], depth: number = 1) : T {
     depth = isNaN(depth) ? 1 : Number(depth);
     // @ts-ignore
-    return depth ? array.reduce(function (acc: T[], cur: T[] | T) {
+    return depth ? array.reduce((acc: T[], cur: T[] | T) => {
         if (Array.isArray(cur)) {
             acc.push.apply(acc, flatten(cur, depth - 1));
         } else {
@@ -52,7 +52,7 @@ export function groupBy<T>(array: T[], keySelector: (item: T) => string | undefi
                 arr[key].push(item);
             }
             return arr;
-        }, <{ [objectKey: string]: T[] }>{}
+        }, {} as { [objectKey: string]: T[] }
     );
 }
 
@@ -117,7 +117,7 @@ export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T)
     for (const [index, value] of enumerateWithIndex(iterable)) {
         tasks[index % parallelism] = tasks[index % parallelism].then(async result => result.concat(await callback(value)));
     }
-    return Promise.all(tasks).then(results => flatten(results));
+    return Promise.all(tasks).then(flatten);
 }
 
 /**
@@ -158,7 +158,7 @@ export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> 
  */
 export function asArray<T>(...elements: Array<T[] | T | Iterable<T>>) : T[] {
     if (elements.length == 1 && Array.isArray(elements[0])) {
-        //return elements[0];
+        // Return elements[0];
     }
     const results : T[] = [];
     for (const element of elements) {

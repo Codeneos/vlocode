@@ -1,18 +1,18 @@
-import * as jsforce from 'jsforce';
-import * as xml2js from 'xml2js';
 import * as constants from '@constants';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import { stripPrefix, parseNumbers } from 'xml2js/lib/processors';
 import axios from 'axios';
+import * as jsforce from 'jsforce';
+import { Logger, LogManager } from 'lib/logging';
+import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
-import Lazy from 'lib/util/lazy';
 import cache from 'lib/util/cache';
-import { LogManager, Logger } from 'lib/logging';
-import SalesforceSchemaService from './salesforceSchemaService';
-import SalesforceDeployService from './salesforceDeployService';
-import QueryService from './queryService';
-import SalesforceLookupService from './salesforceLookupService';
+import Lazy from 'lib/util/lazy';
 import { PropertyAccessor } from 'lib/utilityTypes';
+import * as xml2js from 'xml2js';
+import { parseNumbers, stripPrefix } from 'xml2js/lib/processors';
+import QueryService from './queryService';
+import SalesforceDeployService from './salesforceDeployService';
+import SalesforceLookupService from './salesforceLookupService';
+import SalesforceSchemaService from './salesforceSchemaService';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -36,22 +36,22 @@ interface ApexLogLevels {
     Database: 'None' | 'Info' | 'Finest';
     Validation: 'Info' | 'None';
     Visualforce: 'None' | 'Info' | 'Fine' | 'Finest' ;
-    Workflow: 'None' | 'Error' | 'Warn' | 'Info' |  'Fine' | 'Finer' ;    
+    Workflow: 'None' | 'Error' | 'Warn' | 'Info' |  'Fine' | 'Finer' ;
     System: 'None' | 'Info' | 'Debug' | 'Fine' ;
 }
 
 type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
-export type SoapDebuggingHeader = {
-    Db?: SoapDebuggingLevel
-    Workflow?: SoapDebuggingLevel
-    Validation?: SoapDebuggingLevel
-    Callout?: SoapDebuggingLevel
-    Apex_code?: SoapDebuggingLevel
-    Apex_profiling?: SoapDebuggingLevel
-    Visualforce?: SoapDebuggingLevel
-    System?: SoapDebuggingLevel
-    All?: SoapDebuggingLevel
-};
+export interface SoapDebuggingHeader {
+    Db?: SoapDebuggingLevel;
+    Workflow?: SoapDebuggingLevel;
+    Validation?: SoapDebuggingLevel;
+    Callout?: SoapDebuggingLevel;
+    Apex_code?: SoapDebuggingLevel;
+    Apex_profiling?: SoapDebuggingLevel;
+    Visualforce?: SoapDebuggingLevel;
+    System?: SoapDebuggingLevel;
+    All?: SoapDebuggingLevel;
+}
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
@@ -59,22 +59,22 @@ export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & 
  * Simple Salesforce SOAP request formatter
  */
 class SoapRequest {
-    
+
     constructor(
-        public readonly method : string, 
-        public readonly namespace : string, 
-        public readonly debuggingHeader: SoapDebuggingHeader = {}) {        
+        public readonly method : string,
+        public readonly namespace : string,
+        public readonly debuggingHeader: SoapDebuggingHeader = {}) {
     }
 
     /**
      * Converts the contents of the package to XML that can be saved into a package.xml file
      */
     public toXml(requestBody: Object, sessionId: string) : string {
-        const soapRequestObject = { 
+        const soapRequestObject = {
             'soap:Envelope': {
                 $: {
-                    "xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/",
-                    "xmlns": this.namespace
+                    'xmlns:soap': 'http://schemas.xmlsoap.org/soap/envelope/',
+                    'xmlns': this.namespace
                 },
                 'soap:Header': {
                     CallOptions: {
@@ -91,7 +91,7 @@ class SoapRequest {
                     [this.method]: requestBody,
                 }
             }
-        }; 
+        };
         return new xml2js.Builder(constants.MD_XML_OPTIONS).buildObject(soapRequestObject);
     }
 }
@@ -99,35 +99,35 @@ class SoapRequest {
 /**
  * Simple SOAP response
  */
-interface SoapResponse { 
+interface SoapResponse {
     Envelope: {
-        Header?: any,
+        Header?: any;
         Body?: {
             Fault?: {
-                faultcode: string,
-                faultstring: string
-            },
-            [key: string]: any
-        }
+                faultcode: string;
+                faultstring: string;
+            };
+            [key: string]: any;
+        };
     };
- }
+}
 
-export default class SalesforceService implements JsForceConnectionProvider {  
+export default class SalesforceService implements JsForceConnectionProvider {
 
     #vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
-    
+
     public readonly schema = new SalesforceSchemaService(this.connectionProvider);
     public readonly deploy = new SalesforceDeployService(this);
     public readonly lookupService = new SalesforceLookupService(this.connectionProvider, this.schema, this.queryService);
 
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider, 
+        private readonly connectionProvider: JsForceConnectionProvider,
         private readonly queryService = new QueryService(connectionProvider),
         private readonly logger = LogManager.get(SalesforceService)) {
     }
 
     public async isProductionOrg() : Promise<boolean> {
-        return (await this.getOrganizationDetails()).isSandbox !== true;
+        return !(await this.getOrganizationDetails()).isSandbox;
     }
 
     public getJsForceConnection() : Promise<jsforce.Connection> {
@@ -138,24 +138,24 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return (await this.getInstalledPackageDetails(packageName)) !== undefined;
     }
 
-    public async getPageUrl(page : string, ops?: { namespacePrefix? : string, useFrontdoor?: boolean}) {
+    public async getPageUrl(page : string, ops?: { namespacePrefix? : string; useFrontdoor?: boolean}) {
         const con = await this.getJsForceConnection();
         let relativeUrl = page.replace(/^\/+/, '');
         if (relativeUrl.startsWith('apex/')) {
-            // build lightning URL
-            const state = { 
-                componentDef: 'one:alohaPage', 
+            // Build lightning URL
+            const state = {
+                componentDef: 'one:alohaPage',
                 attributes: {
                     address: `${con.instanceUrl}/${relativeUrl}`
                 },
                 state: { }
             };
-            relativeUrl = 'one/one.app#' + Buffer.from(JSON.stringify(state)).toString('base64');
+            relativeUrl = `one/one.app#${Buffer.from(JSON.stringify(state)).toString('base64')}`;
         }
         if (ops?.useFrontdoor) {
             relativeUrl = `secur/frontdoor.jsp?sid=${encodeURIComponent(con.accessToken)}&retURL=${encodeURIComponent(relativeUrl)}`;
         }
-        const urlNamespace = ops?.namespacePrefix ? '--' + ops.namespacePrefix.replace(/_/i, '-') : '';
+        const urlNamespace = ops?.namespacePrefix ? `--${  ops.namespacePrefix.replace(/_/i, '-')}` : '';
         return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${relativeUrl}`);
     }
 
@@ -171,7 +171,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
     @cache(-1)
     public async getInstalledPackageDetails(packageName: string | RegExp) : Promise<InstalledPackageRecord | undefined> {
-        const results = await this.getInstalledPackages();     
+        const results = await this.getInstalledPackages();
         return results.find(packageInfo => typeof packageName === 'string' ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
     }
 
@@ -211,9 +211,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
         );
     }
 
-    private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any, debugLog?: any }> {
+    private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
         const connection = await this.getJsForceConnection();
-        const soapRequest = new SoapRequest(methodName, "http://soap.sforce.com/2006/08/apex", debuggingHeader);
+        const soapRequest = new SoapRequest(methodName, 'http://soap.sforce.com/2006/08/apex', debuggingHeader);
         const endpoint = `${connection.instanceUrl}/services/Soap/s/${connection.version}`;
         const result = await axios({
             method: 'POST',
@@ -224,7 +224,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             },
             transformResponse: (data: any, headers?: any) => {
                 return xml2js.parseStringPromise(data, {
-                    tagNameProcessors: [ stripPrefix ],            
+                    tagNameProcessors: [ stripPrefix ],
                     attrNameProcessors: [ stripPrefix ],
                     valueProcessors: [
                         (value) => {
@@ -240,8 +240,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
                 });
             },
             data: soapRequest.toXml(request, connection.accessToken)
-        });        
-        const response = <SoapResponse>(await result.data);
+        });
+        const response = (await result.data) as SoapResponse;
 
         if (response.Envelope.Body?.Fault) {
             throw new Error(`SOAP API Fault: ${response.Envelope.Body.Fault?.faultstring}`);
@@ -280,7 +280,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             ...response.body.compileClassesResponse
         };
     }
-    
+
     /**
      * Get a list of available API version on the connected server
      */
@@ -295,7 +295,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return versions;
     }
 
-    // public async getDeveloperLogs(numberOfLogs = 10) {
+    // Public async getDeveloperLogs(numberOfLogs = 10) {
     //     const connection = await this.getJsForceConnection();
     //     const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];
     //     const toolingQuery = `Select ${selectFields.join(',')} From ApexLog Order By StartTime${numberOfLogs ? ` DESC LIMIT ${numberOfLogs}` : ''}`;
@@ -305,7 +305,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     //     return results2?.records;
     // }
 
-    // public async setLogLevel(name: string, logLevels: ApexLogLevels) {
+    // Public async setLogLevel(name: string, logLevels: ApexLogLevels) {
     //     connection.tooling.create('traceFlag', records)
     //     const connection = await this.getJsForceConnection();
     //     const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];

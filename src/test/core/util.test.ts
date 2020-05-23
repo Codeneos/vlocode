@@ -8,23 +8,23 @@ import { filterAsyncParallel, groupBy } from 'lib/util/collection';
 import { formatString, evalExpr } from 'lib/util/string';
 import { getObjectValues as getValues } from 'lib/util/object';
 
-describe('util', () => {   
+describe('util', () => {
 
-    describe('#sanitizePath', () => { 
+    describe('#sanitizePath', () => {
         const s = path.sep;
-        it("should remove double path separators from input", function() {
+        it('should remove double path separators from input', () => {
             expect(sanitizePath('a\\\\/b\\\\\\/c\\\\/d')).equals(`a${s}b${s}c${s}d`);
         });
-        it("should trim path separators from input", function() { 
+        it('should trim path separators from input', () => {
             expect(sanitizePath('\\\\/test/\\\\/')).equals('test');
         });
-        it("should normalize all separators to the platform standard", function() { 
+        it('should normalize all separators to the platform standard', () => {
             expect(sanitizePath('a/b\\c/d\\e')).equals(`a${s}b${s}c${s}d${s}e`);
         });
     });
 
-    describe('#filterAsyncParallel', () => { 
-        it("should return filtered list", async function() {
+    describe('#filterAsyncParallel', () => {
+        it('should return filtered list', async () => {
             const input = [ 1,2,3,4,5,6 ];
             const output = await filterAsyncParallel(input, async i => i % 2 == 0);
             expect(output.length).equals(3);
@@ -34,26 +34,26 @@ describe('util', () => {
         });
     });
 
-    describe('#formatString', () => { 
-        it("should replace placeholders with context values", function() {
+    describe('#formatString', () => {
+        it('should replace placeholders with context values', () => {
             expect(formatString('Foo ${bar}', { bar: 'foo'})).equals('Foo foo');
         });
-        it("should not replace values not found in context array", function() { 
+        it('should not replace values not found in context array', () => {
             expect(formatString('Foo ${bar} foo', { foo: 'foo'})).equals('Foo ${bar} foo');
         });
     });
 
-    describe('#evalExpr', () => { 
-        it("simple expression should return evaluated result as string", function() {
+    describe('#evalExpr', () => {
+        it('simple expression should return evaluated result as string', () => {
             expect(evalExpr('\'Foo \' + bar', { bar: 'bar'})).equals('Foo bar');
         });
-        it("complex expression should return evaluated result as string", function() { 
+        it('complex expression should return evaluated result as string', () => {
             expect(evalExpr('\'Foo \' + (i == 0 ? (bar || foo) : \'bla\')', { i: 0, foo: 'bar'})).equals('Foo bar');
         });
     });
 
-    describe('#groupBy', () => { 
-        it("should group object by specified key", function() {
+    describe('#groupBy', () => {
+        it('should group object by specified key', () => {
             const list = [
                 { group: '1', id: '1' },
                 { group: '1', id: '2' },
@@ -70,18 +70,18 @@ describe('util', () => {
         });
     });
 
-    describe('#getValues', () => { 
-        it("should get values from array", function() {
+    describe('#getValues', () => {
+        it('should get values from array', () => {
             const obj = [ 'foo', ['bar'] ];
             const result = getValues(obj);
             expect(result).to.deep.equal(['foo', 'bar']);
         });
-        it("should get values from object", function() {
+        it('should get values from object', () => {
             const obj = { a: 'foo', bar: { b: 'bar' } };
             const result = getValues(obj);
             expect(result).to.deep.equal(['foo', 'bar']);
         });
-        it("should not get values beyond max depth", function() {
+        it('should not get values beyond max depth', () => {
             const obj = { a: 'foo', bar: { b: 'bar' }};
             const result = getValues(obj, 0);
             expect(result).to.deep.equal(['foo']);

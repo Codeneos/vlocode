@@ -1,14 +1,12 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
 import { getDocumentBodyAsString } from 'lib/util/fs';
-import { DatapackCommand } from './datapackCommand';
 import * as DatapackUtil from 'lib/vlocity/datapackUtil';
 import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
-import DatapackLoader, { directFileSystem, CachedFileSystem } from 'lib/vlocity/datapackLoader';
-import { VlocodeCommand } from "../constants";
-import command from 'command';
+import DatapackLoader, { CachedFileSystem } from 'lib/vlocity/datapackLoader';
+import { DatapackCommand } from './datapackCommand';
 
 
 export default class BuildParentKeyFilesCommand extends DatapackCommand {
@@ -22,12 +20,12 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
     }
 
     public execute(...args: any[]) : Promise<void> {
-       return this.buildParentKeyFiles();
+        return this.buildParentKeyFiles();
     }
 
     protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; increment?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
         const datapackLoader = new DatapackLoader(null, new CachedFileSystem());
-        const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();        
+        const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();
         const loadedDatapacks = [];
 
         let progress = 0;
@@ -36,19 +34,19 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         for (const header of datapackHeaders) {
             if (cancelToken.isCancellationRequested) {
                 progressToken.report({ message: 'cancelled' });
-                return []; 
+                return [];
             }
 
             loadedDatapacks.push(await datapackLoader.loadFrom(header.fsPath));
 
             const newProgress = Math.floor((++progress / datapackHeaders.length) * 100);
             if (newProgress > lastReportedProgress + 1) {
-                progressToken.report({ 
+                progressToken.report({
                     message: 'loading datapacks',
-                    increment: newProgress - lastReportedProgress 
+                    increment: newProgress - lastReportedProgress
                 });
                 lastReportedProgress = newProgress;
-            }            
+            }
         }
 
         return loadedDatapacks;
@@ -56,7 +54,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
     protected async buildParentKeyFiles() : Promise<void> {
 
-        await this.vlocode.withCancelableProgress(`Repairing datapack dependencies`, async (progress, token) => {
+        await this.vlocode.withCancelableProgress('Repairing datapack dependencies', async (progress, token) => {
             // Clear current warnings
             this.diagnostics.clear();
 
@@ -90,7 +88,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                     if (this.datapackService.isGuaranteedParentKey(sourceKey)) {
                         // Some keys are guaranteed and should be ignored
                         continue;
-                    }   
+                    }
 
                     if (resolvedRef) {
                         resolvedRefs.push(resolvedRef);
@@ -105,9 +103,9 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(
-                    missingParents.map(async parentKey => 
-                        await this.findInFiles(path.dirname(datapack.headerFile), parentKey) || 
-                        await this.findInFiles(path.dirname(datapack.headerFile), parentKey.split('/').pop())
+                    missingParents.map(async parentKey =>
+                        await this.findInFiles(path.dirname(datapack.headerFile), parentKey) ||
+                        this.findInFiles(path.dirname(datapack.headerFile), parentKey.split('/').pop())
                     )
                 );
                 for (const [i, [file, range]] of missingKeyLocations.filter(result => !!result).entries()) {
@@ -122,18 +120,18 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
             }
 
             if (allUnresolvedParents.length > 0) {
-                vscode.window.showWarningMessage(`Unable to resolve ${allUnresolvedParents.length} dependencies see problems tab for details.`);
+                void vscode.window.showWarningMessage(`Unable to resolve ${allUnresolvedParents.length} dependencies see problems tab for details.`);
             } else {
-                vscode.window.showInformationMessage(`Successfully resolved all datapack dependencies and updated ParentKey files.`);
+                void vscode.window.showInformationMessage('Successfully resolved all datapack dependencies and updated ParentKey files.');
             }
-           
+
         });
     }
 
     private *getExternalReferences(datapack: VlocityDatapack) {
         if (datapack.datapackType === 'OmniScript') {
             yield* this.resolveOmniScriptReferences(datapack)[Symbol.iterator]();
-        }                    
+        }
         yield* datapack.getExternalReferences();
     }
 
@@ -160,7 +158,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
     private async updateParentKeysFile(datapackHeader: string, parentKeys: string[]) : Promise<void> {
         const [datapackFilePrefix] = path.basename(datapackHeader).split(/_datapack/i);
-        const parentKeyFile = path.join(path.dirname(datapackHeader), datapackFilePrefix + '_ParentKeys.json');
+        const parentKeyFile = path.join(path.dirname(datapackHeader), `${datapackFilePrefix  }_ParentKeys.json`);
         const currentParentKeys = await this.tryReadJson(parentKeyFile);
 
         const newParentKeys = [ ...parentKeys ];
@@ -172,7 +170,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
             await fs.writeFile(parentKeyFile, JSON.stringify([ ...new Set(newParentKeys) ].sort(), undefined, 4));
         } catch(err) {
             this.logger.error('Error while writing file:', err);
-            vscode.window.showErrorMessage(`Error while updating parent keys file for ${datapackFilePrefix}`);
+            void vscode.window.showErrorMessage(`Error while updating parent keys file for ${datapackFilePrefix}`);
         }
     }
 
@@ -212,7 +210,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         const index = content.indexOf(needle);
         if (index < 0) {
             return;
-        } 
+        }
 
         let line = 0, column = 0;
         for (let i = 0; i < index; i++) {

@@ -1,4 +1,5 @@
 import { LogManager } from 'lib/logging';
+import { isPromise } from './async';
 
 /**
  * Private property on the target object used to store cached results;
@@ -22,6 +23,7 @@ function getCacheStore(target: any) : Map<string, any> {
  */
 export function clearCache<T>(target: T) : T {
     if (target[CacheStoreProperty]) {
+        // eslint-disable-next-line @typescript-eslint/tslint/config
         delete target[CacheStoreProperty];
     }
     return target;
@@ -51,10 +53,6 @@ export default function cache(ttl: number = 60) {
  * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
 export function cacheFunction<T extends (...args: any[]) => any>(target: T, ttl: number = -1) : T {
-    function isPromise(value: any) : boolean {
-        return typeof value.then === 'function' && typeof value.catch === 'function';
-    }
-    
     const name = target.name;
     const logger = LogManager.get('CacheDecorator');
 
@@ -75,7 +73,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, ttl:
         cache.set(key, newValue);
         if (isPromise(newValue)) {
             // Remove invalid results from the cache
-            newValue.catch(err => { 
+            newValue.catch(err => {
                 logger.debug(`Delete cached promise on exception -> ${name}`, err);
                 cache.delete(key);
                 // Rethrow the exceptions so the original handler can handle it

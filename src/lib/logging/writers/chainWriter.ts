@@ -1,4 +1,4 @@
-import { LogWriter, LogEntry } from "lib/logging";
+import { LogWriter, LogEntry } from 'lib/logging';
 
 export class ChainWriter implements LogWriter {
     private readonly chain: LogWriter[];
@@ -6,7 +6,7 @@ export class ChainWriter implements LogWriter {
     constructor(...args: LogWriter[]) {
         this.chain = args || [];
     }
-    
+
     public append(...writers: LogWriter[]) {
         this.chain.push(...writers);
     }

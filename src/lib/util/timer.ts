@@ -13,7 +13,7 @@ export default class Timer {
 
     constructor() {
         this.#start = Date.now();
-    } 
+    }
 
     public toString() {
         return `${this.elapsed}ms`;
@@ -21,12 +21,12 @@ export default class Timer {
 
     public stop(): this {
         if (!this.#stop) {
-            this.#stop = Date.now(); 
+            this.#stop = Date.now();
             this.#elapsed += this.#stop - this.#start;
         }
         return this;
     }
-    
+
     public reset(): this {
         this.#start = Date.now();
         this.#stop = 0;

@@ -1,6 +1,6 @@
-import * as expressions from "angular-expressions";
-import { singleton } from "./singleton";
+import * as expressions from 'angular-expressions';
 import cache from './cache';
+import { singleton } from './singleton';
 
 /**
  * Compares strings for equality; by default comparisons are case insensitive
@@ -54,7 +54,7 @@ export function evalExpr(expr: string, contextValues: any) : string {
  */
 export function formatString(stringFormat: string, contextValues: {}) : string {
     return stringFormat.replace(/\${(.+?(.*?))}/gm, match => {
-        const key = /\${(.+?(.*?))}/g.exec(match)[1]; 
+        const key = /\${(.+?(.*?))}/g.exec(match)[1];
         return contextValues[key] === undefined ? match : contextValues[key];
     });
 }

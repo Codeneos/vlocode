@@ -29,12 +29,12 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             progressTitle: `Refreshing ${progressTitle}...`,
             location: vscode.ProgressLocation.Window,
             cancellable: true
-        }, async (progress, token) => {  
+        }, async (progress, token) => {
 
             const result = await this.salesforce.deploy.retrieveManifest(manifest, token);
-  
+
             if (!result.success) {
-                throw new Error(`Refresh failed`);
+                throw new Error('Refresh failed');
             }
 
             const componentsNotFound = [];
@@ -48,18 +48,18 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             }
 
             if (uniqueComponents.length - componentsNotFound.length <= 0) {
-                throw new Error(`Unable to retrieve any of the requested components; it could be that the requested components are not deployed on the target org.`);
+                throw new Error('Unable to retrieve any of the requested components; it could be that the requested components are not deployed on the target org.');
             }
 
             if (componentsNotFound.length > 0) {
                 this.logger.warn(`Unable to refresh: ${componentsNotFound.join(', ')}`);
-            }  
-            this.logger.info(`Refreshed ${uniqueComponents.filter(name => !componentsNotFound.includes(name)).join(', ')} succeeded`);          
+            }
+            this.logger.info(`Refreshed ${uniqueComponents.filter(name => !componentsNotFound.includes(name)).join(', ')} succeeded`);
 
             if (componentsNotFound.length > 0) {
-                vscode.window.showWarningMessage(`Refreshed ${uniqueComponents.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);
+                void vscode.window.showWarningMessage(`Refreshed ${uniqueComponents.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);
             } else {
-                vscode.window.showInformationMessage(`Refreshed ${progressTitle}`);
+                void vscode.window.showInformationMessage(`Refreshed ${progressTitle}`);
             }
         });
     }

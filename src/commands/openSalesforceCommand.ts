@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 
-import { DatapackCommand } from './datapackCommand';
 import { evalExpr } from 'lib/util/string';
-
 import { ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
+import { DatapackCommand } from './datapackCommand';
 
 export default class OpenSalesforceCommand extends DatapackCommand {
 
@@ -15,32 +14,32 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         return this.openInSalesforce(args[0] || this.currentOpenDocument);
     }
 
-    protected openInSalesforce(input: vscode.Uri | ObjectEntry) {     
+    protected openInSalesforce(input: vscode.Uri | ObjectEntry) {
         if (input instanceof vscode.Uri){
             return this.openFileInSalesforce(input);
         }
         return this.openObjectInSalesforce(input);
     }
 
-    protected async openFileInSalesforce(selectedFile: vscode.Uri) {     
+    protected async openFileInSalesforce(selectedFile: vscode.Uri) {
         // Resolve datapack
         const datapack = (await this.loadDatapacks([ selectedFile ])).pop();
         if (!datapack) {
             throw new Error(`${selectedFile.fsPath} not part of datapack`);
         }
-        
-        const salesforceId = (await this.datapackService.getSalesforceIds([ datapack ])).pop();        
+
+        const salesforceId = (await this.datapackService.getSalesforceIds([ datapack ])).pop();
         return this.openIdInSalesforce(salesforceId, datapack.datapackType);
     }
 
-    protected async openObjectInSalesforce(obj: ObjectEntry) {  
-        const salesforceId = obj.id || (await this.datapackService.getSalesforceIds([ obj ])).pop();        
+    protected async openObjectInSalesforce(obj: ObjectEntry) {
+        const salesforceId = obj.id || (await this.datapackService.getSalesforceIds([ obj ])).pop();
         return this.openIdInSalesforce(salesforceId, obj.datapackType);
     }
 
-    protected async openIdInSalesforce(objectId: string, datapackType: string, extraFields?: any) {    
+    protected async openIdInSalesforce(objectId: string, datapackType: string, extraFields?: any) {
         if (!objectId) {
-            vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; it might not be deployed on the connected org.');
+            void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; it might not be deployed on the connected org.');
             return;
         }
 
@@ -54,7 +53,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
 
         const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath);
         this.logger.info(`Opening URL: ${salesforcePath}`);
-        vscode.env.openExternal(vscode.Uri.parse(url));
+        void vscode.env.openExternal(vscode.Uri.parse(url));
     }
 
     protected resolveNamespace(namespace: string) : string | undefined {

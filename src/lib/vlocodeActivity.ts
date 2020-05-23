@@ -27,7 +27,7 @@ export interface VlocodeActivity {
     /**
      * Wether or not the activity can be cancelled
      */
-    readonly cancelable?: Boolean;
+    readonly cancelable?: boolean;
 
     /**
      * Cancel the activity, only available `cancelable` is true

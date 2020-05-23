@@ -19,7 +19,7 @@ export default abstract class MetadataCommand extends CommandBase {
         { test: /(?<message>.*):\s*(?<token>.*)/, handler: this.tokenProblemHandler.bind(this) },
         { test: /.+/, handler: this.genericProblemHandler.bind(this) }
     ];
-    
+
     protected getDiagnostics() : vscode.DiagnosticCollection {
         return this.vlocode.getDiagnostics('salesforce');
     }
@@ -43,27 +43,27 @@ export default abstract class MetadataCommand extends CommandBase {
     protected async showComponentFailures(manifest : MetadataManifest, failures : ComponentFailure[]) {
         // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
         // these are not usefull to display so we instead filter these out
-        const filterFailures = failures.filter(failure => !failure.problem.startsWith(`An unexpected error occurred.`));
+        const filterFailures = failures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
 
         for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
             const info = manifest.files[failure.fileName.replace(/^src\//i, '')];
             if (info && info.localPath) {
                 // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference                
-                this.reportProblem(vscode.Uri.file(info.localPath), failure);
+                await this.reportProblem(vscode.Uri.file(info.localPath), failure);
             }
         }
-        
+
         // Log all failures to the console even those that have no file info
         for (const failure of filterFailures.filter(failure => failure)) {
             this.logger.warn(`${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
         }
     }
 
-    protected async reportProblem(localPath: vscode.Uri, failure: { problem: string, lineNumber: any, columnNumber: any }) {
+    protected async reportProblem(localPath: vscode.Uri, failure: { problem: string; lineNumber: any; columnNumber: any }) {
         // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference     
-        const startPosition = new vscode.Position(parseInt(failure.lineNumber) - 1, parseInt(failure.columnNumber) - 1);
+        const startPosition = new vscode.Position(parseInt(failure.lineNumber, 10) - 1, parseInt(failure.columnNumber, 10) - 1);
         const fileBody = await getDocumentBodyAsString(localPath.fsPath);
-        
+
         for (const matcher of this.problemMatchers) {
             const match = failure.problem.match(matcher.test);
             if(!match) {
@@ -74,21 +74,21 @@ export default abstract class MetadataCommand extends CommandBase {
                 if (range) {
                     this.addError(localPath, range, failure.problem);
                     return;
-                } 
+                }
             } catch(e) {
                 this.logger.error(`Problem matcher error: ${e.message || e}`);
             }
         }
 
         // Only reaches here in case non of the problem matcher work,
-        this.logger.warn(`All problem matchers failed, falling back to basic single character match`);
+        this.logger.warn('All problem matchers failed, falling back to basic single character match');
         this.addError(localPath, new vscode.Range(startPosition, startPosition.translate(0,1)), failure.problem);
     }
 
     private tokenProblemHandler(content: string, problem: string, start: vscode.Position, match: RegExpMatchArray) : vscode.Range {
         // look ahead for the token
-        return this.findSubstring(content, start.line, start.character, match.groups['token']) || 
-            this.findSubstring(content, start.line, 0, match.groups['token']);
+        return this.findSubstring(content, start.line, start.character, match.groups.token) ||
+            this.findSubstring(content, start.line, 0, match.groups.token);
     }
 
     private genericProblemHandler(content: string, problem: string, start: vscode.Position) : vscode.Range {
@@ -104,7 +104,7 @@ export default abstract class MetadataCommand extends CommandBase {
         for (const { localPath } of Object.values(manifest.files)) {
             if (localPath) {
                 this.clearMessages(vscode.Uri.file(localPath));
-            }            
+            }
         }
     }
 

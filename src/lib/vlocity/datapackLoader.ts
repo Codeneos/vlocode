@@ -1,10 +1,10 @@
+import * as nodeFs from 'fs';
 import * as path from 'path';
-import { LogManager, Logger } from 'lib/logging';
-import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
+import { FileSystem } from 'interfaces/fileSystem';
+import { Logger, LogManager } from 'lib/logging';
 import { mapAsyncParallel } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
-import * as nodeFs from 'fs';
-import { FileSystem } from 'interfaces/fileSystem';
+import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 
 /**
  * Basic file system using NodeJS fs module.
@@ -13,7 +13,7 @@ export const directFileSystem : FileSystem = {
     readFile: nodeFs.promises.readFile,
     readdir: nodeFs.promises.readdir,
     pathExists: path => Promise.resolve(nodeFs.existsSync(path))
-}
+};
 
 /**
  * File system that cached directory contents to provide a faster pathExists response
@@ -22,7 +22,7 @@ export class CachedFileSystem implements FileSystem {
 
     protected directoryCache = new Map<string, string[]>();
 
-    constructor (protected readonly fileSystem: FileSystem = directFileSystem) {        
+    constructor (protected readonly fileSystem: FileSystem = directFileSystem) {
     }
 
     public async pathExists(filePath: string): Promise<boolean> {
@@ -51,17 +51,17 @@ export class CachedFileSystem implements FileSystem {
 
 type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);
 
-export default class DatapackLoader {    
+export default class DatapackLoader {
 
-    protected readonly loaders : { test?: RegExp, load: DatapackLoaderFunc }[] = [
+    protected readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [
         { test: /\.json$/i, load: file => this.loadJson(file) },
         { test: /\.\S+$/i, load: file => this.loadRaw(file) }
     ];
 
     constructor(
-        protected readonly logger: Logger = LogManager.get(DatapackLoader), 
-        protected readonly fileSystem: FileSystem = directFileSystem) {        
-    }    
+        protected readonly logger: Logger = LogManager.get(DatapackLoader),
+        protected readonly fileSystem: FileSystem = directFileSystem) {
+    }
 
     public addLoader(test: RegExp, loader: DatapackLoaderFunc) {
         this.loaders.push({ test, load: loader });
@@ -71,10 +71,10 @@ export default class DatapackLoader {
         const manifestEntry = getDatapackManifestKey(datapackHeader);
         this.logger.info(`Loading datapack: ${manifestEntry.key}`);
         const datapackJson = await this.loadJson(datapackHeader);
-        return new VlocityDatapack(datapackHeader, 
-            manifestEntry.datapackType, 
-            manifestEntry.key, 
-            getExportProjectFolder(datapackHeader), 
+        return new VlocityDatapack(datapackHeader,
+            manifestEntry.datapackType,
+            manifestEntry.key,
+            getExportProjectFolder(datapackHeader),
             datapackJson
         );
     }
@@ -109,12 +109,12 @@ export default class DatapackLoader {
     protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
             const fileName = fieldValue.split(/\\|\//i).pop();
-            const loader = this.loaders.find(loader => !loader.test || loader.test.test(fileName));            
+            const loader = this.loaders.find(candidateLoader => !candidateLoader.test ?? candidateLoader.test.test(fileName));
             if (loader) {
                 try {
                     return await loader.load(path.join(baseDir, fileName));
-                } catch(err) { 
-                    // ignore loader errors; if the loader fails it will return the default value
+                } catch(err) {
+                    // Ignore loader errors; if the loader fails it will return the default value
                 }
             }
         } else if (Array.isArray(fieldValue)) {

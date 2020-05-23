@@ -1,35 +1,35 @@
 import * as vscode from 'vscode';
 
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
-import { CommandBase } from './commandBase';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import { CommandBase } from './commandBase';
 
 class VlocityAdminCommand extends CommandBase {
 
     private readonly adminCommands = [
-        { 
-            title: 'Refresh Pricebook',  
+        {
+            title: 'Refresh Pricebook',
             icon: 'mirror',
             detail: 'Runs the refresh pricebook entries command on the currently connected Salesforce org',
             method: 'refreshPriceBook',
             name: VlocodeCommand.refreshPriceBook
         },
-        { 
+        {
             title: 'Refresh Product Hierarchy',
             icon: 'tag',
             detail: 'Refresh the product hierarchy cache for the Vlocity CPQ',
             method: 'startProductHierarchyJob',
             name: VlocodeCommand.refreshProductHierarchy
         },
-        { 
-            title: 'Clear Managed Platform Cache',  
+        {
+            title: 'Clear Managed Platform Cache',
             icon: 'trashcan',
             detail: 'Clear the Vlocity platform cache partition',
             method: 'clearPlatformCache',
             name: VlocodeCommand.clearPlatformCache
         },
-        { 
-            title: 'Update Product Attributes (JSON)',  
+        {
+            title: 'Update Product Attributes (JSON)',
             icon: 'repo-sync',
             detail: 'Refresh the product attribute JSON definitions based on the attribute assignments',
             batchJob: '%vlocity_namespace%.UpdateAllProdAttribJSONBatchJob',
@@ -49,12 +49,12 @@ class VlocityAdminCommand extends CommandBase {
     }
 
     public async execute(commandName?: string) : Promise<void> {
-        const selectedCommand = commandName 
-            ? this.adminCommands.find(command => command.name == commandName) 
-            : await vscode.window.showQuickPick(this.adminCommands.map(cmd => Object.assign(cmd, { label: `$(${cmd.icon}) ${cmd.title}` })));        
-                
+        const selectedCommand = commandName
+            ? this.adminCommands.find(command => command.name == commandName)
+            : await vscode.window.showQuickPick(this.adminCommands.map(cmd => Object.assign(cmd, { label: `$(${cmd.icon}) ${cmd.title}` })));
+
         if (!selectedCommand) {
-            return; 
+            return;
         }
 
         await this.vlocode.withProgress(`Running ${selectedCommand.title}...`, async () => {
@@ -67,18 +67,18 @@ class VlocityAdminCommand extends CommandBase {
         });
     }
 
-    private executeBatch(batchClass: string) : Promise<void> {   
-        const apex = `Database.executeBatch(new ${batchClass}());`;  
+    private executeBatch(batchClass: string) : Promise<void> {
+        const apex = `Database.executeBatch(new ${batchClass}());`;
         return this.executeAnonymous(apex);
     }
 
-    private executeAdminMethod(...methodNames: string[]) : Promise<void> {   
+    private executeAdminMethod(...methodNames: string[]) : Promise<void> {
         let apex = '%vlocity_namespace%.TelcoAdminConsoleController ctrl = new %vlocity_namespace%.TelcoAdminConsoleController();\n';
-        apex += methodNames.map(method => `ctrl.setParameters('{"methodName":"${method}"}'); ctrl.invokeMethod();`).join(`\n`);
+        apex += methodNames.map(method => `ctrl.setParameters('{"methodName":"${method}"}'); ctrl.invokeMethod();`).join('\n');
         return this.executeAnonymous(apex);
     }
 
-    private async executeAnonymous(apex: string) : Promise<void> {   
+    private async executeAnonymous(apex: string) : Promise<void> {
         this.logger.verbose('Execute Anonymous:', apex);
         const connection = await this.connectionProvider.getJsForceConnection();
         const result = await connection.tooling.executeAnonymous(apex.replace(NAMESPACE_PLACEHOLDER, this.vlocode.datapackService.vlocityNamespace));
@@ -94,13 +94,13 @@ class VlocityAdminCommand extends CommandBase {
 export default {
     [VlocodeCommand.adminCommands]: VlocityAdminCommand,
     [VlocodeCommand.refreshPriceBookAndProductHierarchy]: async () => {
-        await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshPriceBook);        
+        await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshPriceBook);
         await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshProductHierarchy);
     },
-    ...[VlocodeCommand.refreshPriceBook, 
-     VlocodeCommand.refreshProductHierarchy, 
-     VlocodeCommand.clearPlatformCache, 
-     VlocodeCommand.clearPlatformCache].reduce( 
-       (map, command) => Object.assign(map, { [command]: () => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
+    ...[VlocodeCommand.refreshPriceBook,
+        VlocodeCommand.refreshProductHierarchy,
+        VlocodeCommand.clearPlatformCache,
+        VlocodeCommand.clearPlatformCache].reduce(
+        (map, command) => Object.assign(map, { [command]: () => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
     )
 };

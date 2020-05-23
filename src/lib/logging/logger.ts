@@ -1,5 +1,6 @@
 import { isObject } from 'util';
-import { LogLevel } from "lib/logging";
+import { LogLevel } from 'lib/logging';
+import { isPromise } from 'lib/util/async';
 import LogManager from './logManager';
 
 export interface LogEntry {
@@ -9,10 +10,10 @@ export interface LogEntry {
     message: string;
 }
 
-export type LogFilter = ( ops: { 
-    logger: Logger, 
-    severity: LogLevel, 
-    args: any[] 
+export type LogFilter = ( ops: {
+    logger: Logger;
+    severity: LogLevel;
+    args: any[];
 }) => boolean;
 
 export interface LogWriter {
@@ -34,7 +35,7 @@ export class Logger {
 
     constructor(
         private readonly manager: LogManager,
-        public readonly name: string, 
+        public readonly name: string,
         private readonly writer: LogWriter) {
     }
 
@@ -44,7 +45,7 @@ export class Logger {
     public warn(...args: any[]) : void { this.write(LogLevel.warn, ...args); }
     public error(...args: any[]) : void { this.write(LogLevel.error, ...args); }
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
-    
+
     public write(level: LogLevel, ...args: any[]) : void {
         const logLevel = this.manager.getLogLevel(this.name);
         if (level < logLevel) {
@@ -54,19 +55,24 @@ export class Logger {
         if (filter && !filter({ logger: this, severity: level, args: args })) {
             return;
         }
-        if (this.writer) {
-            this.writer.write({ 
-                category: this.name, 
-                level, 
-                time: new Date(),
-                message: args.map(this.formatArg).join(' ') 
-            });
-        }
+        this.writeEntry({
+            category: this.name,
+            level,
+            time: new Date(),
+            message: args.map(this.formatArg).join(' ')
+        });
     }
 
     public writeEntry(entry: LogEntry) : void {
-        if (this.writer) { 
-            this.writer.write(entry);
+        if (!this.writer) {
+            return;
+        }
+
+        const result = this.writer.write(entry);
+        if (isPromise(result)) {
+            result.catch(err => {
+                console.error(`Error while writing to log: ${err.message || err}`);
+            });
         }
     }
 
@@ -79,7 +85,7 @@ export class Logger {
             } catch(err) {
                 return '{Object}';
             }
-        } 
+        }
         return arg;
     }
 }

@@ -24,8 +24,8 @@ export function getStackFrameDetails(frameNumber: number) : StackFrame | undefin
         functionName: callerName,
         modulePath: path,
         fileName: basename,
-        lineNumber: Number.parseInt(line),
-        columnNumber: Number.parseInt(column)
+        lineNumber: Number.parseInt(line, 10),
+        columnNumber: Number.parseInt(column, 10)
     };
 }
 const stackLineRegex = /at\s*(module\.|exports\.|object\.)*(.*?)\s*\((.*?([^:\\/]+)):([0-9]+):([0-9]+)\)$/i;

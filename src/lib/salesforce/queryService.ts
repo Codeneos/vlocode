@@ -1,17 +1,17 @@
+import { Field } from 'jsforce';
+import { Logger, LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
-import { LogManager, Logger } from 'lib/logging';
 import { PropertyTransformHandler } from 'lib/util/object';
 import { normalizeSalesforceName } from 'lib/util/salesforce';
-import moment = require('moment');
-import { Field } from 'jsforce';
-import { PropertyAccessor } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
+import { PropertyAccessor } from 'lib/utilityTypes';
+import moment = require('moment');
 import { Readable } from 'request/node_modules/form-data';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
-export default class QueryService {  
+export default class QueryService {
 
     private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();
     private readonly recordFieldNames: WeakMap<any, Map<string, string | number | symbol>> = new WeakMap();
@@ -53,17 +53,17 @@ export default class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public query<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {       
+    public query<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {
         const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
         const cachedResult = enableCache && this.queryCache.get(query);
         if (cachedResult) {
             return cachedResult;
         }
-        
+
         const promisedResult = (async () => {
             const queryTimer = new Timer();
             const connection = await this.connectionProvider.getJsForceConnection();
-            let queryResult = await connection.query<T>(query);            
+            let queryResult = await connection.query<T>(query);
             const records = queryResult.records;
             while (queryResult.nextRecordsUrl) {
                 queryResult = await connection.queryMore(queryResult.nextRecordsUrl);
@@ -87,23 +87,22 @@ export default class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {    
-        this.logger.verbose(`Bulk Query: ${query}...`);   
+    public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {
+        this.logger.verbose(`Bulk Query: ${query}...`);
         const promisedResult = (async () => {
             const queryTimer = new Timer();
             const [type] = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i);
             const connection = await this.connectionProvider.getJsForceConnection();
             const records = await new Promise<any[]>((resolve, reject) => {
-                const recordStream = connection.bulk.query(query) as Readable;   
-                const data = [];  
-                recordStream.once('error', (err) => reject(err));
-                recordStream.on('record', (record) =>{ 
-                    data.push(Object.assign(record, {
-                        attributes: { 
+                const recordStream = connection.bulk.query(query) as Readable;
+                const data = [];
+                recordStream.once('error', reject);
+                recordStream.on('record',record =>{
+                    data.push({...record,
+                        attributes: {
                             type,
                             url: `/${type}/${record.Id}`,
-                        }
-                    })); 
+                        }});
                 });
                 recordStream.once('finish', () => resolve(data));
             });
@@ -142,14 +141,14 @@ export default class QueryService {
     public static formatFieldValue(value: any, field: Field, options = { wrapStrings: true, escapeStrings: true }) : string {
         if (value === null || value === undefined) {
             return 'null';
-        } 
+        }
 
         if (typeof value === 'object' && Array.isArray(value)) {
             return `(${value.map(v => this.formatFieldValue(v, field)).join(',')})`;
         } else if (typeof value === 'object') {
             throw new Error('Cannot format Object value to a valid Salesforce field value.');
-        } 
-        
+        }
+
         if (field.type === 'date' || field.type === 'datetime') {
             if (!value) {
                 return 'null';
@@ -161,18 +160,18 @@ export default class QueryService {
             }
             return moment(value).format(format);
         } else if (field.type === 'boolean') {
-            if (typeof value === 'string') { 
+            if (typeof value === 'string') {
                 return (value.toLowerCase() === 'true').toString();
-            } else if (typeof value === 'number') { 
+            } else if (typeof value === 'number') {
                 return (value > 0).toString();
             }
-            return (!!value).toString();            
+            return (!!value).toString();
         } else if (['double', 'int', 'currency', 'percent'].includes(field.type)) {
-            return value.toString().replace(/[,.]([0-9]{3})/g,'$1').toString().replace(/[.,]/, '.');                
+            return value.toString().replace(/[,.]([0-9]{3})/g,'$1').toString().replace(/[.,]/, '.');
         }
 
         if (options.escapeStrings && field.type === 'string') {
-            value = value.replace("\\", "\\\\").replace("'", "\\'");
+            value = value.replace('\\', '\\\\').replace("'", "\\'");
         }
 
         return options.wrapStrings ? `'${value}'` : `${value}`;

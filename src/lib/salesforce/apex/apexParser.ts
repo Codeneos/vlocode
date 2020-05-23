@@ -7,28 +7,28 @@ interface ParserNode {
 }
 
 interface VariableDeclarationNode extends ParserNode {
-    type: 'VariableDeclaration';  
+    type: 'VariableDeclaration';
     declarations: VariableDeclaratorNode[];
     kind: string; // type of variable
 }
 
 interface VariableDeclaratorNode extends ParserNode {
-    type: 'VariableDeclarator';  
-    id: IdentifierNode;  
-    init: ParserNode; 
+    type: 'VariableDeclarator';
+    id: IdentifierNode;
+    init: ParserNode;
 }
 
 interface LiteralNode extends ParserNode {
-    type: 'Literal';  
+    type: 'Literal';
 }
 
 interface IdentifierNode extends ParserNode {
-    type: 'Identifier';  
+    type: 'Identifier';
     name: string;
 }
 
 interface ConditionalStatementNode extends ParserNode {
-    type: 'ConditionalStatement';  
+    type: 'ConditionalStatement';
     test: string;
 }
 
@@ -43,7 +43,7 @@ class ApexParser {
      */
     public parse(input: string) {
         for(const token of this.lexer.parse(input)) {
-            
+
         }
     }
 }

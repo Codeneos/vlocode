@@ -7,27 +7,27 @@ import Timer from 'lib/util/timer';
 
 type RecordOperationType = 'update' | 'insert';
 
-export type BatchResultRecord = { 
+export type BatchResultRecord = {
     ref: string;
-    success: boolean; 
-    error?: string; 
+    success: boolean;
+    error?: string;
     recordId: string;
-} & 
+} &
 (
-    { success: true; recordId: string; } | 
-    {success: false | null | undefined; error?: string; }
+    { success: true; recordId: string } |
+    { success: false | null | undefined; error?: string }
 );
 
 /** @private type to @see RecordBatch class */
 export interface RecordBatchChunk {
     operation: RecordOperationType;
-    sobjectType: string; 
-    records: object[]; 
+    sobjectType: string;
+    records: object[];
     refs: string[];
 }
 
 export interface BatchProgressCallback {
-    (args: {processed: number, failed: number, total: number}): void;
+    (args: {processed: number; failed: number; total: number}): void;
 }
 
 /**
@@ -35,8 +35,8 @@ export interface BatchProgressCallback {
  */
 export default class RecordBatch {
 
-    private readonly insert = new Map<string, { ref: string; data: any; }[]>();
-    private readonly update = new Map<string, { ref: string; data: any; }[]>();
+    private readonly insert = new Map<string, { ref: string; data: any }[]>();
+    private readonly update = new Map<string, { ref: string; data: any }[]>();
     private progressReporter: BatchProgressCallback;
     private isExecuting: boolean;
 
@@ -55,7 +55,7 @@ export default class RecordBatch {
     public async getRecords(operation: RecordOperationType | 'all', count?: number): Promise<RecordBatchChunk | undefined> {
         const getRecords = async (operation: 'update' | 'insert') => {
             for (const [sobjectType, records] of this[operation]) {
-                let resultRecords: { ref: string; data: any; }[];
+                let resultRecords: { ref: string; data: any }[];
                 if (!count || count >= records.length) {
                     resultRecords = records;
                     this[operation].delete(sobjectType);
@@ -64,8 +64,8 @@ export default class RecordBatch {
                     resultRecords = records.splice(0, count);
                 }
 
-                const recordData = Promise.all(resultRecords.map((record) => this.validateRecordData(sobjectType, record.data, operation as any)));
-                const refs = resultRecords.map((record) => record.ref);
+                const recordData = Promise.all(resultRecords.map(record => this.validateRecordData(sobjectType, record.data, operation as any)));
+                const refs = resultRecords.map(record => record.ref);
 
                 return {
                     operation,
@@ -82,8 +82,8 @@ export default class RecordBatch {
         return await this.getRecords('insert', count) || this.getRecords('update', count);
     }
 
-    public async *yieldRecords(operation: RecordOperationType | 'all', count: number): AsyncGenerator<AwaitReturnType<RecordBatch["getRecords"]>> {
-        let records: AwaitReturnType<RecordBatch["getRecords"]>;
+    public async *yieldRecords(operation: RecordOperationType | 'all', count: number): AsyncGenerator<AwaitReturnType<RecordBatch['getRecords']>> {
+        let records: AwaitReturnType<RecordBatch['getRecords']>;
         while (records = await this.getRecords(operation, count)) {
             yield records;
         }
@@ -154,7 +154,7 @@ export default class RecordBatch {
         }
     }
 
-    public async executeWithCollectionApi(connection: Connection, chunk: AwaitReturnType<RecordBatch["getRecords"]>, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    public async executeWithCollectionApi(connection: Connection, chunk: AwaitReturnType<RecordBatch['getRecords']>, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const timer = new Timer();
         const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, {
             allOrNone: false,
@@ -170,7 +170,7 @@ export default class RecordBatch {
         return results;
     }
 
-    public async executeWithBulkApi(connection: Connection, chunk: AwaitReturnType<RecordBatch["getRecords"]>, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    public async executeWithBulkApi(connection: Connection, chunk: AwaitReturnType<RecordBatch['getRecords']>, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const bulkJob = connection.bulk.createJob(chunk.sobjectType, chunk.operation);
         const batchJob = bulkJob.createBatch();
         let processedCount = 0;
@@ -208,7 +208,7 @@ export default class RecordBatch {
             }
             this.logger.info(`Deployed ${chunk.records.length} ${chunk.sobjectType} records (Bulk API) [${timer.stop()}]`);
 
-            //const results = await promisify(batchJob.execute)(chunk.records) as RecordResult[];
+            // const results = await promisify(batchJob.execute)(chunk.records) as RecordResult[];
             // increment counters yield sp that parallel jobs can run
             const batchFailedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
             this.failedCount += -failedCount - (batchFailedCount);
@@ -216,8 +216,8 @@ export default class RecordBatch {
             return results;
         }
         finally {
-            this.logger.verbose(`Closing bulk job`);
-            bulkJob.close();
+            this.logger.verbose('Closing bulk job');
+            void bulkJob.close();
         }
     }
 

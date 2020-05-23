@@ -1,6 +1,6 @@
 
-import * as xml2js from 'xml2js';
 import * as constants from '@constants';
+import * as xml2js from 'xml2js';
 
 export interface MetadataManifest {
     apiVersion?: string;
@@ -31,10 +31,10 @@ export class PackageXml {
      */
     public add(type: string, member: string): void {
         if (!type) {
-            throw new Error(`Type cannot be an empty or null string`);
+            throw new Error('Type cannot be an empty or null string');
         }
         if (!member) {
-            throw new Error(`member cannot be an empty or null string`);
+            throw new Error('member cannot be an empty or null string');
         }
         // Add component to package if this is a meta like file
         let members = this.metadataMembers.get(type);
@@ -58,7 +58,7 @@ export class PackageXml {
             types: [...this.metadataMembers.entries()].map(([name, members]) => ({ name, members: [...members.values()] }))
         };
     }
-    
+
     /**
      * Converts the contents of the package to XML that can be saved into a package.xml file
      */

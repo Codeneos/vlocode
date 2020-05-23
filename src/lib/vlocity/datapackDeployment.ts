@@ -2,11 +2,10 @@ import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { Connection } from 'jsforce';
-import { DatapackLookupService } from './datapackLookupService';
-import moment = require('moment');
 import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
 import RecordBatch from '../salesforce/recordBatch';
+import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
 import chalk = require('chalk');
@@ -26,7 +25,7 @@ export enum DatapackDeploymentEvent {
  * A datapack deployment task/job
  */
 export default class DatapackDeployment implements DependencyResolver {
-    
+
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private deployedRecords: number = 0;
     private failedRecords: number = 0;
@@ -50,10 +49,10 @@ export default class DatapackDeployment implements DependencyResolver {
         private readonly logger = LogManager.get(DatapackDeployment)) {
     }
 
-    public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {     
+    public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
         for (const record of Array.isArray(records) ? records : [ records ]) {
             this.records.set(record.sourceKey, record);
-        }   
+        }
         return this;
     }
 
@@ -63,7 +62,7 @@ export default class DatapackDeployment implements DependencyResolver {
      */
     public async start(cancelToken?: CancellationToken) {
         const timer = new Timer();
-        let deployableRecords: ReturnType<DatapackDeployment["getDeployableRecords"]>;
+        let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
 
         while (deployableRecords = this.getDeployableRecords()) {
             await this.deployRecords(deployableRecords, cancelToken);
@@ -98,13 +97,13 @@ export default class DatapackDeployment implements DependencyResolver {
      * @param record 
      */
     private hasPendingDependencies(record: DatapackDeploymentRecord) : boolean {
-       for(const key of record.getDependencySourceKeys()) {
-           const dependency = this.records.get(key);
-           if (dependency && dependency.isPending) {
-               return true;
-           }
-       }
-       return false;
+        for(const key of record.getDependencySourceKeys()) {
+            const dependency = this.records.get(key);
+            if (dependency && dependency.isPending) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -129,9 +128,9 @@ export default class DatapackDeployment implements DependencyResolver {
     }
 
     private async runCustomAction(type: 'before' | 'after', datapacks: Map<string, DatapackDeploymentRecord>) {
-        this.logger.verbose(`Running ${chalk.bold(type)} actions for ${datapacks.size} records`);        
+        this.logger.verbose(`Running ${chalk.bold(type)} actions for ${datapacks.size} records`);
         for (const [key, datapack] of datapacks.entries()) {
-            
+
         }
         return datapacks;
     }
@@ -154,11 +153,11 @@ export default class DatapackDeployment implements DependencyResolver {
         const batch = new RecordBatch(this.schemaService);
         const records = [...datapacks.values()];
 
-        this.logger.verbose(`Resolving existing IDs for ${datapacks.size} records`);        
+        this.logger.verbose(`Resolving existing IDs for ${datapacks.size} records`);
         const ids = await this.lookupService.lookupIds(records, 50);
 
         for (const [i, datapack] of records.entries()) {
-            const existingId = ids[i];            
+            const existingId = ids[i];
             if (existingId) {
                 batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
             } else {
@@ -190,9 +189,9 @@ export default class DatapackDeployment implements DependencyResolver {
         // prepare batch
         await this.resolveDependencies(datapacks, cancelToken);
         const batch = await this.createDeploymentBatch(datapacks);
-        
+
         // execute batch
-        const connection = await this.connectionProvider.getJsForceConnection();  
+        const connection = await this.connectionProvider.getJsForceConnection();
         await this.setVlocityTriggerState(connection, false);
 
         try {
@@ -201,16 +200,16 @@ export default class DatapackDeployment implements DependencyResolver {
                 const datapack = datapacks.get(result.ref);
 
                 // Update datapack record statuses
-                if (result.success === true) {
+                if (result.success) {
                     datapack.updateStatus(DeploymentStatus.Deployed, result.recordId);
                     this.logger.verbose(`Deployed ${datapack.sourceKey}`);
                     this.deployedRecords++;
-                } else if (result.success === false) {
+                } else if (!result.success) {
                     datapack.updateStatus(DeploymentStatus.Failed, result.error);
                     this.logger.error(`Failed ${datapack.sourceKey} - ${datapack.statusMessage}`);
                     this.failedRecords++;
                 }
-            } 
+            }
         } finally {
             await this.setVlocityTriggerState(connection, true);
         }

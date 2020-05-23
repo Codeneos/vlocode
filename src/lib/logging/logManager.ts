@@ -1,14 +1,14 @@
+import { LogFilter, Logger, LogWriter } from './logger';
 import { LogLevel } from './logLevels';
-import { Logger, LogFilter, LogWriter } from './logger';
 
-type LogManagerMap<T> = { [logName: string]: T };
+interface LogManagerMap<T> { [logName: string]: T }
 
 /**
  * Manges the active logger and writers associated to them.
  */
 export default class LogManager {
 
-    private readonly activeLoggers : LogManagerMap<any> = {};        
+    private readonly activeLoggers : LogManagerMap<any> = {};
     private readonly detailedLogLevels: LogManagerMap<LogLevel> = {};
     private readonly logFilters: LogManagerMap<LogFilter> = {};
     private readonly logWriters: LogManagerMap<LogWriter[]> = {};
@@ -58,7 +58,7 @@ export default class LogManager {
         let filterFunc = typeof filter == 'function' ? filter : filter.filter;
         if (this.logFilters[logName]) {
             const currentFilter = this.logFilters[logName];
-            filterFunc = (ops) => currentFilter(ops) && filterFunc(ops);
+            filterFunc =ops => currentFilter(ops) && filterFunc(ops);
         }
         this.logFilters[logName] = filterFunc;
     }
@@ -69,9 +69,9 @@ export default class LogManager {
 
     private createLogger(logName: string) : Logger {
         return new Logger(this, logName, {
-            write: (entry) => {
+            write: entry => {
                 for (const writer of this.logWriters[logName] || this.logWriterChain) {
-                    writer.write(entry);
+                    return writer.write(entry);
                 }
             }
         });

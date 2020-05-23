@@ -5,7 +5,7 @@ import { LogManager, Logger } from './logging';
 export const ConfigurationManager = singleton(class ConfigurationManager {
 
     private readonly loadedConfigSections = new Map<string, WorkspaceConfiguration>();
-    private readonly watchers = new Map<string, ((config: any) => void)[]>();
+    private readonly watchers = new Map<string, ((config: any) => void | Promise<void>)[]>();
     private disposables: {dispose() : any}[] = [];
 
     protected get logger() : Logger {
@@ -23,8 +23,8 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
      * Load a configuration section into a concrete object of type T. Allows update adn retrieval as if the config was a native NodeJS object
      * @param configSectionName Section name to load
      */
-    public load<T extends Object>(configSectionName: string) : T {        
-        const proxyConfig = new Proxy(<T>{}, {
+    public load<T extends Object>(configSectionName: string): T {
+        const proxyConfig = new Proxy({} as T, {
             get: (target, key, receiver) => {
                 if (key == '$sectionName') {
                     return configSectionName;
@@ -38,10 +38,10 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
             },
             set: (target, key, value, receiver) => {
                 const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
-                workspaceConfig.update(key.toString(), value, false);
+                void workspaceConfig.update(key.toString(), value, false);
                 return true;
             },
-            ownKeys: (target) => {
+            ownKeys: target => {
                 return Object.getOwnPropertyNames(this.getWorkspaceConfiguration(configSectionName));
             }
         });
@@ -59,7 +59,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
                 return value;
             },
             set(target, key, value, receiver) {
-                //const parentUpdate = { ...target, [key]: value };
+                // const parentUpdate = { ...target, [key]: value };
                 parent[`${propertyName.toString()}.${key.toString()}`] = value;
                 return true;
             }
@@ -121,27 +121,31 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
             const watchers = this.watchers.get(`${sectionName}.${property}`) || [];
             this.logger.verbose(`Detected property change for: ${sectionName}.${property} (watcher-size: ${watchers.length})`);
             for (const watcher of watchers) {
-                watcher(newConfig);
+                Promise.resolve(watcher(newConfig)).catch(err => {
+                    this.logger.error(`Error in config watcher for property ${property}:`, err);
+                });
             }
         }
         // Section watchers
         for (const watcher of this.watchers.get(`${sectionName}`) || []) {
             this.logger.verbose(`Invoke section watcher for config change in: ${sectionName}`);
-            watcher(newConfig);
+            Promise.resolve(watcher(newConfig)).catch(err => {
+                this.logger.error(`Error in config watcher for section ${sectionName}:`, err);
+            });
         }
     }
 
-    public watchProperties<T extends Object>(config: string | T & { $sectionName?: string }, properties: string[], watcher: (config: T) => void) : Disposable {
+    public watchProperties<T extends Object>(config: string | T & { $sectionName?: string }, properties: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
         const sectionName = typeof config === 'string' ? config : config.$sectionName;
         return this.registerWatcher(properties.map(property => `${sectionName}.${property}`), watcher);
     }
 
-    public watch<T extends Object>(config: string | T & { $sectionName?: string }, watcher: (config: T) => void) : Disposable {
+    public watch<T extends Object>(config: string | T & { $sectionName?: string }, watcher: (config: T) => void | Promise<void>) : Disposable {
         const sectionName = typeof config === 'string' ? config : config.$sectionName;
         return this.registerWatcher([ sectionName ], watcher);
     }
 
-    private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => void) : Disposable {
+    private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
         for (const property of watchKeys) {
             this.logger.verbose(`Register config watcher for: ${property}`);
             const watchers = this.watchers.get(property) || [];
