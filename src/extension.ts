@@ -69,9 +69,10 @@ export = class Vlocode {
         LogManager.registerWriter({
             write: entry => {
                 if (this.service.config.logInTerminal) {
-                    return terminalWriter.write(entry);
+                    terminalWriter.write(entry);
+                } else {
+                    outputChannelWriter.write(entry);
                 }
-                outputChannelWriter.write(entry);
             }
         }, new ConsoleWriter());
 
