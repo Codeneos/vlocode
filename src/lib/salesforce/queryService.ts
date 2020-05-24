@@ -1,5 +1,6 @@
+import { Readable } from 'stream';
 import { Field } from 'jsforce';
-import { Logger, LogManager } from 'lib/logging';
+import { LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import { PropertyTransformHandler } from 'lib/util/object';
@@ -7,7 +8,6 @@ import { normalizeSalesforceName } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import moment = require('moment');
-import { Readable } from 'stream';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
@@ -87,7 +87,7 @@ export default class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {
+    public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
         const sobjectType = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
         if (!sobjectType) {
             throw new Error(`SObject type not detected in query: ${query}`);

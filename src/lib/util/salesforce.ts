@@ -1,8 +1,5 @@
 
-import * as path from 'path';
 import * as constants from '@constants';
-import * as fs from 'fs-extra';
-import { filterAsyncParallel, mapAsyncParallel } from 'lib/util/collection';
 import { stringEquals } from 'lib/util/string';
 import { cacheFunction } from './cache';
 
@@ -42,7 +39,7 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
         has: (target, name) => getPropertyKey(target, name) !== undefined || target[name] !== undefined,
         enumerate: target => Object.keys(target),
         ownKeys: target => Object.keys(target),
-        isExtensible: target => false
+        isExtensible: () => false
     });
 }
 

@@ -11,8 +11,6 @@ import { getDocumentBodyAsString } from 'lib/util/fs';
 import * as metadataTypes from 'metadataTypes.yaml';
 import * as vscode from 'vscode';
 import * as xml2js from 'xml2js';
-import { UnaryExpression } from 'typescript';
-import Timer from 'lib/util/timer';
 import { substringAfterLast } from 'lib/util/string';
 import { MetadataManifest, PackageXml } from './deploy/packageXml';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
@@ -131,7 +129,7 @@ export default class SalesforceDeployService {
                         });
                     }
                 } else {
-                    const sourceFile = metaFile.replace(/\-meta\.xml/ig, '');
+                    const sourceFile = metaFile.replace(/-meta\.xml/ig, '');
                     const sourcePackagePath = path.posix.join(packageFolder, path.basename(sourceFile));
                     const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
 

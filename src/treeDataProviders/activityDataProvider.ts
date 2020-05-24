@@ -57,7 +57,7 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
     }
 
     public getActivityLabel(node: VlocodeActivity): string {
-        const labelValue = node.title.replace(/[\.]+$/ig, '');
+        const labelValue = node.title.replace(/[.]+$/ig, '');
         return labelValue;
     }
 

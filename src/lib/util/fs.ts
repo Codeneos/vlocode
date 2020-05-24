@@ -24,7 +24,7 @@ export function sanitizePath(pathStr: string) {
     if (!pathStr) {
         return pathStr;
     }
-    pathStr = pathStr.replace(/^[\/\\]*(.*?)[\/\\]*$/g, '$1');
-    pathStr = pathStr.replace(/[\/\\]+/g, path.sep);
+    pathStr = pathStr.replace(/^[/\\]*(.*?)[/\\]*$/g, '$1');
+    pathStr = pathStr.replace(/[/\\]+/g, path.sep);
     return pathStr;
 }

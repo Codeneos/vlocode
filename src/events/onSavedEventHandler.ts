@@ -1,15 +1,14 @@
 import { EventHandlerBase } from 'events/eventHandlerBase';
 import * as vscode from 'vscode';
-import CommandRouter from 'lib/commandRouter';
 import { VlocodeCommand } from '@constants';
 import { isPartOfDatapack } from 'lib/vlocity/datapackUtil';
 import { isSalesforceMetadataFile } from 'lib/util/salesforce';
 
 export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [
-        '\.vscode',
-        '\.sfdx',
-        '\.git'
+        '\\.vscode',
+        '\\.sfdx',
+        '\\.git'
     ];
 
     protected async handleEvent(document: vscode.TextDocument): Promise<void> {

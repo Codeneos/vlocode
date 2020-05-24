@@ -42,7 +42,7 @@ export default class SfdxUtil {
         return result;
     }
 
-    public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<SalesforceOrgInfo[]> {
+    public static async getAllKnownOrgDetails() : Promise<SalesforceOrgInfo[]> {
         const configs: SalesforceOrgInfo[] = [];
         for await (const config of this.getAllValidatedConfigs()) {
             configs.push(config);
