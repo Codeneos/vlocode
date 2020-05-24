@@ -21,8 +21,12 @@ export function singleton<T extends new(...args: any) => InstanceType<T>>(type: 
  * Get's the active instance of the specified type
  * @param type Type
  */
-export function getInstance<T extends new(...args: any) => InstanceType<T>>(type: T) : InstanceType<T> | undefined {
-    return global[singletonSymbol]?.[type.name];
+export function getInstance<T extends new(...args: any) => InstanceType<T>>(type: T) : InstanceType<T> {
+    const instance = global[singletonSymbol]?.[type.name];
+    if (!instance) {
+        throw new Error(`Tried to get instance for uninitialized singleton of type ${type.name}`);
+    }
+    return instance;
 }
 
 /**

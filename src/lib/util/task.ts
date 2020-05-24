@@ -12,7 +12,7 @@ export interface TaskPromise<T = any> extends Promise<T> {
  */
 export default class Task<T extends (...args: any[]) => Promise<R>, R = any> implements TaskPromise<R> {
 
-    #innerPromise: Promise<R> = null;
+    #innerPromise?: Promise<R>;
     #isRunning: boolean = false;
     #isFinished: boolean = false;
     #hasError: boolean = false;
@@ -58,14 +58,23 @@ export default class Task<T extends (...args: any[]) => Promise<R>, R = any> imp
     }
 
     public then<TResult1, TResult2>(onfulfilled?: (value: R) => TResult1 | PromiseLike<TResult1>, onrejected?: (reason: any) => TResult2 | Promise<TResult2>): Promise<TResult1 | TResult2> {
+        if (!this.#innerPromise) {
+            throw new Error('Cannot then before calling start');
+        }
         return this.#innerPromise.then(onfulfilled, onrejected);
     }
 
     public catch<TResult1>(onrejected?: (reason: any) => TResult1 | Promise<TResult1>): Promise<R | TResult1> {
+        if (!this.#innerPromise) {
+            throw new Error('Cannot catch before calling start');
+        }
         return this.#innerPromise.catch(onrejected);
     }
 
     public finally(onfinally?: () => void): Promise<R> {
+        if (!this.#innerPromise) {
+            throw new Error('Cannot finally before calling start');
+        }
         return this.#innerPromise.finally(onfinally);
     }
 }

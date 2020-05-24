@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { unique, filterUndefined } from 'lib/util/collection';
+import { Iterable } from 'lib/util/iterable';
 import MetadataCommand from './metadataCommand';
 
 /**
@@ -13,13 +15,13 @@ export default class RefreshMetadataCommand extends MetadataCommand {
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {
         // Build manifest
         const manifest = await this.salesforce.deploy.buildManifest(selectedFiles);
-        if (manifest.files.length == 0) {
+        if (Object.values(manifest.files).length == 0) {
             return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
         }
         this.clearPreviousErrors(manifest);
 
         // Get task title
-        const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
+        const uniqueComponents = filterUndefined(unique(Object.values(manifest.files), file => file.name, file => file.name));
         const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${selectedFiles.length} components`;
 
         // Use config provided API version
@@ -37,13 +39,15 @@ export default class RefreshMetadataCommand extends MetadataCommand {
                 throw new Error('Refresh failed');
             }
 
-            const componentsNotFound = [];
+            const componentsNotFound = new Array<string>();
             for (const [requestedFile, info] of Object.entries(manifest.files)) {
-                try {
-                    await result.unpackFile(requestedFile, info.localPath);
-                } catch(err) {
-                    this.logger.error(`${info.name} -- ${err.message || err}`);
-                    componentsNotFound.push(info.name);
+                if (info.localPath && info.type) {
+                    try {
+                        await result.unpackFile(requestedFile, info.localPath);
+                    } catch(err) {
+                        this.logger.error(`${info.name} -- ${err.message || err}`);
+                        componentsNotFound.push(info.name);
+                    }
                 }
             }
 

@@ -7,7 +7,7 @@ import { normalizeSalesforceName } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import moment = require('moment');
-import { Readable } from 'request/node_modules/form-data';
+import { Readable } from 'stream';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
@@ -88,21 +88,27 @@ export default class QueryService {
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
     public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {
+        const sobjectType = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
+        if (!sobjectType) {
+            throw new Error(`SObject type not detected in query: ${query}`);
+        }
+
         this.logger.verbose(`Bulk Query: ${query}...`);
         const promisedResult = (async () => {
             const queryTimer = new Timer();
-            const [type] = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i);
             const connection = await this.connectionProvider.getJsForceConnection();
             const records = await new Promise<any[]>((resolve, reject) => {
                 const recordStream = connection.bulk.query(query) as Readable;
-                const data = [];
+                const data: any[] = [];
                 recordStream.once('error', reject);
-                recordStream.on('record',record =>{
-                    data.push({...record,
+                recordStream.on('record',record => {
+                    const recordAttributes = {
                         attributes: {
-                            type,
-                            url: `/${type}/${record.Id}`,
-                        }});
+                            type: sobjectType,
+                            url: `/${sobjectType}/${record.Id}`,
+                        }
+                    };
+                    data.push(Object.assign(record, recordAttributes));
                 });
                 recordStream.once('finish', () => resolve(data));
             });
@@ -118,7 +124,7 @@ export default class QueryService {
         const getPropertyKey = (target: T, name: string | number | symbol) => {
             const fieldMap = this.getRecordFieldMap(target);
             const normalizedName = normalizeSalesforceName(name.toString());
-            return fieldMap.get(normalizedName);
+            return fieldMap.get(normalizedName) ?? name;
         };
         return new Proxy(record, new PropertyTransformHandler(getPropertyKey));
     }

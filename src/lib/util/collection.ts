@@ -25,12 +25,16 @@ export function flatten<T>(array: T[], depth: number = 1) : T {
  * @param arr Array
  * @param uniqueKeyFunc Filter that determines uniqueness of an item
  */
-export function *unique<T, K>(itr: Iterable<T>, uniqueKeyFunc?: (item: T) => K) : Generator<T> {
+export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T) => K, mapFunc?: (item: T) => M) : Generator<M> {
     const uniqueSet = new Set();
     for (const item of itr) {
         const k = uniqueKeyFunc ? uniqueKeyFunc(item) : item;
         if (!uniqueSet.has(k)) {
-            yield item;
+            if (mapFunc) {
+                yield mapFunc(item);
+            } else {
+                yield item as unknown as M;
+            }
             uniqueSet.add(k);
         }
     }
@@ -138,6 +142,7 @@ export async function filterAsyncParallel<T>(array: Iterable<T>, callback: (item
  * @param value Value to add to the array
  */
 export function arrayMapPush<T, K>(map: Map<K, Array<T>>, key: K, value: T) : number {
+    // @ts-expect-error set followed by get for the same key will never return undefined
     return (map.get(key) || map.set(key, []).get(key)).push(value);
 }
 
@@ -148,6 +153,7 @@ export function arrayMapPush<T, K>(map: Map<K, Array<T>>, key: K, value: T) : nu
  * @param value Value to add to the array
  */
 export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> {
+    // @ts-expect-error set followed by get for the same key will never return undefined
     return (map.get(key) || map.set(key, new Set<T>()).get(key)).add(value);
 }
 
@@ -158,7 +164,7 @@ export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> 
  */
 export function asArray<T>(...elements: Array<T[] | T | Iterable<T>>) : T[] {
     if (elements.length == 1 && Array.isArray(elements[0])) {
-        // Return elements[0];
+        return elements[0];
     }
     const results : T[] = [];
     for (const element of elements) {
@@ -171,4 +177,17 @@ export function asArray<T>(...elements: Array<T[] | T | Iterable<T>>) : T[] {
         }
     }
     return results;
+}
+
+/**
+ * Type guarded filter expression to remove undefined and null entries from an array
+ */
+export function filterUndefined<T>(iterable: Iterable<T | undefined>): Array<T> {
+    const result = new Array<T>();
+    for (const value of iterable) {
+        if (value !== undefined && value !== null) {
+            result.push(value);
+        }
+    }
+    return result;
 }

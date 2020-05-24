@@ -4,20 +4,6 @@ import * as salesforce from '@salesforce/core';
 import AuthCommand = require('salesforce-alm/dist/lib/auth/authCommand');
 import { LogManager, Logger } from 'lib/logging';
 
-export type FullSalesforceOrgDetails = {
-    orgId?: string;
-    accessToken?: string;
-    instanceUrl?: string;
-    loginUrl?: string;
-    username?: string;
-    clientId?: string;
-    connectedStatus?: string;
-    lastUsed?: string;
-    alias?: string;
-    isDefaultDevHubUsername? : boolean;
-    isDefaultUsername?: boolean;
-} & { refreshToken?: string; clientSecret?: string };
-
 export interface SalesforceAuthResult {
     orgId: string;
     accessToken?: string;
@@ -25,18 +11,20 @@ export interface SalesforceAuthResult {
     loginUrl?: string;
     username: string;
     clientId?: string;
+    clientSecret?: string;
     refreshToken?: string;
 }
 
-export interface SalesforceOrgInfo {
-    orgId: string;
-    accessToken?: string;
-    instanceUrl?: string;
-    loginUrl?: string;
-    username: string;
+export interface FullSalesforceOrgDetails extends SalesforceAuthResult {
+    connectedStatus?: string;
+    lastUsed?: string;
     alias?: string;
-    clientId?: string;
-    refreshToken?: string;
+    isDefaultDevHubUsername? : boolean;
+    isDefaultUsername?: boolean;
+}
+
+export interface SalesforceOrgInfo extends SalesforceAuthResult {
+    alias?: string;
 }
 
 /**
@@ -55,7 +43,7 @@ export default class SfdxUtil {
     }
 
     public static async getAllKnownOrgDetails(includeScratchOrgs = true) : Promise<SalesforceOrgInfo[]> {
-        const configs = [];
+        const configs: SalesforceOrgInfo[] = [];
         for await (const config of this.getAllValidatedConfigs()) {
             configs.push(config);
         }
@@ -69,6 +57,12 @@ export default class SfdxUtil {
             for (const authFile of authFiles) {
                 const authInfo = await salesforce.AuthInfo.create( { username: path.parse(authFile).name });
                 const authFields = authInfo.getFields();
+
+                if (!authFields.orgId || !authFields.username) {
+                    this.logger.warn(`Skip authfile '${authFile}'; required fields missing`);
+                    continue;
+                }
+
                 yield {
                     orgId: authFields.orgId,
                     accessToken: authFields.accessToken,
@@ -96,8 +90,8 @@ export default class SfdxUtil {
         return org;
     }
 
-    public static resolveAlias(alias?: string) : Promise<string | undefined> {
-        return salesforce.Aliases.fetch(alias);
+    public static async resolveAlias(alias?: string) : Promise<string | undefined> {
+        return alias ? salesforce.Aliases.fetch(alias) : undefined;
     }
 
     public static async getJsForceConnection(username?: string) : Promise<jsforce.Connection> {

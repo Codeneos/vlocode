@@ -5,7 +5,7 @@ export type LazyInitializer<T> = () => Promise<T> | T;
  */
 export default class Lazy<T> implements Promise<T> {
 
-    constructor(private readonly initializer: LazyInitializer<T>, private innerPromise: Promise<T> = null) {
+    constructor(private readonly initializer: LazyInitializer<T>, private innerPromise?: Promise<T>) {
     }
 
     readonly [Symbol.toStringTag] = 'Lazy';
@@ -28,10 +28,10 @@ export default class Lazy<T> implements Promise<T> {
     }
 
     public catch<TResult1 = void>(onrejected?: (reason: any) => TResult1 | Promise<TResult1>): Promise<T | TResult1> {
-        return this.innerPromise.catch(onrejected);
+        return this.getInnerPromise().catch(onrejected);
     }
 
     public finally(onfinally?: () => void): Promise<T> {
-        return this.innerPromise.finally(onfinally);
+        return this.getInnerPromise().finally(onfinally);
     }
 }

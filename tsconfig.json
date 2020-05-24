@@ -3,13 +3,16 @@
         "module": "commonjs",
         "target": "es2019",
         "outDir": "out",
-        "lib": ["es2019", "es2020.bigint", "es2020.string", "es2020.symbol.wellknown"],
+        "lib": ["es2019", "es2020.bigint", "es2020.string", "es2020.symbol.wellknown", "DOM"],
         "sourceMap": true,
-        "strict": false, 
+        "strict": false,
+        "strictNullChecks": true, 
         "resolveJsonModule": true,
         "noUnusedLocals": false, 
+        "suppressExcessPropertyErrors": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
+        "rootDir": "src",
         "baseUrl": "./src",
         "paths": {
             "@constants": ["constants"],
@@ -22,8 +25,8 @@
             "types"
         ]
     },
-    "exclude": [
-        "node_modules",
-        ".vscode-test"
+    "include": [
+        "src/**/*",
+        "types/**/*"
     ]
 }

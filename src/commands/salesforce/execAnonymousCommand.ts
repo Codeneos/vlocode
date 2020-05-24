@@ -26,6 +26,10 @@ export default class ExecAnonymousCommand extends MetadataCommand {
     }
 
     public async execute() {
+        if (!vscode.window.activeTextEditor) {
+            return;
+        }
+
         // What to execute
         const selectedDocument = vscode.window.activeTextEditor.document;
         const documentSelection = !vscode.window.activeTextEditor.selection?.isEmpty ? vscode.window.activeTextEditor.selection : undefined;

@@ -5,6 +5,7 @@ import { Logger, LogManager } from 'lib/logging';
 import { mapAsyncParallel } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
+import { substringAfterLast } from 'lib/util/string';
 
 /**
  * Basic file system using NodeJS fs module.
@@ -59,8 +60,8 @@ export default class DatapackLoader {
     ];
 
     constructor(
-        protected readonly logger: Logger = LogManager.get(DatapackLoader),
-        protected readonly fileSystem: FileSystem = directFileSystem) {
+        protected readonly fileSystem: FileSystem = directFileSystem,
+        protected readonly logger: Logger = LogManager.get(DatapackLoader)) {
     }
 
     public addLoader(test: RegExp, loader: DatapackLoaderFunc) {
@@ -108,8 +109,8 @@ export default class DatapackLoader {
 
     protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
-            const fileName = fieldValue.split(/\\|\//i).pop();
-            const loader = this.loaders.find(candidateLoader => !candidateLoader.test ?? candidateLoader.test.test(fileName));
+            const fileName = substringAfterLast(fieldValue, /\\|\//i);
+            const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fileName));
             if (loader) {
                 try {
                     return await loader.load(path.join(baseDir, fileName));

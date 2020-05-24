@@ -29,6 +29,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         }
 
         const salesforceId = (await this.datapackService.getSalesforceIds([ datapack ])).pop();
+        if (salesforceId) {}
         return this.openIdInSalesforce(salesforceId, datapack.datapackType);
     }
 
@@ -37,7 +38,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         return this.openIdInSalesforce(salesforceId, obj.datapackType);
     }
 
-    protected async openIdInSalesforce(objectId: string, datapackType: string, extraFields?: any) {
+    protected async openIdInSalesforce(objectId: string | undefined, datapackType: string, extraFields?: any) {
         if (!objectId) {
             void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; it might not be deployed on the connected org.');
             return;
@@ -56,7 +57,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         void vscode.env.openExternal(vscode.Uri.parse(url));
     }
 
-    protected resolveNamespace(namespace: string) : string | undefined {
+    protected resolveNamespace(namespace: string | undefined) : string | undefined {
         if (namespace && this.namespaceResolver[namespace.toLowerCase()]) {
             return this.namespaceResolver[namespace.toLowerCase()]();
         } else if(namespace) {

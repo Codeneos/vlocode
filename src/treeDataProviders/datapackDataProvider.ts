@@ -93,6 +93,8 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         } else if (node instanceof DatapackObjectGroupNode) {
             return this.createDatapackObjectNodes(node.records, node.datapackType).sort(nodeSorter);
         }
+
+        throw new Error(`Specified node type is neither a Category or Group node: ${node.getItemLabel()} (${node.nodeType})`);
     }
 
     private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {
@@ -136,12 +138,12 @@ abstract class DatapackNode {
     constructor(
         public readonly nodeType: DatapackNodeType,
         public expandable: boolean = false,
-        public icon: { light: string; dark: string } | string = undefined
+        public icon: { light: string; dark: string } | string | undefined = undefined
     ) { }
 
     public abstract getItemLabel() : string;
-    public abstract getItemTooltip() : string;
-    public abstract getItemDescription() : string;
+    public abstract getItemTooltip() : string | undefined;
+    public abstract getItemDescription() : string | undefined;
 }
 
 class DatapackCategoryNode extends DatapackNode {
@@ -154,7 +156,7 @@ class DatapackCategoryNode extends DatapackNode {
     }
 
     public getItemDescription() {
-        return null;
+        return undefined;
     }
 
     public getItemTooltip() {
@@ -240,6 +242,6 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public get name(): string {
-        return this.record.Name;
+        return this.record.Name ?? '<NO_NAME>';
     }
 }

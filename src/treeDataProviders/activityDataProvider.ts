@@ -27,7 +27,7 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
         };
     }
 
-    public getIcon(node: VlocodeActivity): { light: string; dark: string } {
+    public getIcon(node: VlocodeActivity): { light: string; dark: string } | undefined {
         switch (node.status) {
             case VlocodeActivityStatus.InProgress: return {
                 light: 'resources/light/loading.svg',

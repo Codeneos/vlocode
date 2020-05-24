@@ -4,7 +4,7 @@ import { stringEquals } from './string';
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
 const proxyTargetSymbol = Symbol('[[proxyTarget]]');
 
-export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol;
+export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol | undefined;
 
 export class PropertyTransformHandler<T extends Object> implements ProxyHandler<T> {
 
@@ -113,8 +113,8 @@ export function transformPropertyProxy<T extends Object>(target: T, transformer:
  * @param obj Object from which to get the values
  * @param depth Max object depth to go down the tree
  */
-export function getObjectValues(obj: Object, depth = -1) : any[] {
-    const properties = [];
+export function getObjectValues(obj: any, depth = -1) : any[] {
+    const properties: any[] = [];
     Object.keys(obj).forEach(key => {
         if (typeof obj[key] === 'object') {
             if (depth != 0) {

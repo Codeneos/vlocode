@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel } from 'lib/util/collection';
+import { forEachAsyncParallel, unique, filterUndefined } from 'lib/util/collection';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
 import Task, { TaskPromise } from 'lib/util/task';
+import { Iterable } from 'lib/util/iterable';
 import MetadataCommand from './metadataCommand';
 
 /**
@@ -14,7 +15,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
      * In order to prevent double deployment keep a list of pending deploy ops
      */
     private readonly filesPendingDeployment = new Set<vscode.Uri>();
-    private currentDeploymentTask : TaskPromise = null;
+    private currentDeploymentTask: TaskPromise | null = null;
 
     public execute(...args: any[]): Promise<void> {
         return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
@@ -71,7 +72,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         manifest.apiVersion = this.vlocode.config.salesforce?.apiVersion;
 
         // Get task title
-        const uniqueComponents = [...Object.values(manifest.files).filter(v => v.type).reduce((set, v) => set.add(v.name), new Set<string>())];
+        const uniqueComponents = filterUndefined(unique(Object.values(manifest.files), file => file.name, file => file.name));
         const progressTitle = uniqueComponents.length == 1 ? uniqueComponents[0] : `${uniqueComponents.length} components`;
 
         if (uniqueComponents.length == 0) {
@@ -90,14 +91,19 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 ignoreWarnings: true
             }, progress, token);
 
+            if (!result) {
+                this.logger.info(`Cancelled deploy of ${uniqueComponents.join(', ')}`);
+                return;
+            }
+
             this.clearPreviousErrors(manifest);
-            if (result.details?.componentFailures?.length > 0) {
+            if (result.details?.componentFailures?.length) {
                 await this.showComponentFailures(manifest, result.details.componentFailures);
             }
 
             if (!result.success) {
-                const errors = result.details.componentFailures.filter(err => err && err.problemType == 'Error');
-                const errorMessage = errors.length == 1 ? errors[0].problem : `Deployment failed with ${errors.length} errors`;
+                const errors = result.details?.componentFailures?.filter(err => err && err.problemType == 'Error');
+                const errorMessage = errors?.length == 1 ? errors[0].problem : `Deployment failed with ${errors?.length || 'unknown'} errors`;
                 throw new Error(errorMessage);
             }
 

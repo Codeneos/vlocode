@@ -6,6 +6,8 @@ import { getDocumentBodyAsString } from 'lib/util/fs';
 import * as DatapackUtil from 'lib/vlocity/datapackUtil';
 import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
 import DatapackLoader, { CachedFileSystem } from 'lib/vlocity/datapackLoader';
+import { filterUndefined } from 'lib/util/collection';
+import { substringAfterLast } from 'lib/util/string';
 import { DatapackCommand } from './datapackCommand';
 
 
@@ -24,9 +26,9 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
     }
 
     protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; increment?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
-        const datapackLoader = new DatapackLoader(null, new CachedFileSystem());
+        const datapackLoader = new DatapackLoader(new CachedFileSystem());
         const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();
-        const loadedDatapacks = [];
+        const loadedDatapacks = new Array<VlocityDatapack>();
 
         let progress = 0;
         let lastReportedProgress = 0;
@@ -74,7 +76,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 }
             }
 
-            const allUnresolvedParents = [];
+            const allUnresolvedParents = new Array<string>();
 
             for (const datapack of datapacks) {
 
@@ -105,10 +107,10 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 const missingKeyLocations = await Promise.all(
                     missingParents.map(async parentKey =>
                         await this.findInFiles(path.dirname(datapack.headerFile), parentKey) ||
-                        this.findInFiles(path.dirname(datapack.headerFile), parentKey.split('/').pop())
+                              this.findInFiles(path.dirname(datapack.headerFile), substringAfterLast(parentKey, '/'))
                     )
                 );
-                for (const [i, [file, range]] of missingKeyLocations.filter(result => !!result).entries()) {
+                for (const [i, [file, range]] of filterUndefined(missingKeyLocations).entries()) {
                     this.addWarning(file, range, `Unable to resolve dependency with key '${missingParents[i].replace(/^%vlocity_namespace%__/,'')}'`);
                 }
                 allUnresolvedParents.push(...missingParents);

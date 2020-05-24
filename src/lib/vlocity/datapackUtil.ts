@@ -64,7 +64,7 @@ export function getExportProjectFolder(datapackHeaderPath: string) : string {
  * Search the project for a datapack with a certain matching key in the currently open workspace folders.
  * @param file Datapack header file path
  */
-export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Promise<string> {
+export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Promise<string | undefined> {
     const files = (await getDatapackHeadersInWorkspace()).map(uri => uri.fsPath);
     for (const file of files) {
         const body = await getDocumentBodyAsString(file);
@@ -72,7 +72,6 @@ export async function getDatapackHeaderByMatchingKey(matchingKey: string) : Prom
             return file;
         }
     }
-    return null;
 }
 
 /**

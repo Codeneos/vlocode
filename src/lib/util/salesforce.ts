@@ -18,7 +18,7 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
     return new Proxy(record, {
         get: (target, name) => {
             const key = getPropertyKey(target, name);
-            const data = target[key];
+            const data = target[key || name];
             if (typeof data === 'object' && data !== null) {
                 if (Array.isArray(data)) {
                     return data.map(element => typeof element === 'object' ? createRecordProxy(element, writable) : element);
@@ -39,10 +39,10 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
             const key = getPropertyKey(target, name);
             return key ? { configurable: true, enumerable: true, writable } : undefined;
         },
-        has: (target, name) => getPropertyKey(target, name) !== undefined,
-        enumerate:target => Object.keys(target),
-        ownKeys:target => Object.keys(target),
-        isExtensible:target => false
+        has: (target, name) => getPropertyKey(target, name) !== undefined || target[name] !== undefined,
+        enumerate: target => Object.keys(target),
+        ownKeys: target => Object.keys(target),
+        isExtensible: target => false
     });
 }
 

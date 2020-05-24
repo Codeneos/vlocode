@@ -13,7 +13,7 @@ describe('vlocityLogging', () => {
         it('should intercept all logging calls', () => {
             const logSpy = spy();
             vlocityLogging.setLogger(Object.assign(
-                new Logger(null, null, null),
+                new Logger(undefined, 'test'),
                 { write: logSpy } )
             );
 

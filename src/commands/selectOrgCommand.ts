@@ -24,9 +24,9 @@ export default class SelectOrgCommand extends CommandBase {
         description: 'Provide a custom instance URL'
     }];
 
-    private readonly salesforceUrlValidator = (url?: string) : string => {
+    private readonly salesforceUrlValidator = (url?: string) : string | undefined => {
         const urlRegex = /(^http(s){0,1}:\/\/[^/]+\.[a-z]+(:[0-9]+|)$)|(^\s*$)/i;
-        if (!urlRegex.test(url)) {
+        if (url && !urlRegex.test(url)) {
             return 'Please specify a valid domain URL starting with https or http';
         }
     };

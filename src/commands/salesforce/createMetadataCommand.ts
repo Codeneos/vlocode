@@ -57,7 +57,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
         }
 
         // Todo: correctly detect the preferred workspace folder
-        const primaryWorkspace = vscode.workspace.workspaceFolders[0]?.uri.fsPath;
+        const primaryWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '.';
 
         for (const [index, file] of Object.entries(newItemType.files)) {
             const filePath = formatString(file.path, contextValues).trim();
@@ -80,7 +80,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
         void vscode.window.showInformationMessage(newItemType.successNotification || 'Successfully created new item');
     }
 
-    protected async getItemTemplate() : Promise<NewItemQuickPickItem> {
+    protected async getItemTemplate() : Promise<NewItemQuickPickItem | undefined> {
         if (this.typeName) {
             if (this.itemTemplates[this.typeName]) {
                 return this.itemTemplates[this.typeName];

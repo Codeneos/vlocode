@@ -24,7 +24,9 @@ export default class SalesforceSchemaService {
         return sobjects;
     }
 
-    public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<jsforce.DescribeSObjectResult> {
+    public async describeSObject(type: string) : Promise<jsforce.DescribeSObjectResult>
+    public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<jsforce.DescribeSObjectResult | undefined>
+    public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<jsforce.DescribeSObjectResult | undefined> {
         try {
             return await this.describeSObjectCached(type);
         } catch(err) {
@@ -40,15 +42,16 @@ export default class SalesforceSchemaService {
         const timer = new Timer();
         try {
             return await con.describe(type);
-        } catch(err) {
-            return null;
         } finally {
             this.logger.verbose(`Described ${type} [${timer.stop()}]`);
         }
     }
 
+
+    public async describeSObjectField(type: string, fieldName: string) : Promise<jsforce.Field>
+    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<jsforce.Field | undefined>
     @cache(-1)
-    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field> {
+    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field | undefined> {
         const result = await this.describeSObject(type, throwWhenNotFound);
         const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
         // First find a field with namespace, secondly without
@@ -79,8 +82,10 @@ export default class SalesforceSchemaService {
      * @param type SObject Type
      * @param fieldName Field Name
      */
-    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.FieldType> {
-        return (await this.describeSObjectField(type, fieldName, throwWhenNotFound)).type;
+    public async sObjectGetFieldType(type: string, fieldName: string): Promise<jsforce.FieldType>
+    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<jsforce.FieldType | undefined>
+    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<jsforce.FieldType | undefined> {
+        return (await this.describeSObjectField(type, fieldName, throwWhenNotFound))?.type;
     }
 
     /**
@@ -90,7 +95,7 @@ export default class SalesforceSchemaService {
      * @param path Full path of properties
      */
     public async toSalesforceField(type: string, path: string) : Promise<string> {
-        const salesforcePath = [];
+        const salesforcePath : any[] = [];
         const pathSplit = path.split('.');
         for (let i = 0; i < pathSplit.length; i++) {
             const prop = pathSplit[i];
@@ -101,6 +106,9 @@ export default class SalesforceSchemaService {
             }
             const isLastField = i == pathSplit.length - 1;
             if (field.type == 'reference' && !isLastField) {
+                if (!field.referenceTo) {
+                    throw new Error(`Reference type information not available for field ${field.name}`);
+                }
                 salesforcePath.push(field.relationshipName);
                 type = field.referenceTo[0];
             } else {

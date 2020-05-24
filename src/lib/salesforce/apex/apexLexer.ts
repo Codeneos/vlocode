@@ -9,7 +9,7 @@ interface LexerScanner {
 
 interface LexerRule {
     first(): string;
-    match (scanner : LexerScanner): string;
+    match (scanner : LexerScanner): string | undefined;
 }
 
 interface LexerToken {
@@ -30,9 +30,9 @@ class ApexInlineSoqlRule implements LexerRule {
         return '[';
     }
 
-    public match (scanner : LexerScanner) {
+    public match(scanner : LexerScanner) {
         if (scanner.peek() !== '[') {
-            return null;
+            return;
         }
 
         // Basic SOQL lexing
@@ -60,7 +60,6 @@ class ApexInlineSoqlRule implements LexerRule {
         if (result.match(/\s*select/mi)) {
             return result.trim();
         }
-        return null;
     }
 }
 
@@ -69,10 +68,10 @@ class ApexInlineSoqlRule implements LexerRule {
  */
 export class ApexLexer {
 
-    constructor(public readonly grammer?: GrammarDefinition) {
-        if (!grammer) {
-            this.grammer = this.initializeApexGrammar();
-        }
+    public readonly grammer: GrammarDefinition;
+
+    constructor(grammer?: GrammarDefinition) {
+        this.grammer = grammer ?? this.initializeApexGrammar();
     }
 
     /**

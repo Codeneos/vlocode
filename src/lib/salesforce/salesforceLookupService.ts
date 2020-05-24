@@ -79,11 +79,11 @@ export default class SalesforceLookupService {
         return this.queryService.query(`select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`, useCache);
     }
 
-    private async filterToWhereClause<T>(type: string, values: { [P in keyof T]?: T[P] | Array<T[P]> | string }, relationshipName: string = '') : Promise<string> {
-        const lookupFilters = [];
+    private async filterToWhereClause<T>(type: string, values: { [P in keyof T]?: T[P] | Array<T[P]> | string } | undefined | null, relationshipName: string = '') : Promise<string> {
+        const lookupFilters: any[] = [];
 
-        for (let [field, value] of Object.entries(values || [])) {
-            if (value === undefined || value == null) {
+        for (let [field, value] of Object.entries(values || {})) {
+            if (value === undefined || value === null) {
                 continue;
             }
 
@@ -93,7 +93,7 @@ export default class SalesforceLookupService {
             }
 
             if (typeof value === 'object') {
-                if (salesforceField.type != 'reference') {
+                if (salesforceField.type != 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName) {
                     throw new Error(`Object type set for non-reference field ${field} on type ${type}`);
                 }
                 lookupFilters.push(await this.filterToWhereClause(salesforceField.referenceTo[0], value, salesforceField.relationshipName));

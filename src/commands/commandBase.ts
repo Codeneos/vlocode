@@ -14,10 +14,10 @@ export class ProgressToken {
         private readonly progressResolve : () => void,
         private readonly progressReject :  (reason?: any) => void,
         private readonly progress : vscode.Progress<{ message?: string; increment?: number }>,
-        private readonly cancelToken : vscode.CancellationToken) {
+        private readonly cancelToken? : vscode.CancellationToken) {
     }
 
-    public get cancellationToken() : vscode.CancellationToken {
+    public get cancellationToken() : vscode.CancellationToken | undefined {
         return this.cancelToken;
     }
 
@@ -52,7 +52,7 @@ export abstract class CommandBase implements Command {
         return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
     }
 
-    protected get selectedText() : string {
+    protected get selectedText() : string | undefined {
         return vscode.window.activeTextEditor && vscode.window.activeTextEditor.selection
             ? vscode.window.activeTextEditor.document.getText(vscode.window.activeTextEditor.selection)
             : undefined;
@@ -63,7 +63,7 @@ export abstract class CommandBase implements Command {
             void this.vlocode.withActivity({
                 location: vscode.ProgressLocation.Notification,
                 progressTitle: title,
-                cancellable
+                cancellable: cancellable == true
             }, (porgress, cancelToken) => {
                 return new Promise<void>((resolve, reject) => {
                     progressTokenResolve(new ProgressToken(resolve, reject, porgress, cancelToken));

@@ -85,13 +85,16 @@ export default abstract class MetadataCommand extends CommandBase {
         this.addError(localPath, new vscode.Range(startPosition, startPosition.translate(0,1)), failure.problem);
     }
 
-    private tokenProblemHandler(content: string, problem: string, start: vscode.Position, match: RegExpMatchArray) : vscode.Range {
+    private tokenProblemHandler(content: string, problem: string, start: vscode.Position, match: RegExpMatchArray) : vscode.Range | undefined {
+        if (!match.groups) {
+            return undefined;
+        }
         // look ahead for the token
         return this.findSubstring(content, start.line, start.character, match.groups.token) ||
-            this.findSubstring(content, start.line, 0, match.groups.token);
+               this.findSubstring(content, start.line, 0, match.groups.token);
     }
 
-    private genericProblemHandler(content: string, problem: string, start: vscode.Position) : vscode.Range {
+    private genericProblemHandler(content: string, problem: string, start: vscode.Position) : vscode.Range | undefined {
         // look for a termination character
         return this.findTerminator(content, start.line, start.character);
     }
@@ -148,7 +151,7 @@ export default abstract class MetadataCommand extends CommandBase {
         const lines = content.split('\n');
         const match = lines[lineNumber]?.substr(index).match(terminationPattern);
 
-        if (match) {
+        if (match && match.index !== undefined) {
             return new vscode.Range(
                 new vscode.Position(lineNumber, index),
                 new vscode.Position(lineNumber, index + match.index)

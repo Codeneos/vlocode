@@ -18,5 +18,5 @@ export default interface Vlocodefiguration {
     autoActivate: boolean;
     compileOnBuild: boolean;
     logInTerminal: boolean;
-    salesforce?: VlocodeSalesforceConfiguration;
+    salesforce: VlocodeSalesforceConfiguration;
 }

@@ -14,7 +14,7 @@ export default class DatapackDeploymentRecord {
     private readonly _dependencies = new Map<string, DatapackRecordDependency>();
     private readonly _deployTimer: Timer = new Timer();
     private _status: DeploymentStatus = DeploymentStatus.Pending;
-    private _statusDetail: string;
+    private _statusDetail?: string;
 
     public get status(): DeploymentStatus {
         return this._status;
@@ -28,12 +28,12 @@ export default class DatapackDeploymentRecord {
         return this._status === DeploymentStatus.Pending;
     }
 
-    public get recordId(): string {
-        return this._status === DeploymentStatus.Deployed && this._statusDetail;
+    public get recordId(): string | undefined {
+        return this._status === DeploymentStatus.Deployed ? this._statusDetail : undefined;
     }
 
-    public get statusMessage(): string {
-        return this._status !== DeploymentStatus.Deployed && this._statusDetail;
+    public get statusMessage(): string | undefined {
+        return this._status !== DeploymentStatus.Deployed ? this._statusDetail : undefined;
     }
 
     public get deployTime(): number {
@@ -69,7 +69,7 @@ export default class DatapackDeploymentRecord {
     }
 
     public getDependencySourceKeys() {
-        return Iterable.map(this._dependencies.values(), d => d.VlocityMatchingRecordSourceKey || d.VlocityLookupRecordSourceKey);
+        return Iterable.map(this._dependencies.values(), d => d.VlocityMatchingRecordSourceKey ?? d.VlocityLookupRecordSourceKey);
     }
 
     public getDependencies() {

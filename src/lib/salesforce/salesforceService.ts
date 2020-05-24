@@ -227,7 +227,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
                     tagNameProcessors: [ stripPrefix ],
                     attrNameProcessors: [ stripPrefix ],
                     valueProcessors: [
-                        (value) => {
+                        value => {
                             if (/^[0-9]+(\.[0-9]+){0,1}$/i.test(value)) {
                                 return parseFloat(value);
                             } else if (/^true|false$/i.test(value)) {
@@ -282,13 +282,20 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
+     * Get the version of the current Salesforce connection
+     */
+    public async getApiVersion() {
+        const connection = await this.getJsForceConnection();
+        return connection.version;
+    }
+
+    /**
      * Get a list of available API version on the connected server
      */
-    @cache(-1)
     public async getApiVersions(count: number = 10) {
         const connection = await this.getJsForceConnection();
         const version = parseFloat(connection.version);
-        const versions = [];
+        const versions: string[] = [];
         for (let i = 0; i < count; i++) {
             versions.push((version - i).toFixed(1));
         }

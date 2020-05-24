@@ -10,7 +10,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
 
     private writeEmitter : vscode.EventEmitter<string>;
     private closeEmitter : vscode.EventEmitter<void>;
-    private currentTerminal : vscode.Terminal;
+    private currentTerminal? : vscode.Terminal;
     private isOpened = false;
     private readonly queuedMessages : LogEntry[] = [];
     private readonly chalk = new chalk.Instance({ level: 2 });
@@ -71,8 +71,9 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
 
     public open() {
         this.isOpened = true;
-        while(this.queuedMessages.length > 0) {
-            this.write(this.queuedMessages.shift());
+        let entry: LogEntry | undefined;
+        while(entry = this.queuedMessages.shift()) {
+            this.write(entry);
         }
         this.focus();
     }
@@ -82,7 +83,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
         if (this.currentTerminal) {
             this.currentTerminal.hide();
             setTimeout(this.currentTerminal.dispose.bind(this.currentTerminal), 500);
-            this.currentTerminal = null;
+            this.currentTerminal = undefined;
         }
     }
 

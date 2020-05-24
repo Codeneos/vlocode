@@ -5,6 +5,7 @@
  */
 
 import metadataTypes = require('metadataTypes.yaml');
+// @ts-ignore
 import packageJson = require('../package.json');
 
 export const VERSION = packageJson.version;
@@ -19,7 +20,7 @@ export const MD_XML_OPTIONS = {
     renderOpts: { pretty: true, indent: '    ', newline: '\n' }
 };
 export const SF_META_EXTENSIONS = [ '-meta.xml' ]
-    .concat(Object.values(metadataTypes).map(type => type.fileExtensions).flat());
+    .concat(Object.values(metadataTypes).map(type => type.fileExtensions ?? []).flat());
 export const DATAPACK_RESERVED_FIELDS = [
     'VlocityDataPackType',
     'VlocityMatchingRecordSourceKey',
