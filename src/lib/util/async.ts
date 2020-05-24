@@ -7,5 +7,5 @@ export async function wait(ms: number): Promise<true> {
 }
 
 export function isPromise(value: any): value is Promise<any> {
-    return typeof value.then === 'function' && typeof value.catch === 'function';
+    return typeof value === 'object' && typeof value.then === 'function' && typeof value.catch === 'function';
 }

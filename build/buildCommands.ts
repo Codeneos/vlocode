@@ -60,9 +60,11 @@ async function loadCommandsMeta(yamlFile: string): Promise<CommandsYaml> {
     return yaml.load((await fs.readFile(yamlFile)).toString());
 }
 
-function stripUndefined<T extends Object>(obj: T) : T {
+function stripUndefined<T extends object>(obj: T) : T {
     for (const [name, value] of Object.entries(obj)) {
         if (value === undefined) {
+            // like this for consider better appraoch in the future with Maps
+            // eslint-disable-next-line @typescript-eslint/tslint/config
             delete obj[name];
         }
     }
@@ -70,7 +72,7 @@ function stripUndefined<T extends Object>(obj: T) : T {
 }
 
 async function updatePackageJson(packageJsonFile: string, commandFile: string) {
-    console.log(`Adding VSCode commands to package...`);
+    console.log('Adding VSCode commands to package...');
 
     const packageJson = await fs.readJSON(packageJsonFile);
     const commands = await loadCommandsMeta(commandFile);
@@ -166,6 +168,7 @@ async function updateCommandsYaml(packageJsonFile: string, commandFile: string) 
 
             if (existingEntry) {
                 if (Array.isArray(existingEntry.when)) {
+                    // @ts-ignore
                     existingEntry.when.push(entry.when);
                 }
             } else {
