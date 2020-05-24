@@ -52,9 +52,20 @@ export function evalExpr(expr: string, contextValues: any) : string {
  * @param stringFormat Format string
  * @param contextValues context values supplied
  */
-export function formatString(stringFormat: string, contextValues: {}) : string {
+export function formatString(stringFormat: string, contextValues?: any) : string {
     return stringFormat.replace(/\${(.+?(.*?))}/gm, match => {
-        const key = /\${(.+?(.*?))}/g.exec(match)[1];
-        return contextValues[key] === undefined ? match : contextValues[key];
+        const key = /\${(.+?(.*?))}/g.exec(match)?.[1];
+        return key === undefined || contextValues?.[key] === undefined ? match : contextValues[key];
     });
+}
+
+/**
+ * Returns section of the string after the last occurence of the specified delimiter; in case the delimiter does not occur returns the whole string
+ * @param value Value
+ * @param delimiter Delemiter string passed ot split
+ * @param limit Maximum number of splits to execute
+ */
+export function substringAfterLast(value: string, delimiter: string | RegExp, limit?: number): string {
+    const splitted = value.split(delimiter, limit);
+    return splitted[splitted.length - 1];
 }

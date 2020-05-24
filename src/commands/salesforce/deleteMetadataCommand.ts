@@ -21,12 +21,12 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             location: vscode.ProgressLocation.Window,
             cancellable: true
         }, async (progress, token) => {
-
-            const manifest = await this.salesforce.deploy.buildManifest(selectedFiles, token);
-            manifest.apiVersion = this.vlocode.config.salesforce?.apiVersion;
+            const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
+            const manifest = await this.salesforce.deploy.buildManifest(selectedFiles);
+            manifest.apiVersion = apiVersion;
             const result = await this.salesforce.deploy.deployDestructiveChanges(manifest, {
                 ignoreWarnings: true
-            }, null, token);
+            }, undefined, token);
 
             const componentNames = [...new Set(Object.values(manifest.files).map(file => file.name))];
 

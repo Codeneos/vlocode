@@ -44,8 +44,8 @@ export default class DatapackDeployment implements DependencyResolver {
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly lookupService?: DatapackLookupService,
-        private readonly schemaService?: SalesforceSchemaService,
+        private readonly lookupService: DatapackLookupService,
+        private readonly schemaService: SalesforceSchemaService,
         private readonly logger = LogManager.get(DatapackDeployment)) {
     }
 
@@ -75,7 +75,7 @@ export default class DatapackDeployment implements DependencyResolver {
      * Gets the deployment status of the specified source item
      * @param sourcekey 
      */
-    public getStatus(sourceKey: string) : DeploymentStatus {
+    public getStatus(sourceKey: string) : DeploymentStatus | undefined {
         return this.records.get(sourceKey)?.status;
     }
 
@@ -111,7 +111,7 @@ export default class DatapackDeployment implements DependencyResolver {
      * @param dependency Dependency
      */
     public async resolveDependency(dependency: DatapackRecordDependency) {
-        const lookupKey = dependency.VlocityLookupRecordSourceKey || dependency.VlocityMatchingRecordSourceKey;
+        const lookupKey = dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey;
         const deployRecord = this.records.get(lookupKey);
         if (deployRecord?.isDeployed) {
             return deployRecord.recordId;
@@ -198,6 +198,10 @@ export default class DatapackDeployment implements DependencyResolver {
             this.logger.log(`Deploying ${datapacks.size} records...`);
             for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
                 const datapack = datapacks.get(result.ref);
+
+                if (!datapack) {
+                    throw new Error(`Deployment for datapack ${result.ref} was never requested`);
+                }
 
                 // Update datapack record statuses
                 if (result.success) {

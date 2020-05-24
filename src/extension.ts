@@ -53,7 +53,7 @@ export = class Vlocode {
     }
 
     private setWorkingDirectory() {
-        if ((vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) > 0) {
+        if (vscode.workspace.workspaceFolders?.length) {
             this.logger.verbose(`Updating Vlocode workspace folder to: ${vscode.workspace.workspaceFolders[0].uri.fsPath}`);
             process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
         } else {
@@ -134,7 +134,7 @@ export = class Vlocode {
 
     private async deactivate() {
         // Log to debug as other output channels will be disposed
-        Vlocode.instance = null; // destroy instance
+        delete Vlocode.instance; // destroy instance
         console.debug('Vlocode extension deactivated');
     }
 

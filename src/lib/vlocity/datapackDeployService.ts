@@ -9,20 +9,26 @@ import moment = require('moment');
 import Timer from 'lib/util/timer';
 import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
+import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 
-export interface DatapackRecordDependency {
-    VlocityDataPackType: 'VlocityLookupMatchingKeyObject' | 'VlocityMatchingKeyObject';
-    VlocityMatchingRecordSourceKey?: string;
-    VlocityLookupRecordSourceKey?: string;
+export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
     [key: string]: any;
-}
+} & ({
+    VlocityDataPackType: 'VlocityMatchingKeyObject';
+    VlocityMatchingRecordSourceKey: string;
+    VlocityLookupRecordSourceKey: undefined;
+} | {
+    VlocityDataPackType: 'VlocityLookupMatchingKeyObject';
+    VlocityMatchingRecordSourceKey: undefined;
+    VlocityLookupRecordSourceKey: string;
+});
 
 export interface DependencyResolver {
-    resolveDependency(dep: DatapackRecordDependency): Promise<string>;
+    resolveDependency(dep: DatapackRecordDependency): Promise<string | undefined>;
 }
 
 export default class VlocityDatapackDeployService {
@@ -30,9 +36,10 @@ export default class VlocityDatapackDeployService {
     constructor(
         private readonly connectionProvider: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
-        private readonly schemaService = connectionProvider instanceof SalesforceService ? connectionProvider.schema : null,
+        // @ts-expect-error ctor checks for schema service not null and throws an error when required
+        private readonly schemaService: SalesforceSchemaService = connectionProvider instanceof SalesforceService ? connectionProvider.schema : undefined,
         private readonly logger = LogManager.get(DatapackDeployment)) {
-        if (!schemaService) {
+        if (!this.schemaService) {
             throw new Error('Schema service is required constructor parameters and cannot be empty');
         }
     }
@@ -82,18 +89,27 @@ export default class VlocityDatapackDeployService {
                 for (const item of Array.isArray(value) ? value : [ value ]) {
                     if (item.VlocityDataPackType === 'SObject') {
                         // Embedded datapack
-                        const embeddedDatapack = new VlocityDatapack(null, datapack.datapackType, null, null, item);
+                        const embeddedDatapack = new VlocityDatapack('', datapack.datapackType, '', '', item);
                         const embeddedRecords = await this.toSalesforceRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
+                        if (!field) {
+                            this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
+                            continue;
+                        }
                         // Lookups and matching keys are treated the same
                         if (field.type !== 'reference' && field.type !== 'string') {
                             this.logger.warn(`Skipping ${key}; cannot use lookup on non-string/reference fields`);
+                            continue;
                         }
                         record.addLookup(field.name, item);
                     } else if (item.VlocityDataPackType) {
                         this.logger.warn(`Unsupported datapack type ${item.VlocityDataPackType}`);
                     } else {
+                        if (!field) {
+                            this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
+                            continue;
+                        }
                         record.values[field.name] = this.convertValue(value, field);
                     }
                 }
@@ -115,7 +131,7 @@ export default class VlocityDatapackDeployService {
     }
 
     // eslint-disable-next-line complexity
-    private convertValue(value: any, field: Field) : string | boolean | number {
+    private convertValue(value: any, field: Field) : string | boolean | number | null {
         if (value === null || value === undefined) {
             return null;
         }

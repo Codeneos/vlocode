@@ -4,12 +4,12 @@ import type * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
 
 interface ExtendedFileProperties extends jsforce.FileProperties {
-    packageName: string;
+    packageName?: string;
     hasMetaFile: boolean;
-    getBuffer(): Promise<Buffer>;
-    getStream(): NodeJS.ReadableStream;
-    getMetaBuffer(): Promise<Buffer>;
-    getMetaStream(): NodeJS.ReadableStream;
+    getBuffer(): Promise<Buffer> | undefined;
+    getStream(): NodeJS.ReadableStream | undefined;
+    getMetaBuffer(): Promise<Buffer> | undefined;
+    getMetaStream(): NodeJS.ReadableStream | undefined;
 }
 
 /**
@@ -17,37 +17,38 @@ interface ExtendedFileProperties extends jsforce.FileProperties {
  */
 export class RetrieveResultPackage {
 
-    public get success() : boolean {
+    public get success(): boolean {
         return !!this.result.zipFile;
     }
 
-    constructor(private readonly result: jsforce.RetrieveResult, private readonly singlePackage: boolean, private readonly zip : ZipArchive) {
+    constructor(private readonly result: jsforce.RetrieveResult, private readonly singlePackage: boolean, private readonly zip?: ZipArchive) {
     }
 
-    public getFiles() : Array<ExtendedFileProperties> {
+    public getFiles(): Array<ExtendedFileProperties> {
         return this.result.fileProperties.map(file => {
             const fullFileName = file.fileName;
             const fileName = this.singlePackage ? file.fileName : file.fileName.split('/').slice(1).join('/');
             const packageName = this.singlePackage ? file.fileName.split('/').shift() : undefined;
             const metaFileName = `${file.fileName}-meta.xml`;
+            const zippedFile = this.zip?.file(metaFileName);
             return {...file,
                 packageName: packageName,
                 fullFileName: fullFileName,
                 fileName: fileName,
-                hasMetaFile: this.zip.file(metaFileName) !== null,
-                getBuffer: () => this.zip.file(fullFileName).async('nodebuffer'),
-                getStream: () => this.zip.file(fullFileName).nodeStream(),
-                getMetaBuffer: () => this.zip.file(metaFileName)?.async('nodebuffer'),
-                getMetaStream: () => this.zip.file(metaFileName)?.nodeStream()};
+                hasMetaFile: zippedFile !== null,
+                getBuffer: () => this.zip?.file(fullFileName)?.async('nodebuffer'),
+                getStream: () => this.zip?.file(fullFileName)?.nodeStream(),
+                getMetaBuffer: () => this.zip?.file(metaFileName)?.async('nodebuffer'),
+                getMetaStream: () => this.zip?.file(metaFileName)?.nodeStream()};
         });
     }
 
-    public getFileProperties(packageFile: string) : ExtendedFileProperties {
+    public getFileProperties(packageFile: string): ExtendedFileProperties | undefined {
         return this.getFiles().find(f => f.fileName.toLowerCase().endsWith(packageFile.toLowerCase()));
     }
 
     public async unpackFile(packageFile: string, targetPath: string) : Promise<void> {
-        const [ file ] = this.zip.filter(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
+        const file = this.zip?.filter(file => file.toLowerCase().endsWith(packageFile.toLowerCase()))[0];
         if (!file) {
             throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
         }

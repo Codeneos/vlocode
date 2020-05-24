@@ -76,18 +76,18 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.disposables = [];
         if (this._datapackService) {
             this._datapackService.dispose();
-            this._datapackService = null;
+            delete this._datapackService;
         }
     }
 
     public async initialize() {
         this.showStatus('$(sync) Connecting to Salesforce...');
         try {
-            this.connector = null;
-            this._salesforceService = null;
+            delete this.connector;
+            delete this._salesforceService;
             if (this._datapackService) {
                 this._datapackService.dispose();
-                this._datapackService = null;
+                delete this._datapackService;
             }
             if (this.config.sfdxUsername) {
                 this._salesforceService = new SalesforceService(this);
@@ -111,7 +111,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.registerDisposable(this.diagnostics[name] = vscode.languages.createDiagnosticCollection(name));
     }
 
-    public showStatus(text: string, command: VlocodeCommand | string = undefined) : void {
+    public showStatus(text: string, command?: VlocodeCommand | string | undefined) : void {
         if (!this.statusBar) {
             this.statusBar = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10));
         }
@@ -181,7 +181,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      */
     public withActivity<T>(
         options: ActivityOptions,
-        task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
+        task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token?: vscode.CancellationToken) => Promise<T>) : Promise<T> {
 
         // Create activity record to track activity progress
         const cancelTokenSource = options.cancellable ? new vscode.CancellationTokenSource() : undefined;
@@ -204,7 +204,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
         // anon-function that is going to run our task
         const taskRunner = async (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => {
-            token?.onCancellationRequested(() => options.cancellable && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
+            token?.onCancellationRequested(() => cancelTokenSource && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
             activityRecord.status = VlocodeActivityStatus.InProgress;
             try {
                 const result = await task(progress, cancelTokenSource?.token);
@@ -235,6 +235,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
         if (this.connector == null) {
+            if (!this.config.sfdxUsername) {
+                throw new Error('Cannot connect to Salesforce; no username specified in configuration');
+            }
             const connectorHooks = new HookManager<SfdxConnectionProvider>().registerHook({
                 post: args => {
                     if (args.name === 'getJsForceConnection') {

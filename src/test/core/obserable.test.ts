@@ -51,7 +51,7 @@ describe('observableArray', () => {
 
     describe('#array.push', () => {
         it('should work transparently for caller', () => {
-            const target = [];
+            const target = new Array<number>();
             const arrayObserver = observeArray(target);
             expect(arrayObserver.push(1)).equals(1);
             expect(arrayObserver.push(2)).equals(2);
@@ -60,15 +60,15 @@ describe('observableArray', () => {
             expect(target).deep.equals([1,2,3,4]);
         });
         it('should trigger onArrayChangedEvent', () => {
-            const target = [];
-            const eventArgs : ArrayChangedEventArgs<number>[] = [];
+            const target = new Array<number>();
+            const eventArgs = new Array<ArrayChangedEventArgs<number>>();
             const arrayObserver = observeArray(target);
             arrayObserver.onArrayChanged(e => eventArgs.push(e));
 
             arrayObserver.push(1);
 
             expect(eventArgs.length).equals(1);
-            expect(eventArgs[0].newValues[0]).equals(1);
+            expect(eventArgs[0].newValues?.[0]).equals(1);
             expect(eventArgs[0].oldValues).equals(undefined);
             expect(eventArgs[0].index).equals(0);
         });
@@ -84,7 +84,7 @@ describe('observableArray', () => {
         });
         it('should trigger onArrayChangedEvent', () => {
             const target = [1,2];
-            const eventArgs : ArrayChangedEventArgs<number>[] = [];
+            const eventArgs = new Array<ArrayChangedEventArgs<number>>();
             const arrayObserver = observeArray(target);
             arrayObserver.onArrayChanged(e => eventArgs.push(e));
 
@@ -92,7 +92,7 @@ describe('observableArray', () => {
 
             expect(eventArgs.length).equals(1);
             expect(eventArgs[0].newValues).equals(undefined);
-            expect(eventArgs[0].oldValues[0]).equals(2);
+            expect(eventArgs[0].oldValues?.[0]).equals(2);
             expect(eventArgs[0].index).equals(1);
         });
     });
@@ -107,7 +107,7 @@ describe('observableArray', () => {
         });
         it('should trigger onPropertyChangedEvent', () => {
             const target = [1,2];
-            const eventArgs : ArrayChangedEventArgs<number>[] = [];
+            const eventArgs = new Array<ArrayChangedEventArgs<number>>();
             const arrayObserver = observeArray(target);
             arrayObserver.onArrayChanged(e => eventArgs.push(e));
 
@@ -115,7 +115,7 @@ describe('observableArray', () => {
 
             expect(eventArgs.length).equals(1);
             expect(eventArgs[0].newValues).equals(undefined);
-            expect(eventArgs[0].oldValues[0]).equals(1);
+            expect(eventArgs[0].oldValues?.[0]).equals(1);
             expect(eventArgs[0].index).equals(0);
         });
     });

@@ -13,13 +13,14 @@ export interface StackFrame {
  * @returns A stack frame object that describes the request stack frame or undefined when the stack frame does not exist
  */
 export function getStackFrameDetails(frameNumber: number) : StackFrame | undefined {
-    const stackLineCaller = new Error().stack.split('\n');
-    if(stackLineCaller.length < frameNumber + 4) {
+    const errorObj = new Error();
+    const stackLineCaller = errorObj.stack?.split('\n');
+    if(!stackLineCaller || stackLineCaller.length < frameNumber + 4) {
         return;
     }
     // frameNumber +2 as we want to exlcude our self and the first line of the split which is not stackframe
     const stackFrameString = stackLineCaller.slice(frameNumber+2, frameNumber+3)[0];
-    const [,,callerName,path,basename,line,column] = stackFrameString.match(stackLineRegex);
+    const [,,callerName,path,basename,line,column] = stackFrameString.match(stackLineRegex) ?? [];
     return {
         functionName: callerName,
         modulePath: path,

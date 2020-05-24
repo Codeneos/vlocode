@@ -15,7 +15,7 @@ import QueryBuilder from '../salesforce/queryBuilder';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
-    readonly datapackType: string;
+    readonly datapackType?: string;
     readonly fields: Array<string>;
     readonly returnField: string;
 }
@@ -61,7 +61,7 @@ export default class VlocityMatchingKeyService {
         // Describe object
         const sobject = await this.salesforce.schema.describeSObject(matchingKey.sobjectType);
         const getFieldType = (fieldName: string) =>
-            sobject.fields.find(field => stringEquals(field.name, this.updateNamespace(fieldName), true)).type;
+            sobject.fields.find(field => stringEquals(field.name, this.updateNamespace(fieldName), true))?.type;
 
         // Append matching key fields
         baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
@@ -79,7 +79,7 @@ export default class VlocityMatchingKeyService {
         return name.replace(constants.NAMESPACE_PLACEHOLDER, '').replace(/^__/, '');
     }
 
-    private formatValue(value: any, type: jsforce.FieldType) : string {
+    private formatValue(value: any, type: jsforce.FieldType | undefined) : string {
         switch (type) {
             case 'int': return `${parseInt(value, 10)}`;
             case 'boolean': return `${value === null || value === undefined ? null : !!value}`;
@@ -122,12 +122,13 @@ export default class VlocityMatchingKeyService {
      * Gets the VlocityMatchingKey object for the specified datapack or SObject type
      * @param type The datapack type or SObject type for which to get the matching key record
      */
-    public async getMatchingKeyDefinition(type: string) : Promise<VlocityMatchingKey | undefined> {
+    public async getMatchingKeyDefinition(type: string) : Promise<VlocityMatchingKey> {
         const matchingKeys = await this.matchingKeys;
         const typeCheckingOrder = [ type, removeNamespacePrefix(type) ];
         for (const typeKey of typeCheckingOrder) {
-            if (matchingKeys.has(typeKey)) {
-                return matchingKeys.get(typeKey);
+            const matchingKey = matchingKeys.get(typeKey);
+            if (matchingKey) {
+                return matchingKey;
             }
         }
         const nameField = this.salesforce.schema.describeSObjectField(type, 'Name', false);
@@ -137,7 +138,6 @@ export default class VlocityMatchingKeyService {
         // Default matching key
         return {
             sobjectType: type,
-            datapackType: null,
             fields: [ 'Name' ],
             returnField: 'Id',
         };
@@ -170,7 +170,7 @@ export default class VlocityMatchingKeyService {
 
         const [ matchingKeyResults ] = await Promise.all([
             // This.salesforce.lookup('vlocity_namespace__VlocityDataPackConfiguration__mdt', null, 'all'),
-            this.salesforce.lookup('vlocity_namespace__DRMatchingKey__mdt', null, 'all')
+            this.salesforce.lookup('vlocity_namespace__DRMatchingKey__mdt', undefined, 'all')
         ]);
 
         const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
@@ -221,7 +221,8 @@ export default class VlocityMatchingKeyService {
                 this.logger.warn(`${sobjectType} matching key field '${fields[i]}' is not accessible`);
             }
         }
-        return validFields.filter(field => !!field).map(field => field.name);
+        // @ts-expect-error filter removes none null values but this is not yet handled by ts
+        return validFields.filter(field => field !== undefined).map(field => field.name);
     }
 
     /**

@@ -41,7 +41,7 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
         return this.vloService.commands.execute(VlocodeCommand.deployDatapack, document.uri, null, false);
     }
 
-    protected deployAsMetadata(document: vscode.TextDocument) : Promise<any> {
+    protected async deployAsMetadata(document: vscode.TextDocument) : Promise<void> {
         if (!this.vloService.config.salesforce.enabled) {
             this.logger.warn('Skip deployment; enable Salesforce support in Vlocode configuration to deploy Salesforce metadata');
             return;

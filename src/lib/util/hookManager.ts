@@ -81,10 +81,11 @@ export class HookManager<T extends object> {
 
     private executeHooks(type: 'pre' | 'post', options: CallHookOptions): CallHookOptions {
         const execute = (hook: CallHook<T>) => {
-            if (!hook[type]) {
+            const hookFunction = hook[type];
+            if (typeof hookFunction !== 'function') {
                 return;
             }
-            const result = hook[type](options);
+            const result = hookFunction(options);
             if (result !== undefined && type === 'post') {
                 options.returnValue = result;
             }

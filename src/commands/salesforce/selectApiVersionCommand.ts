@@ -49,11 +49,12 @@ export default class SelectApiVersion extends CommandBase {
 
     private async getApiVersions() {
         const currentApiVersion = this.vlocode.config.salesforce.apiVersion;
-        const versions = (await this.vlocode.salesforceService.getApiVersions(7)).map(version => ({
+        const versions = await this.vlocode.salesforceService.getApiVersions(7);
+        const mapVersion = (version: string) => ({
             label: `${currentApiVersion == version ? '$(primitive-dot) ' : ''  }Salesforce API Version ${version}`,
             version
-        }));
-        return versions.concat({ label: 'Enter version manually', version: null });
+        });
+        return [ ...versions.map(mapVersion), { label: 'Enter version manually', version: undefined } ];
     }
 }
 

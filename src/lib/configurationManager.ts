@@ -1,12 +1,14 @@
 import { workspace, WorkspaceConfiguration, Disposable, EventEmitter, Event } from 'vscode';
 import { singleton } from './util/singleton';
 import { LogManager, Logger } from './logging';
+import { arrayMapPush } from './util/collection';
 
 export const ConfigurationManager = singleton(class ConfigurationManager {
 
     private readonly loadedConfigSections = new Map<string, WorkspaceConfiguration>();
     private readonly watchers = new Map<string, ((config: any) => void | Promise<void>)[]>();
     private disposables: {dispose() : any}[] = [];
+    private readonly sectionNameSymbol = Symbol();
 
     protected get logger() : Logger {
         return LogManager.get('ConfigurationManager');
@@ -26,12 +28,12 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
     public load<T extends Object>(configSectionName: string): T {
         const proxyConfig = new Proxy({} as T, {
             get: (target, key, receiver) => {
-                if (key == '$sectionName') {
+                if (key == this.sectionNameSymbol) {
                     return configSectionName;
                 }
                 const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
                 const value = workspaceConfig.get(key.toString());
-                if (typeof value === 'object') {
+                if (typeof value === 'object' && value !== null) {
                     return this.wrapInProxy(proxyConfig, key, value);
                 }
                 return value;
@@ -93,8 +95,8 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
      * @param oldConfig Old config
      * @param newConfig Newly loaded config
      */
-    private getPropertiesChanges(oldConfig: WorkspaceConfiguration, newConfig: WorkspaceConfiguration) : string[] {
-        const changedProps = [];
+    private getPropertiesChanges(oldConfig: WorkspaceConfiguration | undefined, newConfig: WorkspaceConfiguration | undefined) : string[] {
+        const changedProps = new Array<string>();
         const configKeys = new Set([...Object.keys(newConfig || {}), ...Object.keys(oldConfig || {})]);
         for (const key of configKeys) {
             const oldValue = oldConfig && oldConfig[key];
@@ -135,32 +137,31 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         }
     }
 
-    public watchProperties<T extends Object>(config: string | T & { $sectionName?: string }, properties: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
-        const sectionName = typeof config === 'string' ? config : config.$sectionName;
+    public watchProperties<T extends Object>(config: string | T, properties: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
+        const sectionName = typeof config === 'string' ? config : config[this.sectionNameSymbol] as string;
         return this.registerWatcher(properties.map(property => `${sectionName}.${property}`), watcher);
     }
 
-    public watch<T extends Object>(config: string | T & { $sectionName?: string }, watcher: (config: T) => void | Promise<void>) : Disposable {
-        const sectionName = typeof config === 'string' ? config : config.$sectionName;
+    public watch<T extends Object>(config: string | T, watcher: (config: T) => void | Promise<void>) : Disposable {
+        const sectionName = typeof config === 'string' ? config : config[this.sectionNameSymbol] as string;
         return this.registerWatcher([ sectionName ], watcher);
     }
 
     private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
         for (const property of watchKeys) {
             this.logger.verbose(`Register config watcher for: ${property}`);
-            const watchers = this.watchers.get(property) || [];
-            watchers.push(watcher);
-            this.watchers.set(property, watchers);
+            arrayMapPush(this.watchers, property, watcher);
         }
         // Delete all watchers on dispose
         return {
             dispose: () => {
                 for (const property of watchKeys) {
                     const watchers = this.watchers.get(property);
-                    const index = watchers.indexOf(watcher);
-                    if (index != -1) {
-                        watchers.splice(index, 1);
-                        this.watchers.set(property, watchers);
+                    if (watchers) {
+                        const index = watchers.indexOf(watcher);
+                        if (index != -1) {
+                            watchers.splice(index, 1);
+                        }
                     }
                 }
             }

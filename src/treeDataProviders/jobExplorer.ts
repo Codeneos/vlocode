@@ -7,6 +7,7 @@ import * as yaml from 'js-yaml';
 
 import VlocityJobFile from 'lib/vlocity/vlocityJobFile';
 import * as vlocity from 'vlocity';
+import { filterUndefined } from 'lib/util/collection';
 import BaseDataProvider from './baseDataProvider';
 
 export default class JobDataProvider extends BaseDataProvider<JobNode> {
@@ -80,7 +81,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
     }
 
     private isValidJob(job: VlocityJobFile) {
-        if (Array.isArray(job.queries)) {
+        if (job && Array.isArray(job.queries)) {
             return job.queries.every(query => !!query.VlocityDataPackType);
         }
         return false;
@@ -101,10 +102,9 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
 
         // remote any non-job files
         this.logger.info(`Found ${yamlFilesWithBody.length} YAML files in workspace folders`);
-        const validJobFiles = yamlFilesWithBody.filter(file => file && this.isValidJob(file.body));
+        const validJobFiles = filterUndefined(yamlFilesWithBody).filter(file => this.isValidJob(file.body));
         this.logger.info(`Displaying ${validJobFiles.length} valid Job files in Job explorer`);
 
-        // await this.vlocode.validateAll(true);
         return validJobFiles.map(({ file }) => new JobNode( file ));
     }
 }

@@ -94,7 +94,7 @@ export class DatapackResultCollection implements Iterable<DatapackResult> {
      * Get a single result record for the specified datapack key
      * @param key Datapack key
      */
-    public getResult(key : string) : DatapackResult {
+    public getResult(key : string) : DatapackResult | undefined {
         return this.results.find(result => result.key.toLowerCase() == key.toLowerCase());
     }
 
@@ -173,7 +173,7 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
      * @param target Target object
      */
     public getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object {
-        return this.vlocityBuildTools.datapacksutils.getExpandedDefinition(target.datapackType, null, key);
+        return this.vlocityBuildTools.datapacksutils.getExpandedDefinition(target.datapackType, undefined, key);
     }
 
     public getSObjectExpandDefinition(key: string, target: { datapackType: string; sobjectType: string }) : boolean | string | Array<string> | object {
@@ -181,41 +181,41 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
     }
 }
 
-class LocalExpandDefinitionProvider implements ExpandDefinitionProvider {
-    private getExpandDefinitions() : DatapacksExpandDefinitions {
-        return null;
-    }
+// class LocalExpandDefinitionProvider implements ExpandDefinitionProvider {
+//     private getExpandDefinitions() : DatapacksExpandDefinitions {
+//         return null;
+//     }
 
-    /**
-     * Get the expand definition for a datapack
-     * @param key Setting name to get the definition for
-     * @param target Target object
-     */
-    public getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object {
-        const expandDef = this.getExpandDefinitions();
-        if (expandDef.DataPacks[target.datapackType]?.[key]) {
-            return expandDef.DataPacks[target.datapackType][key];
-        }
-        return expandDef.DataPacksDefault[key];
-    }
+//     /**
+//      * Get the expand definition for a datapack
+//      * @param key Setting name to get the definition for
+//      * @param target Target object
+//      */
+//     public getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object {
+//         const expandDef = this.getExpandDefinitions();
+//         if (expandDef.DataPacks[target.datapackType]?.[key]) {
+//             return expandDef.DataPacks[target.datapackType][key];
+//         }
+//         return expandDef.DataPacksDefault[key];
+//     }
 
-    public getSObjectExpandDefinition(key: string, target: { datapackType: string; sobjectType: string }) : boolean | string | Array<string> | object {
-        const expandDef = this.getExpandDefinitions();
-        const expandOrder = [
-            expandDef.DataPacks[target.datapackType]?.[target.sobjectType],
-            expandDef.SObjects[target.sobjectType],
-            expandDef.SObjectsDefault
-        ];
+//     public getSObjectExpandDefinition(key: string, target: { datapackType: string; sobjectType: string }) : boolean | string | Array<string> | object {
+//         const expandDef = this.getExpandDefinitions();
+//         const expandOrder = [
+//             expandDef.DataPacks[target.datapackType]?.[target.sobjectType],
+//             expandDef.SObjects[target.sobjectType],
+//             expandDef.SObjectsDefault
+//         ];
 
-        for (const obj of expandOrder) {
-            if (obj?.[key]) {
-                return obj[key];
-            }
-        }
+//         for (const obj of expandOrder) {
+//             if (obj?.[key]) {
+//                 return obj[key];
+//             }
+//         }
 
-        return null;
-    }
-}
+//         return null;
+//     }
+// }
 
 export default class VlocityDatapackService implements vscode.Disposable {
 
@@ -224,7 +224,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     #expandProvider: ExpandDefinitionProvider;
     #matchingKeyService: VlocityMatchingKeyService;
     #customSettings: any; // Load from yaml when needed
-    #customSettingsWatcher: vscode.FileSystemWatcher;
+    #customSettingsWatcher: vscode.FileSystemWatcher | undefined;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -237,7 +237,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     public dispose(){
         if (this.#customSettingsWatcher) {
             this.#customSettingsWatcher.dispose();
-            this.#customSettingsWatcher = null;
+            this.#customSettingsWatcher = undefined;
         }
     }
 
@@ -301,7 +301,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
      * @param key Setting name
      * @param datapack Datapack
      */
-    public getExpandedValue(key: string, datapack: VlocityDatapack) : string {
+    public getExpandedValue(key: string, datapack: VlocityDatapack) : string | undefined {
         let definition = this.#expandProvider.getSObjectExpandDefinition(key, datapack);
         // Let definition = this.vlocityBuildTools.datapacksutils.getExpandedDefinition(key, datapack.datapackType, datapack.sobjectType);
         if (typeof definition === 'string') {
@@ -328,7 +328,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
             return definition.map(resolveValue).filter(v => !!v).join('_');
         }
-        return null;
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
@@ -495,7 +494,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return { ...result, currentStatus: jobOptions.currentStatus };
     }
 
-    public async getCustomJobOptions() : Promise<CustomJobYaml> {
+    public async getCustomJobOptions() : Promise<CustomJobYaml | undefined> {
         if (!this.config.customJobOptionsYaml) {
             // When no YAML file is specified skip this step
             return;
@@ -524,7 +523,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this.#customSettings;
     }
 
-    private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml> {
+    private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml | undefined> {
         try {
             // Parse and watch Custom YAML
             const customSettings = yaml.safeLoad((await fs.readFile(yamlFile)).toString());
@@ -545,8 +544,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
      * Get the first existing path for the specified file 
      * @param file Path to resolve relative to the current loaded workspace folders
      */
-    private async getWorkspacePath(file: string) : Promise<string> | undefined {
-        const pathCandidates = [...vscode.workspace.workspaceFolders.map(root => path.join(root.uri.fsPath, file)), file];
+    private async getWorkspacePath(file: string) : Promise<string | undefined> {
+        const pathCandidates = [...(vscode.workspace.workspaceFolders || []).map(root => path.join(root.uri.fsPath, file)), file];
         for (const pathCandidate of pathCandidates) {
             if (fs.existsSync(pathCandidate)) {
                 return pathCandidate;

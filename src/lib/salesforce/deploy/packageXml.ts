@@ -5,12 +5,19 @@ import * as xml2js from 'xml2js';
 export interface MetadataManifest {
     apiVersion?: string;
     files: {
-        [packagePath: string]: {
-            type?: string;
-            name?: string;
-            body?: Buffer | string;
-            localPath?: string;
-        };
+        [packagePath: string]: ({
+            type?: undefined;
+            name?: undefined;
+        } | {
+            type: string;
+            name: string;
+        }) & ({
+            body?: undefined;
+            localPath: string;
+        } | {
+            body: Buffer | string;
+            localPath?: undefined;
+        });
     };
 }
 
@@ -29,7 +36,7 @@ export class PackageXml {
      * @param type Type of component to add
      * @param member Name of the component to add
      */
-    public add(type: string, member: string): void {
+    public add(type?: string, member?: string): void {
         if (!type) {
             throw new Error('Type cannot be an empty or null string');
         }
@@ -79,7 +86,9 @@ export class PackageXml {
     static from(manifest: MetadataManifest): PackageXml {
         const packageXml = new PackageXml(manifest.apiVersion || '45.0');
         for (const info of Object.values(manifest.files)) {
-            packageXml.add(info.type, info.name);
+            if (info.type) {
+                packageXml.add(info.type, info.name);
+            }
         }
         return packageXml;
     }

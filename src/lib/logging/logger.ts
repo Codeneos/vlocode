@@ -27,16 +27,16 @@ export class Logger {
      */
     static null = new class extends Logger {
         constructor() {
-            super(null, null, null);
+            super(undefined, '/dev/null');
         }
         public write(...args: any[]) { }
         public writeEntry(...args: any[]) { }
     }();
 
     constructor(
-        private readonly manager: LogManager,
+        private readonly manager: LogManager | undefined,
         public readonly name: string,
-        private readonly writer: LogWriter) {
+        private readonly writer?: LogWriter) {
     }
 
     public log(...args: any[]) : void { this.write(LogLevel.info, ...args); }
@@ -47,13 +47,15 @@ export class Logger {
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
 
     public write(level: LogLevel, ...args: any[]) : void {
-        const logLevel = this.manager.getLogLevel(this.name);
-        if (level < logLevel) {
-            return;
-        }
-        const filter = this.manager.getFilter(this.name);
-        if (filter && !filter({ logger: this, severity: level, args: args })) {
-            return;
+        if (this.manager) {
+            const logLevel = this.manager.getLogLevel(this.name);
+            if (level < logLevel) {
+                return;
+            }
+            const filter = this.manager.getFilter(this.name);
+            if (filter && !filter({ logger: this, severity: level, args: args })) {
+                return;
+            }
         }
         this.writeEntry({
             category: this.name,

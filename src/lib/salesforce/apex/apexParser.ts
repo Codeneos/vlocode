@@ -34,7 +34,7 @@ interface ConditionalStatementNode extends ParserNode {
 
 class ApexParser {
 
-    constructor(public readonly lexer?: ApexLexer) {
+    constructor(public readonly lexer: ApexLexer) {
     }
 
     /**
@@ -43,7 +43,6 @@ class ApexParser {
      */
     public parse(input: string) {
         for(const token of this.lexer.parse(input)) {
-
         }
     }
 }

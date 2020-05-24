@@ -24,7 +24,7 @@ class LazyCommand implements Command {
     }
 
     public validate(... args: any[]) {
-        return this.getCreateInstance().validate(...args);
+        return this.getCreateInstance().validate?.(...args);
     }
 
     private getCreateInstance() {

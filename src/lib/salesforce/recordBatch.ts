@@ -4,6 +4,7 @@ import { Connection, RecordResult, BatchInfo } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import { AwaitReturnType } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
+import { arrayMapPush } from 'lib/util/collection';
 
 type RecordOperationType = 'update' | 'insert';
 
@@ -11,11 +12,11 @@ export type BatchResultRecord = {
     ref: string;
     success: boolean;
     error?: string;
-    recordId: string;
+    recordId?: string;
 } &
 (
-    { success: true; recordId: string } |
-    { success: false | null | undefined; error?: string }
+    { success: true; recordId: string; error: undefined } |
+    { success: false; error: string; recordId: undefined }
 );
 
 /** @private type to @see RecordBatch class */
@@ -37,8 +38,8 @@ export default class RecordBatch {
 
     private readonly insert = new Map<string, { ref: string; data: any }[]>();
     private readonly update = new Map<string, { ref: string; data: any }[]>();
-    private progressReporter: BatchProgressCallback;
-    private isExecuting: boolean;
+    private progressReporter: BatchProgressCallback | undefined | null;
+    private isExecuting: boolean = false;
 
     private recordCount = 0;
     private processedCount = 0;
@@ -82,7 +83,7 @@ export default class RecordBatch {
         return await this.getRecords('insert', count) || this.getRecords('update', count);
     }
 
-    public async *yieldRecords(operation: RecordOperationType | 'all', count: number): AsyncGenerator<AwaitReturnType<RecordBatch['getRecords']>> {
+    public async *yieldRecords(operation: RecordOperationType | 'all', count: number): AsyncGenerator<RecordBatchChunk> {
         let records: AwaitReturnType<RecordBatch['getRecords']>;
         while (records = await this.getRecords(operation, count)) {
             yield records;
@@ -125,6 +126,7 @@ export default class RecordBatch {
                 // Process and yield results
                 for (let i = 0; i < results.length; i++) {
                     const result = results[i];
+                    // @ts-expect-error ts does not detect mapping of types correctly
                     yield {
                         ref: chunk.refs[i],
                         success: result.success,
@@ -145,7 +147,7 @@ export default class RecordBatch {
                 clearInterval(reporter);
             }
             this.isExecuting = false;
-            this.progressReporter = null;
+            this.progressReporter = undefined;
         }
 
         if (cancelToken?.isCancellationRequested) {
@@ -154,7 +156,7 @@ export default class RecordBatch {
         }
     }
 
-    public async executeWithCollectionApi(connection: Connection, chunk: AwaitReturnType<RecordBatch['getRecords']>, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    public async executeWithCollectionApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const timer = new Timer();
         const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, {
             allOrNone: false,
@@ -170,7 +172,7 @@ export default class RecordBatch {
         return results;
     }
 
-    public async executeWithBulkApi(connection: Connection, chunk: AwaitReturnType<RecordBatch['getRecords']>, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    public async executeWithBulkApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const bulkJob = connection.bulk.createJob(chunk.sobjectType, chunk.operation);
         const batchJob = bulkJob.createBatch();
         let processedCount = 0;
@@ -191,15 +193,15 @@ export default class RecordBatch {
 
         try {
             const timer = new Timer();
-            const results = await new Promise((resolved, rejected) => {
-                cancelToken?.onCancellationRequested(() => resolved(null));
+            const results = await new Promise<RecordResult[]>((resolve, reject) => {
+                cancelToken?.onCancellationRequested(() => resolve([]));
                 batchJob.execute(chunk.records, (err, result) => {
                     if (err) {
-                        return rejected(err);
+                        return reject(err);
                     }
-                    resolved(result as RecordResult[]);
+                    resolve(result as RecordResult[]);
                 });
-            }) as RecordResult[];
+            });
 
             if (cancelToken?.isCancellationRequested) {
                 // TODO actually check number of inserted records reported
@@ -222,35 +224,32 @@ export default class RecordBatch {
     }
 
     private reportProgress() {
-        if (!this.isExecuting) {
-            return;
+        if (this.isExecuting && this.progressReporter) {
+            this.progressReporter({
+                failed: this.failedCount,
+                processed: this.processedCount,
+                total: this.recordCount
+            });
         }
-        this.progressReporter({
-            failed: this.failedCount,
-            processed: this.processedCount,
-            total: this.recordCount
-        });
     }
 
-    public add(type: string, data: any, ref?: string): this {
+    public add(type: string, data: any, ref: string): this {
         if (data.Id || data.id) {
             return this.addUpdate(type, data, data.Id, ref);
         }
         return this.addInsert(type, data, ref);
     }
 
-    public addUpdate(type: string, data: any, id: string, ref?: string): this {
-        const records = this.update.get(type) || this.update.set(type, []).get(type);
+    public addUpdate(type: string, data: any, id: string, ref: string): this {
         data.Id = id;
-        records.push({ ref, data });
+        arrayMapPush(this.update, type, { ref, data });
         this.recordCount++;
         return this;
     }
 
     public addInsert(type: string, data: any, ref?: string): this {
-        const records = this.insert.get(type) || this.insert.set(type, []).get(type);
         delete data.Id;
-        records.push({ ref, data });
+        arrayMapPush(this.insert, type, { ref, data });
         this.recordCount++;
         return this;
     }

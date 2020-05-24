@@ -31,7 +31,9 @@ export function setLogger(logger : Logger, includeCallerDetails: boolean = false
         }
         if (includeCallerDetails) {
             const callerFrame = util.getStackFrameDetails(2);
-            args.push(`(${callerFrame.fileName}:${callerFrame.lineNumber})`);
+            if (callerFrame) {
+                args.push(`(${callerFrame.fileName}:${callerFrame.lineNumber})`);
+            }
         }
         logFn.apply(logger, args);
     };
