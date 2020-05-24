@@ -119,7 +119,7 @@ export default class DatapackLoader {
                 }
             }
         } else if (Array.isArray(fieldValue)) {
-            return Promise.all(fieldValue.map((value, i) => this.resolveValue(baseDir, value)));
+            return Promise.all(fieldValue.map(value => this.resolveValue(baseDir, value)));
         } else if (fieldValue !== null && typeof fieldValue === 'object') {
             await Promise.all(Object.keys(fieldValue).map(
                 async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key])));

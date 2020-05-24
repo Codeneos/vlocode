@@ -1,4 +1,4 @@
-import { Logger, LogManager } from 'lib/logging';
+import { LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { asArray } from 'lib/util/collection';
 import { PropertyAccessor } from 'lib/utilityTypes';

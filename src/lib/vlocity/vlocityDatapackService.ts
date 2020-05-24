@@ -5,17 +5,17 @@ import * as jsforce from 'jsforce';
 import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
-import { Logger, LogManager } from 'lib/logging';
+import { LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
+import { VlocityDatapack } from 'lib/vlocity/datapack';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import { groupBy, mapAsync } from 'lib/util/collection';
 import { getDocumentBodyAsString } from 'lib/util/fs';
-import DatapackLoader, { CachedFileSystem } from 'lib/vlocity/datapackLoader';
+import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';

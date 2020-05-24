@@ -36,9 +36,11 @@ describe('util', () => {
 
     describe('#formatString', () => {
         it('should replace placeholders with context values', () => {
+            // eslint-disable-next-line no-template-curly-in-string
             expect(formatString('Foo ${bar}', { bar: 'foo'})).equals('Foo foo');
         });
         it('should not replace values not found in context array', () => {
+            // eslint-disable-next-line no-template-curly-in-string
             expect(formatString('Foo ${bar} foo', { foo: 'foo'})).equals('Foo ${bar} foo');
         });
     });

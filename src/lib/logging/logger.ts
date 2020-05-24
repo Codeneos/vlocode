@@ -1,4 +1,3 @@
-import { isObject } from 'util';
 import { LogLevel } from 'lib/logging';
 import { isPromise } from 'lib/util/async';
 import LogManager from './logManager';
@@ -29,8 +28,8 @@ export class Logger {
         constructor() {
             super(undefined, '/dev/null');
         }
-        public write(...args: any[]) { }
-        public writeEntry(...args: any[]) { }
+        public write() { }
+        public writeEntry() { }
     }();
 
     constructor(

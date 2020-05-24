@@ -6,7 +6,7 @@ import { evalExpr } from 'lib/util/string';
 import { groupBy } from 'lib/util/collection';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { createRecordProxy, addFieldsToQuery } from 'lib/util/salesforce';
+import { addFieldsToQuery } from 'lib/util/salesforce';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
@@ -49,9 +49,6 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         return this.vlocode.datapackService;
     }
 
-    private get vlocityNamespace() : string {
-        return this.datapackService.vlocityNamespace;
-    }
 
     public getTreeItem(node: DatapackNode): vscode.TreeItem {
         return {
