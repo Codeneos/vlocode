@@ -12,7 +12,6 @@
         "suppressExcessPropertyErrors": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "rootDir": "src",
         "baseUrl": "./src",
         "paths": {
             "@constants": ["constants"],
@@ -27,6 +26,7 @@
     },
     "include": [
         "src/**/*",
-        "types/**/*"
+        "types/**/*",
+        "build/**/*"
     ]
 }
