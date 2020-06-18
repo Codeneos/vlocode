@@ -3,7 +3,7 @@ import SalesforceService from 'lib/salesforce/salesforceService';
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import QueryService from 'lib/salesforce/queryService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
-import { LogManager } from 'lib/logging';
+import { LogManager, Logger } from 'lib/logging';
 import { Field } from 'jsforce';
 import moment = require('moment');
 import Timer from 'lib/util/timer';
@@ -13,6 +13,10 @@ import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
+import { ApexExecutor } from './apexExecutor';
+import { Iterable } from 'lib/util/iterable';
+import { asArray } from 'lib/util/collection';
+import { dependency } from 'lib/core/inject';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -31,14 +35,15 @@ export interface DependencyResolver {
     resolveDependency(dep: DatapackRecordDependency): Promise<string | undefined>;
 }
 
+@dependency()
 export default class VlocityDatapackDeployService {
 
     constructor(
         private readonly connectionProvider: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
-        // @ts-expect-error ctor checks for schema service not null and throws an error when required
-        private readonly schemaService: SalesforceSchemaService = connectionProvider instanceof SalesforceService ? connectionProvider.schema : undefined,
-        private readonly logger = LogManager.get(DatapackDeployment)) {
+        private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
+        private readonly apexExecutor: ApexExecutor = new ApexExecutor(connectionProvider),
+        private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
         if (!this.schemaService) {
             throw new Error('Schema service is required constructor parameters and cannot be empty');
         }
@@ -49,6 +54,11 @@ export default class VlocityDatapackDeployService {
         const lookupService = new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService);
         const datapackLookup = new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService);
         const deployment = new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService);
+
+        deployment.beforeDeploy(event => {
+            // Bulkify this to run for multiple
+            this.apexExecutor.execute('someApex');
+        });
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
@@ -63,6 +73,25 @@ export default class VlocityDatapackDeployService {
 
         return deployment;
     }
+
+    private async createContextData(datapacks: Iterable<DatapackDeploymentRecord> | DatapackDeploymentRecord) {
+        const contextDataList = new Array<any>();
+        for (const datapack of Iterable.asIterable(datapacks)) {
+            const matchingKeyDef = await this.matchingKeyService.getMatchingKeyDefinition(datapack.sobjectType);
+            const contextData = {};
+            for (const field of Iterable.join(matchingKeyDef.fields, DATAPACK_RESERVED_FIELDS)) {
+                contextData[field] = datapack[field];
+            }
+            contextDataList.push(contextData);
+        }
+        return contextDataList;
+    }
+
+    // CURRENT_DATA_PACKS_CONTEXT will be replaced with:
+    // 1. The Manifest being exported
+    // 2. The Query results being exported
+    // 3. A Summary of the DataPack data being imported
+    //List<Object> dataSetObjects = (List<Object>)JSON.deserializeUntyped('CURRENT_DATA_PACKS_CONTEXT_DATA');
 
     private async toSalesforceRecords(datapack: VlocityDatapack) {
         const sobject = await this.schemaService.describeSObject(datapack.sobjectType, false);

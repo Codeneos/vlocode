@@ -19,6 +19,7 @@ import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
+import { dependency } from 'lib/core/inject';
 
 export interface ManifestEntry {
     datapackType: string;
@@ -217,6 +218,7 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
 //     }
 // }
 
+@dependency()
 export default class VlocityDatapackService implements vscode.Disposable {
 
     private vlocityBuildTools: vlocity;
@@ -229,12 +231,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly config: VlocodeConfiguration,
-        private readonly salesforceService: SalesforceService = new SalesforceService(connectionProvider),
-        private readonly loader: DatapackLoader = new DatapackLoader()
+        private readonly salesforceService: SalesforceService,
+        private readonly loader: DatapackLoader
     ) {
     }
 
-    public dispose(){
+    public dispose() {
         if (this.#customSettingsWatcher) {
             this.#customSettingsWatcher.dispose();
             this.#customSettingsWatcher = undefined;

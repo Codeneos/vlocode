@@ -26,7 +26,6 @@
     },
     "include": [
         "src/**/*",
-        "types/**/*",
-        "build/**/*"
+        "types/**/*"
     ]
 }

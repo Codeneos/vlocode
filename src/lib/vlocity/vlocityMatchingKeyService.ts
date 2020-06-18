@@ -12,6 +12,7 @@ import Lazy from 'lib/util/lazy';
 import { createRecordProxy, removeNamespacePrefix } from 'lib/util/salesforce';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import QueryBuilder from '../salesforce/queryBuilder';
+import { dependency } from 'lib/core/inject';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
@@ -20,6 +21,7 @@ export interface VlocityMatchingKey {
     readonly returnField: string;
 }
 
+@dependency()
 export default class VlocityMatchingKeyService {
 
     constructor(

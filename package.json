@@ -59,7 +59,37 @@
         "onCommand:vlocity.viewInSalesforce",
         "onCommand:vlocity.previewLwc",
         "onCommand:vlocity.createLwc",
-        "onCommand:vlocity.createApexClass"
+        "onCommand:vlocity.createApexClass",
+        "onCommand:vlocode.selectOrg",
+        "onCommand:vlocode.refreshDatapack",
+        "onCommand:vlocode.deployDatapack",
+        "onCommand:vlocode.openSalesforce",
+        "onCommand:vlocode.renameDatapack",
+        "onCommand:vlocode.cloneDatapack",
+        "onCommand:vlocode.exportDatapack",
+        "onCommand:vlocode.buildParentKeyFiles",
+        "onCommand:vlocode.buildDatapack",
+        "onCommand:vlocode.viewDatapack.generic",
+        "onCommand:vlocode.adminCommands",
+        "onCommand:vlocode.admin.refreshPriceBook",
+        "onCommand:vlocode.admin.refreshProductHierarchy",
+        "onCommand:vlocode.admin.refreshPriceBookAndProductHierarchy",
+        "onCommand:vlocode.admin.updateAllProdAttribCommand",
+        "onCommand:vlocode.admin.clearPlatformCache",
+        "onCommand:vlocode.deployMetadata",
+        "onCommand:vlocode.refreshMetadata",
+        "onCommand:vlocode.destroyMetadata",
+        "onCommand:vlocode.selectApiVersion",
+        "onCommand:vlocode.createMetadataCommand",
+        "onCommand:vlocode.execAnonymousCommand",
+        "onCommand:vlocode.viewInSalesforce",
+        "onCommand:vlocode.createLwc",
+        "onCommand:vlocode.createApexClass",
+        "onCommand:vlocode.datapackExplorer.export",
+        "onCommand:vlocode.datapackExplorer.refresh",
+        "onCommand:vlocode.datapackExplorer.openSalesforce",
+        "onCommand:vlocode.jobExplorer.refresh",
+        "onCommand:vlocode.jobExplorer.run"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -90,107 +120,107 @@
         },
         "commands": [
             {
-                "command": "vlocity.selectOrg",
+                "command": "vlocode.selectOrg",
                 "title": "Vlocity: Select Salesforce Org"
             },
             {
-                "command": "vlocity.refreshDatapack",
+                "command": "vlocode.refreshDatapack",
                 "title": "Vlocity: Refresh Datapack(s)"
             },
             {
-                "command": "vlocity.deployDatapack",
+                "command": "vlocode.deployDatapack",
                 "title": "Vlocity: Deploy Datapack(s)"
             },
             {
-                "command": "vlocity.openSalesforce",
+                "command": "vlocode.openSalesforce",
                 "title": "Vlocity: Open in Salesforce"
             },
             {
-                "command": "vlocity.renameDatapack",
+                "command": "vlocode.renameDatapack",
                 "title": "Vlocity: Rename Datapack"
             },
             {
-                "command": "vlocity.cloneDatapack",
+                "command": "vlocode.cloneDatapack",
                 "title": "Vlocity: Clone Datapack"
             },
             {
-                "command": "vlocity.exportDatapack",
+                "command": "vlocode.exportDatapack",
                 "title": "Vlocity: Export Datapack from Salesforce"
             },
             {
-                "command": "vlocity.buildParentKeyFiles",
+                "command": "vlocode.buildParentKeyFiles",
                 "title": "Vlocity: Repair Datapack dependencies"
             },
             {
-                "command": "vlocity.buildDatapack",
+                "command": "vlocode.buildDatapack",
                 "title": "Vlocity: Build Datapack"
             },
             {
-                "command": "vlocity.viewDatapack.generic",
+                "command": "vlocode.viewDatapack.generic",
                 "title": "Vlocity: View Datapack"
             },
             {
-                "command": "vlocity.adminCommands",
+                "command": "vlocode.adminCommands",
                 "title": "Vlocity: Administration Console"
             },
             {
-                "command": "vlocity.admin.refreshPriceBook",
+                "command": "vlocode.admin.refreshPriceBook",
                 "title": "Vlocity: Refresh Pricebook"
             },
             {
-                "command": "vlocity.admin.refreshProductHierarchy",
+                "command": "vlocode.admin.refreshProductHierarchy",
                 "title": "Vlocity: Refresh Product Hierarchy"
             },
             {
-                "command": "vlocity.admin.refreshPriceBookAndProductHierarchy",
+                "command": "vlocode.admin.refreshPriceBookAndProductHierarchy",
                 "title": "Vlocity: Refresh Pricebook and Product Hierarchy"
             },
             {
-                "command": "vlocity.admin.updateAllProdAttribCommand",
+                "command": "vlocode.admin.updateAllProdAttribCommand",
                 "title": "Vlocity: Update Product Attributes"
             },
             {
-                "command": "vlocity.admin.clearPlatformCache",
+                "command": "vlocode.admin.clearPlatformCache",
                 "title": "Vlocity: Clear Platform Cache"
             },
             {
-                "command": "vlocity.deployMetadata",
+                "command": "vlocode.deployMetadata",
                 "title": "Salesforce: Save/Deploy"
             },
             {
-                "command": "vlocity.refreshMetadata",
+                "command": "vlocode.refreshMetadata",
                 "title": "Salesforce: Refresh"
             },
             {
-                "command": "vlocity.destroyMetadata",
+                "command": "vlocode.destroyMetadata",
                 "title": "Salesforce: Delete/Destroy"
             },
             {
-                "command": "vlocity.selectApiVersion",
+                "command": "vlocode.selectApiVersion",
                 "title": "Salesforce: Select API Version"
             },
             {
-                "command": "vlocity.createMetadataCommand",
+                "command": "vlocode.createMetadataCommand",
                 "title": "Salesforce: New component"
             },
             {
-                "command": "vlocity.execAnonymousCommand",
+                "command": "vlocode.execAnonymousCommand",
                 "title": "Salesforce: Execute Anonymous APEX"
             },
             {
-                "command": "vlocity.viewInSalesforce",
+                "command": "vlocode.viewInSalesforce",
                 "title": "Salesforce: View in Salesforce"
             },
             {
-                "command": "vlocity.createLwc",
+                "command": "vlocode.createLwc",
                 "title": "Salesforce: New Lightning Web Component (LWC)"
             },
             {
-                "command": "vlocity.createApexClass",
+                "command": "vlocode.createApexClass",
                 "title": "Salesforce: New APEX class"
             },
             {
-                "command": "vlocity.datapackExplorer.export",
+                "command": "vlocode.datapackExplorer.export",
                 "title": "Export",
                 "icon": {
                     "light": "resources/light/export.svg",
@@ -198,7 +228,7 @@
                 }
             },
             {
-                "command": "vlocity.datapackExplorer.refresh",
+                "command": "vlocode.datapackExplorer.refresh",
                 "title": "Refresh",
                 "icon": {
                     "light": "resources/light/refresh.svg",
@@ -206,7 +236,7 @@
                 }
             },
             {
-                "command": "vlocity.datapackExplorer.openSalesforce",
+                "command": "vlocode.datapackExplorer.openSalesforce",
                 "title": "View in Salesforce",
                 "icon": {
                     "light": "resources/light/link-external.svg",
@@ -214,7 +244,7 @@
                 }
             },
             {
-                "command": "vlocity.jobExplorer.refresh",
+                "command": "vlocode.jobExplorer.refresh",
                 "title": "Refresh",
                 "icon": {
                     "light": "resources/light/refresh.svg",
@@ -222,7 +252,7 @@
                 }
             },
             {
-                "command": "vlocity.jobExplorer.run",
+                "command": "vlocode.jobExplorer.run",
                 "title": "Run job",
                 "icon": {
                     "light": "resources/light/start.svg",
@@ -233,249 +263,263 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "vlocity.selectOrg",
+                    "command": "vlocode.selectOrg",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.refreshDatapack",
+                    "command": "vlocode.refreshDatapack",
+                    "group": "v_vlocity",
+                    "when": "true"
+                },
+                {
+                    "command": "vlocode.deployDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.deployDatapack",
+                    "command": "vlocode.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                },
+                {
+                    "command": "vlocode.renameDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                },
+                {
+                    "command": "vlocode.cloneDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                },
+                {
+                    "command": "vlocode.exportDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.openSalesforce",
+                    "command": "vlocode.buildParentKeyFiles",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.renameDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.cloneDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.exportDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.buildParentKeyFiles",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.buildDatapack",
+                    "command": "vlocode.buildDatapack",
                     "group": "v_vlocity",
                     "when": "false"
                 },
                 {
-                    "command": "vlocity.viewDatapack.generic",
+                    "command": "vlocode.viewDatapack.generic",
                     "group": "v_vlocity",
                     "when": "false"
                 },
                 {
-                    "command": "vlocity.adminCommands",
+                    "command": "vlocode.adminCommands",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.admin.refreshPriceBook",
+                    "command": "vlocode.admin.refreshPriceBook",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.admin.refreshProductHierarchy",
+                    "command": "vlocode.admin.refreshProductHierarchy",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.admin.refreshPriceBookAndProductHierarchy",
+                    "command": "vlocode.admin.refreshPriceBookAndProductHierarchy",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.admin.updateAllProdAttribCommand",
+                    "command": "vlocode.admin.updateAllProdAttribCommand",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.admin.clearPlatformCache",
+                    "command": "vlocode.admin.clearPlatformCache",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.deployMetadata",
+                    "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.refreshMetadata",
+                    "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.destroyMetadata",
+                    "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.selectApiVersion",
+                    "command": "vlocode.selectApiVersion",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.createMetadataCommand",
+                    "command": "vlocode.createMetadataCommand",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.execAnonymousCommand",
+                    "command": "vlocode.execAnonymousCommand",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.viewInSalesforce",
+                    "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i"
                 },
                 {
-                    "command": "vlocity.createLwc",
+                    "command": "vlocode.createLwc",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.createApexClass",
+                    "command": "vlocode.createApexClass",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.export"
-                },
-                {
-                    "command": "vlocity.datapackExplorer.refresh"
-                },
-                {
-                    "command": "vlocity.datapackExplorer.openSalesforce"
-                },
-                {
-                    "command": "vlocity.jobExplorer.refresh",
+                    "command": "vlocode.datapackExplorer.export",
                     "when": "false"
                 },
                 {
-                    "command": "vlocity.jobExplorer.run",
+                    "command": "vlocode.datapackExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.openSalesforce",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.jobExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.jobExplorer.run",
                     "when": "false"
                 }
             ],
             "explorer/context": [
                 {
-                    "command": "vlocity.refreshDatapack",
+                    "command": "vlocode.refreshDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                },
+                {
+                    "command": "vlocode.deployDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.deployDatapack",
-                    "group": "v_vlocity"
+                    "command": "vlocode.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
                 },
                 {
-                    "command": "vlocity.openSalesforce",
-                    "group": "v_vlocity"
+                    "command": "vlocode.renameDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
                 },
                 {
-                    "command": "vlocity.renameDatapack",
-                    "group": "v_vlocity"
+                    "command": "vlocode.cloneDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
                 },
                 {
-                    "command": "vlocity.cloneDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.deployMetadata",
+                    "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.refreshMetadata",
+                    "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 }
             ],
             "editor/context": [
                 {
-                    "command": "vlocity.refreshDatapack",
+                    "command": "vlocode.refreshDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                },
+                {
+                    "command": "vlocode.deployDatapack",
                     "group": "v_vlocity"
                 },
                 {
-                    "command": "vlocity.deployDatapack",
-                    "group": "v_vlocity"
+                    "command": "vlocode.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
                 },
                 {
-                    "command": "vlocity.openSalesforce",
-                    "group": "v_vlocity"
+                    "command": "vlocode.cloneDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
                 },
                 {
-                    "command": "vlocity.cloneDatapack",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocity.deployMetadata",
+                    "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.refreshMetadata",
+                    "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.destroyMetadata",
+                    "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
-                    "command": "vlocity.viewInSalesforce",
+                    "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "vlocity.datapackExplorer.export",
+                    "command": "vlocode.datapackExplorer.export",
                     "group": "inline",
                     "when": "viewItem == vlocity:datapack:object"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.export",
+                    "command": "vlocode.datapackExplorer.export",
                     "group": "inline",
                     "when": "viewItem == vlocity:datapack:category"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.export",
+                    "command": "vlocode.datapackExplorer.export",
                     "group": "v_vlocity",
                     "when": "viewItem == vlocity:datapack:object"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.export",
+                    "command": "vlocode.datapackExplorer.export",
                     "group": "v_vlocity",
                     "when": "viewItem == vlocity:datapack:category"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.openSalesforce",
+                    "command": "vlocode.datapackExplorer.openSalesforce",
                     "group": "inline",
                     "when": "viewItem == vlocity:datapack:object"
                 },
                 {
-                    "command": "vlocity.datapackExplorer.openSalesforce",
+                    "command": "vlocode.datapackExplorer.openSalesforce",
                     "group": "v_vlocity",
                     "when": "viewItem == vlocity:datapack:object"
                 },
                 {
-                    "command": "vlocity.jobExplorer.run",
+                    "command": "vlocode.jobExplorer.run",
                     "group": "inline",
                     "when": "viewItem == vlocity:jobYaml"
                 }
             ],
             "view/title": [
                 {
-                    "command": "vlocity.datapackExplorer.refresh",
+                    "command": "vlocode.datapackExplorer.refresh",
                     "group": "navigation",
                     "when": "view == datapackExplorer"
                 },
                 {
-                    "command": "vlocity.jobExplorer.refresh",
+                    "command": "vlocode.jobExplorer.refresh",
                     "group": "navigation",
                     "when": "view == jobExplorer"
                 }
@@ -488,6 +532,7 @@
                 "vlocity.verbose": {
                     "type": "boolean",
                     "default": false,
+                    "deprecationMessage": "Verbose mode is replaced by the `logLevel` setting",
                     "markdownDescription": "Enable verbose logging to the output window"
                 },
                 "vlocity.sfdxUsername": {
@@ -570,10 +615,33 @@
                     "default": false,
                     "markdownDescription": "Automatically deploy metadata files to Salesforce when saved."
                 },
+                "vlocity.logLevel": {
+                    "type": "string",
+                    "default": "info",
+                    "enum": [
+                        "info",
+                        "verbose",
+                        "debug"
+                    ],
+                    "markdownDescription": "Determines the amount of details printed to the integrated terminal for Vlocode"
+                },
                 "vlocity.logInTerminal": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Enable logging in `TERMINAL` tab instead of in the `OUTPUT` tab, terminal logging uses a vscode *Pseudoterminal* and has support for colors but might not work correctly on all platforms.\n\n**Note** Changing this will require you to restart for the changes to be applied."
+                },
+                "vlocity.deploymentMode": {
+                    "type": "string",
+                    "enum": [
+                        "compatibility",
+                        "direct"
+                    ],
+                    "default": "compatibility",
+                    "enumDescriptions": [
+                        "Use Vlocity Deployment library; maximizes compatibility at the cost of deployment speed",
+                        "Directly load records using bulk or collections API; significantly faster then but still beta"
+                    ],
+                    "markdownDescription": "Change how Datapacks are deployment by Vlocode; select _direct_ mode for faster deployments (currently this is a beta feature)"
                 }
             }
         }
@@ -640,16 +708,17 @@
         "mock-fs": "^4.10.4",
         "moment": "^2.24.0",
         "patch-package": "^6.2.0",
+        "reflect-metadata": "^0.1.13",
         "rimraf": "^3.0.0",
         "salesforce-alm": "^47.10.0",
         "sinon": "^9.0.1",
         "terser": "^4.6.13",
         "terser-webpack-plugin": "^2.3.1",
-        "ts-loader": "^7.0.4",
+        "ts-loader": "^7.0.5",
         "ts-node": "^8.5.4",
         "tslint": "^5.20.1",
         "tslint-loader": "^3.5.4",
-        "typescript": "^3.9.2",
+        "typescript": "^3.9.5",
         "uuid": "^3.3.3",
         "vlocity": "^1.11.12",
         "vsce": "^1.75.0",

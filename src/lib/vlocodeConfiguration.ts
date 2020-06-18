@@ -1,13 +1,13 @@
-export interface VlocodeSalesforceConfiguration {
+export abstract class VlocodeSalesforceConfiguration {
     enabled: boolean;
     deployOnSave: boolean;
     apiVersion: string;
     manageMetaXmlFiles: boolean;
 }
 
-export default interface Vlocodefiguration {
+export default abstract class vlocodeConfiguration {
     verbose: boolean;
-    debug: boolean;
+    logLevel: 'info' | 'verbose' | 'debug';
     sfdxUsername?: string;
     httpProxy?: string;
     additionalOptions?: any;
@@ -18,5 +18,6 @@ export default interface Vlocodefiguration {
     autoActivate: boolean;
     compileOnBuild: boolean;
     logInTerminal: boolean;
+    deploymentMode: 'direct' | 'compatibility';
     salesforce: VlocodeSalesforceConfiguration;
 }

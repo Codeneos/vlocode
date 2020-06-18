@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { Field } from 'jsforce';
-import { LogManager } from 'lib/logging';
+import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import { PropertyTransformHandler } from 'lib/util/object';
@@ -8,9 +8,11 @@ import { normalizeSalesforceName } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import moment = require('moment');
+import { dependency } from 'lib/core/inject';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
+@dependency()
 export default class QueryService {
 
     private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();
@@ -20,7 +22,7 @@ export default class QueryService {
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly logger = LogManager.get(QueryService)) {
+        private readonly logger: Logger = LogManager.get(QueryService)) {
     }
 
     /**

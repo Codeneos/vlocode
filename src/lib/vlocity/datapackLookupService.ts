@@ -5,7 +5,9 @@ import * as constants from '@constants';
 import Timer from 'lib/util/timer';
 import { arrayMapPush } from 'lib/util/collection';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
+import { dependency } from 'lib/core/inject';
 
+@dependency()
 export class DatapackLookupService implements DependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();

@@ -4,7 +4,7 @@ import OnSavedEventHandler from 'events/onSavedEventHandler';
 import OnClassFileDeleted from 'events/onClassFileDeleted';
 import OnClassFileCreated from 'events/onClassFileCreated';
 import * as constants from '@constants';
-import { LogManager, LogFilter, LogLevel } from 'lib/logging';
+import { LogManager, LogFilter, LogLevel, Logger } from 'lib/logging';
 import { ConsoleWriter, OutputChannelWriter, TerminalWriter } from 'lib/logging/writers';
 import Commands from 'commands';
 import * as vlocityUtil from 'lib/vlocity/vlocityLogging';
@@ -17,6 +17,8 @@ import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
+import { container } from 'lib/core/inject';
+import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -77,8 +79,11 @@ export = class Vlocode {
         }, new ConsoleWriter());
 
         // set logging level
-        LogManager.setGlobalLogLevel(this.service.config.verbose ? LogLevel.verbose : LogLevel.info); // todo: support more log levels from config section    
-        ConfigurationManager.watchProperties(this.service.config, [ 'verbose' ], config => LogManager.setGlobalLogLevel(config.verbose ? LogLevel.verbose : LogLevel.info));
+        const getLogLevel = (config: VlocodeConfiguration) => {
+            return LogLevel[config.logLevel];
+        };
+        LogManager.setGlobalLogLevel(getLogLevel(this.service.config)); // todo: support more log levels from config section    
+        ConfigurationManager.watchProperties(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(getLogLevel(config)));
 
         // setup Vlocity logger and filters
         LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
@@ -91,8 +96,10 @@ export = class Vlocode {
         this.setWorkingDirectory();
 
         // Init logging and register services
-        const vloConfig = ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION);
-        this.service = new VlocodeService(vloConfig);
+        container.registerProvider(Logger, LogManager.get.bind(LogManager));
+        container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION));
+
+        this.service = await container.resolve(VlocodeService);
         context.subscriptions.push(this.service);
 
         initializeContext(context, this.service);
@@ -103,8 +110,8 @@ export = class Vlocode {
         this.logger.verbose('Verbose logging enabled');
 
         // Salesforce support      
-        ConfigurationManager.watchProperties(vloConfig, [ 'salesforce.enabled' ], c => this.service.enableSalesforceSupport(c.salesforce.enabled));
-        if (vloConfig.salesforce.enabled) {
+        ConfigurationManager.watchProperties(this.service.config, [ 'salesforce.enabled' ], c => this.service.enableSalesforceSupport(c.salesforce.enabled));
+        if (this.service.config.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
 

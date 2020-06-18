@@ -42,6 +42,19 @@
             "preLaunchTask": "build",
             "stopOnEntry": false,
             "sourceMaps": true
-        }
+        },
+        {
+			"name": "Debug: Build Commands",
+			"type": "node",
+			"request": "launch",
+			"args": ["${workspaceRoot}/build/buildCommands.ts", "./package.json", "./commands.yaml"],
+			"runtimeArgs": ["-r", "ts-node/register"],
+			"cwd": "${workspaceRoot}",
+			"protocol": "inspector",
+			"internalConsoleOptions": "openOnSessionStart",
+			"env": {
+				"TS_NODE_IGNORE": "false"
+			}
+		}
     ]
 }

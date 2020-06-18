@@ -1,4 +1,4 @@
-import { workspace, WorkspaceConfiguration, Disposable, EventEmitter, Event } from 'vscode';
+import { workspace, WorkspaceConfiguration, Disposable } from 'vscode';
 import { singleton } from './util/singleton';
 import { LogManager, Logger } from './logging';
 import { arrayMapPush } from './util/collection';
@@ -27,7 +27,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
      */
     public load<T extends Object>(configSectionName: string): T {
         const proxyConfig = new Proxy({} as T, {
-            get: (target, key, receiver) => {
+            get: (target, key) => {
                 if (key == this.sectionNameSymbol) {
                     return configSectionName;
                 }
@@ -38,12 +38,12 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
                 }
                 return value;
             },
-            set: (target, key, value, receiver) => {
+            set: (target, key, value) => {
                 const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
                 void workspaceConfig.update(key.toString(), value, false);
                 return true;
             },
-            ownKeys: target => {
+            ownKeys: () => {
                 return Object.getOwnPropertyNames(this.getWorkspaceConfiguration(configSectionName));
             }
         });
@@ -60,7 +60,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
                 }
                 return value;
             },
-            set(target, key, value, receiver) {
+            set(target, key, value) {
                 // const parentUpdate = { ...target, [key]: value };
                 parent[`${propertyName.toString()}.${key.toString()}`] = value;
                 return true;
@@ -137,7 +137,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         }
     }
 
-    public watchProperties<T extends Object>(config: string | T, properties: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
+    public watchProperties<T extends Object>(config: string | T, properties: Array<(keyof T) | string>, watcher: (config: T) => void | Promise<void>) : Disposable {
         const sectionName = typeof config === 'string' ? config : config[this.sectionNameSymbol] as string;
         return this.registerWatcher(properties.map(property => `${sectionName}.${property}`), watcher);
     }

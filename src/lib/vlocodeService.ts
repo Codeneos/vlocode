@@ -14,6 +14,7 @@ import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
 import Timer from './util/timer';
 import chalk = require('chalk');
+import { container, dependency } from './core/inject';
 
 interface ActivityOptions {
     progressTitle: string;
@@ -24,6 +25,7 @@ interface ActivityOptions {
     propagateExceptions?: boolean;
 }
 
+@dependency([JsForceConnectionProvider, VlocodeService])
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates
@@ -52,10 +54,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this._salesforceService;
     }
 
-    protected get logger() : Logger {
-        return LogManager.get(VlocodeService);
-    }
-
     public get connected() : boolean {
         return !!this._datapackService;
     }
@@ -65,7 +63,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     // Ctor + Methods
-    constructor(public readonly config: VlocodeConfiguration) {
+    constructor(public readonly config: VlocodeConfiguration, private readonly logger: Logger) {
         this.registerDisposable(this.createConfigWatcher());
         this.connectionHooks.registerHook({ pre: this.updateNamespaceHook.bind(this) });
     }
@@ -89,11 +87,12 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 delete this._datapackService;
             }
             if (this.config.sfdxUsername) {
-                this._salesforceService = new SalesforceService(this);
-                this._datapackService = await new VlocityDatapackService(this, this.config, this.salesforceService).initialize();
+                this._salesforceService = container.get(SalesforceService);
+                this._datapackService = container.get(VlocityDatapackService);
             }
             this.updateStatusBar(this.config);
         } catch (err) {
+            console.error(err);
             this.logger.error(err.message);
             if (err?.message == 'NamedOrgNotFound') {
                 this.showStatus(`$(error) Unknown Salesforce user: ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
@@ -135,7 +134,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     /**
-     * Thin wrapper arround `vscode.window.withProgress` with location `Notification` and cancellable `false`. 
+     * Thin wrapper around `vscode.window.withProgress` with location `Notification` and cancellable `false`. 
      * @param title Title of the task
      * @param task task to run
      */
@@ -148,7 +147,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     /**
-     * Thin wrapper arround `vscode.window.withProgress` with location `Notification` and cancellable `true`. 
+     * Thin wrapper around `vscode.window.withProgress` with location `Notification` and cancellable `true`. 
      * @param title Title of the task
      * @param task task to run
      */
@@ -161,7 +160,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     /**
-     * Thin wrapper arround `vscode.window.withProgress` with location `Window` and cancellable `false`. 
+     * Thin wrapper around `vscode.window.withProgress` with location `Window` and cancellable `false`. 
      * @param title Title of the task
      * @param task task to run
      */
@@ -174,7 +173,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     /**
-     * Wrapper arround `vscode.window.withProgress` that registers the task as an activity visisble in the activity exporer if used.
+     * Wrapper around `vscode.window.withProgress` that registers the task as an activity visisble in the activity exporer if used.
      * @param options Activity options
      * @param task Task to run
      */
@@ -325,7 +324,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private createConfigWatcher() : vscode.Disposable {
         this.updateStatusBar(this.config);
         this.showApiVersionStatusItem();
-        return ConfigurationManager.watch(this.config, async () => {
+        return ConfigurationManager.watchProperties(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml', 'salesforce.apiVersion' ], async () => {
             this.showStatus('$(sync) Processing config changes...', VlocodeCommand.selectOrg);
             await this.initialize();
             this.showApiVersionStatusItem();

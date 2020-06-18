@@ -80,9 +80,21 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 progressText = `Deploying: ${datapackNames.join(', ')} ...`;
             }
 
-
-            // report UI progress back
-            // this.showResultMessage(result);
+            await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
+                const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
+                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
+                
+                if (this.vlocode.config.deploymentMode == 'compatibility') {
+                    this.showResultMessage(
+                        await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token)
+                    );
+                } else {
+                    const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+                    const deployer = new DatapackDeployService(this.salesforce, await this.datapackService.getMatchingKeyService());
+                    const deployment = await deployer.createDeployment(datapacks);
+                    await deployment.start();
+                }                
+            });
 
         } catch (err) {
             this.logger.error(err);

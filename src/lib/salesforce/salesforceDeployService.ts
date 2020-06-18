@@ -15,6 +15,7 @@ import { substringAfterLast } from 'lib/util/string';
 import { MetadataManifest, PackageXml } from './deploy/packageXml';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import SalesforceService from './salesforceService';
+import { dependency } from 'lib/core/inject';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: { componentFailures?: ComponentFailure[] };
@@ -44,6 +45,7 @@ interface RetrieveStatus extends jsforce.RetrieveResult {
     status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
 }
 
+@dependency()
 export default class SalesforceDeployService {
 
     constructor(private readonly salesforce: SalesforceService) {
