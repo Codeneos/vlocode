@@ -611,7 +611,7 @@
         "@types/vscode": "^1.42.0",
         "@types/xml2js": "^0.4.5",
         "ajv": "^6.10.2",
-        "angular": "^1.7.9",
+        "angular": "^1.8.0",
         "angular-expressions": "^1.0.1",
         "axios": "^0.19.2",
         "cache-loader": "^4.1.0",
