@@ -1,8 +1,6 @@
 import * as jsforce from 'jsforce';
-import * as vscode from 'vscode';
-import { default as sfdxUtil, FullSalesforceOrgDetails } from 'lib/util/sfdx';
+import { default as sfdxUtil } from 'lib/util/sfdx';
 import { LogManager, Logger, LogLevel } from 'lib/logging';
-import { HookManager } from 'lib/util/hookManager';
 import JsForceConnectionProvider from './jsForceConnectionProvider';
 
 interface PooledJsforceConnection extends jsforce.Connection {

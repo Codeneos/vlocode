@@ -1,20 +1,22 @@
-import { LogManager } from 'lib/logging';
+import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { asArray } from 'lib/util/collection';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import QueryService, { QueryResult } from './queryService';
 import SalesforceSchemaService from './salesforceSchemaService';
+import { dependency } from 'lib/core/inject';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
  */
+@dependency()
 export default class SalesforceLookupService {
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly schemaService: SalesforceSchemaService = new SalesforceSchemaService(connectionProvider),
         private readonly queryService: QueryService = new QueryService(connectionProvider),
-        private readonly logger = LogManager.get(SalesforceLookupService)) {
+        private readonly logger: Logger = LogManager.get(SalesforceLookupService)) {
     }
 
     /**

@@ -1,5 +1,5 @@
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
-import { LogManager } from 'lib/logging';
+import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { Connection } from 'jsforce';
 import { CancellationToken } from 'vscode';
@@ -9,6 +9,7 @@ import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
 import chalk = require('chalk');
+import { AsyncEventEmitter } from 'lib/util/events';
 
 export interface DatapackDeploymentEventHandler {
     (action: DatapackDeploymentEvent, record: DatapackDeploymentRecord): void | Promise<void>;
@@ -20,7 +21,6 @@ export enum DatapackDeploymentEvent {
     add = 'add',
 }
 
-
 /**
  * A datapack deployment task/job
  */
@@ -29,6 +29,23 @@ export default class DatapackDeployment implements DependencyResolver {
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private deployedRecords: number = 0;
     private failedRecords: number = 0;
+    private events = {
+        [DatapackDeploymentEvent.beforeDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord }]>(),
+        [DatapackDeploymentEvent.afterDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord, success: boolean, error?: string, recordId?: string }]>(),
+        [DatapackDeploymentEvent.add]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord }]>()
+    }
+
+    public get beforeDeploy() {
+        return this.events.beforeDeploy.event;
+    }
+
+    public get afterDeploy() {
+        return this.events.afterDeploy.event;
+    }
+
+    public get onAdd() {
+        return this.events.add.event;
+    }
 
     public get deployedRecordCount() {
         return this.deployedRecords;
@@ -46,12 +63,13 @@ export default class DatapackDeployment implements DependencyResolver {
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
-        private readonly logger = LogManager.get(DatapackDeployment)) {
+        private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
     }
 
     public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
         for (const record of Array.isArray(records) ? records : [ records ]) {
             this.records.set(record.sourceKey, record);
+            void this.events.add.emit({ datapack: record });
         }
         return this;
     }
@@ -127,14 +145,6 @@ export default class DatapackDeployment implements DependencyResolver {
         // Todo: this need to be configured somewhere
     }
 
-    private async runCustomAction(type: 'before' | 'after', datapacks: Map<string, DatapackDeploymentRecord>) {
-        this.logger.verbose(`Running ${chalk.bold(type)} actions for ${datapacks.size} records`);
-        for (const [key, datapack] of datapacks.entries()) {
-
-        }
-        return datapacks;
-    }
-
     /**
      * Disable or enable all Vlocity triggers.
      * @param enabled sets all triggers
@@ -196,6 +206,11 @@ export default class DatapackDeployment implements DependencyResolver {
 
         try {
             this.logger.log(`Deploying ${datapacks.size} records...`);
+
+            for (const datapack of datapacks.values()) {
+                await this.events.beforeDeploy.emit({ datapack });
+            }
+
             for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
                 const datapack = datapacks.get(result.ref);
 
@@ -213,6 +228,8 @@ export default class DatapackDeployment implements DependencyResolver {
                     this.logger.error(`Failed ${datapack.sourceKey} - ${datapack.statusMessage}`);
                     this.failedRecords++;
                 }
+
+                await this.events.afterDeploy.emit({ datapack, ...result });
             }
         } finally {
             await this.setVlocityTriggerState(connection, true);

@@ -118,16 +118,17 @@ async function updatePackageJson(packageJsonFile: string, commandFile: string) {
         // Build menus
         for (const menuInfo of command.menus || []) {
             const menu = contributes.menus[menuInfo.menu] || (contributes.menus[menuInfo.menu] = []);
+            const when = menuInfo.when ?? command.when;
             const newMenuEntry = stripUndefined({
                 command: name,
                 group: command.group || menuInfo.group
             });
 
-            if (menuInfo.when) {
-                if (Array.isArray(menuInfo.when)) {
-                    menu.push(...menuInfo.when.map( when => ({ ...newMenuEntry, when: when.toString() }) ));
+            if (when) {
+                if (Array.isArray(when)) {
+                    menu.push(...when.map( when => ({ ...newMenuEntry, when: when.toString() }) ));
                 } else {
-                    menu.push({ ...newMenuEntry, when: menuInfo.when.toString() });
+                    menu.push({ ...newMenuEntry, when: when.toString() });
                 }
             } else {
                 menu.push(newMenuEntry);

@@ -95,6 +95,10 @@ export default class DatapackUtil {
             return sfRecordLikeObject.Name;
         } else if (sfRecordLikeObject.DeveloperName) {
             return sfRecordLikeObject.DeveloperName;
+        } else if (sfRecordLikeObject.Title) {
+            return sfRecordLikeObject.Title;
+        } else if (sfRecordLikeObject.Label) {
+            return sfRecordLikeObject.Label;
         }
 
         DatapackUtil.logger.warn('Object does not have common namable property', sfRecordLikeObject);

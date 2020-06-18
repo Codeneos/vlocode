@@ -1,20 +1,22 @@
 import * as constants from '@constants';
 import * as jsforce from 'jsforce';
-import { LogManager } from 'lib/logging';
+import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import cache from 'lib/util/cache';
 import { normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import moment = require('moment');
+import { dependency } from 'lib/core/inject';
 
 /**
  * Provices access to Database Schema methods like describe.
  */
+@dependency()
 export default class SalesforceSchemaService {
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly logger = LogManager.get(SalesforceSchemaService)) {
+        private readonly logger: Logger = LogManager.get(SalesforceSchemaService)) {
     }
 
     @cache(-1)

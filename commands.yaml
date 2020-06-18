@@ -1,218 +1,204 @@
 # Extension setup commands
-vlocity.selectOrg:
+vlocode.selectOrg:
   title: 'Vlocity: Select Salesforce Org'
   group: v_vlocity
   menus:
     - menu: commandPalette
 
 # Vlocity basic commands
-vlocity.refreshDatapack:
+vlocode.refreshDatapack:
   title: 'Vlocity: Refresh Datapack(s)'
   group: v_vlocity
+  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
+      when: true
     - menu: explorer/context
     - menu: editor/context
-vlocity.deployDatapack:
+vlocode.deployDatapack:
   title: 'Vlocity: Deploy Datapack(s)'
-  group: v_vlocity
+  group: v_vlocity  
   menus:
     - menu: commandPalette
     - menu: explorer/context
     - menu: editor/context
-vlocity.openSalesforce:
+vlocode.openSalesforce:
   title: 'Vlocity: Open in Salesforce'
   group: v_vlocity
+  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
     - menu: editor/context
-vlocity.renameDatapack:
+vlocode.renameDatapack:
   title: 'Vlocity: Rename Datapack'
   group: v_vlocity
-  when: resourceExtname ~= /.*datapack\.json$/i
+  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
-vlocity.cloneDatapack:
+vlocode.cloneDatapack:
   title: 'Vlocity: Clone Datapack'
   group: v_vlocity
-  when: resourceExtname ~= /.*datapack\.json$/i
+  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
     - menu: editor/context
-vlocity.exportDatapack:
+vlocode.exportDatapack:
   title: 'Vlocity: Export Datapack from Salesforce'
   group: v_vlocity
   menus:
     - menu: commandPalette
-vlocity.buildParentKeyFiles:
+vlocode.buildParentKeyFiles:
   title: 'Vlocity: Repair Datapack dependencies'
   group: v_vlocity
   menus:
     - menu: commandPalette
 
-# hidde commands
-vlocity.buildDatapack:
+# hide commands
+vlocode.buildDatapack:
   title: 'Vlocity: Build Datapack'
   group: v_vlocity
-vlocity.viewDatapack.generic:
+vlocode.viewDatapack.generic:
   title: 'Vlocity: View Datapack'
   group: v_vlocity
       
 # Admin type commands
-vlocity.adminCommands:
+vlocode.adminCommands:
   title: 'Vlocity: Administration Console'
   group: v_vlocity
   menus:
     - menu: commandPalette  
-vlocity.admin.refreshPriceBook:
+vlocode.admin.refreshPriceBook:
   title: 'Vlocity: Refresh Pricebook'
   group: v_vlocity
   menus:
     - menu: commandPalette      
-vlocity.admin.refreshProductHierarchy:
+vlocode.admin.refreshProductHierarchy:
   title: 'Vlocity: Refresh Product Hierarchy'
   group: v_vlocity
   menus:
     - menu: commandPalette
-vlocity.admin.refreshPriceBookAndProductHierarchy:
+vlocode.admin.refreshPriceBookAndProductHierarchy:
   title: 'Vlocity: Refresh Pricebook and Product Hierarchy'
   group: v_vlocity
   menus:
     - menu: commandPalette
-vlocity.admin.updateAllProdAttribCommand:
+vlocode.admin.updateAllProdAttribCommand:
   title: 'Vlocity: Update Product Attributes'
   group: v_vlocity
   menus:
     - menu: commandPalette
-vlocity.admin.clearPlatformCache:
+vlocode.admin.clearPlatformCache:
   title: 'Vlocity: Clear Platform Cache'
   group: v_vlocity
   menus:
     - menu: commandPalette
-     
 
 # Salesforce commands
-vlocity.deployMetadata:
+vlocode.deployMetadata:
   title: 'Salesforce: Save/Deploy'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:    
     - menu: commandPalette      
-      when: vlocodeSalesforceSupport
     - menu: editor/context
-      when: vlocodeSalesforceSupport
     - menu: explorer/context      
-      when: vlocodeSalesforceSupport
-vlocity.refreshMetadata:
+vlocode.refreshMetadata:
   title: 'Salesforce: Refresh'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
-    - menu: commandPalette      
-      when: vlocodeSalesforceSupport
+    - menu: commandPalette            
     - menu: editor/context
-      when: vlocodeSalesforceSupport
-    - menu: explorer/context      
-      when: vlocodeSalesforceSupport
-vlocity.destroyMetadata:
+    - menu: explorer/context
+vlocode.destroyMetadata:
   title: 'Salesforce: Delete/Destroy'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette      
-      when: vlocodeSalesforceSupport
     - menu: editor/context
-      when: vlocodeSalesforceSupport
-vlocity.selectApiVersion:
+vlocode.selectApiVersion:
   title: 'Salesforce: Select API Version'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
-    - menu: commandPalette      
-      when: vlocodeSalesforceSupport
-vlocity.createMetadataCommand:
+    - menu: commandPalette
+vlocode.createMetadataCommand:
   title: 'Salesforce: New component'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette      
-      when: vlocodeSalesforceSupport
-vlocity.execAnonymousCommand:
+vlocode.execAnonymousCommand:
   title: 'Salesforce: Execute Anonymous APEX'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette      
-      when: vlocodeSalesforceSupport
-vlocity.viewInSalesforce:
+vlocode.viewInSalesforce:
   title: 'Salesforce: View in Salesforce'
   group: v_salesforce
+  when: vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i
   menus:
-    - menu: commandPalette      
-      when: vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i
+    - menu: commandPalette
     - menu: editor/context
-      when: vlocodeSalesforceSupport
-vlocity.createLwc:
+vlocode.createLwc:
   title: 'Salesforce: New Lightning Web Component (LWC)'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette      
-      when: vlocodeSalesforceSupport
-vlocity.createApexClass:
+vlocode.createApexClass:
   title: 'Salesforce: New APEX class'
   group: v_salesforce
+  when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette      
-      when: vlocodeSalesforceSupport
 
 # Data datapackExplorer commands
-vlocity.datapackExplorer.export:
+vlocode.datapackExplorer.export:
   title: Export
   icon: resources/{type}/export.svg
+  when: 
+    - viewItem == vlocity:datapack:object
+    - viewItem == vlocity:datapack:category
   menus:
-    - menu: commandPalette
-      when: false
     - menu: view/item/context
       group: inline
-      when: 
-        - viewItem == vlocity:datapack:object
-        - viewItem == vlocity:datapack:category
     - menu: view/item/context
       group: v_vlocity
-      when: 
-        - viewItem == vlocity:datapack:object
-        - viewItem == vlocity:datapack:category
-vlocity.datapackExplorer.refresh:
+vlocode.datapackExplorer.refresh:
   title: Refresh
   icon: resources/{type}/refresh.svg
+  when: view == datapackExplorer
   menus:
-    - menu: commandPalette
-      when: false
     - menu: view/title
       group: navigation
-      when: view == datapackExplorer
-vlocity.datapackExplorer.openSalesforce:
+vlocode.datapackExplorer.openSalesforce:
   title: View in Salesforce
   icon: resources/{type}/link-external.svg
+  when: 'viewItem == vlocity:datapack:object'
   menus:
-    - menu: commandPalette
-      when: false
     - menu: view/item/context
-      group: inline
-      when: 'viewItem == vlocity:datapack:object'
+      group: inline      
     - menu: view/item/context
       group: v_vlocity
-      when: 'viewItem == vlocity:datapack:object'
 
 # Data jobExplorer commands 
-vlocity.jobExplorer.refresh:
+vlocode.jobExplorer.refresh:
   title: Refresh
   icon: resources/{type}/refresh.svg
+  when: view == jobExplorer
   menus:
     - menu: view/title
       group: navigation
-      when: view == jobExplorer
-vlocity.jobExplorer.run:
+vlocode.jobExplorer.run:
   title: Run job
   icon: resources/{type}/start.svg
+  when: viewItem == vlocity:jobYaml
   menus:
     - menu: view/item/context
       group: inline
-      when: viewItem == vlocity:jobYaml

@@ -13,6 +13,7 @@ import QueryService from './queryService';
 import SalesforceDeployService from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
+import { dependency } from 'lib/core/inject';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -112,6 +113,7 @@ interface SoapResponse {
     };
 }
 
+@dependency()
 export default class SalesforceService implements JsForceConnectionProvider {
 
     #vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
@@ -122,8 +124,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly queryService = new QueryService(connectionProvider),
-        private readonly logger = LogManager.get(SalesforceService)) {
+        private readonly queryService: QueryService,
+        private readonly logger: Logger) {
     }
 
     public async isProductionOrg() : Promise<boolean> {

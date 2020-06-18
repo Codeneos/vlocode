@@ -24,7 +24,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     };
 
     public get isClosed() {
-        return !this.currentTerminal && !this.isOpened;
+        return !this.isOpened || !this.currentTerminal;
     }
 
     public get isFocused() {
@@ -60,16 +60,10 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     }
 
     private show() {
-        (this.currentTerminal || this.createTerminal()).show(false);
-        setTimeout(() => {
-            if (!this.isOpened) {
-                this.close();
-                setTimeout(this.show.bind(this), 500);
-            }
-        }, 5000);
+        (this.currentTerminal || this.createTerminal()).show(true);
     }
 
-    public open() {
+    public open(initialDimensions) {
         this.isOpened = true;
         let entry: LogEntry | undefined;
         while(entry = this.queuedMessages.shift()) {
@@ -88,9 +82,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     }
 
     public focus() {
-        if (this.currentTerminal && !this.isFocused) {
-            this.currentTerminal.show(false);
-        }
+        this.currentTerminal?.show(true);
     }
 
     public write(entry: LogEntry) {
@@ -112,8 +104,9 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
                 messageBody = levelColor(messageBody);
             }
 
-            const formatedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;
-            this.writeEmitter.fire(formatedMessage + TERMINAL_EOL);
+            const formattedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;
+            this.writeEmitter.fire(formattedMessage + TERMINAL_EOL);
+            this.focus();
         }
     }
 }
