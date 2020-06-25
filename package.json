@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.14.3",
+    "version": "0.14.4",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -89,21 +89,34 @@
         "onCommand:vlocode.datapackExplorer.refresh",
         "onCommand:vlocode.datapackExplorer.openSalesforce",
         "onCommand:vlocode.jobExplorer.refresh",
-        "onCommand:vlocode.jobExplorer.run"
+        "onCommand:vlocode.jobExplorer.run",
+        "onCommand:vlocity.logExplorer.refresh",
+        "onCommand:vlocity.developerLogs.refresh",
+        "onCommand:vlocity.developerLogs.deleteAll",
+        "onCommand:vlocity.developerLogs.setLogLevel",
+        "onCommand:vlocode.clearDeveloperLogs",
+        "onCommand:vlocode.setTraceFlags"
     ],
     "main": "./out/vlocode",
     "contributes": {
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "vlocity-activitybar",
+                    "id": "vlocode-vlocity",
                     "title": "Vlocity",
+                    "icon": "resources/datapacks.svg"
+                }
+            ],
+            "panel": [
+                {
+                    "id": "vlocode-developerlogs",
+                    "title": "Salesforce Logs",
                     "icon": "resources/datapacks.svg"
                 }
             ]
         },
         "views": {
-            "vlocity-activitybar": [
+            "vlocode-vlocity": [
                 {
                     "id": "datapackExplorer",
                     "name": "Datapacks"
@@ -115,6 +128,13 @@
                 {
                     "id": "jobExplorer",
                     "name": "Jobs"
+                }
+            ],
+            "vlocode-developerlogs": [
+                {
+                    "id": "developerLogsView",
+                    "name": "Salesforce Logs",
+                    "when": "vlocodeSalesforceSupport && vlocodeSalesforceDeveloperLogs"
                 }
             ]
         },
@@ -220,6 +240,14 @@
                 "title": "Salesforce: New APEX class"
             },
             {
+                "command": "vlocode.clearDeveloperLogs",
+                "title": "Salesforce: Clear Developer Logs"
+            },
+            {
+                "command": "vlocode.setTraceFlags",
+                "title": "Salesforce: Set Debug Log Level..."
+            },
+            {
                 "command": "vlocode.datapackExplorer.export",
                 "title": "Export",
                 "icon": {
@@ -257,6 +285,30 @@
                 "icon": {
                     "light": "resources/light/start.svg",
                     "dark": "resources/dark/start.svg"
+                }
+            },
+            {
+                "command": "vlocity.developerLogs.setLogLevel",
+                "title": "Set log level",
+                "icon": {
+                    "light": "resources/light/settings.svg",
+                    "dark": "resources/dark/settings.svg"
+                }
+            },
+            {
+                "command": "vlocity.developerLogs.deleteAll",
+                "title": "Delete all logs",
+                "icon": {
+                    "light": "resources/light/trash.svg",
+                    "dark": "resources/dark/trash.svg"
+                }
+            },
+            {
+                "command": "vlocity.developerLogs.refresh",
+                "title": "Refresh Logs",
+                "icon": {
+                    "light": "resources/light/refresh.svg",
+                    "dark": "resources/dark/refresh.svg"
                 }
             }
         ],
@@ -378,6 +430,16 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
+                    "command": "vlocode.clearDeveloperLogs",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.setTraceFlags",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
                     "command": "vlocode.datapackExplorer.export",
                     "when": "false"
                 },
@@ -395,6 +457,18 @@
                 },
                 {
                     "command": "vlocode.jobExplorer.run",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocity.developerLogs.setLogLevel",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocity.developerLogs.deleteAll",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocity.developerLogs.refresh",
                     "when": "false"
                 }
             ],
@@ -522,6 +596,21 @@
                     "command": "vlocode.jobExplorer.refresh",
                     "group": "navigation",
                     "when": "view == jobExplorer"
+                },
+                {
+                    "command": "vlocity.developerLogs.setLogLevel",
+                    "group": "navigation",
+                    "when": "view == developerLogsView"
+                },
+                {
+                    "command": "vlocity.developerLogs.deleteAll",
+                    "group": "navigation",
+                    "when": "view == developerLogsView"
+                },
+                {
+                    "command": "vlocity.developerLogs.refresh",
+                    "group": "navigation",
+                    "when": "view == developerLogsView"
                 }
             ]
         },
@@ -537,6 +626,7 @@
                 },
                 "vlocity.sfdxUsername": {
                     "type": "string",
+                    "scope": "machine-overridable",
                     "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
                 },
                 "vlocity.username": {
@@ -567,10 +657,12 @@
                 },
                 "vlocity.projectPath": {
                     "type": "string",
+                    "scope": "machine-overridable",
                     "markdownDescription": "Path to the folder containing the Vlocity datapacks relative to the workspace root folder, for example:\n - `./vlocity`\n - `./datapacks`"
                 },
                 "vlocity.customJobOptionsYaml": {
                     "type": "string",
+                    "scope": "machine-overridable",
                     "markdownDescription": "Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.\n\n> **Note** most of the job options are controlled by Vlocode therefore only the **`preStepApex`**, **`postStepApex`** and **`OverrideSettings`** settings will be used from specified YAML file."
                 },
                 "vlocity.deployOnSave": {
@@ -614,6 +706,16 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Automatically deploy metadata files to Salesforce when saved."
+                },
+                "vlocity.salesforce.developerLogsVisible": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Show the Salesforce developer logs panel"
+                },
+                "vlocity.salesforce.developerLogsAutoRefresh": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Auto refresh the Salesforce logs panel when the panel is visible \n\n> **Note** This setting only has effect for Developer instances; for production instances the logs panel needs to be refreshed manually"
                 },
                 "vlocity.logLevel": {
                     "type": "string",
@@ -664,7 +766,7 @@
     },
     "devDependencies": {
         "@lwc/compiler": "^1.3.2",
-        "@salesforce/core": "^2.1.5",
+        "@salesforce/core": "^2.6.0",
         "@types/chai": "^4.2.7",
         "@types/chalk": "^2.2.0",
         "@types/fs-extra": "^8.0.1",
@@ -672,7 +774,7 @@
         "@types/jsforce": "^1.9.18",
         "@types/jszip": "^3.1.7",
         "@types/mocha": "^5.2.7",
-        "@types/node": "^10.17.6",
+        "@types/node": "^12.12.47",
         "@types/request": "^2.48.4",
         "@types/sinon": "^7.5.1",
         "@types/uuid": "^3.4.6",
@@ -710,12 +812,12 @@
         "patch-package": "^6.2.0",
         "reflect-metadata": "^0.1.13",
         "rimraf": "^3.0.0",
-        "salesforce-alm": "^47.10.0",
+        "salesforce-alm": "^48.20.0",
         "sinon": "^9.0.1",
         "terser": "^4.6.13",
         "terser-webpack-plugin": "^2.3.1",
         "ts-loader": "^7.0.5",
-        "ts-node": "^8.5.4",
+        "ts-node": "^8.10.2",
         "tslint": "^5.20.1",
         "tslint-loader": "^3.5.4",
         "typescript": "^3.9.5",
