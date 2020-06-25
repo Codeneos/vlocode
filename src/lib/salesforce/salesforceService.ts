@@ -406,7 +406,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             const result = await connection.tooling.create('DebugLevel', debugLevelObject) as SuccessResult;
             debugLevel.id = result.id;
         } else {
-            await connection.tooling.upsert('DebugLevel', debugLevelObject);
+            await connection.tooling.update('DebugLevel', debugLevelObject);
         }
 
         return debugLevel;

@@ -48,7 +48,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             description: 'The log category level for Visualforce. Includes information about Visualforce events, including serialization and deserialization of the view state or the evaluation of a formula field in a Visualforce page.',
         },
         workflow: {
-            placeHolder: 'APEX Code',
+            placeHolder: 'Workflow',
             default: 'The log category level for workflow rules. Includes information for workflow rules, such as the rule name and the actions taken.',
             options: ['None', 'Error', 'Warn', 'Info', 'Debug', 'Fine', 'Finer', 'Finest'],
             description: 'Tets',
@@ -109,21 +109,30 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             clearInterval(this.traceFlagsWatcherId);
         }
 
-        // Make flags name
-        let debugLevelName = `Vlocode: ${traceFlagsSelection.label}`;
-        if (!traceFlagsSelection.traceFlags) {
-            // custom flags are user-unique
-            const user = (await this.salesforce.getConnectedUserInfo()).username;
-            debugLevelName += ` (${user})`;
-        }
+        return this.vlocode.withActivity({ 
+            progressTitle: `Update log level: ${traceFlagsSelection.label}`, 
+            location: vscode.ProgressLocation.Notification,
+            propagateExceptions: true,
+            cancellable: false
+        }, async () => {
 
-        await this.salesforce.clearUserTraceFlags();
-        const debugLevel = await this.salesforce.createDebugLevel(debugLevelName, traceFlags);
-        this.currentTraceFlagsId = await this.salesforce.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
-        void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
+            let debugLevelName = `Vlocode: ${traceFlagsSelection.label}`;
+            if (!traceFlagsSelection.traceFlags) {
+                // custom flags are user-unique
+                const user = (await this.salesforce.getConnectedUserInfo()).id;
+                debugLevelName += ` ${user}`;
+            }
+            debugLevelName = debugLevelName.replace(/[^0-9a-z_]+/ig, '_');
 
-        // Keep trace flags active extend with 5 min each time
-        this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher, (this.traceFlagsDuration * 1000) / 2);
+            await this.salesforce.clearUserTraceFlags();
+            // @ts-expect-error: `traceFlags` cannot be undefined
+            const debugLevel = await this.salesforce.createDebugLevel(debugLevelName, traceFlags);
+            this.currentTraceFlagsId = await this.salesforce.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
+            void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
+
+            // Keep trace flags active extend with 5 min each time
+            this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher, (this.traceFlagsDuration * 1000) / 2);
+        });
     }
 
     public async getCustomTraceFlags(): Promise<SalesforceDebugLevel | undefined> {
@@ -135,7 +144,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             if (defaultIndex >= 0) {
                 options.unshift(...options.splice(defaultIndex, 1));
             }
-            options[0] = { ...options[0], detail: `(default)`,  description: info.description };
+            options[0] = { ...options[0], description: `(default)` };
 
             // Ask user to select any of the options from the list
             const selected = await vscode.window.showQuickPick(options, { placeHolder: `Select level for ${info.placeHolder}` });
