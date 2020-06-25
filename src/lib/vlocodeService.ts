@@ -214,6 +214,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                     ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Failed;
                 if (options.propagateExceptions) {
                     throw e;
+                } else {
+                    this.logger.error(e);
                 }
             } finally {
                 activityRecord.endTime = Date.now();
