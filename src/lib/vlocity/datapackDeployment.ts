@@ -29,11 +29,11 @@ export default class DatapackDeployment implements DependencyResolver {
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private deployedRecords: number = 0;
     private failedRecords: number = 0;
-    private events = {
+    private readonly events = {
         [DatapackDeploymentEvent.beforeDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord }]>(),
-        [DatapackDeploymentEvent.afterDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord, success: boolean, error?: string, recordId?: string }]>(),
+        [DatapackDeploymentEvent.afterDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord; success: boolean; error?: string; recordId?: string }]>(),
         [DatapackDeploymentEvent.add]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord }]>()
-    }
+    };
 
     public get beforeDeploy() {
         return this.events.beforeDeploy.event;

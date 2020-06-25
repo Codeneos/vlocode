@@ -38,7 +38,6 @@ class VlocodeContext {
     public asAbsolutePath(relativePath: string): string {
         return path.join(this.extensionPath, relativePath);
     }
-
 }
 
 /**

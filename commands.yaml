@@ -156,7 +156,19 @@ vlocode.createApexClass:
   group: v_salesforce
   when: vlocodeSalesforceSupport
   menus:
-    - menu: commandPalette      
+    - menu: commandPalette
+vlocode.clearDeveloperLogs:
+  title: 'Salesforce: Clear Developer Logs'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette
+vlocode.setTraceFlags:
+  title: 'Salesforce: Set Debug Log Level...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette   
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:
@@ -202,3 +214,26 @@ vlocode.jobExplorer.run:
   menus:
     - menu: view/item/context
       group: inline
+
+# Log panel commands
+vlocity.developerLogs.setLogLevel:
+  title: Set log level
+  icon: resources/{type}/settings.svg
+  when: view == developerLogsView
+  menus:
+    - menu: view/title
+      group: navigation
+vlocity.developerLogs.deleteAll:
+  title: Delete all logs
+  icon: resources/{type}/trash.svg
+  when: view == developerLogsView
+  menus:
+    - menu: view/title
+      group: navigation
+vlocity.developerLogs.refresh:
+  title: Refresh Logs
+  icon: resources/{type}/refresh.svg
+  when: view == developerLogsView
+  menus:
+    - menu: view/title
+      group: navigation

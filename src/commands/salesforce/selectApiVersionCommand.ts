@@ -1,12 +1,7 @@
-import { version } from 'punycode';
 import * as vscode from 'vscode';
-import { AuthInfo } from '@salesforce/core';
-import SfdxUtil from 'lib/util/sfdx';
 import { CommandBase } from '../commandBase';
 
-type ApiVersionQuickPickItem = vscode.QuickPickItem & { version?: string };
-
-export default class SelectApiVersion extends CommandBase {
+export default class SelectApiVersionCommand extends CommandBase {
 
     public async validate() : Promise<void> {
         const validationMessage = await this.vlocode.validateSalesforceConnectivity();

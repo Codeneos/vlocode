@@ -19,6 +19,7 @@ import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
 import { container } from 'lib/core/inject';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -90,6 +91,20 @@ export = class Vlocode {
         vlocityUtil.setLogger(LogManager.get('vlocity'));
     }
 
+    /**
+     * Creates an instance of the Developer log panel and regsiters the required event handlers
+     */
+    private createDeveloperLogView() {
+        const developerLogDataProvider = new DeveloperLogDataProvider(this.service);
+        const developerLogsView = vscode.window.createTreeView('developerLogsView', {
+            treeDataProvider: developerLogDataProvider
+        });
+        developerLogsView.onDidChangeVisibility(e => {
+            developerLogDataProvider.pauseAutoRefresh(!e.visible);
+        });
+        return developerLogsView;
+    }
+
     private async activate(context: vscode.ExtensionContext) {
         // All SFDX and Vloctiy commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
@@ -99,7 +114,7 @@ export = class Vlocode {
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION));
 
-        this.service = await container.resolve(VlocodeService);
+        this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);
 
         initializeContext(context, this.service);
@@ -127,13 +142,12 @@ export = class Vlocode {
         this.service.registerDisposable(vscode.window.createTreeView('activityView', {
             treeDataProvider: new ActivityDataProvider(this.service)
         }));
+        this.service.registerDisposable(this.createDeveloperLogView());
 
-        this.service.registerDisposable(
-            new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, this.service)
-        );
         const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/src/classes/*.cls', false, true, false));
         this.service.registerDisposable(new OnClassFileCreated(apexClassWatcher.onDidCreate, this.service));
         this.service.registerDisposable(new OnClassFileDeleted(apexClassWatcher.onDidDelete, this.service));
+        this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, this.service));
 
         // track activation time
         this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);

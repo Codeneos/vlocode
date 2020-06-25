@@ -369,5 +369,13 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         void vscode.commands.executeCommand('setContext', 'vlocodeSalesforceSupport', support);
         this.logger.info(`Salesforce support ${support ? 'enabled' : 'disabled'}`);
     }
+
+    public enableDeveloperLogsPanel(enabled: boolean) {
+        if (this.config.salesforce.developerLogsVisible !== enabled) {
+            this.config.salesforce.developerLogsVisible = enabled;
+        }
+        void vscode.commands.executeCommand('setContext', 'vlocodeSalesforceDeveloperLogs', enabled);
+        this.logger.info(`${enabled ? 'Show' : 'Hide'} Salesforce Developer Logs panel`);
+    }
 }
 

@@ -64,7 +64,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
         return LogManager.get(JobDataProvider);
     }
 
-    public getTreeItem(node: JobNode): vscode.TreeItem {
+    public toTreeItem(node: JobNode): vscode.TreeItem {
         return {
             label: node.label,
             resourceUri: node.jobFile,

@@ -11,6 +11,7 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     private writeEmitter : vscode.EventEmitter<string>;
     private closeEmitter : vscode.EventEmitter<void>;
     private currentTerminal? : vscode.Terminal;
+    private terminalWatchdog? : any;
     private isOpened = false;
     private readonly queuedMessages : LogEntry[] = [];
     private readonly chalk = new chalk.Instance({ level: 2 });
@@ -35,15 +36,25 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     }
 
     public dispose() {
-        if (this.currentTerminal) {
-            this.closeEmitter.fire();
-        }
+        this.close();
+        [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());
     }
 
-    private createTerminal() : vscode.Terminal {
+    private createTerminal(): vscode.Terminal {
+        if (this.currentTerminal) {
+            this.currentTerminal.dispose();
+            this.currentTerminal = undefined;
+        }
+
+        if (this.terminalWatchdog) {
+            clearTimeout(this.terminalWatchdog);
+            this.terminalWatchdog = undefined;
+        }
+
         [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());
         this.writeEmitter = new vscode.EventEmitter<string>();
         this.closeEmitter = new vscode.EventEmitter<void>();
+        this.terminalWatchdog = setTimeout(this.checkTerminalState.bind(this), 5000);
         this.isOpened = false;
         this.currentTerminal = vscode.window.createTerminal({
             name: this.name,
@@ -59,11 +70,23 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
         return this.currentTerminal;
     }
 
+    private checkTerminalState() {
+        const terminal: any = this.currentTerminal;
+        if (!terminal) {
+            return;
+        }
+
+        if (terminal.isOpen === false) {
+            // terminal didn't open -or-has crashed
+            this.createTerminal();
+        }
+    }
+
     private show() {
         (this.currentTerminal || this.createTerminal()).show(true);
     }
 
-    public open(initialDimensions) {
+    public open() {
         this.isOpened = true;
         let entry: LogEntry | undefined;
         while(entry = this.queuedMessages.shift()) {
@@ -75,14 +98,20 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
     public close() {
         this.isOpened = false;
         if (this.currentTerminal) {
-            this.currentTerminal.hide();
-            setTimeout(this.currentTerminal.dispose.bind(this.currentTerminal), 500);
+            this.currentTerminal.dispose();
+            this.closeEmitter.fire();
             this.currentTerminal = undefined;
+        }
+        if (this.terminalWatchdog) {
+            clearTimeout(this.terminalWatchdog);
+            this.terminalWatchdog = undefined;
         }
     }
 
     public focus() {
-        this.currentTerminal?.show(true);
+        if (!this.isFocused) {
+            this.currentTerminal?.show(true);
+        }
     }
 
     public write(entry: LogEntry) {

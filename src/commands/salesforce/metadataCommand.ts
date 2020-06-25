@@ -5,7 +5,6 @@ import { CommandBase } from 'commands/commandBase';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { ComponentFailure } from 'lib/salesforce/salesforceDeployService';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
-import command from 'command';
 
 /**
  * Salesfoece metadata base command 

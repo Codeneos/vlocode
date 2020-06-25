@@ -6,16 +6,16 @@ import { mapAsyncParallel } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import { substringAfterLast } from 'lib/util/string';
-import { dependency } from 'lib/core/inject';
+import { dependency, container } from 'lib/core/inject';
 
 /**
  * Basic file system using NodeJS fs module.
  */
-export const directFileSystem : FileSystem = {
+export const directFileSystem : FileSystem = container.registerAs({
     readFile: nodeFs.promises.readFile,
     readdir: nodeFs.promises.readdir,
     pathExists: path => Promise.resolve(nodeFs.existsSync(path))
-};
+}, FileSystem);
 
 /**
  * File system that cached directory contents to provide a faster pathExists response

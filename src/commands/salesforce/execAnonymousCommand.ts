@@ -1,21 +1,19 @@
 import * as vscode from 'vscode';
 
+import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
 import { SoapDebuggingHeader } from 'lib/salesforce/salesforceService';
 import MetadataCommand from './metadataCommand';
 
-type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader };
+type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader, name?: string };
 
 /**
  * Command for running Anonymous APEX on Salesforce
  */
 export default class ExecAnonymousCommand extends MetadataCommand {
 
-    static readonly START_MARKER = '|CODE_UNIT_STARTED|[EXTERNAL]|execute_anonymous_apex\n';
-    static readonly END_MARKER = '|CODE_UNIT_FINISHED|execute_anonymous_apex\n';
-
     private readonly debugLogLevels : LogLevelQuickPickItem[] = [
-        { label: 'User Debug', description: 'Only log user debug statements', debugHeader: { Apex_code: 'DEBUG' } },
-        { label: 'User Debug with Limits', description: 'User debug statements and details on consumed govern limits', debugHeader: { Apex_code: 'DEBUG', Apex_profiling: 'DEBUG' } },
+        { label: 'User Debug', name: 'USER_DEBUG', description: 'Only log user debug statements', debugHeader: { Apex_code: 'DEBUG' } },
+        { label: 'User Debug with Limits', description: 'User debug statements and details on consumed govern limits', debugHeader: { Apex_code: 'DEBUG', Apex_profiling: 'INFO' } },
         { label: 'User Debug with DML', description: 'User debug statements and executed DML', debugHeader: {  Apex_code: 'DEBUG', Db: 'FINEST' } },
         { label: 'Fine', description: 'All log levels set to FINE', debugHeader: { Apex_code: 'FINE', Db: 'FINE' , All: 'FINE', Apex_profiling: 'FINE' } },
         { label: 'Finest', description: 'All log levels set to FINEST', debugHeader: { Apex_code: 'FINEST', Db: 'FINEST', System: 'FINEST', All: 'FINEST' , Apex_profiling: 'FINEST' } }
@@ -55,7 +53,7 @@ export default class ExecAnonymousCommand extends MetadataCommand {
             progressTitle: 'Executing anonymous APEX...',
             location: vscode.ProgressLocation.Notification,
             cancellable: false
-        }, async (progress, token) => {
+        }, async () => {
 
             const result = await this.salesforce.executeAnonymous(codeToExecute, logLevel.debugHeader);
 
@@ -71,10 +69,9 @@ export default class ExecAnonymousCommand extends MetadataCommand {
             }
 
             if (result.debugLog) {
-                const debugLog = await vscode.workspace.openTextDocument({ language: 'apexlog', content: this.getExecutionLog(result.debugLog) });
-                if (debugLog) {
-                    void vscode.window.showTextDocument(debugLog);
-                }
+                void new DebugLogViewer({
+                    userDebugOnly: logLevel.name === 'USER_DEBUG'
+                }).showExecutionLog(result.debugLog);
             }
 
             if (!result.success) {
@@ -83,17 +80,5 @@ export default class ExecAnonymousCommand extends MetadataCommand {
 
             void vscode.window.showInformationMessage('Execution successful');
         });
-    }
-
-    private getExecutionLog(log: string) {
-        const startIndex = log.indexOf(ExecAnonymousCommand.START_MARKER);
-        const endIndex = log.indexOf(ExecAnonymousCommand.END_MARKER);
-        if (startIndex == -1 || endIndex == -1) {
-            return log;
-        }
-        const executionUnitLog = log.substring(startIndex, endIndex);
-        return executionUnitLog.substring(
-            executionUnitLog.indexOf('\n') + 1,
-            executionUnitLog.lastIndexOf('\n'));
     }
 }

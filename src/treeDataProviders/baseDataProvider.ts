@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import VlocodeService from 'lib/vlocodeService';
 import { CommandCtor } from 'lib/commandRouter';
 import { getContext } from 'lib/vlocodeContext';
+import uuid = require('uuid');
+import { VlocodeCommand } from '@constants';
 
 /**
  * Base tree data provider
@@ -9,6 +11,7 @@ import { getContext } from 'lib/vlocodeContext';
 export default abstract class BaseDataProvider<T> implements vscode.TreeDataProvider<T> {
 
     protected readonly dataChangedEmitter = new vscode.EventEmitter<T | undefined>();
+    protected readonly clickHandlerGuid = uuid.v4();
 
     public get onDidChangeTreeData(): vscode.Event<T | undefined> {
         return this.dataChangedEmitter.event;
@@ -16,12 +19,17 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
 
     constructor(protected readonly vlocode: VlocodeService) {
         this.vlocode.commands.registerAll(this.getCommands());
+        if (this.onClick) {
+            this.vlocode.commands.register(this.clickHandlerGuid, this.onClick.bind(this));
+        }
     }
 
     protected getAbsolutePath(path: string) {
         return getContext().asAbsolutePath(path);
     }
 
+    protected executeCommand(commandName: VlocodeCommand, ... args: any[]) : Thenable<any>;
+    protected executeCommand(commandName: string, ... args: any[]) : Thenable<any>;
     protected executeCommand(commandName: string, ... args: any[]) : Thenable<any> {
         return this.vlocode.commands.execute(commandName, ...args);
     }
@@ -36,7 +44,25 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
         return {};
     }
 
-    public abstract getTreeItem(node: T): vscode.TreeItem;
+    /**
+     * Override this method to handle click on items passd to the default click handler.
+     * @param node Node that is clicked on
+     */
+    public onClick?(node: T) : any | Promise<any>;
+
+    public getTreeItem(node: T): vscode.TreeItem {
+        const item = this.toTreeItem(node);
+        if (!item.command) {
+            item.command = {
+                title: 'Open',
+                command: this.clickHandlerGuid,
+                arguments: [ node ]
+            };
+        }
+        return item;
+    }
+
+    public abstract toTreeItem(node: T): vscode.TreeItem;
 
     public abstract getChildren(node?: T): Promise<T[] | undefined> | T[] | undefined;
 
