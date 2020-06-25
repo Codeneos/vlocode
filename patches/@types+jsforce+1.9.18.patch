@@ -1,5 +1,5 @@
 diff --git a/node_modules/@types/jsforce/connection.d.ts b/node_modules/@types/jsforce/connection.d.ts
-index dd182ad..dca782c 100644
+index dd182ad..d6cad3f 100644
 --- a/node_modules/@types/jsforce/connection.d.ts
 +++ b/node_modules/@types/jsforce/connection.d.ts
 @@ -23,6 +23,31 @@ export interface RestApiOptions {
@@ -74,7 +74,7 @@ index dd182ad..dca782c 100644
      describe$: {
          /** Returns a value from the cache if it exists, otherwise calls Connection.describe */
 diff --git a/node_modules/@types/jsforce/record-result.d.ts b/node_modules/@types/jsforce/record-result.d.ts
-index df77ef2..bcbe7f8 100644
+index df77ef2..05d4dff 100644
 --- a/node_modules/@types/jsforce/record-result.d.ts
 +++ b/node_modules/@types/jsforce/record-result.d.ts
 @@ -1,7 +1,7 @@
@@ -82,7 +82,7 @@ index df77ef2..bcbe7f8 100644
  
  interface ErrorResult {
 -    errors: string[];
-+    errors: Array<any>;
++    errors: { fields: string[], message: string, statusCode: string }[];
      success: false;
  }
  

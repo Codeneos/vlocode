@@ -1,5 +1,5 @@
 diff --git a/node_modules/@oclif/command/lib/index.js b/node_modules/@oclif/command/lib/index.js
-index 350a427..fd728d0 100644
+index 55daa12..d7367b1 100644
 --- a/node_modules/@oclif/command/lib/index.js
 +++ b/node_modules/@oclif/command/lib/index.js
 @@ -20,7 +20,6 @@ function checkNodeVersion() {
