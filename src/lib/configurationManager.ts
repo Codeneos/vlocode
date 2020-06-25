@@ -3,6 +3,13 @@ import { singleton } from './util/singleton';
 import { LogManager, Logger } from './logging';
 import { arrayMapPush } from './util/collection';
 
+interface ConfigurationManagerWatchOptions {
+    /**
+     * Trigger watcher on initial value
+     */
+    initial?: boolean;
+}
+
 export const ConfigurationManager = singleton(class ConfigurationManager {
 
     private readonly loadedConfigSections = new Map<string, WorkspaceConfiguration>();
@@ -137,9 +144,9 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         }
     }
 
-    public watchProperties<T extends Object>(config: string | T, properties: Array<(keyof T) | string>, watcher: (config: T) => void | Promise<void>) : Disposable {
+    public watchProperties<T extends Object>(config: string | T, properties: Array<(keyof T) | string>, watcher: (config: T) => void | Promise<void>, options?: ConfigurationManagerWatchOptions) : Disposable {
         const sectionName = typeof config === 'string' ? config : config[this.sectionNameSymbol] as string;
-        return this.registerWatcher(properties.map(property => `${sectionName}.${property}`), watcher);
+        return this.registerWatcher(properties.map(property => `${sectionName}.${property}`), watcher, options);
     }
 
     public watch<T extends Object>(config: string | T, watcher: (config: T) => void | Promise<void>) : Disposable {
@@ -147,11 +154,23 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         return this.registerWatcher([ sectionName ], watcher);
     }
 
-    private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => void | Promise<void>) : Disposable {
+    private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => void | Promise<void>, options?: ConfigurationManagerWatchOptions) : Disposable {
         for (const property of watchKeys) {
             this.logger.verbose(`Register config watcher for: ${property}`);
             arrayMapPush(this.watchers, property, watcher);
         }
+
+        // trigger for existing
+        if (options?.initial) {
+            const sections = new Set(watchKeys.map(prop => prop.split('.')[0]));
+            for (const section of sections) {
+                for (const config of this.loadedConfigSections.values()) {
+                    const properties = watchKeys.filter(prop => prop.startsWith(`${section}.`)).map(prop => prop.split('.').slice(1).join('.'));
+                    setTimeout(() => this.invokeWatchers(section, config, properties), 0);
+                }
+            }
+        }
+
         // Delete all watchers on dispose
         return {
             dispose: () => {

@@ -1,4 +1,4 @@
-import { LogManager, Logger } from '@logging';
+import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import Timer from 'lib/util/timer';
 import * as jsforce from 'jsforce';

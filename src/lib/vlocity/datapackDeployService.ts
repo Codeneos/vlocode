@@ -10,13 +10,11 @@ import Timer from 'lib/util/timer';
 import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
+import { dependency } from 'lib/core/inject';
 import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import { ApexExecutor } from './apexExecutor';
-import { Iterable } from 'lib/util/iterable';
-import { asArray } from 'lib/util/collection';
-import { dependency } from 'lib/core/inject';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -55,7 +53,7 @@ export default class VlocityDatapackDeployService {
         const datapackLookup = new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService);
         const deployment = new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService);
 
-        deployment.beforeDeploy(event => {
+        deployment.beforeDeploy(() => {
             // Bulkify this to run for multiple
             this.apexExecutor.execute('someApex');
         });
@@ -74,24 +72,12 @@ export default class VlocityDatapackDeployService {
         return deployment;
     }
 
-    private async createContextData(datapacks: Iterable<DatapackDeploymentRecord> | DatapackDeploymentRecord) {
-        const contextDataList = new Array<any>();
-        for (const datapack of Iterable.asIterable(datapacks)) {
-            const matchingKeyDef = await this.matchingKeyService.getMatchingKeyDefinition(datapack.sobjectType);
-            const contextData = {};
-            for (const field of Iterable.join(matchingKeyDef.fields, DATAPACK_RESERVED_FIELDS)) {
-                contextData[field] = datapack[field];
-            }
-            contextDataList.push(contextData);
-        }
-        return contextDataList;
-    }
 
     // CURRENT_DATA_PACKS_CONTEXT will be replaced with:
     // 1. The Manifest being exported
     // 2. The Query results being exported
     // 3. A Summary of the DataPack data being imported
-    //List<Object> dataSetObjects = (List<Object>)JSON.deserializeUntyped('CURRENT_DATA_PACKS_CONTEXT_DATA');
+    // List<Object> dataSetObjects = (List<Object>)JSON.deserializeUntyped('CURRENT_DATA_PACKS_CONTEXT_DATA');
 
     private async toSalesforceRecords(datapack: VlocityDatapack) {
         const sobject = await this.schemaService.describeSObject(datapack.sobjectType, false);

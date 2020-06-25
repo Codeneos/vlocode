@@ -3,6 +3,8 @@ export abstract class VlocodeSalesforceConfiguration {
     deployOnSave: boolean;
     apiVersion: string;
     manageMetaXmlFiles: boolean;
+    developerLogsVisible: boolean;
+    developerLogsAutoRefresh: boolean;
 }
 
 export default abstract class vlocodeConfiguration {

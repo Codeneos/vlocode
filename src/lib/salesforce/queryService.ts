@@ -59,6 +59,7 @@ export default class QueryService {
         const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
         const cachedResult = enableCache && this.queryCache.get(query);
         if (cachedResult) {
+            this.logger.verbose(`Query: ${query} [cache hit]`);
             return cachedResult;
         }
 
@@ -71,7 +72,7 @@ export default class QueryService {
                 queryResult = await connection.queryMore(queryResult.nextRecordsUrl);
                 records.push(...queryResult.records);
             }
-            this.logger.verbose(`Query: ${query} [records ${records.length}] [${queryTimer.stop()}] [${useCache ? 'Cached' : 'Not-Cached'}]`);
+            this.logger.verbose(`Query: ${query} [records ${records.length}] [${queryTimer.stop()}]`);
             return records.map(record => this.wrapRecord<T>(record) as QueryResult<T, K>);
         })().catch(err => {
             throw new Error(err.message || err);

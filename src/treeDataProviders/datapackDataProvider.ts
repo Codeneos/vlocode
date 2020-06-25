@@ -50,7 +50,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
 
-    public getTreeItem(node: DatapackNode): vscode.TreeItem {
+    public toTreeItem(node: DatapackNode): vscode.TreeItem {
         return {
             label: node.getItemLabel(),
             tooltip: node.getItemTooltip(),

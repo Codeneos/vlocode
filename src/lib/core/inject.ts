@@ -40,6 +40,7 @@ import 'reflect-metadata';
 import { singleton } from 'lib/util/singleton';
 import { Iterable } from 'lib/util/iterable';
 import { asArray } from 'lib/util/collection';
+import { LogManager } from 'lib/logging';
 
 type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
 type ServiceFactory<T extends Object = Object> = () => T;
@@ -52,7 +53,7 @@ export interface ServiceProvider<T> {
 
 export const container = singleton(
     /**
-     * IoC container containing maintaining all created services, factories and providers  
+     * IoC container containing for dependency resolution  
      */
     class Container {
 
@@ -66,11 +67,25 @@ export const container = singleton(
         // Provide provide a new instance on each resolution
         private readonly providers = new Map<string, (receiver: any) => any>();
 
-        // constructor(private readonly logger = LogManager.get(Container)) {            
-        // }
+        constructor(private readonly logger = LogManager.get(Container)) {
+        }
 
         /**
-         * 
+         * Dispose all services; factories and provides in this container.
+         */
+        public dispose() {
+            this.factories.clear();
+            this.providers.clear();
+
+            for (const instance of this.instances) {
+                if (typeof instance['dispose'] === 'function') {
+                    instance['dispose']();
+                }
+            }
+        }
+
+        /**
+         * Resolve requested service to an actual service implementation.
          * @param service Service type for which to resolve a concrete class
          * @param receiver Class ctor for which we are resolving this
          */
@@ -95,12 +110,12 @@ export const container = singleton(
             }
 
             // Cannot resolve this
-            console.debug(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.constructor.name}`);
+            this.logger.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
         }
 
         /**
-         * Safe version of resolve that does not return undefined and instead throws an exception for services that cannot be resolved.
-         * @param service Service type for which to resolve a concrete class
+         * Safe version of @see Container.resolve that does not return undefined and throws an exception for services that cannot be resolved.
+         * @param service Service type for which to resolve the concrete class
          */
         public get<T extends Object>(service: ServiceType<T>) : T {
             const instance = this.resolve(service);
@@ -150,11 +165,15 @@ export const container = singleton(
         public registerAs<T extends Object, I extends T = T>(instance: I, services: ServiceType<T> | Array<ServiceType<T>>) {
             for (const service of Iterable.asIterable(services)) {
                 const providedService = this.getServiceName(service);
-                console.debug(`Instance ${instance.constructor.name} as active service provider for: ${providedService}`);
-                this.instances.set(providedService, instance);
-
-                // register the services provided by this instance so it can be unregistered
                 const providedServices: Set<string> = instance[this.servicesProvided] || (instance[this.servicesProvided] = new Set());
+
+                // Do not register duplicates;
+                if (providedServices.has(providedService)) {
+                    continue;
+                }
+
+                this.logger.debug(`Instance ${instance.constructor.name} as active service provider for: ${providedService}`);
+                this.instances.set(providedService, instance);
                 providedServices.add(providedService);
             }
             return instance;
@@ -167,13 +186,13 @@ export const container = singleton(
          */
         public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>) {
             for (const service of Iterable.asIterable(services)) {
-                console.debug(`Register factory for: ${this.getServiceName(service)}`);
+                this.logger.debug(`Register factory for: ${this.getServiceName(service)}`);
                 this.factories.set(this.getServiceName(service), factory);
             }
         }
 
         public registerProvider<T extends Object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I| Promise<I> | undefined) {
-            console.debug(`Register provider for: ${this.getServiceName(service)}`);
+            this.logger.debug(`Register provider for: ${this.getServiceName(service)}`);
             this.providers.set(this.getServiceName(service), provider);
         }
 
@@ -203,7 +222,7 @@ export function dependency<T extends { new(...args:any[]): { } }>(provides?: Arr
             constructor(...args: any[]) {
                 for (let i = 0; i < paramTypes.length; i++) {
                     if (args[i] === undefined) {
-                        args[i] = container.resolve(paramTypes[i], ctor.prototype);
+                        args[i] = container.resolve(paramTypes[i], ctor);
                     }
                 }
                 super(...args);

@@ -1,11 +1,9 @@
-import * as constants from '@constants';
 import * as jsforce from 'jsforce';
 import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import cache from 'lib/util/cache';
 import { normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
-import moment = require('moment');
 import { dependency } from 'lib/core/inject';
 
 /**
