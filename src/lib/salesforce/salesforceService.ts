@@ -95,6 +95,8 @@ export interface SoapDebuggingHeader {
     Apex_profiling?: SoapDebuggingLevel;
     Visualforce?: SoapDebuggingLevel;
     System?: SoapDebuggingLevel;
+    NBA?: SoapDebuggingLevel;
+    Wave?: SoapDebuggingLevel;
     All?: SoapDebuggingLevel;
 }
 
@@ -304,7 +306,18 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param apex APEX code to execute
      * @param logLevels Optional debug log levels to use
      */
-    public async executeAnonymous(apex: string, logLevels?: SoapDebuggingHeader) : Promise<jsforce.ExecuteAnonymousResult & { debugLog?: string }> {
+    public async executeAnonymous(apex: string, logLevels: SoapDebuggingHeader = {}) : Promise<jsforce.ExecuteAnonymousResult & { debugLog?: string }> {
+        // Add any missing debug headers at default level of None                
+        const validDebugCategories = [ 
+            'Db', 'Workflow', 'Validation', 'Callout', 'Apex_code', 
+            'Apex_profiling', 'Visualforce', 'System', 'NBA', 'Wave'
+        ];
+        for (const category of validDebugCategories) {
+            if(!logLevels[category]) {
+                logLevels[category] = 'None';
+            }
+        }
+
         const response = await this.soapToolingRequest('executeAnonymous', {
             String: apex
         }, logLevels);
