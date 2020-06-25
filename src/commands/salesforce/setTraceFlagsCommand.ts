@@ -86,7 +86,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
 
     private traceFlagsWatcherId: any;
     private currentTraceFlagsId: string;
-    private readonly traceFlagsDuration = 60;
+    private readonly traceFlagsDuration = 300;
 
     /**
      * Clears all developer logs.
@@ -131,7 +131,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
 
             // Keep trace flags active extend with 5 min each time
-            this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher.bind(this), (this.traceFlagsDuration * 1000) / 2);
+            this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher.bind(this), (this.traceFlagsDuration - 60) * 1000);
         });
     }
 
