@@ -320,8 +320,7 @@
                 },
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity",
-                    "when": "true"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.deployDatapack",
@@ -329,18 +328,15 @@
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.renameDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.exportDatapack",
@@ -475,8 +471,7 @@
             "explorer/context": [
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.deployDatapack",
@@ -484,18 +479,15 @@
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.renameDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.deployMetadata",
@@ -511,8 +503,7 @@
             "editor/context": [
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.deployDatapack",
@@ -520,13 +511,11 @@
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity",
-                    "when": "resourceFilename ~= /.*datapack\\.json$/i"
+                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.deployMetadata",
