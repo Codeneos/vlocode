@@ -363,7 +363,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
     public async getDeveloperLogs(from?: Date): Promise<DeveloperLog[]> {
         const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];
-        const filter = from && `where StartTime >= ${from.toISOString()}`;
+        const filter = from && `where SystemModstamp >= ${from.toISOString()}`;
         const toolingQuery = `Select ${selectFields.join(',')} From ApexLog ${filter || ''}`;
         const entries = await this.query<DeveloperLogRecord>(toolingQuery);
         return entries.map(entry => new DeveloperLog(entry, this));
@@ -431,7 +431,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param type Type of logging to set
      * @param trackedEntityId Optionally the tracked entity; required for class and use debuging
      * @param durationInSeconds Duration of the logging sessions; default is 1 hour or 3600 seconds
-     * @returns Traceflags instance with an ID
+     * @returns Trace flag instance which can be used to extend or clear
      */
     public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'DEVELOPER_LOG' | 'USER_DEBUG', trackedEntityId?: undefined, durationInSeconds?: number)
     public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'CLASS_TRACING', trackedEntityId: string, durationInSeconds?: number)
@@ -457,9 +457,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
-     * Extends/refresh the trace flags
+     * Extends/refresh the trace flag with the specified ID
      * @param traceFlagsId Id of the trace flags to extend
-     * @param durationInSeconds 
+     * @param durationInSeconds Number of seconds starting now by which to extend the trace flag
      */
     public async extendTraceFlags(traceFlagsId: string, durationInSeconds: number = 3600) {
         // Create base trace flag object
@@ -473,15 +473,23 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
+     * Clears the specified trace flags from the server
+     * @param traceFlagsId Id of the trace flags to clear
+     */
+    public async clearTraceFlags(traceFlagsId: string) {
+        const connection = await this.getJsForceConnection();
+        try {
+            await connection.tooling.delete('TraceFlag', [ traceFlagsId ]);
+        } catch(e) {
+            this.logger.error(`TraceFlag with id ${traceFlagsId} could not be cleared.`);
+        }        
+    }
+
+    /**
      * Removes all active and expired trace flags for the current Salesforce instance.
      */
     public async clearAllTraceFlags() {
-        const connection = await this.getJsForceConnection();
-        const records = (await connection.tooling.query<{Id: string}>('Select Id From TraceFlag'));
-        const ids = records.records.map(rec => rec.Id);
-        if (ids.length > 0) {
-            await connection.tooling.delete('TraceFlag', ids);
-        }
+        return this.deleteToolingRecords(`Select Id From TraceFlag`);
     }
 
     /**
@@ -489,13 +497,33 @@ export default class SalesforceService implements JsForceConnectionProvider {
      */
     public async clearUserTraceFlags() {
         const userId = (await this.getConnectedUserInfo()).id;
-        const connection = await this.getJsForceConnection();
-        const records = (await connection.tooling.query<{Id: string}>(`Select Id From TraceFlag where TracedEntityId = '${userId}'`));
-        const ids = records.records.map(rec => rec.Id);
-        if (ids.length > 0) {
-            await connection.tooling.delete('TraceFlag', ids);
-        }
+        return this.deleteToolingRecords(`Select Id From TraceFlag where TracedEntityId = '${userId}'`);
     }
+
+    public clearApexTestResults() {
+        return this.deleteToolingRecords('Select Id From ApexTestResult');
+    }
+
+    private async deleteToolingRecords(query: string) {
+        const objectType = query.match(/from (?<objectType>[a-z_0-9]+)/i)?.groups?.objectType;
+        if (!objectType) {
+            throw new Error(`No object type found in query: ${query}`);
+        }
+        const connection = await this.getJsForceConnection();
+        let result = (await connection.tooling.query<{Id: string}>(query));
+        do{            
+            const ids = result.records.map(rec => rec.Id);
+            if (ids.length > 0) {
+                await connection.tooling.delete(`${objectType}`, ids);
+            }
+            if (!result.nextRecordsUrl) {
+                break;
+            }
+            result = await connection.tooling.queryMore(result.nextRecordsUrl);
+        } while(result.nextRecordsUrl);
+    }
+
+    //	ApexTestResult
 
     /**
      * Gets basic details about the user for the current connection

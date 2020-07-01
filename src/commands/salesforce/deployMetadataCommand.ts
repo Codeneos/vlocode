@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 import { forEachAsyncParallel, unique, filterUndefined } from 'lib/util/collection';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
@@ -59,7 +60,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             }
         } else {
             this.logger.info('Deployment queued till after pending deployment completes');
-            void vscode.window.showInformationMessage(`Queued deploy of ${selectedFiles} file(s)`);
+            void vscode.window.showInformationMessage(`Queued deploy of ${selectedFiles.map(file => path.basename(file.fsPath))}`);
         }
     }
 
@@ -84,6 +85,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
         await this.vlocode.withActivity({
             progressTitle: `Deploying ${progressTitle}...`,
+            propagateExceptions: true,
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, async (progress, token) => {
@@ -107,7 +109,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 throw new Error(errorMessage);
             }
 
-            this.logger.info(`Succesfully deployed ${uniqueComponents.join(', ')}`);
+            this.logger.info(`Successfully deployed ${uniqueComponents.join(', ')}`);
             void vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
         });
     }

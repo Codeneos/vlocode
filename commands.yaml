@@ -9,10 +9,8 @@ vlocode.selectOrg:
 vlocode.refreshDatapack:
   title: 'Vlocity: Refresh Datapack(s)'
   group: v_vlocity
-  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
-      when: true
     - menu: explorer/context
     - menu: editor/context
 vlocode.deployDatapack:
@@ -25,7 +23,6 @@ vlocode.deployDatapack:
 vlocode.openSalesforce:
   title: 'Vlocity: Open in Salesforce'
   group: v_vlocity
-  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -33,14 +30,12 @@ vlocode.openSalesforce:
 vlocode.renameDatapack:
   title: 'Vlocity: Rename Datapack'
   group: v_vlocity
-  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context
 vlocode.cloneDatapack:
   title: 'Vlocity: Clone Datapack'
   group: v_vlocity
-  when: resourceFilename ~= /.*datapack\.json$/i
   menus:
     - menu: commandPalette
     - menu: explorer/context

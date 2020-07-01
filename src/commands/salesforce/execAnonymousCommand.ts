@@ -51,6 +51,7 @@ export default class ExecAnonymousCommand extends MetadataCommand {
 
         await this.vlocode.withActivity({
             progressTitle: 'Executing anonymous APEX...',
+            propagateExceptions: true,
             location: vscode.ProgressLocation.Notification,
             cancellable: false
         }, async () => {

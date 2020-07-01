@@ -48,6 +48,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             },
             'vlocity.developerLogs.deleteAll': async () => {
                 await this.executeCommand(VlocodeCommand.clearDeveloperLogs);
+                await this.vlocode.salesforceService.clearApexTestResults();
                 this.logs.splice(0);
                 this.refresh();
             }
@@ -73,20 +74,22 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     public scheduleRefresh(timeout: number) {
-        // Prevent a double refresh scheduled
+        // Prevent a double refresh schedules
         if (this.autoRefreshScheduledId) {
             clearTimeout(this.autoRefreshScheduledId);
         }
-        // schedule next refresh if auto refreshing
-        this.autoRefreshScheduledId = setTimeout(async () => {
-            this.autoRefreshScheduledId = undefined;
-            const newLogsAvailable = this.autoRefreshingPaused ? false : await this.refreshLogs();
-            if (newLogsAvailable) {
+        this.autoRefreshScheduledId = setTimeout(this.refreshTask.bind(this), timeout);
+    }
+
+    private async refreshTask() {
+        this.autoRefreshScheduledId = null;        
+        try {
+            if (!this.autoRefreshingPaused && await this.refreshLogs()) {
                 this.refresh();
-            } else {
-                this.scheduleRefresh(this.autoRefreshInterval);
-            }
-        }, timeout);
+            }            
+        } finally {
+            this.scheduleRefresh(this.autoRefreshInterval);
+        }
     }
 
     public async onClick(log: DeveloperLog) {
@@ -150,19 +153,14 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             return;
         }
 
-        try {
-            if (this.lastRefresh && (Date.now() - this.lastRefresh.getTime()) < 500)  {
-                // avoid refreshing if we just had a refresh
-                return this.logs;
-            }
-            await this.refreshLogs();
+        if (this.lastRefresh && (Date.now() - this.lastRefresh.getTime()) < 500)  {
+            // avoid refreshing if we just had a refresh
             return this.logs;
-        } finally {
-            // reschedule refresh here to avoid refreshing when the panel is not focused
-            if (this.autoRefreshing) {
-                this.scheduleRefresh(this.autoRefreshInterval);
-            }
         }
+
+        await this.refreshLogs();  
+              
+        return this.logs;
     }
 
     /**
