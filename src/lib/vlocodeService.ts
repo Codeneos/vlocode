@@ -88,7 +88,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
             if (this.config.sfdxUsername) {
                 this._salesforceService = container.get(SalesforceService);
-                this._datapackService = container.get(VlocityDatapackService);
+                this._datapackService = await container.get(VlocityDatapackService).initialize();
             }
             this.updateStatusBar(this.config);
         } catch (err) {

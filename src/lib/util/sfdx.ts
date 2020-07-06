@@ -1,8 +1,10 @@
+import * as http from 'http';
 import * as path from 'path';
 import * as jsforce from 'jsforce';
 import * as salesforce from '@salesforce/core';
 import AuthCommand = require('salesforce-alm/dist/lib/auth/authCommand');
 import { LogManager, Logger } from 'lib/logging';
+import { CancellationToken } from 'vscode';
 
 export interface SalesforceAuthResult {
     orgId: string;
@@ -32,12 +34,33 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
  */
 export default class SfdxUtil {
 
-    public static async webLogin(options: { instanceUrl: string; alias?: string }) : Promise<SalesforceAuthResult> {
+    public static async webLogin(options: { instanceUrl: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
         const command = new AuthCommand();
-        const result = await command.execute({
+        const httpServer = http.createServer();
+
+        const result = command.execute({
+            server: httpServer,
             instanceurl: options.instanceUrl,
             setalias: options.alias
         });
+
+        if (cancelToken) {
+            cancelToken.onCancellationRequested(() => {
+                // Emit a fake request to force SFDX to execute the proper close handlers
+                if (httpServer.listening) {
+                    httpServer.close();
+                } else {
+                    httpServer.once('listening', () => {
+                        httpServer.close();
+                    });
+                }
+            });
+
+            const caneledPromise = new Promise<SalesforceAuthResult>((_, reject) => cancelToken.onCancellationRequested(() => reject('Operation cancelled')));
+
+            // return race between cancel token
+            return Promise.race([ caneledPromise, result ]);
+        }
 
         return result;
     }

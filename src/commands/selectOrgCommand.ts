@@ -83,11 +83,11 @@ export default class SelectOrgCommand extends CommandBase {
 
         this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
         const authInfo = await this.vlocode.withActivity({
-            location: vscode.ProgressLocation.Window,
-            progressTitle: 'Authorizing new org...',
-            cancellable: false
-        }, async () => {
-            const loginResult = await SfdxUtil.webLogin({ instanceUrl });
+            location: vscode.ProgressLocation.Notification,
+            progressTitle: 'Opening browser to authorize new org...',
+            cancellable: true
+        }, async (_, token) => {
+            const loginResult = await SfdxUtil.webLogin({ instanceUrl }, token);
             if (loginResult && loginResult.accessToken) {
                 return loginResult;
             }
@@ -101,7 +101,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
 
         this.logger.error(`Unable to authorize at '${instanceUrl}'`);
-        void vscode.window.showErrorMessage('Failed to authorize with Salesforce, please verify you are connected to the internet');
+        void vscode.window.showErrorMessage('Failed to authorize new org, see the log for more details');
         return;
     }
 }
