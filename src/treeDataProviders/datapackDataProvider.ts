@@ -7,11 +7,13 @@ import { groupBy } from 'lib/util/collection';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { addFieldsToQuery } from 'lib/util/salesforce';
+import { dependency } from 'lib/core/inject';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
 
+@dependency()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
 
     private async onExport(node: DatapackNode) {

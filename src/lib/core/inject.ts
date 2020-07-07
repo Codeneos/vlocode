@@ -1,41 +1,3 @@
-// /**
-//  * Cache all results from this function in a local cache with a specified TTL in seconds
-//  * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
-//  */
-// export function inject<T extends (...args: any[]) => any>(target: T, ttl: number = -1) : T {
-//     const name = target.name;
-//     const logger = LogManager.get('CacheDecorator');
-
-//     const cachedFunction = function(...args: any[]) {
-//         const cache = getCacheStore(this ?? target);
-//         const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? ''), name);
-//         const cachedValue = cache.get(key);
-//         if (cachedValue) {
-//             logger.debug(`Load response from cache -> ${name}`);
-//             return cachedValue;
-//         }
-//         // Exceptions cause
-//         const newValue = target.apply(this, args);
-//         if (ttl > 0) {
-//             setTimeout(() => cache.delete(key), ttl * 1000);
-//         }
-//         logger.debug(`Cache miss, retrieve value from source -> ${name}`);
-//         cache.set(key, newValue);
-//         if (isPromise(newValue)) {
-//             // Remove invalid results from the cache
-//             newValue.catch(err => {
-//                 logger.debug(`Delete cached promise on exception -> ${name}`, err);
-//                 cache.delete(key);
-//                 // Rethrow the exceptions so the original handler can handle it
-//                 throw err;
-//             });
-//         }
-//         return newValue;
-//     };
-
-//     return cachedFunction as T;
-// }
-
 import 'reflect-metadata';
 import { singleton } from 'lib/util/singleton';
 import { Iterable } from 'lib/util/iterable';
@@ -132,7 +94,7 @@ export const container = singleton(
         public register<T extends Object>(instance: T) {
             const provides = Reflect.getMetadata('dependency:provides', instance.constructor) as Array<ServiceType>;
 
-            if (provides && provides?.length) {
+            if (provides?.length) {
                 for (const serviceType of provides) {
                     container.registerAs(instance, serviceType);
                 }
@@ -215,7 +177,7 @@ export function dependency<T extends { new(...args:any[]): { } }>(provides?: Arr
     return function(ctor: T) {
 
         // Get argument types
-        const paramTypes = Reflect.getMetadata('design:paramtypes', ctor) as any[];
+        const paramTypes = Reflect.getMetadata('design:paramtypes', ctor) as any[] || [];
 
         // Extend the constructor and inject any dependencies not provided
         const classProto = class extends ctor {

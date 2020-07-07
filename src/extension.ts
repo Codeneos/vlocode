@@ -4,7 +4,7 @@ import OnSavedEventHandler from 'events/onSavedEventHandler';
 import OnClassFileDeleted from 'events/onClassFileDeleted';
 import OnClassFileCreated from 'events/onClassFileCreated';
 import * as constants from '@constants';
-import { LogManager, LogFilter, LogLevel, Logger } from 'lib/logging';
+import { LogManager, LogLevel, Logger } from 'lib/logging';
 import { ConsoleWriter, OutputChannelWriter, TerminalWriter } from 'lib/logging/writers';
 import Commands from 'commands';
 import * as vlocityUtil from 'lib/vlocity/vlocityLogging';
@@ -15,11 +15,10 @@ import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
 import { ConfigurationManager } from 'lib/configurationManager';
 import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
+import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
+import { container } from 'lib/core/inject';
 import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
-import { container } from 'lib/core/inject';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -95,7 +94,7 @@ export = class Vlocode {
      * Creates an instance of the Developer log panel and regsiters the required event handlers
      */
     private createDeveloperLogView() {
-        const developerLogDataProvider = new DeveloperLogDataProvider(this.service);
+        const developerLogDataProvider = container.get(DeveloperLogDataProvider);
         const developerLogsView = vscode.window.createTreeView('developerLogsView', {
             treeDataProvider: developerLogDataProvider
         });
@@ -124,7 +123,7 @@ export = class Vlocode {
         this.logger.info(`Using built tools version ${vlocityPackageManifest.version}`);
         this.logger.verbose('Verbose logging enabled');
 
-        // Salesforce support      
+        // Salesforce support
         ConfigurationManager.watchProperties(this.service.config, [ 'salesforce.enabled' ], c => this.service.enableSalesforceSupport(c.salesforce.enabled));
         if (this.service.config.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);

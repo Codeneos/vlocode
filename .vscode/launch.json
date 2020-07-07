@@ -19,7 +19,6 @@
                 "${workspaceFolder}/out/**/*.js"
             ], 
             "skipFiles": [
-                "${workspaceRoot}/node_modules/**/*.js",
                 "<node_internals>/**/*.js",
             ],
             "preLaunchTask": "build",
