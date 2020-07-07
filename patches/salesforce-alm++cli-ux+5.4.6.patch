@@ -1,0 +1,65 @@
+diff --git a/node_modules/salesforce-alm/node_modules/cli-ux/lib/deps.js b/node_modules/salesforce-alm/node_modules/cli-ux/lib/deps.js
+index 6d4ba46..1fb8ce7 100644
+--- a/node_modules/salesforce-alm/node_modules/cli-ux/lib/deps.js
++++ b/node_modules/salesforce-alm/node_modules/cli-ux/lib/deps.js
+@@ -10,46 +10,46 @@ function fetch(s) {
+ }
+ exports.deps = {
+     get stripAnsi() {
+-        return fetch('strip-ansi');
++        return require('strip-ansi');
+     },
+     get ansiStyles() {
+-        return fetch('ansi-styles');
++        return require('ansi-styles');
+     },
+     get ansiEscapes() {
+-        return fetch('ansi-escapes');
++        return require('ansi-escapes');
+     },
+     get passwordPrompt() {
+-        return fetch('password-prompt');
++        return require('password-prompt');
+     },
+     get screen() {
+-        return fetch('@oclif/screen');
++        return require('@oclif/screen');
+     },
+     get open() {
+-        return fetch('./open').default;
++        return require('./open').default;
+     },
+     get prompt() {
+-        return fetch('./prompt');
++        return require('./prompt');
+     },
+     get styledObject() {
+-        return fetch('./styled/object').default;
++        return require('./styled/object').default;
+     },
+     get styledHeader() {
+-        return fetch('./styled/header').default;
++        return require('./styled/header').default;
+     },
+     get styledJSON() {
+-        return fetch('./styled/json').default;
++        return require('./styled/json').default;
+     },
+     get table() {
+-        return fetch('./styled/table').table;
++        return require('./styled/table').table;
+     },
+     get tree() {
+-        return fetch('./styled/tree').default;
++        return require('./styled/tree').default;
+     },
+     get wait() {
+-        return fetch('./wait').default;
++        return require('./wait').default;
+     },
+     get progress() {
+-        return fetch('./styled/progress').default;
++        return require('./styled/progress').default;
+     },
+ };
+ exports.default = exports.deps;
