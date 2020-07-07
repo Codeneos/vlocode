@@ -3,23 +3,25 @@ import VlocodeService from 'lib/vlocodeService';
 import { DeveloperLog } from 'lib/salesforce/developerLog';
 import moment = require('moment');
 import { ConfigurationManager } from 'lib/configurationManager';
-import BaseDataProvider from './baseDataProvider';
 import { VlocodeCommand } from '@constants';
 import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
+import { Logger } from 'lib/logging';
+import { dependency } from 'lib/core/inject';
+import BaseDataProvider from './baseDataProvider';
 
 /**
  * Provides a list of recently executed or executing activities 
  */
+@dependency()
 export default class DeveloperLogDataProvider extends BaseDataProvider<DeveloperLog> implements vscode.Disposable {
 
     private logs: Array<DeveloperLog> = [];
     private lastRefresh?: Date;
     private autoRefreshScheduledId?: any;
-    private autoRefreshing: boolean = false;
-    private autoRefreshingPaused: boolean = false;
+    private autoRefreshingPaused: boolean = true;
     private readonly autoRefreshInterval: number = 3000;
 
-    constructor(service: VlocodeService) {
+    constructor(service: VlocodeService, private readonly logger: Logger) {
         super(service);
         ConfigurationManager.watchProperties(this.vlocode.config, ['sfdxUsername'], config => {
             this.lastRefresh = undefined;
@@ -56,8 +58,6 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     public enableAutoRefresh(enabled: boolean) {
-        this.autoRefreshing = enabled;
-
         if (enabled) {
             this.scheduleRefresh(3000);
         } else if (this.autoRefreshScheduledId) {
@@ -82,11 +82,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     private async refreshTask() {
-        this.autoRefreshScheduledId = null;        
+        this.autoRefreshScheduledId = null;
         try {
             if (!this.autoRefreshingPaused && await this.refreshLogs()) {
                 this.refresh();
-            }            
+            }
         } finally {
             this.scheduleRefresh(this.autoRefreshInterval);
         }
@@ -158,8 +158,8 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             return this.logs;
         }
 
-        await this.refreshLogs();  
-              
+        await this.refreshLogs();
+
         return this.logs;
     }
 
