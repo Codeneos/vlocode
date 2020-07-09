@@ -110,7 +110,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             clearInterval(this.traceFlagsWatcherId);
         }
 
-        return this.vlocode.withActivity({ 
+        return this.vlocode.withActivity({
             progressTitle: `Update log level: ${traceFlagsSelection.label}`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,

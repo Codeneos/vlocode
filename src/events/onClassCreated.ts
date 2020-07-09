@@ -6,10 +6,12 @@ import { Builder as XmlBuilder } from 'xml2js';
 import * as constants from '@constants';
 import { getDocumentBodyAsString } from 'lib/util/fs';
 
-export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
+export default class extends EventHandlerBase<vscode.Uri> {
 
     public get enabled() : boolean {
-        return !!(this.vloService.config?.salesforce?.enabled && this.vloService.config?.salesforce.manageMetaXmlFiles);
+        const manageMetadata = this.vloService.config?.salesforce?.enabled && this.vloService.config.salesforce.manageMetaXmlFiles;
+        const orgSelected = !!this.vloService.config?.sfdxUsername;
+        return !!manageMetadata && orgSelected;
     }
 
     protected async handleEvent(document: vscode.Uri): Promise<void> {
@@ -18,7 +20,7 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
         }
 
         // Auto create the metadata file
-        await this.createMetaDataFileFor(document);
+        await this.createMetadataFileFor(document);
 
         // Is the file empty?
         const documentBody = (await getDocumentBodyAsString(document.fsPath)).trim();
@@ -43,7 +45,7 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
         return `public class ${className} {\n\n\n}`;
     }
 
-    protected async createMetaDataFileFor(document: vscode.Uri): Promise<void> {
+    protected async createMetadataFileFor(document: vscode.Uri): Promise<void> {
         const metaXml = new XmlBuilder(constants.MD_XML_OPTIONS).buildObject({
             ApexClass: {
                 $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' },
@@ -53,7 +55,7 @@ export default class OnClassFileCreated extends EventHandlerBase<vscode.Uri> {
         });
 
         try {
-            await fs.writeFile(`${document.fsPath  }-meta.xml`, metaXml, { flag: 'wx' });
+            await fs.writeFile(`${document.fsPath}-meta.xml`, metaXml, { flag: 'wx' });
         } catch(e) {
             // Ignore error; this fails if the meta file already exists
         }

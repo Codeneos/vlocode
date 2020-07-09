@@ -1,8 +1,9 @@
 const startTime = Date.now(); // Track start up performance
 
 import OnSavedEventHandler from 'events/onSavedEventHandler';
-import OnClassFileDeleted from 'events/onClassFileDeleted';
-import OnClassFileCreated from 'events/onClassFileCreated';
+import HandleSalesforceFileDeleted from 'events/onFileDeleted';
+import HandleTriggerCreated from 'events/onTriggerCreated';
+import HandleClassCreated from 'events/onClassCreated';
 import * as constants from '@constants';
 import { LogManager, LogLevel, Logger } from 'lib/logging';
 import { ConsoleWriter, OutputChannelWriter, TerminalWriter } from 'lib/logging/writers';
@@ -143,9 +144,17 @@ export = class Vlocode {
         }));
         this.service.registerDisposable(this.createDeveloperLogView());
 
-        const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/src/classes/*.cls', false, true, false));
-        this.service.registerDisposable(new OnClassFileCreated(apexClassWatcher.onDidCreate, this.service));
-        this.service.registerDisposable(new OnClassFileDeleted(apexClassWatcher.onDidDelete, this.service));
+        // Watch Apex classes
+        const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/classes/*.cls', false, true, false));
+        this.service.registerDisposable(new HandleClassCreated(apexClassWatcher.onDidCreate, this.service));
+        this.service.registerDisposable(new HandleSalesforceFileDeleted(apexClassWatcher.onDidDelete, this.service));
+
+        // Watch Apex triggers
+        const apexTriggerWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/triggers/*.trigger', false, true, false));
+        this.service.registerDisposable(new HandleTriggerCreated(apexTriggerWatcher.onDidCreate, this.service));
+        this.service.registerDisposable(new HandleSalesforceFileDeleted(apexTriggerWatcher.onDidDelete, this.service));
+
+        // Watch any file saved
         this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, this.service));
 
         // track activation time
