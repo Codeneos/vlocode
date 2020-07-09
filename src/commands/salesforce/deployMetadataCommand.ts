@@ -1,10 +1,8 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
+import * as vscode from 'vscode';
 
 import { forEachAsyncParallel, unique, filterUndefined } from 'lib/util/collection';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
-import Task, { TaskPromise } from 'lib/util/task';
-import { Iterable } from 'lib/util/iterable';
 import MetadataCommand from './metadataCommand';
 
 /**
@@ -16,7 +14,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
      * In order to prevent double deployment keep a list of pending deploy ops
      */
     private readonly filesPendingDeployment = new Set<vscode.Uri>();
-    private currentDeploymentTask: TaskPromise | null = null;
+    private deploymentTimeout?: any;
 
     public execute(...args: any[]): Promise<void> {
         return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
@@ -48,23 +46,28 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
         // Queue files
         selectedFiles.forEach(this.filesPendingDeployment.add, this.filesPendingDeployment);
-        const deploymentTask = new Task(this.deployMetadataTask, this);
 
-        if (this.currentDeploymentTask == null || this.currentDeploymentTask.isFinished) {
-            while (this.filesPendingDeployment.size > 0) {
-                try {
-                    await (this.currentDeploymentTask = deploymentTask.start(this.popPendingFiles()));
-                } catch(e) {
-                    this.logger.error(e);
+        // Start deployment
+        if (this.deploymentTimeout !== undefined) {
+            this.deploymentTimeout = setTimeout(async () => {
+                while (this.filesPendingDeployment.size > 0) {
+                    try {
+                        await this.doDeployMetadata(this.popPendingFiles());
+                    } catch(e) {
+                        this.logger.error(e);
+                        void vscode.window.showErrorMessage(`Deployment error: ${e.message || e}`);
+                    } finally {
+                        this.deploymentTimeout = undefined;
+                    }
                 }
-            }
+            }, 0);
         } else {
-            this.logger.info('Deployment queued till after pending deployment completes');
-            void vscode.window.showInformationMessage(`Queued deploy of ${selectedFiles.map(file => path.basename(file.fsPath))}`);
+            this.logger.info(`Deployment of ${selectedFiles.map(file => path.basename(file.fsPath))} queued till after pending deployment completes`);
+            void vscode.window.showInformationMessage(`Queued deploy of ${selectedFiles.length}...`);
         }
     }
 
-    protected async deployMetadataTask(files: vscode.Uri[]) {
+    protected async doDeployMetadata(files: vscode.Uri[]) {
         // Build manifest
         const manifest = await vscode.window.withProgress({
             title: 'Building Deployment Manifest',
@@ -85,8 +88,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
         await this.vlocode.withActivity({
             progressTitle: `Deploying ${progressTitle}...`,
-            propagateExceptions: true,
             location: vscode.ProgressLocation.Notification,
+            propagateExceptions: true,
             cancellable: true
         }, async (progress, token) => {
             const result = await this.salesforce.deploy.deployManifest(manifest, {

@@ -1,11 +1,12 @@
 import { EventHandlerBase } from 'events/eventHandlerBase';
-import * as path from 'path';
 import * as vscode from 'vscode';
 
-export default class OnClassFileDeleted extends EventHandlerBase<vscode.Uri> {
+export default class extends EventHandlerBase<vscode.Uri> {
 
     public get enabled() : boolean {
-        return !!(this.vloService.config?.salesforce?.enabled && this.vloService.config?.salesforce.manageMetaXmlFiles);
+        const manageMetadata = this.vloService.config?.salesforce.enabled && this.vloService.config.salesforce.manageMetaXmlFiles;
+        const orgSelected = !!this.vloService.config?.sfdxUsername;
+        return !!manageMetadata && orgSelected;
     }
 
     protected async handleEvent(document: vscode.Uri): Promise<void> {

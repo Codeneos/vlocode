@@ -5,7 +5,7 @@ import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
-import { Logger, LogManager } from './logging';
+import { Logger } from './logging';
 import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from './salesforce/connection/sfdxConnectionProvider';
 import SalesforceService from './salesforce/salesforceService';
@@ -369,7 +369,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             this.config.salesforce.enabled = support;
         }
         void vscode.commands.executeCommand('setContext', 'vlocodeSalesforceSupport', support);
-        this.logger.info(`Salesforce support ${support ? 'enabled' : 'disabled'}`);
+        this.logger.info(`Salesforce support ${support ? chalk.green('enabled') : chalk.red('disabled')}`);
     }
 
     public enableDeveloperLogsPanel(enabled: boolean) {
@@ -377,7 +377,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             this.config.salesforce.developerLogsVisible = enabled;
         }
         void vscode.commands.executeCommand('setContext', 'vlocodeSalesforceDeveloperLogs', enabled);
-        this.logger.info(`${enabled ? 'Show' : 'Hide'} Salesforce Developer Logs panel`);
+        this.logger.info(`Salesforce developer logs view ${enabled ? chalk.green('enabled') : chalk.red('disabled')}`);
     }
 }
 

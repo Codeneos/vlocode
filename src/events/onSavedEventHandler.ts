@@ -11,9 +11,16 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
         '\\.git'
     ];
 
+    public get enabled() : boolean {
+        if (!this.vloService.config.sfdxUsername) {
+            return false;
+        }
+        return this.vloService.config.deployOnSave ||
+               this.vloService.config.salesforce?.deployOnSave;
+    }
+
     protected async handleEvent(document: vscode.TextDocument): Promise<void> {
-        if (!this.vloService.config.deployOnSave &&
-            !this.vloService.config.salesforce.deployOnSave) {
+        if (!this.enabled) {
             return;
         }
 
