@@ -4,12 +4,11 @@ import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnecti
 import { Connection } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
+import { AsyncEventEmitter } from 'lib/util/events';
 import RecordBatch from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
-import chalk = require('chalk');
-import { AsyncEventEmitter } from 'lib/util/events';
 
 interface DatapackDeploymentEvents {
     beforeDeploy: Iterable<DatapackDeploymentRecord>;
@@ -147,6 +146,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         for (const [i, datapack] of records.entries()) {
             const existingId = ids[i];
             if (existingId) {
+                datapack.setExistingId(existingId);
                 batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
             } else {
                 batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);

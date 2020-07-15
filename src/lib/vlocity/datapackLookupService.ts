@@ -4,8 +4,8 @@ import { LogManager } from 'lib/logging';
 import * as constants from '@constants';
 import Timer from 'lib/util/timer';
 import { arrayMapPush } from 'lib/util/collection';
-import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import { dependency } from 'lib/core/inject';
+import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 
 @dependency()
 export class DatapackLookupService implements DependencyResolver {
@@ -117,8 +117,10 @@ export class DatapackLookupService implements DependencyResolver {
     }
 
     /**
-     * Bulk lookup of records in Salesforce using the current matching key configuration
-     * @param records 
+     * Bulk lookup of records in Salesforce using the current matching key configuration;
+     * @param records Array of Records to lookup; note the indexes corresponds the the result array
+     * @param batchSize Batch size for the lookup queries; number of records that will be looked up in a single query
+     * @returns Array with all IDs found in Salesforce; array index matches the order of the records as provided
      */
     public async lookupIds(records: Array<{ sobjectType: string; values: object }>, batchSize: 50): Promise<string[]> {
         const lookupResults = new Array<string>();

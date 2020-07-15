@@ -53,43 +53,6 @@ export default class RecordBatch {
         private readonly logger = LogManager.get(RecordBatch)) {
     }
 
-    public async getRecords(operation: RecordOperationType | 'all', count?: number): Promise<RecordBatchChunk | undefined> {
-        const getRecords = async (operation: 'update' | 'insert') => {
-            for (const [sobjectType, records] of this[operation]) {
-                let resultRecords: { ref: string; data: any }[];
-                if (!count || count >= records.length) {
-                    resultRecords = records;
-                    this[operation].delete(sobjectType);
-                }
-                else {
-                    resultRecords = records.splice(0, count);
-                }
-
-                const recordData = Promise.all(resultRecords.map(record => this.validateRecordData(sobjectType, record.data, operation as any)));
-                const refs = resultRecords.map(record => record.ref);
-
-                return {
-                    operation,
-                    sobjectType,
-                    refs,
-                    records: await recordData
-                };
-            }
-        };
-
-        if (operation === 'insert' || operation === 'update') {
-            return getRecords(operation);
-        }
-        return await this.getRecords('insert', count) || this.getRecords('update', count);
-    }
-
-    public async *yieldRecords(operation: RecordOperationType | 'all', count: number): AsyncGenerator<RecordBatchChunk> {
-        let records: AwaitReturnType<RecordBatch['getRecords']>;
-        while (records = await this.getRecords(operation, count)) {
-            yield records;
-        }
-    }
-
     public async *execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
         if (this.isExecuting) {
             throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
@@ -104,8 +67,8 @@ export default class RecordBatch {
         try {
             while (true) {
                 // --START 
-                // Canot use for await due to a bug in TS/NodeJS
-                // for now us this work arround try for await again in the future.
+                // Cannot use for await due to a bug in TS/NodeJS
+                // for now us this work around try for await again in the future.
                 const chunk = await this.getRecords('all');
                 if (!chunk) {
                     return;
@@ -156,7 +119,44 @@ export default class RecordBatch {
         }
     }
 
-    public async executeWithCollectionApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    private async getRecords(operation: RecordOperationType | 'all', count?: number): Promise<RecordBatchChunk | undefined> {
+        const getRecords = async (operation: 'update' | 'insert') => {
+            for (const [sobjectType, records] of this[operation]) {
+                let resultRecords: { ref: string; data: any }[];
+                if (!count || count >= records.length) {
+                    resultRecords = records;
+                    this[operation].delete(sobjectType);
+                }
+                else {
+                    resultRecords = records.splice(0, count);
+                }
+
+                const recordData = Promise.all(resultRecords.map(record => this.validateRecordData(sobjectType, record.data, operation as any)));
+                const refs = resultRecords.map(record => record.ref);
+
+                return {
+                    operation,
+                    sobjectType,
+                    refs,
+                    records: await recordData
+                };
+            }
+        };
+
+        if (operation === 'insert' || operation === 'update') {
+            return getRecords(operation);
+        }
+        return await this.getRecords('insert', count) || this.getRecords('update', count);
+    }
+
+    private async *yieldRecords(operation: RecordOperationType | 'all', count: number): AsyncGenerator<RecordBatchChunk> {
+        let records: AwaitReturnType<RecordBatch['getRecords']>;
+        while (records = await this.getRecords(operation, count)) {
+            yield records;
+        }
+    }
+
+    private async executeWithCollectionApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const timer = new Timer();
         const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, {
             allOrNone: false,
@@ -172,7 +172,7 @@ export default class RecordBatch {
         return results;
     }
 
-    public async executeWithBulkApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    private async executeWithBulkApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const bulkJob = connection.bulk.createJob(chunk.sobjectType, chunk.operation);
         const batchJob = bulkJob.createBatch();
         let processedCount = 0;
@@ -287,7 +287,7 @@ export default class RecordBatch {
                     }
                 }
             }
-            recordData[field] = value;
+            recordData[fieldInfo.name] = value;
         }
         return recordData;
     }

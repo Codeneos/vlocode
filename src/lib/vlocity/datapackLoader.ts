@@ -6,7 +6,8 @@ import { mapAsyncParallel } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import { substringAfterLast } from 'lib/util/string';
-import { dependency, container } from 'lib/core/inject';
+import { dependency } from 'lib/core/inject';
+import { container } from 'lib/core/container';
 
 /**
  * Basic file system using NodeJS fs module.

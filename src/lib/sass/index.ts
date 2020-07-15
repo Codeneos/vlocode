@@ -1,2 +1,2 @@
-export * from './forked/compiler';
 export * from './compiler';
+export * from './forked/compiler';

@@ -44,7 +44,7 @@ export class AsyncEventEmitter<T extends EventMap = any> {
     public async emit<K extends EventKey<T>>(event: K, params: T[K], options?: EventEmitOptions): Promise<boolean> {
         let triggered = 0;
         for (const [id, listener] of this.listeners.entries()) {
-            if (id.startsWith(`${event}__`)) {
+            if (!id.startsWith(`${event}__`)) {
                 continue;
             }
             triggered++;

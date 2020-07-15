@@ -32,13 +32,13 @@ export interface SassCompileErrorResult {
 /**
  * Describes a sass compiler
  */
-export interface SassCompiler {
+export abstract class SassCompiler {
     /**
      * Compile SASS source string into CSS; returns a SASS compiler result with the result CSS or with an error when compilation is not successful.
      * @param source sass-source code to compile
      * @param options Sass.js options (see SASS.js for details)
      */
-    compile(source: string, options?: any): Promise<SassCompileSuccessResult | SassCompileErrorResult>;
+    abstract compile(source: string, options?: any): Promise<SassCompileSuccessResult | SassCompileErrorResult>;
 }
 
 
