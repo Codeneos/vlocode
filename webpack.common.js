@@ -95,6 +95,7 @@ const common = env => ({
 const vscodeExtension = {
     entry: {
         'vlocode': './src/extension.ts',
+        'sassCompiler': './src/forks/sassCompiler.ts',
     },
     name: 'vlocode',
     devtool: 'source-map',

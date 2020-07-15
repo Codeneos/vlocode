@@ -2,7 +2,7 @@ const common = require('./webpack.common.js');
 
 module.exports = env => common(env, {
     mode: 'development',
-    devtool: 'cheap-module-eval-source-map',
+    devtool: 'source-map',
     stats: {
         children: false,
         moduleTrace: false,

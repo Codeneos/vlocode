@@ -44,7 +44,7 @@ export default function cache(ttl: number = 60) {
 
     return function (target: any, name: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.get || descriptor.value;
-        replaceFunctionOrGetter(descriptor, cacheFunction(originalMethod, ttl));
+        replaceFunctionOrGetter(descriptor, cacheFunction(originalMethod, name, ttl));
     };
 }
 
@@ -52,29 +52,37 @@ export default function cache(ttl: number = 60) {
  * Cache all results from this function in a local cache with a specified TTL in seconds
  * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
-export function cacheFunction<T extends (...args: any[]) => any>(target: T, ttl: number = -1) : T {
-    const name = target.name;
-    const logger = LogManager.get('CacheDecorator');
+export function cacheFunction<T extends (...args: any[]) => any>(target: T, name: string, ttl: number = -1) : T {
+    const logger = LogManager.get('Cache');
 
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(this ?? target);
-        const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? ''), name);
+        const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? 'undef'), `${name}:`);
         const cachedValue = cache.get(key);
         if (cachedValue) {
-            logger.debug(`Load response from cache -> ${name}`);
             return cachedValue;
         }
-        // Exceptions cause
+
+        // Reload value and put it in the cache
+        logger.debug(`Cache miss reload value (key: ${key})`);
         const newValue = target.apply(this, args);
         if (ttl > 0) {
+            // Follow TTL
             setTimeout(() => cache.delete(key), ttl * 1000);
         }
-        logger.debug(`Cache miss, retrieve value from source -> ${name}`);
         cache.set(key, newValue);
+
+        // When the result is a promise ensure it gets deleted when it causes an exception
         if (isPromise(newValue)) {
             // Remove invalid results from the cache
-            newValue.catch(err => {
-                logger.debug(`Delete cached promise on exception -> ${name}`, err);
+            newValue.then(value => {
+                // Replace cached value with actual value to avoid keeping attached handler in memory
+                // wrap the result in a promise to ensure this replacement is transparent to the caller
+                logger.debug(`Promise resolved; replace promised value with actual result (key: ${key})`);
+                cache.set(key, Promise.resolve(value));
+                return value;
+            }).catch(err => {
+                logger.debug(`Delete cached promise due to exception (key: ${key})`, err);
                 cache.delete(key);
                 // Rethrow the exceptions so the original handler can handle it
                 throw err;

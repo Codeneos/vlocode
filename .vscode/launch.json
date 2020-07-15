@@ -21,6 +21,7 @@
             "skipFiles": [
                 "<node_internals>/**/*.js",
             ],
+            "smartStep": true,
             "preLaunchTask": "build",
             "stopOnEntry": false,
             "sourceMaps": true
