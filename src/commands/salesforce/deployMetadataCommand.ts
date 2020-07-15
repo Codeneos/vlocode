@@ -48,7 +48,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         selectedFiles.forEach(this.filesPendingDeployment.add, this.filesPendingDeployment);
 
         // Start deployment
-        if (this.deploymentTimeout !== undefined) {
+        if (this.deploymentTimeout === undefined) {
             this.deploymentTimeout = setTimeout(async () => {
                 while (this.filesPendingDeployment.size > 0) {
                     try {

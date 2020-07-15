@@ -15,6 +15,7 @@ import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import { ApexExecutor } from './apexExecutor';
+import { DatapackProcessor } from './datapackProccessor';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -41,6 +42,7 @@ export default class VlocityDatapackDeployService {
         private readonly matchingKeyService: VlocityMatchingKeyService,
         private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
         private readonly apexExecutor: ApexExecutor = new ApexExecutor(connectionProvider),
+        private readonly datapackProcessor: DatapackProcessor = new DatapackProcessor(),
         private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
         if (!this.schemaService) {
             throw new Error('Schema service is required constructor parameters and cannot be empty');
@@ -53,16 +55,17 @@ export default class VlocityDatapackDeployService {
         const datapackLookup = new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService);
         const deployment = new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService);
 
-        deployment.beforeDeploy(() => {
-            // Bulkify this to run for multiple
-            this.apexExecutor.execute('someApex');
-        });
+        // deployment.beforeDeploy(() => {
+        //     // Bulkify this to run for multiple
+        //     this.apexExecutor.execute('someApex');
+        // });
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
         for (const datapack of datapacks) {
             try {
-                deployment.add(await this.toSalesforceRecords(datapack));
+                const processedDatapack = await this.datapackProcessor.process(datapack);
+                deployment.add(await this.toSalesforceRecords(processedDatapack));
             } catch(err) {
                 this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
             }
@@ -71,7 +74,6 @@ export default class VlocityDatapackDeployService {
 
         return deployment;
     }
-
 
     // CURRENT_DATA_PACKS_CONTEXT will be replaced with:
     // 1. The Manifest being exported

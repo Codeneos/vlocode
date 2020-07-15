@@ -112,7 +112,7 @@ export const normalizeSalesforceName = cacheFunction((name: string) : string => 
         strippedName += '__r';
     }
     return strippedName;
-}, -1);
+}, 'normalizeSalesforceName', -1);
 
 /**
  * Normalizes a name to a valid js property by replacing any special characters and changing the name to lower camel case:

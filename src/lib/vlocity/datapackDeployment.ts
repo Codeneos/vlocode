@@ -11,41 +11,19 @@ import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeployment
 import chalk = require('chalk');
 import { AsyncEventEmitter } from 'lib/util/events';
 
-export interface DatapackDeploymentEventHandler {
-    (action: DatapackDeploymentEvent, record: DatapackDeploymentRecord): void | Promise<void>;
-}
-
-export enum DatapackDeploymentEvent {
-    beforeDeploy = 'beforeDeploy',
-    afterDeploy = 'afterDeploy',
-    add = 'add',
+interface DatapackDeploymentEvents {
+    beforeDeploy: Iterable<DatapackDeploymentRecord>;
+    afterDeploy: Iterable<DatapackDeploymentRecord>;
 }
 
 /**
  * A datapack deployment task/job
  */
-export default class DatapackDeployment implements DependencyResolver {
+export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> implements DependencyResolver {
 
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private deployedRecords: number = 0;
     private failedRecords: number = 0;
-    private readonly events = {
-        [DatapackDeploymentEvent.beforeDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord }]>(),
-        [DatapackDeploymentEvent.afterDeploy]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord; success: boolean; error?: string; recordId?: string }]>(),
-        [DatapackDeploymentEvent.add]: new AsyncEventEmitter<[{ datapack: DatapackDeploymentRecord }]>()
-    };
-
-    public get beforeDeploy() {
-        return this.events.beforeDeploy.event;
-    }
-
-    public get afterDeploy() {
-        return this.events.afterDeploy.event;
-    }
-
-    public get onAdd() {
-        return this.events.add.event;
-    }
 
     public get deployedRecordCount() {
         return this.deployedRecords;
@@ -64,12 +42,12 @@ export default class DatapackDeployment implements DependencyResolver {
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
+        super();
     }
 
     public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
         for (const record of Array.isArray(records) ? records : [ records ]) {
             this.records.set(record.sourceKey, record);
-            void this.events.add.emit({ datapack: record });
         }
         return this;
     }
@@ -202,14 +180,11 @@ export default class DatapackDeployment implements DependencyResolver {
 
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
+        await this.emit('beforeDeploy', datapacks.values());
         await this.setVlocityTriggerState(connection, false);
 
         try {
             this.logger.log(`Deploying ${datapacks.size} records...`);
-
-            for (const datapack of datapacks.values()) {
-                await this.events.beforeDeploy.emit({ datapack });
-            }
 
             for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
                 const datapack = datapacks.get(result.ref);
@@ -228,10 +203,9 @@ export default class DatapackDeployment implements DependencyResolver {
                     this.logger.error(`Failed ${datapack.sourceKey} - ${datapack.statusMessage}`);
                     this.failedRecords++;
                 }
-
-                await this.events.afterDeploy.emit({ datapack, ...result });
             }
         } finally {
+            await this.emit('afterDeploy', datapacks.values());
             await this.setVlocityTriggerState(connection, true);
         }
     }

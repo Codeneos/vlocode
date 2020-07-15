@@ -1,29 +1,34 @@
 import { v4 as uuid } from 'uuid';
 
-type AsyncEventListener<T extends any[]> = (...args: T) => Promise<void> | void;
-
 interface EventListenerOptions {
     once: boolean;
+}
+
+interface EventEmitOptions {
+    /**
+     * Propagate exceptions to the emitting class
+     */
+    hideExceptions: boolean;
+    /**
+     * Queues handler execution util after the next event loop processing using `setImmediatePromise`
+     */
+    async: boolean;
 }
 
 interface EventToken {
     dispose(): void;
 }
 
-interface AsyncEvent<T extends any[]> {    
-    (listener: AsyncEventListener<T>, options?: EventListenerOptions): EventToken
-}
+type EventMap = Record<string, any>;
+type EventKey<T extends EventMap> = string & keyof T;
+type EventReceiver<T> = (params: T) => any | Promise<any>;
 
 /**
  * Async event emitting with await support
  */
-export class AsyncEventEmitter<T extends any[]> {
+export class AsyncEventEmitter<T extends EventMap = any> {
 
-    private listeners = new Map<string, { callback: AsyncEventListener<T> } & EventListenerOptions>();
-
-    public get event() : AsyncEvent<T> {
-        return this.registerListener.bind(this);
-    }    
+    private readonly listeners = new Map<string, { callback: EventReceiver<any> } & EventListenerOptions>();
 
     /**
      * Support for clearing the event listeners
@@ -36,43 +41,60 @@ export class AsyncEventEmitter<T extends any[]> {
      * Emit an event and await the event completion
      * @param args Event args
      */
-    public async emit(...args: T) : Promise<boolean> {
+    public async emit<K extends EventKey<T>>(event: K, params: T[K], options?: EventEmitOptions): Promise<boolean> {
+        let triggered = 0;
         for (const [id, listener] of this.listeners.entries()) {
-            await listener.callback(...args);
+            if (id.startsWith(`${event}__`)) {
+                continue;
+            }
+            triggered++;
+
+            if (options?.async) {
+                setImmediate(listener.callback, params);
+            } else {
+                try {
+                    await listener.callback(params);
+                } catch(err) {
+                    if (!options?.hideExceptions) {
+                        throw err;
+                    }
+                }
+            }
+
             if (listener.once) {
                 this.listeners.delete(id);
             }
         }
-        return this.listeners.size > 0;
+        return triggered > 0;
     }
 
     /**
      * Register an event listener to trigger on an event.
      * @param listener Listener to register
      */
-    public on(listener: AsyncEventListener<T>): EventToken {        
-        return this.registerListener(listener, { once: false });
+    public on<K extends EventKey<T>>(event: K, listener: EventReceiver<T[K]>): EventToken {
+        return this.registerListener(event, listener, { once: false });
     }
 
     /**
      * Register an event listener to trigger once on event.
      * @param listener Listener to register
      */
-    public once(listener: AsyncEventListener<T>): EventToken {
-        return this.registerListener(listener, { once: true });
-    }    
+    public once<K extends EventKey<T>>(event: K, listener: EventReceiver<T[K]>): EventToken {
+        return this.registerListener(event, listener, { once: true });
+    }
 
     /**
      * Register an event listener to trigger on an event.
      * @param listener Listener to register
      */
-    private registerListener(listener: AsyncEventListener<T>, options: EventListenerOptions): EventToken {
-        const id = uuid();
+    private registerListener<K extends EventKey<T>>(event: string, listener: EventReceiver<T[K]>, options: EventListenerOptions): EventToken {
+        const id = `${event}__${uuid()}`;
         this.listeners.set(id, {
             callback: listener,
             ...options
         });
-        return { 
+        return {
             dispose: this.listeners.delete.bind(this.listeners, id)
         };
     }

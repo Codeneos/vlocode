@@ -121,7 +121,7 @@ export class DatapackLookupService implements DependencyResolver {
      * @param records 
      */
     public async lookupIds(records: Array<{ sobjectType: string; values: object }>, batchSize: 50): Promise<string[]> {
-        const results = new Array<string>();
+        const lookupResults = new Array<string>();
         const indexMap = new Map<string, number>();
         const lookupTypes = new Map<string, object[]>();
 
@@ -139,7 +139,7 @@ export class DatapackLookupService implements DependencyResolver {
             const id = this.getCachedEntry(sobjectType, lookupKey);
             if (id) {
                 // Do not query if there is a cached entry
-                results[i] = id;
+                lookupResults[i] = id;
                 continue;
             }
 
@@ -173,7 +173,7 @@ export class DatapackLookupService implements DependencyResolver {
                     this.updateCachedEntry(sobjectType, lookupKey, rec.id);
                     const index = indexMap.get(lookupKey);
                     if (index !== undefined) {
-                        results[index] = rec.id;
+                        lookupResults[index] = rec.id;
                     } else {
                         this.logger.warn(`Got result for record that was never requested: ${lookupKey}`);
                     }
@@ -184,7 +184,7 @@ export class DatapackLookupService implements DependencyResolver {
             this.logger.log(`Found ${found}/${total} requested ${sobjectType} records [${timer.stop()}]`);
         }
 
-        return results;
+        return lookupResults;
     }
 
     private buildFilter(data: object, fields: string[]) {
