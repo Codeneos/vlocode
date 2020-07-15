@@ -14,7 +14,8 @@ import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
 import Timer from './util/timer';
 import chalk = require('chalk');
-import { container, dependency } from './core/inject';
+import { dependency } from './core/inject';
+import { container } from './core/container';
 
 interface ActivityOptions {
     progressTitle: string;
@@ -25,7 +26,7 @@ interface ActivityOptions {
     propagateExceptions?: boolean;
 }
 
-@dependency([JsForceConnectionProvider, VlocodeService])
+@dependency({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates

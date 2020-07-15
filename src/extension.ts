@@ -17,7 +17,7 @@ import { ConfigurationManager } from 'lib/configurationManager';
 import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
-import { container } from 'lib/core/inject';
+import { container, LifecyclePolicy } from 'lib/core/container';
 import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
 
@@ -106,13 +106,13 @@ export = class Vlocode {
     }
 
     private async activate(context: vscode.ExtensionContext) {
-        // All SFDX and Vloctiy commands work better when we are running from the workspace folder
+        // All SFDX and Vlocity commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
         this.setWorkingDirectory();
 
         // Init logging and register services
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
-        container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION));
+        container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
 
         this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);

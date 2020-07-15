@@ -16,6 +16,8 @@ import SalesforceDeployService from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
+import RecordBatch from './recordBatch';
+import { CancellationToken } from 'vscode';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -259,6 +261,37 @@ export default class SalesforceService implements JsForceConnectionProvider {
         );
     }
 
+    /**
+     * Insert one or more records into Salesforce; by default uses the standard collections api but switches to bulk API when there
+     * are more then 50 records to be inserted.
+     * @remarks For more control ove the operation users can also directly create a record batch offering more control.
+     * @param type Record types to insert
+     * @param records record data and references
+     * @param cancelToken optional cancellation token
+     */
+    public async* insert(type: string, records: Array<{ values: any; ref: string }>, cancelToken?: CancellationToken) {
+        const batch = new RecordBatch(this.schema);
+        for (const record of records) {
+            batch.addInsert(type, record.values, record.ref);
+        }
+        yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
+    }
+
+    /**
+     * Update one or more records in Salesforce using the ID field as foreign key; by default uses the standard collections api but switches to bulk API when there.
+     * @remarks For more control ove the operation users can also directly create a record batch offering more control.
+     * @param type Record types to updated; all data should have an ID field
+     * @param records record data and references
+     * @param cancelToken optional cancellation token
+     */
+    public async update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
+        const batch = new RecordBatch(this.schema);
+        for (const record of records) {
+            batch.addUpdate(type, record, record.id, record.id);
+        }
+        return batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
+    }
+
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
         const connection = await this.getJsForceConnection();
         const soapRequest = new SoapRequest(methodName, 'http://soap.sforce.com/2006/08/apex', debuggingHeader);
@@ -308,8 +341,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
      */
     public async executeAnonymous(apex: string, logLevels: SoapDebuggingHeader = {}) : Promise<jsforce.ExecuteAnonymousResult & { debugLog?: string }> {
         // Add any missing debug headers at default level of None                
-        const validDebugCategories = [ 
-            'Db', 'Workflow', 'Validation', 'Callout', 'Apex_code', 
+        const validDebugCategories = [
+            'Db', 'Workflow', 'Validation', 'Callout', 'Apex_code',
             'Apex_profiling', 'Visualforce', 'System', 'NBA', 'Wave'
         ];
         for (const category of validDebugCategories) {
@@ -429,7 +462,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * Set the trace flags based on the specified details.
      * @param debugLevel Logging level to set
      * @param type Type of logging to set
-     * @param trackedEntityId Optionally the tracked entity; required for class and use debuging
+     * @param trackedEntityId Optionally the tracked entity; required for class and use debugging
      * @param durationInSeconds Duration of the logging sessions; default is 1 hour or 3600 seconds
      * @returns Trace flag instance which can be used to extend or clear
      */
@@ -482,14 +515,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
             await connection.tooling.delete('TraceFlag', [ traceFlagsId ]);
         } catch(e) {
             this.logger.error(`TraceFlag with id ${traceFlagsId} could not be cleared.`);
-        }        
+        }
     }
 
     /**
      * Removes all active and expired trace flags for the current Salesforce instance.
      */
     public async clearAllTraceFlags() {
-        return this.deleteToolingRecords(`Select Id From TraceFlag`);
+        return this.deleteToolingRecords('Select Id From TraceFlag');
     }
 
     /**
@@ -511,7 +544,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         }
         const connection = await this.getJsForceConnection();
         let result = (await connection.tooling.query<{Id: string}>(query));
-        do{            
+        do{
             const ids = result.records.map(rec => rec.Id);
             if (ids.length > 0) {
                 await connection.tooling.delete(`${objectType}`, ids);

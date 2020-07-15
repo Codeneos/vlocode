@@ -15,6 +15,7 @@ export default class DatapackDeploymentRecord {
     private readonly _deployTimer: Timer = new Timer();
     private _status: DeploymentStatus = DeploymentStatus.Pending;
     private _statusDetail?: string;
+    private _existingId?: string;
 
     public get status(): DeploymentStatus {
         return this._status;
@@ -29,7 +30,7 @@ export default class DatapackDeploymentRecord {
     }
 
     public get recordId(): string | undefined {
-        return this._status === DeploymentStatus.Deployed ? this._statusDetail : undefined;
+        return this._status === DeploymentStatus.Deployed ? this._statusDetail : this._existingId;
     }
 
     public get statusMessage(): string | undefined {
@@ -45,6 +46,7 @@ export default class DatapackDeploymentRecord {
     }
 
     constructor(
+        public readonly datapackType: string,
         public readonly sobjectType: string,
         public readonly sourceKey: string,
         public readonly values: Object = {}) {
@@ -58,6 +60,10 @@ export default class DatapackDeploymentRecord {
         }
         this._status = status;
         this._statusDetail = detail;
+    }
+
+    public setExistingId(value: string) {
+        this._existingId = value;
     }
 
     public setField(field: string, value: any) {

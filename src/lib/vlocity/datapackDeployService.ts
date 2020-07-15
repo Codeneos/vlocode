@@ -11,11 +11,12 @@ import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { dependency } from 'lib/core/inject';
+import { container } from 'lib/core/container';
+import { groupBy } from 'lib/util/collection';
 import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
-import { ApexExecutor } from './apexExecutor';
-import { DatapackProcessor } from './datapackProccessor';
+import deploymentSpecs from './deploymentSpecs';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -34,6 +35,12 @@ export interface DependencyResolver {
     resolveDependency(dep: DatapackRecordDependency): Promise<string | undefined>;
 }
 
+export abstract class DatapackDeploymentSpec {
+    abstract preprocess?(datapack: VlocityDatapack): Promise<void> | void;
+    abstract beforeDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
+    abstract afterDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
+}
+
 @dependency()
 export default class VlocityDatapackDeployService {
 
@@ -41,31 +48,28 @@ export default class VlocityDatapackDeployService {
         private readonly connectionProvider: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
         private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
-        private readonly apexExecutor: ApexExecutor = new ApexExecutor(connectionProvider),
-        private readonly datapackProcessor: DatapackProcessor = new DatapackProcessor(),
-        private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
+        private readonly logger: Logger = LogManager.get(VlocityDatapackDeployService)) {
         if (!this.schemaService) {
             throw new Error('Schema service is required constructor parameters and cannot be empty');
         }
     }
 
     public async createDeployment(datapacks: VlocityDatapack[]) {
-        const queryService = new QueryService(this.connectionProvider).setCacheDefault(true);
-        const lookupService = new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService);
-        const datapackLookup = new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService);
-        const deployment = new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService);
+        const local = container.new();
+        const queryService = local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
+        const lookupService = local.register(new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService));
+        const datapackLookup = local.register(new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService));
+        const deployment = local.register(new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService));
 
-        // deployment.beforeDeploy(() => {
-        //     // Bulkify this to run for multiple
-        //     this.apexExecutor.execute('someApex');
-        // });
+        deployment.on('beforeDeploy', this.beforeDeploy.bind(this));
+        deployment.on('afterDeploy', this.afterDeploy.bind(this));
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
         for (const datapack of datapacks) {
             try {
-                const processedDatapack = await this.datapackProcessor.process(datapack);
-                deployment.add(await this.toSalesforceRecords(processedDatapack));
+                await this.runPreprocessors(datapack);
+                deployment.add(await this.toSalesforceRecords(datapack));
             } catch(err) {
                 this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
             }
@@ -73,6 +77,61 @@ export default class VlocityDatapackDeployService {
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
 
         return deployment;
+    }
+
+    /**
+     * Runs pre-processors on the specified datapack.
+     * @param datapack Datapack to preprocess
+     */
+    private async runPreprocessors(datapack: VlocityDatapack) {
+        const spec = this.getDeploySpec(datapack.datapackType);
+        if (spec && spec.preprocess) {
+            await spec.preprocess(datapack);
+        }
+    }
+
+    /**
+     * Event handler running before the deployment 
+     * @param datapacks Datapacks being deployed
+     */
+    private beforeDeploy(datapacks: Iterable<DatapackDeploymentRecord>) {
+        // TODO: run APEX here
+        return this.runSpecFunction('beforeDeploy', datapacks);
+    }
+
+    /**
+     * Event handler running after the deployment
+     * @param datapacks Datapacks that have been deployed
+     */
+    private afterDeploy(datapacks: Iterable<DatapackDeploymentRecord>) {
+        // TODO: run APEX here
+        return this.runSpecFunction('afterDeploy', datapacks);
+    }
+
+    private getDeploySpec(datapackType: string): DatapackDeploymentSpec {
+        return container.resolve(deploymentSpecs[datapackType]);
+    }
+
+    /**
+     * Event handler running before the deployment 
+     * @param datapacks Datapacks being deployed
+     */
+    private async runSpecFunction(type: 'beforeDeploy' | 'afterDeploy', datapacks: Iterable<DatapackDeploymentRecord>) {
+        const datapacksByType = groupBy([...datapacks], dp => dp.datapackType);
+
+        for (const [datapackType, values] of Object.entries(datapacksByType)) {
+            const spec = this.getDeploySpec(datapackType);
+            const specFunc = spec?.[type];
+            if (!specFunc) {
+                continue;
+            }
+
+            // Split in equal slices
+            while(values.length > 0) {
+                const slice = values.splice(0, 50);
+                await specFunc.call(spec, slice);
+            }
+        }
     }
 
     // CURRENT_DATA_PACKS_CONTEXT will be replaced with:
@@ -88,7 +147,7 @@ export default class VlocityDatapackDeployService {
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
         }
 
-        const record = new DatapackDeploymentRecord(sobject.name, datapack.sourceKey);
+        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, datapack.sourceKey);
         const records : Array<typeof record> = [ record ];
 
         for (const [key, value] of Object.entries(datapack.data)) {
@@ -211,3 +270,4 @@ export default class VlocityDatapackDeployService {
         }
     }
 }
+
