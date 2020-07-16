@@ -170,8 +170,8 @@ vlocode.datapackExplorer.export:
   title: Export
   icon: resources/{type}/export.svg
   when: 
-    - viewItem == vlocity:datapack:object
-    - viewItem == vlocity:datapack:category
+    - viewItem == vlocode:datapack:object
+    - viewItem == vlocode:datapack:category
   menus:
     - menu: view/item/context
       group: inline
@@ -187,7 +187,7 @@ vlocode.datapackExplorer.refresh:
 vlocode.datapackExplorer.openSalesforce:
   title: View in Salesforce
   icon: resources/{type}/link-external.svg
-  when: 'viewItem == vlocity:datapack:object'
+  when: 'viewItem == vlocode:datapack:object'
   menus:
     - menu: view/item/context
       group: inline      
@@ -205,7 +205,7 @@ vlocode.jobExplorer.refresh:
 vlocode.jobExplorer.run:
   title: Run job
   icon: resources/{type}/start.svg
-  when: viewItem == vlocity:jobYaml
+  when: viewItem == vlocode:jobYaml
   menus:
     - menu: view/item/context
       group: inline

@@ -41,9 +41,9 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
     protected getCommands() {
         return {
-            'vlocity.datapackExplorer.export': async node => this.onExport(node),
-            'vlocity.datapackExplorer.openSalesforce': OpenSalesforceCommand,
-            'vlocity.datapackExplorer.refresh': () => this.refresh()
+            'vlocode.datapackExplorer.export': async node => this.onExport(node),
+            'vlocode.datapackExplorer.openSalesforce': OpenSalesforceCommand,
+            'vlocode.datapackExplorer.refresh': () => this.refresh()
         };
     }
 
@@ -54,11 +54,12 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
     public toTreeItem(node: DatapackNode): vscode.TreeItem {
         return {
+            id: node.getId(),
             label: node.getItemLabel(),
             tooltip: node.getItemTooltip(),
             iconPath: this.getItemIconPath(node.icon),
             description: node.getItemDescription(),
-            contextValue: `vlocity:datapack:${node.nodeType}`,
+            contextValue: `vlocode:datapack:${node.nodeType}`,
             collapsibleState: node.expandable ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
         };
     }
@@ -140,14 +141,19 @@ abstract class DatapackNode {
         public icon: { light: string; dark: string } | string | undefined = undefined
     ) { }
 
-    public abstract getItemLabel() : string;
-    public abstract getItemTooltip() : string | undefined;
-    public abstract getItemDescription() : string | undefined;
+    public abstract getId(): string;
+    public abstract getItemLabel(): string;
+    public abstract getItemTooltip(): string | undefined;
+    public abstract getItemDescription(): string | undefined;
 }
 
 class DatapackCategoryNode extends DatapackNode {
     constructor(public datapackType: string) {
         super(DatapackNodeType.Category, true);
+    }
+
+    public getId() {
+        return this.getItemLabel();
     }
 
     public getItemLabel() {
@@ -173,6 +179,10 @@ class DatapackObjectGroupNode extends DatapackNode {
         }
     ) {
         super(DatapackNodeType.ObjectGroup, true);
+    }
+
+    public getId() {
+        return `${this.datapackType}-${this.getItemLabel()}`;
     }
 
     public getItemLabel() {
@@ -210,6 +220,10 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
         }
     ) {
         super(DatapackNodeType.Object, false);
+    }
+
+    public getId() {
+        return this.id;
     }
 
     public getItemLabel() {

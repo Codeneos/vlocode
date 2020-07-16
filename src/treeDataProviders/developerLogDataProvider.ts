@@ -44,11 +44,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
 
     protected getCommands() {
         return {
-            'vlocity.developerLogs.refresh': this.refresh.bind(this),
-            'vlocity.developerLogs.setLogLevel': async () => {
+            'vlocode.developerLogs.refresh': this.refresh.bind(this),
+            'vlocode.developerLogs.setLogLevel': async () => {
                 await this.executeCommand(VlocodeCommand.setTraceFlags);
             },
-            'vlocity.developerLogs.deleteAll': async () => {
+            'vlocode.developerLogs.deleteAll': async () => {
                 await this.executeCommand(VlocodeCommand.clearDeveloperLogs);
                 await this.vlocode.salesforceService.clearApexTestResults();
                 this.logs.splice(0);

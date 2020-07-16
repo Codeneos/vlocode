@@ -542,37 +542,37 @@
                 {
                     "command": "vlocode.datapackExplorer.export",
                     "group": "inline",
-                    "when": "viewItem == vlocity:datapack:object"
+                    "when": "viewItem == vlocode:datapack:object"
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
                     "group": "inline",
-                    "when": "viewItem == vlocity:datapack:category"
+                    "when": "viewItem == vlocode:datapack:category"
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
                     "group": "v_vlocity",
-                    "when": "viewItem == vlocity:datapack:object"
+                    "when": "viewItem == vlocode:datapack:object"
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
                     "group": "v_vlocity",
-                    "when": "viewItem == vlocity:datapack:category"
+                    "when": "viewItem == vlocode:datapack:category"
                 },
                 {
                     "command": "vlocode.datapackExplorer.openSalesforce",
                     "group": "inline",
-                    "when": "viewItem == vlocity:datapack:object"
+                    "when": "viewItem == vlocode:datapack:object"
                 },
                 {
                     "command": "vlocode.datapackExplorer.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "viewItem == vlocity:datapack:object"
+                    "when": "viewItem == vlocode:datapack:object"
                 },
                 {
                     "command": "vlocode.jobExplorer.run",
                     "group": "inline",
-                    "when": "viewItem == vlocity:jobYaml"
+                    "when": "viewItem == vlocode:jobYaml"
                 }
             ],
             "view/title": [
