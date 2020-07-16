@@ -21,7 +21,7 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
     public toTreeItem(node: VlocodeActivity): vscode.TreeItem {
         return {
             label: this.getActivityLabel(node),
-            contextValue: 'vlocity:activity',
+            contextValue: 'vlocode:activity',
             tooltip: node.title,
             iconPath: this.getItemIconPath(this.getIcon(node)),
             description: this.getStatusLabel(node),

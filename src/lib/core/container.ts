@@ -183,8 +183,15 @@ export class Container {
         if (providedServices) {
             for (const service of providedServices) {
                 providedServices.delete(service);
+                this.instances.delete(service);
             }
             providedServices.clear();
+        }
+
+        for (const [service, activeInstance] of this.instances.entries()) {
+            if (activeInstance === instance) {
+                this.instances.delete(service);
+            }
         }
     }
 

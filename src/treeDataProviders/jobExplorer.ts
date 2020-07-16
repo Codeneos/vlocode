@@ -29,8 +29,8 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
 
     protected getCommands() {
         return {
-            'vlocity.jobExplorer.run': async (node: JobNode) => this.runJob(node),
-            'vlocity.jobExplorer.refresh': () => this.refresh()
+            'vlocode.jobExplorer.run': async (node: JobNode) => this.runJob(node),
+            'vlocode.jobExplorer.refresh': () => this.refresh()
         };
     }
 
@@ -73,7 +73,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
                 command: 'vscode.open',
                 arguments: [ node.jobFile ]
             },
-            contextValue: 'vlocity:jobYaml',
+            contextValue: 'vlocode:jobYaml',
             tooltip: node.tooltip,
             description: node.description,
             collapsibleState: vscode.TreeItemCollapsibleState.None

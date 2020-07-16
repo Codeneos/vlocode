@@ -284,12 +284,12 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
+    public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.schema);
         for (const record of records) {
             batch.addUpdate(type, record, record.id, record.id);
         }
-        return batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
+        yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
     }
 
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {

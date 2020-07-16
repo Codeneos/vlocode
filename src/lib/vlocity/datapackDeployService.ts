@@ -85,7 +85,7 @@ export default class VlocityDatapackDeployService {
      */
     private async runPreprocessors(datapack: VlocityDatapack) {
         const spec = this.getDeploySpec(datapack.datapackType);
-        if (spec && spec.preprocess) {
+        if (spec?.preprocess) {
             await spec.preprocess(datapack);
         }
     }
@@ -108,8 +108,10 @@ export default class VlocityDatapackDeployService {
         return this.runSpecFunction('afterDeploy', datapacks);
     }
 
-    private getDeploySpec(datapackType: string): DatapackDeploymentSpec {
-        return container.resolve(deploymentSpecs[datapackType]);
+    private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
+        if (deploymentSpecs[datapackType]) {
+            return container.resolve(deploymentSpecs[datapackType]);
+        }
     }
 
     /**

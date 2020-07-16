@@ -82,10 +82,12 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.showStatus('$(sync) Connecting to Salesforce...');
         try {
             delete this.connector;
-            delete this._salesforceService;
+            if (this._salesforceService) {
+                container.unregister(this._salesforceService);
+            }
             if (this._datapackService) {
+                container.unregister(this._datapackService);
                 this._datapackService.dispose();
-                delete this._datapackService;
             }
             if (this.config.sfdxUsername) {
                 this._salesforceService = container.get(SalesforceService);

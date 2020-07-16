@@ -33,11 +33,20 @@ export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
                 throw new Error(result.formatted);
             }
         }
+
+        // Update to inactive to allow updates
+        datapack.data[`active__c`] = false;
     }
 
-    public async beforeDeploy(datapackRecords: DatapackDeploymentRecord[]) {
-        const templateRecords = datapackRecords.filter(this.ensureRecordId).map(record => ({ id: record.recordId, isActive: false }));
-        await this.salesforceService.update(datapackRecords[0].sobjectType, templateRecords);
+    public async afterDeploy(datapackRecords: DatapackDeploymentRecord[]) {
+        const templateRecords = datapackRecords.filter(this.ensureRecordId).map(record => ({ id: record.recordId, active__c: true }));
+        for await(const record of this.salesforceService.update(datapackRecords[0].sobjectType, templateRecords)) {
+            if (!record.success) {
+                this.logger.warn(`Failed activation of template ${record.ref}: ${record.error}`);
+            } else {
+                this.logger.verbose(`Activated of template ${record.ref}`);
+            }
+        }
     }
 
     public ensureRecordId(record: DatapackDeploymentRecord): record is DatapackDeploymentRecord & { recordId: string } {

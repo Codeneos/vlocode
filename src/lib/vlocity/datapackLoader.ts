@@ -88,6 +88,10 @@ export default class DatapackLoader {
     }
 
     protected async loadJson(fileName : string) : Promise<any> {
+        if (!await this.fileSystem.pathExists(fileName)) {
+            return undefined;
+        }
+
         const datapackJson = await this.fileSystem.readFile(fileName);
         const baseDir = path.dirname(fileName);
         const datapack = JSON.parse(datapackJson.toString());
@@ -103,11 +107,12 @@ export default class DatapackLoader {
         return datapack;
     }
 
-    protected async loadRaw(fileName : string) : Promise<any> {
-        if (await this.fileSystem.pathExists(fileName)) {
-            return (await this.fileSystem.readFile(fileName)).toString();
+    protected async loadRaw(fileName: string) : Promise<any> {
+        if (!await this.fileSystem.pathExists(fileName)) {
+            return undefined;
         }
-        throw new Error('Cannot load invalid file');
+
+        return (await this.fileSystem.readFile(fileName)).toString();
     }
 
     protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
@@ -116,7 +121,10 @@ export default class DatapackLoader {
             const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fileName));
             if (loader) {
                 try {
-                    return await loader.load(path.join(baseDir, fileName));
+                    const value = await loader.load(path.join(baseDir, fileName));
+                    if (value !== undefined) {
+                        return value;
+                    }
                 } catch(err) {
                     // Ignore loader errors; if the loader fails it will return the default value
                 }
