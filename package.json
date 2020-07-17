@@ -95,7 +95,10 @@
         "onCommand:vlocity.developerLogs.deleteAll",
         "onCommand:vlocity.developerLogs.setLogLevel",
         "onCommand:vlocode.clearDeveloperLogs",
-        "onCommand:vlocode.setTraceFlags"
+        "onCommand:vlocode.setTraceFlags",
+        "onCommand:vlocode.developerLogs.setLogLevel",
+        "onCommand:vlocode.developerLogs.deleteAll",
+        "onCommand:vlocode.developerLogs.refresh"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -288,7 +291,7 @@
                 }
             },
             {
-                "command": "vlocity.developerLogs.setLogLevel",
+                "command": "vlocode.developerLogs.setLogLevel",
                 "title": "Set log level",
                 "icon": {
                     "light": "resources/light/settings.svg",
@@ -296,7 +299,7 @@
                 }
             },
             {
-                "command": "vlocity.developerLogs.deleteAll",
+                "command": "vlocode.developerLogs.deleteAll",
                 "title": "Delete all logs",
                 "icon": {
                     "light": "resources/light/trash.svg",
@@ -304,7 +307,7 @@
                 }
             },
             {
-                "command": "vlocity.developerLogs.refresh",
+                "command": "vlocode.developerLogs.refresh",
                 "title": "Refresh Logs",
                 "icon": {
                     "light": "resources/light/refresh.svg",
@@ -456,15 +459,15 @@
                     "when": "false"
                 },
                 {
-                    "command": "vlocity.developerLogs.setLogLevel",
+                    "command": "vlocode.developerLogs.setLogLevel",
                     "when": "false"
                 },
                 {
-                    "command": "vlocity.developerLogs.deleteAll",
+                    "command": "vlocode.developerLogs.deleteAll",
                     "when": "false"
                 },
                 {
-                    "command": "vlocity.developerLogs.refresh",
+                    "command": "vlocode.developerLogs.refresh",
                     "when": "false"
                 }
             ],
@@ -587,17 +590,17 @@
                     "when": "view == jobExplorer"
                 },
                 {
-                    "command": "vlocity.developerLogs.setLogLevel",
+                    "command": "vlocode.developerLogs.setLogLevel",
                     "group": "navigation",
                     "when": "view == developerLogsView"
                 },
                 {
-                    "command": "vlocity.developerLogs.deleteAll",
+                    "command": "vlocode.developerLogs.deleteAll",
                     "group": "navigation",
                     "when": "view == developerLogsView"
                 },
                 {
-                    "command": "vlocity.developerLogs.refresh",
+                    "command": "vlocode.developerLogs.refresh",
                     "group": "navigation",
                     "when": "view == developerLogsView"
                 }
@@ -740,11 +743,11 @@
     "scripts": {
         "prepare": "patch-package && npm run prepare:commands",
         "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
-        "prepare:commands2": "ts-node ./build/parseCommands.ts ./src/commands",
         "build": "npm run prepare && webpack --config webpack.prod.js --env.extension --env.views",
         "build:debug": "npm run prepare && webpack --config webpack.dev.js --env.extension",
         "build:tests": "npm run prepare && webpack --config webpack.dev.js --env.tests --env.transpileOnly",
         "watch": "webpack --watch --config webpack.dev.js --env.extension --env.tests",
+        "watch:prod": "webpack --watch --config webpack.prod.js --env.extension",
         "clean": "rimraf ./out",
         "lint": "tslint -p .",
         "test": "npm run build:tests && node ./out/test/runTest.js",
@@ -805,8 +808,8 @@
         "rimraf": "^3.0.0",
         "salesforce-alm": "^48.20.0",
         "sinon": "^9.0.1",
-        "terser": "^4.6.13",
-        "terser-webpack-plugin": "^2.3.1",
+        "terser": "^4.8.0",
+        "terser-webpack-plugin": "^3.0.7",
         "ts-loader": "^7.0.5",
         "ts-node": "^8.10.2",
         "tslint": "^5.20.1",

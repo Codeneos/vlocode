@@ -1,8 +1,8 @@
-import * as nodeFs from 'fs';
+import * as nodeFs from 'fs-extra';
 import * as path from 'path';
 import { FileSystem } from 'interfaces/fileSystem';
 import { Logger, LogManager } from 'lib/logging';
-import { mapAsyncParallel } from 'lib/util/collection';
+import { mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import { substringAfterLast } from 'lib/util/string';
@@ -12,9 +12,9 @@ import { container } from 'lib/core/container';
 /**
  * Basic file system using NodeJS fs module.
  */
-export const directFileSystem : FileSystem = container.registerAs({
-    readFile: nodeFs.promises.readFile,
-    readdir: nodeFs.promises.readdir,
+export const directFileSystem = container.registerAs({
+    readFile: nodeFs.readFile,
+    readdir: nodeFs.readdir,
     pathExists: path => Promise.resolve(nodeFs.existsSync(path))
 }, FileSystem);
 
@@ -71,20 +71,31 @@ export default class DatapackLoader {
         this.loaders.push({ test, load: loader });
     }
 
-    public async loadFrom(datapackHeader: string) : Promise<VlocityDatapack> {
-        const manifestEntry = getDatapackManifestKey(datapackHeader);
-        this.logger.info(`Loading datapack: ${manifestEntry.key}`);
-        const datapackJson = await this.loadJson(datapackHeader);
-        return new VlocityDatapack(datapackHeader,
-            manifestEntry.datapackType,
-            manifestEntry.key,
-            getExportProjectFolder(datapackHeader),
-            datapackJson
-        );
+    public async loadFrom(datapackHeader: string): Promise<VlocityDatapack>;
+    public async loadFrom(datapackHeader: string, bubbleExceptions: true) : Promise<VlocityDatapack>;
+    public async loadFrom(datapackHeader: string, bubbleExceptions: false) : Promise<VlocityDatapack | undefined>;
+    public async loadFrom(datapackHeader: string, bubbleExceptions = true) : Promise<VlocityDatapack | undefined> {
+        try {
+            const manifestEntry = getDatapackManifestKey(datapackHeader);
+            this.logger.info(`Loading datapack: ${manifestEntry.key}`);
+            const datapackJson = await this.loadJson(datapackHeader);
+            return new VlocityDatapack(datapackHeader,
+                manifestEntry.datapackType,
+                manifestEntry.key,
+                getExportProjectFolder(datapackHeader),
+                datapackJson
+            );
+        } catch(err) {
+            this.logger.error(`Error loading datapack: ${path.basename(datapackHeader)} -- ${err.message || err}`);
+            if (bubbleExceptions) {
+                throw err;
+            }
+        }
     }
 
-    public loadAll(datapackHeaders : string[]) : Promise<VlocityDatapack[]> {
-        return mapAsyncParallel(datapackHeaders, this.loadFrom.bind(this), 4);
+    public async loadAll(datapackHeaders : string[]) : Promise<VlocityDatapack[]> {
+        const datapacks = await mapAsyncParallel(datapackHeaders, header => this.loadFrom(header, false), 4);
+        return filterUndefined(datapacks);
     }
 
     protected async loadJson(fileName : string) : Promise<any> {

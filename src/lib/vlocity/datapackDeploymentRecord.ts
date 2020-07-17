@@ -83,7 +83,7 @@ export default class DatapackDeploymentRecord {
     }
 
     public async resolveDependencies(resolver: DependencyResolver) {
-        const depArray = Object.entries(this._dependencies);
+        const depArray = [...this._dependencies.entries()];
         for(const [field, dependency] of depArray) {
             const resolution = await resolver.resolveDependency(dependency);
             if (resolution) {

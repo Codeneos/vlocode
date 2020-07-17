@@ -50,7 +50,6 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             },
             'vlocode.developerLogs.deleteAll': async () => {
                 await this.executeCommand(VlocodeCommand.clearDeveloperLogs);
-                await this.vlocode.salesforceService.clearApexTestResults();
                 this.logs.splice(0);
                 this.refresh();
             }

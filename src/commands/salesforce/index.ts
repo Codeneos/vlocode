@@ -17,7 +17,7 @@ export default {
     [VlocodeCommand.createMetadataCommand]: CreateMetadataCommand,
     [VlocodeCommand.execAnonymousCommand]: ExecAnonymousCommand,
     [VlocodeCommand.viewInSalesforce] : ViewInSalesforceCommand,
-    [VlocodeCommand.createApexCLass] : new CreateMetadataCommand('apexClass'),
+    [VlocodeCommand.createApexClass] : new CreateMetadataCommand('apexClass'),
     [VlocodeCommand.createLwc] : new CreateMetadataCommand('lwc'),
     [VlocodeCommand.clearDeveloperLogs] : ClearDeveloperLogsCommands,
     [VlocodeCommand.setTraceFlags] : SetTraceFlagsCommand
