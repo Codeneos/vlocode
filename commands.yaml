@@ -211,21 +211,21 @@ vlocode.jobExplorer.run:
       group: inline
 
 # Log panel commands
-vlocity.developerLogs.setLogLevel:
+vlocode.developerLogs.setLogLevel:
   title: Set log level
   icon: resources/{type}/settings.svg
   when: view == developerLogsView
   menus:
     - menu: view/title
       group: navigation
-vlocity.developerLogs.deleteAll:
+vlocode.developerLogs.deleteAll:
   title: Delete all logs
   icon: resources/{type}/trash.svg
   when: view == developerLogsView
   menus:
     - menu: view/title
       group: navigation
-vlocity.developerLogs.refresh:
+vlocode.developerLogs.refresh:
   title: Refresh Logs
   icon: resources/{type}/refresh.svg
   when: view == developerLogsView

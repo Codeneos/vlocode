@@ -53,7 +53,7 @@ export enum VlocodeCommand {
     createMetadataCommand  = 'vlocode.createMetadataCommand',
     execAnonymousCommand = 'vlocode.execAnonymousCommand',
     viewInSalesforce = 'vlocode.viewInSalesforce',
-    createApexCLass = 'vlocode.createApexCLass',
+    createApexClass = 'vlocode.createApexClass',
     createLwc = 'vlocode.createLwc',
     clearDeveloperLogs = 'vlocode.clearDeveloperLogs',
     setTraceFlags = 'vlocode.setTraceFlags'
