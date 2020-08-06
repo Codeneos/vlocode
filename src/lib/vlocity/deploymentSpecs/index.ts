@@ -1,10 +1,12 @@
 import { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
 import { VlocityUITemplateSpec } from './vlocityUITemplate';
+import { VlocityOmniScriptSpec } from './omniScript';
 
 interface DeploymentSpecMap {
     [datapackType: string]: { new(...args: any[]): DatapackDeploymentSpec };
 };
 
 export default {
-    'VlocityUITemplate': VlocityUITemplateSpec
+    'VlocityUITemplate': VlocityUITemplateSpec,
+    'OmniScript': VlocityOmniScriptSpec
 } as DeploymentSpecMap;

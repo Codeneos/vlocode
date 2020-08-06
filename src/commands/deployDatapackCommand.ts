@@ -7,6 +7,7 @@ import { DatapackCommand } from 'commands/datapackCommand';
 import { forEachAsyncParallel } from 'lib/util/collection';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import DatapackDeployService from 'lib/vlocity/datapackDeployService';
+import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -82,18 +83,21 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
             await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
-                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-                
+                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath))); 
+
                 if (this.vlocode.config.deploymentMode == 'compatibility') {
                     this.showResultMessage(
                         await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token)
                     );
                 } else {
                     const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-                    const deployer = new DatapackDeployService(this.salesforce, await this.datapackService.getMatchingKeyService());
+                    const deployer = new DatapackDeployService(this.salesforce,
+                        await this.datapackService.getMatchingKeyService(),
+                        new VlocityNamespaceService(this.datapackService.vlocityNamespace)
+                    );
                     const deployment = await deployer.createDeployment(datapacks);
                     await deployment.start();
-                }                
+                }
             });
 
         } catch (err) {

@@ -4,16 +4,14 @@ import Timer from 'lib/util/timer';
 import * as jsforce from 'jsforce';
 import chalk = require('chalk');
 import { dependency } from 'lib/core/inject';
+import * as constants from '@constants';
 
 @dependency()
-export class VlocityNamespaceProvider {
-
-    private vlocityNamespace: string;
-    private readonly namespaceSymbol = Symbol('vlocityNamespace');
+export class VlocityNamespaceService {
 
     constructor(
-        public readonly connectionProvider: JsForceConnectionProvider,
-        private readonly logger: Logger = LogManager.get(VlocityNamespaceProvider) ) {
+        private vlocityNamespace: string | null = null,
+        private readonly logger: Logger = LogManager.get(VlocityNamespaceService) ) {
     }
 
     /**
@@ -23,33 +21,31 @@ export class VlocityNamespaceProvider {
         return this.vlocityNamespace;
     }
 
-    public async initialize(): Promise<this> {
-        const connection = await this.connectionProvider.getJsForceConnection();
+    /**
+     * Update the text replacing all namespace placeholders
+     * @param name text to update
+     */
+    public updateNamespace(name: string) {
+        if (this.vlocityNamespace) {
+            return name.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
+        }
+        return name.replace(constants.NAMESPACE_PLACEHOLDER, '').replace(/^__/, '');
+    }
+
+    public async initialize(connectionProvider: JsForceConnectionProvider): Promise<this> {
+        const connection = await connectionProvider.getJsForceConnection();
         this.vlocityNamespace = await this.getConnectionNamespace(connection);
         return this;
     }
 
     private async getConnectionNamespace(connection: jsforce.Connection) {
-        if (connection[this.namespaceSymbol] != undefined) {
-            // Namespace is already initialized directly return our connection
-            return connection[this.namespaceSymbol];
-        }
-
-        // Init namespace by query a Vlocity class similair as to what is done in the build tools
+        // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
         const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
         const namespace = results.records[0]?.NamespacePrefix || null;
 
-        // Define a readonly property that cannot be overwritten or changed using
-        // a unique symbol only known to this class instance
-        Object.defineProperty(connection, this.namespaceSymbol, {
-            value: namespace,
-            writable: false,
-            configurable: false
-        });
-
         if (results.totalSize == 0) {
-            // This usually happens when there is no VLocity package installed
+            // This usually happens when there is no Vlocity package installed
             this.logger.warn('Unable to detect Vlocity Managed Package on target org, is Vlocity installed?');
         } else {
             this.logger.info(`Initialized Vlocity namespace to ${chalk.bold(namespace)} [${timer.stop()}]`);
@@ -58,4 +54,3 @@ export class VlocityNamespaceProvider {
         return namespace;
     }
 }
-

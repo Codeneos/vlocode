@@ -8,16 +8,18 @@ import cache from 'lib/util/cache';
 import Lazy from 'lib/util/lazy';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import * as xml2js from 'xml2js';
-import { parseNumbers, stripPrefix } from 'xml2js/lib/processors';
+import { stripPrefix } from 'xml2js/lib/processors';
 import { dependency } from 'lib/core/inject';
 import { SuccessResult } from 'jsforce';
+import { CancellationToken } from 'vscode';
+import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
+import Timer from 'lib/util/timer';
 import QueryService from './queryService';
 import SalesforceDeployService from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
-import { CancellationToken } from 'vscode';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -164,14 +166,13 @@ interface SoapResponse {
 @dependency()
 export default class SalesforceService implements JsForceConnectionProvider {
 
-    #vlocityNamespace = new Lazy(() => this.getInstalledPackageNamespace(/vlocity/i));
-
     public readonly schema = new SalesforceSchemaService(this.connectionProvider);
     public readonly deploy = new SalesforceDeployService(this);
     public readonly lookupService = new SalesforceLookupService(this.connectionProvider, this.schema, this.queryService);
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly namespaceService: VlocityNamespaceService,
         private readonly queryService: QueryService,
         private readonly logger: Logger) {
     }
@@ -209,7 +210,6 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${relativeUrl}`);
     }
 
-
     @cache(-1)
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
         const installedPackage = await this.getInstalledPackageDetails(packageName);
@@ -243,7 +243,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      */
     public async query<T extends Partial<SObjectRecord>>(query: string, useCache?: boolean) : Promise<T[]> {
         return this.queryService.query(
-            query.replace(constants.NAMESPACE_PLACEHOLDER, await this.#vlocityNamespace), useCache
+            this.namespaceService.updateNamespace(query), useCache
         );
     }
 
@@ -257,7 +257,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      */
     public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
         return this.lookupService.lookup(
-            type.replace(constants.NAMESPACE_PLACEHOLDER, await this.#vlocityNamespace), filter, lookupFields, limit, useCache
+            this.namespaceService.updateNamespace(type), filter, lookupFields, limit, useCache
         );
     }
 
@@ -556,8 +556,6 @@ export default class SalesforceService implements JsForceConnectionProvider {
         } while(result.nextRecordsUrl);
     }
 
-    //	ApexTestResult
-
     /**
      * Gets basic details about the user for the current connection
      */
@@ -571,5 +569,59 @@ export default class SalesforceService implements JsForceConnectionProvider {
             username: identity.username,
             type: identity.user_type,
         };
+    }
+
+    /**
+     * 
+     * @param page Name of the APEX page which exposes the requested class/controller
+     * @param action Name of the class including namespace when a namespace is required
+     * @param method Name of the method to call on the controller
+     * @param data Data to pass to the controller
+     */
+    public async requestApexRemote(page: string, action: string, method: string, data: any) {
+        const connection = await this.getJsForceConnection();
+        const pageNamespace = this.namespaceService.updateNamespace(page).match(/(^[a-z_]+)__(?!c$)/i)?.[1];
+        const body = {
+            'action': this.namespaceService.updateNamespace(action),
+            'method': this.namespaceService.updateNamespace(method),
+            'data': data,
+            'type': 'rpc',
+            'tid': 1,
+            'ctx': {
+                'csrf': '1',
+                'vid': '1',
+                'ns': pageNamespace ?? '',
+                'ver': parseInt(connection.version, 10)
+            }
+        };
+        const request = {
+            'method': 'POST',
+            'url': `${connection.instanceUrl}/apexremote`,
+            'body': JSON.stringify(body),
+            'headers': {
+                'content-type': 'application/json',
+                'Referer': `${connection.instanceUrl}/apex/${this.namespaceService.updateNamespace(page)}`
+            }
+        };
+
+        const timer = new Timer();
+        try {
+            const result = (await connection.request(request))?.[0];
+
+            if (!result) {
+                throw new Error('No response from Salesforce');
+            }
+
+            if (result?.statusCode != 200) {
+                if (result.message) {
+                    throw new Error(result.message);
+                }
+                throw new Error(`Received unexpected ${result?.statusCode} status code back from Salesforce`);
+            }
+
+            return result;
+        } finally {
+            this.logger.verbose(`APEX remote request ${page}->${method} [${timer.stop()}]`);
+        }
     }
 }

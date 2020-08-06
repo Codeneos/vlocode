@@ -1,5 +1,5 @@
-import * as nodeFs from 'fs-extra';
 import * as path from 'path';
+import * as nodeFs from 'fs-extra';
 import { FileSystem } from 'interfaces/fileSystem';
 import { Logger, LogManager } from 'lib/logging';
 import { mapAsyncParallel, filterUndefined } from 'lib/util/collection';

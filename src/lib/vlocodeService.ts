@@ -16,6 +16,7 @@ import Timer from './util/timer';
 import chalk = require('chalk');
 import { dependency } from './core/inject';
 import { container } from './core/container';
+import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
 
 interface ActivityOptions {
     progressTitle: string;
@@ -34,6 +35,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private statusBar: vscode.StatusBarItem;
     private apiStatus: vscode.StatusBarItem;
     private connector: JsForceConnectionProvider;
+
     private readonly connectionHooks = new HookManager<jsforce.Connection>();
     private readonly commandRouter = new CommandRouter(this);
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
@@ -53,6 +55,11 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private _salesforceService: SalesforceService;
     public get salesforceService(): SalesforceService {
         return this._salesforceService;
+    }
+
+    private _namespaceService: VlocityNamespaceService;
+    public get vlocityNamespace(): VlocityNamespaceService {
+        return this._namespaceService;
     }
 
     public get connected() : boolean {
@@ -85,11 +92,15 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             if (this._salesforceService) {
                 container.unregister(this._salesforceService);
             }
+            if (this._namespaceService) {
+                container.unregister(this._namespaceService);
+            }
             if (this._datapackService) {
                 container.unregister(this._datapackService);
                 this._datapackService.dispose();
             }
             if (this.config.sfdxUsername) {
+                this._namespaceService = await container.get(VlocityNamespaceService).initialize(this);
                 this._salesforceService = container.get(SalesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
             }
@@ -245,14 +256,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 post: args => {
                     if (args.name === 'getJsForceConnection') {
                         args.returnValue = args.returnValue
-                            .then(connection => {
-                                const result = this.initializeNamespace(connection);
-                                return result;
-                            })
-                            .then(connection => {
-                                const result = this.connectionHooks.attach(connection);
-                                return result;
-                            });
+                            .then(connection => this.initializeNamespace(connection))
+                            .then(connection => this.connectionHooks.attach(connection));
                     }
                 }
             });
@@ -268,7 +273,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             return connection;
         }
 
-        // Init namespace by query a Vlocity class similair as to what is done in the build tools
+        // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
         const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
 

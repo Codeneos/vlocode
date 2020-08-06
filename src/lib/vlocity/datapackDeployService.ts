@@ -11,12 +11,13 @@ import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { dependency } from 'lib/core/inject';
-import { container } from 'lib/core/container';
+import { container, LifecyclePolicy } from 'lib/core/container';
 import { groupBy } from 'lib/util/collection';
 import { DatapackLookupService } from './datapackLookupService';
-import DatapackDeployment from './datapackDeployment';
+import DatapackDeployment, { DatapackDeploymentEvents } from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import deploymentSpecs from './deploymentSpecs';
+import { VlocityNamespaceService } from './vlocityNamespaceService';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -41,12 +42,13 @@ export abstract class DatapackDeploymentSpec {
     abstract afterDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
 }
 
-@dependency()
+@dependency({ lifecycle: LifecyclePolicy.transient })
 export default class VlocityDatapackDeployService {
 
     constructor(
         private readonly connectionProvider: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
+        private readonly namespaceService: VlocityNamespaceService,
         private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
         private readonly logger: Logger = LogManager.get(VlocityDatapackDeployService)) {
         if (!this.schemaService) {
@@ -61,8 +63,8 @@ export default class VlocityDatapackDeployService {
         const datapackLookup = local.register(new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService));
         const deployment = local.register(new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService));
 
-        deployment.on('beforeDeploy', this.beforeDeploy.bind(this));
-        deployment.on('afterDeploy', this.afterDeploy.bind(this));
+        deployment.on('beforeDeployRecord', this.beforeDeployRecord.bind(this));
+        deployment.on('afterDeployRecord', this.afterDeployRecord.bind(this));
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
@@ -92,20 +94,20 @@ export default class VlocityDatapackDeployService {
 
     /**
      * Event handler running before the deployment 
-     * @param datapacks Datapacks being deployed
+     * @param datapackRecords Datapacks being deployed
      */
-    private beforeDeploy(datapacks: Iterable<DatapackDeploymentRecord>) {
+    private beforeDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>) {
         // TODO: run APEX here
-        return this.runSpecFunction('beforeDeploy', datapacks);
+        return this.runSpecFunction('beforeDeploy', datapackRecords);
     }
 
     /**
      * Event handler running after the deployment
-     * @param datapacks Datapacks that have been deployed
+     * @param datapackRecords Datapacks that have been deployed
      */
-    private afterDeploy(datapacks: Iterable<DatapackDeploymentRecord>) {
+    private afterDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>) {
         // TODO: run APEX here
-        return this.runSpecFunction('afterDeploy', datapacks);
+        return this.runSpecFunction('afterDeploy', datapackRecords);
     }
 
     private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
@@ -118,12 +120,12 @@ export default class VlocityDatapackDeployService {
      * Event handler running before the deployment 
      * @param datapacks Datapacks being deployed
      */
-    private async runSpecFunction(type: 'beforeDeploy' | 'afterDeploy', datapacks: Iterable<DatapackDeploymentRecord>) {
+    private async runSpecFunction<Type extends keyof DatapackDeploymentEvents>(type: Type, datapacks: DatapackDeploymentEvents[Type]) {
         const datapacksByType = groupBy([...datapacks], dp => dp.datapackType);
 
         for (const [datapackType, values] of Object.entries(datapacksByType)) {
             const spec = this.getDeploySpec(datapackType);
-            const specFunc = spec?.[type];
+            const specFunc = spec?.[type as string];
             if (!specFunc) {
                 continue;
             }
@@ -149,7 +151,7 @@ export default class VlocityDatapackDeployService {
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
         }
 
-        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, datapack.sourceKey);
+        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, datapack.sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
 
         for (const [key, value] of Object.entries(datapack.data)) {
@@ -167,7 +169,7 @@ export default class VlocityDatapackDeployService {
                 for (const item of Array.isArray(value) ? value : [ value ]) {
                     if (item.VlocityDataPackType === 'SObject') {
                         // Embedded datapack
-                        const embeddedDatapack = new VlocityDatapack('', datapack.datapackType, '', '', item);
+                        const embeddedDatapack = new VlocityDatapack('', datapack.datapackType, datapack.key, '', item);
                         const embeddedRecords = await this.toSalesforceRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
@@ -265,9 +267,9 @@ export default class VlocityDatapackDeployService {
             case 'string':
             default: {
                 if (typeof value === 'object') {
-                    return JSON.stringify(value);
+                    return this.namespaceService.updateNamespace(JSON.stringify(value));
                 }
-                return `${value}`;
+                return this.namespaceService.updateNamespace(`${value}`);
             }
         }
     }

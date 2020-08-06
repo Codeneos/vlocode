@@ -5,12 +5,15 @@ import { Connection } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
 import { AsyncEventEmitter } from 'lib/util/events';
+import { arrayMapPush, mapGetOrCreate } from 'lib/util/collection';
 import RecordBatch from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
 
-interface DatapackDeploymentEvents {
+export interface DatapackDeploymentEvents {
+    beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
+    afterDeployRecord: Iterable<DatapackDeploymentRecord>;
     beforeDeploy: Iterable<DatapackDeploymentRecord>;
     afterDeploy: Iterable<DatapackDeploymentRecord>;
 }
@@ -21,6 +24,7 @@ interface DatapackDeploymentEvents {
 export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> implements DependencyResolver {
 
     private readonly records = new Map<string, DatapackDeploymentRecord>();
+    private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
     private deployedRecords: number = 0;
     private failedRecords: number = 0;
 
@@ -47,6 +51,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
     public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
         for (const record of Array.isArray(records) ? records : [ records ]) {
             this.records.set(record.sourceKey, record);
+            mapGetOrCreate(this.recordGroups, record.datapackKey, () => new DatapackDeploymentRecordGroup(record.datapackKey)).push(record);
         }
         return this;
     }
@@ -59,18 +64,20 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         const timer = new Timer();
         let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
 
+        await this.emit('beforeDeploy', this.records.values());
         while (deployableRecords = this.getDeployableRecords()) {
             await this.deployRecords(deployableRecords, cancelToken);
         }
+        await this.emit('afterDeploy', this.records.values());
 
         this.logger.log(`Deployed ${this.deployedRecordCount}/${this.totalRecordCount} records [${timer.stop()}]`);
     }
 
     /**
-     * Gets the deployment status of the specified source item
+     * Gets the deployment status of a record by source key
      * @param sourcekey 
      */
-    public getStatus(sourceKey: string) : DeploymentStatus | undefined {
+    public getRecordStatus(sourceKey: string) : DeploymentStatus | undefined {
         return this.records.get(sourceKey)?.status;
     }
 
@@ -118,8 +125,20 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         return resolved;
     }
 
-    private async cleanBeforeDeploy(datapack: DatapackDeploymentRecord) {
-        // Todo: this need to be configured somewhere
+    /**
+     * Check if a datapack has any pending records
+     * @param datapackKey Key of the datapack
+     */
+    public hasPendingRecords(datapackKey: string) : boolean {
+        return this.recordGroups.get(datapackKey)?.hasPendingRecords() ?? false;
+    }
+
+    /**
+     * Get all records related a specific datapack, includes main record and any child records originating from the same datapack.
+     * @param datapackKey Key of the datapack
+     */
+    public getRecords(datapackKey: string) : Array<DatapackDeploymentRecord> {
+        return this.recordGroups.get(datapackKey)?.records() || [];
     }
 
     /**
@@ -173,44 +192,96 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         }
     }
 
-    private async deployRecords(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+    private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        // Update status
+        const recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
+        for (const datapackRecord of datapackRecords.values()) {
+            datapackRecord.updateStatus(DeploymentStatus.InProgress);
+
+            // Figure out which record-groups are getting deployed; we trigger the post deploy event only 
+            // when a full record group is deployed
+            const recordGroup = this.recordGroups.get(datapackRecord.datapackKey);
+            if (recordGroup != null) {
+                recordGroups.set(datapackRecord.datapackKey, recordGroup);
+            }
+        }
+
         // prepare batch
-        await this.resolveDependencies(datapacks, cancelToken);
-        const batch = await this.createDeploymentBatch(datapacks);
+        await this.resolveDependencies(datapackRecords, cancelToken);
+        const batch = await this.createDeploymentBatch(datapackRecords);
 
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
-        await this.emit('beforeDeploy', datapacks.values());
+        await this.emit('beforeDeployRecord', datapackRecords.values());
         await this.setVlocityTriggerState(connection, false);
 
         try {
-            this.logger.log(`Deploying ${datapacks.size} records...`);
+            this.logger.log(`Deploying ${datapackRecords.size} records...`);
 
             for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
-                const datapack = datapacks.get(result.ref);
+                const datapackRecord = datapackRecords.get(result.ref);
 
-                if (!datapack) {
+                if (!datapackRecord) {
                     throw new Error(`Deployment for datapack ${result.ref} was never requested`);
                 }
 
                 // Update datapack record statuses
                 if (result.success) {
-                    datapack.updateStatus(DeploymentStatus.Deployed, result.recordId);
-                    this.logger.verbose(`Deployed ${datapack.sourceKey}`);
+                    datapackRecord.updateStatus(DeploymentStatus.Deployed, result.recordId);
+                    this.logger.verbose(`Deployed ${datapackRecord.sourceKey}`);
                     this.deployedRecords++;
                 } else if (!result.success) {
-                    datapack.updateStatus(DeploymentStatus.Failed, result.error);
-                    this.logger.error(`Failed ${datapack.sourceKey} - ${datapack.statusMessage}`);
+                    datapackRecord.updateStatus(DeploymentStatus.Failed, result.error);
+                    this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
                     this.failedRecords++;
                 }
             }
         } finally {
-            await this.emit('afterDeploy', datapacks.values());
+            const deployedRecords = new Array<DatapackDeploymentRecord>();
+            for (const recordGroup of recordGroups.values()) {
+                if (!recordGroup.hasPendingRecords()) {
+                    deployedRecords.push(...recordGroup.records());
+                }
+            }
+
+            await this.emit('afterDeployRecord', deployedRecords.values());
             await this.setVlocityTriggerState(connection, true);
         }
     }
 
     private handleProgressReport({ processed, total }) {
         this.logger.verbose(`Deployment in progress ${processed}/${total}...`);
+    }
+}
+
+class DatapackDeploymentRecordGroup {
+    #records = new Array<DatapackDeploymentRecord>();
+
+    /**
+     * Create a new group instance.
+     * @param key Key of this group
+     */
+    public constructor(public readonly key: string) {
+    }
+
+    /**
+     * Adds an a new record to the
+     */
+    public push(record: DatapackDeploymentRecord) {
+        this.#records.push(record);
+    }
+
+    /**
+     * Determines if this group has any pending records
+     */
+    public hasPendingRecords() : boolean {
+        return this.#records.some(record => record.isPending);
+    }
+
+    /**
+     * Get all records in the group.
+     */
+    public records(){
+        return this.#records;
     }
 }

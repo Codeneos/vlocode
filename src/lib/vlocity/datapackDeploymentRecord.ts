@@ -26,7 +26,11 @@ export default class DatapackDeploymentRecord {
     }
 
     public get isPending(): boolean {
-        return this._status === DeploymentStatus.Pending;
+        return this._status === DeploymentStatus.Pending || this._status === DeploymentStatus.InProgress;
+    }
+
+    public get isFailed(): boolean {
+        return this._status === DeploymentStatus.Failed;
     }
 
     public get recordId(): string | undefined {
@@ -49,6 +53,7 @@ export default class DatapackDeploymentRecord {
         public readonly datapackType: string,
         public readonly sobjectType: string,
         public readonly sourceKey: string,
+        public readonly datapackKey: string,
         public readonly values: Object = {}) {
     }
 

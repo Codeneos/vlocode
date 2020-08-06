@@ -46,7 +46,7 @@ export default class RecordBatch {
     private failedCount = 0;
 
     private readonly bulkPollInterval = 5000;
-    private readonly bulkPollTimeout = 120000;
+    private readonly bulkPollTimeout = 30 * 60 * 1000; // 30-min for large jobs
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,
