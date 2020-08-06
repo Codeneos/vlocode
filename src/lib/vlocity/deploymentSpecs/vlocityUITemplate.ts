@@ -34,8 +34,8 @@ export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
             }
         }
 
-        // Update to inactive to allow updates
-        datapack.data[`active__c`] = false;
+        // Update to inactive to allow insert; later in the process these are activated
+        datapack.data.active__c = false;
     }
 
     public async afterDeploy(datapackRecords: DatapackDeploymentRecord[]) {

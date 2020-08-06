@@ -18,8 +18,10 @@ import { getDocumentBodyAsString } from 'lib/util/fs';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
-import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { dependency } from 'lib/core/inject';
+import * as constants from '@constants';
+import VlocityMatchingKeyService from './vlocityMatchingKeyService';
+import { VlocityNamespaceService } from './vlocityNamespaceService';
 
 export interface ManifestEntry {
     datapackType: string;

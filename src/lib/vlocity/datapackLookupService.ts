@@ -177,7 +177,7 @@ export class DatapackLookupService implements DependencyResolver {
                     if (index !== undefined) {
                         lookupResults[index] = rec.id;
                     } else {
-                        this.logger.warn(`Got result for record that was never requested: ${lookupKey}`);
+                        this.logger.debug(`Got result for record not requested: ${lookupKey}`);
                     }
                 }
 

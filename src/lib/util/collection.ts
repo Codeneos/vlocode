@@ -158,6 +158,18 @@ export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> 
 }
 
 /**
+ * Get or create a value for the specified key
+ * @param map Map to get or create the value in
+ * @param key Key of the value in the map
+ * @param valueInitializer Value initializer call when the value is not set
+ */
+export function mapGetOrCreate<V, K>(map: Map<K, V>, key: K, valueInitializer: () => V) : V {
+    // @ts-expect-error set followed by get for the same key will never return undefined
+    return map.get(key) || map.set(key, valueInitializer()).get(key);
+}
+
+
+/**
  * Converts specified array-like arguments to a single array; may return original parameter if only a single param is specified and that 
  * param is already an array. Otherwise the provided parameters are copied to a new array.
  * @param elements 
