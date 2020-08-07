@@ -19,6 +19,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     private lastRefresh?: Date;
     private autoRefreshScheduledId?: any;
     private autoRefreshingPaused: boolean = true;
+    private currentUserOnly: boolean = false;
     private readonly autoRefreshInterval: number = 3000;
 
     constructor(service: VlocodeService, private readonly logger: Logger) {
@@ -36,6 +37,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         ConfigurationManager.watchProperties(this.vlocode.config, [ 'salesforce.developerLogsAutoRefresh' ], config => {
             this.enableAutoRefresh(!!config.salesforce.developerLogsAutoRefresh);
         }, { initial: true });
+        ConfigurationManager.watchProperties(this.vlocode.config, [ 'salesforce.developerLogsVisibility' ], config => {
+            this.currentUserOnly = config.salesforce.developerLogsVisibility != 'all';
+            this.lastRefresh = undefined;
+            this.refresh();
+        }, { initial: true });
     }
 
     dispose() {
@@ -47,6 +53,9 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             'vlocode.developerLogs.refresh': this.refresh.bind(this),
             'vlocode.developerLogs.setLogLevel': async () => {
                 await this.executeCommand(VlocodeCommand.setTraceFlags);
+            },
+            'vlocode.developerLogs.setLogVisibility': async () => {
+                await this.executeCommand(VlocodeCommand.setLogVisibility);
             },
             'vlocode.developerLogs.deleteAll': async () => {
                 await this.executeCommand(VlocodeCommand.clearDeveloperLogs);
@@ -101,7 +110,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             label: this.getLabel(log),
             description: this.getStatusLabel(log),
             contextValue: 'salesforce:developerLog',
-            tooltip: log.operation,
+            tooltip: this.getTooltip(log),
             iconPath: this.getItemIconPath(this.getIcon(log)),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
         };
@@ -112,39 +121,21 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             light: 'resources/light/log.svg',
             dark: 'resources/dark/log.svg'
         };
-        // switch (node.status) {
-        //     case VlocodeActivityStatus.InProgress: return {
-        //         light: 'resources/light/loading.svg',
-        //         dark: 'resources/dark/loading.svg'
-        //     };
-        //     case VlocodeActivityStatus.Completed: return {
-        //         light: 'resources/light/checked.svg',
-        //         dark: 'resources/dark/checked.svg'
-        //     };
-        //     case VlocodeActivityStatus.Cancelled: return {
-        //         light: 'resources/light/error.svg',
-        //         dark: 'resources/dark/error.svg'
-        //     };
-        //     case VlocodeActivityStatus.Failed: return {
-        //         light: 'resources/light/warning.svg',
-        //         dark: 'resources/dark/warning.svg'
-        //     };
-        //     default: return undefined;
-        // }
-        return undefined;
     }
 
     public getTooltip(log: DeveloperLog): string {
-        return `${log.user}; ${log.status} - ${moment(log.startTime).format('M/D/YYYY HH:mm:ss')}`;
+        return `${log.status} - ${moment(log.startTime).format('M/D/YYYY HH:mm:ss')}`;
     }
 
     public getStatusLabel(log: DeveloperLog): string {
-        return `${moment(log.startTime).format('M/D/YYYY HH:mm:ss')} - ${Math.floor(log.size / 102.4) / 10}KB`;
+        return `${moment(log.startTime).format('M/D/YYYY HH:mm:ss')} (${(log.durationMilliseconds / 1000).toFixed(2)}s) - ${Math.floor(log.size / 102.4) / 10}KB`;
     }
 
     public getLabel(log: DeveloperLog): string {
-        const labelValue = `${log.operation} (${log.request})`;
-        return labelValue;
+        if (this.currentUserOnly) {
+            return `${log.request}: ${log.operation}`;
+        }
+        return `${log.request}: ${log.operation} <${log.user}>`;
     }
 
     public async getChildren(node?: DeveloperLog) {
@@ -170,7 +161,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
 
         // Load logs since last refresh
         const refreshDate = new Date();
-        const latestLogs = await this.vlocode.salesforceService.getDeveloperLogs(this.lastRefresh);
+        const latestLogs = await this.vlocode.salesforceService.getDeveloperLogs(this.lastRefresh, this.currentUserOnly);
         this.lastRefresh = refreshDate;
         const uniqueLogEntries = new Map<string, DeveloperLog>(this.logs.concat(latestLogs).map(item => ([item.id, item])));
         let newLogs = Array.from(uniqueLogEntries.values());

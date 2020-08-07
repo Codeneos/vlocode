@@ -3,14 +3,11 @@ const common = require('./webpack.common.js');
 const TerserPlugin = require('terser-webpack-plugin');
 
 const minimizerOptions = {
-    ecma: 6,
+    ecma: 2017,
     warnings: true,
+    toplevel: false,
     parse: {},
-    compress: {
-        dead_code: false,
-        inline: false,
-        module: true
-    },
+    compress: false,
     mangle: false,
     module: true,
     keep_classnames: true,

@@ -394,10 +394,22 @@ export default class SalesforceService implements JsForceConnectionProvider {
         return versions;
     }
 
-    public async getDeveloperLogs(from?: Date): Promise<DeveloperLog[]> {
+    /**
+     * Retrieves developer logs from the server
+     * @param from Since date
+     * @param currentUserOnly treu if to only query the logs fro the current user otherwise retiree all logs 
+     */
+    public async getDeveloperLogs(from?: Date, currentUserOnly: boolean = false): Promise<DeveloperLog[]> {
         const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];
-        const filter = from && `where SystemModstamp >= ${from.toISOString()}`;
-        const toolingQuery = `Select ${selectFields.join(',')} From ApexLog ${filter || ''}`;
+        const filters = new Array<string>();
+        if (from) {
+            filters.push(`SystemModstamp >= ${from.toISOString()}`);
+        }
+        if (currentUserOnly) {
+            const currentUser = await this.getConnectedUserInfo();
+            filters.push(`LogUserId = '${currentUser.id}'`);
+        }
+        const toolingQuery = `Select ${selectFields.join(',')} From ApexLog ${filters.length ? `where ${filters.join(' and ')}` : ''}`;
         const entries = await this.query<DeveloperLogRecord>(toolingQuery);
         return entries.map(entry => new DeveloperLog(entry, this));
     }

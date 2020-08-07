@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.14.6",
+    "version": "0.14.7",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -23,43 +23,10 @@
         "email": "peter@curlybracket.nl"
     },
     "activationEvents": [
-        "onCommand:vlocity.selectOrg",
-        "onCommand:vlocity.refreshDatapack",
-        "onCommand:vlocity.deployDatapack",
-        "onCommand:vlocity.exportDatapack",
-        "onCommand:vlocity.adminCommands",
-        "onCommand:vlocity.buildParentKeyFiles",
-        "onCommand:vlocity.openSalesforce",
-        "onCommand:vlocity.renameDatapack",
-        "onCommand:vlocity.cloneDatapack",
-        "onCommand:vlocity.deployMetadata",
-        "onCommand:vlocity.deployMetadataExplorer",
         "onView:datapackExplorer",
         "onView:jobExplorer",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json",
-        "onCommand:vlocity.buildDatapack",
-        "onCommand:vlocity.viewDatapack.generic",
-        "onCommand:vlocity.admin.refreshPriceBook",
-        "onCommand:vlocity.admin.refreshProductHierarchy",
-        "onCommand:vlocity.admin.refreshPriceBookAndProductHierarchy",
-        "onCommand:vlocity.admin.updateAllProdAttribCommand",
-        "onCommand:vlocity.admin.clearPlatformCache",
-        "onCommand:vlocity.deployMetadata.explorer",
-        "onCommand:vlocity.datapackExplorer.export",
-        "onCommand:vlocity.datapackExplorer.refresh",
-        "onCommand:vlocity.datapackExplorer.openSalesforce",
-        "onCommand:vlocity.jobExplorer.refresh",
-        "onCommand:vlocity.destroyMetadata",
-        "onCommand:vlocity.jobExplorer.run",
-        "onCommand:vlocity.refreshMetadata",
-        "onCommand:vlocity.selectApiVersion",
-        "onCommand:vlocity.createMetadataCommand",
-        "onCommand:vlocity.execAnonymousCommand",
-        "onCommand:vlocity.viewInSalesforce",
-        "onCommand:vlocity.previewLwc",
-        "onCommand:vlocity.createLwc",
-        "onCommand:vlocity.createApexClass",
         "onCommand:vlocode.selectOrg",
         "onCommand:vlocode.refreshDatapack",
         "onCommand:vlocode.deployDatapack",
@@ -90,15 +57,13 @@
         "onCommand:vlocode.datapackExplorer.openSalesforce",
         "onCommand:vlocode.jobExplorer.refresh",
         "onCommand:vlocode.jobExplorer.run",
-        "onCommand:vlocity.logExplorer.refresh",
-        "onCommand:vlocity.developerLogs.refresh",
-        "onCommand:vlocity.developerLogs.deleteAll",
-        "onCommand:vlocity.developerLogs.setLogLevel",
         "onCommand:vlocode.clearDeveloperLogs",
         "onCommand:vlocode.setTraceFlags",
         "onCommand:vlocode.developerLogs.setLogLevel",
         "onCommand:vlocode.developerLogs.deleteAll",
-        "onCommand:vlocode.developerLogs.refresh"
+        "onCommand:vlocode.developerLogs.refresh",
+        "onCommand:vlocode.setLogVisibility",
+        "onCommand:vlocode.developerLogs.setLogVisibility"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -251,6 +216,10 @@
                 "title": "Salesforce: Set Debug Log Level..."
             },
             {
+                "command": "vlocode.setLogVisibility",
+                "title": "Salesforce: Set Developer Log Visibility..."
+            },
+            {
                 "command": "vlocode.datapackExplorer.export",
                 "title": "Export",
                 "icon": {
@@ -308,10 +277,18 @@
             },
             {
                 "command": "vlocode.developerLogs.refresh",
-                "title": "Refresh Logs",
+                "title": "Refresh",
                 "icon": {
                     "light": "resources/light/refresh.svg",
                     "dark": "resources/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "vlocode.developerLogs.setLogVisibility",
+                "title": "Log Visibility (own/all)",
+                "icon": {
+                    "light": "resources/light/visibility.svg",
+                    "dark": "resources/dark/visibility.svg"
                 }
             }
         ],
@@ -439,6 +416,11 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
+                    "command": "vlocode.setLogVisibility",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
                     "command": "vlocode.datapackExplorer.export",
                     "when": "false"
                 },
@@ -468,6 +450,10 @@
                 },
                 {
                     "command": "vlocode.developerLogs.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.developerLogs.setLogVisibility",
                     "when": "false"
                 }
             ],
@@ -603,6 +589,11 @@
                     "command": "vlocode.developerLogs.refresh",
                     "group": "navigation",
                     "when": "view == developerLogsView"
+                },
+                {
+                    "command": "vlocode.developerLogs.setLogVisibility",
+                    "group": "navigation",
+                    "when": "view == developerLogsView"
                 }
             ]
         },
@@ -703,6 +694,19 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Show the Salesforce developer logs panel"
+                },
+                "vlocity.salesforce.developerLogsVisibility": {
+                    "type": "string",
+                    "enum": [
+                        "self",
+                        "all"
+                    ],
+                    "default": "self",
+                    "enumDescriptions": [
+                        "Display only the logs generated by the currently connected user",
+                        "Display all developer logs on the connected org from all users with active trace flags"
+                    ],
+                    "markdownDescription": "Change which logs are displayed and visible in the Developer logs panel"
                 },
                 "vlocity.salesforce.developerLogsAutoRefresh": {
                     "type": "boolean",

@@ -96,7 +96,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 ignoreWarnings: true
             }, progress, token);
 
-            if (!result) {
+            if (!result || token?.isCancellationRequested) {
                 this.logger.info(`Cancelled deploy of ${uniqueComponents.join(', ')}`);
                 return;
             }

@@ -83,7 +83,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
             await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
                 const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
-                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath))); 
+                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
 
                 if (this.vlocode.config.deploymentMode == 'compatibility') {
                     this.showResultMessage(

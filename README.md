@@ -8,26 +8,32 @@
 
 # **Vlocode**: Vlocity/Salesforce development integration for Visual Studio Code
 
-This extension provides functionality for deploying, extracting and refreshing **Vlocity metadata** from with Visual Studio Code.
-It is targeted at **Vlocity/Salesforce developers** who want work with Vlocity and **Salesforce metadata** from within VSCode making all commands available directly from with Visual Studio Code. 
+This extension provides functionality for deploying, extracting and refreshing **Vlocity metadata** with Visual Studio Code.
+It is targeted at **Vlocity/Salesforce developers** who  work with **Vlocity** and **Salesforce metadata** making commands available directly from with Visual Studio Code. 
 
-This extension uses of the Vlocity build tools library for executing the import and export commands, and the resulting files can directly be commited git and other source control systems.
+![Demo](resources/salesforceDemo.gif)
+
+This extension uses JSForce, SFDX and the Vlocity build tools library for executing commands. 
 
 All settings for Vlocode are part of the .vscode settings file making it easy to maintain and change.
 
-Vlocode also has support for **Salesforce metadata** enabling deployment and retrieval of Salesforce metadata, Executing Anonymous APEX as well as automatically maintaining _-meta.xml_ files. By default Salesforce support is disabled but can be enabled from withing the extension setting (_vlocity.salesforce.enabled_)
+Vlocode also has broad support **Salesforce metadata** enabling deployment and retrieval of Salesforce metadata.
+
+![Demo](resources/datapackExport.gif)
 
 ## Features
 
 ### Salesforce
+* **Auto create and update -meta.xml files** automatically rename and create _-meta.xml_ files when you create or rename APEX classes
 * **Deploy on save** deploy files to the connected org on save
 * **Deploy multiple metadata files** deploy one or more files in a single request to Salesforce
 * **Refresh/Retrieve metadata** refresh/retrieve one or more files in a single request to Salesforce
-* **Auto create and update -meta.xml files** automatically rename and create _-meta.xml_ files when you create or rename APEX classes
-* **Auto APEX class boilerplates** automatically generate a boiler plate class definition and meta.xml file once you create a new APEX class file
-* **API version selector** use different API versions for Salesforce tooling and metadata commands
+* **Easy creation of APEX classes** automatically generate a boiler plate class definition and meta.xml file once you create a new APEX class file
 * **Execute anonymous** support for executing anonymous APEX with different log levels and profiling 
 * **Delete metadata from org** delete APEX classes or other metadata from your org from within vscode
+* **Integrated Salesforce Logs viewer** using the integrated Log viewer you can view and open Salesforce debug logs directly from VSCode
+![Developer logs](resources/developerLogs.png)
+
 
 ### Vlocity
 * **Retrieve & refresh** Vlocity datapacks from within Visual Studio Code simplifying your workflow
