@@ -39,12 +39,12 @@ deploy:
     token: $GITHUB_TOKEN
     file_glob: true
     file: "*.vsix"
-    cleanup: false
+    skip_cleanup: true
     name: "Version $PACKAGE_VERSION"
     on:
       tags: true
   - provider: script  
     script: npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
-    cleanup: false
+    skip_cleanup: true
     on:
       tags: true
