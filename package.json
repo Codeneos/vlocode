@@ -809,7 +809,7 @@
         "moment": "^2.24.0",
         "patch-package": "^6.2.0",
         "reflect-metadata": "^0.1.13",
-        "rimraf": "^3.0.0",
+        "rimraf": "^3.0.2",
         "salesforce-alm": "^48.20.0",
         "sinon": "^9.0.1",
         "terser": "^4.8.0",
