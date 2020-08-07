@@ -163,6 +163,12 @@ vlocode.setTraceFlags:
   group: v_salesforce
   when: vlocodeSalesforceSupport
   menus:
+    - menu: commandPalette
+vlocode.setLogVisibility:
+  title: 'Salesforce: Set Developer Log Visibility...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
     - menu: commandPalette   
 
 # Data datapackExplorer commands
@@ -224,11 +230,18 @@ vlocode.developerLogs.deleteAll:
   when: view == developerLogsView
   menus:
     - menu: view/title
-      group: navigation
+      group: navigation  
 vlocode.developerLogs.refresh:
-  title: Refresh Logs
+  title: Refresh
   icon: resources/{type}/refresh.svg
   when: view == developerLogsView
   menus:
     - menu: view/title
       group: navigation
+vlocode.developerLogs.setLogVisibility:
+  title: Log Visibility (own/all)
+  icon: resources/{type}/visibility.svg
+  when: view == developerLogsView
+  menus:
+    - menu: view/title
+      group: navigation 

@@ -29,14 +29,19 @@ export default class RefreshMetadataCommand extends MetadataCommand {
 
         await this.vlocode.withActivity({
             progressTitle: `Refreshing ${progressTitle}...`,
-            location: vscode.ProgressLocation.Window,
-            cancellable: true
+            location: vscode.ProgressLocation.Notification,
+            propagateExceptions: true,
+            cancellable: true,
         }, async (progress, token) => {
 
             const result = await this.salesforce.deploy.retrieveManifest(manifest, token);
 
+            if (token?.isCancellationRequested) {
+                return;
+            }
+
             if (!result.success) {
-                throw new Error('Refresh failed');
+                throw new Error('Failed to refresh selected metadata.');
             }
 
             const componentsNotFound = new Array<string>();

@@ -56,5 +56,6 @@ export enum VlocodeCommand {
     createApexClass = 'vlocode.createApexClass',
     createLwc = 'vlocode.createLwc',
     clearDeveloperLogs = 'vlocode.clearDeveloperLogs',
-    setTraceFlags = 'vlocode.setTraceFlags'
+    setTraceFlags = 'vlocode.setTraceFlags',
+    setLogVisibility = 'vlocode.setLogVisibility'
 }

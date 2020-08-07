@@ -5,6 +5,7 @@ export abstract class VlocodeSalesforceConfiguration {
     manageMetaXmlFiles: boolean;
     developerLogsVisible: boolean;
     developerLogsAutoRefresh: boolean;
+    developerLogsVisibility: 'self' | 'all';
 }
 
 export default abstract class vlocodeConfiguration {

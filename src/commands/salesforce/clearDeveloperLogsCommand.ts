@@ -5,7 +5,7 @@ import MetadataCommand from './metadataCommand';
 /**
  * Clears all developer logs from the connected org
  */
-export default class ClearDeveloperLogsCommands extends MetadataCommand {
+export default class ClearDeveloperLogsCommand extends MetadataCommand {
 
     /**
      * Clears all developer logs.

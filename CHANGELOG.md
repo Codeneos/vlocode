@@ -1,5 +1,18 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
+## [0.14.7] - 2019-08-07
+ - Rewrite and restructure core components
+ - Support new Datapack Deployment mode called `direct` this mode allows for direct deployments of datapacks using the Collections ot Bulk API from salesforce. For large deployments this significantly improves the deployment times by up to 90%.
+ - All new Salesforce logs explorer which allows viewing of Salesforce logs similar to the developer console.
+ - Control logging level in Salesforce for Vlocode through the VSCode UI
+ - Salesforce deployments are now queued internally when multiple deployments are requested from within VSCode optimizes the developer experience.
+ - Show progress when refreshing files.
+ - Clone and renamed datapack commands have been improved and should yield better results.
+ - Fix datapack explorer not displaying templates from multiple authors correctly.
+ - Fix execute apex did not always display error message
+ - New command to purge all debug logs from the server 
+ - New command to set which logs to show in the logs panel
+
 ## [0.12.14] - 2019-03-26
  - Fix lookup datapac keys typo.
  - Fix sonar cloud token error in travis config.
