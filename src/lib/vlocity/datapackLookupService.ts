@@ -209,9 +209,9 @@ export class DatapackLookupService implements DependencyResolver {
 
     private buildLookupKey(sobjectType: string, fields: Array<string>, data: object): string | undefined {
         const values = fields.map(field => data[field]).filter(v => v !== undefined && v !== null);
-        if (!values.length) {
-            debugger;
-        }
+        // if (!values.length) {
+        //     debugger;
+        // }
         // As opposed to querying lookup keys should not contain a VLocity package namespace as they 
         // are org independent, as such we replace the namespace; if present back with the place holder
         return values.length ? `${sobjectType}/${values.join('/')}`.replace(this.vlocityNamespace, '%vlocity_namespace%') : undefined;
