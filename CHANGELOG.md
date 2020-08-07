@@ -1,6 +1,6 @@
 # Changelog Vlocity Salesforce Integration for VSCode
 
-## [0.14.7] - 2019-08-07
+## [0.14.8] - 2019-08-07
  - Rewrite and restructure core components
  - Support new Datapack Deployment mode called `direct` this mode allows for direct deployments of datapacks using the Collections ot Bulk API from salesforce. For large deployments this significantly improves the deployment times by up to 90%.
  - All new Salesforce logs explorer which allows viewing of Salesforce logs similar to the developer console.
