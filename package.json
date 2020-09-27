@@ -788,7 +788,7 @@
         "copy-webpack-plugin": "^5.1.1",
         "eslint": "^7.1.0",
         "eslint-config-prettier": "^6.11.0",
-        "eslint-plugin-import": "^2.20.2",
+        "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-jsdoc": "^25.4.2",
         "eslint-plugin-prefer-arrow": "^1.2.1",
         "gelex": "0.0.7",
