@@ -21,7 +21,7 @@ export abstract class EventHandlerBase<T> implements vscode.Disposable {
     }
 
     private async handleEventAsync(eventObject: T) : Promise<void> {
-        this.logger.verbose(`Handle event: ${this.constructor.name}`);
+        this.logger.debug(`Handle event: ${this.constructor.name}`);
         try {
             await Promise.resolve(this.handleEvent(eventObject));
         } catch (err) {
