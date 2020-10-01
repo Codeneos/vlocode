@@ -39,7 +39,7 @@ class VlocityLogFilter {
     }
 }
 
-export = class Vlocode {
+class Vlocode {
 
     private static instance: Vlocode;
     private service: VlocodeService;
@@ -175,3 +175,11 @@ export = class Vlocode {
         return Vlocode.instance.deactivate();
     }
 };
+
+export function activate(context: vscode.ExtensionContext) {
+    return Vlocode.activate(context);
+}
+
+export function deactivate() {
+    return Vlocode.deactivate();
+}

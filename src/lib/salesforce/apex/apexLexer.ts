@@ -1,4 +1,4 @@
-import gelex = require('gelex');
+import * as gelex from 'gelex';
 
 interface LexerScanner {
     peek(): string;

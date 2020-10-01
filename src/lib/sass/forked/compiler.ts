@@ -2,7 +2,7 @@ import { fork } from 'child_process';
 import * as path from 'path';
 import { Logger } from 'lib/logging';
 import { SassCompiler, SassCompileSuccessResult, SassCompileErrorResult } from 'lib/sass/compiler';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 import { LifecyclePolicy } from 'lib/core/container';
 import Timer from 'lib/util/timer';
 
@@ -15,7 +15,7 @@ export interface Message {
  * A forked version of the SASS compiler running compilation of SASS in a separate thread;
  * This class is used by internally by the 
  */
-@dependency({ provides: SassCompiler, lifecycle: LifecyclePolicy.singleton })
+@service({ provides: SassCompiler, lifecycle: LifecyclePolicy.singleton })
 export class ForkedSassCompiler implements SassCompiler {
 
     public constructor(public readonly logger: Logger) {

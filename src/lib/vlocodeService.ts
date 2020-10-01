@@ -13,8 +13,8 @@ import { ConfigurationManager } from './configurationManager';
 import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
 import Timer from './util/timer';
-import chalk = require('chalk');
-import { dependency } from './core/inject';
+import * as chalk from 'chalk';
+import { service } from './core/inject';
 import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
 
@@ -27,7 +27,7 @@ interface ActivityOptions {
     propagateExceptions?: boolean;
 }
 
-@dependency({ provides: [JsForceConnectionProvider, VlocodeService] })
+@service({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates

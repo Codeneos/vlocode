@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import moment = require('moment');
+import * as moment from 'moment';
 import { getContext } from 'lib/vlocodeContext';
 import { DeveloperLog } from './developerLog';
 

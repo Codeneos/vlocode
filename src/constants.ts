@@ -4,9 +4,8 @@
  * Default constants used in this extensipn
  */
 
-import metadataTypes = require('metadataTypes.yaml');
 // @ts-ignore
-import packageJson = require('../package.json');
+import * as packageJson from '../package.json';
 
 export const VERSION = packageJson.version;
 export const API_CLIENT_NAME = 'Vlocode SOAP client';
@@ -19,8 +18,6 @@ export const MD_XML_OPTIONS = {
     xmldec: { version: '1.0', encoding: 'UTF-8' },
     renderOpts: { pretty: true, indent: '    ', newline: '\n' }
 };
-export const SF_META_EXTENSIONS = [ '-meta.xml' ]
-    .concat(Object.values(metadataTypes).map(type => type.fileExtensions ?? []).flat());
 export const DATAPACK_RESERVED_FIELDS = [
     'VlocityDataPackType',
     'VlocityMatchingRecordSourceKey',

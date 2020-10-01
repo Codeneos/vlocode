@@ -1,17 +1,18 @@
-import { LogManager, Logger } from 'lib/logging';
+import { Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import Timer from 'lib/util/timer';
 import * as jsforce from 'jsforce';
-import chalk = require('chalk');
-import { dependency } from 'lib/core/inject';
+import * as chalk from 'chalk';
+import { service } from 'lib/core/inject';
 import * as constants from '@constants';
 
-@dependency()
+@service()
 export class VlocityNamespaceService {
 
+    constructor(...args: any[])
     constructor(
-        private vlocityNamespace: string | null = null,
-        private readonly logger: Logger = LogManager.get(VlocityNamespaceService) ) {
+        private vlocityNamespace: string | null,
+        private readonly logger: Logger) {
     }
 
     /**
@@ -32,6 +33,10 @@ export class VlocityNamespaceService {
         return name.replace(constants.NAMESPACE_PLACEHOLDER, '').replace(/^__/, '');
     }
 
+    /**
+     * Get the namespace of the current connection
+     * @param connectionProvider Connection provider to use to initialize the namespace
+     */
     public async initialize(connectionProvider: JsForceConnectionProvider): Promise<this> {
         const connection = await connectionProvider.getJsForceConnection();
         this.vlocityNamespace = await this.getConnectionNamespace(connection);

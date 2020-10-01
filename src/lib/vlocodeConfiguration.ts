@@ -8,7 +8,7 @@ export abstract class VlocodeSalesforceConfiguration {
     developerLogsVisibility: 'self' | 'all';
 }
 
-export default abstract class vlocodeConfiguration {
+export default abstract class VlocodeConfiguration {
     verbose: boolean;
     logLevel: 'info' | 'verbose' | 'debug';
     sfdxUsername?: string;

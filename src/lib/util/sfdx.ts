@@ -2,7 +2,6 @@ import * as http from 'http';
 import * as path from 'path';
 import * as jsforce from 'jsforce';
 import * as salesforce from '@salesforce/core';
-import AuthCommand = require('salesforce-alm/dist/lib/auth/authCommand');
 import { LogManager, Logger } from 'lib/logging';
 import { CancellationToken } from 'vscode';
 
@@ -34,7 +33,8 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
  */
 export default class SfdxUtil {
 
-    public static async webLogin(options: { instanceUrl: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
+    public static async webLogin(options: { instanceUrl: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {        
+        const AuthCommand = await import('salesforce-alm/dist/lib/auth/authCommand');
         const command = new AuthCommand();
         const httpServer = http.createServer();
 

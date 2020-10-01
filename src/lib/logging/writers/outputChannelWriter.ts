@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import moment = require('moment');
+import * as moment from 'moment';
 import * as constants from '@constants';
 import { LogWriter, LogEntry, LogLevel } from 'lib/logging';
 
@@ -27,6 +27,5 @@ export class OutputChannelWriter implements LogWriter, vscode.Disposable {
     public write({level, time, category, message} : LogEntry) : void {
         const levelPrefix = (LogLevel[level] || 'unknown').substr(0,1);
         this.outputChannel.appendLine(`[${moment(time).format(constants.LOG_DATE_FORMAT)}] ${levelPrefix}: ${message}`);
-        this.focus();
     }
 }

@@ -1,5 +1,5 @@
 import { SassCompiler } from 'lib/sass';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 import type { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import SalesforceService from 'lib/salesforce/salesforceService';
@@ -8,7 +8,7 @@ import Timer from 'lib/util/timer';
 import { Logger } from 'lib/logging';
 import type DatapackDeploymentRecord from '../datapackDeploymentRecord';
 
-@dependency({ lifecycle: LifecyclePolicy.transient })
+@service({ lifecycle: LifecyclePolicy.transient })
 export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
 
     public constructor(

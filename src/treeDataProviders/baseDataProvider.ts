@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import VlocodeService from 'lib/vlocodeService';
 import { CommandCtor } from 'lib/commandRouter';
 import { getContext } from 'lib/vlocodeContext';
-import uuid = require('uuid');
+import * as uuid from 'uuid';
 import { VlocodeCommand } from '@constants';
 
 /**

@@ -1,7 +1,7 @@
 import { LogLevel, LogWriter, LogEntry } from 'lib/logging';
 import * as vscode from 'vscode';
-import chalk = require('chalk');
-import moment = require('moment');
+import * as chalk from 'chalk';
+import * as moment from 'moment';
 import * as constants from '@constants';
 
 const TERMINAL_EOL = '\r\n';
@@ -135,7 +135,6 @@ export class TerminalWriter implements LogWriter, vscode.Disposable {
 
             const formattedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;
             this.writeEmitter.fire(formattedMessage + TERMINAL_EOL);
-            this.focus();
         }
     }
 }

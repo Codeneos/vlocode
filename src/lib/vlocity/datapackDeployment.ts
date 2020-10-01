@@ -255,7 +255,8 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
 }
 
 class DatapackDeploymentRecordGroup {
-    #records = new Array<DatapackDeploymentRecord>();
+
+    private readonly groupRecords = new Array<DatapackDeploymentRecord>();
 
     /**
      * Create a new group instance.
@@ -268,20 +269,20 @@ class DatapackDeploymentRecordGroup {
      * Adds an a new record to the
      */
     public push(record: DatapackDeploymentRecord) {
-        this.#records.push(record);
+        this.groupRecords.push(record);
     }
 
     /**
      * Determines if this group has any pending records
      */
     public hasPendingRecords() : boolean {
-        return this.#records.some(record => record.isPending);
+        return this.groupRecords.some(record => record.isPending);
     }
 
     /**
      * Get all records in the group.
      */
     public records(){
-        return this.#records;
+        return this.groupRecords;
     }
 }

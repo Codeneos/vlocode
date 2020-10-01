@@ -5,12 +5,12 @@ import QueryService from 'lib/salesforce/queryService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import { LogManager, Logger } from 'lib/logging';
 import { Field } from 'jsforce';
-import moment = require('moment');
+import * as moment from 'moment';
 import Timer from 'lib/util/timer';
 import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 import { container, LifecyclePolicy } from 'lib/core/container';
 import { groupBy } from 'lib/util/collection';
 import { DatapackLookupService } from './datapackLookupService';
@@ -42,7 +42,7 @@ export abstract class DatapackDeploymentSpec {
     abstract afterDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
 }
 
-@dependency({ lifecycle: LifecyclePolicy.transient })
+@service({ lifecycle: LifecyclePolicy.transient })
 export default class VlocityDatapackDeployService {
 
     constructor(

@@ -1,18 +1,18 @@
 import * as vscode from 'vscode';
 import VlocodeService from 'lib/vlocodeService';
 import { DeveloperLog } from 'lib/salesforce/developerLog';
-import moment = require('moment');
+import * as moment from 'moment';
 import { ConfigurationManager } from 'lib/configurationManager';
 import { VlocodeCommand } from '@constants';
 import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
 import { Logger } from 'lib/logging';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 import BaseDataProvider from './baseDataProvider';
 
 /**
  * Provides a list of recently executed or executing activities 
  */
-@dependency()
+@service()
 export default class DeveloperLogDataProvider extends BaseDataProvider<DeveloperLog> implements vscode.Disposable {
 
     private logs: Array<DeveloperLog> = [];

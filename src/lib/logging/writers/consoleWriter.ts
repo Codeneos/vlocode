@@ -1,6 +1,6 @@
 import * as constants from '@constants';
 import { LogWriter, LogEntry, LogLevel } from 'lib/logging';
-import moment = require('moment');
+import * as moment from 'moment';
 
 export class ConsoleWriter implements LogWriter {
     public write({ level, time, category, message } : LogEntry) : void {

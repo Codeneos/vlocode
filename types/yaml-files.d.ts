@@ -25,17 +25,11 @@ declare module 'exportQueryDefinitions.yaml' {
   export = exportQueryDefinitions;
 }
 
-declare module 'metadataTypes.yaml' {
-  interface MetadataType {
-    packageFolder?: string;
-    fileExtensions?: string[];
-    packageType?: string;    
-    retainFolderStructure?: boolean;
-  }
-  const exportQueryDefinitions : { 
-    [metadataType: string] : MetadataType
+declare module 'metaFileTemplates.yaml' {
+  const exportMetaFileTemplates : { 
+    [metadataType: string] : string
   };
-  export = exportQueryDefinitions;
+  export = exportMetaFileTemplates;
 }
 
 declare module 'newItemTemplates.yaml' {

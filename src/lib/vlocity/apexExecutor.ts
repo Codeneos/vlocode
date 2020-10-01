@@ -5,9 +5,9 @@ import * as vscode from 'vscode';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { LogManager, Logger } from 'lib/logging';
 import cache from 'lib/util/cache';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 
-@dependency()
+@service()
 export class ApexExecutor {
 
     constructor(

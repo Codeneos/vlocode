@@ -18,7 +18,7 @@ import { getDocumentBodyAsString } from 'lib/util/fs';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 import * as constants from '@constants';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
@@ -220,15 +220,15 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
 //     }
 // }
 
-@dependency()
+@service()
 export default class VlocityDatapackService implements vscode.Disposable {
 
     private vlocityBuildTools: vlocity;
 
-    #expandProvider: ExpandDefinitionProvider;
-    #matchingKeyService: VlocityMatchingKeyService;
-    #customSettings: any; // Load from yaml when needed
-    #customSettingsWatcher: vscode.FileSystemWatcher | undefined;
+    private expandProvider: ExpandDefinitionProvider;
+    private matchingKeyService: VlocityMatchingKeyService;
+    private customSettings: any; // Load from yaml when needed
+    private customSettingsWatcher: vscode.FileSystemWatcher | undefined;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -239,9 +239,9 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public dispose() {
-        if (this.#customSettingsWatcher) {
-            this.#customSettingsWatcher.dispose();
-            this.#customSettingsWatcher = undefined;
+        if (this.customSettingsWatcher) {
+            this.customSettingsWatcher.dispose();
+            this.customSettingsWatcher = undefined;
         }
     }
 
@@ -273,7 +273,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }
 
         // Init expand provider
-        this.#expandProvider = new BuildToolsExpandDefinitionProvider(this.vlocityBuildTools);
+        this.expandProvider = new BuildToolsExpandDefinitionProvider(this.vlocityBuildTools);
 
         return buildTools;
     }
@@ -306,7 +306,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
      * @param datapack Datapack
      */
     public getExpandedValue(key: string, datapack: VlocityDatapack) : string | undefined {
-        let definition = this.#expandProvider.getSObjectExpandDefinition(key, datapack);
+        let definition = this.expandProvider.getSObjectExpandDefinition(key, datapack);
         // Let definition = this.vlocityBuildTools.datapacksutils.getExpandedDefinition(key, datapack.datapackType, datapack.sobjectType);
         if (typeof definition === 'string') {
             definition = [ definition ];
@@ -343,10 +343,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        if (!this.#matchingKeyService) {
-            this.#matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this.salesforceService);
+        if (!this.matchingKeyService) {
+            this.matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this.salesforceService);
         }
-        return this.#matchingKeyService;
+        return this.matchingKeyService;
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
@@ -504,7 +504,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             return;
         }
 
-        if (!this.#customSettings) {
+        if (!this.customSettings) {
             // Parse any custom job options from the custom yaml
             const yamlFullPath = await this.getWorkspacePath(this.config.customJobOptionsYaml);
             if (!yamlFullPath) {
@@ -513,18 +513,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
             }
 
             // Watch for changes or deletes of the custom YAML
-            if (!this.#customSettingsWatcher) {
-                this.#customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
-                this.#customSettingsWatcher.onDidChange(e => this.#customSettings = this.loadCustomSettingsFrom(e.fsPath));
-                this.#customSettingsWatcher.onDidCreate(e => this.#customSettings = this.loadCustomSettingsFrom(e.fsPath));
-                this.#customSettingsWatcher.onDidDelete(_e => this.#customSettings = null);
+            if (!this.customSettingsWatcher) {
+                this.customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
+                this.customSettingsWatcher.onDidChange(e => this.customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this.customSettingsWatcher.onDidCreate(e => this.customSettings = this.loadCustomSettingsFrom(e.fsPath));
+                this.customSettingsWatcher.onDidDelete(_e => this.customSettings = null);
             }
 
             // Load settings
-            this.#customSettings = await this.loadCustomSettingsFrom(yamlFullPath);
+            this.customSettings = await this.loadCustomSettingsFrom(yamlFullPath);
         }
 
-        return this.#customSettings;
+        return this.customSettings;
     }
 
     private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml | undefined> {

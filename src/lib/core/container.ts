@@ -78,6 +78,7 @@ export class Container {
      */
     public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: any, resolver: Container = this) : T | undefined {
         const serviceName = this.getServiceName(service);
+        console.debug(`resolve ${serviceName}`);
 
         const provider = this.providers.get(serviceName);
         if (provider && receiver) {
@@ -160,7 +161,8 @@ export class Container {
      */
     private createInstance<T extends { new(...args: any[]): I }, I extends Object>(ctor: T): I {
         // Get argument types
-        const paramTypes = Reflect.getMetadata('design:paramtypes', ctor) as any[] || [];
+        const typeInfo = Reflect.getMetadata("design:typeinfo", ctor);
+        const paramTypes = typeInfo?.paramTypes();
         if (!paramTypes) {
             throw new Error('Cannot create an instance of an object without design time decoration');
         }
@@ -171,7 +173,7 @@ export class Container {
             args[i] = this.resolve(paramTypes[i], undefined, ctor);
         }
         console.debug(`Create instance ${ctor.name}`);
-        return new ctor(...args);
+        return this.createLazyProxy(() => new ctor(...args), ctor.prototype);
     }
 
     /**
@@ -252,6 +254,49 @@ export class Container {
             return service;
         }
         return service.name;
+    }
+
+    private createLazyProxy<T extends Object>(factory: () => T, prototype: any) : T {
+        let instance: any = null;
+        const targetProperties = [ this.servicesProvided ] as any[];
+        const getInstance = () => instance || (instance = factory());
+        return new Proxy({}, {
+            get(target, prop) {
+                if (targetProperties.includes(prop)) {
+                    return target[prop];
+                }
+                if (!instance && typeof prototype[prop] === 'function') {
+                    return function(...args: any[]) {
+                        prototype[prop].apply(this, args);
+                    };
+                }
+                return getInstance()[prop];
+            },
+            set(target, prop, value) {
+                if (targetProperties.includes(prop)) {
+                    target[prop] = value;
+                } else {
+                    if (typeof prototype[prop] === 'function') {
+                        return false;
+                    }
+                    getInstance()[prop] = value;
+                }
+                return true;
+            },
+            has(target, prop) { return prop in getInstance(); },
+            getOwnPropertyDescriptor(target, prop) {
+                return Object.getOwnPropertyDescriptor(getInstance(), prop);
+            },
+            getPrototypeOf() {
+                return getInstance().prototype;
+            },
+            ownKeys() {
+                return Object.keys(getInstance());
+            },
+            enumerate() {
+                return Object.keys(getInstance());
+            }
+        }) as T;
     }
 }
 

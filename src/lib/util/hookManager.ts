@@ -1,4 +1,4 @@
-import uuid = require('uuid');
+import * as uuid from 'uuid';
 
 interface CallHookOptions<T = any> {
     target: T;

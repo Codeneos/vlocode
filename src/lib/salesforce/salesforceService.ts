@@ -9,17 +9,19 @@ import Lazy from 'lib/util/lazy';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import * as xml2js from 'xml2js';
 import { stripPrefix } from 'xml2js/lib/processors';
-import { dependency } from 'lib/core/inject';
+import { service as service } from 'lib/core/inject';
 import { SuccessResult } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 import Timer from 'lib/util/timer';
 import QueryService from './queryService';
-import SalesforceDeployService from './salesforceDeployService';
+import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
+import { container } from 'lib/core/container';
+import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -163,12 +165,12 @@ interface SoapResponse {
     };
 }
 
-@dependency()
+@service()
 export default class SalesforceService implements JsForceConnectionProvider {
 
     public readonly schema = new SalesforceSchemaService(this.connectionProvider);
-    public readonly deploy = new SalesforceDeployService(this);
     public readonly lookupService = new SalesforceLookupService(this.connectionProvider, this.schema, this.queryService);
+    public readonly deploy = new SalesforceDeployService(this);
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -581,6 +583,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
             username: identity.username,
             type: identity.user_type,
         };
+    }
+
+    /**
+     * Get the list of supported metadata types for the current organization.
+     */
+    @cache()
+    public async getMetadataTypes() {
+        return (await this.getJsForceConnection()).metadata.describe();
     }
 
     /**

@@ -89,7 +89,7 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
  * @param fileName file name to check
  */
 export function isSalesforceMetadataFile(fileName: string) : boolean {
-    return constants.SF_META_EXTENSIONS.some(ext => fileName.endsWith(ext));
+    return true;//constants.SF_META_EXTENSIONS.some(ext => fileName.endsWith(ext));
 }
 
 

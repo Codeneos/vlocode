@@ -1,4 +1,4 @@
-import uuid = require('uuid');
+import * as uuid from 'uuid';
 import { stringEquals } from './string';
 
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');

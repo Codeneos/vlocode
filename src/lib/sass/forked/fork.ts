@@ -1,5 +1,5 @@
 import * as sass from 'sass.js';
-import globby = require('globby');
+import * as globby from 'globby';
 import type { Message } from './compiler';
 
 /**

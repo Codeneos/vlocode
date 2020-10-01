@@ -1,21 +1,22 @@
-import chalk = require('chalk');
+import * as chalk from 'chalk';
 import * as path from 'path';
 import { Stream } from 'stream';
 import * as fs from 'fs-extra';
 import * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
-import { Logger, LogManager } from 'lib/logging';
+import { Logger } from 'lib/logging';
 import { wait } from 'lib/util/async';
 import { filterAsyncParallel, mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { getDocumentBodyAsString } from 'lib/util/fs';
-import * as metadataTypes from 'metadataTypes.yaml';
+import * as metaFileTemplates from 'metaFileTemplates.yaml';
 import * as vscode from 'vscode';
-import * as xml2js from 'xml2js';
-import { substringAfterLast } from 'lib/util/string';
+import { formatString, stringEquals, substringAfterLast } from 'lib/util/string';
 import { MetadataManifest, PackageXml } from './deploy/packageXml';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import SalesforceService from './salesforceService';
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
+import { MetadataObject } from 'jsforce';
+import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: { componentFailures?: ComponentFailure[] };
@@ -45,14 +46,14 @@ interface RetrieveStatus extends jsforce.RetrieveResult {
     status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
 }
 
-@dependency()
-export default class SalesforceDeployService {
+@service()
+export class SalesforceDeployService {
 
-    constructor(private readonly salesforce: SalesforceService) {
-    }
-
-    protected get logger() : Logger {
-        return LogManager.get(SalesforceDeployService);
+    constructor(...args: any[]);
+    constructor(
+        private readonly salesforce: SalesforceService,
+        private readonly config: VlocodeConfiguration,
+        private readonly logger: Logger) {
     }
 
     /**
@@ -98,64 +99,106 @@ export default class SalesforceDeployService {
      * @param srcDir The package directory to read the source from.
      * @param ignorePatterns A list of ignore patterns of the files to ignore.
      */
-    public async buildManifest(files: vscode.Uri[], token?: undefined) : Promise<MetadataManifest>
-    public async buildManifest(files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined>
-    public async buildManifest(files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
-        const mdPackage : MetadataManifest = { files: {} };
-        const metaFiles =  await this.getMetaFiles(files.map(file => file.fsPath), true);
+    public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: undefined) : Promise<MetadataManifest>
+    public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined>
+    public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
+        const targetApiVersion = apiVersion || this.config.salesforce.apiVersion || '45.0';
+        const mdPackage : MetadataManifest = { piVersion: targetApiVersion, files: {} };
 
         this.logger.verbose(`Building package manifest for ${files.length} selected files/folders`);
 
         // Build zip archive for all expanded files
         // Note use posix path separators when building package.zip
-        for (const metaFile of metaFiles) {
+        for (const file of files) {
 
             // Stop directly and return null
             if (token && token.isCancellationRequested) {
                 return;
             }
 
-            const componentType = await this.getComponentType(metaFile);
-            const packageFolder = this.getPackageFolder(metaFile, componentType);
-            const componentName = this.getPackageComponentName(metaFile, componentType);
+            // get metadata type
+            const metadataType = await this.getMetadataType(file.fsPath);
+            if (!metadataType) {
+                continue;
+            }
 
-            if (metaFile.toLowerCase().endsWith('-meta.xml')) {
-                const isBundle = componentType.endsWith('Bundle');
-                if (isBundle) {
-                    // Classic metadata package all related files
-                    const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(metaFile), '**'));
-                    for (const sourceFile of sourceFiles) {
-                        const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
-                        Object.assign(mdPackage.files, {
-                            [sourcePackagePath]: { name: componentName, type: componentType, localPath: sourceFile.fsPath }
-                        });
-                    }
-                } else {
-                    const sourceFile = metaFile.replace(/-meta\.xml/ig, '');
-                    const sourcePackagePath = path.posix.join(packageFolder, path.basename(sourceFile));
-                    const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
+            const isBundle = metadataType.xmlName.endsWith('Bundle');
+            const packageFolder = this.getPackageFolder(file.fsPath, metadataType);
+            const componentName = this.getPackageComponentName(file.fsPath, metadataType);
 
-                    Object.assign(mdPackage.files, {
-                        [sourcePackagePath]: { name: componentName, type: componentType, localPath: sourceFile },
-                        [metaPackagePath]: { name: componentName, type: componentType, localPath: metaFile },
-                    });
+            if (isBundle) {
+                // Only Aura and LWC are bundled at this moment
+                // Classic metadata package all related files
+                const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(file.fsPath), '**'));
+                for (const sourceFile of sourceFiles) {
+                    const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
+                    mdPackage.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: sourceFile.fsPath };
                 }
             } else {
-                // Other meta data type add only the meta file
-                const packagePath = path.posix.join(packageFolder, path.basename(metaFile));
-                Object.assign(mdPackage.files, {
-                    [packagePath]: { name: componentName, type: componentType, localPath: metaFile }
-                });
+                // First try adding the metadata file - if fails continue and also skip adding source
+                if (metadataType.metaFile) {
+                    // For files that require a separate meta file include it
+                    const metaFile = `${file}-meta.xml`;
+                    const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
+
+                    if (fs.existsSync(metaFile)) {
+                        mdPackage.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, localPath: metaFile };
+                    } else {
+                        const metaBody = await this.generateMetaFileBody(file.fsPath, targetApiVersion, metadataType);
+                        if (!metaBody) {
+                            this.logger.error(`${file} is missing a -meta.xml - auto generation of meta-xml files is not supported for type ${metadataType.xmlName}`);
+                            continue;
+                        }
+                        mdPackage.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, body: metaBody };
+                    }
+                }
+
+                // add source
+                const sourcePackagePath = path.posix.join(packageFolder, path.basename(file.fsPath));
+                mdPackage.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: file.fsPath };
             }
         }
 
         return mdPackage;
     }
 
-    private getPackageComponentName(metaFile: string, componentType: string) : string {
+    private async generateMetaFileBody(file: string, apiVersion: string, metadataType: MetadataObject) {
+        if (metaFileTemplates[metadataType.xmlName]) {
+            const contextValues = {
+                apiVersion, file,
+                name: file.match(/((.*[\\/])|^)([\w.-]+)\.[\w]+$/)?.[3]
+            };
+            return formatString(metaFileTemplates[metadataType.xmlName], contextValues).trim();
+        }
+    }
+
+    private async getMetadataType(fileName: string) {
+        const metadataTypes = await this.salesforce.getMetadataTypes();
+        for (const type of metadataTypes.metadataObjects) {
+            if (type.suffix) {
+                if (fileName.endsWith(`.${type.suffix}`)) {
+                    return type;
+                }
+            } else if (type.directoryName) {
+                // Consider both the directory and sub-directories
+                const dirnames = [ path.dirname(fileName), path.dirname(path.dirname(fileName)) ];
+                // @ts-expect-error compiler does not validate that type.directoryName cannot be null
+                if (dirnames.some(dirname => stringEquals(dirname, type.directoryName))) {
+                    return type;
+                }
+            }
+        }
+    }
+
+    /**
+     * Gets the name of the component for the package manifest
+     * @param metaFile 
+     * @param metadataType 
+     */
+    private getPackageComponentName(metaFile: string, metadataType: MetadataObject) : string {
         const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
         const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
-        const packageFolder = this.getPackageFolder(metaFile, componentType);
+        const packageFolder = this.getPackageFolder(metaFile, metadataType);
 
         if (packageFolder.includes(path.posix.sep)) {
             return packageFolder.split(path.posix.sep).slice(1).concat([ componentName ]).join(path.posix.sep);
@@ -164,10 +207,14 @@ export default class SalesforceDeployService {
         return componentName;
     }
 
-    private getPackageFolder(fullSourcePath: string, componentType: string) : string {
-        const componentTypeInfo = metadataTypes[componentType];
-        const retainFolderStructure = !!(componentTypeInfo && componentTypeInfo.retainFolderStructure);
-        const componentPackageFolder = componentTypeInfo && componentTypeInfo.packageFolder;
+    /**
+     * Get the packaging folder for the source file.
+     * @param fullSourcePath 
+     * @param metadataType 
+     */
+    private getPackageFolder(fullSourcePath: string, metadataType: MetadataObject) : string {
+        const retainFolderStructure = metadataType.inFolder;
+        const componentPackageFolder = metadataType.directoryName;
 
         if (retainFolderStructure && componentPackageFolder) {
             const packageParts = path.dirname(fullSourcePath).split(/\/|\\/);
@@ -178,25 +225,6 @@ export default class SalesforceDeployService {
         return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/);
     }
 
-    private async getComponentType(metaFile: string) {
-        const metaFileExt = path.extname(metaFile).toLowerCase();
-
-        // Alternate component type for settings
-        if (metaFileExt == '.settings') {
-            return 'Settings';
-        }
-
-        const metaXml = await xml2js.parseStringPromise(await getDocumentBodyAsString(metaFile));
-        const metaBodyTag = Object.keys(metaXml)[0];
-        const componentTypeInfo = metadataTypes[metaBodyTag];
-
-        if (componentTypeInfo && componentTypeInfo.packageType) {
-            return componentTypeInfo.packageType;
-        }
-
-        return metaBodyTag;
-    }
-
     /**
      * Build a Salesforce package from the specified directory, do not add any files that match the specified pattern.
      * @param srcDir The package directory to read the source from.
@@ -205,11 +233,10 @@ export default class SalesforceDeployService {
     private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: undefined): Promise<ZipArchive>
     private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken): Promise<ZipArchive | undefined>
     private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken): Promise<ZipArchive | undefined> {
-        const manifest = await this.buildManifest(files, token);
+        const manifest = await this.buildManifest(files, apiVersion, token);
         if (!manifest) {
             return;
         }
-        manifest.apiVersion = apiVersion;
         return this.buildPackageFromManifest(manifest, token);
     }
 

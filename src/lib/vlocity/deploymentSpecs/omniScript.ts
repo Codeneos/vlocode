@@ -1,4 +1,4 @@
-import { dependency } from 'lib/core/inject';
+import { service } from 'lib/core/inject';
 import type { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { LifecyclePolicy } from 'lib/core/container';
@@ -6,7 +6,7 @@ import { mapAsyncParallel } from 'lib/util/collection';
 import { Logger } from 'lib/logging';
 import DatapackDeploymentRecord, { DeploymentStatus } from '../datapackDeploymentRecord';
 
-@dependency({ lifecycle: LifecyclePolicy.transient })
+@service({ lifecycle: LifecyclePolicy.transient })
 export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
 
     public constructor(
