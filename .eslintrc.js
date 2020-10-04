@@ -17,6 +17,7 @@ module.exports = {
         "node": true
     },
     "ignorePatterns": [
+        "**/.*.js", 
         "out/**/*", 
         "node_modules/**/*", 
         ".vscode/**/*", 
@@ -29,7 +30,7 @@ module.exports = {
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "project": "tsconfig.json",
+        "project": [ "tsconfig.json", "./build/tsconfig.json" ],
         "sourceType": "module"
     },
     "plugins": [
