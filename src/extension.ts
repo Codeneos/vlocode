@@ -163,7 +163,7 @@ class Vlocode {
 
     private async deactivate() {
         // Log to debug as other output channels will be disposed
-        delete Vlocode.instance; // destroy instance
+        Vlocode.instance.service.dispose();
         console.debug('Vlocode extension deactivated');
     }
 

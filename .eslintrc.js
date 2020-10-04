@@ -13,9 +13,15 @@ Happy linting! 💖
 */
 module.exports = {
     "env": {
-        "es6": true,
+        "es2020": true,
         "node": true
     },
+    "ignorePatterns": [
+        "out/**/*", 
+        "node_modules/**/*", 
+        ".vscode/**/*", 
+        ".vscode-test/**/*"
+    ],
     "extends": [
         "prettier",
         "prettier/@typescript-eslint",
