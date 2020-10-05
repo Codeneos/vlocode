@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
         "module": "CommonJS",
-        "target": "es2020"
+        "target": "es6"
     }
 }
