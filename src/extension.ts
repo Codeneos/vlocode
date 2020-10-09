@@ -18,8 +18,8 @@ import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
 import { container, LifecyclePolicy } from 'lib/core/container';
-import VlocodeService from './lib/vlocodeService';
-import VlocodeConfiguration from './lib/vlocodeConfiguration';
+import VlocodeService from 'lib/vlocodeService';
+import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [

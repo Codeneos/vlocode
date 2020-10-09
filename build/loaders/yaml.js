@@ -1,7 +1,6 @@
-const path = require('path');
 const merge = require('webpack-merge').smart;
 const fs = require('fs');
-const yaml = require('js-yaml')
+const yaml = require('js-yaml');
 
 function loadYaml(yamlSrc) {
     const loadedYml  = yaml.load(yamlSrc);
@@ -9,7 +8,7 @@ function loadYaml(yamlSrc) {
         const includedYml = loadedYml.include.map(file => loadYamlFile(file));
         delete loadedYml.include;
         return merge(...includedYml, loadedYml);
-    }    
+    }
     return loadedYml;
 }
 
@@ -19,11 +18,13 @@ function loadYamlFile(yamlFile) {
 }
 
 module.exports = function (source) {
-    if (this.cacheable) this.cacheable();
+    if (this.cacheable) {
+        this.cacheable();
+    }
 
     const value = JSON.stringify(loadYaml(source))
         .replace(/\u2028/g, '\\u2028')
         .replace(/\u2029/g, '\\u2029');
 
-    return `module.exports = ${value}`;
-}
+    return `module.exports = ${value};`;
+};
