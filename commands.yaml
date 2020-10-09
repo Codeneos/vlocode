@@ -170,6 +170,12 @@ vlocode.setLogVisibility:
   when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette   
+vlocode.execRestApi:
+  title: 'Salesforce: Execute REST API...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette   
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:

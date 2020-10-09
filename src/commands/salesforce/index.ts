@@ -9,6 +9,7 @@ import ViewInSalesforceCommand from './viewInSalesforce';
 import ClearDeveloperLogsCommand from './clearDeveloperLogsCommand';
 import SetTraceFlagsCommand from './setTraceFlagsCommand';
 import SetDeveloperLogVisibilityCommand from './SetDeveloperLogVisibilityCommand';
+import ExecuteRestApiCommand from './execRestApiCommand';
 
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,
@@ -17,10 +18,11 @@ export default {
     [VlocodeCommand.selectApiVersion]: SelectApiVersionCommand,
     [VlocodeCommand.createMetadataCommand]: CreateMetadataCommand,
     [VlocodeCommand.execAnonymousCommand]: ExecAnonymousCommand,
-    [VlocodeCommand.viewInSalesforce] : ViewInSalesforceCommand,
-    [VlocodeCommand.createApexClass] : new CreateMetadataCommand('apexClass'),
-    [VlocodeCommand.createLwc] : new CreateMetadataCommand('lwc'),
-    [VlocodeCommand.clearDeveloperLogs] : ClearDeveloperLogsCommand,
-    [VlocodeCommand.setTraceFlags] : SetTraceFlagsCommand,
-    [VlocodeCommand.setLogVisibility] : SetDeveloperLogVisibilityCommand
+    [VlocodeCommand.viewInSalesforce]: ViewInSalesforceCommand,
+    [VlocodeCommand.createApexClass]: new CreateMetadataCommand('apexClass'),
+    [VlocodeCommand.createLwc]: new CreateMetadataCommand('lwc'),
+    [VlocodeCommand.clearDeveloperLogs]: ClearDeveloperLogsCommand,
+    [VlocodeCommand.setTraceFlags]: SetTraceFlagsCommand,
+    [VlocodeCommand.setLogVisibility]: SetDeveloperLogVisibilityCommand,
+    [VlocodeCommand.execRestApi]: ExecuteRestApiCommand,
 };

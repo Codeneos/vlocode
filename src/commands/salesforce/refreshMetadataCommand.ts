@@ -16,7 +16,8 @@ export default class RefreshMetadataCommand extends MetadataCommand {
         // Build manifest
         const manifest = await this.salesforce.deploy.buildManifest(selectedFiles);
         if (Object.values(manifest.files).length == 0) {
-            return vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
+            void vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
+            return;
         }
         this.clearPreviousErrors(manifest);
 

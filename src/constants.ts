@@ -54,5 +54,6 @@ export enum VlocodeCommand {
     createLwc = 'vlocode.createLwc',
     clearDeveloperLogs = 'vlocode.clearDeveloperLogs',
     setTraceFlags = 'vlocode.setTraceFlags',
-    setLogVisibility = 'vlocode.setLogVisibility'
+    setLogVisibility = 'vlocode.setLogVisibility',
+    execRestApi = 'vlocode.execRestApi'
 }
