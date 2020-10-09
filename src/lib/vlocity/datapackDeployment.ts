@@ -6,7 +6,7 @@ import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
 import { AsyncEventEmitter } from 'lib/util/events';
 import { arrayMapPush, mapGetOrCreate } from 'lib/util/collection';
-import RecordBatch from '../salesforce/recordBatch';
+import RecordBatch, { RecordBatchOptions } from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
@@ -44,6 +44,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
+        private readonly recordBatchOptions: RecordBatchOptions,
         private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
         super();
     }
@@ -156,7 +157,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
 
     private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>) {
         // prepare batch
-        const batch = new RecordBatch(this.schemaService);
+        const batch = new RecordBatch(this.schemaService, this.recordBatchOptions);
         const records = [...datapacks.values()];
 
         this.logger.verbose(`Resolving existing IDs for ${datapacks.size} records`);

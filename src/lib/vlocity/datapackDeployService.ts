@@ -18,6 +18,8 @@ import DatapackDeployment, { DatapackDeploymentEvents } from './datapackDeployme
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
+import VlocodeConfiguration, { VlocodeVlocityDeployConfiguration } from 'lib/vlocodeConfiguration';
+import * as uuid from 'uuid';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -45,10 +47,12 @@ export abstract class DatapackDeploymentSpec {
 @service({ lifecycle: LifecyclePolicy.transient })
 export default class VlocityDatapackDeployService {
 
+    constructor(...args: any[]);
     constructor(
         private readonly connectionProvider: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
         private readonly namespaceService: VlocityNamespaceService,
+        private readonly config: VlocodeConfiguration,
         private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
         private readonly logger: Logger = LogManager.get(VlocityDatapackDeployService)) {
         if (!this.schemaService) {
@@ -61,7 +65,7 @@ export default class VlocityDatapackDeployService {
         const queryService = local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
         const lookupService = local.register(new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService));
         const datapackLookup = local.register(new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService));
-        const deployment = local.register(new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService));
+        const deployment = local.register(new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService, this.config.deploy));
 
         deployment.on('beforeDeployRecord', this.beforeDeployRecord.bind(this));
         deployment.on('afterDeployRecord', this.afterDeployRecord.bind(this));
@@ -88,7 +92,8 @@ export default class VlocityDatapackDeployService {
     private async runPreprocessors(datapack: VlocityDatapack) {
         const spec = this.getDeploySpec(datapack.datapackType);
         if (spec?.preprocess) {
-            await spec.preprocess(datapack);
+            const result = spec.preprocess(datapack);
+            await result;
         }
     }
 
@@ -151,7 +156,8 @@ export default class VlocityDatapackDeployService {
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
         }
 
-        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, datapack.sourceKey, datapack.key);
+        const sourceKey = datapack.sourceKey ??`${sobject.name}/${uuid.v4()}`; // some objects do not have a source key - generate a unique key so we can deploy them
+        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
 
         for (const [key, value] of Object.entries(datapack.data)) {
@@ -163,7 +169,7 @@ export default class VlocityDatapackDeployService {
             }
 
             // Objects are dependencies
-            if (typeof value === 'object') {
+            if (typeof value === 'object' && value !== null) {
 
                 // handle lookups and embedded datapacks
                 for (const item of Array.isArray(value) ? value : [ value ]) {
@@ -266,10 +272,12 @@ export default class VlocityDatapackDeployService {
             }
             case 'string':
             default: {
-                if (typeof value === 'object') {
-                    return this.namespaceService.updateNamespace(JSON.stringify(value));
+                let stringValue = typeof value === 'object' ? JSON.stringify(value) : `${value}`;
+                stringValue = this.namespaceService.updateNamespace(stringValue);
+                if (stringValue.length > field.length) {
+                    throw new Error(`Value length (${stringValue.length}) surpassed max length of field ${field.name} (max: ${field.length})`);
                 }
-                return this.namespaceService.updateNamespace(`${value}`);
+                return stringValue;
             }
         }
     }

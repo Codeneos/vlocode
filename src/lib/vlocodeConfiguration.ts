@@ -8,6 +8,12 @@ export abstract class VlocodeSalesforceConfiguration {
     developerLogsVisibility: 'self' | 'all';
 }
 
+export abstract class VlocodeVlocityDeployConfiguration {
+    chunkSize: number;
+    bulkApiThreshold: number;
+    useBulkApi: boolean;
+}
+
 export default abstract class VlocodeConfiguration {
     verbose: boolean;
     logLevel: 'info' | 'verbose' | 'debug';
@@ -22,5 +28,6 @@ export default abstract class VlocodeConfiguration {
     compileOnBuild: boolean;
     logInTerminal: boolean;
     deploymentMode: 'direct' | 'compatibility';
+    deploy: VlocodeVlocityDeployConfiguration;
     salesforce: VlocodeSalesforceConfiguration;
 }

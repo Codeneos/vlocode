@@ -5,6 +5,7 @@ import { CancellationToken } from 'vscode';
 import { AwaitReturnType } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
 import { arrayMapPush } from 'lib/util/collection';
+import { type } from 'os';
 
 type RecordOperationType = 'update' | 'insert';
 
@@ -31,6 +32,16 @@ export interface BatchProgressCallback {
     (args: {processed: number; failed: number; total: number}): void;
 }
 
+const recordBatchDefaultOptions = {
+    /** Allow the use of the bulk API when the record count is larger then the bulk API threshold (chunkSize) */
+    useBulkApi: false,
+    bulkApiThreshold: 500,
+    /** Max chunk size when using the collections API only; if using bulk API once */
+    chunkSize: 100
+};
+
+export type RecordBatchOptions = Partial<typeof recordBatchDefaultOptions>;
+
 /**
  * Inserts and updates a set records and transparently selects either the collections or bulk API.
  */
@@ -47,10 +58,17 @@ export default class RecordBatch {
 
     private readonly bulkPollInterval = 5000;
     private readonly bulkPollTimeout = 30 * 60 * 1000; // 30-min for large jobs
+    private readonly options = { ...recordBatchDefaultOptions };
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,
+        options: RecordBatchOptions = {},
         private readonly logger = LogManager.get(RecordBatch)) {
+        for (const option of Object.keys(options)) {
+            if (options[option] !== undefined && options[option] !== null) {
+                this.options[option] = options[option];
+            }
+        }
     }
 
     public async *execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
@@ -63,13 +81,14 @@ export default class RecordBatch {
         this.isExecuting = true;
         this.progressReporter = onProgress;
         const reporter = onProgress && setInterval(this.reportProgress.bind(this), this.bulkPollInterval);
+        const chunkSize = this.options.useBulkApi ? undefined : this.options.chunkSize;
 
         try {
             while (true) {
                 // --START 
                 // Cannot use for await due to a bug in TS/NodeJS
                 // for now us this work around try for await again in the future.
-                const chunk = await this.getRecords('all');
+                const chunk = await this.getRecords('all', chunkSize);
                 if (!chunk) {
                     return;
                 }
@@ -79,7 +98,7 @@ export default class RecordBatch {
                 }
 
                 // Record count lower then 50 use the normal collections API
-                const executionApiFunc = chunk.records.length > 50 ? 'executeWithBulkApi' : 'executeWithCollectionApi';
+                const executionApiFunc = this.options.useBulkApi && chunk.records.length > this.options.chunkSize ? 'executeWithBulkApi' : 'executeWithCollectionApi';
                 const results = await this[executionApiFunc](connection, chunk, cancelToken).catch(err => {
                     this.logger.error(`Failed to ${chunk.operation} ${chunk.records.length} records (${executionApiFunc.substr(11)}):`, err.message);
                     this.logger.verbose(chunk.records);

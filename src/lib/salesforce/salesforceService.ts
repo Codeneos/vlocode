@@ -287,7 +287,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param cancelToken optional cancellation token
      */
     public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
-        const batch = new RecordBatch(this.schema);
+        const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100 });
         for (const record of records) {
             batch.addUpdate(type, record, record.id, record.id);
         }

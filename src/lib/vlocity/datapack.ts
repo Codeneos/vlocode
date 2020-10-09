@@ -1,5 +1,6 @@
-import { PropertyTransformHandler, transformPropertyProxy } from 'lib/util/object';
-import { createRecordProxy, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
+import { dirname } from 'path';
+import { PropertyTransformHandler } from 'lib/util/object';
+import { removeNamespacePrefix } from 'lib/util/salesforce';
 import { ManifestEntry, ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
 import { v4 as generateGuid } from 'uuid';
 import { LogManager } from '../logging';
@@ -28,6 +29,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public get sobjectType(): string { return this.data.VlocityRecordSObjectType; }
     public get sourceKey(): string { return this.data.VlocityRecordSourceKey; }
     public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
+    public get datapackFolder(): string { return dirname(this.headerFile); }
     public readonly data: any;
     #dataProxy: any;
 
@@ -240,6 +242,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         } else if (name in this){
             (this as any)[name] = value;
         }
-        return this.getDataProxy()[name] = value;
+        this.getDataProxy()[name] = value;
+        return true;
     }
 }

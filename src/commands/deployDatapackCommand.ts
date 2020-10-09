@@ -91,10 +91,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
                     );
                 } else {
                     const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-                    const deployer = new DatapackDeployService(this.salesforce,
-                        await this.datapackService.getMatchingKeyService(),
-                        new VlocityNamespaceService(this.datapackService.vlocityNamespace)
-                    );
+                    const deployer = new DatapackDeployService();
                     const deployment = await deployer.createDeployment(datapacks);
                     await deployment.start();
                 }

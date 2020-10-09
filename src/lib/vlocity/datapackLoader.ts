@@ -128,11 +128,10 @@ export default class DatapackLoader {
 
     protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
-            const fileName = substringAfterLast(fieldValue, /\\|\//i);
-            const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fileName));
+            const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fieldValue));
             if (loader) {
                 try {
-                    const value = await loader.load(path.join(baseDir, fileName));
+                    const value = await loader.load(path.join(baseDir, fieldValue));
                     if (value !== undefined) {
                         return value;
                     }

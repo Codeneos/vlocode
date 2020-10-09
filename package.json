@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.44.0"
+        "vscode": "^1.47.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -63,7 +63,8 @@
         "onCommand:vlocode.developerLogs.deleteAll",
         "onCommand:vlocode.developerLogs.refresh",
         "onCommand:vlocode.setLogVisibility",
-        "onCommand:vlocode.developerLogs.setLogVisibility"
+        "onCommand:vlocode.developerLogs.setLogVisibility",
+        "onCommand:vlocode.execRestApi"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -218,6 +219,10 @@
             {
                 "command": "vlocode.setLogVisibility",
                 "title": "Salesforce: Set Developer Log Visibility..."
+            },
+            {
+                "command": "vlocode.execRestApi",
+                "title": "Salesforce: Execute REST API..."
             },
             {
                 "command": "vlocode.datapackExplorer.export",
@@ -417,6 +422,11 @@
                 },
                 {
                     "command": "vlocode.setLogVisibility",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.execRestApi",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },
@@ -740,6 +750,21 @@
                         "Directly load records using bulk or collections API; significantly faster then but still beta"
                     ],
                     "markdownDescription": "Change how Datapacks are deployment by Vlocode; select _direct_ mode for faster deployments (currently this is a beta feature)"
+                },
+                "vlocity.deploy.chunkSize": {
+                    "type": "number",
+                    "default": 100,
+                    "markdownDescription": "Number of records to deploy in as single operation using the collection API, only affects deployments when *direct* mode is enabled"
+                },
+                "vlocity.deploy.bulkApiThreshold": {
+                    "type": "number",
+                    "default": 500,
+                    "markdownDescription": "Record count when to start using the bulk API only has effect when `vlocity.deploy.useBulkApi` is set to true `true`"
+                },
+                "vlocity.deploy.useBulkApi": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "When enabled the deployment process will use the bulk API for uploading records when the total record type for a single SObject surpassed the value configured as `bulkApiThreshold`"
                 }
             }
         }
@@ -775,7 +800,7 @@
         "@types/request": "^2.48.4",
         "@types/sinon": "^7.5.1",
         "@types/uuid": "^3.4.6",
-        "@types/vscode": "^1.44.0",
+        "@types/vscode": "^1.47.0",
         "@types/xml2js": "^0.4.5",
         "@typescript-eslint/eslint-plugin": "^3.0.0",
         "@typescript-eslint/eslint-plugin-tslint": "^3.0.0",
