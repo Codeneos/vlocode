@@ -14,7 +14,7 @@ export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivi
         super(service);
         this.vlocode.activities.onArrayChanged(event => {
             event.newValues?.map(v => v.onPropertyChanged(() => this.dataChangedEmitter.fire(v)));
-            this.dataChangedEmitter.fire();
+            this.dataChangedEmitter.fire(undefined);
         });
     }
 
