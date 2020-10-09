@@ -8,7 +8,7 @@ import ExecAnonymousCommand from './execAnonymousCommand';
 import ViewInSalesforceCommand from './viewInSalesforce';
 import ClearDeveloperLogsCommand from './clearDeveloperLogsCommand';
 import SetTraceFlagsCommand from './setTraceFlagsCommand';
-import SetDeveloperLogVisibilityCommand from './SetDeveloperLogVisibilityCommand';
+import SetDeveloperLogVisibilityCommand from './setDeveloperLogVisibilityCommand';
 import ExecuteRestApiCommand from './execRestApiCommand';
 
 export default {
