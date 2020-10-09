@@ -3,7 +3,7 @@ import * as constants from '@constants';
 import * as xml2js from 'xml2js';
 
 export interface MetadataManifest {
-    apiVersion?: string;
+    apiVersion: string;
     files: {
         [packagePath: string]: ({
             type?: undefined;

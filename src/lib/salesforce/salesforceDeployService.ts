@@ -103,10 +103,12 @@ export class SalesforceDeployService {
     public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined>
     public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
         const targetApiVersion = apiVersion || this.config.salesforce.apiVersion || '45.0';
-        const mdPackage : MetadataManifest = { piVersion: targetApiVersion, files: {} };
-
+        const mdPackage : MetadataManifest = { apiVersion: targetApiVersion, files: {} };
         this.logger.verbose(`Building package manifest for ${files.length} selected files/folders`);
+        return this.addToManifest(mdPackage, files, token);
+    }
 
+    private async addToManifest(manifest: MetadataManifest, files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
         // Build zip archive for all expanded files
         // Note use posix path separators when building package.zip
         for (const file of files) {
@@ -116,12 +118,27 @@ export class SalesforceDeployService {
                 return;
             }
 
+            // parse folders recusively
+            if ((await vscode.workspace.fs.stat(file)).type == vscode.FileType.Directory) {
+                await this.addToManifest(manifest, (await vscode.workspace.fs.readDirectory(file)).map(([f]) => vscode.Uri.joinPath(file, f)), token);
+                continue;
+            }
+
+            // If selected file is a meta file check the source file instead
+            if (file.fsPath.endsWith('-meta.xml')) {
+                const sourceFile = file.with({ path: file.path.slice(0, -9) });
+                if (fs.existsSync(sourceFile.fsPath)) {
+                    await this.addToManifest(manifest, [ sourceFile ], token);
+                }
+            }
+
             // get metadata type
-            const metadataType = await this.getMetadataType(file.fsPath);
+            const metadataType = await this.getMetadataType(file);
             if (!metadataType) {
                 continue;
             }
 
+            const isMetaFile = file.fsPath.endsWith('-meta.xml');
             const isBundle = metadataType.xmlName.endsWith('Bundle');
             const packageFolder = this.getPackageFolder(file.fsPath, metadataType);
             const componentName = this.getPackageComponentName(file.fsPath, metadataType);
@@ -132,34 +149,34 @@ export class SalesforceDeployService {
                 const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(file.fsPath), '**'));
                 for (const sourceFile of sourceFiles) {
                     const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
-                    mdPackage.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: sourceFile.fsPath };
+                    manifest.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: sourceFile.fsPath };
                 }
             } else {
                 // First try adding the metadata file - if fails continue and also skip adding source
-                if (metadataType.metaFile) {
+                if (metadataType.metaFile && !isMetaFile) {
                     // For files that require a separate meta file include it
-                    const metaFile = `${file}-meta.xml`;
+                    const metaFile = `${file.fsPath}-meta.xml`;
                     const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
 
                     if (fs.existsSync(metaFile)) {
-                        mdPackage.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, localPath: metaFile };
+                        manifest.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, localPath: metaFile };
                     } else {
-                        const metaBody = await this.generateMetaFileBody(file.fsPath, targetApiVersion, metadataType);
+                        const metaBody = await this.generateMetaFileBody(file.fsPath, manifest.apiVersion, metadataType);
                         if (!metaBody) {
                             this.logger.error(`${file} is missing a -meta.xml - auto generation of meta-xml files is not supported for type ${metadataType.xmlName}`);
                             continue;
                         }
-                        mdPackage.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, body: metaBody };
+                        manifest.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, body: metaBody };
                     }
                 }
 
                 // add source
                 const sourcePackagePath = path.posix.join(packageFolder, path.basename(file.fsPath));
-                mdPackage.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: file.fsPath };
+                manifest.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: file.fsPath };
             }
         }
 
-        return mdPackage;
+        return manifest;
     }
 
     private async generateMetaFileBody(file: string, apiVersion: string, metadataType: MetadataObject) {
@@ -172,20 +189,23 @@ export class SalesforceDeployService {
         }
     }
 
-    private async getMetadataType(fileName: string) {
+    private async getMetadataType(file: vscode.Uri) {
         const metadataTypes = await this.salesforce.getMetadataTypes();
         for (const type of metadataTypes.metadataObjects) {
-            if (type.suffix) {
-                if (fileName.endsWith(`.${type.suffix}`)) {
-                    return type;
+            const suffixMatches = !type.suffix || file.fsPath.endsWith(`.${type.suffix}`);
+            const metaSuffixMatches = file.fsPath.endsWith(`.${type.suffix}-meta.xml`);
+
+            if (suffixMatches || metaSuffixMatches) {
+                if (type.directoryName) {
+                    // Consider both the directory and sub-directories
+                    const relativePath = vscode.workspace.asRelativePath(file, false);
+                    const dirnames = path.dirname(relativePath).split(/[\\/]/g);
+                    // @ts-expect-error compiler does not validate that type.directoryName cannot be null
+                    if (!dirnames.some(dirname => stringEquals(dirname, type.directoryName))) {
+                        continue;
+                    }
                 }
-            } else if (type.directoryName) {
-                // Consider both the directory and sub-directories
-                const dirnames = [ path.dirname(fileName), path.dirname(path.dirname(fileName)) ];
-                // @ts-expect-error compiler does not validate that type.directoryName cannot be null
-                if (dirnames.some(dirname => stringEquals(dirname, type.directoryName))) {
-                    return type;
-                }
+                return type;
             }
         }
     }
