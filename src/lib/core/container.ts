@@ -267,7 +267,7 @@ export class Container {
                 }
                 if (!instance && typeof prototype[prop] === 'function') {
                     return function(...args: any[]) {
-                        prototype[prop].apply(this, args);
+                        return prototype[prop].apply(this, args);
                     };
                 }
                 return getInstance()[prop];
