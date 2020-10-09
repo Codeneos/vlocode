@@ -18,7 +18,7 @@ export interface SassCompileSuccessResult {
 }
 
 /**
- * Unrestful compiler result
+ * SASS compiler error result
  */
 export interface SassCompileErrorResult {
     status: 1;
@@ -30,6 +30,50 @@ export interface SassCompileErrorResult {
 }
 
 /**
+ * SASS compiler options
+ */
+export interface SassCompilerOptions {
+    // extra include paths considered by the importer
+    importer: {
+        includePaths?: string[];
+        [key: string]: any;
+    };
+    // Format output: nested, expanded, compact, compressed
+    style?: 'nested' | 'expanded' | 'compact' | 'compressed';
+    // Decimal point precision for outputting fractional numbers
+    // (-1 will use the libsass default, which currently is 5)
+    precision?: number;
+    // If you want inline source comments
+    comments?: boolean;
+    // String to be used for indentation
+    indent?: string;
+    // String to be used to for line feeds
+    linefeed?: string;
+}
+
+export interface SassImportRequest {
+    /** path libsass wants to load (content of »@import "<path>";«) */ 
+    current?: string;
+    /** absolute path of previously imported file ("stdin" if first) */
+    previous?: string;
+    /** currentPath resolved against previousPath */
+    resolved?: string;
+    /** absolute path in file system, null if not found */
+    path?: string;
+    /** value of options.importer */
+    options?: any;
+}
+
+export interface SassImportResponse {
+    /** the content to use instead of loading a file */
+    content?: string;
+    /** he absolute path to load from file system */
+    path?: string;
+    /** the error message to print and abort the compilation */
+    error?: any;
+}
+
+/**
  * Describes a sass compiler
  */
 export abstract class SassCompiler {
@@ -38,7 +82,7 @@ export abstract class SassCompiler {
      * @param source sass-source code to compile
      * @param options Sass.js options (see SASS.js for details)
      */
-    abstract compile(source: string, options?: any): Promise<SassCompileSuccessResult | SassCompileErrorResult>;
+    abstract compile(source: string, options?: SassCompilerOptions): Promise<SassCompileSuccessResult | SassCompileErrorResult>;
 }
 
 

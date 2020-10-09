@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { SassCompiler } from 'lib/sass';
 import { service } from 'lib/core/inject';
 import type { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
@@ -24,7 +25,8 @@ export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
     public async preprocess(datapack: VlocityDatapack) {
         if (datapack.sass__c) {
             const timer = new Timer();
-            const result = await this.sass.compile(datapack.sass__c);
+            const includePaths = [ datapack.datapackFolder, path.join(datapack.datapackFolder, '..') ];
+            const result = await this.sass.compile(datapack.sass__c, { importer: { includePaths } });
             this.logger.info(`Compiled ${datapack.name} SASS [${timer.stop()}]`);
 
             if (result.status == 0) {
