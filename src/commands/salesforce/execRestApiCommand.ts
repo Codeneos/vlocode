@@ -1,3 +1,4 @@
+import Timer from 'lib/util/timer';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
 
@@ -8,7 +9,7 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             return;
         }
 
-        const method = await vscode.window.showQuickPick([ 'GET' ], { placeHolder: 'Select HTTP Method', ignoreFocusOut: true });
+        const method = await vscode.window.showQuickPick([ 'GET', 'POST' ], { placeHolder: 'Select HTTP Method', ignoreFocusOut: true });
         if (!method) {
             return;
         }
@@ -19,13 +20,23 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             url = `/services/apexrest/${url}`.replace(/[/]+/g, '/');
         }
 
+        let body;
+        if (method == 'POST') {
+            body = await vscode.window.showInputBox({ placeHolder: 'Enter POST body', ignoreFocusOut: true });
+            if (!body) {
+                return;
+            }
+        }
+
         this.logger.info(`Invoking ${url} as ${method}`);
+        const timer = new Timer();
         const connection = await this.salesforce.getJsForceConnection();
         const response = await this.vlocode.withActivity({
             progressTitle: `${method} ${url}...`,
             location: vscode.ProgressLocation.Notification,
             cancellable: false
-        }, () => connection.request({ method, url }));
+        }, () => connection.request({ method, url, body }));
+        this.logger.info(`${method} ${url} [${timer.stop()}]`);
 
         const responseDocument = await vscode.workspace.openTextDocument({ language: 'json', content: JSON.stringify(response, null, 4) });
         if (responseDocument) {
