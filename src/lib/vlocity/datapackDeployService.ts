@@ -239,7 +239,7 @@ export default class VlocityDatapackDeployService {
                 }
                 const dateFormat = {
                     'date': 'YYYY-MM-DD',
-                    'datetime': 'YYYY-MM-DDThh:mm:ssZ'
+                    'datetime': 'YYYY-MM-DDTHH:mm:ssZ'
                 };
                 const date = moment(value);
                 if (!date.isValid()) {
