@@ -790,7 +790,7 @@
         "@salesforce/core": "^2.6.0",
         "@types/chai": "^4.2.7",
         "@types/chalk": "^2.2.0",
-        "@types/fs-extra": "^8.0.1",
+        "@types/fs-extra": "^9.0.4",
         "@types/globby": "^9.1.0",
         "@types/js-yaml": "^3.12.1",
         "@types/jsforce": "^1.9.18",
