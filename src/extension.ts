@@ -20,6 +20,7 @@ import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider
 import { container, LifecyclePolicy } from 'lib/core/container';
 import VlocodeService from 'lib/vlocodeService';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import { ApexLogSymbolProvider } from 'symbolProviders/apexLogSymbolProvider';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -156,6 +157,13 @@ class Vlocode {
 
         // Watch any file saved
         this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, this.service));
+
+        // Add apex LOG symbol provider
+        try {
+            this.service.registerDisposable(vscode.languages.registerDocumentSymbolProvider({ language: 'apexlog' }, new ApexLogSymbolProvider()));
+        } catch(err) {
+            this.logger.warn(`Unable to regsiter symbol provider for APEX logs: ${err}`);
+        }
 
         // track activation time
         this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);
