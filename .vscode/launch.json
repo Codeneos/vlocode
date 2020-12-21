@@ -19,7 +19,13 @@
                 "${workspaceFolder}/out/**/*.js"
             ], 
             "skipFiles": [
-                "<node_internals>/**/*.js",
+                "**/out/vendor.js",
+                "**/app/**",
+                "**/node_modules.asar/**",
+                "**/node_modules/**/*.js",
+                "<node_internals>/**",
+                "async_hooks.js",
+                "inspector_async_hook.js"
             ],
             "smartStep": true,
             "preLaunchTask": "build",

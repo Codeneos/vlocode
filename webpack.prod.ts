@@ -1,22 +1,14 @@
+
+import * as webpack from 'webpack';
 import { default as common } from './webpack.common';
 import * as TerserPlugin from 'terser-webpack-plugin';
 
-module.exports = env => common(env, {
+const production: webpack.Configuration = {
     mode: 'production',
-    devtool: 'none',
+    devtool: 'inline-source-map',
     optimization: {
-        mergeDuplicateChunks: true,
-        minimizer: [new TerserPlugin({
-            terserOptions: {
-                ecma: 2019,
-                toplevel: false,
-                parse: {},
-                compress: false,
-                mangle: false,
-                module: true,
-                keep_classnames: true,
-                keep_fnames: true
-            }
-        })]
+        mergeDuplicateChunks: true
     }
-});
+};
+
+module.exports = env => common(env, production);

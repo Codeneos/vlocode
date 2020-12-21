@@ -83,8 +83,27 @@ const common : webpack.Configuration = {
         __filename: false
     },
     mode: 'development',
+    optimization: {
+        runtimeChunk: false,
+        providedExports: false,
+        usedExports: false,
+        portableRecords: true,
+        moduleIds: 'named',
+        chunkIds: 'named',
+        splitChunks: {
+            chunks: 'all',
+            maxInitialRequests: Infinity,
+            minSize: 0,
+            cacheGroups: {
+                vendor: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name: 'vendor'
+                },
+            },
+        },
+    },
     externals:
-        function(context, request, callback) {
+        function({ context, request}, callback) {
             const isExternal = packageExternals.some(
                 moduleName => new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
             );

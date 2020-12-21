@@ -11,8 +11,7 @@ const development : webpack.Configuration = {
     },
     optimization: {
         removeAvailableModules: true,
-        removeEmptyChunks: false,
-        splitChunks: false
+        removeEmptyChunks: false
     },
     output: {
         pathinfo: false,
