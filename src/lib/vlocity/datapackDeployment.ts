@@ -151,6 +151,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         await connection.tooling.executeAnonymous(`
             vlocity_cmt__TriggerSetup__c allVlocityTriggers = vlocity_cmt__TriggerSetup__c.getInstance('AllTriggers');
             allVlocityTriggers.vlocity_cmt__IsTriggerOn__c = ${enabled};
+            update allVlocityTriggers; 
         `);
         this.logger.verbose(`Set Vlocity trigger state ${enabled} [${timer.stop()}]`);
     }

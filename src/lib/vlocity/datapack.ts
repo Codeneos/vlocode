@@ -30,7 +30,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public get sourceKey(): string { return this.data.VlocityRecordSourceKey; }
     public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
     public get datapackFolder(): string { return dirname(this.headerFile); }
-    public readonly data: any;
+    public readonly data: object & { [key: string]: any };
     #dataProxy: any;
 
     constructor(
@@ -219,6 +219,9 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         if (!this.#dataProxy) {
             const nameTransformer = (name: string) => removeNamespacePrefix(name).replace('_', '').toLowerCase();
             const getPropertyKey = (target: object, name: string | number | symbol) => {
+                if (typeof name !== 'string' && target.hasOwnProperty(name)) {
+                    return name;
+                }
                 const normalizedName = nameTransformer(name.toString());
                 return Object.keys(target).find(key => nameTransformer(key) == normalizedName);
             };
