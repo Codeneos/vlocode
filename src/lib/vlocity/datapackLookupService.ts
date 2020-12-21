@@ -161,7 +161,6 @@ export class DatapackLookupService implements DependencyResolver {
             do {
                 const lookupEntries = entries.splice(0, batchSize);
                 const results = await this.lookupService.lookup(sobjectType, lookupEntries, [ 'Id', ...matchingKey.fields ], undefined, false);
-                found += results.length;
 
                 for (const rec of results) {
                     const lookupKey = this.buildLookupKey(sobjectType, matchingKey.fields, rec);
@@ -176,6 +175,7 @@ export class DatapackLookupService implements DependencyResolver {
                     const index = indexMap.get(lookupKey);
                     if (index !== undefined) {
                         lookupResults[index] = rec.id;
+                        found++;
                     } else {
                         this.logger.debug(`Got result for record not requested: ${lookupKey}`);
                     }
