@@ -5,6 +5,7 @@ import { LifecyclePolicy } from 'lib/core/container';
 import { mapAsyncParallel } from 'lib/util/collection';
 import { Logger } from 'lib/logging';
 import DatapackDeploymentRecord, { DeploymentStatus } from '../datapackDeploymentRecord';
+import { VlocityDatapack } from '../datapack';
 
 @service({ lifecycle: LifecyclePolicy.transient })
 export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
@@ -12,6 +13,11 @@ export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
     public constructor(
         private readonly salesforceService: SalesforceService,
         private readonly logger: Logger) {
+    }
+
+    public async preprocess(datapack: VlocityDatapack) {
+        // Update to inactive to allow insert; later in the process these are activated
+        datapack.IsActive__c = false;
     }
 
     public async afterDeploy(datapackRecords: DatapackDeploymentRecord[]) {
