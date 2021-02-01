@@ -808,7 +808,7 @@
         "@typescript-eslint/eslint-plugin": "^3.0.0",
         "@typescript-eslint/eslint-plugin-tslint": "^3.0.0",
         "@typescript-eslint/parser": "^3.0.0",
-        "angular-expressions": "^1.0.1",
+        "angular-expressions": "^1.1.2",
         "axios": "^0.21.1",
         "cache-loader": "^4.1.0",
         "chai": "^4.2.0",
