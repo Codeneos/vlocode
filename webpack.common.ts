@@ -95,6 +95,11 @@ const common : webpack.Configuration = {
             maxInitialRequests: Infinity,
             minSize: 0,
             cacheGroups: {
+                sass: {
+                    priority: 10,
+                    test: /[\\/]sass\.js[\\/]/,
+                    name: 'lib-sass'
+                },
                 vendor: {
                     test: /[\\/]node_modules[\\/]/,
                     name: 'vendor'
@@ -103,9 +108,9 @@ const common : webpack.Configuration = {
         },
     },
     externals:
-        function({ context, request}, callback) {
+        function({ request }, callback) {
             const isExternal = packageExternals.some(
-                moduleName => new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
+                moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
             );
             if (isExternal){
                 // @ts-ignore
@@ -119,7 +124,7 @@ const common : webpack.Configuration = {
 const vscodeExtension : webpack.Configuration = {
     entry: {
         'vlocode': './src/extension.ts',
-        'sassCompiler': './src/lib/sass/forked/fork.ts',
+        'sass-compiler': './src/lib/sass/forked/fork.ts',
     },
     name: 'vlocode',
     devtool: 'source-map',

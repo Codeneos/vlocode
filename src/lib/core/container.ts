@@ -32,7 +32,7 @@ export enum LifecyclePolicy {
 export class Container {
 
     private readonly instances = new Map<string, any>();
-    private readonly servicesProvided = Symbol();
+    private readonly servicesProvided = Symbol('[[Container:ServicesProvided]]');
 
     // Factories are lazy instances, when there is no instance it will be created
     // through a factory
@@ -76,7 +76,7 @@ export class Container {
      * @param overrideLifecycle Use an alternate lifecycle policy
      * @param receiver Class ctor for which we are resolving this
      */
-    public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: any, resolver: Container = this) : T | undefined {
+    public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: new () => object, resolver: Container = this) : T | undefined {
         const serviceName = this.getServiceName(service);
         console.debug(`resolve ${serviceName}`);
 
@@ -98,7 +98,7 @@ export class Container {
             const instance = factory.new() as T;
             const effectiveLifecycle = overrideLifecycle ?? factory.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return resolver.registerAs(resolver.register(instance), service);
+                return this.registerAs(this.register(instance), service);
             }
             return instance;
         }
@@ -109,14 +109,14 @@ export class Container {
             const instance = resolver.createInstance(type.ctor) as T;
             const effectiveLifecycle = overrideLifecycle ?? type.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return resolver.registerAs(resolver.register(instance), service);
+                return this.registerAs(this.register(instance), service);
             }
             return instance;
         }
 
         // probe parent
         if (this.parent) {
-            return this.parent.resolve(service, receiver, this);
+            return this.parent.resolve(service, overrideLifecycle, receiver, resolver);
         }
 
         // Cannot resolve this
@@ -194,6 +194,12 @@ export class Container {
             if (activeInstance === instance) {
                 this.instances.delete(service);
             }
+        }
+
+        // eslint-disable-next-line @typescript-eslint/dot-notation 
+        if (typeof instance['dispose'] === 'function') {
+            // eslint-disable-next-line @typescript-eslint/dot-notation 
+            instance['dispose']();
         }
     }
 

@@ -95,7 +95,7 @@ export class ForkedSassCompiler implements SassCompiler {
         }
 
         this.logger.verbose('Starting new SASS compiler');
-        const sassCompilerPath = path.join(__dirname, 'sassCompiler.js');
+        const sassCompilerPath = path.join(__dirname, 'sass-compiler.js');
         this.sassCompiler = fork(sassCompilerPath);
         this.sassCompiler.on('message', this.handleCompilerMessages.bind(this));
         this.sassCompiler.on('close', this.handleCompilerExit.bind(this));
