@@ -49,7 +49,8 @@ export default class VlocityMatchingKeyService {
      */
     public async getQuery(type: string, entry: { [key: string] : any }) : Promise<string> {
         // TODO: rewrite me to a lookup
-        const matchingKey = await this.getMatchingKeyDefinition(type);
+        const sobjectType = this.updateNamespace(entry.VlocityRecordSObjectType);
+        const matchingKey = await this.getMatchingKeyDefinition(sobjectType);
         if (!matchingKey) {
             throw new Error(`Object type ${type} does not have a matching key specified in Salesforce.`);
         }
@@ -57,11 +58,11 @@ export default class VlocityMatchingKeyService {
         let baseQuery = this.getExportQuery(type);
         if (!baseQuery) {
             this.logger.warn(`No base query found for type ${type}; using generic select`);
-            baseQuery = `SELECT ${matchingKey.returnField} FROM ${matchingKey.sobjectType}`;
+            baseQuery = `SELECT ${matchingKey.returnField} FROM ${sobjectType}`;
         }
 
         // Describe object
-        const sobject = await this.salesforce.schema.describeSObject(matchingKey.sobjectType);
+        const sobject = await this.salesforce.schema.describeSObject(sobjectType);
         const getFieldType = (fieldName: string) =>
             sobject.fields.find(field => stringEquals(field.name, this.updateNamespace(fieldName), true))?.type;
 
