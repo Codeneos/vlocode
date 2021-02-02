@@ -3,6 +3,7 @@ import * as jsforce from 'jsforce';
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
 import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
+import * as chalk from 'chalk';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { Logger } from './logging';
@@ -13,7 +14,6 @@ import { ConfigurationManager } from './configurationManager';
 import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
 import Timer from './util/timer';
-import * as chalk from 'chalk';
 import { service } from './core/inject';
 import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
@@ -32,9 +32,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     // Privates
     private disposables: {dispose() : any}[] = [];
-    private statusBar: vscode.StatusBarItem;
-    private apiStatus: vscode.StatusBarItem;
-    private connector: JsForceConnectionProvider;
+    private statusBar?: vscode.StatusBarItem;
+    private apiStatus?: vscode.StatusBarItem;
+    private connector?: JsForceConnectionProvider;
 
     private readonly connectionHooks = new HookManager<jsforce.Connection>();
     private readonly commandRouter = new CommandRouter(this);
@@ -47,18 +47,27 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     public readonly onActivitiesChanged = this.activitiesChangedEmitter.event;
 
     // Properties
-    private _datapackService: VlocityDatapackService;
+    private _datapackService?: VlocityDatapackService;
     public get datapackService(): VlocityDatapackService {
+        if (!this._datapackService) {
+            throw new Error('Vlocode is not initialized; VlocityDatapackService is null');
+        }
         return this._datapackService;
     }
 
-    private _salesforceService: SalesforceService;
+    private _salesforceService?: SalesforceService;
     public get salesforceService(): SalesforceService {
+        if (!this._salesforceService) {
+            throw new Error('Vlocode is not initialized; SalesforceService is null');
+        }
         return this._salesforceService;
     }
 
-    private _namespaceService: VlocityNamespaceService;
+    private _namespaceService?: VlocityNamespaceService;
     public get vlocityNamespace(): VlocityNamespaceService {
+        if (!this._namespaceService) {
+            throw new Error('Vlocode is not initialized; VlocityNamespaceService is null');
+        }
         return this._namespaceService;
     }
 
@@ -248,7 +257,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
-        if (this.connector == null) {
+        if (!this.connector) {
             if (!this.config.sfdxUsername) {
                 throw new Error('Cannot connect to Salesforce; no username specified in configuration');
             }

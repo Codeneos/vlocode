@@ -4,13 +4,16 @@ import { container, ServiceType, LifecyclePolicy } from './container';
 import { getDesignParamTypes } from 'lib/util/reflect';
 
 export interface DependencyOptions {
+    /** List of components that is provided by this class  */
     provides?: Array<ServiceType> | ServiceType;
+    /** Determines how a service is created and maintained in the system  */
     lifecycle?: LifecyclePolicy;
 }
 
 /**
- * A dependency/component that can be dependent on by other component and is registered in the container as factory.
- * @param provides List of components that is provided by this class
+ * Register a component/service into as injectable component into the main appliction container; services can have a LifecyclePolicy which 
+ * determines how and when the service is created. 
+ * @param options Constructions options for the service
  */
 export function service<T extends { new(...args: any[]): InstanceType<T> }>(options: DependencyOptions = {}) {
     const lifecycle = options?.lifecycle || LifecyclePolicy.singleton;
@@ -49,8 +52,4 @@ export function service<T extends { new(...args: any[]): InstanceType<T> }>(opti
         // Ensure our newly created dependency shares the same class name as the parent,
         return Object.defineProperty(classProto, 'name', { value: ctor.name, configurable: false, writable: false });
     };
-}
-
-export function noResolve() {
-    
 }
