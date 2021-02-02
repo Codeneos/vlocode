@@ -38,6 +38,9 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
                 if (key == this.sectionNameSymbol) {
                     return configSectionName;
                 }
+                if (typeof key === 'symbol') {
+                    return target[key];
+                }
                 const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
                 const value = workspaceConfig.get(key.toString());
                 if (typeof value === 'object' && value !== null) {
@@ -46,8 +49,12 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
                 return value;
             },
             set: (target, key, value) => {
-                const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
-                void workspaceConfig.update(key.toString(), value, false);
+                if (typeof key === 'symbol') {
+                    target[key] = value;
+                } else {
+                    const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
+                    void workspaceConfig.update(key.toString(), value, false);
+                }
                 return true;
             },
             ownKeys: () => {
