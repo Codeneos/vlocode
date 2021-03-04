@@ -78,22 +78,25 @@ export class Container {
      */
     public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: new () => object, resolver: Container = this) : T | undefined {
         const serviceName = this.getServiceName(service);
-        console.debug(`resolve ${serviceName}`);
+        console.debug(`Request ${serviceName}`);
 
         const provider = this.providers.get(serviceName);
         if (provider && receiver) {
+            console.debug(`Provided ${serviceName}`);
             return provider(receiver);
         }
 
         // return existing instance
         const currentInstance = this.instances.get(serviceName);
         if (currentInstance) {
+            console.debug(`Resolved existing`);
             return currentInstance;
         }
 
         // Note factories are likely not required any more - consider dropping this concept for now
         const factory = this.factories.get(serviceName);
         if (factory) {
+            console.debug(`Fabricate ${serviceName}`);
             // Fabricate new
             const instance = factory.new() as T;
             const effectiveLifecycle = overrideLifecycle ?? factory.lifecycle;
@@ -172,8 +175,11 @@ export class Container {
         for (let i = 0; i < paramTypes.length; i++) {
             args[i] = this.resolve(paramTypes[i], undefined, ctor);
         }
-        console.debug(`Create instance ${ctor.name}`);
-        return this.createLazyProxy(() => new ctor(...args), ctor.prototype);
+        console.debug(`Creating ${ctor.name} (lazy)`);
+        return this.createLazyProxy(() => {
+            console.debug(`Construct ${ctor.name}`);
+            return new ctor(...args);
+        }, ctor.prototype);
     }
 
     /**

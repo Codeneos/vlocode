@@ -1,5 +1,5 @@
 import * as jsforce from 'jsforce';
-import { LogManager } from 'lib/logging';
+import { Logger, LogManager } from 'lib/logging';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { stringEquals } from 'lib/util/string';
 
@@ -13,6 +13,8 @@ import { createRecordProxy, removeNamespacePrefix } from 'lib/util/salesforce';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import QueryBuilder from '../salesforce/queryBuilder';
 import { service } from 'lib/core/inject';
+import { VlocityNamespaceService } from './vlocityNamespaceService';
+import DatapackInfoService from './datapackInfoService';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
@@ -25,7 +27,9 @@ export interface VlocityMatchingKey {
 export default class VlocityMatchingKeyService {
 
     constructor(
-        public readonly vlocityNamespace: string,
+        private readonly logger: Logger,
+        private readonly vlocityNamespace: VlocityNamespaceService,
+        private readonly datapackInfo: DatapackInfoService,
         private readonly salesforce: SalesforceService) {
     }
 
@@ -38,10 +42,6 @@ export default class VlocityMatchingKeyService {
         return exportQueryDefinitions;
     }
 
-    private get logger() {
-        return LogManager.get(VlocityMatchingKeyService);
-    }
-
     /**
      * Build a specific select query for 
      * @param type Type of object for which to build a select query
@@ -49,7 +49,7 @@ export default class VlocityMatchingKeyService {
      */
     public async getQuery(type: string, entry: { [key: string] : any }) : Promise<string> {
         // TODO: rewrite me to a lookup
-        const sobjectType = this.updateNamespace(entry.VlocityRecordSObjectType);
+        const sobjectType = this.vlocityNamespace.updateNamespace(entry.VlocityRecordSObjectType);
         const matchingKey = await this.getMatchingKeyDefinition(sobjectType);
         if (!matchingKey) {
             throw new Error(`Object type ${type} does not have a matching key specified in Salesforce.`);
@@ -64,7 +64,7 @@ export default class VlocityMatchingKeyService {
         // Describe object
         const sobject = await this.salesforce.schema.describeSObject(sobjectType);
         const getFieldType = (fieldName: string) =>
-            sobject.fields.find(field => stringEquals(field.name, this.updateNamespace(fieldName), true))?.type;
+            sobject.fields.find(field => stringEquals(field.name, this.vlocityNamespace.updateNamespace(fieldName), true))?.type;
 
         // Append matching key fields
         baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
@@ -73,13 +73,6 @@ export default class VlocityMatchingKeyService {
         baseQuery += ' ORDER BY LastModifiedDate DESC LIMIT 1';
 
         return baseQuery;
-    }
-
-    private updateNamespace(name: string) {
-        if (this.vlocityNamespace) {
-            return name.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
-        }
-        return name.replace(constants.NAMESPACE_PLACEHOLDER, '').replace(/^__/, '');
     }
 
     private formatValue(value: any, type: jsforce.FieldType | undefined) : string {
@@ -171,17 +164,14 @@ export default class VlocityMatchingKeyService {
     private async queryMatchingKeys(): Promise<Array<VlocityMatchingKey>> {
         this.logger.verbose('Querying matching keys from Salesforce');
 
-        const [ matchingKeyResults ] = await Promise.all([
-            // This.salesforce.lookup('vlocity_namespace__VlocityDataPackConfiguration__mdt', null, 'all'),
-            this.salesforce.lookup('vlocity_namespace__DRMatchingKey__mdt', undefined, 'all')
-        ]);
-
+        const matchingKeyResults = await this.salesforce.lookup('vlocity_namespace__DRMatchingKey__mdt', undefined, 'all');
         const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
             const fields = record.matchingKeyFields.split(',').map(s => s.trim());
             const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
+            const datapackType = await this.datapackInfo.getDatapackType(record.objectAPIName);
             return {
                 sobjectType: record.objectAPIName,
-                datapackType: this.getDatapackType(record.objectAPIName) ?? record.Label,
+                datapackType: datapackType,
                 fields: validFields,
                 returnField: record.returnKeyField
             };

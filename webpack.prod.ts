@@ -1,13 +1,46 @@
 
 import * as webpack from 'webpack';
-import { default as common } from './webpack.common';
 import * as TerserPlugin from 'terser-webpack-plugin';
+import { default as common } from './webpack.common';
 
 const production: webpack.Configuration = {
     mode: 'production',
-    devtool: 'inline-source-map',
+    devtool: false,
     optimization: {
-        mergeDuplicateChunks: true
+        mergeDuplicateChunks: true,
+        minimize: true,
+        minimizer: [
+            // @ts-ignore
+            new TerserPlugin({
+                // Optimize and compress code
+                terserOptions: {
+                    ecma: 2019,
+                    compress: {
+                        arrows: true,
+                        drop_debugger: true,
+                        dead_code: false,
+                        inline: false,
+                        keep_classnames: true,
+                        keep_fnames: true,
+                        keep_infinity: true
+                    },
+                    mangle: false,
+                    module: true,
+                    format: null,
+                },
+                // Move license to different file
+                extractComments: {
+                    condition: 'some',
+                    filename: fileData => {
+                        // The "fileData" argument contains object with "filename", "basename", "query" and "hash"
+                        return `${fileData.filename}.LICENSE.txt${fileData.query}`;
+                    },
+                    banner: licenseFile => {
+                        return `License: ${licenseFile}`;
+                    },
+                }
+            })
+        ],
     }
 };
 

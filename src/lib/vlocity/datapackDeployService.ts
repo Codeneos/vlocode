@@ -64,7 +64,7 @@ export default class VlocityDatapackDeployService {
         const local = container.new();
         const queryService = local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
         const lookupService = local.register(new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService));
-        const datapackLookup = local.register(new DatapackLookupService(this.matchingKeyService.vlocityNamespace, this.matchingKeyService, lookupService));
+        const datapackLookup = local.register(new DatapackLookupService(this.namespaceService.getNamespace(), this.matchingKeyService, lookupService));
         const deployment = local.register(new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService, this.config.deploy));
 
         deployment.on('beforeDeployRecord', this.beforeDeployRecord.bind(this));
@@ -160,7 +160,7 @@ export default class VlocityDatapackDeployService {
         const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
 
-        for (const [key, value] of Object.entries(datapack.data)) {
+        for (const [key, value] of Object.entries(datapack.data).filter(([key]) => !key.includes('.'))) {
             const field = await this.schemaService.describeSObjectField(sobject.name, key, false);
 
             // skip datapack fields
@@ -203,10 +203,7 @@ export default class VlocityDatapackDeployService {
             } else {
                 // make sure the field exists
                 if (!field) {
-                    if (!key.includes('.')) {
-                        // only log fields that do not have a rel
-                        this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
-                    }
+                    this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
                     continue;
                 }
                 record.values[field.name] = this.convertValue(value, field);

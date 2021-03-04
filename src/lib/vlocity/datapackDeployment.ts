@@ -188,7 +188,8 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
                 await datapack.resolveDependencies(this);
 
                 if (datapack.hasUnresolvedDependencies) {
-                    this.logger.warn(`Record ${datapack.sourceKey} has ${datapack.getDependencies().length} unresolvable dependencies: ${datapack.getDependencies().join(', ')}`);
+                    const deps = datapack.getDependencies().map(dp => dp.VlocityMatchingRecordSourceKey || dp.VlocityLookupRecordSourceKey);
+                    this.logger.warn(`Record ${datapack.sourceKey} has ${datapack.getDependencies().length} unresolvable dependencies: ${deps.join(', ')}`);
                 }
             }
         }

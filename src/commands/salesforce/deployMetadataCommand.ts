@@ -70,8 +70,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
     protected async doDeployMetadata(files: vscode.Uri[]) {
         // Build manifest
         const manifest = await vscode.window.withProgress({
-            title: 'Building Deployment Manifest',
-            location: vscode.ProgressLocation.Window,
+            title: 'Building Deployment Manifest...',
+            location: vscode.ProgressLocation.Notification,
         }, () => this.salesforce.deploy.buildManifest(files, this.vlocode.config.salesforce?.apiVersion));
 
         // Get task title
@@ -82,6 +82,9 @@ export default class DeployMetadataCommand extends MetadataCommand {
             void vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
             return;
         }
+
+        // Save manifest
+        await this.saveUnsavedChanges(manifest);
 
         // Clear errors before starting the deployment
         this.clearPreviousErrors(manifest);

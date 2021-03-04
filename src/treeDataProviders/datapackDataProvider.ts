@@ -6,15 +6,21 @@ import { evalExpr } from 'lib/util/string';
 import { groupBy } from 'lib/util/collection';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { addFieldsToQuery } from 'lib/util/salesforce';
+import { addFieldsToQuery, normalizeSalesforceName } from 'lib/util/salesforce';
 import { service } from 'lib/core/inject';
+import { container } from 'lib/core/container';
+import DatapackInfoService from 'lib/vlocity/datapackInfoService';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
+import { DescribeGlobalSObjectResult } from 'jsforce';
+import { TreeItemCollapsibleState } from 'vscode';
 
 @service()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
+
+    private readonly supportSObjectExport = false;
 
     private async onExport(node: DatapackNode) {
         if (node.nodeType == DatapackNodeType.Category) {
@@ -51,7 +57,6 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         return this.vlocode.datapackService;
     }
 
-
     public toTreeItem(node: DatapackNode): vscode.TreeItem {
         return {
             id: node.getId(),
@@ -60,41 +65,59 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
             iconPath: this.getItemIconPath(node.icon),
             description: node.getItemDescription(),
             contextValue: `vlocode:datapack:${node.nodeType}`,
-            collapsibleState: node.expandable ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+            collapsibleState: typeof node.collapsibleState === 'boolean'
+                ? (node.collapsibleState ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.None)
+                : node.collapsibleState
         };
     }
 
     public async getChildren(node?: DatapackNode): Promise<DatapackNode[]> {
         await this.vlocode.validateAll(true);
         const nodeSorter = (a: DatapackNode, b: DatapackNode) => a.getItemLabel().localeCompare(b.getItemLabel());
+        try {
+            const nodes = await this.getNodes(node);
+            return nodes.sort(nodeSorter);
+        } catch (err) {
+            return [ new DatapackErrorNode(err.message) ];
+        }
+    }
 
+    private async getNodes(node?: DatapackNode): Promise<DatapackNode[]> {
         if (!node) {
-            return Object.keys(await this.datapackService.getQueryDefinitions()).map(
-                dataPackType => new DatapackCategoryNode(dataPackType)
-            ).sort(nodeSorter);
+            return [
+                new DatapackRootNode('Datapacks', 'Vlocity datapacks', TreeItemCollapsibleState.Expanded),
+                new DatapackRootNode('SObjects', 'Generic SObjects', TreeItemCollapsibleState.Collapsed)
+            ];
+        } else if (node instanceof DatapackRootNode) {
+            if (node.label === 'Datapacks') {
+                const datapacks = await container.get(DatapackInfoService).getDatapacks();
+                return datapacks.map(info => new DatapackCategoryNode(info.datapackType));
+            } else if (node.label === 'SObjects') {
+                return this.createSObjectNodes(await this.vlocode.salesforceService.schema.describeSObjects());
+            }
         } else if (node instanceof DatapackCategoryNode) {
-            const records = await this.getExportableRecords(node.datapackType);
-
-            // set node to not expand in case there are no results
-            if (!records) {
-                node.expandable = false;
-                this.refresh(node);
-                return [];
-            }
-
-            // group results?
-            const queryDefinitions = await this.datapackService.getQueryDefinitions();
-            const nodeConfig = queryDefinitions[node.datapackType];
-            if (nodeConfig && nodeConfig.groupKey) {
-                return this.createDatapackGroupNodes(records, node.datapackType, nodeConfig.groupKey).sort(nodeSorter);
-            }
-            return this.createDatapackObjectNodes(records, node.datapackType).sort(nodeSorter);
-
+            return this.expandCategoryNode(node);
         } else if (node instanceof DatapackObjectGroupNode) {
-            return this.createDatapackObjectNodes(node.records, node.datapackType).sort(nodeSorter);
+            return this.createDatapackObjectNodes(node.records, node.datapackType);
         }
 
         throw new Error(`Specified node type is neither a Category or Group node: ${node.getItemLabel()} (${node.nodeType})`);
+    }
+
+    private async expandCategoryNode(node: DatapackCategoryNode) {
+        const records = await this.getExportableRecords(node.datapackType);
+
+        // set node to not expand in case there are no results
+        if (!records || !records.length) {
+            return [ new DatapackTextNode('No datapacks available') ];
+        }
+
+        // group results?
+        const queryDefinition = await this.datapackService.getQueryDefinition(node.datapackType);
+        if (queryDefinition && queryDefinition.groupKey) {
+            return this.createDatapackGroupNodes(records, node.datapackType, queryDefinition.groupKey);
+        }
+        return this.createDatapackObjectNodes(records, node.datapackType);
     }
 
     private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {
@@ -109,9 +132,20 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
     private async getQuery(datapackType: string) {
-        const queryDefinitions = await this.datapackService.getQueryDefinitions();
-        const queryString = addFieldsToQuery(queryDefinitions[datapackType].query, 'Name');
-        return queryString;
+        const queryDefinition = await this.datapackService.getQueryDefinition(datapackType);
+        if (queryDefinition && queryDefinition.query) {
+            return addFieldsToQuery(queryDefinition.query, 'Name');
+        }
+
+        const sobjectType = await container.get(DatapackInfoService).getSObjectType(datapackType);
+        return `Select Id, Name from ${sobjectType}`;
+    }
+
+    private async createSObjectNodes(records: DescribeGlobalSObjectResult[]) {
+        const datapacks = (await container.get(DatapackInfoService).getDatapacks()).filter(dp => !!dp.sobjectType);
+        const hasDatapack = (sobject: string) => datapacks.some(dp => normalizeSalesforceName(dp.sobjectType) === normalizeSalesforceName(sobject));
+        const nonDatapackObjects = records.filter(record => !hasDatapack(record.name));
+        return nonDatapackObjects.map(record => new DatapackTextNode(record.name));
     }
 
     private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
@@ -129,6 +163,8 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 }
 
 enum DatapackNodeType {
+    Text = 'text',
+    Root = 'root',
     Category = 'category',
     Object = 'object',
     ObjectGroup = 'objectGroup'
@@ -137,8 +173,8 @@ enum DatapackNodeType {
 abstract class DatapackNode {
     constructor(
         public readonly nodeType: DatapackNodeType,
-        public expandable: boolean = false,
-        public icon: { light: string; dark: string } | string | undefined = undefined
+        public collapsibleState: TreeItemCollapsibleState | boolean = false,
+        public icon: { light: string; dark: string } | string | undefined = undefined,
     ) { }
 
     public abstract getId(): string;
@@ -147,13 +183,70 @@ abstract class DatapackNode {
     public abstract getItemDescription(): string | undefined;
 }
 
+class DatapackTextNode extends DatapackNode {
+    constructor(public readonly text: string, public icon: { light: string; dark: string } | string | undefined = undefined) {
+        super(DatapackNodeType.Text, false, icon);
+    }
+
+    public getId() {
+        return this.getItemLabel();
+    }
+
+    public getItemLabel() {
+        return this.text;
+    }
+
+    public getItemDescription() {
+        return undefined;
+    }
+
+    public getItemTooltip() {
+        return undefined;
+    }
+}
+
+class DatapackRootNode extends DatapackNode {
+    constructor(
+        public readonly label: string,
+        private readonly desc: string,
+        collapsibleState: TreeItemCollapsibleState,
+        icon: { light: string; dark: string } | string | undefined = undefined) {
+        super(DatapackNodeType.Root, collapsibleState, icon);
+    }
+
+    public getId() {
+        return `root:${this.getItemLabel()}`;
+    }
+
+    public getItemLabel() {
+        return this.label;
+    }
+
+    public getItemDescription() {
+        return this.desc;
+    }
+
+    public getItemTooltip() {
+        return undefined;
+    }
+}
+
+class DatapackErrorNode extends DatapackTextNode {
+    constructor(text: string) {
+        super(text, {
+            light: 'resources/light/error.svg',
+            dark: 'resources/dark/error.svg'
+        });
+    }
+}
+
 class DatapackCategoryNode extends DatapackNode {
     constructor(public datapackType: string) {
         super(DatapackNodeType.Category, true);
     }
 
     public getId() {
-        return this.getItemLabel();
+        return `${this.nodeType}:${this.getItemLabel()}`;
     }
 
     public getItemLabel() {

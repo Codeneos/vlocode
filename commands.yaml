@@ -93,7 +93,7 @@ vlocode.admin.clearPlatformCache:
 
 # Salesforce commands
 vlocode.deployMetadata:
-  title: 'Salesforce: Save/Deploy'
+  title: 'Salesforce: Deploy'
   group: v_salesforce
   when: vlocodeSalesforceSupport
   menus:    

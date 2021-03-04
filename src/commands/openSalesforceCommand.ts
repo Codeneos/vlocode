@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as open from 'open';
 
 import { evalExpr } from 'lib/util/string';
 import { ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
@@ -29,7 +30,6 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         }
 
         const salesforceId = (await this.datapackService.getSalesforceIds([ datapack ])).pop();
-        if (salesforceId) {}
         return this.openIdInSalesforce(salesforceId, datapack.datapackType);
     }
 
@@ -45,16 +45,28 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         }
 
         // Build URL
-        const queryDefinitions = await this.datapackService.getQueryDefinitions();
-        let salesforceUrl = queryDefinitions[datapackType].salesforceUrl || `'lightning/r/${objectId}/view'`;
+        const queryDefinition = await this.datapackService.getQueryDefinition(datapackType);
+        let salesforceUrl = queryDefinition?.salesforceUrl || await this.getObjectNativeUrl(objectId);
         salesforceUrl = typeof salesforceUrl === 'string' ? { path: salesforceUrl } : salesforceUrl;
 
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
-        const salesforcePath = evalExpr(salesforceUrl.path, {...extraFields, id: objectId, type: datapackType, namespace: namespace });
+        const salesforcePath = evalExpr(salesforceUrl.path, {...extraFields, id: objectId, type: datapackType, namespace });
 
-        const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath);
+        const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true });
         this.logger.info(`Opening URL: ${salesforcePath}`);
-        void vscode.env.openExternal(vscode.Uri.parse(url));
+        // Do not use vscode.env.openExternal as it encodes params of the URI creating an invalid URI
+        void open(url);
+    }
+
+    protected async getObjectNativeUrl(objectId: string) {
+        const objectInfo = await this.salesforce.schema.describeSObjectById(objectId);
+
+        if (objectInfo.customSetting) {
+            const apexPage = `/setup/ui/viewCustomSettingsData.apexp?appLayout=setup&id=${objectId}`;
+            return `'lightning/setup/CustomSettings/page?address=${encodeURIComponent(apexPage)}'`;
+        }
+
+        return `'lightning/r/${objectId}/view'`;
     }
 
     protected resolveNamespace(namespace: string | undefined) : string | undefined {

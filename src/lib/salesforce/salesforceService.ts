@@ -1,4 +1,5 @@
 import * as constants from '@constants';
+import * as vscode from 'vscode';
 import axios from 'axios';
 import * as jsforce from 'jsforce';
 import { Logger, LogManager } from 'lib/logging';
@@ -192,7 +193,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     public async getPageUrl(page : string, ops?: { namespacePrefix? : string; useFrontdoor?: boolean}) {
-        const con = await this.getJsForceConnection();
+const con = await this.getJsForceConnection();
         let relativeUrl = page.replace(/^\/+/, '');
         if (relativeUrl.startsWith('apex/')) {
             // Build lightning URL
@@ -205,11 +206,19 @@ export default class SalesforceService implements JsForceConnectionProvider {
             };
             relativeUrl = `one/one.app#${Buffer.from(JSON.stringify(state)).toString('base64')}`;
         }
+
         if (ops?.useFrontdoor) {
             relativeUrl = `secur/frontdoor.jsp?sid=${encodeURIComponent(con.accessToken)}&retURL=${encodeURIComponent(relativeUrl)}`;
         }
+
         const urlNamespace = ops?.namespacePrefix ? `--${  ops.namespacePrefix.replace(/_/i, '-')}` : '';
-        return con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${relativeUrl}`);
+        let url = con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4`);
+
+        if (relativeUrl.startsWith('lightning/') && url.includes('.my.')) {
+            // replace my.salesforce.com with lightning.force.com for setup pages
+            url = url.replace(/\.my\.salesforce\.com/i, '.lightning.force.com');
+        }
+        return url;
     }
 
     @cache(-1)

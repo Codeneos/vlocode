@@ -1,5 +1,6 @@
 
 import * as constants from '@constants';
+import { Iterable } from 'lib/util/iterable';
 import * as xml2js from 'xml2js';
 
 export interface MetadataManifest {
@@ -24,44 +25,74 @@ export interface MetadataManifest {
 /**
  * Object that describe the salesforce package XML, can be converted into a package.xml file body or JSON structure
  */
-export class PackageXml {
+export class PackageManifest {
     private readonly metadataMembers = new Map<string, Set<string>>();
-    constructor(public readonly version: string) {
-        if (!/^\d{2,3}\.\d$/.test(version)) {
-            throw new Error(`Invalid API version: ${version}`);
-        }
+
+    /**
+     * Get all types that are mentioned in this package.
+     */
+    public *types() {
+        yield *this.metadataMembers.keys();
     }
+
     /**
      * Add a new memeber to te package XML manifest
      * @param type Type of component to add
      * @param member Name of the component to add
      */
-    public add(type?: string, member?: string): void {
-        if (!type) {
-            throw new Error('Type cannot be an empty or null string');
-        }
-        if (!member) {
-            throw new Error('member cannot be an empty or null string');
-        }
+    public add(type: string, member: string): void {
         // Add component to package if this is a meta like file
         let members = this.metadataMembers.get(type);
         if (members == null) {
             this.metadataMembers.set(type, members = new Set<string>());
         }
+
+        if (members.has('*')) {
+            return;
+        }
+
+        if (member == '*') {
+            members.clear();
+        }
+
         members.add(member);
     }
+
+    /**
+     * Count the number of package members in the current manifest
+     * @param type The XML type to count
+     */
+    public count(type?: string): number {
+        if (type) {
+            return this.metadataMembers.get(type)?.size ?? 0;
+        }
+        return Iterable.reduce(this.metadataMembers.entries(), (sum, [,members]) => sum + members.size, 0);
+    }
+
+    /**
+     * Determine if the specified type exists in the current manifest and has members
+     * @param type 
+     */
+    public has(type: string): boolean {
+        return this.count(type) > 0;
+    }
+
     /**
      * Converts the contents of the package to a JSON structure that can be use for retrieval
      */
-    public toJson(): {
+    public toJson(apiVersion: string): {
         version: string;
         types: {
             name: string;
             members: string[];
         }[];
     } {
+        if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
+            throw new Error(`Invalid API version: ${apiVersion}`);
+        }
+
         return {
-            version: this.version,
+            version: apiVersion,
             types: [...this.metadataMembers.entries()].map(([name, members]) => ({ name, members: [...members.values()] }))
         };
     }
@@ -69,12 +100,12 @@ export class PackageXml {
     /**
      * Converts the contents of the package to XML that can be saved into a package.xml file
      */
-    public toXml(): string {
+    public toXml(apiVersion: string): string {
         const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
         return xmlBuilder.buildObject({
             Package: {
                 $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
-                ...this.toJson()
+                ...this.toJson(apiVersion)
             }
         });
     }
@@ -83,8 +114,8 @@ export class PackageXml {
      * Creates a package XML structure object from a MetadataManifest
      * @param manifest The manifest to create a PackageXML from
      */
-    static from(manifest: MetadataManifest): PackageXml {
-        const packageXml = new PackageXml(manifest.apiVersion || '45.0');
+    static from(manifest: MetadataManifest): PackageManifest {
+        const packageXml = new PackageManifest();
         for (const info of Object.values(manifest.files)) {
             if (info.type) {
                 packageXml.add(info.type, info.name);

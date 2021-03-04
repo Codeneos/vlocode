@@ -59,6 +59,16 @@ export namespace Iterable {
         }
     }
 
+    export function reduce<T, S = T>(itr: Iterable<T>, reduceFunction: (prev: S, item: T) => S, init: S) : S;
+    export function reduce<T, S = T>(itr: Iterable<T>, reduceFunction: (prev: S, item: T) => S, init?: S) : S | undefined {
+        let sum = init;
+        for (const item of itr) {
+            // @ts-ignore sum can be of type T or S both is fine
+            sum = sum === undefined ? item : reduceFunction(sum, item);
+        }
+        return sum;
+    }
+
     /**
      * Checks if the specified obj is an iterable by checking if it has a callable Symbol.iterator 
      * @param obj Object to check

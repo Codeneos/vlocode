@@ -11,7 +11,7 @@ import { getDocumentBodyAsString } from 'lib/util/fs';
 import * as metaFileTemplates from 'metaFileTemplates.yaml';
 import * as vscode from 'vscode';
 import { formatString, stringEquals, substringAfterLast } from 'lib/util/string';
-import { MetadataManifest, PackageXml } from './deploy/packageXml';
+import { MetadataManifest, PackageManifest } from './deploy/packageXml';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import SalesforceService from './salesforceService';
 import { service } from 'lib/core/inject';
@@ -65,11 +65,11 @@ export class SalesforceDeployService {
     public async buildPackageFromManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<ZipArchive | undefined>
     public async buildPackageFromManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<ZipArchive | undefined> {
         // Build package XML
-        const packageXml = new PackageXml(manifest.apiVersion || '45.0');
+        const packageXml = new PackageManifest();
         const packageZip = new ZipArchive();
 
         // Log
-        this.logger.verbose(`Building metadata ZIP package API ${packageXml.version}`);
+        this.logger.verbose(`Building metadata ZIP package API ${manifest.apiVersion}`);
 
         for (const [packagePath, info] of Object.entries(manifest.files)) {
             // Stop directly and return null
@@ -91,7 +91,7 @@ export class SalesforceDeployService {
         }
 
         // Add package.xml
-        return packageZip.file('package.xml', packageXml.toXml());
+        return packageZip.file('package.xml', packageXml.toXml(manifest.apiVersion));
     }
 
     /**
@@ -183,7 +183,7 @@ export class SalesforceDeployService {
         if (metaFileTemplates[metadataType.xmlName]) {
             const contextValues = {
                 apiVersion, file,
-                name: file.match(/((.*[\\/])|^)([\w.-]+)\.[\w]+$/)?.[3]
+                name: file.match(/((.*[/\\])|^)([\w.-]+)\.[\w]+$/)?.[3]
             };
             return formatString(metaFileTemplates[metadataType.xmlName], contextValues).trim();
         }
@@ -199,7 +199,7 @@ export class SalesforceDeployService {
                 if (type.directoryName) {
                     // Consider both the directory and sub-directories
                     const relativePath = vscode.workspace.asRelativePath(file, false);
-                    const dirnames = path.dirname(relativePath).split(/[\\/]/g);
+                    const dirnames = path.dirname(relativePath).split(/\/|\\/g);
                     // @ts-expect-error compiler does not validate that type.directoryName cannot be null
                     if (!dirnames.some(dirname => stringEquals(dirname, type.directoryName))) {
                         continue;
@@ -219,6 +219,11 @@ export class SalesforceDeployService {
         const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
         const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
         const packageFolder = this.getPackageFolder(metaFile, metadataType);
+        const isBundle = metadataType.xmlName.endsWith('Bundle');
+
+        if (isBundle) {
+            return metaFile.split(/\\|\//g).slice(-2).shift()!;
+        }
 
         if (packageFolder.includes(path.posix.sep)) {
             return packageFolder.split(path.posix.sep).slice(1).concat([ componentName ]).join(path.posix.sep);
@@ -233,16 +238,16 @@ export class SalesforceDeployService {
      * @param metadataType 
      */
     private getPackageFolder(fullSourcePath: string, metadataType: MetadataObject) : string {
-        const retainFolderStructure = metadataType.inFolder;
+        const retainFolderStructure = !!metadataType.inFolder;
         const componentPackageFolder = metadataType.directoryName;
 
         if (retainFolderStructure && componentPackageFolder) {
-            const packageParts = path.dirname(fullSourcePath).split(/\/|\\/);
+            const packageParts = path.dirname(fullSourcePath).split(/\/|\\/g);
             const packageFolderIndex = packageParts.indexOf(componentPackageFolder);
             return packageParts.slice(packageFolderIndex).join(path.posix.sep);
         }
 
-        return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/);
+        return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/g);
     }
 
     /**
@@ -287,7 +292,7 @@ export class SalesforceDeployService {
         const packageZip = await this.buildPackageFromManifest({
             apiVersion: manifest.apiVersion,
             files: {
-                'destructiveChanges.xml': { body: PackageXml.from(manifest).toXml() }
+                'destructiveChanges.xml': { body: PackageManifest.from(manifest).toXml(manifest.apiVersion) }
             }
         });
         return this.deploy(packageZip, options, progress, token);
@@ -369,7 +374,6 @@ export class SalesforceDeployService {
                 // Always check only for production
                 deployOptions.rollbackOnError = true;
                 deployOptions.purgeOnDelete = false;
-                // @ts-expect-error Types for JSforce are outdated; checkOnly is a valid deploy options
                 deployOptions.checkOnly = true;
             }
 
@@ -421,13 +425,13 @@ export class SalesforceDeployService {
 
         const retrieveTask = async (cancellationToken?: vscode.CancellationToken) => {
             // Create package
-            const packageXml = PackageXml.from(manifest);
+            const packageXml = PackageManifest.from(manifest);
             const singlePackage = true;
 
             // Start deploy            
             const connection = await this.salesforce.getJsForceConnection();
             const retrieveJob = await connection.metadata.retrieve({
-                singlePackage, unpackaged: packageXml.toJson()
+                singlePackage, unpackaged: packageXml.toJson(manifest.apiVersion)
             }, undefined);
 
             // Wait for deploy
@@ -475,7 +479,7 @@ export class SalesforceDeployService {
         // Determine possible meta search paths for the selected files
         const searchPaths = [] as string[];
         for (const file of paths) {
-            const pathParts = file.split(/\/|\\/ig);
+            const pathParts = file.split(/\/|\\/g);
             if (pathParts.includes('lwc')) {
                 const componentPath = pathParts.slice(0, pathParts.lastIndexOf('lwc') + 2);
                 searchPaths.push(path.join(...componentPath));

@@ -19,7 +19,7 @@ export class VlocityNamespaceService {
      * Get the vlocity namespace for the specified 
      */
     public getNamespace() {
-        return this.vlocityNamespace;
+        return this.vlocityNamespace ?? '';
     }
 
     /**

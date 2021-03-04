@@ -2,9 +2,10 @@ import * as jsforce from 'jsforce';
 import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import cache from 'lib/util/cache';
-import { normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
+import { isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { service } from 'lib/core/inject';
+import { debug } from 'console';
 
 /**
  * Provices access to Database Schema methods like describe.
@@ -36,6 +37,20 @@ export default class SalesforceSchemaService {
         }
     }
 
+    public async describeSObjectById(id: string) : Promise<jsforce.DescribeSObjectResult>{
+        if (!isSalesforceId(id)) {
+            throw Error(`Invalid Salesfoce id: ${id}`);
+        }
+
+        for (const obj of await this.describeSObjects()) {
+            if (obj.keyPrefix && id.startsWith(obj.keyPrefix)) {
+                return this.describeSObject(obj.name);
+            }
+        }
+
+        throw Error(`No object found matching the key prefix specified: ${id}`);
+    }
+
     @cache(-1)
     private async describeSObjectCached(type: string) : Promise<jsforce.DescribeSObjectResult> {
         const con = await this.connectionProvider.getJsForceConnection();
@@ -47,21 +62,43 @@ export default class SalesforceSchemaService {
         }
     }
 
-
     public async describeSObjectField(type: string, fieldName: string) : Promise<jsforce.Field>
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<jsforce.Field | undefined>
     @cache(-1)
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field | undefined> {
-        const result = await this.describeSObject(type, throwWhenNotFound);
-        const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
-        // First find a field with namespace, secondly without
-        const field = result?.fields.find(field => removeNamespacePrefix(field.name.toLowerCase()) == normalizedFieldName);
-        if (!field) {
-            if (throwWhenNotFound) {
-                throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
+        return (await this.describeSObjectFieldPath(type, fieldName, throwWhenNotFound))?.slice(-1).pop();
+    }
+
+    public async describeSObjectFieldPath(type: string, fieldName: string) : Promise<jsforce.Field[]>
+    public async describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<jsforce.Field[] | undefined>
+    /**
+     * Resolve an SObject field based on it's path; returns an array of jsforce.Field's
+     * @param type SObject type
+     * @param fieldPath Full field path
+     * @param throwWhenNotFound trye to throw an exception when the type is not found otherwise return null;
+     */
+    @cache(-1)
+    public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field[] | undefined> {
+        const resolved = new Array<jsforce.Field>();
+
+        // Resolve a full Field path
+        for (const fieldName of fieldPath.split('.')) {
+            const result = await this.describeSObject(type, throwWhenNotFound);
+            const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
+
+            // First find a field with namespace, secondly without
+            const field = result?.fields.find(field => [field.name, field.relationshipName].some(name => name && removeNamespacePrefix(name.toLowerCase()) == normalizedFieldName));
+            if (!field) {
+                if (throwWhenNotFound) {
+                    throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
+                }
+                return undefined;
             }
+
+            resolved.push(field);
         }
-        return field;
+
+        return resolved;
     }
 
     public async getSObjectFields(type: string) : Promise<jsforce.Field[]> {

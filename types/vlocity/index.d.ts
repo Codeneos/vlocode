@@ -127,6 +127,7 @@ declare module 'vlocity' {
 
         export class DataPacksBuilder {
             allFileDataMap: {[key: string] : any};
+            compile: (lang: string, source: string, options: { includePaths: Array<string> }, cb: (error: any, css: string) => void) => void;
         }
 
         export interface VlocityJobResult {

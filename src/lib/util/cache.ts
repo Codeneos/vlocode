@@ -1,5 +1,7 @@
 import { LogManager } from 'lib/logging';
 import { isPromise } from './async';
+import { deserialize, serialize } from 'v8';
+import { types } from 'util';
 
 /**
  * Private property on the target object used to store cached results;
@@ -7,12 +9,67 @@ import { isPromise } from './async';
 const CacheStoreProperty = Symbol.for('cache');
 
 /**
+ * Describes a entry in the cache of an object; allows the cache to return promise wrapped values and determine the age of a cache entry upon retrieval
+ */
+class CacheEntry {
+
+    private readonly date: number;
+    private readonly isPromise: boolean;
+    private isResolved: boolean;
+
+    constructor(private innerValue: any) {
+        this.date = Date.now();
+        this.isPromise = isPromise(innerValue);
+        if (this.isPromise) {
+            this.innerValue.then(value => {
+                this.isResolved = true;
+                this.innerValue = value;
+                return this.getInnerValueSafe();
+            });
+        }
+    }
+
+    /**
+     * Get the inner value of this cache entry as a safe mutable variant. When we return an array or object from the cache it should be transparent for the 
+     * consuming that this is a cache entry. For mutable objects it is import the result of a chache method remains idempotent.
+     */
+    private getInnerValueSafe() {
+        if (typeof this.innerValue === 'object' && this.innerValue !== null) {
+            return Object.seal(this.innerValue);
+            // if (!types.isProxy(this.innerValue)) {
+            //     return deserialize(serialize(this.innerValue));
+            // }
+        }
+        return this.innerValue;
+    }
+
+    /**
+     * Get the value this cache entry holds, returns a Promise when the original value is a promise otherwise directly returns a safe mutable version
+     * of the cached value.
+     */
+    get value() {
+        if (this.isPromise && !this.isResolved) {
+            // When the promise is not resolved return the original promise
+            return this.innerValue;
+        }
+
+        // When the promise is resolved or when not-a-promise get a safe version of the cache and
+        // when required return it as a resoleved promise.
+        const safeValue = this.getInnerValueSafe();
+        if (this.isPromise) {
+            return Promise.resolve(safeValue);
+        }
+        return safeValue;
+    }
+}
+
+/**
  * Get the cache map for an object
  * @param this Then entry on which to get the cache
  */
-function getCacheStore(target: any) : Map<string, any> {
+function getCacheStore(target: any) : Map<string, CacheEntry> {
     if (!target[CacheStoreProperty]) {
-        target[CacheStoreProperty] = new Map<string, any>();
+        target[CacheStoreProperty] = new Map<string, CacheEntry>();
     }
     return target[CacheStoreProperty];
 }
@@ -58,35 +115,31 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(this ?? target);
         const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? 'undef'), `${name}:`);
-        const cachedValue = cache.get(key);
-        if (cachedValue) {
-            return cachedValue;
+        const cacheEntry = cache.get(key);
+        if (cacheEntry) {
+            return cacheEntry.value;
         }
 
         // Reload value and put it in the cache
         logger.debug(`Cache miss reload value (key: ${key})`);
-        const newValue = target.apply(this, args);
+        const newValue =  target.apply(this, args);
         if (ttl > 0) {
             // Follow TTL
             setTimeout(() => cache.delete(key), ttl * 1000);
         }
-        cache.set(key, newValue);
 
         // When the result is a promise ensure it gets deleted when it causes an exception
         if (isPromise(newValue)) {
-            // Remove invalid results from the cache
-            newValue.then(value => {
-                // Replace cached value with actual value to avoid keeping attached handler in memory
-                // wrap the result in a promise to ensure this replacement is transparent to the caller
-                logger.debug(`Promise resolved; replace promised value with actual result (key: ${key})`);
-                cache.set(key, Promise.resolve(value));
-                return value;
-            }).catch(err => {
+            newValue.catch(err => {
                 logger.debug(`Delete cached promise due to exception (key: ${key})`, err);
                 cache.delete(key);
             });
         }
-        return newValue;
+
+        // Store and return
+        const entry = new CacheEntry(newValue);
+        cache.set(key, entry);
+        return entry.value;
     };
 
     return cachedFunction as T;

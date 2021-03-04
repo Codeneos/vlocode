@@ -203,3 +203,12 @@ export function filterUndefined<T>(iterable: Iterable<T | undefined>): Array<T> 
     }
     return result;
 }
+
+/**
+ * Get the last element from an array similair to pop but without removing the element. 
+ * @param array Atray to get the last element from. Array is not altered.
+ */
+export function last<T>(array: Array<T>): T | undefined {
+    return array.length ? array[array.length - 1] : undefined;
+}
+

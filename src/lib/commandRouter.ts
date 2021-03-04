@@ -51,9 +51,6 @@ class CommandExecutor implements Command {
         } catch(err) {
             const message = err.message || err;
             this.logger.error(`Command error: ${message}`);
-            if (util.types.isNativeError(err)) {
-                this.logger.verbose(err.stack);
-            }
             void vscode.window.showErrorMessage(message);
         }
     }

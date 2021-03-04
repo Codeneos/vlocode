@@ -126,3 +126,12 @@ export function getObjectValues(obj: any, depth = -1) : any[] {
     });
     return properties;
 }
+
+/**
+ * Transform the specified object into a different shape by transforming each key according to the transformation function
+ * @param obj Object to transform
+ * @param transformer Transformation function
+ */
+export function transform(obj: object, transformer: (key: string | number | symbol) => string | number | symbol): object {
+    return Object.entries(obj).reduce((map, [key, value]) => Object.assign(map, { [transformer(key)]: value }), {});
+}

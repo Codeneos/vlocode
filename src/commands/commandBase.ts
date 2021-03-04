@@ -92,12 +92,12 @@ export abstract class CommandBase implements Command {
         return true;
     }
 
-    @cache(-1)
+    //@cache(-1)
     protected get logger() : Logger {
         return LogManager.get(this.getName());
     }
 
-    @cache(-1)
+    //@cache(-1)
     protected get vlocode() : VlocodeService {
         return getContext().service;
     }

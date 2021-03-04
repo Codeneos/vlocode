@@ -5,7 +5,7 @@ import * as jsforce from 'jsforce';
 import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
-import { LogManager } from 'lib/logging';
+import { Logger, LogManager } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
@@ -22,6 +22,8 @@ import { service } from 'lib/core/inject';
 import * as constants from '@constants';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
+import { stringEquals } from 'lib/util/string';
+type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
 
 export interface ManifestEntry {
     datapackType: string;
@@ -226,14 +228,15 @@ export default class VlocityDatapackService implements vscode.Disposable {
     private vlocityBuildTools: vlocity;
 
     private expandProvider: ExpandDefinitionProvider;
-    private matchingKeyService: VlocityMatchingKeyService;
     private customSettings: any; // Load from yaml when needed
     private customSettingsWatcher: vscode.FileSystemWatcher | undefined;
 
     constructor(
+        private readonly logger: Logger,
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly config: VlocodeConfiguration,
         private readonly salesforceService: SalesforceService,
+        private readonly matchingKeyService: VlocityMatchingKeyService,
         private readonly loader: DatapackLoader
     ) {
     }
@@ -265,6 +268,9 @@ export default class VlocityDatapackService implements vscode.Disposable {
         buildTools.datapacksexportbuildfile.saveFile = () => {};
         await buildTools.utilityservice.checkLogin();
 
+        // patch SASS compiler
+        //buildTools.datapacksbuilder.compile = function(lang, source, options, cb) 
+
         // Making sure that any override definitions so that offline operations (expand) also uses the correct
         // custom definitions when defined -- do this after the login check to ensure we have namespaces set correctly
         const customJobOptions = await this.getCustomJobOptions();
@@ -282,22 +288,25 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this.vlocityBuildTools.namespace;
     }
 
-    public get queryDefinitions() {
-        return exportQueryDefinitions;
-    }
-
-    private get logger() {
-        return LogManager.get(VlocityDatapackService);
-    }
-
+    /**
+     * Get all known query definitions.
+     */
     public async getQueryDefinitions() : Promise<QueryDefinitions> {
         const customJobOptions = await this.getCustomJobOptions();
         if (customJobOptions && customJobOptions.customQueries) {
             const customQueries = customJobOptions.customQueries.reduce((map, val) =>
-                ({...map, [val.VlocityDataPackType]: val}) , {});
+                Object.assign(map, { [val.VlocityDataPackType]: val }) , {});
             return {...customQueries, ...exportQueryDefinitions};
         }
         return exportQueryDefinitions;
+    }
+
+    /**
+     * Get the query definition for the specified datapack type.
+     * @param datapack Datapack type
+     */
+    public async getQueryDefinition(datapack: string) {
+        return Object.entries(await this.getQueryDefinitions()).find(([type]) => stringEquals(type, datapack))?.[1];
     }
 
     /**
@@ -340,13 +349,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     public isGuaranteedParentKey(key: string) {
         return key.startsWith('RecordType/') || this.vlocityBuildTools.datapacksutils.isGuaranteedParentKey(key);
-    }
-
-    public async getMatchingKeyService() : Promise<VlocityMatchingKeyService> {
-        if (!this.matchingKeyService) {
-            this.matchingKeyService = new VlocityMatchingKeyService(this.vlocityNamespace, this.salesforceService);
-        }
-        return this.matchingKeyService;
     }
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
@@ -454,7 +456,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return Promise.all(objects.map(async entry => {
             return {
                 VlocityDataPackType: entry.datapackType,
-                query: await (await this.getMatchingKeyService()).getQuery(entry.datapackType, entry)
+                query: await this.matchingKeyService.getQuery(entry.datapackType, entry)
             };
         }));
     }
@@ -517,7 +519,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 this.customSettingsWatcher = vscode.workspace.createFileSystemWatcher(yamlFullPath);
                 this.customSettingsWatcher.onDidChange(e => this.customSettings = this.loadCustomSettingsFrom(e.fsPath));
                 this.customSettingsWatcher.onDidCreate(e => this.customSettings = this.loadCustomSettingsFrom(e.fsPath));
-                this.customSettingsWatcher.onDidDelete(_e => this.customSettings = null);
+                this.customSettingsWatcher.onDidDelete(() => this.customSettings = null);
             }
 
             // Load settings
