@@ -31,7 +31,7 @@ function getImportHandler(includePaths: string[]) {
         if (includeCache.has(file)) {
             return includeCache.get(file);
         }
-        const data = fs.readFileSync(file).toString('UTF-8');
+        const data = fs.readFileSync(file).toString("utf-8");
         includeCache.set(file, data);
         return data;
     };

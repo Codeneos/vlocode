@@ -93,7 +93,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
             try {
                 return {
                     file,
-                    body: yaml.safeLoad((await fs.readFile(file.fsPath)).toString('utf8'), { filename: file.fsPath })
+                    body: yaml.load((await fs.readFile(file.fsPath)).toString('utf8'), { filename: file.fsPath }) as any
                 };
             } catch(err) {
                 this.logger.error(`Unable to load YAML file ${file} due to parsing error: ${err.message || err}`);

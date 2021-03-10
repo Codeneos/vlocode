@@ -1,4 +1,4 @@
-const merge = require('webpack-merge').smart;
+const merge = require('webpack-merge').merge;
 const fs = require('fs');
 const yaml = require('js-yaml');
 

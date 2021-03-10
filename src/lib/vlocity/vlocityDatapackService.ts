@@ -470,7 +470,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public async runYamlJob(command: vlocity.actionType, yamlFile: string, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
-        const jobInfo : vlocity.JobInfo = yaml.safeLoad(await getDocumentBodyAsString(yamlFile));
+        const jobInfo = yaml.load(await getDocumentBodyAsString(yamlFile)) as vlocity.JobInfo;
         delete jobInfo.projectPath;
         jobInfo.initialized = true;
         return this.runCommand(command, jobInfo, cancellationToken);
@@ -532,7 +532,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     private async loadCustomSettingsFrom(yamlFile: string) : Promise<CustomJobYaml | undefined> {
         try {
             // Parse and watch Custom YAML
-            const customSettings = yaml.safeLoad((await fs.readFile(yamlFile)).toString());
+            const customSettings = yaml.load((await fs.readFile(yamlFile)).toString()) as any;
             this.logger.info(`Loaded custom settings from YAML file: ${yamlFile}`);
             return  {
                 OverrideSettings: customSettings.OverrideSettings,

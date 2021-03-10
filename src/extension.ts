@@ -167,6 +167,9 @@ class Vlocode {
 
         // track activation time
         this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);
+
+        // Connect to SF
+        void this.service.initialize();
     }
 
     private async deactivate() {

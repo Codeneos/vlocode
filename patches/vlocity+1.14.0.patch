@@ -1,8 +1,8 @@
 diff --git a/node_modules/vlocity/lib/datapacks.js b/node_modules/vlocity/lib/datapacks.js
-index 4c3b118..f6d4f2d 100644
+index 6aabe7a..d0bbfdc 100644
 --- a/node_modules/vlocity/lib/datapacks.js
 +++ b/node_modules/vlocity/lib/datapacks.js
-@@ -123,6 +123,11 @@ DataPacks.prototype.getStorageLimitExceededError = function() {
+@@ -217,6 +217,11 @@ DataPacks.prototype.getStorageLimitExceededError = function() {
  DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
      var self = this;
  
@@ -14,9 +14,18 @@ index 4c3b118..f6d4f2d 100644
      if (options && dataPackData && dataPackData.processData) {
  
          Object.keys(options).forEach(function(optionKey){
-@@ -171,6 +176,11 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+@@ -244,7 +249,7 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+             dataPackData.processData.VlocityDataPackData.dataPacks.forEach(function(dataPack) {
+                 if (dataPack.VlocityDataPackRelationshipType == "Pagination") {
+                     addDataPackArray.push(dataPack)
+-                } else {
++                } else {
+                     allDataPacks.push(dataPack); 
+                 }
+             });
+@@ -279,6 +284,11 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
  
-             let result = await self.vlocity.jsForceConnection.apex.post(self.dataPacksEndpoint(), dataPackData);
+             let result = await self.makeApexPostRequest(self.dataPacksEndpoint(), dataPackData);
  
 +            if (options.cancellationToken && options.cancellationToken.isCancellationRequested) {
 +                VlocityUtils.warn('Detected cancellation requested. Skipping further job processing.');
@@ -26,48 +35,61 @@ index 4c3b118..f6d4f2d 100644
              VlocityUtils.verbose('Result', result);
  
              if (!result) {
-@@ -208,16 +218,17 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
+@@ -316,23 +326,24 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
                  result.Total = 1;
-             }    
+             }
  
--            if (result.Total > 0 
--                && !result.Async 
+-            if (soloExportDataPackKey 
+-                && (!options.maxDepth 
+-                    || options.maxDepth == -1)
+-                && (result.Finished > 0 
+-                    && result.Status != "Ready" 
+-                    && result.Status != "Error" 
+-                    && !result.Async)) {
+-                result.Status = "Complete";
+-            } else if (!result.Async 
 -                && dataPackData.processType == "Export" 
--                && result.Status != "Complete"
+-                && result.Status == "InProgress"
 -                && (!options.maxDepth 
 -                    || options.maxDepth == -1)
 -                && options.exportPacksMaxSize 
--                && result.Total > options.exportPacksMaxSize) {
+-                && (result.Total - startingExportSize) > options.exportPacksMaxSize) {
 -                    result.Status = "Complete";
 -            }
 +            // Disable this as it causes dependencies to be ommited resulting in partial exports.
-+            // if (result.Total > 0 
-+            //     && !result.Async 
++            // if (soloExportDataPackKey 
++            //     && (!options.maxDepth 
++            //         || options.maxDepth == -1)
++            //     && (result.Finished > 0 
++            //         && result.Status != "Ready" 
++            //         && result.Status != "Error" 
++            //         && !result.Async)) {
++            //     result.Status = "Complete";
++            // } else if (!result.Async 
 +            //     && dataPackData.processType == "Export" 
-+            //     && result.Status != "Complete"
++            //     && result.Status == "InProgress"
 +            //     && (!options.maxDepth 
 +            //         || options.maxDepth == -1)
 +            //     && options.exportPacksMaxSize 
-+            //     && result.Total > options.exportPacksMaxSize) {
++            //     && (result.Total - startingExportSize) > options.exportPacksMaxSize) {
 +            //         result.Status = "Complete";
 +            // }
  
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 7ab38ff..a45df0d 100644
+index 535f9d2..7e39217 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
-@@ -1,8 +1,7 @@
+@@ -1,7 +1,6 @@
 -var yaml = require('js-yaml');
  var path = require('path');
  var fs = require('fs-extra');
 -var sass = require('sass.js');
- var stringify = require('json-stable-stringify');
 +var sass = null;
+ var stringify = require('fast-json-stable-stringify');
  
  var UTF8_EXTENSIONS = [ "css", "json", "yaml", "scss", "html", "js", "xml"];
- 
 @@ -14,7 +13,7 @@ var DataPacksBuilder = module.exports = function(vlocity) {
  
      this.compileQueue = []; // array with files that require compilation
@@ -77,21 +99,31 @@ index 7ab38ff..a45df0d 100644
  
      this.dataPackSizes = {};
  
-@@ -347,34 +346,53 @@ DataPacksBuilder.prototype.getFileData = function() {
-     return this.allFileDataMap[path.normalize(pathString).toLowerCase()];
+@@ -232,10 +231,7 @@ DataPacksBuilder.prototype.buildImport = async function(importPath, jobInfo, val
+ 
+         if (jobInfo.upgradeDataPackFields) {
+             jobInfo.platformObjectMappings = this.vlocity.datapacksutils.updateExpandedDefinitionNamespace(
+-                yaml.safeLoad(fs.readFileSync(
+-                    path.join(__dirname, 'platformObjectMappings.yaml'),
+-                    'utf8'
+-                ))
++                require('./platformObjectMappings.yaml')
+             );
+             dataPackImport.dataPacks.forEach(dataPack => {
+                 if (Object.keys(jobInfo.platformObjectMappings).includes(dataPack.VlocityDataPackType)) {
+@@ -416,33 +412,52 @@ DataPacksBuilder.prototype.getFileData = function() {
  }
  
--DataPacksBuilder.prototype.setFileData = async function(filePath, filePath, encoding) {
+ DataPacksBuilder.prototype.setFileData = async function(filePath, encoding) {
 -    var data = await fs.readFile(filePath, encoding);
-+DataPacksBuilder.prototype.setFileData = async function(filePath, encoding) {
 +    //const data = await fs.readFile(filePath, encoding);
 +    const fileKey = path.normalize(filePath).toLowerCase();
 +    const isDatapackMeta = fileKey.endsWith('_datapack.json') || fileKey.endsWith('.json');
- 
+     
      if (!this.allFileDataMap) {
          this.allFileDataMap = {};
      }
- 
+     
 -    this.allFileDataMap[path.normalize(filePath).toLowerCase()] = data;
 -
 -    try {
@@ -115,7 +147,11 @@ index 7ab38ff..a45df0d 100644
 +            return fileData;
 +        }
 +    });
-+
+ 
+-            if (dataPack instanceof Array) {
+-                for (data of dataPack) {
+-                    if (data.VlocityRecordSourceKey) {
+-                        this.recordSourceKeyToFilePath[data.VlocityRecordSourceKey] = path.normalize(filePath);    
 +    if (isDatapackMeta) {
 +        try {
 +            var dataPack = JSON.parse(this.allFileDataMap[fileKey]);
@@ -123,11 +159,7 @@ index 7ab38ff..a45df0d 100644
 +                if (!this.recordSourceKeyToFilePath) {
 +                    this.recordSourceKeyToFilePath = {};
 +                }
-             
--            if (dataPack instanceof Array) {
--                for (data of dataPack) {
--                    if (data.VlocityRecordSourceKey) {
--                        this.recordSourceKeyToFilePath[data.VlocityRecordSourceKey] = path.normalize(filePath);    
++                
 +                if (dataPack instanceof Array) {
 +                    for (data of dataPack) {
 +                        if (data.VlocityRecordSourceKey) {
@@ -148,49 +180,7 @@ index 7ab38ff..a45df0d 100644
  }
  
  DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, dataPackKey) {
-@@ -387,7 +405,7 @@ DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, da
-             encoding = 'utf8';
-         }
-         var filemapkey = path.normalize(path.join(srcpath, filename));
--        filePromises.push(this.setFileData(filemapkey, filemapkey, encoding));
-+        filePromises.push(this.setFileData(filemapkey, encoding));
-     }
- 
-     if (filePromises.length > 0) {
-@@ -707,12 +725,19 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
-                                 return;
-                             }
- 
--                            if (jobInfo.currentStatus[parentKey] != null 
--                                && !(jobInfo.currentStatus[parentKey] == 'Success' 
-+                            if (jobInfo.currentStatus[parentKey] != null ) {
-+                                if (jobInfo.currentStatus[parentKey] == 'Success' 
-                                     || jobInfo.currentStatus[parentKey] == 'Header' 
--                                    || jobInfo.currentStatus[parentKey] == 'AddedHeader') 
--                                && currentDataPackKeysInImport[parentKey] != true) {
--                                needsParents = true;
-+                                    || jobInfo.currentStatus[parentKey] == 'AddedHeader')  {
-+                                    VlocityUtils.verbose(`Parent deployed (datapack: ${dataPackKey}): ${parentKey}`);
-+                                } else if (currentDataPackKeysInImport[parentKey] == true) {                                    
-+                                    VlocityUtils.verbose(`Parent in current import (datapack: ${dataPackKey}): ${parentKey}`);
-+                                } else {
-+                                    VlocityUtils.verbose(`Skipping over ${dataPackKey}; parent not yet deployed: ${parentKey}; parent status: ${jobInfo.currentStatus[parentKey]}`);
-+                                    needsParents = true;
-+                                }
-+                            } else {
-+                                VlocityUtils.verbose(`Skipping unknown dependency ${parentKey} from datapack: ${dataPackKey}`);
-                             }
-                         });
- 
-@@ -770,6 +795,7 @@ DataPacksBuilder.prototype.getNextImports = function(importPath, jobInfo, curren
-                                 && jobInfo.currentStatus[referenceKey] 
-                                 && !(jobInfo.currentStatus[referenceKey] == 'Success' 
-                                 || jobInfo.currentStatus[referenceKey] == 'Header')) {
-+                                VlocityUtils.log(`Skipping over ${dataPackKey}; refernce not yet deployed: ${referenceKey}`);
-                                 hasReference = true;
-                             }
-                         }
-@@ -1083,6 +1109,11 @@ DataPacksBuilder.prototype.compile = function(lang, source, options, cb) {
+@@ -1297,6 +1312,11 @@ DataPacksBuilder.prototype.compile = function(lang, source, options, cb) {
      // add addtional languages here to support more compilation types    
      switch(lang) {
          case 'scss': {
@@ -203,23 +193,26 @@ index 7ab38ff..a45df0d 100644
              sass.importer((request, done) => {
                  // (object) request
 diff --git a/node_modules/vlocity/lib/datapackserrorhandling.js b/node_modules/vlocity/lib/datapackserrorhandling.js
-index f475d46..4aabfe9 100644
+index 26cb86f..cae7464 100644
 --- a/node_modules/vlocity/lib/datapackserrorhandling.js
 +++ b/node_modules/vlocity/lib/datapackserrorhandling.js
-@@ -4,7 +4,7 @@ var yaml = require('js-yaml');
- 
+@@ -1,10 +1,6 @@
+-var fs = require("fs-extra");
+-var path = require('path');
+-var yaml = require('js-yaml');
+-
  var DataPacksErrorHandling = module.exports = function(vlocity) {
      this.vlocity = vlocity || {};
 -    this.errorHandlingDefinition = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "datapackserrorhandling.yaml"), 'utf8'));
-+    this.errorHandlingDefinition = require("./datapackserrorhandling.yaml");
++    this.errorHandlingDefinition =  require("./datapackserrorhandling.yaml");
  };
  
  DataPacksErrorHandling.prototype.getSanitizedErrorMessage = async function(jobInfo, dataPack) {
 diff --git a/node_modules/vlocity/lib/datapacksjob.js b/node_modules/vlocity/lib/datapacksjob.js
-index b4f97c8..b0b3b7c 100644
+index 7879216..b45c50f 100644
 --- a/node_modules/vlocity/lib/datapacksjob.js
 +++ b/node_modules/vlocity/lib/datapacksjob.js
-@@ -7,8 +7,8 @@ var childProcess = require('child_process');
+@@ -9,8 +9,8 @@ const open = require("opn");
  var DataPacksJob = module.exports = function(vlocity) {
      this.vlocity = vlocity || {};
  
@@ -230,7 +223,7 @@ index b4f97c8..b0b3b7c 100644
      this.runningParallel = {};
      this.vlocity.relationMap = new Map();
      this.vlocity.insertIndexToSfIdMap = new Map();
-@@ -26,7 +26,8 @@ var SUPPORTED_JOB_KEY_TO_OPTION_MAP = {
+@@ -28,7 +28,8 @@ var SUPPORTED_JOB_KEY_TO_OPTION_MAP = {
      source: 'source',
      alreadyExportedKeys: 'alreadyExportedKeys',
      exportPacksMaxSize: 'exportPacksMaxSize',
@@ -240,27 +233,20 @@ index b4f97c8..b0b3b7c 100644
  };
  
  var MAX_PER_GROUP = 10;
-@@ -1076,7 +1077,10 @@ DataPacksJob.prototype.exportGroup = async function(inputMap) {
+@@ -1315,8 +1316,10 @@ DataPacksJob.prototype.exportGroup = async function(inputMap) {
              return false;
          }
  
 -        VlocityUtils.success('Exporting', dataPack.VlocityDataPackType, this.vlocity.datapacksutils.getDisplayName(dataPack));
+-
 +        var name = this.vlocity.datapacksutils.getDisplayName(dataPack);
 +        if (name) {
 +            VlocityUtils.success('Exporting', dataPack.VlocityDataPackType, name);
 +        }
- 
          return true;
      });
-@@ -1892,6 +1896,7 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
  
-         let result = await this.vlocity.datapacks.import(dataJson, this.getOptionsFromJobInfo(jobInfo));
- 
-+
-         await new Promise(resolve => setTimeout(resolve, 1));
- 
-         // Prevent endless deploy loops due to server side issues
-@@ -2039,7 +2044,8 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
+@@ -2478,7 +2481,8 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
              throw e;
          }
  
@@ -271,10 +257,10 @@ index b4f97c8..b0b3b7c 100644
  }
  
 diff --git a/node_modules/vlocity/lib/datapacksutils.js b/node_modules/vlocity/lib/datapacksutils.js
-index 16b7f2e..547ae47 100644
+index a96735c..1c56697 100644
 --- a/node_modules/vlocity/lib/datapacksutils.js
 +++ b/node_modules/vlocity/lib/datapacksutils.js
-@@ -22,7 +22,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
+@@ -26,7 +26,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
  
      CURRENT_INFO_FILE = path.join(vlocity.tempFolder, 'currentJobInfo.json');
  
@@ -283,7 +269,7 @@ index 16b7f2e..547ae47 100644
  
      this.runJavaScriptModules = {};
  
-@@ -619,6 +619,7 @@ DataPacksUtils.prototype.loadApex = async function(projectPath, filePath) {
+@@ -825,6 +825,7 @@ DataPacksUtils.prototype.loadApex = async function(projectPath, filePath) {
      var possiblePaths = [
          path.join(projectPath, filePath),
          path.join(__dirname, '..', 'apex', filePath),
@@ -291,51 +277,28 @@ index 16b7f2e..547ae47 100644
          filePath
      ];
  
-@@ -975,6 +976,9 @@ DataPacksUtils.prototype.getDisplayName = function(dataPack) {
-         dataPackKey = dataPack.VlocityDataPackKey.substring(dataPack.VlocityDataPackKey.indexOf('/') + 1);
-     } else if (dataPack.VlocityDataPackKeyForManifest) {
-         dataPackKey = dataPack.VlocityDataPackKeyForManifest.substring(dataPack.VlocityDataPackKeyForManifest.indexOf('/') + 1);
-+        if (dataPackKey == 'null') {
-+            dataPackKey = null;
-+        }
-     } else if (dataPack.VlocityRecordSourceKey) {
-         dataPackKey = dataPack.VlocityRecordSourceKey.substring(dataPack.VlocityRecordSourceKey.indexOf('/') + 1);
-     }
-diff --git a/node_modules/vlocity/lib/datapacktypes/attributecategory.js b/node_modules/vlocity/lib/datapacktypes/attributecategory.js
-index d1849c0..af04645 100644
---- a/node_modules/vlocity/lib/datapacktypes/attributecategory.js
-+++ b/node_modules/vlocity/lib/datapacktypes/attributecategory.js
-@@ -54,5 +54,5 @@ AttributeCategory.prototype.handleAttributeCategoryDisplaySequence = async funct
-     var jobInfoCopy = JSON.parse(JSON.stringify(jobInfo));
- 
-     await this.vlocity.datapacksexpand.expand(jobInfoCopy.projectPath + '/' + jobInfoCopy.expansionPath, {dataPacks: [dataPackWithError]}, jobInfoCopy);
--    await this.vlocity.datapacksbuilder.setFileData(filePath, filePath, "utf8");
-+    await this.vlocity.datapacksbuilder.setFileData(filePath, "utf8");
- };
-\ No newline at end of file
-diff --git a/node_modules/vlocity/lib/querydefinition.yaml b/node_modules/vlocity/lib/querydefinition.yaml
-index 76f5366..c448ab5 100644
---- a/node_modules/vlocity/lib/querydefinition.yaml
-+++ b/node_modules/vlocity/lib/querydefinition.yaml
-@@ -19,7 +19,7 @@ Catalog:
-   query: Select Id, Name from %vlocity_namespace%__Catalog__c     
- ContentVersion:
-   VlocityDataPackType: ContentVersion
--  query: Select Id, Name, Title, %vlocity_namespace%__GlobalKey__c from ContentVersion where %vlocity_namespace%__GlobalKey__c != null
-+  query: Select Id, Title, %vlocity_namespace%__GlobalKey__c from ContentVersion where %vlocity_namespace%__GlobalKey__c != null
-   manifestOnly: true
- ContextAction:
-   VlocityDataPackType: ContextAction
+@@ -1240,6 +1241,9 @@ DataPacksUtils.prototype.getDisplayName = function(dataPack) {
+             dataPackKey = dataPack.VlocityDataPackKey.substring(dataPack.VlocityDataPackKey.indexOf('/') + 1);
+         } else if (dataPack.VlocityDataPackKeyForManifest) {
+             dataPackKey = dataPack.VlocityDataPackKeyForManifest.substring(dataPack.VlocityDataPackKeyForManifest.indexOf('/') + 1);
++            if (dataPackKey == 'null') {
++                dataPackKey = null;
++            }
+         } else if (dataPack.VlocityRecordSourceKey) {
+             dataPackKey = dataPack.VlocityRecordSourceKey.substring(dataPack.VlocityRecordSourceKey.indexOf('/') + 1);
+         }
 diff --git a/node_modules/vlocity/lib/utilityservice.js b/node_modules/vlocity/lib/utilityservice.js
-index dafa90e..2a2ce94 100644
+index 718875b..de6b5b9 100644
 --- a/node_modules/vlocity/lib/utilityservice.js
 +++ b/node_modules/vlocity/lib/utilityservice.js
-@@ -400,10 +400,10 @@ UtilityService.prototype.getPackageVersion = async function() {
-     
-     VlocityUtils.verbose('Get Package Version');
- 
--    if (!this.vlocity.packageVersion) {
-+    if (!this.vlocity.PackageVersion) {
+@@ -1,5 +1,4 @@
+ var jsforce = require('jsforce');
+-var yaml = require('js-yaml');
+ var fs = require('fs-extra');
+ var path = require('path');
+ var stringify = require('fast-json-stable-stringify');
+@@ -482,7 +481,7 @@ UtilityService.prototype.getPackageVersion = async function() {
+     if (!this.vlocity.PackageVersion) {
          var result = await this.vlocity.jsForceConnection.query("SELECT DurableId, Id, IsSalesforce, MajorVersion, MinorVersion, Name, NamespacePrefix FROM Publisher where NamespacePrefix = \'" + this.vlocity.namespace + "\' LIMIT 1");
  
 -        this.vlocity.buildToolsVersionSettings = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "buildToolsVersionSettings.yaml"), 'utf8'));

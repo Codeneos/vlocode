@@ -11,6 +11,11 @@ export default class SelectOrgCommand extends CommandBase {
         description: 'You will be prompted for the login url'
     };
 
+    private readonly refreshTokensOption : SelectOrgQuickPickItem = {
+        label: '$(refresh) Refresh OAuth tokens',
+        description: 'Refresh the Access and Refresh tokens if expired'
+    };
+
     private readonly salesforceOrgTypes : SelectOrgQuickPickItem[] = [{
         label: '$(microscope) Sandbox',
         description: 'https://test.salesforce.com',
@@ -45,21 +50,25 @@ export default class SelectOrgCommand extends CommandBase {
 
     public async execute() : Promise<void> {
         const knownOrgs = await this.vlocode.withStatusBarProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
-        const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption].concat(knownOrgs),
+        const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption, this.refreshTokensOption].concat(knownOrgs),
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
         if (!selectedOrg) {
             return;
         }
 
-        const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();
+        if (selectedOrg === this.refreshTokensOption) {
+            await this.vlocode.refreshOAuthTokens();
+        } else {
+            const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();
 
-        if (selectedOrgInfo) {
-            this.logger.log(`Set ${selectedOrgInfo.username} as target org for Vlocity deploy/refresh operations`);
-            if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
-                this.vlocode.config.sfdxUsername = selectedOrgInfo.username;
-            } else {
-                await this.vlocode.initialize();
+            if (selectedOrgInfo) {
+                this.logger.log(`Set ${selectedOrgInfo.username} as target org for Vlocity deploy/refresh operations`);
+                if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
+                    this.vlocode.config.sfdxUsername = selectedOrgInfo.username;
+                } else {
+                    await this.vlocode.initialize();
+                }
             }
         }
     }

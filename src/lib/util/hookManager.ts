@@ -48,7 +48,7 @@ export class HookManager<T extends object> {
     /**
      * addHook
      */
-    public registerHook(hook: CallHook) {
+    public registerHook(hook: CallHook<T>) {
         this.hooks.push(hook);
         return this;
     }

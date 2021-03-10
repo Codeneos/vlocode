@@ -1,8 +1,8 @@
 diff --git a/node_modules/@salesforce/core/lib/messages.js b/node_modules/@salesforce/core/lib/messages.js
-index e3e187d..aeffb09 100644
+index 4316bc8..87f1ef6 100644
 --- a/node_modules/@salesforce/core/lib/messages.js
 +++ b/node_modules/@salesforce/core/lib/messages.js
-@@ -169,6 +169,7 @@ class Messages {
+@@ -168,6 +168,7 @@ class Messages {
       * @param packageName The npm package name. Figured out from the root directory's package.json.
       */
      static importMessagesDirectory(moduleDirectoryPath, truncateToProjectPath = true, packageName) {
@@ -10,7 +10,7 @@ index e3e187d..aeffb09 100644
          let moduleMessagesDirPath = moduleDirectoryPath;
          let projectRoot = moduleDirectoryPath;
          if (!path.isAbsolute(moduleDirectoryPath)) {
-@@ -223,6 +224,7 @@ class Messages {
+@@ -222,6 +223,7 @@ class Messages {
       * @param bundleName The name of the bundle to load.
       */
      static loadMessages(packageName, bundleName) {
@@ -18,22 +18,21 @@ index e3e187d..aeffb09 100644
          const key = new Key(packageName, bundleName);
          let messages;
          if (this.isCached(packageName, bundleName)) {
-@@ -258,7 +260,8 @@ class Messages {
+@@ -259,7 +261,7 @@ class Messages {
       * **See** https://nodejs.org/api/util.html#util_util_format_format_args
       */
      getMessage(key, tokens = []) {
 -        return this.getMessageWithMap(key, tokens, this.messages);
-+        console.debug(`getMessage`, key, tokens);
 +        return `${key}`;
      }
      getMessageWithMap(key, tokens = [], map) {
          // Allow nested keys for better grouping
-@@ -287,7 +290,7 @@ class Messages {
+@@ -302,6 +304,6 @@ Messages.bundles = new Map();
   * @ignore
   */
- Messages._readFile = (filePath) => {
+ Messages.readFile = (filePath) => {
 -    return require(filePath);
 +    return JSON.parse(fs.readFileSync(filePath).toString());
  };
- // It would be AWESOME to use Map<Key, Message> but js does an object instance comparison and doesn't let you
- // override valueOf or equals for the === operator, which map uses. So, Use Map<String, Message>
+ //# sourceMappingURL=messages.js.map
+\ No newline at end of file

@@ -26,7 +26,7 @@ const production: webpack.Configuration = {
                     },
                     mangle: false,
                     module: true,
-                    format: null,
+                    format: undefined,
                 },
                 // Move license to different file
                 extractComments: {

@@ -17,6 +17,7 @@ import Timer from './util/timer';
 import { service } from './core/inject';
 import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
+import SfdxUtil from './util/sfdx';
 
 interface ActivityOptions {
     progressTitle: string;
@@ -108,7 +109,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 container.unregister(this._datapackService);
                 this._datapackService.dispose();
             }
-            if (this.config.sfdxUsername) {
+            if (this.config.sfdxUsername) {                
                 this._namespaceService = await container.get(VlocityNamespaceService).initialize(this);
                 this._salesforceService = container.get(SalesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
@@ -235,7 +236,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             } catch(e) {
                 activityRecord.status = cancelTokenSource?.token.isCancellationRequested
                     ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Failed;
-                if (options.propagateExceptions) {
+                if (options.propagateExceptions !== false) {
                     throw e;
                 } else {
                     this.logger.error(e);
@@ -265,6 +266,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 post: args => {
                     if (args.name === 'getJsForceConnection') {
                         args.returnValue = args.returnValue
+                            .catch(err =>  this.handleGetConnectionError(args.target, err))
                             .then(connection => this.initializeNamespace(connection))
                             .then(connection => this.connectionHooks.attach(connection));
                     }
@@ -274,6 +276,35 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }
         const conn = await this.connector.getJsForceConnection();
         return conn;
+    }
+
+    private async handleGetConnectionError(connector: JsForceConnectionProvider, err: Error | undefined) {
+        if (err?.message == 'RefreshTokenAuthError') {
+            const action = await vscode.window.showWarningMessage(
+                `Your refresh token for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`, 
+                { title: 'Yes', refresh: true },
+                { title: 'No', refresh: false }
+            );
+            if (action?.refresh) {
+                const authResult = await this.refreshOAuthTokens();
+                if (authResult.accessToken) {
+                    return connector!.getJsForceConnection();
+                }
+            } else {
+                throw new Error(`Unable to connect to Salesforce, the refresh token for ${this.config.sfdxUsername} has expired`);
+            }
+        } else {
+            throw err;
+        }
+    }
+
+    public refreshOAuthTokens() {
+        return this.withActivity({
+            progressTitle: `Refresh ${this.config.sfdxUsername} org credentials...`,
+            location: vscode.ProgressLocation.Notification,
+            propagateExceptions: true,
+            cancellable: true
+        }, (progress, token) => SfdxUtil.refreshOAuthTokens(this.config.sfdxUsername!, token));
     }
 
     private async initializeNamespace(connection: jsforce.Connection) {

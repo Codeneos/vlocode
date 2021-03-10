@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as webpack from 'webpack';
-import * as merge from 'webpack-merge';
+import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import * as CopyPlugin from 'copy-webpack-plugin';
 import * as packageJson from './package.json';
@@ -68,7 +68,8 @@ const common : webpack.Configuration = {
             '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
             'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
             'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
-            'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml')
+            'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml'),            
+            'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux')
         }
     },
     output: {
@@ -133,9 +134,11 @@ const vscodeExtension : webpack.Configuration = {
         path: path.resolve(__dirname, 'out'),
     },
     plugins: [
-        new CopyPlugin([
-            { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex', ignore: [ 'TestJob.cls' ] }
-        ]),
+        new CopyPlugin({
+            patterns: [
+                { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex' }
+            ]
+        }),
     ]
 };
 
@@ -166,5 +169,5 @@ const configVariations = {
 export default (env, extraConfig) => {
     return Object.keys(configVariations)
         .filter(key => env[key])
-        .map(key => merge.smart(common, configVariations[key], extraConfig));
+        .map(key => merge(common, configVariations[key], extraConfig));
 };

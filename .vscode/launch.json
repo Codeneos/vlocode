@@ -19,10 +19,6 @@
                 "${workspaceFolder}/out/**/*.js"
             ], 
             "skipFiles": [
-                "**/*.js",                
-                "!**/vlocode.js",
-                "node_modules/**/*.js",
-                "!node_modules/vlocity/**/*.js",
                 "<node_internals>/**/*.js",
                 "async_hooks.js",
                 "inspector_async_hook.js"

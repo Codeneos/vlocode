@@ -1,6 +1,7 @@
 import * as http from 'http';
 import * as path from 'path';
 import * as jsforce from 'jsforce';
+import * as open from 'open';
 import * as salesforce from '@salesforce/core';
 import { LogManager, Logger } from 'lib/logging';
 import { CancellationToken } from 'vscode';
@@ -33,27 +34,29 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
  */
 export default class SfdxUtil {
 
-    public static async webLogin(options: { instanceUrl: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {        
-        const AuthCommand = await import('salesforce-alm/dist/lib/auth/authCommand');
-        const command = new AuthCommand();
-        const httpServer = http.createServer();
+    public static async webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {   
+        const oauthServer = await salesforce.WebOAuthServer.create({ 
+            oauthConfig: { 
+                loginUrl: options.instanceUrl ?? 'https://test.salesforce.com'
+            }
+        });   
 
-        const result = command.execute({
-            server: httpServer,
-            instanceurl: options.instanceUrl,
-            setalias: options.alias
-        });
+        await oauthServer.start();
+        cancelToken?.isCancellationRequested || await open(oauthServer.getAuthorizationUrl(), { wait: false });    
+        const result = oauthServer.authorizeAndSave().then(authInfo => authInfo.getFields(true) as SalesforceAuthResult);
 
         if (cancelToken) {
+            if (cancelToken.isCancellationRequested) {
+                // @ts-ignore oauthServer.webServer is private but we need to read it in order to close
+                // the server if the oath request is cancelled
+                oauthServer.webServer.close();
+                throw 'Operation cancelled';
+            }
+
             cancelToken.onCancellationRequested(() => {
-                // Emit a fake request to force SFDX to execute the proper close handlers
-                if (httpServer.listening) {
-                    httpServer.close();
-                } else {
-                    httpServer.once('listening', () => {
-                        httpServer.close();
-                    });
-                }
+                // @ts-ignore oauthServer.webServer is private but we need to read it in order to close
+                // the server if the oath request is cancelled
+                oauthServer.webServer.close();
             });
 
             const caneledPromise = new Promise<SalesforceAuthResult>((_, reject) => cancelToken.onCancellationRequested(() => reject('Operation cancelled')));
@@ -65,6 +68,12 @@ export default class SfdxUtil {
         return result;
     }
 
+    public static async refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {   
+        const username = await this.resolveAlias(usernameOrAlias) || usernameOrAlias;
+        const authInfo = await salesforce.AuthInfo.create({ username });
+        return SfdxUtil.webLogin(authInfo.getFields(false), cancelToken);
+    }
+
     public static async getAllKnownOrgDetails() : Promise<SalesforceOrgInfo[]> {
         const configs: SalesforceOrgInfo[] = [];
         for await (const config of this.getAllValidatedConfigs()) {
@@ -73,11 +82,11 @@ export default class SfdxUtil {
         return configs;
     }
 
-    public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {
-        try {
-            const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
-            const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
-            for (const authFile of authFiles) {
+    public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {       
+        const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
+        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
+        for (const authFile of authFiles) {
+            try {
                 const authInfo = await salesforce.AuthInfo.create( { username: path.parse(authFile).name });
                 const authFields = authInfo.getFields();
 
@@ -96,10 +105,10 @@ export default class SfdxUtil {
                     refreshToken: authFields.refreshToken,
                     alias: aliases?.getKeysByValue(authFields.username)[0]
                 };
+            } catch(err) {
+                this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
             }
-        } catch(err) {
-            this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
-        }
+        }        
     }
 
     public static async getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {

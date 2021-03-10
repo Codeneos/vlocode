@@ -46,7 +46,7 @@ export class DeveloperLog {
     @cache()
     public async getBody(): Promise<string> {
         const connection = await this.connectionProvider.getJsForceConnection();
-        const body = await connection.request(`/sobjects/ApexLog/${this.entry.id}/Body`);
-        return body as string;
+        const body = await connection.request<string>(`/sobjects/ApexLog/${this.entry.id}/Body`);
+        return body;
     }
 }
