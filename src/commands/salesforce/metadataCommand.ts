@@ -5,6 +5,7 @@ import { CommandBase } from 'commands/commandBase';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { ComponentFailure } from 'lib/salesforce/salesforceDeployService';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
+import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 
 /**
  * Salesfoece metadata base command 
@@ -39,16 +40,16 @@ export default abstract class MetadataCommand extends CommandBase {
      * @param manifest The deployment or destructive changes manifest
      * @param failures Array of component failures
      */
-    protected async showComponentFailures(manifest : MetadataManifest, failures : ComponentFailure[]) {
+    protected async showComponentFailures(sfPackage: SalesforcePackage, failures : ComponentFailure[]) {
         // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
         // these are not usefull to display so we instead filter these out
         const filterFailures = failures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
 
         for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
-            const info = manifest.files[failure.fileName.replace(/^src\//i, '')];
-            if (info && info.localPath) {
+            const info = sfPackage.getSourceFile(failure.fileName.replace(/^src\//i, ''));
+            if (info) {
                 // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference                
-                await this.reportProblem(vscode.Uri.file(info.localPath), failure);
+                await this.reportProblem(vscode.Uri.file(info), failure);
             }
         }
 
@@ -102,11 +103,9 @@ export default abstract class MetadataCommand extends CommandBase {
      * Clears currently registered errors from the diagnostics/problems tab n VSCode
      * @param manifest The deployment or destructive changes manifest
      */
-    protected clearPreviousErrors(manifest : MetadataManifest) : void {
-        for (const { localPath } of Object.values(manifest.files)) {
-            if (localPath) {
-                this.clearMessages(vscode.Uri.file(localPath));
-            }
+    protected clearPreviousErrors(files : Iterable<string | vscode.Uri>) : void {
+        for (const file of files) {
+            this.clearMessages(typeof file === 'string' ? vscode.Uri.file(file) : file);
         }
     }
 

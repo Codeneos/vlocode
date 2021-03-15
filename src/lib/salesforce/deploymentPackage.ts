@@ -5,13 +5,17 @@ import * as xml2js from 'xml2js';
 import * as fs from 'fs-extra';
 import * as ZipArchive from 'jszip';
 import { PackageManifest } from './deploy/packageXml';
+import { Iterable } from 'lib/util/iterable';
+import { getDocumentBodyAsString } from 'lib/util/fs';
+
+type SalesforcePackageFileData = { fsPath?: string, data?: string | Buffer };
 
 export class SalesforcePackage {
 
     /**
      * Get the metadata mainfest for this package
      */
-    private readonly manifest = new PackageManifest();
+    public readonly manifest = new PackageManifest();
 
     /**
      * Access the pre or post destructive changes in this package
@@ -21,7 +25,7 @@ export class SalesforcePackage {
         post: new PackageManifest()
     };
 
-    private readonly packageData = new Map<string, Buffer | string>();
+    private readonly packageData = new Map<string, SalesforcePackageFileData>();
 
     constructor(
         public readonly apiVersion: string,
@@ -30,13 +34,45 @@ export class SalesforcePackage {
             throw new Error(`Invalid API version: ${apiVersion}`);
         }
     }
+    public add(entry: { xmlName: string, componentName: string, packagePath: string } & SalesforcePackageFileData) {
+        this.manifest.add(entry.xmlName, entry.componentName);
+        this.packageData.set(entry.packagePath.replace(/\/|\\/g, '/'), { 
+            data: entry.data, 
+            fsPath: entry.fsPath 
+        });
+    }
 
-    public addPackageData(packagePath: string, data: string | Buffer) {
+    public addPackageData(packagePath: string, data: SalesforcePackageFileData) {
         this.packageData.set(packagePath.replace(/\/|\\/g, '/'), data);
     }
 
     public addPackageMember(xmlName: string, componentName: string) {
         this.manifest.add(xmlName, componentName);
+    }
+
+    public getSourceFile(packagePath: string) {
+        return this.packageData.get(packagePath)?.fsPath;
+    }
+
+    /**
+     * Counts the number of unique components in this package.
+     */
+    public size() {
+        return this.manifest.count();
+    }
+
+    /**
+     * Get a list of paths to files included in this package.
+     * @returns Array of paths to files included in this package
+     */
+    public files() {
+        return new Set(Iterable.filter(Iterable.map(this.packageData.values(), value => value.fsPath!), value => !!value));
+    }
+
+    public *sourceFiles() {
+        for (const [packagePath, data] of this.packageData) {
+            yield { packagePath, fsPath: data.fsPath };
+        }
     }
 
     /**
@@ -95,8 +131,15 @@ export class SalesforcePackage {
      * Get the currently packaged data for the specified path in the package.
      * @param packagePath Package path
      */
-    public getPackageData(packagePath: string) {
-        return this.packageData.get(packagePath.replace(/\/|\\/g, '/'));
+    public async getPackageData(packagePath: string) {
+        const data = this.packageData.get(packagePath.replace(/\/|\\/g, '/'));
+        if (!data) {
+            return;
+        }
+        if (!data.data) {
+            data.data = await getDocumentBodyAsString(data.fsPath!);
+        }
+        return data.data;
     }
 
     /**
@@ -115,6 +158,13 @@ export class SalesforcePackage {
     }
 
     /**
+     * Get a flat array with the names of the components in this package prefixed with their type.
+     */
+     public getComponentNames() {
+        return Iterable.reduce(this.manifest.types(), (arr, type) => arr.concat(this.manifest.list(type).map(name => `${type}/${name}`)), new Array<string>());
+    }
+
+    /**
      * Get the number of packaged components for a specific XML memeber type
      * @param xmlName XML type name
      */
@@ -125,11 +175,11 @@ export class SalesforcePackage {
     /**
      * Builds the ZipArchive from the current package and returns the package archive
      */
-    private buildPackage() : ZipArchive {
+    private async buildPackage(): Promise<ZipArchive> {
         this.generateMissingMetaFiles();
         const packageZip = new ZipArchive();
-
-        packageZip.file(path.posix.join(this.packageDir, 'package.xml'), this.manifest.toXml(this.apiVersion));
+        const xmlPackage = this.manifest.toXml(this.apiVersion);
+        packageZip.file(path.posix.join(this.packageDir, 'package.xml'), xmlPackage);
 
         if (this.destructiveChanges.pre.count() > 0) {
             packageZip.file(path.posix.join(this.packageDir, 'destructiveChanges.xml'),
@@ -141,8 +191,8 @@ export class SalesforcePackage {
                 this.destructiveChanges.post.toXml(this.apiVersion));
         }
 
-        for (const [packagePath, data] of this.packageData.entries()) {
-            packageZip.file(path.posix.join(this.packageDir, packagePath), data);
+        for (const [packagePath, { data, fsPath }] of this.packageData.entries()) {
+            packageZip.file(path.posix.join(this.packageDir, packagePath), data ?? await getDocumentBodyAsString(fsPath!));
         }
 
         return packageZip;
@@ -151,17 +201,17 @@ export class SalesforcePackage {
     /**
      * Generates missing -meta.xml files for APEX classes using the package specified API version.
      */
-    private generateMissingMetaFiles() {
+    public generateMissingMetaFiles() {
         for (const [packagePath] of this.packageData.entries()) {
             if (packagePath.endsWith('.cls')) {
                 // APEX classes
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
-                    this.packageData.set(`${packagePath}-meta.xml`, this.buildClassMetadata(this.apiVersion));
+                    this.packageData.set(`${packagePath}-meta.xml`, { data: this.buildClassMetadata(this.apiVersion) });
                 }
             } else if (packagePath.endsWith('.trigger')) {
                 // APEX classes
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
-                    this.packageData.set(`${packagePath}-meta.xml`, this.buildTriggerMetadata(this.apiVersion));
+                    this.packageData.set(`${packagePath}-meta.xml`, { data: this.buildTriggerMetadata(this.apiVersion) });
                 }
             }
         }
@@ -195,9 +245,10 @@ export class SalesforcePackage {
      * Save the package as zip file
      * @param zipFile target file.
      */
-    public savePackage(savePath: string): Promise<void> {
+    public async savePackage(savePath: string): Promise<void> {
+        const zip = await this.buildPackage();
         return new Promise((resolve, reject) => {
-            this.buildPackage().generateNodeStream({ streamFiles: true, compressionOptions: { level: 8 } })
+            zip.generateNodeStream({ streamFiles: true, compressionOptions: { level: 8 } })
                 .pipe(fs.createWriteStream(savePath))
                 .on('finish', () => {
                     resolve();
@@ -211,8 +262,8 @@ export class SalesforcePackage {
      * Generate a nodejs buffer with compressed package zip that can be uploaded to Salesforce.
      * @param compressionLevel levle of compression
      */
-    public generatePackage(compressionLevel: number = 7): Promise<Buffer> {
-        return this.buildPackage().generateAsync({
+    public async generatePackage(compressionLevel: number = 7): Promise<Buffer> {
+        return (await this.buildPackage()).generateAsync({
             type: 'nodebuffer',
             compression: 'DEFLATE',
             compressionOptions: {

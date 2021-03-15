@@ -59,6 +59,17 @@ export class PackageManifest {
     }
 
     /**
+     * Get a list of all componts of the specified type in this package
+     * @param type The XML type to list the compoents from
+     */
+     public list(type?: string): string[] {
+        if (type) {
+            return Array.from(this.metadataMembers.get(type)?.values() ?? []);
+        }
+        return Iterable.reduce(this.metadataMembers.entries(), (arr, [,members]) => arr.concat(Array.from(members)), new Array<string>());
+    }
+
+    /**
      * Count the number of package members in the current manifest
      * @param type The XML type to count
      */

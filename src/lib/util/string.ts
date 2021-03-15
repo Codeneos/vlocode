@@ -8,7 +8,7 @@ import { singleton } from './singleton';
  * @param b String b
  * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
  */
-export function stringEquals(a : string, b: string, caseInsensitive: boolean = true) : boolean {
+export function stringEquals(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
     if (a === b) {
         return true;
     }
@@ -22,6 +22,25 @@ export function stringEquals(a : string, b: string, caseInsensitive: boolean = t
         return b.toLowerCase() == a.toLowerCase();
     }
     return false;
+}
+
+/**
+ * Determines if the string spcified ends with the other string, caseInsensitive by default
+ * @param a String a
+ * @param b String b
+ * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
+ */
+ export function endsWith(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
+    if (a === null || a === undefined) {
+        return false;
+    }
+    if (b === null || b === undefined) {
+        return false;
+    }
+    if (caseInsensitive) {
+        return b.toLowerCase().endsWith(a.toLowerCase());
+    }
+    return b.endsWith(a);
 }
 
 export function format(formatStr: string, ...args: any[]) {

@@ -17,6 +17,9 @@ import SalesforceService from './salesforceService';
 import { service } from 'lib/core/inject';
 import { MetadataObject } from 'jsforce';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import { SalesforcePackage } from './deploymentPackage';
+import * as xml2js from 'xml2js';
+import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: { componentFailures?: ComponentFailure[] };
@@ -94,176 +97,169 @@ export class SalesforceDeployService {
         return packageZip.file('package.xml', packageXml.toXml(manifest.apiVersion));
     }
 
-    /**
-     * Build a Salesforce Manifest from the specified files, do not add any files that match the specified pattern.
-     * @param srcDir The package directory to read the source from.
-     * @param ignorePatterns A list of ignore patterns of the files to ignore.
-     */
-    public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: undefined) : Promise<MetadataManifest>
-    public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined>
-    public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
-        const targetApiVersion = apiVersion || this.config.salesforce.apiVersion || '45.0';
-        const mdPackage : MetadataManifest = { apiVersion: targetApiVersion, files: {} };
-        this.logger.verbose(`Building package manifest for ${files.length} selected files/folders`);
-        return this.addToManifest(mdPackage, files, token);
-    }
+    // /**
+    //  * Build a Salesforce Manifest from the specified files, do not add any files that match the specified pattern.
+    //  * @param srcDir The package directory to read the source from.
+    //  * @param ignorePatterns A list of ignore patterns of the files to ignore.
+    //  */
+    // public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: undefined) : Promise<MetadataManifest>
+    // public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined>
+    // public async buildManifest(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
+    //     const targetApiVersion = apiVersion || this.config.salesforce.apiVersion || '45.0';
+    //     const mdPackage : MetadataManifest = { apiVersion: targetApiVersion, files: {} };
+    //     this.logger.verbose(`Building package manifest for ${files.length} selected files/folders`);
+    //     return this.addToManifest(mdPackage, files, token);
+    // }
 
-    private async addToManifest(manifest: MetadataManifest, files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
-        // Build zip archive for all expanded files
-        // Note use posix path separators when building package.zip
-        for (const file of files) {
+    // /**
+    //  * Build a Salesforce Package from the specified files, do not add any files that match the specified pattern.
+    //  * @param srcDir The package directory to read the source from.
+    //  * @param ignorePatterns A list of ignore patterns of the files to ignore.
+    //  */
+    // public async buildPackage(files: vscode.Uri[], apiVersion?: string, token?: undefined) : Promise<SalesforcePackage>
+    // public async buildPackage(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<SalesforcePackage | undefined>
+    // public async buildPackage(files: vscode.Uri[], apiVersion?: string, token?: vscode.CancellationToken) : Promise<SalesforcePackage | undefined> {
+    //     const targetApiVersion = apiVersion || this.config.salesforce.apiVersion || '45.0'
+    //     this.logger.verbose(`Building package for ${files.length} selected files/folders`);
+    //     const builder = new SalesforcePackageBuilder(targetApiVersion, SalesforcePackageType.deploy);
+    //     return (await builder.addFiles(files, token)).getPackage();
+    // }
 
-            // Stop directly and return null
-            if (token && token.isCancellationRequested) {
-                return;
-            }
+    // private async addToManifest(manifest: MetadataManifest, files: vscode.Uri[], token?: vscode.CancellationToken) : Promise<MetadataManifest | undefined> {
+    //     // Build zip archive for all expanded files
+    //     // Note use posix path separators when building package.zip
+    //     for (const file of files) {
 
-            // parse folders recusively
-            if ((await vscode.workspace.fs.stat(file)).type == vscode.FileType.Directory) {
-                await this.addToManifest(manifest, (await vscode.workspace.fs.readDirectory(file)).map(([f]) => vscode.Uri.joinPath(file, f)), token);
-                continue;
-            }
+    //         // Stop directly and return null
+    //         if (token && token.isCancellationRequested) {
+    //             return;
+    //         }
 
-            // If selected file is a meta file check the source file instead
-            if (file.fsPath.endsWith('-meta.xml')) {
-                const sourceFile = file.with({ path: file.path.slice(0, -9) });
-                if (fs.existsSync(sourceFile.fsPath)) {
-                    await this.addToManifest(manifest, [ sourceFile ], token);
-                }
-            }
+    //         // parse folders recusively
+    //         if ((await vscode.workspace.fs.stat(file)).type == vscode.FileType.Directory) {
+    //             await this.addToManifest(manifest, (await vscode.workspace.fs.readDirectory(file)).map(([f]) => vscode.Uri.joinPath(file, f)), token);
+    //             continue;
+    //         }
 
-            // get metadata type
-            const metadataType = await this.getMetadataType(file);
-            if (!metadataType) {
-                continue;
-            }
+    //         // If selected file is a meta file check the source file instead
+    //         if (file.fsPath.endsWith('-meta.xml')) {
+    //             const sourceFile = file.with({ path: file.path.slice(0, -9) });
+    //             if (fs.existsSync(sourceFile.fsPath)) {
+    //                 await this.addToManifest(manifest, [ sourceFile ], token);
+    //             }
+    //         }
 
-            const isMetaFile = file.fsPath.endsWith('-meta.xml');
-            const isBundle = metadataType.xmlName.endsWith('Bundle');
-            const packageFolder = this.getPackageFolder(file.fsPath, metadataType);
-            const componentName = this.getPackageComponentName(file.fsPath, metadataType);
+    //         // get metadata type
+    //         const metadataType = await this.getMetadataType(file);
+    //         if (!metadataType) {
+    //             continue;
+    //         }
 
-            if (isBundle) {
-                // Only Aura and LWC are bundled at this moment
-                // Classic metadata package all related files
-                const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(file.fsPath), '**'));
-                for (const sourceFile of sourceFiles) {
-                    const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
-                    manifest.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: sourceFile.fsPath };
-                }
-            } else {
-                // First try adding the metadata file - if fails continue and also skip adding source
-                if (metadataType.metaFile && !isMetaFile) {
-                    // For files that require a separate meta file include it
-                    const metaFile = `${file.fsPath}-meta.xml`;
-                    const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
+    //         const isMetaFile = file.fsPath.endsWith('-meta.xml');
+    //         const isBundle = metadataType.xmlName.endsWith('Bundle');
+    //         const packageFolder = this.getPackageFolder(file.fsPath, metadataType);
+    //         const componentName = this.getPackageComponentName(file.fsPath, metadataType);
 
-                    if (fs.existsSync(metaFile)) {
-                        manifest.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, localPath: metaFile };
-                    } else {
-                        const metaBody = await this.generateMetaFileBody(file.fsPath, manifest.apiVersion, metadataType);
-                        if (!metaBody) {
-                            this.logger.error(`${file} is missing a -meta.xml - auto generation of meta-xml files is not supported for type ${metadataType.xmlName}`);
-                            continue;
-                        }
-                        manifest.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, body: metaBody };
-                    }
-                }
+    //         if (isBundle) {
+    //             // Only Aura and LWC are bundled at this moment
+    //             // Classic metadata package all related files
+    //             const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(file.fsPath), '**'));
+    //             for (const sourceFile of sourceFiles) {
+    //                 const sourcePackagePath = path.posix.join(packageFolder, componentName, path.basename(sourceFile.fsPath));
+    //                 manifest.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: sourceFile.fsPath };
+    //             }
+    //         } else {
+    //             // First try adding the metadata file - if fails continue and also skip adding source
+    //             if (metadataType.metaFile && !isMetaFile) {
+    //                 // For files that require a separate meta file include it
+    //                 const metaFile = `${file.fsPath}-meta.xml`;
+    //                 const metaPackagePath = path.posix.join(packageFolder, path.basename(metaFile));
 
-                // add source
-                const sourcePackagePath = path.posix.join(packageFolder, path.basename(file.fsPath));
-                manifest.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: file.fsPath };
-            }
-        }
+    //                 if (fs.existsSync(metaFile)) {
+    //                     manifest.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, localPath: metaFile };
+    //                 } else {
+    //                     const metaBody = await this.generateMetaFileBody(file.fsPath, manifest.apiVersion, metadataType);
+    //                     if (!metaBody) {
+    //                         this.logger.error(`${file} is missing a -meta.xml - auto generation of meta-xml files is not supported for type ${metadataType.xmlName}`);
+    //                         continue;
+    //                     }
+    //                     manifest.files[metaPackagePath] = { name: componentName, type: metadataType.xmlName, body: metaBody };
+    //                 }
+    //             }
 
-        return manifest;
-    }
+    //             // add source
+    //             const sourcePackagePath = path.posix.join(packageFolder, path.basename(file.fsPath));
+    //             manifest.files[sourcePackagePath] = { name: componentName, type: metadataType.xmlName, localPath: file.fsPath };
+    //         }
+    //     }
 
-    private async generateMetaFileBody(file: string, apiVersion: string, metadataType: MetadataObject) {
-        if (metaFileTemplates[metadataType.xmlName]) {
-            const contextValues = {
-                apiVersion, file,
-                name: file.match(/((.*[/\\])|^)([\w.-]+)\.[\w]+$/)?.[3]
-            };
-            return formatString(metaFileTemplates[metadataType.xmlName], contextValues).trim();
-        }
-    }
+    //     return manifest;
+    // }
 
-    private async getMetadataType(file: vscode.Uri) {
-        const metadataTypes = await this.salesforce.getMetadataTypes();
-        for (const type of metadataTypes.metadataObjects) {
-            const suffixMatches = !type.suffix || file.fsPath.endsWith(`.${type.suffix}`);
-            const metaSuffixMatches = file.fsPath.endsWith(`.${type.suffix}-meta.xml`);
+    // private async generateMetaFileBody(file: string, apiVersion: string, metadataType: MetadataObject) {
+    //     if (metaFileTemplates[metadataType.xmlName]) {
+    //         const contextValues = {
+    //             apiVersion, file,
+    //             name: file.match(/((.*[/\\])|^)([\w.-]+)\.[\w]+$/)?.[3]
+    //         };
+    //         return formatString(metaFileTemplates[metadataType.xmlName], contextValues).trim();
+    //     }
+    // }
 
-            if (suffixMatches || metaSuffixMatches) {
-                if (type.directoryName) {
-                    // Consider both the directory and sub-directories
-                    const relativePath = vscode.workspace.asRelativePath(file, false);
-                    const dirnames = path.dirname(relativePath).split(/\/|\\/g);
-                    // @ts-expect-error compiler does not validate that type.directoryName cannot be null
-                    if (!dirnames.some(dirname => stringEquals(dirname, type.directoryName))) {
-                        continue;
-                    }
-                }
-                return type;
-            }
-        }
-    }
+    // /**
+    //  * Gets the name of the component for the package manifest
+    //  * @param metaFile 
+    //  * @param metadataType 
+    //  */
+    // private getPackageComponentName(metaFile: string, metadataType: MetadataObject) : string {
+    //     const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
+    //     const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
+    //     const packageFolder = this.getPackageFolder(metaFile, metadataType);
+    //     const isBundle = metadataType.xmlName.endsWith('Bundle');
 
-    /**
-     * Gets the name of the component for the package manifest
-     * @param metaFile 
-     * @param metadataType 
-     */
-    private getPackageComponentName(metaFile: string, metadataType: MetadataObject) : string {
-        const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
-        const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
-        const packageFolder = this.getPackageFolder(metaFile, metadataType);
-        const isBundle = metadataType.xmlName.endsWith('Bundle');
+    //     if (isBundle) {
+    //         return metaFile.split(/\\|\//g).slice(-2).shift()!;
+    //     }
 
-        if (isBundle) {
-            return metaFile.split(/\\|\//g).slice(-2).shift()!;
-        }
+    //     if (packageFolder.includes(path.posix.sep)) {
+    //         return packageFolder.split(path.posix.sep).slice(1).concat([ componentName ]).join(path.posix.sep);
+    //     }
 
-        if (packageFolder.includes(path.posix.sep)) {
-            return packageFolder.split(path.posix.sep).slice(1).concat([ componentName ]).join(path.posix.sep);
-        }
+    //     return componentName;
+    // }
 
-        return componentName;
-    }
+    // /**
+    //  * Get the packaging folder for the source file.
+    //  * @param fullSourcePath 
+    //  * @param metadataType 
+    //  */
+    // private getPackageFolder(fullSourcePath: string, metadataType: MetadataObject) : string {
+    //     const retainFolderStructure = !!metadataType.inFolder;
+    //     const componentPackageFolder = metadataType.directoryName;
 
-    /**
-     * Get the packaging folder for the source file.
-     * @param fullSourcePath 
-     * @param metadataType 
-     */
-    private getPackageFolder(fullSourcePath: string, metadataType: MetadataObject) : string {
-        const retainFolderStructure = !!metadataType.inFolder;
-        const componentPackageFolder = metadataType.directoryName;
+    //     if (retainFolderStructure && componentPackageFolder) {
+    //         const packageParts = path.dirname(fullSourcePath).split(/\/|\\/g);
+    //         const packageFolderIndex = packageParts.indexOf(componentPackageFolder);
+    //         return packageParts.slice(packageFolderIndex).join(path.posix.sep);
+    //     }
 
-        if (retainFolderStructure && componentPackageFolder) {
-            const packageParts = path.dirname(fullSourcePath).split(/\/|\\/g);
-            const packageFolderIndex = packageParts.indexOf(componentPackageFolder);
-            return packageParts.slice(packageFolderIndex).join(path.posix.sep);
-        }
+    //     return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/g);
+    // }
 
-        return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/g);
-    }
-
-    /**
-     * Build a Salesforce package from the specified directory, do not add any files that match the specified pattern.
-     * @param srcDir The package directory to read the source from.
-     * @param ignorePatterns A list of ignore patterns of the files to ignore.
-     */
-    private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: undefined): Promise<ZipArchive>
-    private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken): Promise<ZipArchive | undefined>
-    private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken): Promise<ZipArchive | undefined> {
-        const manifest = await this.buildManifest(files, apiVersion, token);
-        if (!manifest) {
-            return;
-        }
-        return this.buildPackageFromManifest(manifest, token);
-    }
+    // /**
+    //  * Build a Salesforce package from the specified directory, do not add any files that match the specified pattern.
+    //  * @param srcDir The package directory to read the source from.
+    //  * @param ignorePatterns A list of ignore patterns of the files to ignore.
+    //  */
+    // private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: undefined): Promise<ZipArchive>
+    // private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken): Promise<ZipArchive | undefined>
+    // private async buildPackageFromFiles(files: vscode.Uri[], apiVersion: string, token?: vscode.CancellationToken): Promise<ZipArchive | undefined> {
+    //     const manifest = await this.buildManifest(files, apiVersion, token);
+    //     if (!manifest) {
+    //         return;
+    //     }
+    //     return this.buildPackageFromManifest(manifest, token);
+    // }
 
     /**
      * Save the package as zip file
@@ -283,6 +279,16 @@ export class SalesforceDeployService {
     }
 
     /**
+     * Deploy the specified SalesforcePackage into the target org
+     * @param manifest Destructive changes to apply
+     * @param options Optional deployment options to use
+     * @param token A cancellation token to stop the process
+     */
+     public async deployPackage(sfPackage: SalesforcePackage, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+        return this.deploy(await sfPackage.generatePackage(), options, progress, token);
+    }
+
+    /**
      * Deploy the specified destructive changes
      * @param manifest Destructive changes to apply
      * @param options Optional deployment options to use
@@ -295,41 +301,6 @@ export class SalesforceDeployService {
                 'destructiveChanges.xml': { body: PackageManifest.from(manifest).toXml(manifest.apiVersion) }
             }
         });
-        return this.deploy(packageZip, options, progress, token);
-    }
-
-
-    /**
-     * Deploy the selected files to the currently selected org.
-     * @param files Files to deploy
-     * @param options Extra deploy options
-     * @param progressOptions Progress options
-     */
-    public async deployFiles(files: vscode.Uri[], options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: undefined) : Promise<DetailedDeployResult>
-    public async deployFiles(files: vscode.Uri[], options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult | undefined>
-    public async deployFiles(files: vscode.Uri[], options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult | undefined> {
-        const packageZip = await this.buildPackageFromFiles(files, '47.0', token);
-        if (!packageZip) {
-            // Return if the task was cancelled
-            return;
-        }
-        return this.deploy(packageZip, options, progress, token);
-    }
-
-    /**
-     * Deploy the selected files to the currently selected org.
-     * @param files Files to deploy
-     * @param options Extra deploy options
-     * @param progressOptions Progress options
-     */
-    public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: undefined) : Promise<DetailedDeployResult>
-    public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult | undefined>
-    public async deployManifest(manifest: MetadataManifest, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult | undefined> {
-        const packageZip = await this.buildPackageFromManifest(manifest, token);
-        if (!packageZip) {
-            // Return if the task was cancelled
-            return;
-        }
         return this.deploy(packageZip, options, progress, token);
     }
 
@@ -355,6 +326,9 @@ export class SalesforceDeployService {
                     }
                 });
             }
+
+            const testZip = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, 'test.zip');
+            await fs.writeFile(testZip, zipInput);
 
             // Set deploy options passed to JSforce; options arg can override the defaults
             const deployOptions = {
@@ -420,18 +394,18 @@ export class SalesforceDeployService {
      * @param options Extra deploy options
      * @param progressOptions Progress options
      */
-    public async retrieveManifest(manifest: MetadataManifest, token?: vscode.CancellationToken) : Promise<RetrieveResultPackage> {
+    public async retrieveManifest(manifest: PackageManifest, apiVersion?: string, token?: vscode.CancellationToken) : Promise<RetrieveResultPackage> {
         const checkInterval = 500;
 
         const retrieveTask = async (cancellationToken?: vscode.CancellationToken) => {
             // Create package
-            const packageXml = PackageManifest.from(manifest);
+            apiVersion = apiVersion ?? this.config.salesforce.apiVersion ?? await this.salesforce.getApiVersion();
             const singlePackage = true;
 
             // Start deploy            
             const connection = await this.salesforce.getJsForceConnection();
             const retrieveJob = await connection.metadata.retrieve({
-                singlePackage, unpackaged: packageXml.toJson(manifest.apiVersion)
+                singlePackage, unpackaged: manifest.toJson(apiVersion)
             }, undefined);
 
             // Wait for deploy

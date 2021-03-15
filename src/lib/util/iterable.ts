@@ -59,6 +59,19 @@ export namespace Iterable {
         }
     }
 
+    /**
+     * Filters the values in an iterator omnly returning items fro which the filter function returns a true-ish value @see Array.prototype.filter
+     * @param itr Iterator
+     * @param filterFunc Filter function
+     */
+     export function *filter<T>(itr: Iterable<T>, filterFunc: (item: T) => any) : Generator<T> {
+        for (const item of itr) {
+            if (filterFunc(item)) {
+                yield item;
+            }
+        }
+    }
+
     export function reduce<T, S = T>(itr: Iterable<T>, reduceFunction: (prev: S, item: T) => S, init: S) : S;
     export function reduce<T, S = T>(itr: Iterable<T>, reduceFunction: (prev: S, item: T) => S, init?: S) : S | undefined {
         let sum = init;

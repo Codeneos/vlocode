@@ -1,3 +1,4 @@
+import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
@@ -14,7 +15,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
     protected async deleteMetadata(selectedFiles: vscode.Uri[]) {
         const progressTitle = selectedFiles.length == 1
             ? `${path.basename(selectedFiles[0].fsPath)}`
-            : `${selectedFiles.length} components`;
+            : `${selectedFiles.length} files`;
 
         await this.vlocode.withActivity({
             progressTitle: `Destruct ${progressTitle}...`,
@@ -22,20 +23,24 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             cancellable: true
         }, async (progress, token) => {
             const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
-            const manifest = await this.salesforce.deploy.buildManifest(selectedFiles);
-            manifest.apiVersion = apiVersion;
-            const result = await this.salesforce.deploy.deployDestructiveChanges(manifest, {
+            const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.destruct);
+            const sfPackage = (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
+            
+            if (token?.isCancellationRequested) {
+                return;
+            }
+
+            const result = await this.salesforce.deploy.deployPackage(sfPackage, {
                 ignoreWarnings: true
             }, undefined, token);
-
-            const componentNames = [...new Set(Object.values(manifest.files).map(file => file.name))];
 
             if (!result.success) {
                 this.logger.error(`Destruct failed ${result.status}: ${result.errorMessage}`);
                 throw new Error(`Destruct failed: ${result.errorMessage}`);
             }
-
-            this.logger.info(`Destruct ${componentNames.join(', ')} succeeded`);
+            
+            const componentNames = sfPackage.getComponentNames();
+            this.logger.info(`Destruct of ${componentNames.join(', ')} succeeded`);
             void vscode.window.showInformationMessage(`Destructed ${progressTitle}`);
         });
     }
