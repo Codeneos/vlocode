@@ -96,6 +96,7 @@ declare module 'vlocity' {
             saveCurrentJobInfo(djobInfo: JobInfo) : void;
             loadCurrentJobInfo(jobInfon: JobInfo) : void;
             printJobStatus(jobInfo: JobInfo) : void;
+            updateStatusIPC(logInfo: any) : void;
             overrideExpandedDefinition(overrides : any) : void;
             getExpandedDefinition(datapack: string, sobject: string | undefined | null, key: string) : any;
             isGuaranteedParentKey(parentKey : any) : boolean;

@@ -1,5 +1,5 @@
 diff --git a/node_modules/vlocity/lib/datapacks.js b/node_modules/vlocity/lib/datapacks.js
-index 6aabe7a..d0bbfdc 100644
+index 6aabe7a..41a974f 100644
 --- a/node_modules/vlocity/lib/datapacks.js
 +++ b/node_modules/vlocity/lib/datapacks.js
 @@ -217,6 +217,11 @@ DataPacks.prototype.getStorageLimitExceededError = function() {
@@ -14,15 +14,6 @@ index 6aabe7a..d0bbfdc 100644
      if (options && dataPackData && dataPackData.processData) {
  
          Object.keys(options).forEach(function(optionKey){
-@@ -244,7 +249,7 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
-             dataPackData.processData.VlocityDataPackData.dataPacks.forEach(function(dataPack) {
-                 if (dataPack.VlocityDataPackRelationshipType == "Pagination") {
-                     addDataPackArray.push(dataPack)
--                } else {
-+                } else {
-                     allDataPacks.push(dataPack); 
-                 }
-             });
 @@ -279,6 +284,11 @@ DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
  
              let result = await self.makeApexPostRequest(self.dataPacksEndpoint(), dataPackData);
@@ -78,7 +69,7 @@ index 6aabe7a..d0bbfdc 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 535f9d2..7e39217 100644
+index 535f9d2..76359be 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
 @@ -1,7 +1,6 @@
@@ -119,11 +110,11 @@ index 535f9d2..7e39217 100644
 +    //const data = await fs.readFile(filePath, encoding);
 +    const fileKey = path.normalize(filePath).toLowerCase();
 +    const isDatapackMeta = fileKey.endsWith('_datapack.json') || fileKey.endsWith('.json');
-     
+ 
      if (!this.allFileDataMap) {
          this.allFileDataMap = {};
      }
-     
+ 
 -    this.allFileDataMap[path.normalize(filePath).toLowerCase()] = data;
 -
 -    try {
@@ -147,7 +138,7 @@ index 535f9d2..7e39217 100644
 +            return fileData;
 +        }
 +    });
- 
+             
 -            if (dataPack instanceof Array) {
 -                for (data of dataPack) {
 -                    if (data.VlocityRecordSourceKey) {
@@ -257,7 +248,7 @@ index 7879216..b45c50f 100644
  }
  
 diff --git a/node_modules/vlocity/lib/datapacksutils.js b/node_modules/vlocity/lib/datapacksutils.js
-index a96735c..1c56697 100644
+index a96735c..f4fc60a 100644
 --- a/node_modules/vlocity/lib/datapacksutils.js
 +++ b/node_modules/vlocity/lib/datapacksutils.js
 @@ -26,7 +26,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
@@ -287,6 +278,15 @@ index a96735c..1c56697 100644
          } else if (dataPack.VlocityRecordSourceKey) {
              dataPackKey = dataPack.VlocityRecordSourceKey.substring(dataPack.VlocityRecordSourceKey.indexOf('/') + 1);
          }
+@@ -2537,7 +2541,7 @@ DataPacksUtils.prototype.printJobStatus = function(jobInfo, forceWrite) {
+ DataPacksUtils.prototype.updateStatusIPC = function(logInfo) {
+     let ipcRenderer;
+     if ('electron' in process.versions) {
+-        ipcRenderer = require('electron').ipcRenderer;
++        //ipcRenderer = require('electron').ipcRenderer;
+     } else {
+         return;
+     }
 diff --git a/node_modules/vlocity/lib/utilityservice.js b/node_modules/vlocity/lib/utilityservice.js
 index 718875b..de6b5b9 100644
 --- a/node_modules/vlocity/lib/utilityservice.js
@@ -319,3 +319,16 @@ index d85f750..6d7ed7e 100644
      self.vlocityMatchingKeys = await self.vlocity.utilityservice.getDRMatchingKeyFields();
      var allTests = self.loadAllTests();
      var runTestData = await self.groupRunTestData(currentContextData, allTests);
+diff --git a/node_modules/vlocity/lib/vlocityutils.js b/node_modules/vlocity/lib/vlocityutils.js
+index 9b76a81..2434806 100644
+--- a/node_modules/vlocity/lib/vlocityutils.js
++++ b/node_modules/vlocity/lib/vlocityutils.js
+@@ -60,7 +60,7 @@ VlocityUtils.getIPCRenderer = function() {
+ 
+     if (ipcRendererSingleton === undefined) {
+         if ('electron' in process.versions) {
+-            ipcRendererSingleton = require('electron').ipcRenderer;
++            ipcRendererSingleton = false;
+         } else {
+             ipcRendererSingleton = false;
+         }

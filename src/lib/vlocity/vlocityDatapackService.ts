@@ -266,6 +266,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         buildTools.datapacksutils.printJobStatus = () => {};
         buildTools.datapacksutils.saveCurrentJobInfo = () => {};
         buildTools.datapacksexportbuildfile.saveFile = () => {};
+        buildTools.datapacksutils.updateStatusIPC  = () => {};
         await buildTools.utilityservice.checkLogin();
 
         // patch SASS compiler
