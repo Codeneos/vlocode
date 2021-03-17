@@ -2,7 +2,7 @@ import { ChildProcess, fork } from 'child_process';
 import * as path from 'path';
 import { Logger } from 'lib/logging';
 import { SassCompiler, SassCompileSuccessResult, SassCompileErrorResult } from 'lib/sass/compiler';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { LifecyclePolicy } from 'lib/core/container';
 import * as uuid from 'uuid';
 
@@ -21,7 +21,7 @@ interface SassCompileRequest {
  * A forked version of the SASS compiler running compilation of SASS in a separate thread;
  * This class is used by internally by the 
  */
-@service({ provides: SassCompiler, lifecycle: LifecyclePolicy.singleton })
+@injectable({ provides: SassCompiler, lifecycle: LifecyclePolicy.singleton })
 export class ForkedSassCompiler implements SassCompiler {
 
     private sassCompiler?: ChildProcess;

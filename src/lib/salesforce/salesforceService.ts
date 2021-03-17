@@ -2,27 +2,26 @@ import * as constants from '@constants';
 import * as vscode from 'vscode';
 import axios from 'axios';
 import * as jsforce from 'jsforce';
-import { Logger, LogManager } from 'lib/logging';
+import * as xml2js from 'xml2js';
+
+import { Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import cache from 'lib/util/cache';
-import Lazy from 'lib/util/lazy';
 import { PropertyAccessor } from 'lib/utilityTypes';
-import * as xml2js from 'xml2js';
 import { stripPrefix } from 'xml2js/lib/processors';
-import { service as service } from 'lib/core/inject';
-import { SuccessResult } from 'jsforce';
-import { CancellationToken } from 'vscode';
+import { injectable as injectable } from 'lib/core/inject';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 import Timer from 'lib/util/timer';
+import { registryData, MetadataType } from '@salesforce/source-deploy-retrieve';
+import { substringAfter } from 'lib/util/string';
 import QueryService from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
-import { container } from 'lib/core/container';
-import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import { SalesforcePackageBuilder } from './deploymentPackageBuilder';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -166,7 +165,7 @@ interface SoapResponse {
     };
 }
 
-@service()
+@injectable()
 export default class SalesforceService implements JsForceConnectionProvider {
 
     public readonly schema = new SalesforceSchemaService(this.connectionProvider);
@@ -193,7 +192,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     public async getPageUrl(page : string, ops?: { namespacePrefix? : string; useFrontdoor?: boolean}) {
-const con = await this.getJsForceConnection();
+        const con = await this.getJsForceConnection();
         let relativeUrl = page.replace(/^\/+/, '');
         if (relativeUrl.startsWith('apex/')) {
             // Build lightning URL
@@ -212,7 +211,7 @@ const con = await this.getJsForceConnection();
         }
 
         const urlNamespace = ops?.namespacePrefix ? `--${  ops.namespacePrefix.replace(/_/i, '-')}` : '';
-        let url = con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4`);
+        let url = con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${relativeUrl}`);
 
         if (relativeUrl.startsWith('lightning/') && url.includes('.my.')) {
             // replace my.salesforce.com with lightning.force.com for setup pages
@@ -280,7 +279,7 @@ const con = await this.getJsForceConnection();
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async* insert(type: string, records: Array<{ values: any; ref: string }>, cancelToken?: CancellationToken) {
+    public async* insert(type: string, records: Array<{ values: any; ref: string }>, cancelToken?: vscode.CancellationToken) {
         const batch = new RecordBatch(this.schema);
         for (const record of records) {
             batch.addInsert(type, record.values, record.ref);
@@ -295,7 +294,7 @@ const con = await this.getJsForceConnection();
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
+    public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: vscode.CancellationToken) {
         const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100 });
         for (const record of records) {
             batch.addUpdate(type, record, record.id, record.id);
@@ -314,7 +313,7 @@ const con = await this.getJsForceConnection();
                 'SOAPAction': '""',
                 'Content-Type':  'text/xml;charset=UTF-8'
             },
-            transformResponse: (data: any, headers?: any) => {
+            transformResponse: (data: any) => {
                 return xml2js.parseStringPromise(data, {
                     tagNameProcessors: [ stripPrefix ],
                     attrNameProcessors: [ stripPrefix ],
@@ -369,6 +368,65 @@ const con = await this.getJsForceConnection();
             ...response.body.executeAnonymousResponse.result,
             debugLog: response.debugLog
         };
+    }
+
+    /**
+     * Query the component data from Salesforce, returns all basic information of a Metadata component throug the tooling API.
+     * @param componentType Component type
+     * @param fullName FQ name of the component
+     * @returns 
+     */
+    public async describeComponent(componentType: string, fullName: string) {
+        const connection = await this.getJsForceConnection();
+        const nameInfo = this.getNameInfo({ componentType, name: fullName });
+        const toolingObject = componentType.replace(/$Custom/i, '');
+
+        const toolingObjectDescribe = await connection.tooling.describe(toolingObject);
+        const nameField = toolingObjectDescribe.fields.find(field => field.nameField);
+        const selectFields = toolingObjectDescribe.fields.map(field => field.name);
+
+        if (!nameField) {
+            return;
+        }
+
+        const toolingQuery = `select ${selectFields.join(',')} from ${toolingObjectDescribe.name} where ${nameField.name} = '${nameInfo.name}' and NamespacePrefix = '${nameInfo.namespace ?? ''}'`;
+        const { records } = await connection.tooling.query<{Id: string}>(toolingQuery);
+        return records[0];
+    }
+
+    /**
+     * Get metadata info about any file; returns metadata type and name or undefined if the specified type is not a Metadata source.
+     * @param filePath Source file path
+     * @returns 
+     */
+    public async getMetadataInfo(filePath: string | vscode.Uri) : Promise<{ componentType: string; fullName: string; name: string } | undefined> {
+        const apiVersion = await this.getApiVersion();
+        const sfPackage = (await new SalesforcePackageBuilder(apiVersion, 'retrieve', this).addFiles([ filePath ])).getPackage();
+        const info = sfPackage.getSourceFileInfo(typeof filePath === 'string' ? filePath : filePath.fsPath);
+        if (info) {
+            return {
+                ...info,
+                ...this.getNameInfo(info),
+                fullName: info.name
+            };
+        }
+    }
+
+    private getNameInfo(metadataInfo: { componentType: string; name: string }) : { name: string; namespace?: string } {
+        let name = metadataInfo.name;
+        if (metadataInfo.componentType == 'Layout') {
+            name = substringAfter(metadataInfo.name, '-');
+        }
+
+        const nameParts = name.split('__');
+        if (nameParts.length > 1 && nameParts[nameParts.length - 1] != 'c') {
+            return {
+                namespace: nameParts.shift()!,
+                name: nameParts.join('__')
+            };
+        }
+
+        return { name };
     }
 
     /**
@@ -472,7 +530,7 @@ const con = await this.getJsForceConnection();
 
         // Save log levels
         if (!debugLevelObject.Id) {
-            const result = await connection.tooling.create('DebugLevel', debugLevelObject) as SuccessResult;
+            const result = await connection.tooling.create('DebugLevel', debugLevelObject) as jsforce.SuccessResult;
             debugLevel.id = result.id;
         } else {
             await connection.tooling.update('DebugLevel', debugLevelObject);
@@ -508,7 +566,7 @@ const con = await this.getJsForceConnection();
 
         // Save log levels
         const connection = await this.getJsForceConnection();
-        const result = await connection.tooling.create('TraceFlag', traceFlag) as SuccessResult;
+        const result = await connection.tooling.create('TraceFlag', traceFlag) as jsforce.SuccessResult;
         return result.id;
     }
 
@@ -599,7 +657,15 @@ const con = await this.getJsForceConnection();
      */
     @cache()
     public async getMetadataTypes() {
-        return (await this.getJsForceConnection()).metadata.describe();
+        return (await (await this.getJsForceConnection()).metadata.describe()).metadataObjects;
+    }
+
+    /**
+     * Get static/embedded metadata type from the SFDX metadata regsitery from the @salesforce/core module. Contains more detail compared to the
+     * API provided metadata details.
+     */
+    public getMetadataType(type: string): MetadataType {
+        return registryData.types[type];
     }
 
     /**

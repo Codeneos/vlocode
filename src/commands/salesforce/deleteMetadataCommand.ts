@@ -35,8 +35,16 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             }, undefined, token);
 
             if (!result.success) {
-                this.logger.error(`Destruct failed ${result.status}: ${result.errorMessage}`);
-                throw new Error(`Destruct failed: ${result.errorMessage}`);
+                if (result.details?.componentFailures) {
+                    this.showComponentFailures(sfPackage, result.details.componentFailures);
+                    const distinctProblems = [...new Set(result.details.componentFailures.map(failure => failure.problem))];
+                    if (distinctProblems.length == 1) {
+                        throw new Error(distinctProblems[0]);
+                    }
+                } else {
+                    this.logger.error(`Destruct failed ${result.status}`);
+                }
+                throw new Error(`Failed to delete one or more components from the org`);
             }
             
             const componentNames = sfPackage.getComponentNames();

@@ -4,13 +4,13 @@ import { asArray, last } from 'lib/util/collection';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import QueryService, { QueryResult } from './queryService';
 import SalesforceSchemaService from './salesforceSchemaService';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { transform } from 'lib/util/object';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
  */
-@service()
+@injectable()
 export default class SalesforceLookupService {
 
     constructor(

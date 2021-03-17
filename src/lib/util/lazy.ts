@@ -1,37 +1,35 @@
-export type LazyInitializer<T> = () => Promise<T> | T;
-
 /**
- * Lazy initializable value that follows a promise like pattern and thus can be awaited using then
+ * Only initialize the variable/value when it is accessed for the first time by wrapping the value in Lazy Proxy that is initialize only once it is acessed.
+ * @param initializer Initializer function
+ * @param args Arguments to be passed
+ * @returns Return value of the lazy initailize
  */
-export default class Lazy<T> implements Promise<T> {
-
-    constructor(private readonly initializer: LazyInitializer<T>, private innerPromise?: Promise<T>) {
-    }
-
-    readonly [Symbol.toStringTag] = 'Lazy';
-
-    private getInnerPromise() : Promise<T> {
-        if (!this.innerPromise) {
-            this.innerPromise = new Promise((resolve, reject) => {
-                try {
-                    Promise.resolve(this.initializer()).then(resolve).catch(reject);
-                } catch(err) {
-                    reject(err);
-                }
-            });
+export function lazy<T extends (...args: any[]) => any>(initializer: T, ...args: Parameters<T>): ReturnType<T> {
+    let instance: any = null;
+    const getInstance = () => instance || (instance = initializer(...args));
+    return new Proxy({}, {
+        get(target, prop) {
+            return getInstance()[prop];
+        },
+        set(target, prop, value) {
+            getInstance()[prop] = value;
+            return true;
+        },
+        has(target, prop) { return prop in getInstance(); },
+        getOwnPropertyDescriptor(target, prop) {
+            return Object.getOwnPropertyDescriptor(getInstance(), prop);
+        },
+        getPrototypeOf() {
+            return getInstance().prototype;
+        },
+        ownKeys() {
+            return Object.keys(getInstance());
+        },
+        enumerate() {
+            return Object.keys(getInstance());
+        },
+        isExtensible() {
+            return false;
         }
-        return this.innerPromise;
-    }
-
-    public then<TResult1 = T, TResult2 = void>(onfulfilled?: (value: T) => TResult1 | Promise<TResult1>, onrejected?: (reason: any) => TResult2 | Promise<TResult2>): Promise<TResult1 | TResult2> {
-        return this.getInnerPromise().then(onfulfilled, onrejected);
-    }
-
-    public catch<TResult1 = void>(onrejected?: (reason: any) => TResult1 | Promise<TResult1>): Promise<T | TResult1> {
-        return this.getInnerPromise().catch(onrejected);
-    }
-
-    public finally(onfinally?: () => void): Promise<T> {
-        return this.getInnerPromise().finally(onfinally);
-    }
+    }) as ReturnType<T>;
 }

@@ -1,18 +1,12 @@
 import * as jsforce from 'jsforce';
-import { Logger, LogManager } from 'lib/logging';
+import { Logger } from 'lib/logging';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { stringEquals } from 'lib/util/string';
 
-import * as constants from '@constants';
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import cache from 'lib/util/cache';
-import Lazy from 'lib/util/lazy';
-import { createRecordProxy, removeNamespacePrefix } from 'lib/util/salesforce';
-import DatapackUtil from 'lib/vlocity/datapackUtil';
-import QueryBuilder from '../salesforce/queryBuilder';
-import { service } from 'lib/core/inject';
+import { removeNamespacePrefix } from 'lib/util/salesforce';
+import { injectable } from 'lib/core/inject';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import DatapackInfoService from './datapackInfoService';
 
@@ -23,7 +17,7 @@ export interface VlocityMatchingKey {
     readonly returnField: string;
 }
 
-@service()
+@injectable()
 export default class VlocityMatchingKeyService {
 
     constructor(

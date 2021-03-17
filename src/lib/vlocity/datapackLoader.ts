@@ -6,7 +6,7 @@ import { mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import { substringAfterLast } from 'lib/util/string';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { container } from 'lib/core/container';
 
 /**
@@ -54,7 +54,7 @@ export class CachedFileSystem implements FileSystem {
 
 type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);
 
-@service()
+@injectable()
 export default class DatapackLoader {
 
     protected readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [

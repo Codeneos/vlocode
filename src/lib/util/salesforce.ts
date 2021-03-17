@@ -48,16 +48,27 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
  * @param field Field to remove the namespace from
  */
 export function removeNamespacePrefix(field : string) : string {
+    return extractNamespaceAndName(field).name;
+}
+
+/**
+ * Extract both the name of a type as well as the namespace if any
+ * @param typeName Field to seperate namespace and type
+ */
+ export function extractNamespaceAndName(typeName : string) : { name: string, namespace?: string } {
     // Also can use regex: /^(.+?__)?(?!c$|$)(.*?)(__c)?$/ replace with '$2$3'
-    const namespaceIndex = field.indexOf('__');
+    const namespaceIndex = typeName.indexOf('__');
     if (namespaceIndex > 0) {
         // Custom fields are postfixed with __c, avoid detection field name as namespace
-        const hasNamespace = namespaceIndex !== field.lastIndexOf('__');
+        const hasNamespace = typeName.substr(-3, 2) != '__' || namespaceIndex !== typeName.lastIndexOf('__') ;
         if (hasNamespace) {
-            return field.substring(namespaceIndex+2);
+            return { 
+                name: typeName.substring(namespaceIndex + 2),
+                namespace: typeName.substring(0, namespaceIndex)
+            }
         }
     }
-    return field;
+    return { name: typeName };
 }
 
 /**

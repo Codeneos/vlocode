@@ -1,11 +1,10 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel, unique, filterUndefined } from 'lib/util/collection';
-import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
-import MetadataCommand from './metadataCommand';
+import { forEachAsyncParallel } from 'lib/util/collection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
+import MetadataCommand from './metadataCommand';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -85,8 +84,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
         if (sfPackage.size() == 0) {
             void vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
             return;
-        }       
-        const componentNames = sfPackage.getComponentNames(); 
+        }
+        const componentNames = sfPackage.getComponentNames();
         const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
         this.logger.info(`Added ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
 

@@ -10,16 +10,24 @@ const vscode = import('vscode').catch(e => null);
  * @param file file name
  */
 export async function getDocumentBodyAsString(file: string | Uri, encoding: BufferEncoding = 'utf-8') : Promise<string> {
+    return (await getDocumentBody(file)).toString(encoding);
+}
+
+/**
+ * Get the body of a document as Buffer
+ * @param file file name
+ */
+export async function getDocumentBody(file: string | Uri) : Promise<Buffer> {
     const fileName = typeof file === 'string' ? file : file.fsPath;
     const vscodeRef = await vscode;
     if (vscodeRef) {
         const doc = vscodeRef?.workspace.textDocuments.find(doc => doc.fileName == fileName);
-        if (doc) {
-            return doc.getText();
+        if (doc && doc.isDirty) {
+            return Buffer.from(doc.getText());
         }
-        return Buffer.from(await vscodeRef?.workspace.fs.readFile(vscodeRef.Uri.file(fileName))).toString(encoding);
+        return Buffer.from(await vscodeRef?.workspace.fs.readFile(vscodeRef.Uri.file(fileName)));
     }
-    return (await fs.readFile(fileName)).toString(encoding);
+    return fs.readFile(fileName);
 }
 
 export function sanitizePath(pathStr: string) {

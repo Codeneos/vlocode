@@ -1,12 +1,15 @@
 import * as vscode from 'vscode';
-import { evalExpr } from 'lib/util/string';
+import { evalExpr, formatString } from 'lib/util/string';
+import * as open from 'open';
 import MetadataCommand from './metadataCommand';
+import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 
 export default class ViewInSalesforceCommand extends MetadataCommand {
 
     private readonly urlFormats = [
-        { filePattern: /\.page$/i, type: 'ApexPage', url: '{instanceUrl}/apex/{name}' },
-        { filePattern: /\.object$/i, url: '{instanceUrl}/lightning/setup/ObjectManager/{name}/Details/view' }
+        { filePattern: /\.page$/i, type: 'ApexPage', url: '/apex/${Name}' },
+        { filePattern: /\.object$/i, url: '/lightning/setup/ObjectManager/${Name}/Details/view' },
+        { filePattern: /\.layout$/i, url: '/lightning/setup/ObjectManager/${object}/PageLayouts/${id}/view' }
     ];
 
     public async execute(args) {
@@ -19,26 +22,23 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
                 return format.url;
             }
         }
-        return null;
+        return '/${Id}';
     }
 
-    protected async openFileInSalesforce(selectedFile: vscode.Uri) {
-        // Resolve datapack        
-        // const manifestFileInfo = Object.values((await this.salesforce.deploy.buildManifest([selectedFile])).files).shift();
-        // const urlFormat = this.getUrlFormat(selectedFile);
-        // if (!urlFormat || !manifestFileInfo) {
-        //     throw 'Cannot open the specified file in Salesforce; url format not defined.';
-        // }
+    protected async openFileInSalesforce(selectedFile: vscode.Uri) {        
+        const metadataInfo = await this.salesforce.getMetadataInfo(selectedFile);
+        if (!metadataInfo) {
+            throw 'The selected file is not a known Salesforce metadata component';
+        }
 
-        // const connection = await this.salesforce.getJsForceConnection();
-        // const salesforcePath = evalExpr(urlFormat, {
-        //     instanceUrl: connection.instanceUrl,
-        //     name: manifestFileInfo.name,
-        //     type: manifestFileInfo.type
-        // });
+        const objectData = await this.salesforce.describeComponent(metadataInfo?.componentType, metadataInfo?.fullName);
+        const urlFormat = this.getUrlFormat(selectedFile);
+        if (!urlFormat || !metadataInfo) {
+            throw 'Cannot open the specified file in Salesforce; url format not defined.';
+        }
 
-        // const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true });
-        // this.logger.info(`Opening URL: ${salesforcePath}`);
-        // void vscode.env.openExternal(vscode.Uri.parse(url));
+        const salesforcePath = formatString(urlFormat, {...metadataInfo, ...objectData});
+        this.logger.info(`Opening URL: ${salesforcePath}`);
+        open(await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true }));
     }
 }

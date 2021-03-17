@@ -18,7 +18,7 @@ import { getDocumentBodyAsString } from 'lib/util/fs';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import * as constants from '@constants';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
@@ -222,7 +222,7 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
 //     }
 // }
 
-@service()
+@injectable()
 export default class VlocityDatapackService implements vscode.Disposable {
 
     private vlocityBuildTools: vlocity;

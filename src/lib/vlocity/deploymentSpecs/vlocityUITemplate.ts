@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { SassCompiler } from 'lib/sass';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import type { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import SalesforceService from 'lib/salesforce/salesforceService';
@@ -9,7 +9,7 @@ import Timer from 'lib/util/timer';
 import { Logger } from 'lib/logging';
 import type DatapackDeploymentRecord from '../datapackDeploymentRecord';
 
-@service({ lifecycle: LifecyclePolicy.transient })
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
 
     public constructor(

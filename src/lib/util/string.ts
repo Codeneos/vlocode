@@ -88,3 +88,25 @@ export function substringAfterLast(value: string, delimiter: string | RegExp, li
     const splitted = value.split(delimiter, limit);
     return splitted[splitted.length - 1];
 }
+
+/**
+ * Returns section of the string after the first occurence of the specified delimiter; in case the delimiter does not occur returns the whole string
+ * @param value Value
+ * @param delimiter Delemiter string passed ot split
+ */
+ export function substringAfter(value: string, delimiter: string | RegExp): string {
+    if (typeof delimiter === 'string') {
+        // parse as string
+        const indexOfDelimiter = value.indexOf(delimiter);
+        if (indexOfDelimiter && indexOfDelimiter >= 0) {
+            return value.substring(indexOfDelimiter + delimiter.length);
+        }
+        return value;
+    }
+    // Parse as regex
+    const matchOfDelimiter = delimiter.exec(value);
+    if (matchOfDelimiter) {
+        return value.substring(matchOfDelimiter.index + matchOfDelimiter[0].length);
+    }
+    return value;
+}

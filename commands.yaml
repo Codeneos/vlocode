@@ -109,12 +109,13 @@ vlocode.refreshMetadata:
     - menu: editor/context
     - menu: explorer/context
 vlocode.destroyMetadata:
-  title: 'Salesforce: Delete/Destroy'
+  title: 'Salesforce: Delete'
   group: v_salesforce
   when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette      
     - menu: editor/context
+    - menu: explorer/context     
 vlocode.selectApiVersion:
   title: 'Salesforce: Select API Version'
   group: v_salesforce
@@ -134,9 +135,9 @@ vlocode.execAnonymousCommand:
   menus:
     - menu: commandPalette      
 vlocode.viewInSalesforce:
-  title: 'Salesforce: View in Salesforce'
+  title: 'Salesforce: Open in Salesforce'
   group: v_salesforce
-  when: vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i
+  when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette
     - menu: editor/context
@@ -197,7 +198,7 @@ vlocode.datapackExplorer.refresh:
     - menu: view/title
       group: navigation
 vlocode.datapackExplorer.openSalesforce:
-  title: View in Salesforce
+  title: Open in Salesforce
   icon: resources/{type}/link-external.svg
   when: 'viewItem == vlocode:datapack:object'
   menus:

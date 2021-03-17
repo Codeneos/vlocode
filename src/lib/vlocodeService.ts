@@ -14,7 +14,7 @@ import { ConfigurationManager } from './configurationManager';
 import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
 import Timer from './util/timer';
-import { service } from './core/inject';
+import { injectable } from './core/inject';
 import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
 import SfdxUtil from './util/sfdx';
@@ -28,7 +28,7 @@ interface ActivityOptions {
     propagateExceptions?: boolean;
 }
 
-@service({ provides: [JsForceConnectionProvider, VlocodeService] })
+@injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates

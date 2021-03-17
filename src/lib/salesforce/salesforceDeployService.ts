@@ -1,25 +1,21 @@
-import * as chalk from 'chalk';
 import * as path from 'path';
 import { Stream } from 'stream';
+import * as chalk from 'chalk';
 import * as fs from 'fs-extra';
 import * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
+import * as vscode from 'vscode';
+
 import { Logger } from 'lib/logging';
 import { wait } from 'lib/util/async';
 import { filterAsyncParallel, mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { getDocumentBodyAsString } from 'lib/util/fs';
-import * as metaFileTemplates from 'metaFileTemplates.yaml';
-import * as vscode from 'vscode';
-import { formatString, stringEquals, substringAfterLast } from 'lib/util/string';
-import { MetadataManifest, PackageManifest } from './deploy/packageXml';
-import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
-import SalesforceService from './salesforceService';
-import { service } from 'lib/core/inject';
-import { MetadataObject } from 'jsforce';
+import { injectable } from 'lib/core/inject';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { SalesforcePackage } from './deploymentPackage';
-import * as xml2js from 'xml2js';
-import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
+import SalesforceService from './salesforceService';
+import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
+import { MetadataManifest, PackageManifest } from './deploy/packageXml';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: { componentFailures?: ComponentFailure[] };
@@ -49,7 +45,7 @@ interface RetrieveStatus extends jsforce.RetrieveResult {
     status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
 }
 
-@service()
+@injectable()
 export class SalesforceDeployService {
 
     constructor(...args: any[]);
@@ -284,7 +280,7 @@ export class SalesforceDeployService {
      * @param options Optional deployment options to use
      * @param token A cancellation token to stop the process
      */
-     public async deployPackage(sfPackage: SalesforcePackage, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    public async deployPackage(sfPackage: SalesforcePackage, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
         return this.deploy(await sfPackage.generatePackage(), options, progress, token);
     }
 
@@ -311,7 +307,7 @@ export class SalesforceDeployService {
      * @param progressOptions progress options
      */
     private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
-        const checkInterval = 500;
+        let checkInterval = 1000;
         const logInterval = 5000;
         const deploymentTypeText = options && options.checkOnly ? 'Validate' : 'Deploy';
 
@@ -357,11 +353,19 @@ export class SalesforceDeployService {
 
             // Wait for deploy
             let lastConsoleLog = 0;
+            let pollCount = 0;
             while (await wait(checkInterval)) {
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
                     // @ts-expect-error; cancelDeploy is not available in jsforce types
                     void connection.metadata.cancelDeploy(deployJob.id);
                     throw new Error(`${deploymentTypeText} cancelled`);
+                }
+
+                // Reduce polling frequency for long running deployments
+                if (pollCount++ > 10) {
+                    checkInterval = Math.max(checkInterval + 1000, checkInterval);
+                    pollCount = 0;
+                    this.logger.verbose(`Reducing deployment poll interval to ${checkInterval}ms`);
                 }
 
                 const status = await connection.metadata.checkDeployStatus(deployJob.id, true);
@@ -467,7 +471,7 @@ export class SalesforceDeployService {
         }
 
         const results = await mapAsyncParallel(searchPaths, async pathStr => {
-            const stat = await fs.stat(pathStr).catch(e => undefined);
+            const stat = await fs.stat(pathStr).catch(() => undefined);
             if (stat === undefined) {
                 return;
             }

@@ -24,8 +24,6 @@ module.exports = {
         ".vscode-test/**/*"
     ],
     "extends": [
-        "prettier",
-        "prettier/@typescript-eslint",
         "plugin:import/typescript"
     ],
     "parser": "@typescript-eslint/parser",

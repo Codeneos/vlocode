@@ -4,10 +4,10 @@ import { LogManager } from 'lib/logging';
 import * as constants from '@constants';
 import Timer from 'lib/util/timer';
 import { arrayMapPush } from 'lib/util/collection';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 
-@service()
+@injectable()
 export class DatapackLookupService implements DependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();

@@ -6,13 +6,13 @@ import { ConfigurationManager } from 'lib/configurationManager';
 import { VlocodeCommand } from '@constants';
 import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
 import { Logger } from 'lib/logging';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import BaseDataProvider from './baseDataProvider';
 
 /**
  * Provides a list of recently executed or executing activities 
  */
-@service()
+@injectable()
 export default class DeveloperLogDataProvider extends BaseDataProvider<DeveloperLog> implements vscode.Disposable {
 
     private logs: Array<DeveloperLog> = [];

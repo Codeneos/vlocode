@@ -7,7 +7,7 @@ import { groupBy } from 'lib/util/collection';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { addFieldsToQuery, normalizeSalesforceName } from 'lib/util/salesforce';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { container } from 'lib/core/container';
 import DatapackInfoService from 'lib/vlocity/datapackInfoService';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
@@ -17,7 +17,7 @@ import BaseDataProvider from './baseDataProvider';
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
 
-@service()
+@injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
 
     private readonly supportSObjectExport = false;

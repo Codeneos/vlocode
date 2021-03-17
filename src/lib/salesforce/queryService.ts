@@ -8,11 +8,11 @@ import { normalizeSalesforceName } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { PropertyAccessor } from 'lib/utilityTypes';
 import * as moment from 'moment';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
-@service()
+@injectable()
 export default class QueryService {
 
     private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();

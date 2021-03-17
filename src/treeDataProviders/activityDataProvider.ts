@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import VlocodeService from 'lib/vlocodeService';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import BaseDataProvider from './baseDataProvider';
 
 /**
  * Provides a list of recently executed or executing activities 
  */
-@service()
+@injectable()
 export default class ActivityDataProvider extends BaseDataProvider<VlocodeActivity> {
 
     constructor(service: VlocodeService) {

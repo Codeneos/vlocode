@@ -4,11 +4,12 @@ import * as constants from '@constants';
 import * as xml2js from 'xml2js';
 import * as fs from 'fs-extra';
 import * as ZipArchive from 'jszip';
-import { PackageManifest } from './deploy/packageXml';
 import { Iterable } from 'lib/util/iterable';
-import { getDocumentBodyAsString } from 'lib/util/fs';
+import { getDocumentBody, getDocumentBodyAsString } from 'lib/util/fs';
+import { PackageManifest } from './deploy/packageXml';
 
-type SalesforcePackageFileData = { fsPath?: string, data?: string | Buffer };
+interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer }
+interface SalesforcePackageSourceMap { packagePath: string; componentType: string; name: string }
 
 export class SalesforcePackage {
 
@@ -27,29 +28,50 @@ export class SalesforcePackage {
 
     private readonly packageData = new Map<string, SalesforcePackageFileData>();
 
+    /**
+     * Maps source files to package contents
+     */
+    private readonly sourceFileMap = new Map<string, SalesforcePackageSourceMap>();
+
     constructor(
         public readonly apiVersion: string,
-        private readonly packageDir = 'src') {
+        private readonly packageDir: string = '') {
         if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
             throw new Error(`Invalid API version: ${apiVersion}`);
         }
     }
-    public add(entry: { xmlName: string, componentName: string, packagePath: string } & SalesforcePackageFileData) {
-        this.manifest.add(entry.xmlName, entry.componentName);
-        this.packageData.set(entry.packagePath.replace(/\/|\\/g, '/'), { 
-            data: entry.data, 
-            fsPath: entry.fsPath 
+    public add(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
+        this.addManifestEntry(entry.xmlName, entry.componentName);
+        this.setPackageData(entry.packagePath, {
+            data: entry.data,
+            fsPath: entry.fsPath
+        });
+        if (entry.fsPath) {
+            this.addSourceMap(entry.fsPath, entry);
+        }
+    }
+
+    public addSourceMap(fsPath: string, entry: { xmlName: string; componentName: string; packagePath: string }) {
+        this.sourceFileMap.set(fsPath, {
+            packagePath: entry.packagePath,
+            name: entry.componentName,
+            componentType: entry.xmlName
         });
     }
 
-    public addPackageData(packagePath: string, data: SalesforcePackageFileData) {
+    public setPackageData(packagePath: string, data: SalesforcePackageFileData) {
         this.packageData.set(packagePath.replace(/\/|\\/g, '/'), data);
     }
 
-    public addPackageMember(xmlName: string, componentName: string) {
+    public addManifestEntry(xmlName: string, componentName: string) {
         this.manifest.add(xmlName, componentName);
     }
 
+    /**
+     * Get the source file for any packge path in the package.
+     * @param packagePath package path
+     * @returns Source file FS path
+     */
     public getSourceFile(packagePath: string) {
         return this.packageData.get(packagePath)?.fsPath;
     }
@@ -70,9 +92,17 @@ export class SalesforcePackage {
     }
 
     public *sourceFiles() {
-        for (const [packagePath, data] of this.packageData) {
-            yield { packagePath, fsPath: data.fsPath };
+        for (const [packagePath, { fsPath }] of this.packageData) {
+            yield { packagePath, fsPath };
         }
+    }
+
+    /**
+     * Returns source file info such as the detected component type as well as package path for each source file.
+     * @param sourceFile Source file path
+     */
+    public getSourceFileInfo(sourceFile: string) {
+        return this.sourceFileMap.get(sourceFile);
     }
 
     /**
@@ -160,7 +190,7 @@ export class SalesforcePackage {
     /**
      * Get a flat array with the names of the components in this package prefixed with their type.
      */
-     public getComponentNames() {
+    public getComponentNames() {
         return Iterable.reduce(this.manifest.types(), (arr, type) => arr.concat(this.manifest.list(type).map(name => `${type}/${name}`)), new Array<string>());
     }
 
@@ -192,7 +222,7 @@ export class SalesforcePackage {
         }
 
         for (const [packagePath, { data, fsPath }] of this.packageData.entries()) {
-            packageZip.file(path.posix.join(this.packageDir, packagePath), data ?? await getDocumentBodyAsString(fsPath!));
+            packageZip.file(path.posix.join(this.packageDir, packagePath), data ?? await getDocumentBody(fsPath!));
         }
 
         return packageZip;

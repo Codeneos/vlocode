@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.14.10",
+    "version": "0.15.0",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -174,7 +174,7 @@
             },
             {
                 "command": "vlocode.deployMetadata",
-                "title": "Salesforce: Save/Deploy"
+                "title": "Salesforce: Deploy"
             },
             {
                 "command": "vlocode.refreshMetadata",
@@ -182,7 +182,7 @@
             },
             {
                 "command": "vlocode.destroyMetadata",
-                "title": "Salesforce: Delete/Destroy"
+                "title": "Salesforce: Delete"
             },
             {
                 "command": "vlocode.selectApiVersion",
@@ -198,7 +198,7 @@
             },
             {
                 "command": "vlocode.viewInSalesforce",
-                "title": "Salesforce: View in Salesforce"
+                "title": "Salesforce: Open in Salesforce"
             },
             {
                 "command": "vlocode.createLwc",
@@ -242,7 +242,7 @@
             },
             {
                 "command": "vlocode.datapackExplorer.openSalesforce",
-                "title": "View in Salesforce",
+                "title": "Open in Salesforce",
                 "icon": {
                     "light": "resources/light/link-external.svg",
                     "dark": "resources/dark/link-external.svg"
@@ -398,7 +398,7 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i"
+                    "when": "vlocodeSalesforceSupport"
                 },
                 {
                     "command": "vlocode.createLwc",
@@ -534,7 +534,7 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourceExtname =~ /cls|page|object/i"
+                    "when": "vlocodeSalesforceSupport"
                 }
             ],
             "view/item/context": [
@@ -778,7 +778,7 @@
         "watch": "webpack --watch --config webpack.dev.ts --env extension --env tests",
         "watch:prod": "webpack --watch --config webpack.prod.ts --env extension",
         "clean": "rimraf ./out",
-        "lint": "tslint -p .",
+        "lint": "eslint ./src/**/*.ts",
         "test": "npm run build:tests && node ./out/test/runTest.js",
         "bump": "ts-node ./build/bumpVersion.ts patch",
         "package": "vsce package",
@@ -817,6 +817,7 @@
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-jsdoc": "^32.2.0",
         "eslint-plugin-prefer-arrow": "^1.2.3",
+        "eslint-plugin-prettier": "^3.3.1",
         "gelex": "0.0.7",
         "glob": "^7.1.6",
         "globby": "^11.0.2",

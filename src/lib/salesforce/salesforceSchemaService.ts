@@ -4,13 +4,13 @@ import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnecti
 import cache from 'lib/util/cache';
 import { isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { debug } from 'console';
 
 /**
  * Provices access to Database Schema methods like describe.
  */
-@service()
+@injectable()
 export default class SalesforceSchemaService {
 
     constructor(

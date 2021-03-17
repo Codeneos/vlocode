@@ -3,10 +3,10 @@ import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnecti
 import Timer from 'lib/util/timer';
 import * as jsforce from 'jsforce';
 import * as chalk from 'chalk';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import * as constants from '@constants';
 
-@service()
+@injectable()
 export class VlocityNamespaceService {
 
     constructor(...args: any[])

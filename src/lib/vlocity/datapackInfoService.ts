@@ -3,7 +3,7 @@ import SalesforceService from 'lib/salesforce/salesforceService';
 
 import cache from 'lib/util/cache';
 import { removeNamespacePrefix } from 'lib/util/salesforce';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { arrayMapPush } from 'lib/util/collection';
 
 export interface VlocityDatapackInfo {
@@ -44,7 +44,7 @@ interface DatapackConfigirationRecord {
     ValidateType?: string;
 }
 
-@service()
+@injectable()
 export default class DatapackInfoService {
 
     constructor(

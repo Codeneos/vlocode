@@ -10,7 +10,7 @@ import Timer from 'lib/util/timer';
 import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
-import { service } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { container, LifecyclePolicy } from 'lib/core/container';
 import { groupBy } from 'lib/util/collection';
 import { DatapackLookupService } from './datapackLookupService';
@@ -44,7 +44,7 @@ export abstract class DatapackDeploymentSpec {
     abstract afterDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
 }
 
-@service({ lifecycle: LifecyclePolicy.transient })
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export default class VlocityDatapackDeployService {
 
     constructor(...args: any[]);
