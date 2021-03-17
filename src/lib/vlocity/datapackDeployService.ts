@@ -13,13 +13,13 @@ import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { injectable } from 'lib/core/inject';
 import { container, LifecyclePolicy } from 'lib/core/container';
 import { groupBy } from 'lib/util/collection';
+import VlocodeConfiguration, { VlocodeVlocityDeployConfiguration } from 'lib/vlocodeConfiguration';
+import * as uuid from 'uuid';
 import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment, { DatapackDeploymentEvents } from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
-import VlocodeConfiguration, { VlocodeVlocityDeployConfiguration } from 'lib/vlocodeConfiguration';
-import * as uuid from 'uuid';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;

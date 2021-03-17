@@ -1,5 +1,5 @@
-import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import * as path from 'path';
+import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
 
@@ -25,7 +25,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
             const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.destruct);
             const sfPackage = (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
-            
+
             if (token?.isCancellationRequested) {
                 return;
             }
@@ -44,9 +44,9 @@ export default class DeleteMetadataCommand extends MetadataCommand {
                 } else {
                     this.logger.error(`Destruct failed ${result.status}`);
                 }
-                throw new Error(`Failed to delete one or more components from the org`);
+                throw new Error('Failed to delete one or more components from the org');
             }
-            
+
             const componentNames = sfPackage.getComponentNames();
             this.logger.info(`Destruct of ${componentNames.join(', ')} succeeded`);
             void vscode.window.showInformationMessage(`Destructed ${progressTitle}`);

@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as sass from 'sass.js';
 import * as fs from 'fs-extra';
+import { DeferredPromise } from 'lib/util/deferred';
 import type { SassCompilerOptions, SassImportRequest, SassImportResponse } from '../compiler';
 import type { Message } from './compiler';
-import { DeferredPromise } from 'lib/util/deferred';
 
 /**
  * Send a message from the fork the parent process
@@ -31,7 +31,7 @@ function getImportHandler(includePaths: string[]) {
         if (includeCache.has(file)) {
             return includeCache.get(file);
         }
-        const data = fs.readFileSync(file).toString("utf-8");
+        const data = fs.readFileSync(file).toString('utf-8');
         includeCache.set(file, data);
         return data;
     };

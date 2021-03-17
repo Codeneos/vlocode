@@ -4,7 +4,7 @@ import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
 import { SoapDebuggingHeader } from 'lib/salesforce/salesforceService';
 import MetadataCommand from './metadataCommand';
 
-type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader, name?: string };
+type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader; name?: string };
 
 /**
  * Command for running Anonymous APEX on Salesforce

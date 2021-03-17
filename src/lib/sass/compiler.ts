@@ -52,7 +52,7 @@ export interface SassCompilerOptions {
 }
 
 export interface SassImportRequest {
-    /** path libsass wants to load (content of »@import "<path>";«) */ 
+    /** path libsass wants to load (content of »@import "<path>";«) */
     current?: string;
     /** absolute path of previously imported file ("stdin" if first) */
     previous?: string;

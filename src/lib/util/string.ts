@@ -30,7 +30,7 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
  * @param b String b
  * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
  */
- export function endsWith(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
+export function endsWith(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
     if (a === null || a === undefined) {
         return false;
     }
@@ -94,7 +94,7 @@ export function substringAfterLast(value: string, delimiter: string | RegExp, li
  * @param value Value
  * @param delimiter Delemiter string passed ot split
  */
- export function substringAfter(value: string, delimiter: string | RegExp): string {
+export function substringAfter(value: string, delimiter: string | RegExp): string {
     if (typeof delimiter === 'string') {
         // parse as string
         const indexOfDelimiter = value.indexOf(delimiter);

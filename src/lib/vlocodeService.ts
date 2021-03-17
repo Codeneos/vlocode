@@ -109,7 +109,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 container.unregister(this._datapackService);
                 this._datapackService.dispose();
             }
-            if (this.config.sfdxUsername) {                
+            if (this.config.sfdxUsername) {
                 this._namespaceService = await container.get(VlocityNamespaceService).initialize(this);
                 this._salesforceService = container.get(SalesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
@@ -281,7 +281,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private async handleGetConnectionError(connector: JsForceConnectionProvider, err: Error | undefined) {
         if (err?.message == 'RefreshTokenAuthError') {
             const action = await vscode.window.showWarningMessage(
-                `Your refresh token for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`, 
+                `Your refresh token for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`,
                 { title: 'Yes', refresh: true },
                 { title: 'No', refresh: false }
             );

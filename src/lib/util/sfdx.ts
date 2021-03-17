@@ -34,15 +34,15 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
  */
 export default class SfdxUtil {
 
-    public static async webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {   
-        const oauthServer = await salesforce.WebOAuthServer.create({ 
-            oauthConfig: { 
+    public static async webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
+        const oauthServer = await salesforce.WebOAuthServer.create({
+            oauthConfig: {
                 loginUrl: options.instanceUrl ?? 'https://test.salesforce.com'
             }
-        });   
+        });
 
         await oauthServer.start();
-        cancelToken?.isCancellationRequested || await open(oauthServer.getAuthorizationUrl(), { wait: false });    
+        cancelToken?.isCancellationRequested || await open(oauthServer.getAuthorizationUrl(), { wait: false });
         const result = oauthServer.authorizeAndSave().then(authInfo => authInfo.getFields(true) as SalesforceAuthResult);
 
         if (cancelToken) {
@@ -68,7 +68,7 @@ export default class SfdxUtil {
         return result;
     }
 
-    public static async refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {   
+    public static async refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
         const username = await this.resolveAlias(usernameOrAlias) || usernameOrAlias;
         const authInfo = await salesforce.AuthInfo.create({ username });
         return SfdxUtil.webLogin(authInfo.getFields(false), cancelToken);
@@ -82,7 +82,7 @@ export default class SfdxUtil {
         return configs;
     }
 
-    public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {       
+    public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {
         const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
         const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
         for (const authFile of authFiles) {
@@ -108,7 +108,7 @@ export default class SfdxUtil {
             } catch(err) {
                 this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
             }
-        }        
+        }
     }
 
     public static async getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {

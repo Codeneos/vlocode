@@ -64,7 +64,7 @@ export namespace Iterable {
      * @param itr Iterator
      * @param filterFunc Filter function
      */
-     export function *filter<T>(itr: Iterable<T>, filterFunc: (item: T) => any) : Generator<T> {
+    export function *filter<T>(itr: Iterable<T>, filterFunc: (item: T) => any) : Generator<T> {
         for (const item of itr) {
             if (filterFunc(item)) {
                 yield item;

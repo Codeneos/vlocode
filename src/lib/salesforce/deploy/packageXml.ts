@@ -62,7 +62,7 @@ export class PackageManifest {
      * Get a list of all componts of the specified type in this package
      * @param type The XML type to list the compoents from
      */
-     public list(type?: string): string[] {
+    public list(type?: string): string[] {
         if (type) {
             return Array.from(this.metadataMembers.get(type)?.values() ?? []);
         }

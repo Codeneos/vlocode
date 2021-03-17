@@ -53,8 +53,8 @@ export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
      */
     private invokeBusinessProcessController(method: string, payload: any = {}) {
         return this.salesforceService.requestApexRemote(
-            `vlocity_namespace__embeddingbusinessprocesspage`,
-            `vlocity_namespace.EmbeddingBusinessProcessController`,
+            'vlocity_namespace__embeddingbusinessprocesspage',
+            'vlocity_namespace.EmbeddingBusinessProcessController',
             method, payload);
     }
 }

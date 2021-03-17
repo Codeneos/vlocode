@@ -55,17 +55,17 @@ export function removeNamespacePrefix(field : string) : string {
  * Extract both the name of a type as well as the namespace if any
  * @param typeName Field to seperate namespace and type
  */
- export function extractNamespaceAndName(typeName : string) : { name: string, namespace?: string } {
+export function extractNamespaceAndName(typeName : string) : { name: string; namespace?: string } {
     // Also can use regex: /^(.+?__)?(?!c$|$)(.*?)(__c)?$/ replace with '$2$3'
     const namespaceIndex = typeName.indexOf('__');
     if (namespaceIndex > 0) {
         // Custom fields are postfixed with __c, avoid detection field name as namespace
         const hasNamespace = typeName.substr(-3, 2) != '__' || namespaceIndex !== typeName.lastIndexOf('__') ;
         if (hasNamespace) {
-            return { 
+            return {
                 name: typeName.substring(namespaceIndex + 2),
                 namespace: typeName.substring(0, namespaceIndex)
-            }
+            };
         }
     }
     return { name: typeName };
@@ -100,7 +100,7 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
  * @param fileName file name to check
  */
 export function isSalesforceMetadataFile(fileName: string) : boolean {
-    return true;//constants.SF_META_EXTENSIONS.some(ext => fileName.endsWith(ext));
+    return true;// constants.SF_META_EXTENSIONS.some(ext => fileName.endsWith(ext));
 }
 
 

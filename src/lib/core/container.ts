@@ -4,7 +4,7 @@ import { Iterable } from 'lib/util/iterable';
 import { LogManager } from 'lib/logging';
 import { asArray } from 'lib/util/collection';
 
-export type ServiceCtor<T extends Object = any> = { new(...args: any[]): T };
+export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
 export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
 export type ServiceFactory<T extends Object = Object> = () => T;
 
@@ -64,8 +64,8 @@ export class Container {
         this.providers.clear();
 
         for (const instance of this.instances) {
-            if (typeof instance['dispose'] === 'function') {
-                instance['dispose']();
+            if (typeof instance.dispose === 'function') {
+                instance.dispose();
             }
         }
     }
@@ -89,7 +89,7 @@ export class Container {
         // return existing instance
         const currentInstance = this.instances.get(serviceName);
         if (currentInstance) {
-            console.debug(`Resolved existing`);
+            console.debug('Resolved existing');
             return currentInstance;
         }
 
@@ -164,7 +164,7 @@ export class Container {
      */
     private createInstance<T extends { new(...args: any[]): I }, I extends Object>(ctor: T): I {
         // Get argument types
-        const typeInfo = Reflect.getMetadata("design:typeinfo", ctor);
+        const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
         const paramTypes = typeInfo?.paramTypes();
         if (!paramTypes) {
             throw new Error('Cannot create an instance of an object without design time decoration');

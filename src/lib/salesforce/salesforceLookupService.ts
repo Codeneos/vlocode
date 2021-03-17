@@ -2,10 +2,10 @@ import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { asArray, last } from 'lib/util/collection';
 import { PropertyAccessor } from 'lib/utilityTypes';
-import QueryService, { QueryResult } from './queryService';
-import SalesforceSchemaService from './salesforceSchemaService';
 import { injectable } from 'lib/core/inject';
 import { transform } from 'lib/util/object';
+import QueryService, { QueryResult } from './queryService';
+import SalesforceSchemaService from './salesforceSchemaService';
 
 /**
  * Look up records from Salesforce using an more convenient syntax

@@ -1,3 +1,4 @@
+import { debug } from 'console';
 import * as jsforce from 'jsforce';
 import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
@@ -5,7 +6,6 @@ import cache from 'lib/util/cache';
 import { isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { injectable } from 'lib/core/inject';
-import { debug } from 'console';
 
 /**
  * Provices access to Database Schema methods like describe.

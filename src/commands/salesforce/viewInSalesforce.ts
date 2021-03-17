@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { evalExpr, formatString } from 'lib/util/string';
 import * as open from 'open';
-import MetadataCommand from './metadataCommand';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
+import MetadataCommand from './metadataCommand';
 
 export default class ViewInSalesforceCommand extends MetadataCommand {
 
@@ -25,7 +25,7 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
         return '/${Id}';
     }
 
-    protected async openFileInSalesforce(selectedFile: vscode.Uri) {        
+    protected async openFileInSalesforce(selectedFile: vscode.Uri) {
         const metadataInfo = await this.salesforce.getMetadataInfo(selectedFile);
         if (!metadataInfo) {
             throw 'The selected file is not a known Salesforce metadata component';

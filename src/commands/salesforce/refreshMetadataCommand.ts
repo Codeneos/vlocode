@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { unique, filterUndefined } from 'lib/util/collection';
 import { Iterable } from 'lib/util/iterable';
-import MetadataCommand from './metadataCommand';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
+import MetadataCommand from './metadataCommand';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
@@ -24,15 +24,15 @@ export default class RefreshMetadataCommand extends MetadataCommand {
         }, async (progress, token) => {
             const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.retrieve);
             return (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
-        });        
+        });
         this.clearPreviousErrors(sfPackage.files());
 
-         // Get task title
-         if (sfPackage.size() == 0) {
+        // Get task title
+        if (sfPackage.size() == 0) {
             void vscode.window.showWarningMessage('None of the selected files or folders are refreshable Salesforce Metadata');
             return;
-        }       
-        const componentNames = sfPackage.getComponentNames(); 
+        }
+        const componentNames = sfPackage.getComponentNames();
         const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
         this.logger.info(`Refresh ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
 
@@ -72,7 +72,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             if (componentsNotFound.length > 0) {
                 this.logger.warn(`Unable to refresh: ${componentsNotFound.join(', ')}`);
             }
-            //this.logger.info(`Refreshed ${uniqueComponents.filter(name => !componentsNotFound.includes(name)).join(', ')} succeeded`);
+            // this.logger.info(`Refreshed ${uniqueComponents.filter(name => !componentsNotFound.includes(name)).join(', ')} succeeded`);
 
             if (componentsNotFound.length > 0) {
                 void vscode.window.showWarningMessage(`Refreshed ${componentNames.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);

@@ -1,7 +1,7 @@
-import { LogManager } from 'lib/logging';
-import { isPromise } from './async';
 import { deserialize, serialize } from 'v8';
 import { types } from 'util';
+import { LogManager } from 'lib/logging';
+import { isPromise } from './async';
 
 /**
  * Private property on the target object used to store cached results;

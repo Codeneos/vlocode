@@ -10,12 +10,12 @@ import { addFieldsToQuery, normalizeSalesforceName } from 'lib/util/salesforce';
 import { injectable } from 'lib/core/inject';
 import { container } from 'lib/core/container';
 import DatapackInfoService from 'lib/vlocity/datapackInfoService';
+import { DescribeGlobalSObjectResult } from 'jsforce';
+import { TreeItemCollapsibleState } from 'vscode';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
-import { DescribeGlobalSObjectResult } from 'jsforce';
-import { TreeItemCollapsibleState } from 'vscode';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {

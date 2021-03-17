@@ -20,9 +20,9 @@ import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/data
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { injectable } from 'lib/core/inject';
 import * as constants from '@constants';
+import { stringEquals } from 'lib/util/string';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
-import { stringEquals } from 'lib/util/string';
 type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
 
 export interface ManifestEntry {
@@ -270,7 +270,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         await buildTools.utilityservice.checkLogin();
 
         // patch SASS compiler
-        //buildTools.datapacksbuilder.compile = function(lang, source, options, cb) 
+        // buildTools.datapacksbuilder.compile = function(lang, source, options, cb) 
 
         // Making sure that any override definitions so that offline operations (expand) also uses the correct
         // custom definitions when defined -- do this after the login check to ensure we have namespaces set correctly

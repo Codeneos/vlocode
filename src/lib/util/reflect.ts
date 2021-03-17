@@ -9,7 +9,7 @@ export function getDesignParamTypes(ctor: any) : any[] {
     }
 
     // Probe new style attributes
-    const typeInfo = Reflect.getMetadata("design:typeinfo", ctor);
+    const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
     if (typeInfo?.paramTypes) {
         return typeInfo.paramTypes();
     }

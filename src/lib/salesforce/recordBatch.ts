@@ -1,3 +1,4 @@
+import { type } from 'os';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { LogManager } from 'lib/logging';
 import { Connection, RecordResult, BatchInfo } from 'jsforce';
@@ -5,7 +6,6 @@ import { CancellationToken } from 'vscode';
 import { AwaitReturnType } from 'lib/utilityTypes';
 import Timer from 'lib/util/timer';
 import { arrayMapPush } from 'lib/util/collection';
-import { type } from 'os';
 
 type RecordOperationType = 'update' | 'insert';
 
