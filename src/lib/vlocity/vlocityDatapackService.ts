@@ -484,7 +484,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     private async datapacksJobAsync(command: vlocity.actionType, jobInfo : vlocity.JobInfo, cancellationToken?: vscode.CancellationToken) : Promise<vlocity.VlocityJobResult> {
         // Collect and create job optipns
-        const localOptions = { projectPath: this.resolvedProjectPath() };
+        const localOptions = {
+            projectPath: this.resolvedProjectPath(),
+            // default settings and datapacks not packed in extension
+            // so autoUpdateSettings will always fail, so never attempt this.
+            autoUpdateSettings: false
+        };
         const customOptions = await this.getCustomJobOptions();
         const jobOptions: any = { ...customOptions, ...this.config, ...localOptions, ...jobInfo };
 

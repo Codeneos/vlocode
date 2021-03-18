@@ -29,7 +29,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
     }
 
     /**
-     * Load a configuration section into a concrete object of type T. Allows update adn retrieval as if the config was a native NodeJS object
+     * Load a configuration section into a concrete object of type T. Allows update and retrieval as if the config was a native NodeJS object
      * @param configSectionName Section name to load
      */
     public load<T extends Object>(configSectionName: string): T {
@@ -82,7 +82,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         });
     }
 
-    private getWorkspaceConfiguration(configSectionName: string ) {
+    private getWorkspaceConfiguration(configSectionName: string) {
         let workspaceConfig = this.loadedConfigSections.get(configSectionName);
         if (!workspaceConfig) {
             // Init config in cache

@@ -292,7 +292,7 @@ export class SalesforcePackage {
      * Generate a nodejs buffer with compressed package zip that can be uploaded to Salesforce.
      * @param compressionLevel levle of compression
      */
-    public async generatePackage(compressionLevel: number = 7): Promise<Buffer> {
+    public async generatePackage(compressionLevel: number = 0): Promise<Buffer> {
         return (await this.buildPackage()).generateAsync({
             type: 'nodebuffer',
             compression: 'DEFLATE',

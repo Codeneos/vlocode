@@ -13,8 +13,8 @@ import { stripPrefix } from 'xml2js/lib/processors';
 import { injectable as injectable } from 'lib/core/inject';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 import Timer from 'lib/util/timer';
-import { registryData, MetadataType } from '@salesforce/source-deploy-retrieve';
-import { substringAfter } from 'lib/util/string';
+import { registryData, MetadataType as SfdxMetadataType } from '@salesforce/source-deploy-retrieve';
+import { stringEquals, substringAfter } from 'lib/util/string';
 import QueryService from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
@@ -163,6 +163,10 @@ interface SoapResponse {
             [key: string]: any;
         };
     };
+}
+
+export interface MetadataType extends Partial<SfdxMetadataType>, jsforce.MetadataObject {
+    isBundle: boolean;
 }
 
 @injectable()
@@ -653,19 +657,28 @@ export default class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
-     * Get the list of supported metadata types for the current organization.
+     * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX regsitery
      */
     @cache()
-    public async getMetadataTypes() {
-        return (await (await this.getJsForceConnection()).metadata.describe()).metadataObjects;
+    public async getMetadataTypes() : Promise<MetadataType[]> {
+        const metadataObjects = (await (await this.getJsForceConnection()).metadata.describe()).metadataObjects;
+        for (const metadataObject of metadataObjects as MetadataType[]) {
+            const metadataRegistyType = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
+            if (metadataRegistyType) {
+                Object.assign(metadataObject, metadataRegistyType);
+                metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle';
+            } else {
+                metadataObject.isBundle = metadataObject.xmlName.endsWith('Bundle');
+            }
+        }
+        return metadataObjects as MetadataType[];
     }
 
     /**
-     * Get static/embedded metadata type from the SFDX metadata regsitery from the @salesforce/core module. Contains more detail compared to the
-     * API provided metadata details.
+     * When the metadata type is a known metadata type return the type.
      */
-    public getMetadataType(type: string): MetadataType {
-        return registryData.types[type];
+    public async getMetadataType(type: string) {
+        return (await this.getMetadataTypes()).find(t => stringEquals(type, t.xmlName));
     }
 
     /**

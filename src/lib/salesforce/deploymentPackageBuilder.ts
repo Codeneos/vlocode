@@ -12,7 +12,7 @@ import { LifecyclePolicy } from 'lib/core/container';
 import { Iterable } from 'lib/util/iterable';
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage } from './deploymentPackage';
-import SalesforceService from './salesforceService';
+import SalesforceService, { MetadataType } from './salesforceService';
 
 export enum SalesforcePackageType {
     /**
@@ -51,7 +51,7 @@ export class SalesforcePackageBuilder {
      * @returns Instance of the package builder.
      */
     public async addFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken) : Promise<this> {
-        const childMetadataFiles = new Set<[vscode.Uri, string, jsforce.MetadataObject]>();
+        const childMetadataFiles = new Set<[vscode.Uri, string, MetadataType]>();
         const fileUris = Iterable.map(files, file => typeof file === 'string' ? vscode.Uri.file(file) : file);
 
         // Build zip archive for all expanded file; filter out files already parsed
@@ -80,7 +80,7 @@ export class SalesforcePackageBuilder {
             }
 
             // get metadata type
-            const xmlName = await this.getXmlName(file);
+            const xmlName = await this.getComponentType(file);
             const metadataType = xmlName && await this.getMetadataType(xmlName);
             if (!xmlName || !metadataType) {
                 this.logger.debug(`Adding ${file} is not a known Salesforce metadata type`);
@@ -93,7 +93,6 @@ export class SalesforcePackageBuilder {
                 continue;
             }
 
-            const isBundle = xmlName.endsWith('Bundle');
             const componentName = this.getPackageComponentName(file.fsPath, metadataType);
             const packagePath = this.getPackagePath(file.fsPath, metadataType);
 
@@ -103,7 +102,7 @@ export class SalesforcePackageBuilder {
             if (this.type === SalesforcePackageType.destruct) {
                 this.mdPackage.addDestructiveChange(xmlName, componentName);
             } else {
-                this.mdPackage.add({xmlName, componentName, packagePath, fsPath: file.fsPath });
+                this.mdPackage.add({ xmlName, componentName, packagePath, fsPath: file.fsPath });
             }
 
             // also ensure metafile is added
@@ -112,7 +111,7 @@ export class SalesforcePackageBuilder {
                 await this.addFiles([ metaFile ], token);
             }
 
-            if (isBundle) {
+            if (metadataType.isBundle) {
                 // Only Aura and LWC are bundled at this moment
                 // Classic metadata package all related files
                 const sourceFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(path.dirname(file.fsPath), '**'));
@@ -133,7 +132,7 @@ export class SalesforcePackageBuilder {
      * @param xmlName XML name of the child element
      * @param metadataType Metadata type of the parent/root
      */
-    private async mergeChildSourceWithParent(sourceFile: vscode.Uri, xmlName: string, metadataType: jsforce.MetadataObject) {
+    private async mergeChildSourceWithParent(sourceFile: vscode.Uri, xmlName: string, metadataType: MetadataType) {
         // Get metadata type for a source file
         const tagNameInParent = substringAfterLast(path.dirname(sourceFile.fsPath), /\\|\//);
         const chilComponentName = this.getPackageComponentName(sourceFile.fsPath, metadataType);
@@ -171,7 +170,7 @@ export class SalesforcePackageBuilder {
      * @param metadataType Type of metadata to merge
      * @returns true if the file is merged otherwise false.
      */
-    private async mergeWithExistingMetadata(packagePath: string, sourceFile: vscode.Uri, metadataType: jsforce.MetadataObject) {
+    private async mergeWithExistingMetadata(packagePath: string, sourceFile: vscode.Uri, metadataType: MetadataType) {
         const existingPackageData = await this.mdPackage.getPackageData(packagePath);
         if (!existingPackageData) {
             return false;
@@ -184,7 +183,7 @@ export class SalesforcePackageBuilder {
         return true;
     }
 
-    //  private async addEmbeddedMetadataMembers(sourceFile: vscode.Uri, metadataType: jsforce.MetadataObject) {
+    //  private async addEmbeddedMetadataMembers(sourceFile: vscode.Uri, metadataType: MetadataType) {
     //     const metadata = await xml2js.parseStringPromise(await getDocumentBodyAsString(sourceFile));
     //     for(const [key, value] of Object.entries(metadata[metadataType.xmlName])) {
     //         //const isChildElement = 
@@ -243,32 +242,24 @@ export class SalesforcePackageBuilder {
         return metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName));
     }
 
-    private async getXmlName(file: vscode.Uri) {
-        const metadataTypes = await this.salesforce.getMetadataTypes();
-        const fileLowerCase = file.fsPath.toLowerCase();
-
-        if (fileLowerCase.endsWith('.xml')) {
-            let xmlName = await this.getRootElementName(file);
-
-            // Cannot detect certain metadata types properly so instead manually set the type
-            if (xmlName == 'EmailFolder') {
-                xmlName = 'EmailTemplate';
-            } else if (xmlName && xmlName.endsWith('Folder')) {
-                // Handles document Folder and otehr folder cases
-                xmlName = xmlName.substr(0, xmlName.length - 6);
-            }
-
-            const metadataType = xmlName && metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName!));
-            if (metadataType) {
-                return xmlName;
-            }
+    private async getComponentType(file: vscode.Uri) {
+        const xmlName = await this.getComponentTypeFromSource(file);
+        if (xmlName) {
+            return xmlName;
         }
 
+        const fileLowerCase = file.fsPath.toLowerCase();
         const directoryNameOnlyMatches = new Array<string>();
-        for (const type of metadataTypes) {
+
+        for (const type of await this.salesforce.getMetadataTypes()) {
             const suffixMatches = type.suffix && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}`);
             const metaSuffixMatches = type.suffix && type.metaFile && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}-meta.xml`);
-            const directoryNameMatches = type.directoryName && path.dirname(file.fsPath).split(/[/\\]/g).some(dirname => stringEquals(dirname, type.directoryName));
+            const fileDirName = type.isBundle ? path.dirname(path.dirname(file.fsPath)) : path.dirname(file.fsPath);
+            const directoryNameMatches = type.directoryName && fileDirName.split(/[/\\]/g).some(dirname => stringEquals(dirname, type.directoryName));
+
+            if (type.strictDirectoryName && !directoryNameMatches) {
+                continue;
+            }
 
             if (metaSuffixMatches) {
                 return type.xmlName;
@@ -295,6 +286,28 @@ export class SalesforcePackageBuilder {
         }
     }
 
+    private async getComponentTypeFromSource(file: vscode.Uri) {
+        if (file.fsPath.toLowerCase().endsWith('.xml')) {
+            return;
+        }
+
+        const metadataTypes = await this.salesforce.getMetadataTypes();
+        let xmlName = await this.getRootElementName(file);
+
+        // Cannot detect certain metadata types properly so instead manually set the type
+        if (xmlName == 'EmailFolder') {
+            xmlName = 'EmailTemplate';
+        } else if (xmlName && xmlName.endsWith('Folder')) {
+            // Handles document Folder and otehr folder cases
+            xmlName = xmlName.substr(0, xmlName.length - 6);
+        }
+
+        const metadataType = xmlName && metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName!));
+        if (metadataType) {
+            return xmlName;
+        }
+    }
+
     /**
      * Get root Element/Tag name of the specified XML file.
      * @param file Path to the XML file from which to get the root element name.
@@ -313,12 +326,11 @@ export class SalesforcePackageBuilder {
      * @param metaFile 
      * @param metadataType 
      */
-    private getPackageComponentName(metaFile: string, metadataType: jsforce.MetadataObject) : string {
+    private getPackageComponentName(metaFile: string, metadataType: MetadataType) : string {
         const sourceFileName = path.basename(metaFile).replace(/-meta\.xml$/ig, '');
         const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
-        const isBundle = metadataType.xmlName.endsWith('Bundle');
 
-        if (isBundle) {
+        if (metadataType.isBundle) {
             return metaFile.split(/\\|\//g).slice(-2).shift()!;
         }
 
@@ -335,10 +347,9 @@ export class SalesforcePackageBuilder {
      * @param fullSourcePath 
      * @param metadataType 
      */
-    private getPackageFolder(fullSourcePath: string, metadataType: jsforce.MetadataObject) : string {
+    private getPackageFolder(fullSourcePath: string, metadataType: MetadataType) : string {
         const retainFolderStructure = !!metadataType.inFolder;
         const componentPackageFolder = metadataType.directoryName;
-        const isBundle = metadataType.xmlName.endsWith('Bundle');
 
         if (retainFolderStructure && componentPackageFolder) {
             const packageParts = path.dirname(fullSourcePath).split(/\/|\\/g);
@@ -346,7 +357,7 @@ export class SalesforcePackageBuilder {
             return packageParts.slice(packageFolderIndex).join(path.posix.sep);
         }
 
-        if (isBundle && componentPackageFolder) {
+        if (metadataType.isBundle && componentPackageFolder) {
             const componentName = fullSourcePath.split(/\\|\//g).slice(-2).shift()!;
             return path.posix.join(componentPackageFolder, componentName);
         }
@@ -354,7 +365,7 @@ export class SalesforcePackageBuilder {
         return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/g);
     }
 
-    private getPackagePath(sourceFile: string, metadataType: jsforce.MetadataObject) {
+    private getPackagePath(sourceFile: string, metadataType: MetadataType) {
         return path.posix.join(this.getPackageFolder(sourceFile, metadataType), path.basename(sourceFile));
     }
 

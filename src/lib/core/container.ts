@@ -64,8 +64,10 @@ export class Container {
         this.providers.clear();
 
         for (const instance of this.instances) {
-            if (typeof instance.dispose === 'function') {
-                instance.dispose();
+            // eslint-disable-next-line @typescript-eslint/dot-notation -- does not compile with TS as dispose is an optional member
+            if (typeof instance['dispose'] === 'function') {
+                // eslint-disable-next-line @typescript-eslint/dot-notation
+                instance['dispose']();
             }
         }
     }
