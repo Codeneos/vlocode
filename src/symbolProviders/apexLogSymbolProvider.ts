@@ -17,7 +17,8 @@ import * as vscode from 'vscode';
  */
 export class ApexLogSymbolProvider implements vscode.DocumentSymbolProvider {
 
-    readonly functionPattern = /^(?<time>[\d+:.]+) \(\d+\)\|(?<type>CONSTRUCTOR|METHOD)_(?<mode>ENTRY|EXIT)\|\[\d+\]\|(?<name>.*)$$/;
+    readonly functionPattern = /^(?<time>[\d+:.]+) \(\d+\)\|(?<type>CONSTRUCTOR|METHOD|SYSTEM_METHOD)_(?<mode>ENTRY|EXIT)\|\[\d+\]\|(?<name>.*)$/;
+    readonly assignmentPattern = /^(?<time>[\d+:.]+) \(\d+\)\|VARIABLE_ASSIGNMENT\|\[\d+\]\|(?<name>.*)$/;
 
     public async provideDocumentSymbols(document: vscode.TextDocument): Promise<vscode.DocumentSymbol[]> {
         const symbols = this.parseSymbols(this.getDocumentLineIterator(document));
@@ -28,13 +29,17 @@ export class ApexLogSymbolProvider implements vscode.DocumentSymbolProvider {
         const symbols = new Array<vscode.DocumentSymbol>();
 
         for (const line of documentLines) {
-            const text = line.text;
-            const match = line.text.match(this.functionPattern);
+            const functionMatch = line.text.match(this.functionPattern);
+            const assignmentMatch = line.text.match(this.assignmentPattern);
 
-            if (match && match.groups) {
-                const type = match.groups.type === 'CONSTRUCTOR' ? vscode.SymbolKind.Constructor : vscode.SymbolKind.Method;
-                const symbolName = match.groups.name.split('|').pop() || 'NAME_MISSING';
-                const symbolDetail = match.groups.name.split('|').slice(0, 2).join('|');
+            if (functionMatch?.groups) {
+                let type = functionMatch.groups.type === 'CONSTRUCTOR' ? vscode.SymbolKind.Constructor : vscode.SymbolKind.Method;
+                const symbolName = functionMatch.groups.name.split('|').pop() || 'NAME_MISSING';
+                const symbolDetail = functionMatch.groups.name.split('|').slice(0, 2).join('|');
+
+                if (symbolName.includes('.__sfdc_')) {
+                    type = vscode.SymbolKind.Property;
+                }
 
                 const symbol = new vscode.DocumentSymbol(
                     symbolName,
@@ -44,13 +49,28 @@ export class ApexLogSymbolProvider implements vscode.DocumentSymbolProvider {
                     line.range
                 );
 
-                if (match.groups.mode === 'ENTRY') {
+                if (functionMatch.groups.mode === 'ENTRY') {
                     symbol.children.push(...this.parseSymbols(documentLines));
                 } else {
                     break;
                 }
 
                 symbols.push(symbol);
+            }
+
+            if (assignmentMatch?.groups) {
+                const type = vscode.SymbolKind.Variable;
+                const nameParts = assignmentMatch.groups.name.split('|');
+                const symbolName = `${nameParts.shift()} = ${nameParts.shift()}`;
+                const symbolDetail = nameParts.join('|');
+
+                symbols.push(new vscode.DocumentSymbol(
+                    symbolName,
+                    symbolDetail,
+                    type,
+                    line.range,
+                    line.range
+                ));
             }
         }
 
