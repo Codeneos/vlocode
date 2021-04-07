@@ -2,8 +2,10 @@
 import * as fs from 'fs-extra';
 import type * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
+import * as path from 'path';
 
 interface ExtendedFileProperties extends jsforce.FileProperties {
+    fullFileName: string,
     packageName?: string;
     hasMetaFile: boolean;
     getBuffer(): Promise<Buffer> | undefined;
@@ -19,6 +21,11 @@ export class RetrieveResultPackage {
 
     public get success(): boolean {
         return !!this.result.zipFile;
+    }
+
+    public get retrieveCount(): number {
+        // Do not count package XML
+        return this.result.fileProperties ? this.result.fileProperties.length - 1 : 0;
     }
 
     constructor(private readonly result: jsforce.RetrieveResult, private readonly singlePackage: boolean, private readonly zip?: ZipArchive) {
@@ -53,9 +60,11 @@ export class RetrieveResultPackage {
             throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
         }
         return new Promise((resolve, reject) => {
-            file.nodeStream().pipe(fs.createWriteStream(targetPath, { flags: 'w' }))
-                .on('finish', resolve)
-                .on('error', reject);
+            fs.ensureDir(path.dirname(targetPath)).then(() => {
+                file.nodeStream().pipe(fs.createWriteStream(targetPath, { flags: 'w' }))
+                    .on('finish', resolve)
+                    .on('error', reject);
+            }).catch(reject);
         });
     }
 }

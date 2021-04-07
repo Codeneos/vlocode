@@ -399,7 +399,7 @@ export class SalesforceDeployService {
      * @param progressOptions Progress options
      */
     public async retrieveManifest(manifest: PackageManifest, apiVersion?: string, token?: vscode.CancellationToken) : Promise<RetrieveResultPackage> {
-        const checkInterval = 500;
+        const checkInterval = 2000;
 
         const retrieveTask = async (cancellationToken?: vscode.CancellationToken) => {
             // Create package
