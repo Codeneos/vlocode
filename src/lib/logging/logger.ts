@@ -16,7 +16,16 @@ export type LogFilter = ( ops: {
 }) => boolean;
 
 export interface LogWriter {
+    /**
+     * Write a entry to the log
+     * @param entry Entry to write
+     */
     write(entry: LogEntry) : void | Promise<void>;
+
+    /**
+     * Optionally focus the output/log channel to the forground (only for supported channels)
+     */
+    focus?() : void | Promise<void>;
 }
 
 export class Logger {
@@ -36,6 +45,10 @@ export class Logger {
         private readonly manager: LogManager | undefined,
         public readonly name: string,
         private readonly writer?: LogWriter) {
+    }
+
+    public focus() {
+        void this.writer?.focus?.();
     }
 
     public log(...args: any[]) : void { this.write(LogLevel.info, ...args); }

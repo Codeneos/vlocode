@@ -73,6 +73,13 @@ export default class LogManager {
                 for (const writer of this.logWriters[logName] || this.logWriterChain) {
                     return writer.write(entry);
                 }
+            },
+            focus: () => {
+                for (const writer of this.logWriters[logName] || this.logWriterChain) {
+                    if (writer.focus) {
+                        return writer.focus();
+                    }
+                }
             }
         });
     }

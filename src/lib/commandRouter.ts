@@ -51,7 +51,7 @@ class CommandExecutor implements Command {
         } catch(err) {
             const message = err.message || err;
             this.logger.error(`Command error: ${message}`);
-            void vscode.window.showErrorMessage(message);
+            void vscode.window.showErrorMessage(message, 'Show').then(value => value === 'Show' && this.logger.focus());
         }
     }
 
