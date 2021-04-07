@@ -64,7 +64,8 @@
         "onCommand:vlocode.developerLogs.refresh",
         "onCommand:vlocode.setLogVisibility",
         "onCommand:vlocode.developerLogs.setLogVisibility",
-        "onCommand:vlocode.execRestApi"
+        "onCommand:vlocode.execRestApi",
+        "onCommand:vlocode.retrieveMetadata"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -223,6 +224,10 @@
             {
                 "command": "vlocode.execRestApi",
                 "title": "Salesforce: Execute REST API..."
+            },
+            {
+                "command": "vlocode.retrieveMetadata",
+                "title": "Salesforce: Retrieve metadata..."
             },
             {
                 "command": "vlocode.datapackExplorer.export",
@@ -431,6 +436,11 @@
                     "when": "vlocodeSalesforceSupport"
                 },
                 {
+                    "command": "vlocode.retrieveMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
                     "command": "vlocode.datapackExplorer.export",
                     "when": "false"
                 },
@@ -497,6 +507,11 @@
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.destroyMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
                 }
             ],
             "editor/context": [
@@ -550,6 +565,16 @@
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
+                    "group": "inline",
+                    "when": "viewItem == vlocode:datapack:sobject"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
+                    "group": "inline",
+                    "when": "viewItem == vlocode:datapack:sobjectType"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
                     "group": "v_vlocity",
                     "when": "viewItem == vlocode:datapack:object"
                 },
@@ -559,14 +584,34 @@
                     "when": "viewItem == vlocode:datapack:category"
                 },
                 {
+                    "command": "vlocode.datapackExplorer.export",
+                    "group": "v_vlocity",
+                    "when": "viewItem == vlocode:datapack:sobject"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
+                    "group": "v_vlocity",
+                    "when": "viewItem == vlocode:datapack:sobjectType"
+                },
+                {
                     "command": "vlocode.datapackExplorer.openSalesforce",
                     "group": "inline",
                     "when": "viewItem == vlocode:datapack:object"
                 },
                 {
                     "command": "vlocode.datapackExplorer.openSalesforce",
+                    "group": "inline",
+                    "when": "viewItem == vlocode:datapack:sobject"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.openSalesforce",
                     "group": "v_vlocity",
                     "when": "viewItem == vlocode:datapack:object"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "viewItem == vlocode:datapack:sobject"
                 },
                 {
                     "command": "vlocode.jobExplorer.run",
@@ -771,7 +816,7 @@
     },
     "scripts": {
         "prepare": "patch-package && npm run prepare:commands",
-        "prepare:commands": "ts-node ./package.json ./commands.yaml",
+        "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
         "build": "npm run prepare && webpack --config webpack.prod.ts --env extension --env views",
         "build:debug": "npm run prepare && webpack --config webpack.dev.ts --env extension",
         "build:tests": "npm run prepare && webpack --config webpack.dev.ts --env tests --env transpileOnly",

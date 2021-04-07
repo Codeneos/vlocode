@@ -10,6 +10,7 @@ import ClearDeveloperLogsCommand from './clearDeveloperLogsCommand';
 import SetTraceFlagsCommand from './setTraceFlagsCommand';
 import SetDeveloperLogVisibilityCommand from './setDeveloperLogVisibilityCommand';
 import ExecuteRestApiCommand from './execRestApiCommand';
+import RetrieveMetadataCommand from './retrieveMetadataCommand';
 
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,
@@ -25,4 +26,5 @@ export default {
     [VlocodeCommand.setTraceFlags]: SetTraceFlagsCommand,
     [VlocodeCommand.setLogVisibility]: SetDeveloperLogVisibilityCommand,
     [VlocodeCommand.execRestApi]: ExecuteRestApiCommand,
+    [VlocodeCommand.retrieveMetadata]: RetrieveMetadataCommand,
 };

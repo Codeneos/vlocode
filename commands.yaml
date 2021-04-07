@@ -177,6 +177,12 @@ vlocode.execRestApi:
   when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette   
+vlocode.retrieveMetadata:
+  title: 'Salesforce: Retrieve metadata...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette   
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:
@@ -185,6 +191,8 @@ vlocode.datapackExplorer.export:
   when: 
     - viewItem == vlocode:datapack:object
     - viewItem == vlocode:datapack:category
+    - viewItem == vlocode:datapack:sobject
+    - viewItem == vlocode:datapack:sobjectType
   menus:
     - menu: view/item/context
       group: inline
@@ -200,7 +208,9 @@ vlocode.datapackExplorer.refresh:
 vlocode.datapackExplorer.openSalesforce:
   title: Open in Salesforce
   icon: resources/{type}/link-external.svg
-  when: 'viewItem == vlocode:datapack:object'
+  when: 
+    - viewItem == vlocode:datapack:object
+    - viewItem == vlocode:datapack:sobject
   menus:
     - menu: view/item/context
       group: inline      

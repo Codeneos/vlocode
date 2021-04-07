@@ -433,7 +433,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             queries: exportQueries,
             projectPath: projectPath,
             expansionPath: path.relative(projectPath, exportFolder),
-            ignoreAllErrors: true, // Avoid the export to stop when there is a dependency error -- for example missing template
+            ignoreAllErrors: false, // Avoid the export to stop when there is a dependency error -- for example missing template
             fullManifest: exportManifest,
             skipQueries: exportQueries.length == 0,
             maxDepth: maxDepth,
