@@ -90,7 +90,7 @@ export function clearCache<T>(target: T) : T {
  * Cache all results from this function in a local cache with a specified TTL in seconds
  * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
-export default function cache(ttl: number = 60) {
+export default function cache(ttl: number = -1) {
     function replaceFunctionOrGetter(descriptor: PropertyDescriptor, newFn: any) {
         if (descriptor.get) {
             descriptor.get = newFn;

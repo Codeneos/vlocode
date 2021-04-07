@@ -783,6 +783,11 @@
                     "default": true,
                     "markdownDescription": "Enable logging in `TERMINAL` tab instead of in the `OUTPUT` tab, terminal logging uses a vscode *Pseudoterminal* and has support for colors but might not work correctly on all platforms.\n\n**Note** Changing this will require you to restart for the changes to be applied."
                 },
+                "vlocity.parallelLimit": {
+                    "type": "number",
+                    "default": 50,
+                    "markdownDescription": "The number of parallel exports to run when exporting or refreshing Vlocity datapacks"
+                },
                 "vlocity.deploymentMode": {
                     "type": "string",
                     "enum": [

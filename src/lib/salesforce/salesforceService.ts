@@ -8,12 +8,14 @@ import { Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import cache from 'lib/util/cache';
-import { PropertyAccessor } from 'lib/utilityTypes';
+import { PropertyAccessor } from 'lib/types';
 import { stripPrefix } from 'xml2js/lib/processors';
 import { injectable as injectable } from 'lib/core/inject';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 import Timer from 'lib/util/timer';
 import { registryData, MetadataType as SfdxMetadataType } from '@salesforce/source-deploy-retrieve';
+import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
+import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { stringEquals, substringAfter } from 'lib/util/string';
 import QueryService from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
@@ -22,6 +24,7 @@ import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
 import { SalesforcePackageBuilder } from './deploymentPackageBuilder';
+import QueryBuilder from './queryBuilder';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -167,6 +170,8 @@ interface SoapResponse {
 
 export interface MetadataType extends Partial<SfdxMetadataType>, jsforce.MetadataObject {
     isBundle: boolean;
+    nameForMsgs?: string;
+    nameForMsgsPlural?: string;
 }
 
 @injectable()
@@ -387,14 +392,21 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
         const toolingObjectDescribe = await connection.tooling.describe(toolingObject);
         const nameField = toolingObjectDescribe.fields.find(field => field.nameField);
-        const selectFields = toolingObjectDescribe.fields.map(field => field.name);
+        const hasNamespaceField = toolingObjectDescribe.fields.some(field => field.name == 'NamespacePrefix');
 
         if (!nameField) {
             return;
         }
 
-        const toolingQuery = `select ${selectFields.join(',')} from ${toolingObjectDescribe.name} where ${nameField.name} = '${nameInfo.name}' and NamespacePrefix = '${nameInfo.namespace ?? ''}'`;
-        const { records } = await connection.tooling.query<{Id: string}>(toolingQuery);
+        const toolingQuery = new QueryBuilder(toolingObjectDescribe.name)
+            .select(nameField, 'Id')
+            .whereEq(nameField, nameInfo.name);
+
+        if (hasNamespaceField) {
+            toolingQuery.whereEq('NamespacePrefix', nameInfo.namespace ?? '');
+        }
+
+        const { records } = await connection.tooling.query<{Id: string}>(toolingQuery.getQueryString());
         return records[0];
     }
 
@@ -660,15 +672,19 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX regsitery
      */
     @cache()
-    public async getMetadataTypes() : Promise<MetadataType[]> {
-        const metadataObjects = (await (await this.getJsForceConnection()).metadata.describe()).metadataObjects;
+    public getMetadataTypes() : MetadataType[] {
         for (const metadataObject of metadataObjects as MetadataType[]) {
-            const metadataRegistyType = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
-            if (metadataRegistyType) {
-                Object.assign(metadataObject, metadataRegistyType);
+            const metadataRegistyData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
+            if (metadataRegistyData) {
+                Object.assign(metadataObject, metadataRegistyData);
                 metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle';
             } else {
                 metadataObject.isBundle = metadataObject.xmlName.endsWith('Bundle');
+            }
+            // Merge type def data
+            const metadataTypeDef = typeDefs[metadataObject.xmlName];
+            if (metadataTypeDef) {
+                Object.assign(metadataObject, metadataTypeDef);
             }
         }
         return metadataObjects as MetadataType[];
@@ -677,8 +693,8 @@ export default class SalesforceService implements JsForceConnectionProvider {
     /**
      * When the metadata type is a known metadata type return the type.
      */
-    public async getMetadataType(type: string) {
-        return (await this.getMetadataTypes()).find(t => stringEquals(type, t.xmlName));
+    public getMetadataType(type: string) {
+        return this.getMetadataTypes().find(t => stringEquals(type, t.xmlName));
     }
 
     /**

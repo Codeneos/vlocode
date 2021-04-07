@@ -1,5 +1,5 @@
 import * as constants from '@constants';
-import { Logger, LogManager } from 'lib/logging';
+import { LogManager } from 'lib/logging';
 
 export interface QueryCondition {
     readonly field: string;
@@ -36,21 +36,21 @@ export default class QueryBuilder {
         return LogManager.get(QueryBuilder);
     }
 
-    public select(...fields: string[]) {
-        this.fields.push(...fields);
+    public select(...fields: (string | { name: string })[]) {
+        this.fields.push(...fields.map(f => typeof f === 'string' ? f : f.name));
         return this;
     }
 
-    public sortBy(...sortFields: [string, SortOrder?][] | string[]) : QueryBuilder {
+    public sortBy(...sortFields: [string | { name: string }, SortOrder?][] | (string | { name: string })[]) : QueryBuilder {
         sortFields.forEach(sortField => {
             if(Array.isArray(sortField)) {
                 this.sorting.push({
-                    field: sortField[0],
+                    field: sortField[0].name ?? sortField[0],
                     order: sortField[1] || SortOrder.ASC
                 });
             } else {
                 this.sorting.push({
-                    field: sortField,
+                    field: sortField.name ?? sortField,
                     order: SortOrder.ASC
                 });
             }
@@ -58,18 +58,18 @@ export default class QueryBuilder {
         return this;
     }
 
-    public whereEq(field: string, value: any) : QueryBuilder {
+    public whereEq(field: (string | { name: string }), value: any) : QueryBuilder {
         return this.where([field, '=', value]);
     }
 
-    public whereNotEq(field: string, value: any) : QueryBuilder {
+    public whereNotEq(field: (string | { name: string }), value: any) : QueryBuilder {
         return this.where([field, '!=', value]);
     }
 
-    public where(...conditions: [string, string, any][]) : QueryBuilder {
+    public where(...conditions: [string | { name: string }, string, any][]) : QueryBuilder {
         conditions.forEach(condition => {
             this.conditions.push({
-                field: condition[0],
+                field: typeof condition[0] === 'string' ? condition[0] : condition[0].name,
                 comparisonOperator: condition[1],
                 value: condition[2]
             });
@@ -77,7 +77,7 @@ export default class QueryBuilder {
         return this;
     }
 
-    public build() : string {
+    public getQueryString() : string {
         let query = `select ${this.fields.join(',').replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)} `
                   + `from ${this.objectType.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)}`;
         if (this.conditions.length > 0) {
@@ -104,6 +104,9 @@ export default class QueryBuilder {
     private formatValue(value: any) {
         if (value === null || value === undefined) {
             return null;
+        }
+        else if (typeof value === 'number' || typeof value === 'boolean') {
+            return `${value}`;
         }
         return `'${value}'`;
     }

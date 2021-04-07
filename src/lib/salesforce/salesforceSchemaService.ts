@@ -1,4 +1,3 @@
-import { debug } from 'console';
 import * as jsforce from 'jsforce';
 import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';

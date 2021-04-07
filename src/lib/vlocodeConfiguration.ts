@@ -21,8 +21,8 @@ export default abstract class VlocodeConfiguration {
     httpProxy?: string;
     additionalOptions?: any;
     projectPath?: string;
-    maxDepth?: number;
     customJobOptionsYaml?: string;
+    parallelLimit?: number;
     deployOnSave: boolean;
     autoActivate: boolean;
     compileOnBuild: boolean;

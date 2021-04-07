@@ -1,7 +1,7 @@
 import { LogManager, Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { asArray, last } from 'lib/util/collection';
-import { PropertyAccessor } from 'lib/utilityTypes';
+import { PropertyAccessor } from 'lib/types';
 import { injectable } from 'lib/core/inject';
 import { transform } from 'lib/util/object';
 import QueryService, { QueryResult } from './queryService';

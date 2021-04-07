@@ -186,42 +186,6 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
     }
 }
 
-// class LocalExpandDefinitionProvider implements ExpandDefinitionProvider {
-//     private getExpandDefinitions() : DatapacksExpandDefinitions {
-//         return null;
-//     }
-
-//     /**
-//      * Get the expand definition for a datapack
-//      * @param key Setting name to get the definition for
-//      * @param target Target object
-//      */
-//     public getDatapackExpandDefinition(key: string, target: { datapackType: string }) : boolean | string | object {
-//         const expandDef = this.getExpandDefinitions();
-//         if (expandDef.DataPacks[target.datapackType]?.[key]) {
-//             return expandDef.DataPacks[target.datapackType][key];
-//         }
-//         return expandDef.DataPacksDefault[key];
-//     }
-
-//     public getSObjectExpandDefinition(key: string, target: { datapackType: string; sobjectType: string }) : boolean | string | Array<string> | object {
-//         const expandDef = this.getExpandDefinitions();
-//         const expandOrder = [
-//             expandDef.DataPacks[target.datapackType]?.[target.sobjectType],
-//             expandDef.SObjects[target.sobjectType],
-//             expandDef.SObjectsDefault
-//         ];
-
-//         for (const obj of expandOrder) {
-//             if (obj?.[key]) {
-//                 return obj[key];
-//             }
-//         }
-
-//         return null;
-//     }
-// }
-
 @injectable()
 export default class VlocityDatapackService implements vscode.Disposable {
 
@@ -429,6 +393,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
         const exportQueries = await this.createExportQueries(entries.filter(e => !e.id));
         const exportManifest = this.createExportManifest(entries.filter(e => !!e.id) as ObjectEntryWithId[]);
         const projectPath = this.resolvedProjectPath();
+        const hasSObjectExports = entries.some(entry => entry.datapackType == 'SObject');
+        const parallelExports = hasSObjectExports ? 1 : this.config.parallelLimit;
         return this.runCommand('Export',{
             queries: exportQueries,
             projectPath: projectPath,
@@ -436,6 +402,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             ignoreAllErrors: false, // Avoid the export to stop when there is a dependency error -- for example missing template
             fullManifest: exportManifest,
             skipQueries: exportQueries.length == 0,
+            defaultMaxParallel: parallelExports,
             maxDepth: maxDepth,
             initialized: true // Avoid project initialization when exporting
         }, cancellationToken);
@@ -460,14 +427,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 query: await this.matchingKeyService.getQuery(entry.datapackType, entry)
             };
         }));
-    }
-
-    private createDeployManifest(objects: ManifestEntry[]) : any {
-        return objects.reduce((mf, item) => {
-            mf[item.datapackType] = mf[item.datapackType] || [];
-            mf[item.datapackType].push(item.key);
-            return mf;
-        }, {});
     }
 
     public async runYamlJob(command: vlocity.actionType, yamlFile: string, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {

@@ -8,7 +8,7 @@ import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 import { PackageManifest } from 'lib/salesforce/deploy/packageXml';
 import { stringEquals } from 'lib/util/string';
 import { MapLike } from 'typescript';
-import { DescribeGlobalSObjectResult } from 'jsforce';
+import { DescribeGlobalSObjectResult, FileProperties } from 'jsforce';
 import * as path from 'path';
 
 /**
@@ -16,14 +16,10 @@ import * as path from 'path';
  */
 export default class RetrieveMetadataCommand extends MetadataCommand {
 
-    private readonly metadataExporters: MapLike<(type: MetadataType) => Promise<{ label?: string; fullName: string }[]>> = {
-        'CustomMetadata': () => this.getExportableObjectLikeTypes(obj => obj.name.endsWith('__mdt')),
-        'CustomObject': () => this.getExportableObjectLikeTypes(obj => !obj.name.endsWith('__mdt'))
-    };
-
     public async execute() : Promise<void>  {
         return this.exportWizard();
     }
+
     protected async exportWizard() : Promise<void>  {
         const metadataType = await this.showMetadataTypeSelection();
         if (!metadataType) {
@@ -50,25 +46,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
     }
 
     private getManifestName(metadataType: MetadataType, component: { fullName: string }) : string {
-        if (metadataType.xmlName === 'CustomMetadata') {
-            return component.fullName.replace(/__mdt$/, '.*');
-        }
         return component.fullName;
-    }
-
-    private getToolingObject(metadataType: MetadataType) : string {
-        if (metadataType.xmlName === 'CustomMetadata') {
-            return 'CustomObject';
-        }
-        return metadataType.xmlName.replace(/$Custom/i, '');
-    }
-
-    protected async getExportableComponents(metadataType : MetadataType) : Promise<{ fullName: string }[]> {
-        // query available records
-        if (this.metadataExporters[metadataType.xmlName]) {
-            return this.metadataExporters[metadataType.xmlName](metadataType);
-        }
-        return this.queryExportableComponents(metadataType);
     }
 
     protected async getExportableObjectLikeTypes(nameFilter: RegExp) : Promise<{ fullName: string }[]>
@@ -84,64 +62,34 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }));
     }
 
-    protected async queryExportableComponents(metadataType : MetadataType) : Promise<{ fullName: string }[]> {
+    protected async getExportableComponents(metadataType : MetadataType) : Promise<{ fullName: string }[]> {
         // query available records
         const connection = await this.salesforce.getJsForceConnection();
-        const { query, nameField } = await this.getExportQuery(metadataType);
-        const { records } = await connection.tooling.query<any>(query);
-        return records.map(record => ({
-            id: record.Id,
-            name: record[nameField],
-            fullName: this.getFullname(metadataType, record[nameField], record),
-            nameField: nameField
-        }));
-    }
-
-    protected getFullname(metadataType: MetadataType, name: string, record: any) : string {
-        // query available records
-        if (record['NamespacePrefix']) {
-            return `${record['NamespacePrefix']}__${name}__c`;
+        const components = await connection.metadata.list({ type: metadataType.xmlName });
+        if (metadataType.xmlName === 'CustomMetadata') {
+            const getTypeName = (fullName: string) => fullName.split('.')[0];
+            return [...unique(components, 
+                cmp => getTypeName(cmp.fullName), 
+                cmp => Object.assign(cmp, { label: getTypeName(cmp.fullName), fullName: `${getTypeName(cmp.fullName)}.*`}))
+            ];
         }
-        return `${name}__c`;
+        return components;
     }
 
-    private async getExportQuery(metadataType: MetadataType) {
-        const connection = await this.salesforce.getJsForceConnection();
-        const toolingObject = this.getToolingObject(metadataType);
-        const toolingObjectDescribe = await connection.tooling.describe(toolingObject);
-        const fields = ['Id', 'NamespacePrefix'];
-        const validFieldNames = new Set(toolingObjectDescribe.fields.map(field =>field.name));
-
-        const nameField = toolingObjectDescribe.fields.find(field => field.nameField);
-        if (nameField) {
-            fields.push(nameField.name);
-        }
-
-        return {
-            query: `SELECT ${fields.filter(name => validFieldNames.has(name)).join(',')} from ${toolingObject}`,
-            nameField: nameField?.name ?? 'Id'
-        };
-    }
-
-    protected async showMetadataTypeSelection() : Promise<(MetadataType & { name: String }) | undefined> {
-        const metadataTypes = Object.values(await this.salesforce.getMetadataTypes()).filter(type => !!type.name).map(
-            type => ({
-                label: type.name!,
+    protected async showMetadataTypeSelection() : Promise<MetadataType | undefined> {
+        const metadataTypes = this.salesforce.getMetadataTypes()
+            .map(type => ({
+                label: type.nameForMsgsPlural ?? type.xmlName,
                 description: type.xmlName,
-                type
-            })
-        );
+                type: type
+            })).sort((a,b) => a.label.localeCompare(b.label));
 
         const metadataToExport = await vscode.window.showQuickPick(metadataTypes, {
             matchOnDetail: true,
             ignoreFocusOut: true,
             placeHolder: 'Select metadata type to export'
         });
-        if (!metadataToExport) {
-            return; // selection cancelled;
-        }
-
-        return metadataToExport.type as (MetadataType & { name: String });
+        return metadataToExport?.type;
     }
 
     protected async retrieveMetadata(components: { fullname: string; componentType: string }[]) {
@@ -185,6 +133,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
                     // todo make retrieve path configurable
                     const unpackTarget = path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.', 'src', file.fullFileName);
                     await result.unpackFile(file.fullFileName, unpackTarget);
+                    this.logger.log(`Retrieved ${unpackTarget}`);
                     unpackedFiles.push(unpackTarget);
                 } catch(err) {
                     this.logger.error(`${file.fullName} -- ${err.message || err}`);

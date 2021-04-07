@@ -3,7 +3,7 @@ import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { LogManager } from 'lib/logging';
 import { Connection, RecordResult, BatchInfo } from 'jsforce';
 import { CancellationToken } from 'vscode';
-import { AwaitReturnType } from 'lib/utilityTypes';
+import { AwaitReturnType } from 'lib/types';
 import Timer from 'lib/util/timer';
 import { arrayMapPush } from 'lib/util/collection';
 

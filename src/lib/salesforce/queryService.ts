@@ -6,7 +6,7 @@ import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import { PropertyTransformHandler } from 'lib/util/object';
 import { normalizeSalesforceName } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
-import { PropertyAccessor } from 'lib/utilityTypes';
+import { PropertyAccessor } from 'lib/types';
 import * as moment from 'moment';
 import { injectable } from 'lib/core/inject';
 

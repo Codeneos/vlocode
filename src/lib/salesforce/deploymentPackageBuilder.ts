@@ -237,8 +237,8 @@ export class SalesforcePackageBuilder {
         return this.mdPackage.manifest;
     }
 
-    private async getMetadataType(xmlName: string) {
-        const metadataTypes = await this.salesforce.getMetadataTypes();
+    private getMetadataType(xmlName: string) {
+        const metadataTypes = this.salesforce.getMetadataTypes();
         return metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName));
     }
 
@@ -251,7 +251,7 @@ export class SalesforcePackageBuilder {
         const fileLowerCase = file.fsPath.toLowerCase();
         const directoryNameOnlyMatches = new Array<string>();
 
-        for (const type of await this.salesforce.getMetadataTypes()) {
+        for (const type of this.salesforce.getMetadataTypes()) {
             const suffixMatches = type.suffix && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}`);
             const metaSuffixMatches = type.suffix && type.metaFile && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}-meta.xml`);
             const fileDirName = type.isBundle ? path.dirname(path.dirname(file.fsPath)) : path.dirname(file.fsPath);
@@ -291,7 +291,7 @@ export class SalesforcePackageBuilder {
             return;
         }
 
-        const metadataTypes = await this.salesforce.getMetadataTypes();
+        const metadataTypes = this.salesforce.getMetadataTypes();
         let xmlName = await this.getRootElementName(file);
 
         // Cannot detect certain metadata types properly so instead manually set the type
