@@ -57,7 +57,7 @@ interface PackageContributions {
 }
 
 async function loadCommandsMeta(yamlFile: string): Promise<CommandsYaml> {
-    return yaml.load((await fs.readFile(yamlFile)).toString());
+    return yaml.load((await fs.readFile(yamlFile)).toString()) as CommandsYaml;
 }
 
 function stripUndefined<T extends object>(obj: T) : T {
