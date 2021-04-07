@@ -10,7 +10,8 @@ import * as packageJson from '../package.json';
 export const VERSION = packageJson.version;
 export const API_CLIENT_NAME = 'Vlocode SOAP client';
 export const CONFIG_SECTION = 'vlocity';
-export const OUTPUT_CHANNEL_NAME = 'Vlocity';
+export const CONFIG_FILE = '.vlocode';
+export const OUTPUT_CHANNEL_NAME = 'Vlocode';
 export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = /(%|)vlocity_namespace(%|)/gi;
@@ -55,5 +56,6 @@ export enum VlocodeCommand {
     clearDeveloperLogs = 'vlocode.clearDeveloperLogs',
     setTraceFlags = 'vlocode.setTraceFlags',
     setLogVisibility = 'vlocode.setLogVisibility',
-    execRestApi = 'vlocode.execRestApi'
+    execRestApi = 'vlocode.execRestApi',
+    retrieveMetadata = 'vlocode.retrieveMetadata'
 }

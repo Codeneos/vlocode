@@ -21,6 +21,7 @@ import { container, LifecyclePolicy } from 'lib/core/container';
 import VlocodeService from 'lib/vlocodeService';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { ApexLogSymbolProvider } from 'symbolProviders/apexLogSymbolProvider';
+import { lazy } from 'lib/util/lazy';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -65,27 +66,21 @@ class Vlocode {
         }
     }
 
+
     private startLogger() {
         // Simple switch that decides how to log
-        const terminalWriter = this.service.registerDisposable(new TerminalWriter('Vlocode'));
-        const outputChannelWriter = this.service.registerDisposable(new OutputChannelWriter('Vlocode'));
+        const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode')));
+        const outputChannelWriter = lazy(() => this.service.registerDisposable(new OutputChannelWriter('Vlocode')));
+        let logInTerminal = false;
 
         LogManager.registerWriter({
-            write: entry => {
-                if (this.service.config.logInTerminal) {
-                    terminalWriter.write(entry);
-                } else {
-                    outputChannelWriter.write(entry);
-                }
-            }
+            write: entry => logInTerminal ? terminalWriter.write(entry) : outputChannelWriter.write(entry),
+            focus: () => logInTerminal ? terminalWriter.focus() : outputChannelWriter.focus(),
         }, new ConsoleWriter());
 
         // set logging level
-        const getLogLevel = (config: VlocodeConfiguration) => {
-            return LogLevel[config.logLevel];
-        };
-        LogManager.setGlobalLogLevel(getLogLevel(this.service.config)); // todo: support more log levels from config section    
-        ConfigurationManager.watchProperties(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(getLogLevel(config)));
+        ConfigurationManager.watchProperties(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(LogLevel[config.logLevel]), { initial: true });
+        ConfigurationManager.watchProperties(this.service.config, [ 'logInTerminal' ], config => logInTerminal = config.logInTerminal, { initial: true });
 
         // setup Vlocity logger and filters
         LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
@@ -166,6 +161,7 @@ class Vlocode {
         }
 
         // track activation time
+        this.logger.focus();
         this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);
 
         // Connect to SF
@@ -174,7 +170,7 @@ class Vlocode {
 
     private async deactivate() {
         // Log to debug as other output channels will be disposed
-        Vlocode.instance.service.dispose();
+        this.service.dispose();
         console.debug('Vlocode extension deactivated');
     }
 

@@ -1,7 +1,11 @@
-import { workspace, WorkspaceConfiguration, Disposable } from 'vscode';
+import { workspace, WorkspaceConfiguration, Disposable, Uri } from 'vscode';
+import * as vscode from 'vscode';
+import * as fs from 'fs-extra';
+import { CONFIG_FILE } from '@constants';
 import { singleton } from './util/singleton';
 import { LogManager, Logger } from './logging';
 import { arrayMapPush } from './util/collection';
+import { lazy } from './util/lazy';
 
 interface ConfigurationManagerWatchOptions {
     /**
@@ -10,12 +14,163 @@ interface ConfigurationManagerWatchOptions {
     initial?: boolean;
 }
 
-export const ConfigurationManager = singleton(class ConfigurationManager {
+interface VscodeWorkspaceConfigProvider {
+    getVscodeConfiguration(section: string): WorkspaceConfiguration;
+}
 
+const sectionNameSymbol = Symbol();
+
+class ConfigProxyHandler<T extends object> implements ProxyHandler<T> {
+
+    public constructor(
+        private readonly configSectionName: string,
+        private readonly overrides: WorkspaceOverrideConfiguration,
+        private readonly configProvider: VscodeWorkspaceConfigProvider) {
+    }
+
+    public get(target: T, key: string | symbol) {
+        if (key == sectionNameSymbol) {
+            return this.configSectionName;
+        }
+        if (typeof key === 'symbol' || typeof target[key] === 'function') {
+            return target[key];
+        }
+        const value = this.getWorkspaceConfiguration().get(key.toString());
+        if (typeof value === 'object' && value !== null) {
+            return this.wrapInProxy(key, value);
+        }
+        const override = this.overrides.getValue(key);
+        if (override !== undefined) {
+            return override;
+        }
+        return value;
+    }
+
+    public set(target: any | T, key: string | symbol, value: any) {
+        if (typeof key === 'symbol') {
+            target[key] = value;
+        } else {
+            void this.getWorkspaceConfiguration().update(key.toString(), value, false);
+        }
+        return true;
+    }
+
+    public ownKeys() {
+        return Object.getOwnPropertyNames(this.getWorkspaceConfiguration());
+    }
+
+    private getWorkspaceConfiguration() {
+        return this.configProvider.getVscodeConfiguration(this.configSectionName);
+    }
+
+    private wrapInProxy<T extends Object>(propertyPath: string | symbol | number, value: T) : T {
+        return new Proxy(value, {
+            get: (target, key) => {
+                const value = target[key];
+                const fullPropertyPath = `${propertyPath.toString()}.${key.toString()}`;
+                if (typeof value === 'object' && value !== null) {
+                    return this.wrapInProxy(fullPropertyPath, value);
+                }
+                const override = this.overrides.getValue(fullPropertyPath);
+                if (override !== undefined) {
+                    return override;
+                }
+                return value;
+            },
+            set: (target, key, newValue) => {
+                return this.set(value, `${propertyPath.toString()}.${key.toString()}`, newValue);
+            }
+        });
+    }
+}
+
+class WorkspaceOverrideConfiguration {
+
+    private readonly overrideConfigs: {
+        [workspace: string]: {
+            values: object;
+            watcher: vscode.FileSystemWatcher;
+            fsPath: string;
+        };
+    } = {};
+    private workspaceFolderChangeListner: Disposable;
+
+    private get logger() : Logger {
+        return LogManager.get('WorkspaceOverrideConfiguration');
+    }
+
+    constructor() {
+        this.initializeFromWorkspace();
+    }
+
+    public dispose() {
+        for (const override of Object.values(this.overrideConfigs)) {
+            override.watcher.dispose();
+        }
+        this.workspaceFolderChangeListner.dispose();
+    }
+
+    public getValue(propertyPath: string) {
+        const firstWorkspaceFolder = workspace.workspaceFolders?.find(ws => ws.index == 0);
+        if (firstWorkspaceFolder) {
+            return propertyPath.split('.').reduce((values, prop) => values && values[prop],
+                this.overrideConfigs[firstWorkspaceFolder.uri.fsPath]?.values);
+        }
+    }
+
+    public initializeFromWorkspace() {
+        for (const workspacePath of workspace.workspaceFolders ?? []) {
+            this.load(workspacePath.uri.fsPath, Uri.joinPath(workspacePath.uri, CONFIG_FILE));
+        }
+
+        if (!this.workspaceFolderChangeListner) {
+            this.workspaceFolderChangeListner = workspace.onDidChangeWorkspaceFolders(event => {
+                event.removed.forEach(ws => this.unload(ws.uri.path));
+                event.added.forEach(ws => this.load(ws.uri.path, Uri.joinPath(ws.uri, CONFIG_FILE)));
+            });
+        }
+    }
+
+    private unload(workspace: string) {
+        if(this.overrideConfigs[workspace]) {
+            this.overrideConfigs[workspace].watcher.dispose();
+            // eslint-disable-next-line @typescript-eslint/tslint/config
+            delete this.overrideConfigs[workspace];
+        }
+    }
+
+    private load(workspace: string, configPath: vscode.Uri) {
+        // Init config struct
+        const config = this.overrideConfigs[workspace] ?? (this.overrideConfigs[workspace] = {
+            values: {},
+            fsPath: configPath.fsPath,
+            watcher: this.initializeWatcher(workspace, configPath),
+        });
+
+        // load
+        try {
+            this.logger.verbose(`Loading workspace overrides from: ${configPath.fsPath}`);
+            config.values = fs.existsSync(configPath.fsPath) ? fs.readJsonSync(configPath.fsPath) : {};
+        } catch(err) {
+            this.logger.error(`Error while reading override config from ${configPath.fsPath}:`, err.message);
+        }
+    }
+
+    private initializeWatcher(workspace: string, configPath: vscode.Uri) {
+        const configFileWatcher = vscode.workspace.createFileSystemWatcher(configPath.fsPath, false, false, false);
+        configFileWatcher.onDidChange(() => this.load(workspace, configPath));
+        configFileWatcher.onDidCreate(() => this.load(workspace, configPath));
+        configFileWatcher.onDidDelete(() => this.overrideConfigs[workspace].values = {});
+        return configFileWatcher;
+    }
+}
+
+export const ConfigurationManager = singleton(class ConfigurationManager implements VscodeWorkspaceConfigProvider {
+
+    private readonly overrideConfig = lazy(() => new WorkspaceOverrideConfiguration());
     private readonly loadedConfigSections = new Map<string, WorkspaceConfiguration>();
-    private readonly watchers = new Map<string, ((config: any) => void | Promise<void>)[]>();
-    private disposables: {dispose() : any}[] = [];
-    private readonly sectionNameSymbol = Symbol();
+    private readonly watchers = new Map<string, ((config: any) => any | Promise<any>)[]>();
+    private disposables: Array<{ dispose() : any }> = [];
 
     protected get logger() : Logger {
         return LogManager.get('ConfigurationManager');
@@ -26,6 +181,7 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         this.disposables = [];
         this.watchers.clear();
         this.loadedConfigSections.clear();
+        this.overrideConfig.dispose();
     }
 
     /**
@@ -33,56 +189,10 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
      * @param configSectionName Section name to load
      */
     public load<T extends Object>(configSectionName: string): T {
-        const proxyConfig = new Proxy({} as T, {
-            get: (target, key) => {
-                if (key == this.sectionNameSymbol) {
-                    return configSectionName;
-                }
-                if (typeof key === 'symbol') {
-                    return target[key];
-                }
-                const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
-                const value = workspaceConfig.get(key.toString());
-                if (typeof value === 'object' && value !== null) {
-                    return this.wrapInProxy(proxyConfig, key, value);
-                }
-                return value;
-            },
-            set: (target, key, value) => {
-                if (typeof key === 'symbol') {
-                    target[key] = value;
-                } else {
-                    const workspaceConfig = this.getWorkspaceConfiguration(configSectionName);
-                    void workspaceConfig.update(key.toString(), value, false);
-                }
-                return true;
-            },
-            ownKeys: () => {
-                return Object.getOwnPropertyNames(this.getWorkspaceConfiguration(configSectionName));
-            }
-        });
-        return proxyConfig;
+        return new Proxy({} as T, new ConfigProxyHandler<T>(configSectionName, this.overrideConfig, this));
     }
 
-    private wrapInProxy<T extends Object>(parent: any, propertyName: string | symbol | number, value: T) : T {
-        const wrapInProxy = this.wrapInProxy.bind(this);
-        return new Proxy(value, {
-            get(target, key) {
-                const value = target[key];
-                if (typeof value === 'object') {
-                    return wrapInProxy(this, key, value);
-                }
-                return value;
-            },
-            set(target, key, value) {
-                // const parentUpdate = { ...target, [key]: value };
-                parent[`${propertyName.toString()}.${key.toString()}`] = value;
-                return true;
-            }
-        });
-    }
-
-    private getWorkspaceConfiguration(configSectionName: string) {
+    public getVscodeConfiguration(configSectionName: string) {
         let workspaceConfig = this.loadedConfigSections.get(configSectionName);
         if (!workspaceConfig) {
             // Init config in cache
@@ -151,17 +261,17 @@ export const ConfigurationManager = singleton(class ConfigurationManager {
         }
     }
 
-    public watchProperties<T extends Object>(config: string | T, properties: Array<(keyof T) | string>, watcher: (config: T) => void | Promise<void>, options?: ConfigurationManagerWatchOptions) : Disposable {
-        const sectionName = typeof config === 'string' ? config : config[this.sectionNameSymbol] as string;
+    public watchProperties<T extends Object>(config: string | T, properties: Array<(keyof T) | string>, watcher: (config: T) => any | Promise<any>, options?: ConfigurationManagerWatchOptions) : Disposable {
+        const sectionName = typeof config === 'string' ? config : config[sectionNameSymbol] as string;
         return this.registerWatcher(properties.map(property => `${sectionName}.${property}`), watcher, options);
     }
 
-    public watch<T extends Object>(config: string | T, watcher: (config: T) => void | Promise<void>) : Disposable {
-        const sectionName = typeof config === 'string' ? config : config[this.sectionNameSymbol] as string;
+    public watch<T extends Object>(config: string | T, watcher: (config: T) => any | Promise<any>) : Disposable {
+        const sectionName = typeof config === 'string' ? config : config[sectionNameSymbol] as string;
         return this.registerWatcher([ sectionName ], watcher);
     }
 
-    private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => void | Promise<void>, options?: ConfigurationManagerWatchOptions) : Disposable {
+    private registerWatcher<T extends Object>(watchKeys: string[], watcher: (config: T) => any | Promise<any>, options?: ConfigurationManagerWatchOptions) : Disposable {
         for (const property of watchKeys) {
             this.logger.verbose(`Register config watcher for: ${property}`);
             arrayMapPush(this.watchers, property, watcher);
