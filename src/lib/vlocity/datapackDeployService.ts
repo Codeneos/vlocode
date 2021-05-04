@@ -2,7 +2,6 @@ import { VlocityDatapack } from 'lib/vlocity/datapack';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import QueryService from 'lib/salesforce/queryService';
-import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import { LogManager, Logger } from 'lib/logging';
 import { Field } from 'jsforce';
 import * as moment from 'moment';
@@ -11,15 +10,16 @@ import { DATAPACK_RESERVED_FIELDS } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { injectable } from 'lib/core/inject';
-import { container, LifecyclePolicy } from 'lib/core/container';
-import { groupBy } from 'lib/util/collection';
-import VlocodeConfiguration, { VlocodeVlocityDeployConfiguration } from 'lib/vlocodeConfiguration';
+import { container, LifecyclePolicy } from 'lib/core';
+import { asArray, groupBy } from 'lib/util/collection';
+import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import * as uuid from 'uuid';
-import { DatapackLookupService } from './datapackLookupService';
 import DatapackDeployment, { DatapackDeploymentEvents } from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
+import { AsyncEventHandler } from 'lib/util/events';
+import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -38,10 +38,15 @@ export interface DependencyResolver {
     resolveDependency(dep: DatapackRecordDependency): Promise<string | undefined>;
 }
 
+export interface DatapackDeploymentEvent {
+    readonly recordGroups: DatapackDeploymentRecordGroup[];
+    getDeployedRecords(type: string): Iterable<DatapackDeploymentRecord & { recordId: string }>;
+}
+
 export abstract class DatapackDeploymentSpec {
-    abstract preprocess?(datapack: VlocityDatapack): Promise<void> | void;
-    abstract beforeDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
-    abstract afterDeploy?(datapacks: DatapackDeploymentRecord[]): Promise<void> | void;
+    abstract preprocess?(datapack: VlocityDatapack): Promise<any> | any;
+    abstract beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
+    abstract afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
 }
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
@@ -62,13 +67,11 @@ export default class VlocityDatapackDeployService {
 
     public async createDeployment(datapacks: VlocityDatapack[]) {
         const local = container.new();
-        const queryService = local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
-        const lookupService = local.register(new SalesforceLookupService(this.connectionProvider, this.schemaService, queryService));
-        const datapackLookup = local.register(new DatapackLookupService(this.namespaceService.getNamespace(), this.matchingKeyService, lookupService));
-        const deployment = local.register(new DatapackDeployment(this.connectionProvider, datapackLookup, this.schemaService, this.config.deploy));
+        local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
+        const deployment = local.get(DatapackDeployment);
 
-        deployment.on('beforeDeployRecord', this.beforeDeployRecord.bind(this));
-        deployment.on('afterDeployRecord', this.afterDeployRecord.bind(this));
+        deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(group));
+        deployment.on('beforeDeployGroup', group => this.beforeDeployRecordGroup(group));
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
@@ -101,18 +104,18 @@ export default class VlocityDatapackDeployService {
      * Event handler running before the deployment 
      * @param datapackRecords Datapacks being deployed
      */
-    private beforeDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>) {
+    private beforeDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
         // TODO: run APEX here
-        return this.runSpecFunction('beforeDeploy', datapackRecords);
+        return this.runSpecFunction('beforeDeploy', datapackGroups);
     }
 
     /**
      * Event handler running after the deployment
      * @param datapackRecords Datapacks that have been deployed
      */
-    private afterDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>) {
+    private afterDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
         // TODO: run APEX here
-        return this.runSpecFunction('afterDeploy', datapackRecords);
+        return this.runSpecFunction('afterDeploy', datapackGroups);
     }
 
     private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
@@ -125,20 +128,40 @@ export default class VlocityDatapackDeployService {
      * Event handler running before the deployment 
      * @param datapacks Datapacks being deployed
      */
-    private async runSpecFunction<Type extends keyof DatapackDeploymentEvents>(type: Type, datapacks: DatapackDeploymentEvents[Type]) {
-        const datapacksByType = groupBy([...datapacks], dp => dp.datapackType);
+    private async runSpecFunction<Type extends keyof DatapackDeploymentSpec>(type: Type, datapacks: Iterable<DatapackDeploymentRecordGroup>) {
+        const datapacksByType = groupBy(asArray(datapacks), dp => dp.datapackType);
 
-        for (const [datapackType, values] of Object.entries(datapacksByType)) {
+        for (const [datapackType, recordGroups] of Object.entries(datapacksByType)) {
             const spec = this.getDeploySpec(datapackType);
             const specFunc = spec?.[type as string];
             if (!specFunc) {
                 continue;
             }
 
+            const event: DatapackDeploymentEvent = {
+                recordGroups,
+                getDeployedRecords: type => this.getDeployedRecords(type, recordGroups)
+            };
+            await specFunc.call(spec, event);
+
             // Split in equal slices
-            while(values.length > 0) {
-                const slice = values.splice(0, 50);
-                await specFunc.call(spec, slice);
+            // while(values.length > 0) {
+            //     const slice = values.splice(0, 50);
+            //     await specFunc.call(spec, slice);
+            // }
+        }
+    }
+
+    /**
+     * Get all deployed omniscripts from each deployment group.
+     * @param groups Groups
+     */
+    private *getDeployedRecords(type: string, groups: Iterable<DatapackDeploymentRecordGroup>) : Generator<DatapackDeploymentRecord & { recordId: string }> {
+        for (const group of groups) {
+            const record = group.getRecordOfType(type);
+            if (record?.recordId !== undefined) {
+                // @ts-expect-error recordId is not undefined; TS cannot yet detect this
+                yield record;
             }
         }
     }
@@ -214,7 +237,7 @@ export default class VlocityDatapackDeployService {
     }
 
     // eslint-disable-next-line complexity
-    private convertValue(value: any, field: Field) : string | boolean | number | null {
+    private convertValue(value: any, field: Field) : string | boolean | number | null | Buffer {
         if (value === null || value === undefined) {
             return null;
         }
@@ -266,6 +289,9 @@ export default class VlocityDatapackDeployService {
                     return isSalesforceId(value);
                 }
                 throw new Error(`Value is not a valid Salesforce ID: ${value}`);
+            }
+            case 'base64': {
+                return Buffer.from(value).toString('base64');
             }
             case 'string':
             default: {

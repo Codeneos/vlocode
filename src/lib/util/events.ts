@@ -6,13 +6,14 @@ interface EventListenerOptions {
 
 interface EventEmitOptions {
     /**
-     * Propagate exceptions to the emitting class
+     * Propagate exceptions to the emitting class, only works the handler is not-async. Whne async is passed as true exceptions are always hidden.
+     * _Note: even when exceptions are hidden they will still be logged using console.error log for debugging purposes._
      */
-    hideExceptions: boolean;
+    hideExceptions?: boolean;
     /**
-     * Queues handler execution util after the next event loop processing using `setImmediatePromise`
+     * Queues handler execution util after the next event loop processing using `setImmediatePromise`. Async processing of the event does not forces `hideExceptions` to `true`. 
      */
-    async: boolean;
+    async?: boolean;
 }
 
 interface EventToken {
@@ -22,6 +23,10 @@ interface EventToken {
 type EventMap = Record<string, any>;
 type EventKey<T extends EventMap> = string & keyof T;
 type EventReceiver<T> = (params: T) => any | Promise<any>;
+
+export type AsyncEventHandler<T extends EventMap> = {
+    [K in keyof T]?: EventReceiver<T[K]>
+};
 
 /**
  * Async event emitting with await support
@@ -55,8 +60,11 @@ export class AsyncEventEmitter<T extends EventMap = any> {
                 try {
                     await listener.callback(params);
                 } catch(err) {
-                    if (!options?.hideExceptions) {
+                    if (!options?.hideExceptions && !options?.async) {
                         throw err;
+                    } else {
+                        // for Debugging syill log errors to the console but don't fail
+                        console.error(err.message ?? err);
                     }
                 }
             }

@@ -5,7 +5,6 @@ import { Logger, LogManager } from 'lib/logging';
 import { mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
-import { substringAfterLast } from 'lib/util/string';
 import { injectable } from 'lib/core/inject';
 import { container } from 'lib/core/container';
 
@@ -59,7 +58,9 @@ export default class DatapackLoader {
 
     protected readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [
         { test: /\.json$/i, load: file => this.loadJson(file) },
-        { test: /\.\S+$/i, load: file => this.loadRaw(file) }
+        { test: /\.png|jpeg|jpg|doc|docx|xls|xlsx|zip$/i, load: file => this.loadBinary(file) },
+        { test: /\.js|html|csv|txt|css|scss|sass\S+$/i, load: file => this.loadText(file) },
+        { test: /\.\S+$/i, load: file => this.loadText(file) }
     ];
 
     constructor(
@@ -118,12 +119,18 @@ export default class DatapackLoader {
         return datapack;
     }
 
-    protected async loadRaw(fileName: string) : Promise<any> {
+    protected async loadText(fileName: string) : Promise<any> {
         if (!await this.fileSystem.pathExists(fileName)) {
             return undefined;
         }
+        return (await this.fileSystem.readFile(fileName)).toString('utf-8');
+    }
 
-        return (await this.fileSystem.readFile(fileName)).toString();
+    protected async loadBinary(fileName: string) : Promise<any> {
+        if (!await this.fileSystem.pathExists(fileName)) {
+            return undefined;
+        }
+        return this.fileSystem.readFile(fileName);
     }
 
     protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {

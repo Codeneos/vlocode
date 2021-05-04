@@ -223,7 +223,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             accessToken: connection.accessToken,
             instanceUrl: connection.instanceUrl,
         };
-        const buildTools = new vlocity({...this.config, ...vlocityInstanceParams} as VlocodeConfiguration);
+        const buildTools = new vlocity({...this.config, ...vlocityInstanceParams});
         buildTools.jsForceConnection = connection;
         buildTools.utilityservice.login = async () => {};
         buildTools.utilityservice.sfdxLogin = async () => {};
@@ -475,7 +475,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
             // Parse any custom job options from the custom yaml
             const yamlFullPath = await this.getWorkspacePath(this.config.customJobOptionsYaml);
             if (!yamlFullPath) {
-                this.logger.warn(`The specified custom YAML file '${this.config.customJobOptionsYaml}' does not exists`);
+                void vscode.window.showErrorMessage(`Custom Vlocity YAML file does not exists: ${this.config.customJobOptionsYaml}`);
                 return;
             }
 
@@ -507,6 +507,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 customQueries: customSettings.queries
             };
         } catch(err) {
+            void vscode.window.showErrorMessage(`Failed to parse custom YAML file: ${yamlFile}`, 'See details').then(() => this.logger.focus());
             this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${err.message || err}`);
         }
     }

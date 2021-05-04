@@ -8,5 +8,6 @@ interface DeploymentSpecMap {
 
 export default {
     'VlocityUITemplate': VlocityUITemplateSpec,
-    'OmniScript': VlocityOmniScriptSpec
+    'OmniScript': VlocityOmniScriptSpec,
+    'IntegrationProcedure': VlocityOmniScriptSpec
 } as DeploymentSpecMap;

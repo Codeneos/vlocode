@@ -1,4 +1,6 @@
-export abstract class VlocodeSalesforceConfiguration {
+import { BaseConfiguration } from './config';
+
+export abstract class VlocodeSalesforceConfiguration extends BaseConfiguration {
     enabled: boolean;
     deployOnSave: boolean;
     apiVersion: string;
@@ -8,18 +10,15 @@ export abstract class VlocodeSalesforceConfiguration {
     developerLogsVisibility: 'self' | 'all';
 }
 
-export abstract class VlocodeVlocityDeployConfiguration {
+export abstract class VlocodeVlocityDeployConfiguration extends BaseConfiguration {
     chunkSize: number;
     bulkApiThreshold: number;
     useBulkApi: boolean;
 }
 
-export default abstract class VlocodeConfiguration {
-    verbose: boolean;
+export default abstract class VlocodeConfiguration extends BaseConfiguration {
     logLevel: 'info' | 'verbose' | 'debug';
     sfdxUsername?: string;
-    httpProxy?: string;
-    additionalOptions?: any;
     projectPath?: string;
     customJobOptionsYaml?: string;
     parallelLimit?: number;

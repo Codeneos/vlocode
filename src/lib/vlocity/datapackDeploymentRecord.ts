@@ -26,7 +26,11 @@ export default class DatapackDeploymentRecord {
     }
 
     public get isPending(): boolean {
-        return this._status === DeploymentStatus.Pending || this._status === DeploymentStatus.InProgress;
+        return this._status === DeploymentStatus.Pending;
+    }
+
+    public get isStarted(): boolean {
+        return this._status === DeploymentStatus.InProgress;
     }
 
     public get isFailed(): boolean {

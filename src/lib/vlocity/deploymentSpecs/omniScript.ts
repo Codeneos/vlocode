@@ -1,10 +1,10 @@
 import { injectable } from 'lib/core/inject';
-import type { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
+import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { LifecyclePolicy } from 'lib/core/container';
-import { mapAsyncParallel } from 'lib/util/collection';
+import { forEachAsyncParallel } from 'lib/util/collection';
 import { Logger } from 'lib/logging';
-import DatapackDeploymentRecord, { DeploymentStatus } from '../datapackDeploymentRecord';
+import { DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
@@ -18,11 +18,11 @@ export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
     public async preprocess(datapack: VlocityDatapack) {
         // Update to inactive to allow insert; later in the process these are activated
         datapack.IsActive__c = false;
+        delete datapack.Version__c;
     }
 
-    public async afterDeploy(datapackRecords: DatapackDeploymentRecord[]) {
-        const omniScriptRecords = datapackRecords.filter(this.ensureOmniScriptRecords);
-        await mapAsyncParallel(omniScriptRecords, async record => {
+    public async afterDeploy(event: DatapackDeploymentEvent) {
+        return forEachAsyncParallel(event.getDeployedRecords('OmniScript__c'), async record => {
             try {
                 this.logger.info(`Activating ${record.datapackKey}...`);
                 await this.activateOmniScript(record.recordId);
@@ -31,11 +31,6 @@ export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
                 record.updateStatus(DeploymentStatus.Failed, err.message || err);
             }
         }, 4);
-    }
-
-    public ensureOmniScriptRecords(record: DatapackDeploymentRecord): record is DatapackDeploymentRecord & { recordId: string } {
-        // Type guard to help typescript see that we are checking for undefined record ids
-        return record.recordId !== undefined && (record.sobjectType.endsWith('__OmniScript__c') ||  record.sobjectType == 'OmniScript__c');
     }
 
     /**

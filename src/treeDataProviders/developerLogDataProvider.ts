@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import VlocodeService from 'lib/vlocodeService';
 import { DeveloperLog } from 'lib/salesforce/developerLog';
 import * as moment from 'moment';
-import { ConfigurationManager } from 'lib/configurationManager';
+import { ConfigurationManager } from 'lib/config';
 import { VlocodeCommand } from '@constants';
 import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
 import { Logger } from 'lib/logging';
@@ -31,14 +31,14 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
                 this.refresh();
             }
         });
-        ConfigurationManager.watchProperties(this.vlocode.config, [ 'salesforce.developerLogsVisible' ], config => {
-            service.enableDeveloperLogsPanel(config.salesforce.developerLogsVisible);
+        ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisible' ], config => {
+            service.enableDeveloperLogsPanel(config.developerLogsVisible);
         }, { initial: true });
-        ConfigurationManager.watchProperties(this.vlocode.config, [ 'salesforce.developerLogsAutoRefresh' ], config => {
-            this.enableAutoRefresh(!!config.salesforce.developerLogsAutoRefresh);
+        ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsAutoRefresh' ], config => {
+            this.enableAutoRefresh(!!config.developerLogsAutoRefresh);
         }, { initial: true });
-        ConfigurationManager.watchProperties(this.vlocode.config, [ 'salesforce.developerLogsVisibility' ], config => {
-            this.currentUserOnly = config.salesforce.developerLogsVisibility != 'all';
+        ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisibility' ], config => {
+            this.currentUserOnly = config.developerLogsVisibility != 'all';
             this.lastRefresh = undefined;
             this.refresh();
         }, { initial: true });

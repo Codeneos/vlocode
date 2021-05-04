@@ -13,7 +13,7 @@ import { initializeContext } from 'lib/vlocodeContext';
 import DatapackProvider from 'treeDataProviders/datapackDataProvider';
 import JobDataProvider from 'treeDataProviders/jobExplorer';
 import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
-import { ConfigurationManager } from 'lib/configurationManager';
+import { ConfigurationManager } from 'lib/config';
 import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
@@ -121,7 +121,7 @@ class Vlocode {
         this.logger.verbose('Verbose logging enabled');
 
         // Salesforce support
-        ConfigurationManager.watchProperties(this.service.config, [ 'salesforce.enabled' ], c => this.service.enableSalesforceSupport(c.salesforce.enabled));
+        ConfigurationManager.watchProperties(this.service.config.salesforce, [ 'enabled' ], c => this.service.enableSalesforceSupport(c.enabled));
         if (this.service.config.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }

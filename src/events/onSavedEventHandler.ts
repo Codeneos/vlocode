@@ -26,7 +26,7 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
 
         if (!vscode.workspace.getWorkspaceFolder(document.uri) ||
             this.ignoredPaths.some(path => new RegExp(path).test(document.fileName))) {
-            this.logger.verbose(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
+            this.logger.debug(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
             return; // ignore these
         }
 

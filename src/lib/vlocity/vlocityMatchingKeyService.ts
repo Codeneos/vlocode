@@ -205,7 +205,7 @@ export default class VlocityMatchingKeyService {
         ));
         for (const [i, field] of validFields.entries()) {
             if (!field) {
-                this.logger.warn(`${sobjectType} matching key field '${fields[i]}' is not accessible`);
+                this.logger.warn(`${sobjectType}: matching key field '${fields[i]}' is invalid or not accessible`);
             }
         }
         // @ts-expect-error filter removes none null values but this is not yet handled by ts

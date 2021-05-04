@@ -1,5 +1,6 @@
 // File contains several functions for manipulating or accessing collectiong like objects such as: Set, Map and Array
 
+import { isTemplateExpression } from 'typescript';
 import { Iterable } from './iterable';
 
 /**
@@ -42,11 +43,11 @@ export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T)
 
 /**
  * Groups an array into key accessible groups of objects
- * @param array Array to group
+ * @param iterable iterable items to group
  * @param predicate function to get the group by key
  */
-export function groupBy<T>(array: T[], keySelector: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
-    return array.reduce(
+export function groupBy<T>(iterable: Iterable<T>, keySelector: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
+    return asArray(iterable).reduce(
         (arr, item) => {
             const key = keySelector(item);
             if (key) {
@@ -93,22 +94,21 @@ export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Promise
 export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<any>) : Promise<T[]> {
     let foreachPromise = Promise.resolve();
     for (let i = 0; i < array.length; i++) {
-        foreachPromise = foreachPromise.then(_r => callback(array[i], i, array));
+        foreachPromise = foreachPromise.then(() => callback(array[i], i, array));
     }
-    return foreachPromise.then(_r => array);
+    return foreachPromise.then(() => array);
 }
 
 /**
  * Execute callback async in parallel on each of the items in the specified array
- * @param array Array to execute the callback on
+ * @param iterable An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function forEachAsyncParallel<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Thenable<any>) : Promise<T[]> {
-    const tasks : Thenable<any>[] = [];
-    for (let i = 0; i < array.length; i++) {
-        tasks.push(callback(array[i], i, array));
-    }
-    return Promise.all(tasks).then(_r => array);
+export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: T, index?: number, array?: T[]) => Thenable<any>, parallelism = 2) : Promise<T[]> {
+    return mapAsyncParallel(iterable, async item => {
+        await callback(item);
+        return item;
+    }, parallelism);
 }
 
 /**

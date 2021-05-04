@@ -1,7 +1,7 @@
 import { deserialize, serialize } from 'v8';
 import { types } from 'util';
 import { LogManager } from 'lib/logging';
-import { isPromise } from './async';
+import { isPromise, isThenable } from './async';
 
 /**
  * Private property on the target object used to store cached results;
@@ -16,15 +16,21 @@ class CacheEntry {
     private readonly date: number;
     private readonly isPromise: boolean;
     private isResolved: boolean;
+    private isRejected: boolean;
 
     constructor(private innerValue: any) {
         this.date = Date.now();
-        this.isPromise = isPromise(innerValue);
+        this.isPromise = isThenable(innerValue);
         if (this.isPromise) {
-            this.innerValue.then(value => {
+            void this.innerValue.then(value => {
                 this.isResolved = true;
                 this.innerValue = value;
                 return this.getInnerValueSafe();
+            }).catch(err => {
+                this.isResolved = true;
+                this.isRejected = true;
+                this.innerValue = err;
+                return err;
             });
         }
     }
@@ -57,7 +63,7 @@ class CacheEntry {
         // when required return it as a resoleved promise.
         const safeValue = this.getInnerValueSafe();
         if (this.isPromise) {
-            return Promise.resolve(safeValue);
+            return this.isRejected ? Promise.reject(safeValue) : Promise.resolve(safeValue);
         }
         return safeValue;
     }
@@ -122,7 +128,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
 
         // Reload value and put it in the cache
         logger.debug(`Cache miss reload value (key: ${key})`);
-        const newValue =  target.apply(this, args);
+        let newValue = target.apply(this, args);
         if (ttl > 0) {
             // Follow TTL
             setTimeout(() => cache.delete(key), ttl * 1000);
@@ -130,7 +136,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
 
         // When the result is a promise ensure it gets deleted when it causes an exception
         if (isPromise(newValue)) {
-            newValue.catch(err => {
+            newValue = newValue.catch(err => {
                 logger.debug(`Delete cached promise due to exception (key: ${key})`, err);
                 cache.delete(key);
             });

@@ -10,7 +10,7 @@ import { Logger } from './logging';
 import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from './salesforce/connection/sfdxConnectionProvider';
 import SalesforceService from './salesforce/salesforceService';
-import { ConfigurationManager } from './configurationManager';
+import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
 import Timer from './util/timer';
@@ -64,14 +64,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this._salesforceService;
     }
 
-    private _namespaceService?: VlocityNamespaceService;
-    public get vlocityNamespace(): VlocityNamespaceService {
-        if (!this._namespaceService) {
-            throw new Error('Vlocode is not initialized; VlocityNamespaceService is null');
-        }
-        return this._namespaceService;
-    }
-
     public get connected() : boolean {
         return !!this._datapackService;
     }
@@ -81,8 +73,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     // Ctor + Methods
-    constructor(public readonly config: VlocodeConfiguration, private readonly logger: Logger) {
-        this.registerDisposable(this.createConfigWatcher());
+    constructor(public readonly config: VlocodeConfiguration, public readonly nsService: VlocityNamespaceService, private readonly logger: Logger) {
+        this.createConfigWatcher();
         this.connectionHooks.registerHook({ pre: this.updateNamespaceHook.bind(this) });
     }
 
@@ -102,15 +94,12 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             if (this._salesforceService) {
                 container.unregister(this._salesforceService);
             }
-            if (this._namespaceService) {
-                container.unregister(this._namespaceService);
-            }
             if (this._datapackService) {
                 container.unregister(this._datapackService);
                 this._datapackService.dispose();
             }
             if (this.config.sfdxUsername) {
-                this._namespaceService = await container.get(VlocityNamespaceService).initialize(this);
+                await this.nsService.initialize(this); // reload namespace
                 this._salesforceService = container.get(SalesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
             }
@@ -267,7 +256,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                     if (args.name === 'getJsForceConnection') {
                         args.returnValue = args.returnValue
                             .catch(err =>  this.handleGetConnectionError(args.target, err))
-                            .then(connection => this.initializeNamespace(connection))
                             .then(connection => this.connectionHooks.attach(connection));
                     }
                 }
@@ -307,39 +295,10 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }, (progress, token) => SfdxUtil.refreshOAuthTokens(this.config.sfdxUsername!, token));
     }
 
-    private async initializeNamespace(connection: jsforce.Connection) {
-        if (connection[this.namespaceSymbol]) {
-            // Namespace is already initialized directly return our connection
-            return connection;
-        }
-
-        // Init namespace by query a Vlocity class similar as to what is done in the build tools
-        const timer = new Timer();
-        const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
-
-        if (results.totalSize == 0) {
-            // This usually happens when there is no VLocity package installed
-            this.logger.warn('Unable to detect Vlocity Managed Package on target org, is Vlocity installed?');
-        } else {
-            // Define a readonly property that cannot be overwritten or changed using
-            // a unique symbol only known to this class instance
-            Object.defineProperty(connection, this.namespaceSymbol, {
-                value: results.records[0].NamespacePrefix,
-                writable: false,
-                configurable: false
-            });
-            this.logger.info(`Initialized Vlocity namespace to ${chalk.bold(results.records[0].NamespacePrefix)} [${timer.stop()}]`);
-        }
-
-        return connection;
-    }
-
-    private updateNamespaceHook({ target, args }) {
-        if (target[this.namespaceSymbol]) {
-            for (let i = 0; i < args.length; i++) {
-                if (typeof args[i] === 'string') {
-                    args[i] = args[i].replace(NAMESPACE_PLACEHOLDER, target[this.namespaceSymbol]);
-                }
+    private updateNamespaceHook({ args }) {
+        for (let i = 0; i < args.length; i++) {
+            if (typeof args[i] === 'string') {
+                args[i] = this.nsService.updateNamespace(args[i]);
             }
         }
     }
@@ -371,14 +330,19 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return disposable;
     }
 
-    private createConfigWatcher() : vscode.Disposable {
+    private createConfigWatcher() {
         this.updateStatusBar(this.config);
         this.showApiVersionStatusItem();
-        return ConfigurationManager.watchProperties(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml', 'salesforce.apiVersion' ], async () => {
-            this.showStatus('$(sync) Processing config changes...', VlocodeCommand.selectOrg);
-            await this.initialize();
-            this.showApiVersionStatusItem();
-        });
+        this.disposables.push(
+            ConfigurationManager.watchProperties(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
+            ConfigurationManager.watchProperties(this.config.salesforce, [ 'apiVersion' ], this.processConfigurationChange.bind(this))
+        );
+    }
+
+    private async processConfigurationChange() {
+        this.showStatus('$(sync) Processing config changes...', VlocodeCommand.selectOrg);
+        await this.initialize();
+        this.showApiVersionStatusItem();
     }
 
     public async validateSalesforceConnectivity() : Promise<string | undefined> {

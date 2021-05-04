@@ -3,6 +3,7 @@ import { singleton } from 'lib/util/singleton';
 import { Iterable } from 'lib/util/iterable';
 import { LogManager } from 'lib/logging';
 import { asArray } from 'lib/util/collection';
+import { v4 as generateGuid } from 'uuid';
 
 export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
 export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
@@ -33,6 +34,7 @@ export class Container {
 
     private readonly instances = new Map<string, any>();
     private readonly servicesProvided = Symbol('[[Container:ServicesProvided]]');
+    private readonly containerGuid = generateGuid();
 
     // Factories are lazy instances, when there is no instance it will be created
     // through a factory
@@ -52,8 +54,8 @@ export class Container {
      * by default dependency resolution is first attempted using the providers, factories and registered service instance in the new container; 
      * if that fails it resolution is delegated to the parent until the root container which will throw an exception in case it cannot resolve the requested module.
      */
-    public new(): Container {
-        return new Container(this.logger, this);
+    public new(options?: { isolated?: boolean }): Container {
+        return new Container(this.logger, options?.isolated ? undefined : this);
     }
 
     /**
@@ -82,6 +84,10 @@ export class Container {
         const serviceName = this.getServiceName(service);
         console.debug(`Request ${serviceName}`);
 
+        if (resolver != this) {
+            console.debug(`Resolving for inhertired container: ${resolver.containerGuid}`);
+        }
+
         const provider = this.providers.get(serviceName);
         if (provider && receiver) {
             console.debug(`Provided ${serviceName}`);
@@ -103,7 +109,7 @@ export class Container {
             const instance = factory.new() as T;
             const effectiveLifecycle = overrideLifecycle ?? factory.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return this.registerAs(this.register(instance), service);
+                return resolver.registerAs(resolver.register(instance), service);
             }
             return instance;
         }
@@ -114,7 +120,7 @@ export class Container {
             const instance = resolver.createInstance(type.ctor) as T;
             const effectiveLifecycle = overrideLifecycle ?? type.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return this.registerAs(this.register(instance), service);
+                return resolver.registerAs(resolver.register(instance), service);
             }
             return instance;
         }
@@ -272,11 +278,11 @@ export class Container {
 
     private createLazyProxy<T extends Object>(factory: () => T, prototype: any) : T {
         let instance: any = null;
-        const targetProperties = [ this.servicesProvided ] as any[];
+        const targetProperties = new Set<string | symbol>([ this.servicesProvided ]);
         const getInstance = () => instance || (instance = factory());
         return new Proxy({}, {
             get(target, prop) {
-                if (targetProperties.includes(prop)) {
+                if (targetProperties.has(prop)) {
                     return target[prop];
                 }
                 if (!instance && typeof prototype[prop] === 'function') {
@@ -287,7 +293,7 @@ export class Container {
                 return getInstance()[prop];
             },
             set(target, prop, value) {
-                if (targetProperties.includes(prop)) {
+                if (targetProperties.has(prop)) {
                     target[prop] = value;
                 } else {
                     if (typeof prototype[prop] === 'function') {

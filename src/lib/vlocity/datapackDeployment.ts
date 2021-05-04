@@ -5,22 +5,28 @@ import { Connection } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
 import { AsyncEventEmitter } from 'lib/util/events';
-import { arrayMapPush, mapGetOrCreate } from 'lib/util/collection';
+import { mapGetOrCreate } from 'lib/util/collection';
+import { LifecyclePolicy, injectable } from 'lib/core';
 import RecordBatch, { RecordBatchOptions } from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
+import { VlocityNamespaceService } from './vlocityNamespaceService';
+import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import { Iterable } from 'lib/util/iterable';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
-    beforeDeploy: Iterable<DatapackDeploymentRecord>;
-    afterDeploy: Iterable<DatapackDeploymentRecord>;
+    beforeDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
+    afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
+    onError: DatapackDeploymentRecord;
 }
 
 /**
  * A datapack deployment task/job
  */
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> implements DependencyResolver {
 
     private readonly records = new Map<string, DatapackDeploymentRecord>();
@@ -45,6 +51,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly recordBatchOptions: RecordBatchOptions,
+        private readonly namespaceService: VlocityNamespaceService,
         private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
         super();
     }
@@ -65,11 +72,9 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         const timer = new Timer();
         let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
 
-        await this.emit('beforeDeploy', this.records.values());
         while (deployableRecords = this.getDeployableRecords()) {
             await this.deployRecords(deployableRecords, cancelToken);
         }
-        await this.emit('afterDeploy', this.records.values());
 
         this.logger.log(`Deployed ${this.deployedRecordCount}/${this.totalRecordCount} records [${timer.stop()}]`);
     }
@@ -139,7 +144,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
      * @param datapackKey Key of the datapack
      */
     public getRecords(datapackKey: string) : Array<DatapackDeploymentRecord> {
-        return this.recordGroups.get(datapackKey)?.records() || [];
+        return [...(this.recordGroups.get(datapackKey) ?? [])];
     }
 
     /**
@@ -148,11 +153,17 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
      */
     private async setVlocityTriggerState(connection: Connection, enabled: boolean) {
         const timer = new Timer();
-        await connection.tooling.executeAnonymous(`
-            vlocity_cmt__TriggerSetup__c allVlocityTriggers = vlocity_cmt__TriggerSetup__c.getInstance('AllTriggers');
-            allVlocityTriggers.vlocity_cmt__IsTriggerOn__c = ${enabled};
-            update allVlocityTriggers; 
-        `);
+        // await connection.tooling.executeAnonymous(`
+        //     vlocity_cmt__TriggerSetup__c allVlocityTriggers = vlocity_cmt__TriggerSetup__c.getInstance('AllTriggers');
+        //     allVlocityTriggers.vlocity_cmt__IsTriggerOn__c = ${enabled};
+        //     update allVlocityTriggers; 
+        // `);
+
+        const result = await connection.upsert('vlocity_cmt__TriggerSetup__c', {
+            Name: 'AllTriggers',
+            vlocity_cmt__IsTriggerOn__c: true
+        }, 'Name');
+
         this.logger.verbose(`Set Vlocity trigger state ${enabled} [${timer.stop()}]`);
     }
 
@@ -196,16 +207,22 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        // Update status
-        const recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
+        // Find out to which record groups the record to be deployed belong record groups 
+        const recordGroupsInDeployment = new Map<string, DatapackDeploymentRecordGroup>();
         for (const datapackRecord of datapackRecords.values()) {
-            datapackRecord.updateStatus(DeploymentStatus.InProgress);
+            if (datapackRecord.isPending) {
+                datapackRecord.updateStatus(DeploymentStatus.InProgress);
+            } else {
+                throw new Error(`Dataoack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
+            }
 
             // Figure out which record-groups are getting deployed; we trigger the post deploy event only 
             // when a full record group is deployed
             const recordGroup = this.recordGroups.get(datapackRecord.datapackKey);
             if (recordGroup != null) {
-                recordGroups.set(datapackRecord.datapackKey, recordGroup);
+                recordGroupsInDeployment.set(datapackRecord.datapackKey, recordGroup);
+            } else {
+                throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);
             }
         }
 
@@ -215,8 +232,9 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
 
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
-        await this.emit('beforeDeployRecord', datapackRecords.values());
-        await this.setVlocityTriggerState(connection, false);
+        const newGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.isStarted());
+        await this.emit('beforeDeployGroup', newGroups, { hideExceptions: true });
+        //await this.setVlocityTriggerState(connection, false);
 
         try {
             this.logger.log(`Deploying ${datapackRecords.size} records...`);
@@ -236,56 +254,17 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
                 } else if (!result.success) {
                     datapackRecord.updateStatus(DeploymentStatus.Failed, result.error);
                     this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
+                    await this.emit('onError', datapackRecord);
                     this.failedRecords++;
                 }
             }
         } finally {
-            const deployedRecords = new Array<DatapackDeploymentRecord>();
-            for (const recordGroup of recordGroups.values()) {
-                if (!recordGroup.hasPendingRecords()) {
-                    deployedRecords.push(...recordGroup.records());
-                }
-            }
-
-            await this.emit('afterDeployRecord', deployedRecords.values());
-            await this.setVlocityTriggerState(connection, true);
+            const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());
+            await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: true });
         }
     }
 
     private handleProgressReport({ processed, total }) {
         this.logger.verbose(`Deployment in progress ${processed}/${total}...`);
-    }
-}
-
-class DatapackDeploymentRecordGroup {
-
-    private readonly groupRecords = new Array<DatapackDeploymentRecord>();
-
-    /**
-     * Create a new group instance.
-     * @param key Key of this group
-     */
-    public constructor(public readonly key: string) {
-    }
-
-    /**
-     * Adds an a new record to the
-     */
-    public push(record: DatapackDeploymentRecord) {
-        this.groupRecords.push(record);
-    }
-
-    /**
-     * Determines if this group has any pending records
-     */
-    public hasPendingRecords() : boolean {
-        return this.groupRecords.some(record => record.isPending);
-    }
-
-    /**
-     * Get all records in the group.
-     */
-    public records(){
-        return this.groupRecords;
     }
 }
