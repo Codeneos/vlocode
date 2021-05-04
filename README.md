@@ -25,13 +25,18 @@ Vlocode also has broad support **Salesforce metadata** enabling deployment and r
 
 ### Salesforce
 * **Auto create and update -meta.xml files** automatically rename and create _-meta.xml_ files when you create or rename APEX classes
+* **Export metadata** export any metadata object using the command pallet
+* **Advance metadata deployments**
+  * Support deployment of both __SFDX__ and __Classic__ Metadata format
+  * Support mixed source code deployment with Netadata defined both in SFDX format as well as in classic format 
+* **Support LWC/Aura** Support for both LWC and Aura deployments
 * **Deploy on save** deploy files to the connected org on save
 * **Deploy multiple metadata files** deploy one or more files in a single request to Salesforce
 * **Refresh/Retrieve metadata** refresh/retrieve one or more files in a single request to Salesforce
 * **Easy creation of APEX classes** automatically generate a boiler plate class definition and meta.xml file once you create a new APEX class file
 * **Execute anonymous** support for executing anonymous APEX with different log levels and profiling 
 * **Delete metadata from org** delete APEX classes or other metadata from your org from within vscode
-* **Integrated Salesforce Logs viewer** using the integrated Log viewer you can view and open Salesforce debug logs directly from VSCode
+* ** Salesforce Logs viewer** using the integrated Log viewer you can view and open Salesforce debug logs directly from VSCode
 ![Developer logs](resources/developerLogs.png)
 
 
@@ -61,6 +66,19 @@ Vlocode also has broad support **Salesforce metadata** enabling deployment and r
 - Basic knowledge of Vlocity datapacks
 - Access to an Salesforce instance with the Vlocity managed package installed
 
+## Using a `.vlocode` config rule
+Instead of configuring Vlocode through VSCodes workspace and user level settings you can also override configuration settings using a workspace-folder `.vlocode`-file. This allows to force a certain configuration value and can be usefull to ensure all developers on the project use the same configuration for exporting *vlocity* and *Salesforce* metadata
+
+**Sample of a `.vlocode` configuration-file**
+```json
+{
+    "customJobOptionsYaml": "./vlocity/dataPacksJobs/default.yaml",
+    "projectPath": "./vlocity/src",
+    "salesforce": { 
+        "apiVersion": "48.0"
+    }
+}
+```
 ## Extension Settings
 
 This extension contributes the following settings:

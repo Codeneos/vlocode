@@ -1,10 +1,32 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
+## Version 0.15.0 - 2021-05-06
+ - Support for local override configuration in a `.vlocode` configuration-file; this file allows you to store overrides that will be preferred over user and workspace configuration and can easily be versioned in git. Any workspace/user level configuration for Vlocode can be overwritten using this file such as the export directory for Vlocity metadata as well as setting a custom YAML file to ensure the export format for Vlocity metadata is correct. Sample of a `.vlocode` configuration-file:
+    ```json
+    {
+        "customJobOptionsYaml": "./vlocity/dataPacksJobs/default.yaml",
+        "projectPath": "./vlocity/src",
+        "salesforce": { 
+            "apiVersion": "48.0"
+        }
+    }
+    ```
+ - Add support deployment of mixed SFDX/classic metadata
+ - Add support export of Salesforce Metadata using the command pallet
+ - Add support open-in-salesforce for All salesforce metadata objects
+ - Improve Vlocity deployment using __Direct deployment__ mode supporting more datapack types
+ - Improve Salesforce deployment
+ - Upgrade Vlocity build tools dependency
+ - Upgrade SFDX and Salesforce ALM dependencies
+ - Refactor configuration Framework
+ - Support exporting of generic SObjects from Vlocode
+ - Several small improvements and enhancement to improve overall user experience 
+ - Upgrade build stack to webpack 5.0
 
-## Version 0.14.9 - 2019-09-30
+## Version 0.14.9 - 2020-09-30
  - Fix unhanded rejection warnings for cache decorated functions.
  - Fix `_toRecordResult` errors caused by jsforce bug.
 
-## Version 0.14.8 - 2019-08-07
+## Version 0.14.8 - 2020-08-07
  - Rewrite and restructure core components
  - Support new Datapack Deployment mode called `direct` this mode allows for direct deployments of datapacks using the Collections ot Bulk API from salesforce. For large deployments this significantly improves the deployment times by up to 90%.
  - All new Salesforce logs explorer which allows viewing of Salesforce logs similar to the developer console.
@@ -17,16 +39,16 @@
  - New command to purge all debug logs from the server 
  - New command to set which logs to show in the logs panel
 
-## Version 0.12.14 - 2019-03-26
+## Version 0.12.14 - 2020-03-26
  - Fix lookup datapac keys typo.
  - Fix sonar cloud token error in travis config.
 
-## Version 0.12.13 - 2019-02-19
+## Version 0.12.13 - 2020-02-19
  - Fix refresh datapack error
  - More logging for Salesforce deployments
  - Force all production deployment requests to check only
 
-## Version 0.12.12 - 2019-02-19
+## Version 0.12.12 - 2020-02-19
  - Auto create and delete `-meta.xml` files for classes
  - Auto create boiler plate code for APEX classes and interfaces
  - Better metadata deployment support for structured data such as email templates and documents
