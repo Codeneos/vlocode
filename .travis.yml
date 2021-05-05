@@ -27,7 +27,7 @@ install:
 script:
   - npm run build:debug
   - npm test  
-  - npm run lint -- -o tslint-report.json --format json
+  - npm run lint -- -o eslint-report.json --format json
   - sonar-scanner
 
 before_deploy:
