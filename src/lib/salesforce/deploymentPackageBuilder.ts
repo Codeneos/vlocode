@@ -83,7 +83,7 @@ export class SalesforcePackageBuilder {
             const xmlName = await this.getComponentType(file);
             const metadataType = xmlName && await this.getMetadataType(xmlName);
             if (!xmlName || !metadataType) {
-                this.logger.debug(`Adding ${file} is not a known Salesforce metadata type`);
+                this.logger.warn(`Adding ${file} is not a known Salesforce metadata type`);
                 continue;
             }
 
@@ -247,48 +247,52 @@ export class SalesforcePackageBuilder {
         if (xmlName) {
             return xmlName;
         }
+        return undefined;
 
-        const fileLowerCase = file.fsPath.toLowerCase();
-        const directoryNameOnlyMatches = new Array<string>();
+        // const fileLowerCase = file.fsPath.toLowerCase();
+        // const directoryNameOnlyMatches = new Array<string>();
 
-        for (const type of this.salesforce.getMetadataTypes()) {
-            const suffixMatches = type.suffix && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}`);
-            const metaSuffixMatches = type.suffix && type.metaFile && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}-meta.xml`);
-            const fileDirName = type.isBundle ? path.dirname(path.dirname(file.fsPath)) : path.dirname(file.fsPath);
-            const directoryNameMatches = type.directoryName && fileDirName.split(/[/\\]/g).some(dirname => stringEquals(dirname, type.directoryName));
+        // for (const type of this.salesforce.getMetadataTypes()) {
+        //     const suffixMatches = type.suffix && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}`);
+        //     const metaSuffixMatches = type.suffix && type.metaFile && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}-meta.xml`);
+        //     const fileDirName = type.isBundle ? path.dirname(path.dirname(file.fsPath)) : path.dirname(file.fsPath);
+        //     const directoryNameMatches = type.directoryName && fileDirName.split(/[/\\]/g).some(dirname => stringEquals(dirname, type.directoryName));
 
-            if (type.strictDirectoryName && !directoryNameMatches) {
-                continue;
-            }
+        //     if (type.strictDirectoryName && !directoryNameMatches) {
+        //         continue;
+        //     }
 
-            if (metaSuffixMatches) {
-                return type.xmlName;
-            }
+        //     if (metaSuffixMatches) {
+        //         return type.xmlName;
+        //     }
 
-            if (suffixMatches) {
-                if (type.metaFile && fs.existsSync(`${file.fsPath}-meta.xml`)) {
-                    return type.xmlName;
-                }
+        //     if (suffixMatches) {
+        //         if (type.metaFile && fs.existsSync(`${file.fsPath}-meta.xml`)) {
+        //             return type.xmlName;
+        //         }
 
-                if (directoryNameMatches) {
-                    return type.xmlName;
-                }
-            }
+        //         if (directoryNameMatches) {
+        //             return type.xmlName;
+        //         }
+        //     }
 
-            if (directoryNameMatches) {
-                // Matches aura and lwc bundled files primarly
-                directoryNameOnlyMatches.push(type.xmlName);
-            }
-        }
+        //     if (directoryNameMatches) {
+        //         // Matches aura and lwc bundled files primarly
+        //         directoryNameOnlyMatches.push(type.xmlName);
+        //     }
+        // }
 
-        if (directoryNameOnlyMatches.length == 1) {
-            return directoryNameOnlyMatches.pop();
-        }
+        // if (directoryNameOnlyMatches.length == 1) {
+        //     return directoryNameOnlyMatches.pop();
+        // }
     }
 
     private async getComponentTypeFromSource(file: vscode.Uri) {
-        if (file.fsPath.toLowerCase().endsWith('.xml')) {
-            return;
+        const metaFile = `${file.fsPath}-meta.xml`;
+
+        if (fs.existsSync(metaFile)) {
+            // Prefer meta file if they exist
+            return this.getComponentTypeFromSource(vscode.Uri.file(metaFile));
         }
 
         const metadataTypes = this.salesforce.getMetadataTypes();
@@ -312,12 +316,14 @@ export class SalesforcePackageBuilder {
      * Get root Element/Tag name of the specified XML file.
      * @param file Path to the XML file from which to get the root element name.
      */
-    private async getRootElementName(file: vscode.Uri) {
+    private async getRootElementName(file: vscode.Uri | string) {
         const body = await getDocumentBodyAsString(file);
-        try {
-            return Object.keys(await xml2js.parseStringPromise(body)).shift();
-        } catch{
-            return undefined;
+        if (body.trimStart().startsWith('<?xml ')) {
+            try {
+                return Object.keys(await xml2js.parseStringPromise(body)).shift();
+            } catch{
+                return undefined;
+            }
         }
     }
 
