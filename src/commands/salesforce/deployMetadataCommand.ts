@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import { forEachAsyncParallel } from 'lib/util/collection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
+import { Iterable } from 'lib/util/iterable';
+import * as open from 'open';
 import MetadataCommand from './metadataCommand';
 
 /**
@@ -96,14 +98,16 @@ export default class DeployMetadataCommand extends MetadataCommand {
         this.clearPreviousErrors(sfPackage.files());
 
         await this.vlocode.withActivity({
-            progressTitle: `Deploying ${progressTitle}...`,
+            progressTitle: `Deploying ${progressTitle}`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
         }, async (progress, token) => {
             const result = await this.salesforce.deploy.deployPackage(sfPackage, {
                 ignoreWarnings: true
-            }, progress, token);
+            }, { report: ({ message, increment, total }) => {
+                progress.report( { message, total: 100, increment: total ? ((increment ?? 0) / total) * 100 : undefined } );
+            } }, token);
 
             if (!result || token?.isCancellationRequested) {
                 this.logger.info(`Cancelled deploy of ${componentNames.join(', ')}`);
@@ -121,8 +125,27 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 throw new Error(errorMessage);
             }
 
-            this.logger.info(`Successfully deployed ${componentNames.join(', ')}`);
-            void vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
+            // success will be `true` even when not all components are successfully deployed
+            // so check if we had any errors
+            const partialSuccess = !!result.details?.componentFailures?.length;
+            const deploymentDetailsUrl = `/changemgmt/monitorDeploymentsDetails.apexp?asyncId=${result.id}`;
+            const setupPageUrl = `lightning/setup/DeployStatus/page?address=${deploymentDetailsUrl}`;
+
+            if (partialSuccess) {
+                // Partial success
+                void vscode.window.showWarningMessage(`Partially deployed ${progressTitle}`, 'See details').then(async selected =>
+                    selected && void open(await this.vlocode.salesforceService.getPageUrl(setupPageUrl, { useFrontdoor: true }))
+                );
+            } else {
+                void vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
+            }
+
+            if (result.details) {
+                this.logger.debug(`Deployment ${result.id} details`);
+                for (const message of Iterable.join(result.details.componentFailures, result.details.componentSuccesses)) {
+                    this.logger.debug(`${message.fullName} (${message.componentType}) -- ${message.success ? 'success' : 'error'}`);
+                }
+            }
         });
     }
 }

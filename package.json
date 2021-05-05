@@ -25,8 +25,11 @@
     "activationEvents": [
         "onView:datapackExplorer",
         "onView:jobExplorer",
+        "onView:developerLogsView",
         "workspaceContains:**/*_datapack.json",
         "workspaceContains:**/*_DataPack.json",
+        "workspaceContains:**/.vlocode",
+        "workspaceContains:**/*.cls",
         "onCommand:vlocode.selectOrg",
         "onCommand:vlocode.refreshDatapack",
         "onCommand:vlocode.deployDatapack",

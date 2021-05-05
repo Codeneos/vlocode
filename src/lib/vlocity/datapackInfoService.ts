@@ -21,7 +21,7 @@ export interface VlocityDatapackInfo {
  * Partial record format for datapack configuration custom metadata records.
  */
 
-interface DatapackConfigirationRecord {
+interface DatapackConfigurationRecord {
     DeveloperName: string;
     NamespacePrefix: string;
     QualifiedApiName: string;
@@ -59,15 +59,15 @@ export default class DatapackInfoService {
     @cache(-1)
     public async getDatapacks() : Promise<VlocityDatapackInfo[]> {
         this.logger.verbose('Querying DataPack configuration from Salesforce');
-        const configrationRecords = await this.salesforce.lookup<DatapackConfigirationRecord>('vlocity_namespace__VlocityDataPackConfiguration__mdt', undefined, 'all');
-        if (configrationRecords.length == 0) {
+        const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('vlocity_namespace__VlocityDataPackConfiguration__mdt', undefined, 'all');
+        if (configurationRecords.length == 0) {
             throw new Error('No DataPack configuration found in Salesforce');
         }
-        this.logger.verbose(`Loaded ${configrationRecords.length} DataPack configurations`);
+        this.logger.verbose(`Loaded ${configurationRecords.length} DataPack configurations`);
 
         // Split between standard and custom configiration, custom is prefered over standard
-        const standardConfiguration = configrationRecords.filter(f => f.NamespacePrefix != null);
-        const customConfiguration = configrationRecords.filter(f => f.NamespacePrefix == null);
+        const standardConfiguration = configurationRecords.filter(f => f.NamespacePrefix != null);
+        const customConfiguration = configurationRecords.filter(f => f.NamespacePrefix == null);
 
         const datapackInfos = [...customConfiguration, ...standardConfiguration].map(record => [
             record.DeveloperName.toLowerCase(),

@@ -51,11 +51,13 @@ export namespace Iterable {
      * Merge two or more iterators together into a single iterable.
      * @param itrs iterators to merge
      */
-    export function join<T>(...itrs: Iterable<T>[]): Iterable<T> {
+    export function join<T>(...itrs: (Iterable<T> | undefined)[]): Iterable<T> {
         return {
             *[Symbol.iterator]() {
                 for (const itr of itrs) {
-                    yield *itr;
+                    if (itr) {
+                        yield *itr;
+                    }
                 }
             }
         };

@@ -18,17 +18,53 @@ import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import { MetadataManifest, PackageManifest } from './deploy/packageXml';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
-    details?: { componentFailures?: ComponentFailure[] };
+    details?: { 
+        componentFailures: FailureDeployMessage[];
+        componentSuccesses: DeployMessage[];
+    };
 };
 
-export interface ComponentFailure {
+export interface DeployMessage {
+    /**
+     * ID of the component being deployed.
+     */
+    id: string;
+    /**
+     * The metadata type of the component in this deployment. This field is available in API version 30.0 and later.
+     */
+    componentType: string;
+    /**
+     * The name of the file in the .zip file used to deploy this component.
+     */
+    fileName: string;
+    /**
+     * The full name of the component. 
+     * Inherited from Metadata, this field is defined in the WSDL for this metadata type. It must be specified when creating, updating, or deleting. See createMetadata() to see an example of this field specified for a call.
+     */
+    fullName: string;
+    /**
+     * Indicates whether the component was successfully deployed (true) or not (false).
+     */
+    success: boolean;
+    /**
+     * If true, the component was changed as a result of this deployment. If false, the deployed component was the same as the corresponding component already in the organization.
+     */
+    changed: boolean;
+    /**
+     * If true, the component was deleted as a result of this deployment. If false, the component was either new or modified as result of the deployment.
+     */
+    deleted: boolean;
+    /**
+     * If true, the component was created as a result of this deployment. If false, the component was either deleted or modified as a result of the deployment.
+     */
+    created: boolean;
+}
+
+export interface FailureDeployMessage extends DeployMessage {
     problem: string;
-    problemType: string;
+    problemType: 'Warning' | 'Error';
     columnNumber: string;
     lineNumber: string;
-    componentType: string;
-    fileName: string;
-    fullName: string;
 }
 
 export type DeploymentProgress = vscode.Progress<{
@@ -353,6 +389,7 @@ export class SalesforceDeployService {
 
             // Wait for deploy
             let lastConsoleLog = 0;
+            let lastProgress = 0;
             let pollCount = 0;
             while (await wait(checkInterval)) {
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
@@ -375,6 +412,16 @@ export class SalesforceDeployService {
                     this.logger.info(
                         `Deployment ${status.id} - ${status.status} ` +
                         `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})`);
+                    if (status.numberComponentsTotal) {
+                        progress?.report({
+                            message: `${status.numberComponentsDeployed}/${status.numberComponentsTotal}`,
+                            increment: status.numberComponentsDeployed - lastProgress,
+                            total: status.numberComponentsTotal
+                        });
+                        lastProgress = status.numberComponentsDeployed;
+                    } else {
+                        progress?.report({ message: status.status });
+                    }
                     lastConsoleLog = Date.now();
                 }
 

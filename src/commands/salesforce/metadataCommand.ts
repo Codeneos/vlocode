@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { getDocumentBodyAsString } from 'lib/util/fs';
 import { CommandBase } from 'commands/commandBase';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { ComponentFailure } from 'lib/salesforce/salesforceDeployService';
+import { FailureDeployMessage } from 'lib/salesforce/salesforceDeployService';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 
@@ -40,7 +40,7 @@ export default abstract class MetadataCommand extends CommandBase {
      * @param manifest The deployment or destructive changes manifest
      * @param failures Array of component failures
      */
-    protected async showComponentFailures(sfPackage: SalesforcePackage, failures : ComponentFailure[]) {
+    protected async showComponentFailures(sfPackage: SalesforcePackage, failures: FailureDeployMessage[]) {
         // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
         // these are not usefull to display so we instead filter these out
         const filterFailures = failures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
