@@ -1,5 +1,11 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
-## Version 0.15.0 - 2021-05-06
+
+## Version 0.15.1 - 2021-05-06
+ - Improve feedback of progress for Salesforce deployments displaying the total progress
+ - Improve Salesforce metadata deployment
+ - Fix an issue with certain Aura component bundles getting deployed as CustomApplications
+
+## Version 0.15.0 - 2021-05-05
  - Support for local override configuration in a `.vlocode` configuration-file; this file allows you to store overrides that will be preferred over user and workspace configuration and can easily be versioned in git. Any workspace/user level configuration for Vlocode can be overwritten using this file such as the export directory for Vlocity metadata as well as setting a custom YAML file to ensure the export format for Vlocity metadata is correct. Sample of a `.vlocode` configuration-file:
     ```json
     {
