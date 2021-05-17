@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.15.1",
+    "version": "0.15.2",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.53.0"
+        "vscode": "^1.55.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -313,23 +313,53 @@
                 },
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.refreshDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.deployDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.renameDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.cloneDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.exportDatapack",
@@ -483,23 +513,53 @@
             "explorer/context": [
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.refreshDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.deployDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.renameDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.cloneDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
@@ -520,19 +580,43 @@
             "editor/context": [
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.refreshDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.deployDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.openSalesforce",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.cloneDatapack",
+                    "group": "v_vlocity",
+                    "when": "resourceDirname in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
@@ -851,7 +935,7 @@
         "@types/sinon": "^9.0.10",
         "@types/terser-webpack-plugin": "^5.0.2",
         "@types/uuid": "^8.3.0",
-        "@types/vscode": "^1.53.0",
+        "@types/vscode": "^1.55.0",
         "@types/webpack": "^4.41.26",
         "@types/webpack-merge": "^4.1.5",
         "@types/xml2js": "^0.4.8",

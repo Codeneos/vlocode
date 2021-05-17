@@ -1,5 +1,9 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.15.2 - 2021-05-17
+ - Fix issue where meta files are not created for sub-folders of classes and trigger folders.
+ - FIx issue where trigger meta file is not using the Trigger Tag
+
 ## Version 0.15.1 - 2021-05-06
  - Improve feedback of progress for Salesforce deployments displaying the total progress
  - Improve Salesforce metadata deployment
