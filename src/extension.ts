@@ -141,12 +141,12 @@ class Vlocode {
         this.service.registerDisposable(this.createDeveloperLogView());
 
         // Watch Apex classes
-        const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/classes/*.cls', false, true, false));
+        const apexClassWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/classes/**/*.cls', false, true, false));
         this.service.registerDisposable(new HandleClassCreated(apexClassWatcher.onDidCreate, this.service));
         this.service.registerDisposable(new HandleSalesforceFileDeleted(apexClassWatcher.onDidDelete, this.service));
 
         // Watch Apex triggers
-        const apexTriggerWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/triggers/*.trigger', false, true, false));
+        const apexTriggerWatcher = this.service.registerDisposable(vscode.workspace.createFileSystemWatcher('**/triggers/**/*.trigger', false, true, false));
         this.service.registerDisposable(new HandleTriggerCreated(apexTriggerWatcher.onDidCreate, this.service));
         this.service.registerDisposable(new HandleSalesforceFileDeleted(apexTriggerWatcher.onDidDelete, this.service));
 
