@@ -1,4 +1,4 @@
-name: Test & Validate
+name: Validate
 
 on:
   workflow_dispatch: {}
