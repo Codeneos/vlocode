@@ -3,5 +3,7 @@ node_modules
 retire-cache
 *.vsix
 .*
+!.gitignore
+!.github
 testReports
 tslint-report.json
