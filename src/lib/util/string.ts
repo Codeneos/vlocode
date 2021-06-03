@@ -79,20 +79,20 @@ export function formatString(stringFormat: string, contextValues?: any) : string
 }
 
 /**
- * Returns section of the string after the last occurence of the specified delimiter; in case the delimiter does not occur returns the whole string
+ * Returns section of the string after the last occurrence of the specified delimiter; in case the delimiter does not occur returns the whole string
  * @param value Value
- * @param delimiter Delemiter string passed ot split
+ * @param delimiter Delimiter string passed ot split
  * @param limit Maximum number of splits to execute
  */
-export function substringAfterLast(value: string, delimiter: string | RegExp, limit?: number): string {
-    const splitted = value.split(delimiter, limit);
+export function substringAfterLast(value: string, delimiter: string | RegExp): string {
+    const splitted = value.split(delimiter);
     return splitted[splitted.length - 1];
 }
 
 /**
- * Returns section of the string after the first occurence of the specified delimiter; in case the delimiter does not occur returns the whole string
+ * Returns section of the string after the first occurrence of the specified delimiter; in case the delimiter does not occur returns the whole string
  * @param value Value
- * @param delimiter Delemiter string passed ot split
+ * @param delimiter Delimiter string passed ot split
  */
 export function substringAfter(value: string, delimiter: string | RegExp): string {
     if (typeof delimiter === 'string') {

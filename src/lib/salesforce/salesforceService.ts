@@ -674,9 +674,9 @@ export default class SalesforceService implements JsForceConnectionProvider {
     @cache()
     public getMetadataTypes() : MetadataType[] {
         for (const metadataObject of metadataObjects as MetadataType[]) {
-            const metadataRegistyData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
-            if (metadataRegistyData) {
-                Object.assign(metadataObject, metadataRegistyData);
+            const metadataRegistryData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
+            if (metadataRegistryData) {
+                Object.assign(metadataObject, metadataRegistryData);
                 metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle';
             } else {
                 metadataObject.isBundle = metadataObject.xmlName.endsWith('Bundle');

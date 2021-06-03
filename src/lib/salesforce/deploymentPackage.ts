@@ -68,7 +68,7 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get the source file for any packge path in the package.
+     * Get the source file for any package path in the package.
      * @param packagePath package path
      * @returns Source file FS path
      */

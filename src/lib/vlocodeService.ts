@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
+import { VlocodeCommand } from '@constants';
 import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import * as chalk from 'chalk';
@@ -13,11 +13,11 @@ import SalesforceService from './salesforce/salesforceService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 import { HookManager } from './util/hookManager';
-import Timer from './util/timer';
 import { injectable } from './core/inject';
 import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
 import SfdxUtil from './util/sfdx';
+import { isPromise } from './util/async';
 
 interface ActivityOptions {
     progressTitle: string;
@@ -121,6 +121,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }
         return this.registerDisposable(this.diagnostics[name] = vscode.languages.createDiagnosticCollection(name));
     }
+
+
 
     public showStatus(text: string, command?: VlocodeCommand | string | undefined) : void {
         if (!this.statusBar) {
@@ -325,7 +327,12 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
     }
 
-    public registerDisposable<T extends  {dispose() : any}>(disposable: T) : T {
+    public registerDisposable<T extends {dispose() : any}>(disposable: T) : T
+    public registerDisposable<T extends {dispose() : any}>(disposable: Promise<T>) : Promise<T>
+    public registerDisposable<T extends {dispose() : any}>(disposable: T | Promise<T>) : T | Promise<T> {
+        if (isPromise(disposable)) {
+            return disposable.then(result => this.registerDisposable(result));
+        }
         this.disposables.push(disposable);
         return disposable;
     }

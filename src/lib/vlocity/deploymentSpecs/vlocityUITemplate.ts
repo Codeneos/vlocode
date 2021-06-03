@@ -45,7 +45,7 @@ export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
             if (!record.success) {
                 this.logger.warn(`Failed activation of template ${record.ref}: ${record.error}`);
             } else {
-                this.logger.verbose(`Activated of template ${record.ref}`);
+                this.logger.verbose(`Activated Vlocity UI template ${record.ref}`);
             }
         }
     }
