@@ -1,0 +1,34 @@
+name: Publish Extension
+
+on:
+  workflow_dispatch: {}
+
+  jobs:
+  validate:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14.x'  
+    - run: npm ci
+    - run: npm run bump
+    - name: get-version
+      run: export PACKAGE_VERSION=$(node -p "require('./package.json').version")
+    - run: npm run build
+    - name: tag
+      uses: tvdias/github-tagger@v0.0.1
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        tag: "v${{ env.PACKAGE_VERSION }}"
+    - name: github-release
+      uses: ncipollo/release-action@v1
+      with:
+        name: "Version ${{ env.PACKAGE_VERSION }}"
+        artifact: '*.vsix'
+        artifactErrorsFailBuild: true
+        allowUpdates: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: "v${{ env.PACKAGE_VERSION }}"
