@@ -3,9 +3,9 @@ name: Vlocode CI
 on:
   workflow_dispatch: {}
   push:
-    branches: [ $default-branch ]
+    branches: [ master ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ master ]
     types: [ opened, synchronize, reopened ]
 
 jobs:
