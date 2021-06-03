@@ -24,14 +24,17 @@ jobs:
         node-version: '14.x'
     - name: Start Xvfb
       run: sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+    # Updates notes for next release
+    - uses: actions/cache@v2
+      with:
+      path: |
+        .webpack-cache
+        ~/.npm
+      key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
     # Building and linting
     - run: npm ci
     - run: npm test
     - run: npm run lint
-    # Updates notes for next release
-    - uses: release-drafter/release-drafter@v5
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     # SonarQube quality scan
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master

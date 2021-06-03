@@ -108,6 +108,10 @@ const common : webpack.Configuration = {
             },
         },
     },
+    cache: {
+        type: 'filesystem',
+        cacheLocation: path.resolve(__dirname, '.webpack-cache'),
+    },
     externals:
         function({ request }, callback) {
             const isExternal = packageExternals.some(
