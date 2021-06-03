@@ -27,10 +27,10 @@ jobs:
     # Updates notes for next release
     - uses: actions/cache@v2
       with:
-      path: |
-        .webpack-cache
-        ~/.npm
-      key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        path: |
+          .webpack-cache
+          ~/.npm
+        key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
     # Building and linting
     - run: npm ci
     - run: npm test
