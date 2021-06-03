@@ -1,4 +1,4 @@
-name: Publish Extension
+name: Create release
 
 on:
   workflow_dispatch: {}
@@ -16,18 +16,17 @@ jobs:
     # Install deps, bump version and build the package
     - run: npm ci
     - run: npm run bump
-    - name: get-version
-      run: export PACKAGE_VERSION=$(node -p "require('./package.json').version")
-    - run: npm run build
+    - name: Get release version
+      run: echo "::set-env name=PACKAGE_VERSION::$(node -p \"require('./package.json').version\")"
     - run: npm run package  
     # Create tag so it can be publihsed
-    - name: tag
+    - name: Create tag
       uses: tvdias/github-tagger@v0.0.1
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
         tag: "v${{ env.PACKAGE_VERSION }}"
     # Create the release
-    - name: release
+    - name: Draft release
       uses: ncipollo/release-action@v1
       with:
         name: "Version ${{ env.PACKAGE_VERSION }}"

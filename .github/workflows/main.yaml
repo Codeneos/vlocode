@@ -1,4 +1,4 @@
-name: Vlocode CI
+name: Test & Validate
 
 on:
   workflow_dispatch: {}
@@ -28,6 +28,10 @@ jobs:
     - run: npm ci
     - run: npm test
     - run: npm run lint
+    # Updates notes for next release
+    - uses: release-drafter/release-drafter@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     # SonarQube quality scan
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
