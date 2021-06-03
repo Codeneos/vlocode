@@ -22,8 +22,11 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '14.x'
+    - name: Setup xvfb (Linux)
+      run: |
+        sudo apt-get install -y xvfb
+        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
     - run: npm ci
-    - run: 'xhost local:'
     - run: npm test
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
