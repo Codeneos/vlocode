@@ -8,7 +8,6 @@ on:
     branches: [ $default-branch ]
     types: [ opened, synchronize, reopened ]
 
-name: Main Workflow
 jobs:
   validate:
 
@@ -23,7 +22,8 @@ jobs:
         node-version: '14.x'
     - run: npm ci
     - run: npm test
-    - uses: sonarsource/sonarcloud-github-action@master
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
