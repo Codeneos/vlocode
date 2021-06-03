@@ -12,6 +12,8 @@ jobs:
   validate:
 
     runs-on: ubuntu-latest
+    env:
+      DISPLAY: ':0'
 
     steps:
     - uses: actions/checkout@v2
@@ -21,6 +23,7 @@ jobs:
       with:
         node-version: '14.x'
     - run: npm ci
+    - run: 'xhost local:'
     - run: npm test
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
