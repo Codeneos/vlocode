@@ -1,7 +1,9 @@
+import path = require('path');
 import * as constants from '@constants';
 import * as vscode from 'vscode';
+import * as fs from 'fs-extra';
 import { Logger } from './logging';
-import { injectable, LifecyclePolicy } from './core';
+import { FileSystem, injectable, LifecyclePolicy } from './core';
 import Timer from './util/timer';
 
 /**
@@ -17,7 +19,7 @@ export interface FileFilterFunction {
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class WorkspaceContextDetector implements vscode.Disposable {
 
-    private contextFolders = new Array<vscode.Uri>();
+    private contextFiles = new Array<string>();
     private workspaceFolderWatcher: vscode.Disposable;
     private workspaceFileWatcher: vscode.FileSystemWatcher;
 
@@ -30,6 +32,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     constructor(
         private readonly editorContextKey: string,
         public readonly isApplicableFile: FileFilterFunction,
+        private readonly fs: FileSystem,
         private readonly logger: Logger) {
     }
 
@@ -44,82 +47,87 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
     public async initialize() {
         this.workspaceFolderWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async e => {
-            const updatedContextFolders = this.contextFolders.filter(folder =>
-                !e.removed.some(f => folder.toString().startsWith(f.uri.toString()))
-            );
-            for (const addedWorkspace of e.added) {
-                updatedContextFolders.push(...await this.getApplicableFolders(addedWorkspace.uri));
+            for (const removeWorkspace of e.removed) {
+                this.remove(removeWorkspace.uri.fsPath);
             }
-            this.contextFolders = updatedContextFolders;
+            for (const addedWorkspace of e.added) {
+                this.contextFiles.push(...await this.getApplicableFiles(addedWorkspace.uri.fsPath));
+            }
             await this.updateContext();
         });
 
         this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, true, false);
         this.workspaceFileWatcher.onDidCreate(async newFile => {
-            if (this.isApplicableFile(newFile.fsPath)) {
-                this.contextFolders.push(vscode.Uri.joinPath(newFile, '..'));
-                await this.updateContext();
-            } else if (await this.isApplicableFolder(newFile)) {
-                this.contextFolders.push(newFile);
+            const fsPath = newFile.fsPath;
+            const newFiles = new Array<string>();
+
+            if (await this.fs.isDirectory(fsPath)) {
+                newFiles.push(...await this.getApplicableFiles(fsPath));
+            } else if (this.isApplicableFile(fsPath)) {
+                newFiles.push(fsPath);
+            }
+
+            if (newFiles.length > 0) {
+                this.contextFiles.push(...newFiles);
                 await this.updateContext();
             }
         });
 
-        this.contextFolders.push(...await this.getApplicableFoldersInWorkspace());
+        this.contextFiles.push(...await this.getApplicableFoldersInWorkspace());
         await this.updateContext();
 
         return this;
     }
 
+    private remove(filePath: string) {
+        this.contextFiles = this.contextFiles.filter(file => file.startsWith(filePath));
+    }
+
     private async updateContext() {
         const timer = new Timer();
         const folders = {};
-        const workspaceFolders = vscode.workspace.workspaceFolders?.map(ws => ws.uri.fsPath) ?? [];
-        for (const folder of this.contextFolders) {
-            folders[folder.fsPath] = true;
-
-            // add subfolders
-            let parentFolder = vscode.Uri.joinPath(folder, '..');
-            while (!folders[parentFolder.fsPath] && !workspaceFolders.includes(parentFolder.fsPath)) {
-                folders[parentFolder.fsPath] = true;
-                parentFolder = vscode.Uri.joinPath(parentFolder, '..');
-            }
+        for (const fullPath of this.contextFiles) {
+            folders[fullPath] = true;
         }
-
         await vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.${this.editorContextKey}`, folders);
         this.logger.verbose(`Updated context ${constants.CONTEXT_PREFIX}.${this.editorContextKey} [${timer.stop()}]`);
     }
 
     private async getApplicableFoldersInWorkspace() {
-        const folders = new Array<vscode.Uri>();
+        const files = new Array<string>();
         for (const workspace of vscode.workspace.workspaceFolders ?? []) {
             this.logger.info(`Probing workspace ${workspace.name} (${workspace.uri}) for ${this.editorContextKey}...`);
             const timer = new Timer();
-            const workspaceFolders = await this.getApplicableFolders(workspace.uri);
-            this.logger.info(`Detected ${workspaceFolders.length} applicable folders in workspace ${workspace.name} [${timer.stop()}]`);
-            folders.push(...workspaceFolders);
+            const workspaceFiles = await this.getApplicableFiles(workspace.uri.fsPath);
+            this.logger.info(`Detected ${workspaceFiles.length} applicable files in workspace ${workspace.name} [${timer.stop()}]`);
+            files.push(...workspaceFiles);
         }
-        return folders;
+        return files;
     }
 
-    public async getApplicableFolders(folder: vscode.Uri) {
-        const folders = new Array<vscode.Uri>();
-        for (const [file, type] of await vscode.workspace.fs.readDirectory(folder)) {
-            if (file.startsWith('.')) {
-                // ignore dotted files and folders
+    public async getApplicableFiles(folder: string) : Promise<string[]> {
+        const files = new Array<string>();
+        const dirEntries = await fs.readdir(folder, { withFileTypes: true });
+        const hasApplicableFiles = dirEntries.some(entry => entry.isFile() && this.isApplicableFile(entry.name));
+
+        for (const entry of dirEntries) {
+            if (entry.name.startsWith('.')) {
                 continue;
             }
-            const subFolder = vscode.Uri.joinPath(folder, file);
-            if (type == vscode.FileType.Directory) {
-                const isDatapackFolder = await this.isApplicableFolder(subFolder);
-                if (isDatapackFolder) {
-                    folders.push(subFolder);
-                } else {
-                    folders.push(...await this.getApplicableFolders(subFolder));
-                }
+            const fullPath = path.join(folder, entry.name);
+            if (entry.isDirectory()) {
+                files.push(...await this.getApplicableFiles(fullPath));
+            } else if (hasApplicableFiles) {
+                files.push(fullPath);
             }
         }
-        return folders;
+
+        if (files.length > 0) {
+            // Include the parent folder when it has any files applicable
+            files.push(folder);
+        }
+
+        return files;
     }
 
     public async isApplicableFolder(folder: vscode.Uri) {

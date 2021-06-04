@@ -313,23 +313,28 @@
                 },
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.exportDatapack",
@@ -337,7 +342,8 @@
                 },
                 {
                     "command": "vlocode.buildParentKeyFiles",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.buildDatapack",
@@ -483,23 +489,28 @@
             "explorer/context": [
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
@@ -520,19 +531,23 @@
             "editor/context": [
                 {
                     "command": "vlocode.refreshDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
-                    "group": "v_vlocity"
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
