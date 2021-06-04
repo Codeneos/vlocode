@@ -6,8 +6,8 @@ import { DatapackResultCollection } from 'lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from 'commands/datapackCommand';
 import { forEachAsyncParallel } from 'lib/util/collection';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
-import DatapackDeployService from 'lib/vlocity/datapackDeployer';
-import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
+import DatapackDeployer from 'lib/vlocity/datapackDeployer';
+import { container } from 'lib/core';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -91,8 +91,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
                     );
                 } else {
                     const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-                    const deployer = new DatapackDeployService();
-                    const deployment = await deployer.createDeployment(datapacks);
+                    const deployment = await container.get(DatapackDeployer).createDeployment(datapacks);
                     await deployment.start();
                 }
             });
