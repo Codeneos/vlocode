@@ -22,6 +22,7 @@ import VlocodeService from 'lib/vlocodeService';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { ApexLogSymbolProvider } from 'symbolProviders/apexLogSymbolProvider';
 import { lazy } from 'lib/util/lazy';
+import { WorkspaceContextDetector } from 'lib/workspaceContextDetector';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -157,8 +158,12 @@ class Vlocode {
         try {
             this.service.registerDisposable(vscode.languages.registerDocumentSymbolProvider({ language: 'apexlog' }, new ApexLogSymbolProvider()));
         } catch(err) {
-            this.logger.warn(`Unable to regsiter symbol provider for APEX logs: ${err}`);
+            this.logger.warn(`Unable to register symbol provider for APEX logs: ${err}`);
         }
+
+        // watch for changes        
+        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', file => file.toLowerCase().endsWith('_datapack.json')).initialize());
+        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', file => file.toLowerCase().endsWith('-meta.xml')).initialize());
 
         // track activation time
         this.logger.focus();

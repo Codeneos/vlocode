@@ -5,7 +5,7 @@ import * as jsforce from 'jsforce';
 import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
-import { Logger, LogManager } from 'lib/logging';
+import { Logger } from 'lib/logging';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
@@ -19,11 +19,8 @@ import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { injectable } from 'lib/core/inject';
-import * as constants from '@constants';
 import { stringEquals } from 'lib/util/string';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
-import { VlocityNamespaceService } from './vlocityNamespaceService';
-type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
 
 export interface ManifestEntry {
     datapackType: string;
@@ -41,8 +38,6 @@ export interface ObjectEntry {
 type ObjectEntryWithId = ObjectEntry & { id: string };
 
 type QueryDefinitions = typeof import('exportQueryDefinitions.yaml');
-
-type DatapacksExpandDefinitions = typeof import('datapacksexpanddefinition.yaml');
 
 export interface DatapackResult {
     key: string;

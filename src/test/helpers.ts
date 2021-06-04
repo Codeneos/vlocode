@@ -18,12 +18,35 @@ import * as sinon from 'sinon';
   }*/
 
 /**
- * Makes cross platform compatible path string for testing using MockFS
+ * Normalizes a path from windows to unix line separators
  * @param p Path to make 
  */
-export function makePath(p : string) {
-    if (path.sep == path.win32.sep) {
-        return p.replace(/^\//i, 'c:\\').replace(/\//g, '\\');
+export function normalizePath(p : string | string[]) {
+    if (typeof p == 'string') {
+        return p.replace(/[\\/]+/g, '/');
     }
-    return p;
+    return p.map(normalizePath);
+}
+
+/**
+ * Mock dependency using an ES6 Proxy
+ */
+export function mockDep<T extends { new(): I }, I extends Object>(ctor?: T) : I;
+export function mockDep<T extends { new(...args: any[]): I }, I extends Object>(ctor?: T) : I;
+export function mockDep<I extends Object>() : I;
+export function mockDep<I>() : I {
+    return new Proxy({}, {
+        get: (target, prop) => {
+            console.debug(`mockDep->get(${String(prop)})`);
+            return mockDep();
+        },
+        set: (target, prop, value) => {
+            console.debug(`mockDep->set(${String(prop)}) = ${value}`);
+            return true;
+        },
+        apply: (target, thisArg, argumentsList) => {
+            console.debug(`mockDep->apply(${String(argumentsList)})`);
+            return mockDep();
+        }
+    }) as any;
 }

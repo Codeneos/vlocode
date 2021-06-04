@@ -1,55 +1,11 @@
 import * as path from 'path';
-import * as nodeFs from 'fs-extra';
-import { FileSystem } from 'interfaces/fileSystem';
+import { FileSystem } from 'lib/core/fs';
 import { Logger, LogManager } from 'lib/logging';
 import { mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
 import { injectable } from 'lib/core/inject';
-import { container } from 'lib/core/container';
 
-/**
- * Basic file system using NodeJS fs module.
- */
-export const directFileSystem = container.registerAs({
-    readFile: nodeFs.readFile,
-    readdir: nodeFs.readdir,
-    pathExists: path => Promise.resolve(nodeFs.existsSync(path))
-}, FileSystem);
-
-/**
- * File system that cached directory contents to provide a faster pathExists response
- */
-export class CachedFileSystem implements FileSystem {
-
-    protected directoryCache = new Map<string, string[]>();
-
-    constructor (protected readonly fileSystem: FileSystem = directFileSystem) {
-    }
-
-    public async pathExists(filePath: string): Promise<boolean> {
-        try {
-            const fileName = path.basename(filePath);
-            const files = await this.readdir(path.dirname(filePath));
-            return files.includes(fileName);
-        } catch(e) {
-            return false;
-        }
-    }
-
-    public readFile(path: string){
-        return this.fileSystem.readFile(path);
-    }
-
-    public async readdir(filePath: string): Promise<string[]> {
-        let files = this.directoryCache.get(filePath);
-        if (!files) {
-            files = await this.fileSystem.readdir(filePath);
-            this.directoryCache.set(filePath, files);
-        }
-        return files;
-    }
-}
 
 type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);
 
@@ -64,7 +20,7 @@ export default class DatapackLoader {
     ];
 
     constructor(
-        protected readonly fileSystem: FileSystem = directFileSystem,
+        protected readonly fileSystem: FileSystem,
         protected readonly logger: Logger = LogManager.get(DatapackLoader)) {
     }
 

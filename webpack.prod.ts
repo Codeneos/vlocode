@@ -1,4 +1,5 @@
 
+import * as path from 'path';
 import * as webpack from 'webpack';
 import * as TerserPlugin from 'terser-webpack-plugin';
 import { default as common } from './webpack.common';
@@ -6,6 +7,10 @@ import { default as common } from './webpack.common';
 const production: webpack.Configuration = {
     mode: 'production',
     devtool: false,
+    cache: {
+        type: 'filesystem',
+        cacheLocation: path.resolve(__dirname, '.webpack-cache', 'prod'),
+    },
     optimization: {
         mergeDuplicateChunks: true,
         minimize: true,

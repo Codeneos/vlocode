@@ -399,19 +399,19 @@ export class SalesforceDeployService {
                 }
 
                 // Reduce polling frequency for long running deployments
-                if (pollCount++ > 10) {
-                    checkInterval = Math.max(checkInterval + 1000, checkInterval);
+                if (pollCount++ > 10 && checkInterval < 5000) {
                     pollCount = 0;
-                    this.logger.verbose(`Reducing deployment poll interval to ${checkInterval}ms`);
+                    this.logger.verbose(`Reducing deployment poll interval to ${checkInterval = Math.min(checkInterval + 1000, 5000)}ms`);
                 }
 
                 const status = await connection.metadata.checkDeployStatus(deployJob.id, true);
 
                 if (Date.now() - lastConsoleLog > logInterval) {
-                    // Do not create seperate interval for logging but use the main status check loop
+                    // Do not create separate interval for logging but use the main status check loop
                     this.logger.info(
-                        `Deployment ${status.id} - ${status.status} ` +
-                        `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})`);
+                        `Deployment ${status.id} -- ${status.status} ` +
+                        `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})` +
+                        `${status.numberComponentErrors ? ` -- Errors ${status.numberComponentErrors}` : ''}`);
                     if (status.numberComponentsTotal) {
                         progress?.report({
                             message: `${status.numberComponentsDeployed}/${status.numberComponentsTotal}`,

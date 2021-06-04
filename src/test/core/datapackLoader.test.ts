@@ -1,22 +1,22 @@
 import { expect } from 'chai';
-import * as mockFs from 'mock-fs';
 import 'mocha';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
+import { MemoryFileSystem } from 'lib/core/fs';
+import { Logger } from 'lib/logging';
 
 describe('datapackLoader', () => {
-    describe.skip('#loadFrom', () => {
-        beforeEach(() => {
-            // setup fake FS for testing
-            mockFs({
-                'datapack1.json': JSON.stringify({ name: 'test', json1: 'test1.json', html: 'test.html' }),
-                'test1.json': JSON.stringify({ name: 'test1', json2: 'test2.json' }),
-                'test2.json': JSON.stringify({ name: 'test2', html: 'test.html' }),
-                'test.html': 'test_content',
-                'datapack2.json': JSON.stringify({ name: 'test', nonExisting: 'non_existing.json', html: 'test.html' }),
-            });
+    describe('#loadFrom', () => {
+
+        const mockFs = new MemoryFileSystem({
+            'datapack1.json': JSON.stringify({ name: 'test', json1: 'test1.json', html: 'test.html' }),
+            'test1.json': JSON.stringify({ name: 'test1', json2: 'test2.json' }),
+            'test2.json': JSON.stringify({ name: 'test2', html: 'test.html' }),
+            'test.html': 'test_content',
+            'datapack2.json': JSON.stringify({ name: 'test', nonExisting: 'non_existing.json', html: 'test.html' }),
         });
+
         it('should recursively include references', async () => {
-            const loader = new DatapackLoader();
+            const loader = new DatapackLoader(mockFs, Logger.null);
             const loadedDatapack = await loader.loadFrom('datapack1.json');
 
             // assert
@@ -27,7 +27,7 @@ describe('datapackLoader', () => {
             expect(loadedDatapack.json1.json2.html).equals('test_content');
         });
         it('should treat non-existing references as strings', async () => {
-            const loader = new DatapackLoader();
+            const loader = new DatapackLoader(mockFs, Logger.null);
             const loadedDatapack = await loader.loadFrom('datapack2.json');
 
             // assert
@@ -35,6 +35,5 @@ describe('datapackLoader', () => {
             expect(loadedDatapack.html).equals('test_content');
             expect(loadedDatapack.nonExisting).equals('non_existing.json');
         });
-        afterEach(mockFs.restore);
     });
 });

@@ -15,6 +15,8 @@ export interface ServiceProvider<T> {
     get(...args: any[]): T;
 }
 
+type PartialArray<T extends Array<X>, X = any> = Partial<T> & Array<X>;
+
 export enum LifecyclePolicy {
     /**
      * Only a single instance is created and a reference of that instance is kept alive in the container until it is destroyed
@@ -82,29 +84,29 @@ export class Container {
      */
     public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: new () => object, resolver: Container = this) : T | undefined {
         const serviceName = this.getServiceName(service);
-        console.debug(`Request ${serviceName}`);
+        //console.debug(`Request ${serviceName}`);
 
         if (resolver != this) {
-            console.debug(`Resolving for inhertired container: ${resolver.containerGuid}`);
+            //console.debug(`Resolving for inhertired container: ${resolver.containerGuid}`);
         }
 
         const provider = this.providers.get(serviceName);
         if (provider && receiver) {
-            console.debug(`Provided ${serviceName}`);
+            //console.debug(`Provided ${serviceName}`);
             return provider(receiver);
         }
 
         // return existing instance
         const currentInstance = this.instances.get(serviceName);
         if (currentInstance) {
-            console.debug('Resolved existing');
+            //console.debug('Resolved existing');
             return currentInstance;
         }
 
         // Note factories are likely not required any more - consider dropping this concept for now
         const factory = this.factories.get(serviceName);
         if (factory) {
-            console.debug(`Fabricate ${serviceName}`);
+            //console.debug(`Fabricate ${serviceName}`);
             // Fabricate new
             const instance = factory.new() as T;
             const effectiveLifecycle = overrideLifecycle ?? factory.lifecycle;
@@ -131,8 +133,18 @@ export class Container {
         }
 
         // Cannot resolve this
-        console.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
+        //console.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
         this.logger.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
+    }
+
+    /**
+     * Create a new instance of a type resolving constructor parameters as dependencies using the container
+     * @param ctor Constructor/Type to instantiate
+     * @param params Constructor params provided
+     * @returns New instance of an object who's dependencies are resolved by the container
+     */
+    public create<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>) : InstanceType<T> {
+        return this.createInstance(ctor, params, { lazy: false });
     }
 
     /**
@@ -170,7 +182,7 @@ export class Container {
      * Creates a new instance of the specified type resolving dependencies using the current container context
      * @param ctor Constructor type/prototype class definition
      */
-    private createInstance<T extends { new(...args: any[]): I }, I extends Object>(ctor: T): I {
+    private createInstance<T extends { new(...args: any[]): I }, I extends Object>(ctor: T, args: Array<any> = [], options?: { lazy?: boolean }): I {
         // Get argument types
         const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
         const paramTypes = typeInfo?.paramTypes();
@@ -179,15 +191,21 @@ export class Container {
         }
 
         // Resolve all dependencies and create a new instance
-        const args = new Array<any>(paramTypes);
         for (let i = 0; i < paramTypes.length; i++) {
-            args[i] = this.resolve(paramTypes[i], undefined, ctor);
+            args[i] = args[i] ?? this.resolve(paramTypes[i], undefined, ctor);
         }
-        console.debug(`Creating ${ctor.name} (lazy)`);
-        return this.createLazyProxy(() => {
-            console.debug(`Construct ${ctor.name}`);
+
+        // Only create when accessed or directly instantiate
+        if (options?.lazy) {
+            console.debug(`Creating ${ctor.name} (lazy)`);
+            return this.createLazyProxy(() => {
+                console.debug(`Construct ${ctor.name}`);
+                return new ctor(...args);
+            }, ctor.prototype);
+        } else {
+            console.debug(`Creating ${ctor.name}`);
             return new ctor(...args);
-        }, ctor.prototype);
+        }
     }
 
     /**

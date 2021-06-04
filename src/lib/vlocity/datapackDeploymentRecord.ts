@@ -1,6 +1,6 @@
 import Timer from 'lib/util/timer';
 import { Iterable } from 'lib/util/iterable';
-import { DatapackRecordDependency, DependencyResolver } from './datapackDeployService';
+import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer';
 
 export enum DeploymentStatus {
     Pending,

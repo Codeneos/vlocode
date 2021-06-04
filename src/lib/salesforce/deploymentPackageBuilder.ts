@@ -1,7 +1,5 @@
 import * as path from 'path';
-import * as fs from 'fs-extra';
 import { Logger } from 'lib/logging';
-import { fileExists, getDocumentBodyAsString, readDirectory, sanitizePath } from 'lib/util/fs';
 import * as vscode from 'vscode';
 import { substringAfterLast } from 'lib/util/string';
 import * as xml2js from 'xml2js';
@@ -9,7 +7,7 @@ import * as constants from '@constants';
 import { inject, injectable } from 'lib/core/inject';
 import { LifecyclePolicy } from 'lib/core/container';
 import { Iterable } from 'lib/util/iterable';
-import * as globby from 'globby';
+import { FileSystem } from 'lib/core/fs';
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService, { MetadataType } from './salesforceService';
@@ -40,6 +38,7 @@ export class SalesforcePackageBuilder {
         public readonly apiVersion: string,
         public readonly type: SalesforcePackageType,
         @inject('SalesforceService') private readonly salesforce: SalesforceService,
+        @inject('FileSystem') private readonly fs: FileSystem,
         private readonly logger: Logger) {
         this.mdPackage = new SalesforcePackage(apiVersion);
     }
@@ -64,9 +63,15 @@ export class SalesforcePackageBuilder {
             }
 
             // parse folders recursively
-            const fileStat = await fs.stat(file);
+            const fileStat = await this.fs.stat(file);
+
+            if (fileStat == null) {
+                console.debug(`skip stats == null -> ${file}`);
+                continue; // non-accessible skip
+            }
+
             if (fileStat.isDirectory()) {
-                await this.addFiles((await readDirectory(file)).map(folderFileName => path.join(file, folderFileName)), token);
+                await this.addFiles((await this.fs.readDirectory(file)).map(folderFileName => path.join(file, folderFileName)), token);
                 continue;
             }
 
@@ -74,18 +79,21 @@ export class SalesforcePackageBuilder {
             const isMetaFile = file.endsWith('-meta.xml');
             if (isMetaFile) {
                 const sourceFile = file.slice(0, -9);
-                if (fileExists(sourceFile)) {
+                if (await this.fs.isFile(sourceFile)) {
                     await this.addFiles([ sourceFile ], token);
+                    continue;
                 }
             }
 
             // get metadata type
             const xmlName = await this.getComponentType(file);
-            const metadataType = xmlName && await this.getMetadataType(xmlName);
+            const metadataType = xmlName && this.getMetadataType(xmlName);
             if (!xmlName || !metadataType) {
                 this.logger.warn(`Adding ${file} is not a known Salesforce metadata type`);
                 continue;
             }
+
+            console.debug(`${file} -> ${xmlName}`);
 
             if (metadataType.xmlName != xmlName) {
                 // Support for SFDX formatted source code
@@ -107,17 +115,19 @@ export class SalesforcePackageBuilder {
 
             // also ensure metafile is added
             const metaFile = `${file}-meta.xml`;
-            if (metadataType.metaFile && fileExists(metaFile)) {
+            if (await this.fs.isFile(metaFile)) {
                 this.mdPackage.add({ xmlName, componentName, packagePath: `${packagePath}-meta.xml`, fsPath: metaFile });
-                //await this.addFiles([ metaFile ], token);
             }
 
             if (metadataType.isBundle) {
                 // Only Aura and LWC are bundled at this moment
                 // Classic metadata package all related files
-                const bundleFiles = await globby(sanitizePath(path.join(path.dirname(file), '**'), path.posix.sep));
-                for (const relatedFile of bundleFiles) {
-                    this.mdPackage.add({ xmlName, componentName, packagePath: this.getPackagePath(relatedFile, metadataType), fsPath: relatedFile });
+                const bundleFolder = path.dirname(file);
+                const bundleFiles = await this.fs.readDirectory(bundleFolder);
+                for (const relatedFile of bundleFiles.map(fileName => path.join(bundleFolder, fileName))) {
+                    if (await this.fs.isFile(relatedFile)) {
+                        this.mdPackage.add({ xmlName, componentName, packagePath: this.getPackagePath(relatedFile, metadataType), fsPath: relatedFile });
+                    }
                 }
             }
         }
@@ -139,7 +149,7 @@ export class SalesforcePackageBuilder {
         // Get metadata type for a source file
         const tagNameInParent = substringAfterLast(path.dirname(sourceFile), /\\|\//);
         const childComponentName = this.getPackageComponentName(sourceFile, metadataType);
-        const childMetadata = (await xml2js.parseStringPromise(await getDocumentBodyAsString(sourceFile)))[xmlName];
+        const childMetadata = (await xml2js.parseStringPromise(await this.fs.readFileAsString(sourceFile)))[xmlName];
 
         const parentComponentFolder = path.join(...sourceFile.split(/\\|\//g).slice(0,-2));
         const parentComponentName = path.basename(parentComponentFolder);
@@ -180,7 +190,7 @@ export class SalesforcePackageBuilder {
         }
 
         const existingMetadata = await xml2js.parseStringPromise(existingPackageData);
-        const newMetadata = await xml2js.parseStringPromise(await getDocumentBodyAsString(sourceFile));
+        const newMetadata = await xml2js.parseStringPromise(await this.fs.readFileAsString(sourceFile.fsPath));
         const mergedMetadata = this.mergeMetadata(existingMetadata[metadataType.xmlName], newMetadata[metadataType.xmlName]);
         this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata), fsPath: sourceFile.fsPath});
         return true;
@@ -258,16 +268,19 @@ export class SalesforcePackageBuilder {
 
         for (const type of this.salesforce.getMetadataTypes()) {
             if (type.strictDirectoryName) {
-                if (type.isBundle && parentFolder == type.directoryName) {
-                    return type.xmlName;
+                if (type.isBundle) {
+                    // match parent folder only for bundles
+                    if (parentFolder == type.directoryName){
+                        return type.xmlName;
+                    }
                 } else if (folder == type.directoryName) {
                     return type.xmlName;
                 }
-                continue;
-            }
-
-            if (type.suffix?.toLocaleLowerCase() == fileSuffix){
-                return type.xmlName;
+            } else {
+                // Suffix match only when strictDirectoryName == false 
+                if (type.suffix?.toLocaleLowerCase() == fileSuffix){
+                    return type.xmlName;
+                }
             }
         }
 
@@ -312,7 +325,7 @@ export class SalesforcePackageBuilder {
     private async getComponentTypeFromSource(file: string) {
         const metaFile = `${file}-meta.xml`;
 
-        if (fileExists(metaFile)) {
+        if (await this.fs.isFile(metaFile)) {
             // Prefer meta file if they exist
             return this.getComponentTypeFromSource(metaFile);
         }
@@ -338,8 +351,8 @@ export class SalesforcePackageBuilder {
      * Get root Element/Tag name of the specified XML file.
      * @param file Path to the XML file from which to get the root element name.
      */
-    private async getRootElementName(file: vscode.Uri | string) {
-        const body = await getDocumentBodyAsString(file);
+    private async getRootElementName(file: string) {
+        const body = await this.fs.readFileAsString(file);
         if (body.trimStart().startsWith('<?xml ')) {
             try {
                 return Object.keys(await xml2js.parseStringPromise(body)).shift();

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { SassCompiler } from 'lib/sass';
 import { injectable } from 'lib/core/inject';
-import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
+import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { LifecyclePolicy } from 'lib/core/container';

@@ -19,6 +19,9 @@ const testRunnerConfig : Mocha.MochaOptions = {
 };
 
 export async function run(): Promise<void> {
+    // ensure mock fs is loaded
+    require('mock-fs');
+
     // Create the mocha test
     const mocha = new Mocha(testRunnerConfig);
     const testsRoot = path.resolve(__dirname);

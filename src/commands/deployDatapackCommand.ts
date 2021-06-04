@@ -6,7 +6,7 @@ import { DatapackResultCollection } from 'lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from 'commands/datapackCommand';
 import { forEachAsyncParallel } from 'lib/util/collection';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
-import DatapackDeployService from 'lib/vlocity/datapackDeployService';
+import DatapackDeployService from 'lib/vlocity/datapackDeployer';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 
 export default class DeployDatapackCommand extends DatapackCommand {

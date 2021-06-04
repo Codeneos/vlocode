@@ -7,13 +7,13 @@ import Timer from 'lib/util/timer';
 import { AsyncEventEmitter } from 'lib/util/events';
 import { mapGetOrCreate } from 'lib/util/collection';
 import { LifecyclePolicy, injectable } from 'lib/core';
+import { Iterable } from 'lib/util/iterable';
 import RecordBatch, { RecordBatchOptions } from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
-import { DependencyResolver, DatapackRecordDependency } from './datapackDeployService';
+import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
-import { Iterable } from 'lib/util/iterable';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;

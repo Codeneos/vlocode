@@ -5,11 +5,11 @@ import * as fs from 'fs-extra';
 import { getDocumentBodyAsString } from 'lib/util/fs';
 import * as DatapackUtil from 'lib/vlocity/datapackUtil';
 import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
-import DatapackLoader, { CachedFileSystem } from 'lib/vlocity/datapackLoader';
+import DatapackLoader from 'lib/vlocity/datapackLoader';
 import { filterUndefined } from 'lib/util/collection';
 import { substringAfterLast } from 'lib/util/string';
+import { container } from 'lib/core';
 import { DatapackCommand } from './datapackCommand';
-
 
 export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
@@ -26,7 +26,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
     }
 
     protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; increment?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
-        const datapackLoader = new DatapackLoader(new CachedFileSystem());
+        const datapackLoader = container.get(DatapackLoader);
         const datapackHeaders = await DatapackUtil.getDatapackHeadersInWorkspace();
         const loadedDatapacks = new Array<VlocityDatapack>();
 

@@ -1,4 +1,4 @@
-import { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployService';
+import { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
 import { VlocityUITemplateSpec } from './vlocityUITemplate';
 import { VlocityOmniScriptSpec } from './omniScript';
 import { VlocityActionSpec } from './vlocityAction';

@@ -9,9 +9,6 @@ vlocode.selectOrg:
 vlocode.refreshDatapack:
   title: 'Vlocity: Refresh Datapack(s)'
   group: v_vlocity
-  when: 
-   - explorerResourceIsFolder && resourcePath in vlocode.datapacks
-   - resourceDirname in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -19,9 +16,6 @@ vlocode.refreshDatapack:
 vlocode.deployDatapack:
   title: 'Vlocity: Deploy Datapack(s)'
   group: v_vlocity  
-  when: 
-   - explorerResourceIsFolder && resourcePath in vlocode.datapacks
-   - resourceDirname in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -29,9 +23,6 @@ vlocode.deployDatapack:
 vlocode.openSalesforce:
   title: 'Vlocity: Open in Salesforce'
   group: v_vlocity
-  when: 
-   - explorerResourceIsFolder && resourcePath in vlocode.datapacks
-   - resourceDirname in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -39,18 +30,12 @@ vlocode.openSalesforce:
 vlocode.renameDatapack:
   title: 'Vlocity: Rename Datapack'
   group: v_vlocity
-  when: 
-   - explorerResourceIsFolder && resourcePath in vlocode.datapacks
-   - resourceDirname in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
 vlocode.cloneDatapack:
   title: 'Vlocity: Clone Datapack'
   group: v_vlocity
-  when: 
-   - explorerResourceIsFolder && resourcePath in vlocode.datapacks
-   - resourceDirname in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context

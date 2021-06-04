@@ -14,11 +14,10 @@ import { container, LifecyclePolicy } from 'lib/core';
 import { asArray, groupBy } from 'lib/util/collection';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import * as uuid from 'uuid';
-import DatapackDeployment, { DatapackDeploymentEvents } from './datapackDeployment';
+import DatapackDeployment from './datapackDeployment';
 import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
-import { AsyncEventHandler } from 'lib/util/events';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 
 export type DatapackRecordDependency = {
@@ -50,7 +49,7 @@ export abstract class DatapackDeploymentSpec {
 }
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export default class VlocityDatapackDeployService {
+export default class VlocityDatapackDeployer {
 
     constructor(...args: any[]);
     constructor(
@@ -59,7 +58,7 @@ export default class VlocityDatapackDeployService {
         private readonly namespaceService: VlocityNamespaceService,
         private readonly config: VlocodeConfiguration,
         private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
-        private readonly logger: Logger = LogManager.get(VlocityDatapackDeployService)) {
+        private readonly logger: Logger = LogManager.get(VlocityDatapackDeployer)) {
         if (!this.schemaService) {
             throw new Error('Schema service is required constructor parameters and cannot be empty');
         }
@@ -153,7 +152,7 @@ export default class VlocityDatapackDeployService {
     }
 
     /**
-     * Get all deployed omniscripts from each deployment group.
+     * Get all deployed records from each deployment group.
      * @param groups Groups
      */
     private *getDeployedRecords(type: string, groups: Iterable<DatapackDeploymentRecordGroup>) : Generator<DatapackDeploymentRecord & { recordId: string }> {
