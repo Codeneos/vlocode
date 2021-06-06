@@ -31,7 +31,7 @@ jobs:
     - name: Commit Tag 
       if: github.event.inputs.bumpVersion == 'true'
       run: |
-        git config --global user.name '${{ env.GITHUB_ACTOR }}'
+        git config --global user.name 'CI'
         git config --global user.email 'curlybracket-nl@users.noreply.github.com'
         git commit -am "CI: bumping version to v${{ env.PACKAGE_VERSION }}"
         git tag -fa "v${{ env.PACKAGE_VERSION }}"
