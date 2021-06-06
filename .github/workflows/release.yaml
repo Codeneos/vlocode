@@ -27,7 +27,8 @@ jobs:
       run: | 
         npm ci
         npm run package  
-        echo "PACKAGE_VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
+        echo "PACKAGE_VERSION="$(node -p "require('./package.json').version") >> $GITHUB_ENV
+    - run: echo ${{ env.PACKAGE_VERSION }}
     # Create tag so it can be publihsed
     - name: Create Tag 
       if: github.event.inputs.bumpVersion == 'true'
