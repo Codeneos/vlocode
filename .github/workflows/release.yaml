@@ -4,7 +4,7 @@ on:
   workflow_dispatch:     
     inputs:
      bumpVersion:
-        description: 'Bump version'     
+        description: 'Bump Version'     
         required: true
         default: 'true'
 
@@ -38,7 +38,7 @@ jobs:
     - name: Commit Tag 
       if: github.event.inputs.bumpVersion == 'true'
       run: |
-        git config --global user.name '${{ GITHUB_ACTOR }}'
+        git config --global user.name '${{ env.GITHUB_ACTOR }}'
         git config --global user.email 'curlybracket-nl@users.noreply.github.com'
         git commit -am "Bump version to ${{ env.PACKAGE_VERSION }}"
         git push
