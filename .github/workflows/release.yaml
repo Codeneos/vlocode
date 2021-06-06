@@ -1,7 +1,12 @@
 name: Create release
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:     
+    inputs:
+     bumpVersion:
+        description: 'Bump version'     
+        required: true
+        default: 'true'
 
 jobs:
   release:
@@ -15,16 +20,28 @@ jobs:
         node-version: '14.x'  
     # Install deps, bump version and build the package
     - run: npm ci
-    - run: npm run bump
-    - name: Get release version
-      run: echo "::set-env name=PACKAGE_VERSION::$(node -p \"require('./package.json').version\")"
-    - run: npm run package  
+    - name: Bump version
+      if: github.event.inputs.bumpVersion == 'true'
+      run: npm run bump
+    - name: Build
+      run: | 
+        npm ci
+        npm run package  
+        echo "PACKAGE_VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
     # Create tag so it can be publihsed
-    - name: Create tag
+    - name: Create Tag 
+      if: github.event.inputs.bumpVersion == 'true'
       uses: tvdias/github-tagger@v0.0.1
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
         tag: "v${{ env.PACKAGE_VERSION }}"
+    - name: Commit Tag 
+      if: github.event.inputs.bumpVersion == 'true'
+      run: |
+        git config --global user.name '${{ GITHUB_ACTOR }}'
+        git config --global user.email 'curlybracket-nl@users.noreply.github.com'
+        git commit -am "Bump version to ${{ env.PACKAGE_VERSION }}"
+        git push
     # Create the release
     - name: Draft release
       uses: ncipollo/release-action@v1
@@ -33,5 +50,6 @@ jobs:
         artifact: '*.vsix'
         artifactErrorsFailBuild: true
         allowUpdates: true
+        prerelease: true
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: "v${{ env.PACKAGE_VERSION }}"
