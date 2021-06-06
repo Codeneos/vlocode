@@ -29,19 +29,14 @@ jobs:
         echo "PACKAGE_VERSION="$(node -p "require('./package.json').version") >> $GITHUB_ENV
     - run: echo ${{ env.PACKAGE_VERSION }}
     # Create tag so it can be publihsed
-    - name: Create Tag 
-      if: github.event.inputs.bumpVersion == 'true'
-      uses: tvdias/github-tagger@v0.0.1
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        tag: "v${{ env.PACKAGE_VERSION }}"
     - name: Commit Tag 
       if: github.event.inputs.bumpVersion == 'true'
       run: |
         git config --global user.name '${{ env.GITHUB_ACTOR }}'
         git config --global user.email 'curlybracket-nl@users.noreply.github.com'
-        git commit -am "Bump version to ${{ env.PACKAGE_VERSION }}"
-        git push
+        git commit -am "CI: bumping version to v${{ env.PACKAGE_VERSION }}"
+        git tag -fa "v${{ env.PACKAGE_VERSION }}"
+        git push --tags
     # Create the release
     - name: Draft release
       uses: ncipollo/release-action@v1
