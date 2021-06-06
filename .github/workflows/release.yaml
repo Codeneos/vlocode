@@ -25,7 +25,6 @@ jobs:
       run: npm run bump
     - name: Build
       run: npm run package
-    - run: echo ${{ env.PACKAGE_VERSION }}
     # Create tag so it can be publihsed
     - name: Commit Tag 
       if: github.event.inputs.bumpVersion == 'true'
