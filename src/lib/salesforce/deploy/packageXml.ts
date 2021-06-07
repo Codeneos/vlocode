@@ -31,8 +31,8 @@ export class PackageManifest {
     /**
      * Get all types that are mentioned in this package.
      */
-    public *types() {
-        yield *this.metadataMembers.keys();
+    public types() {
+        return [...this.metadataMembers.keys()];
     }
 
     /**

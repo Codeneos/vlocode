@@ -1,5 +1,5 @@
-const merge = require('webpack-merge').merge;
 const fs = require('fs');
+const merge = require('webpack-merge').merge;
 const yaml = require('js-yaml');
 
 function loadYaml(yamlSrc) {

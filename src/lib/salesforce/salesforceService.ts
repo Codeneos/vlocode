@@ -13,10 +13,7 @@ import { stripPrefix } from 'xml2js/lib/processors';
 import { injectable as injectable } from 'lib/core/inject';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 import Timer from 'lib/util/timer';
-import { registryData, MetadataType as SfdxMetadataType } from '@salesforce/source-deploy-retrieve';
-import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
-import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
-import { stringEquals, substringAfter } from 'lib/util/string';
+import { substringAfter } from 'lib/util/string';
 import QueryService from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
@@ -25,6 +22,7 @@ import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
 import { SalesforcePackageBuilder } from './deploymentPackageBuilder';
 import QueryBuilder from './queryBuilder';
+import { MetadataRegistry, MetadataType } from './metadataRegistry';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -168,17 +166,12 @@ interface SoapResponse {
     };
 }
 
-export interface MetadataType extends Partial<SfdxMetadataType>, jsforce.MetadataObject {
-    isBundle: boolean;
-    nameForMsgs?: string;
-    nameForMsgsPlural?: string;
-}
-
 @injectable()
 export default class SalesforceService implements JsForceConnectionProvider {
 
-    public readonly schema = new SalesforceSchemaService(this.connectionProvider);
-    public readonly lookupService = new SalesforceLookupService(this.connectionProvider, this.schema, this.queryService);
+    public readonly metadataRegistry = new MetadataRegistry();
+    public readonly schema = new SalesforceSchemaService(this);
+    public readonly lookupService = new SalesforceLookupService(this, this.schema, this.queryService);
     public readonly deploy = new SalesforceDeployService(this);
 
     constructor(
@@ -671,30 +664,15 @@ export default class SalesforceService implements JsForceConnectionProvider {
     /**
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX regsitery
      */
-    @cache()
     public getMetadataTypes() : MetadataType[] {
-        for (const metadataObject of metadataObjects as MetadataType[]) {
-            const metadataRegistryData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
-            if (metadataRegistryData) {
-                Object.assign(metadataObject, metadataRegistryData);
-                metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle';
-            } else {
-                metadataObject.isBundle = metadataObject.xmlName.endsWith('Bundle');
-            }
-            // Merge type def data
-            const metadataTypeDef = typeDefs[metadataObject.xmlName];
-            if (metadataTypeDef) {
-                Object.assign(metadataObject, metadataTypeDef);
-            }
-        }
-        return metadataObjects as MetadataType[];
+        return this.metadataRegistry.getMetadataTypes();
     }
 
     /**
      * When the metadata type is a known metadata type return the type.
      */
     public getMetadataType(type: string) {
-        return this.getMetadataTypes().find(t => stringEquals(type, t.xmlName));
+        return this.metadataRegistry.getMetadataType(type);
     }
 
     /**

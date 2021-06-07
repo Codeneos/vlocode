@@ -317,7 +317,7 @@ export class SalesforceDeployService {
      * @param token A cancellation token to stop the process
      */
     public async deployPackage(sfPackage: SalesforcePackage, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
-        return this.deploy(await sfPackage.generatePackage(), options, progress, token);
+        return this.deploy(await sfPackage.getBuffer(), options, progress, token);
     }
 
     /**

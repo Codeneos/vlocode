@@ -8,9 +8,10 @@ import { inject, injectable } from 'lib/core/inject';
 import { LifecyclePolicy } from 'lib/core/container';
 import { Iterable } from 'lib/util/iterable';
 import { FileSystem } from 'lib/core/fs';
+import * as chalk from 'chalk';
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage } from './deploymentPackage';
-import SalesforceService, { MetadataType } from './salesforceService';
+import { MetadataRegistry, MetadataType } from './metadataRegistry';
 
 export enum SalesforcePackageType {
     /**
@@ -32,15 +33,15 @@ export class SalesforcePackageBuilder {
 
     private readonly mdPackage: SalesforcePackage;
     private readonly parsedFiles = new Set<string>();
+    private readonly metadataRegistry = new MetadataRegistry();
 
     constructor(...args: any[]);
     constructor(
         public readonly apiVersion: string,
         public readonly type: SalesforcePackageType,
-        @inject('SalesforceService') private readonly salesforce: SalesforceService,
         @inject('FileSystem') private readonly fs: FileSystem,
         private readonly logger: Logger) {
-        this.mdPackage = new SalesforcePackage(apiVersion);
+        this.mdPackage = new SalesforcePackage(apiVersion, '', fs);
     }
 
     /**
@@ -64,10 +65,8 @@ export class SalesforcePackageBuilder {
 
             // parse folders recursively
             const fileStat = await this.fs.stat(file);
-
             if (fileStat == null) {
-                console.debug(`skip stats == null -> ${file}`);
-                continue; // non-accessible skip
+                throw new Error(`The specified file does not exist or is inaccessible: ${file}`);
             }
 
             if (fileStat.isDirectory()) {
@@ -87,13 +86,17 @@ export class SalesforcePackageBuilder {
 
             // get metadata type
             const xmlName = await this.getComponentType(file);
-            const metadataType = xmlName && this.getMetadataType(xmlName);
-            if (!xmlName || !metadataType) {
-                this.logger.warn(`Adding ${file} is not a known Salesforce metadata type`);
+            if (xmlName == 'Package' && path.basename(file).includes('destructive')) {
+                const destructiveChangeType = file.toLocaleLowerCase().includes('post') ? 'post' : 'pre';
+                await this.mdPackage.mergeDestructiveChanges(file, destructiveChangeType);
                 continue;
             }
 
-            console.debug(`${file} -> ${xmlName}`);
+            const metadataType = xmlName && this.getMetadataType(xmlName);
+            if (!xmlName || !metadataType) {
+                this.logger.warn(`Adding ${file} (xmlName: ${xmlName ?? '?'}) is not a known Salesforce metadata type`);
+                continue;
+            }
 
             if (metadataType.xmlName != xmlName) {
                 // Support for SFDX formatted source code
@@ -101,34 +104,13 @@ export class SalesforcePackageBuilder {
                 continue;
             }
 
-            const componentName = this.getPackageComponentName(file, metadataType);
-            const packagePath = this.getPackagePath(file, metadataType);
-
-            // add source
-            this.logger.verbose(`Adding ${path.basename(file)} as ${xmlName}`);
-
-            if (this.type === SalesforcePackageType.destruct) {
-                this.mdPackage.addDestructiveChange(xmlName, componentName);
-            } else {
-                this.mdPackage.add({ xmlName, componentName, packagePath, fsPath: file });
-            }
-
-            // also ensure metafile is added
-            const metaFile = `${file}-meta.xml`;
-            if (await this.fs.isFile(metaFile)) {
-                this.mdPackage.add({ xmlName, componentName, packagePath: `${packagePath}-meta.xml`, fsPath: metaFile });
-            }
-
             if (metadataType.isBundle) {
                 // Only Aura and LWC are bundled at this moment
                 // Classic metadata package all related files
-                const bundleFolder = path.dirname(file);
-                const bundleFiles = await this.fs.readDirectory(bundleFolder);
-                for (const relatedFile of bundleFiles.map(fileName => path.join(bundleFolder, fileName))) {
-                    if (await this.fs.isFile(relatedFile)) {
-                        this.mdPackage.add({ xmlName, componentName, packagePath: this.getPackagePath(relatedFile, metadataType), fsPath: relatedFile });
-                    }
-                }
+                await this.addBundledSources(path.dirname(file), metadataType);
+            } else {
+                // add source
+                await this.addSingleSourceFile(file, metadataType);
             }
         }
 
@@ -137,6 +119,49 @@ export class SalesforcePackageBuilder {
         }
 
         return this;
+    }
+
+    private async addBundledSources(bundleFolder: string, metadataType: MetadataType) {
+        const bundleFiles = await this.fs.readDirectory(bundleFolder);
+        const componentName = bundleFolder.split(/\\|\//g).pop()!;
+        for (const file of bundleFiles.map(fileName => path.join(bundleFolder, fileName))) {
+            if (await this.fs.isFile(file)) {
+                await this.addSingleSourceFile(file, metadataType, componentName);
+            }
+        }
+    }
+
+    private async addSingleSourceFile(file: string, metadataType: MetadataType, componentName?: string) {
+        if (!componentName) {
+            // resolve component name when not defined as input param
+            componentName = this.getPackageComponentName(file, metadataType);
+        }
+
+        if (this.type === SalesforcePackageType.destruct) {
+            this.mdPackage.addDestructiveChange(metadataType.xmlName, componentName);
+        } else {
+            const packagePath = this.getPackagePath(file, metadataType);
+            this.mdPackage.add({
+                xmlName: metadataType.xmlName,
+                componentName,
+                packagePath,
+                fsPath: file
+            });
+
+            // Make sure the meta file when it exists is also added to the deployment
+            const isMetaFile = file.endsWith('-meta.xml');
+            const isMetaFilePackaged = this.mdPackage.hasPackageData(`${packagePath}-meta.xml`);
+            if (!isMetaFile && !isMetaFilePackaged && await this.fs.isFile(`${file}-meta.xml`)) {
+                this.mdPackage.add({
+                    xmlName: metadataType.xmlName,
+                    componentName,
+                    packagePath: `${packagePath}-meta.xml`,
+                    fsPath: `${file}-meta.xml`
+                });
+            }
+        }
+
+        this.logger.verbose(`Added ${path.basename(file)} (${componentName}) as [${chalk.green(metadataType.xmlName)}]`);
     }
 
     /**
@@ -251,7 +276,7 @@ export class SalesforcePackageBuilder {
     }
 
     private getMetadataType(xmlName: string) {
-        const metadataTypes = this.salesforce.getMetadataTypes();
+        const metadataTypes = this.metadataRegistry.getMetadataTypes();
         return metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName));
     }
 
@@ -266,7 +291,7 @@ export class SalesforcePackageBuilder {
         const parentFolder = pathParts.pop();
         const fileSuffix = file.split('.').pop()?.toLocaleLowerCase();
 
-        for (const type of this.salesforce.getMetadataTypes()) {
+        for (const type of this.metadataRegistry.getMetadataTypes()) {
             if (type.strictDirectoryName) {
                 if (type.isBundle) {
                     // match parent folder only for bundles
@@ -330,7 +355,7 @@ export class SalesforcePackageBuilder {
             return this.getComponentTypeFromSource(metaFile);
         }
 
-        const metadataTypes = this.salesforce.getMetadataTypes();
+        const metadataTypes = this.metadataRegistry.getMetadataTypes();
         let xmlName = await this.getRootElementName(file);
 
         // Cannot detect certain metadata types properly so instead manually set the type
@@ -339,6 +364,9 @@ export class SalesforcePackageBuilder {
         } else if (xmlName && xmlName.endsWith('Folder')) {
             // Handles document Folder and other folder cases
             xmlName = xmlName.substr(0, xmlName.length - 6);
+        } else if (xmlName == 'Package') {
+            // Package are considered valid types for destructive changes
+            return xmlName;
         }
 
         const metadataType = xmlName && metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName!));

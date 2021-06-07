@@ -1,9 +1,9 @@
+
 import * as vscode from 'vscode';
-import { evalExpr, formatString } from 'lib/util/string';
+import { formatString } from 'lib/util/string';
 import * as open from 'open';
-import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
+import { MetadataType } from 'lib/salesforce/metadataRegistry';
 import MetadataCommand from './metadataCommand';
-import { MetadataType } from 'lib/salesforce/salesforceService';
 
 export default class ViewInSalesforceCommand extends MetadataCommand {
 
@@ -11,6 +11,7 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
         return this.openFileInSalesforce(args[0] || this.currentOpenDocument);
     }
 
+    /* eslint-disable no-template-curly-in-string */
     protected getUrlFormat(metadataType: MetadataType) {
         if (metadataType.xmlName == 'CustomObject') {
             return '/lightning/setup/ObjectManager/page?address=/${Id}';

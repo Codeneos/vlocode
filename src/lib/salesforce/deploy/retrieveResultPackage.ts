@@ -1,8 +1,8 @@
 
+import * as path from 'path';
 import * as fs from 'fs-extra';
 import type * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
-import * as path from 'path';
 
 interface ExtendedFileProperties extends jsforce.FileProperties {
     fullFileName: string,

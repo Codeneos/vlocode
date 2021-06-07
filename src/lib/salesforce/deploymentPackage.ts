@@ -2,10 +2,9 @@
 import * as path from 'path';
 import * as constants from '@constants';
 import * as xml2js from 'xml2js';
-import * as fs from 'fs-extra';
 import * as ZipArchive from 'jszip';
 import { Iterable } from 'lib/util/iterable';
-import { getDocumentBody, getDocumentBodyAsString } from 'lib/util/fs';
+import { FileSystem } from 'lib/core';
 import { PackageManifest } from './deploy/packageXml';
 
 interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer }
@@ -35,11 +34,13 @@ export class SalesforcePackage {
 
     constructor(
         public readonly apiVersion: string,
-        private readonly packageDir: string = '') {
+        private readonly packageDir: string,
+        private readonly fs: FileSystem) {
         if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
             throw new Error(`Invalid API version: ${apiVersion}`);
         }
     }
+
     public add(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
         this.addManifestEntry(entry.xmlName, entry.componentName);
         this.setPackageData(entry.packagePath, {
@@ -121,7 +122,7 @@ export class SalesforcePackage {
      * @param type Type of changes
      */
     public async mergeDestructiveChanges(sourceFile: string, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
-        const items = (await xml2js.parseStringPromise(await fs.readFile(sourceFile))).Package;
+        const items = (await xml2js.parseStringPromise(await this.fs.readFileAsString(sourceFile))).Package;
         for (const packageType of items.types) {
             const xmlName = packageType.name[0];
             for (const member of packageType.members) {
@@ -167,7 +168,7 @@ export class SalesforcePackage {
             return;
         }
         if (!data.data) {
-            data.data = await getDocumentBodyAsString(data.fsPath!);
+            data.data = await this.fs.readFile(data.fsPath!);
         }
         return data.data;
     }
@@ -205,14 +206,15 @@ export class SalesforcePackage {
     /**
      * Builds the ZipArchive from the current package and returns the package archive
      */
-    private async buildPackage(): Promise<ZipArchive> {
-        this.generateMissingMetaFiles();
+    public async generateArchive(): Promise<ZipArchive> {
         const packageZip = new ZipArchive();
         const xmlPackage = this.manifest.toXml(this.apiVersion);
-        packageZip.file(path.posix.join(this.packageDir, 'package.xml'), xmlPackage);
+        if (this.manifest.types().length > 0) {
+            packageZip.file(path.posix.join(this.packageDir, 'package.xml'), xmlPackage);
+        }
 
         if (this.destructiveChanges.pre.count() > 0) {
-            packageZip.file(path.posix.join(this.packageDir, 'destructiveChanges.xml'),
+            packageZip.file(path.posix.join(this.packageDir, 'destructiveChangesPre.xml'),
                 this.destructiveChanges.pre.toXml(this.apiVersion));
         }
 
@@ -222,7 +224,7 @@ export class SalesforcePackage {
         }
 
         for (const [packagePath, { data, fsPath }] of this.packageData.entries()) {
-            packageZip.file(path.posix.join(this.packageDir, packagePath), data ?? await getDocumentBody(fsPath!));
+            packageZip.file(path.posix.join(this.packageDir, packagePath), data ?? await this.fs.readFile(fsPath!));
         }
 
         return packageZip;
@@ -276,10 +278,9 @@ export class SalesforcePackage {
      * @param zipFile target file.
      */
     public async savePackage(savePath: string): Promise<void> {
-        const zip = await this.buildPackage();
+        const zip = await this.generateArchive();
         return new Promise((resolve, reject) => {
             zip.generateNodeStream({ streamFiles: true, compressionOptions: { level: 8 } })
-                .pipe(fs.createWriteStream(savePath))
                 .on('finish', () => {
                     resolve();
                 }).on('error', err => {
@@ -292,8 +293,8 @@ export class SalesforcePackage {
      * Generate a nodejs buffer with compressed package zip that can be uploaded to Salesforce.
      * @param compressionLevel levle of compression
      */
-    public async generatePackage(compressionLevel: number = 0): Promise<Buffer> {
-        return (await this.buildPackage()).generateAsync({
+    public async getBuffer(compressionLevel: number = 0): Promise<Buffer> {
+        return (await this.generateArchive()).generateAsync({
             type: 'nodebuffer',
             compression: 'DEFLATE',
             compressionOptions: {

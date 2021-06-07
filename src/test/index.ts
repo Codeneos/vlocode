@@ -2,11 +2,15 @@ import * as path from 'path';
 import { promisify } from 'util';
 import * as Mocha from 'mocha';
 import * as glob from 'glob';
+import 'source-map-support/register';
+
+const isDebuggerAttached = /--debug|--inspect/.test(process.execArgv.join(' '));
 
 const testRunnerConfig : Mocha.MochaOptions = {
     ui: 'bdd',
-    useColors: true,
-    reporter: 'mocha-multi-reporters',
+    useColors: !isDebuggerAttached,
+    reporter: isDebuggerAttached ? 'spec' : 'mocha-multi-reporters',
+    timeout: isDebuggerAttached ? 0 : 2000,
     reporterOptions: {
         reporterEnabled: 'spec, mocha-junit-reporter, mocha-sonarqube-reporter',
         mochaJunitReporterReporterOptions: {

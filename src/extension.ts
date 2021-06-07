@@ -1,5 +1,8 @@
 const startTime = Date.now(); // Track start up performance
 
+// Easier debugging with source maps
+import 'source-map-support/register';
+
 import OnSavedEventHandler from 'events/onSavedEventHandler';
 import HandleSalesforceFileDeleted from 'events/onFileDeleted';
 import HandleTriggerCreated from 'events/onTriggerCreated';
@@ -23,6 +26,7 @@ import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { ApexLogSymbolProvider } from 'symbolProviders/apexLogSymbolProvider';
 import { lazy } from 'lib/util/lazy';
 import { WorkspaceContextDetector } from 'lib/workspaceContextDetector';
+import { MetadataDetector } from 'lib/salesforce/metadataDetector';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -163,7 +167,7 @@ class Vlocode {
 
         // watch for changes        
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', file => file.toLowerCase().endsWith('_datapack.json')).initialize());
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', file => file.toLowerCase().endsWith('-meta.xml')).initialize());
+        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', new MetadataDetector().getFilter()).initialize());
 
         // track activation time
         this.logger.focus();

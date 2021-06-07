@@ -99,7 +99,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
             this.logger.info(`Probing workspace ${workspace.name} (${workspace.uri}) for ${this.editorContextKey}...`);
             const timer = new Timer();
             const workspaceFiles = await this.getApplicableFiles(workspace.uri.fsPath);
-            this.logger.info(`Detected ${workspaceFiles.length} applicable files in workspace ${workspace.name} [${timer.stop()}]`);
+            this.logger.info(`Detected ${workspaceFiles.length} applicable files for context [${this.editorContextKey}] in workspace ${workspace.name} [${timer.stop()}]`);
             files.push(...workspaceFiles);
         }
         return files;

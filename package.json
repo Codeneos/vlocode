@@ -324,17 +324,17 @@
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.exportDatapack",
@@ -382,17 +382,17 @@
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.selectApiVersion",
@@ -500,32 +500,32 @@
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 }
             ],
             "editor/context": [
@@ -542,27 +542,27 @@
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath in vlocode.datapacks"
+                    "when": "resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.viewInSalesforce",
@@ -911,6 +911,7 @@
         "salesforce-alm": "^51.2.1",
         "sass.js": "^0.11.1",
         "sinon": "^9.2.4",
+        "source-map-support": "^0.5.19",
         "terser": "^5.6.0",
         "terser-webpack-plugin": "^5.1.1",
         "ts-loader": "^8.0.17",

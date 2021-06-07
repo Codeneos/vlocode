@@ -10,7 +10,7 @@ vlocode.refreshDatapack:
   title: 'Vlocity: Refresh Datapack(s)'
   group: v_vlocity
   when: 
-   - resourcePath in vlocode.datapacks
+    - resourcePath in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -19,7 +19,7 @@ vlocode.deployDatapack:
   title: 'Vlocity: Deploy Datapack(s)'
   group: v_vlocity  
   when: 
-   - resourcePath in vlocode.datapacks
+    - resourcePath in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -37,7 +37,7 @@ vlocode.renameDatapack:
   title: 'Vlocity: Rename Datapack'
   group: v_vlocity
   when: 
-   - resourcePath in vlocode.datapacks
+    - resourcePath in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -45,7 +45,7 @@ vlocode.cloneDatapack:
   title: 'Vlocity: Clone Datapack'
   group: v_vlocity
   when: 
-   - resourcePath in vlocode.datapacks
+    - resourcePath in vlocode.datapacks
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -59,7 +59,7 @@ vlocode.buildParentKeyFiles:
   title: 'Vlocity: Repair Datapack dependencies'
   group: v_vlocity
   when: 
-   - resourcePath in vlocode.datapacks
+    - resourcePath in vlocode.datapacks
   menus:
     - menu: commandPalette
 
@@ -107,7 +107,7 @@ vlocode.admin.clearPlatformCache:
 vlocode.deployMetadata:
   title: 'Salesforce: Deploy'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: vlocodeSalesforceSupport && resourcePath in vlocode.metadata
   menus:    
     - menu: commandPalette      
     - menu: editor/context
@@ -115,7 +115,7 @@ vlocode.deployMetadata:
 vlocode.refreshMetadata:
   title: 'Salesforce: Refresh'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: vlocodeSalesforceSupport && resourcePath in vlocode.metadata
   menus:
     - menu: commandPalette            
     - menu: editor/context
@@ -123,7 +123,7 @@ vlocode.refreshMetadata:
 vlocode.destroyMetadata:
   title: 'Salesforce: Delete'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: vlocodeSalesforceSupport && resourcePath in vlocode.metadata
   menus:
     - menu: commandPalette      
     - menu: editor/context

@@ -3,13 +3,13 @@ import { unique, filterUndefined } from 'lib/util/collection';
 import { Iterable } from 'lib/util/iterable';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import MetadataCommand from './metadataCommand';
-import { MetadataType } from 'lib/salesforce/salesforceService';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 import { PackageManifest } from 'lib/salesforce/deploy/packageXml';
 import { stringEquals } from 'lib/util/string';
 import { MapLike } from 'typescript';
 import { DescribeGlobalSObjectResult, FileProperties } from 'jsforce';
 import * as path from 'path';
+import { MetadataType } from 'lib/salesforce/metadataRegistry';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce

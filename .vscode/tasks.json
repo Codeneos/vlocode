@@ -4,6 +4,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "type": "shell",
+            "label": "build-docker-test",
+            "command": "docker build ./docker/test -t vlocodetester",
+        },
+        {
+            "type": "shell",
+            "label": "run-docker-test",
+            "command": "docker run --rm -it --entrypoint 'bash' -w /vlocode -v ${PWD}:/vlocode vlocodetester",
+        },
+        {
             "type": "npm",
             "script": "watch",
             "isBackground": true,

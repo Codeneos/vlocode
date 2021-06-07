@@ -13,6 +13,7 @@
             "args": [
                 "",
                 "--disable-extensions",
+                "--trace-deprecation",
                 "--extensionDevelopmentPath=${workspaceFolder}"
             ],
             "outFiles": [
