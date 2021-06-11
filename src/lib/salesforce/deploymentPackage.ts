@@ -209,9 +209,7 @@ export class SalesforcePackage {
     public async generateArchive(): Promise<ZipArchive> {
         const packageZip = new ZipArchive();
         const xmlPackage = this.manifest.toXml(this.apiVersion);
-        if (this.manifest.types().length > 0) {
-            packageZip.file(path.posix.join(this.packageDir, 'package.xml'), xmlPackage);
-        }
+        packageZip.file(path.posix.join(this.packageDir, 'package.xml'), xmlPackage);
 
         if (this.destructiveChanges.pre.count() > 0) {
             packageZip.file(path.posix.join(this.packageDir, 'destructiveChangesPre.xml'),

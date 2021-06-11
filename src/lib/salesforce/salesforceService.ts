@@ -496,12 +496,23 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * Deletes all Developers for All users from the server and returns te number of delete log entries as number.
      */
     public async clearDeveloperLogs() {
-        const ids = (await this.query<DeveloperLogRecord>('Select Id From ApexLog')).map(record => record.id);
-        const connection = await this.getJsForceConnection();
-        if (ids.length > 0) {
-            await connection.tooling.delete('ApexLog', ids);
+        const [ { logCount } ] = (await this.query<{ logCount: number }>('Select count(Id) logCount From ApexLog'));
+        if (logCount == 0) {
+            return 0;
         }
-        return ids.length;
+        const connection = await this.getJsForceConnection();
+        let logsDeleted = 0;
+        while(true) {
+            // Query and delete logs in chunks to avoid overloading the server
+            const ids = (await this.query<DeveloperLogRecord>('Select Id From ApexLog limit 100')).map(record => record.id);
+            if (ids.length == 0) {
+                break;
+            }
+            this.logger.info(`Deleting ${logsDeleted + ids.length}/${logCount} debug logs from the server...`);
+            await connection.tooling.delete('ApexLog', ids);
+            logsDeleted += ids.length;
+        }
+        return logsDeleted;
     }
 
     /**

@@ -283,6 +283,41 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).equals('myClass');
             });
         });
+        describe('#settings', () => {
+            it('should add all settings as Setting metadata type', async () => {
+                const settingsFsMock = new MemoryFileSystem({
+                    // Non deployable Files
+                    'main/default/app/settings/Account.settings': buildXml('AccountSettings'),
+                    'main/default/app/settings/Address.settings': buildXml('AddressSettings'),
+                    'main/default/app/settings/BusinessHours.settings': buildXml('BusinessHoursSettings'),
+                });
+
+                const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.deploy, settingsFsMock, Logger.null);
+                await packageBuilder.addFiles([
+                    'main/default/app/settings/Account.settings',
+                    'main/default/app/settings/Address.settings',
+                    'main/default/app/settings/BusinessHours.settings'
+                ]);
+
+                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+
+                expect(filesAdded.length).equals(3);
+                expect(filesAdded).includes.members([
+                    'main/default/app/settings/Account.settings',
+                    'main/default/app/settings/Address.settings',
+                    'main/default/app/settings/BusinessHours.settings'
+                ]);
+                expect(manifest.types.length).equals(1);
+                expect(manifest.types[0].name).equals('Settings');
+                expect(manifest.types[0].members.length).equals(3);
+                expect(manifest.types[0].members).members([
+                    'Account',
+                    'Address',
+                    'BusinessHours'
+                ]);
+            });
+        });
         describe('#destructiveChanges', () => {
             it('should add changes to deployment as-is', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.deploy, mockFs, Logger.null);

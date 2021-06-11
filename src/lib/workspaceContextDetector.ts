@@ -1,4 +1,5 @@
 import path = require('path');
+import { clearTimeout, setTimeout } from 'timers';
 import * as constants from '@constants';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
@@ -22,6 +23,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private contextFiles = new Array<string>();
     private workspaceFolderWatcher: vscode.Disposable;
     private workspaceFileWatcher: vscode.FileSystemWatcher;
+    private scheduledContextUpdate?: NodeJS.Timeout;
 
     /**
      * Create a new WorkspaceContextDetector with the specified configuration.
@@ -53,7 +55,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
             for (const addedWorkspace of e.added) {
                 this.contextFiles.push(...await this.getApplicableFiles(addedWorkspace.uri.fsPath));
             }
-            await this.updateContext();
+            this.scheduleContextUpdate();
         });
 
         this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, true, false);
@@ -69,12 +71,12 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
             if (newFiles.length > 0) {
                 this.contextFiles.push(...newFiles);
-                await this.updateContext();
+                this.scheduleContextUpdate();
             }
         });
 
         this.contextFiles.push(...await this.getApplicableFoldersInWorkspace());
-        await this.updateContext();
+        this.scheduleContextUpdate();
 
         return this;
     }
@@ -83,7 +85,15 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         this.contextFiles = this.contextFiles.filter(file => file.startsWith(filePath));
     }
 
+    private scheduleContextUpdate() {
+        if (this.scheduledContextUpdate) {
+            clearTimeout(this.scheduledContextUpdate);
+        }
+        this.scheduledContextUpdate = setTimeout(() => this.updateContext(), 50);
+    }
+
     private async updateContext() {
+        this.scheduledContextUpdate = undefined;
         const timer = new Timer();
         const folders = {};
         for (const fullPath of this.contextFiles) {

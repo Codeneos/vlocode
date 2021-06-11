@@ -54,7 +54,6 @@ node_modules/webdriverio
 node_modules/@types
 node_modules/@sinonjs
 *.json
-*.js
 *.yaml
 .*
 !package.json

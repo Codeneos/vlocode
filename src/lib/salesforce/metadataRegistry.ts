@@ -5,7 +5,6 @@ import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { MetadataObject } from 'jsforce';
 import { singletonMixin } from 'lib/util/singleton';
 import { injectable } from 'lib/core';
-import { arrayMapPush } from 'lib/util/collection';
 
 export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
     isBundle: boolean;
@@ -22,7 +21,6 @@ export class MetadataRegistry {
     private readonly suffixes = new Map<string, MetadataType[]>();
 
     constructor() {
-        console.debug('Init');
         // Init metadata
         for (const metadataObject of metadataObjects.map(md => Object.assign({}, md) as MetadataType)) {
             const sfdxRegistryData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
@@ -32,17 +30,20 @@ export class MetadataRegistry {
             } else {
                 metadataObject.isBundle = metadataObject.xmlName.endsWith('Bundle');
             }
+
             // Merge type def data
             const metadataTypeDef = typeDefs[metadataObject.xmlName];
             if (metadataTypeDef) {
                 Object.assign(metadataObject, metadataTypeDef);
             }
+
             // Store in registry
             this.registry.push(metadataObject);
             if (this.types.has(metadataObject.xmlName.toLowerCase())) {
                 console.debug(`XML Name already in-use: ${metadataObject.xmlName.toLowerCase()}`);
                 continue;
             }
+
             this.types.set(metadataObject.xmlName.toLowerCase(), metadataObject);
             if (metadataObject.childXmlNames) {
                 metadataObject.childXmlNames.forEach(childType => {
@@ -51,9 +52,6 @@ export class MetadataRegistry {
                     }
                     this.types.set(childType.toLowerCase(), metadataObject);
                 });
-            }
-            if (metadataObject.suffix) {
-                arrayMapPush(this.suffixes, metadataObject.suffix.toLowerCase(), metadataObject);
             }
         }
     }
@@ -69,7 +67,7 @@ export class MetadataRegistry {
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
     public getMetadataSuffixes() : string[] {
-        return [...this.suffixes.keys()];
+        return [... Object.keys(registryData.suffixes)];
     }
 
     /**
@@ -78,7 +76,7 @@ export class MetadataRegistry {
      * @returns 
      */
     public isMetadataSuffix(suffix: string) {
-        return this.suffixes.has(suffix.toLowerCase());
+        return registryData.suffixes[suffix.toLowerCase()] !== undefined;
     }
 
     /**
@@ -91,11 +89,12 @@ export class MetadataRegistry {
     }
 
     /**
-     * Get the metadata type info based on file suffix
+     * Get the primary Metadata type for a given file suffix
      * @param suffix File suffix without .
      * @returns 
      */
-    public getMetadataTypesBySuffix(suffix: string) {
-        return this.suffixes.get(suffix.toLowerCase());
+    public getMetadataTypeBySuffix(suffix: string) {
+        const metadataType = registryData.suffixes[suffix.toLowerCase()];
+        return metadataType && this.getMetadataType(metadataType);
     }
 }

@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.15.2",
+    "version": "0.15.3",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.53.0"
+        "vscode": "^1.56.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -867,7 +867,7 @@
         "@types/sinon": "^9.0.10",
         "@types/terser-webpack-plugin": "^5.0.2",
         "@types/uuid": "^8.3.0",
-        "@types/vscode": "^1.53.0",
+        "@types/vscode": "^1.56.0",
         "@types/webpack": "^4.41.26",
         "@types/webpack-merge": "^4.1.5",
         "@types/xml2js": "^0.4.8",
@@ -921,7 +921,7 @@
         "typescript": "^4.2.2",
         "uuid": "^8.3.2",
         "vlocity": "^1.14.0",
-        "vsce": "^1.91.0",
+        "vsce": "^1.93.0",
         "vscode-languageclient": "^7.0.0",
         "vscode-test": "^1.5.1",
         "webpack": "^5.24.3",

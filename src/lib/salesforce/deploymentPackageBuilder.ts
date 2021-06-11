@@ -286,10 +286,10 @@ export class SalesforcePackageBuilder {
             return xmlName;
         }
 
+        // Strict directory name check
         const pathParts = file.split(/\\|\//g).slice(0, -1);
         const folder = pathParts.pop();
         const parentFolder = pathParts.pop();
-        const fileSuffix = file.split('.').pop()?.toLocaleLowerCase();
 
         for (const type of this.metadataRegistry.getMetadataTypes()) {
             if (type.strictDirectoryName) {
@@ -301,12 +301,13 @@ export class SalesforcePackageBuilder {
                 } else if (folder == type.directoryName) {
                     return type.xmlName;
                 }
-            } else {
-                // Suffix match only when strictDirectoryName == false 
-                if (type.suffix?.toLocaleLowerCase() == fileSuffix){
-                    return type.xmlName;
-                }
             }
+        }
+
+        // Suffix check
+        const fileSuffix = file.split('.').pop()?.toLocaleLowerCase();
+        if (fileSuffix) {
+            return this.metadataRegistry.getMetadataTypeBySuffix(fileSuffix)?.xmlName;
         }
 
         // const fileLowerCase = file.fsPath.toLowerCase();
