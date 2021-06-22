@@ -139,6 +139,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
             newValue = newValue.catch(err => {
                 logger.debug(`Delete cached promise due to exception (key: ${key})`, err);
                 cache.delete(key);
+                throw err;
             });
         }
 

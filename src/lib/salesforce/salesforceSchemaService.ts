@@ -134,11 +134,12 @@ export default class SalesforceSchemaService {
         const salesforcePath : any[] = [];
         const pathSplit = path.split('.');
         for (let i = 0; i < pathSplit.length; i++) {
-            const prop = pathSplit[i];
+            const propertyName = pathSplit[i];
+            const normalizedPropertyName = normalizeSalesforceName(propertyName);
             const fields = await this.getSObjectFields(type);
-            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizeSalesforceName(prop));
+            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizedPropertyName || field.relationshipName && normalizeSalesforceName(field.relationshipName) == normalizedPropertyName);
             if (!field) {
-                throw new Error(`Unable to resolve salesforce field path; unknown property ${prop} on type ${type}`);
+                throw new Error(`Unable to resolve salesforce field path; no such salesforce field: ${type}.${propertyName}`);
             }
             const isLastField = i == pathSplit.length - 1;
             if (field.type == 'reference' && !isLastField) {
@@ -149,7 +150,7 @@ export default class SalesforceSchemaService {
                 type = field.referenceTo[0];
             } else {
                 if (!isLastField) {
-                    throw new Error(`Unable to resolve salesforce full field path; unknown property ${prop} on type ${type} is not a reference field`);
+                    throw new Error(`Unable to resolve salesforce full field path; unknown property ${propertyName} on type ${type} is not a reference field`);
                 }
                 salesforcePath.push(field.name);
             }

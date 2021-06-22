@@ -27,6 +27,7 @@ export default abstract class VlocodeConfiguration extends BaseConfiguration {
     compileOnBuild: boolean;
     logInTerminal: boolean;
     deploymentMode: 'direct' | 'compatibility';
+    conditionalContextMenus: boolean;
     deploy: VlocodeVlocityDeployConfiguration;
     salesforce: VlocodeSalesforceConfiguration;
 }

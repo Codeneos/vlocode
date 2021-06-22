@@ -69,6 +69,11 @@ export class Logger {
                 return;
             }
         }
+
+        if (level == LogLevel.error) {
+            console.error(...args.filter(arg => typeof arg === 'string' || arg instanceof Error));
+        }
+
         this.writeEntry({
             category: this.name,
             level,

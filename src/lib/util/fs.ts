@@ -57,3 +57,42 @@ export async function readDirectory(filePath: fs.PathLike) {
     }
     return fs.readdir(filePath);
 }
+
+/**
+ * Platform agnostic method to get the folder name from a path string (dirname); returns the folder of the path treating both / as well as \\ as directory separators.
+ * @param pathLike path like string
+ * @returns Folder path of a path like string
+ */
+export function directoryName(pathLike: string) {
+    const pathParts = pathLike.split(/[\\/]/g);
+    if (pathParts.length == 1) {
+        return '.';
+    } else if (pathParts.length == 2 && (pathParts[0] == '/' || pathParts[0] == '\\')) {
+        return path.sep;
+    }
+    return pathParts.slice(0, -1).join(path.sep);
+}
+
+/**
+ *  Platform agnostic method to get the file name or basename of a path treating both / as well as \\ as directory separators.
+ * @param pathLike path like string
+ * @returns Basename of a path with the file suffix
+ */
+export function fileName(pathLike: string) {
+    const pathParts = pathLike.split(/[\\/]/g);
+    return pathParts[pathParts.length - 1];
+}
+
+/**
+ * Get the file suffix without . from a file name; returns an empty string when the file has no suffix
+ * @param pathLike Path like string
+ * @returns File suffix without . and an empty string when there is no suffix
+ */
+export function fileSuffix(pathLike: string) {
+    const basename = fileName(pathLike);
+    const suffixSplit = basename.indexOf('.');
+    if (suffixSplit >= 0) {
+        return basename.substring(suffixSplit + 1);
+    }
+    return '';
+}

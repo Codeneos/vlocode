@@ -5,6 +5,7 @@ import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
 import { Iterable } from 'lib/util/iterable';
 import { FileSystem } from 'lib/core';
+import { directoryName } from 'lib/util/fs';
 import { PackageManifest } from './deploy/packageXml';
 
 interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer }
@@ -66,6 +67,20 @@ export class SalesforcePackage {
 
     public addManifestEntry(xmlName: string, componentName: string) {
         this.manifest.add(xmlName, componentName);
+    }
+
+    /**
+     * Get source folder containing the specified component.
+     * @param componentType Type of the component
+     * @param componentName Name of the component
+     * @returns Source file folder or undefined when not found
+     */
+    public getSourceFolder(componentType: string, componentName: string) {
+        for (const [fsPath, sourceFileInfo] of this.sourceFileMap.entries()) {
+            if (sourceFileInfo.componentType == componentType && sourceFileInfo.name == componentName) {
+                return directoryName(fsPath);
+            }
+        }
     }
 
     /**
@@ -268,22 +283,6 @@ export class SalesforcePackage {
                 $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
                 ...(data || {})
             }
-        });
-    }
-
-    /**
-     * Save the package as zip file
-     * @param zipFile target file.
-     */
-    public async savePackage(savePath: string): Promise<void> {
-        const zip = await this.generateArchive();
-        return new Promise((resolve, reject) => {
-            zip.generateNodeStream({ streamFiles: true, compressionOptions: { level: 8 } })
-                .on('finish', () => {
-                    resolve();
-                }).on('error', err => {
-                    reject(err);
-                });
         });
     }
 

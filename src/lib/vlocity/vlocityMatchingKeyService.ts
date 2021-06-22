@@ -121,14 +121,14 @@ export default class VlocityMatchingKeyService {
                 return matchingKey;
             }
         }
-        const nameField = this.salesforce.schema.describeSObjectField(type, 'Name', false);
-        if (!nameField) {
-            throw new Error(`No matching key defined for type ${type} in Salesforce and default matching key field 'Name' does not exists.`);
-        }
+        // const nameField = this.salesforce.schema.describeSObjectField(type, 'Name', false);
+        // if (!nameField) {
+        //     throw new Error(`No matching key defined for type ${type} in Salesforce and default matching key field 'Name' does not exists.`);
+        // }
         // Default matching key
         return {
             sobjectType: type,
-            fields: [ 'Name' ],
+            fields: [],
             returnField: 'Id',
         };
     }

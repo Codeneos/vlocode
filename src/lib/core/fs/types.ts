@@ -35,7 +35,7 @@ export abstract class FileSystem {
      * @param path Path to check
      */
     public async pathExists(path: string): Promise<boolean> {
-        return this.stat(path) !== undefined;
+        return await this.stat(path) !== undefined;
     }
 
     /**

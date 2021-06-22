@@ -523,8 +523,6 @@ export class SalesforceDeployService {
                 return;
             }
             const files = stat.isDirectory() ? (await fs.readdir(pathStr)).map(file => path.join(pathStr, file)) : [ pathStr ];
-
-            // Let metaFiles = files.filter(name => constants.SF_META_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext)));
             const metaFiles = await filterAsyncParallel(files, file => this.hasXmlHeader(file), 4);
 
             if (recursive) {

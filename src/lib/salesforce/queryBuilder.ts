@@ -1,4 +1,3 @@
-import * as constants from '@constants';
 import { LogManager } from 'lib/logging';
 
 export interface QueryCondition {
@@ -29,11 +28,7 @@ export default class QueryBuilder {
 
     constructor(
         private readonly objectType: string,
-        private readonly vlocityNamespace: string = 'vlocity_namespace') {
-    }
-
-    private get logger() {
-        return LogManager.get(QueryBuilder);
+        private readonly logger = LogManager.get(QueryBuilder)) {
     }
 
     public select(...fields: (string | { name: string })[]) {
@@ -78,8 +73,8 @@ export default class QueryBuilder {
     }
 
     public getQueryString() : string {
-        let query = `select ${this.fields.join(',').replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)} `
-                  + `from ${this.objectType.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)}`;
+        let query = `select ${this.fields.join(',')} `
+                  + `from ${this.objectType}`;
         if (this.conditions.length > 0) {
             query += ` where ${this.conditions.map(c => this.formatCondition(c)).join(' and ')}`;
         }
@@ -94,11 +89,11 @@ export default class QueryBuilder {
     }
 
     private formatSortCondition(s: SortCondition) {
-        return `${s.field.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)} ${s.order}}`;
+        return `${s.field} ${s.order}}`;
     }
 
     private formatCondition(c: QueryCondition) {
-        return `${c.field.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace)} ${c.comparisonOperator} ${this.formatValue(c.value)}`;
+        return `${c.field} ${c.comparisonOperator} ${this.formatValue(c.value)}`;
     }
 
     private formatValue(value: any) {

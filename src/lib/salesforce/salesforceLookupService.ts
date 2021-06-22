@@ -6,6 +6,7 @@ import { injectable } from 'lib/core/inject';
 import { transform } from 'lib/util/object';
 import QueryService, { QueryResult } from './queryService';
 import SalesforceSchemaService from './salesforceSchemaService';
+import { joinLimit } from 'lib/util/string';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
@@ -18,6 +19,10 @@ export default class SalesforceLookupService {
         private readonly schemaService: SalesforceSchemaService = new SalesforceSchemaService(connectionProvider),
         private readonly queryService: QueryService = new QueryService(connectionProvider),
         private readonly logger: Logger = LogManager.get(SalesforceLookupService)) {
+    }
+
+    public async lookupSingle<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', useCache?: boolean): Promise<QueryResult<T, K> | undefined>  {
+        return (await this.lookup(type, filter, lookupFields, 1, useCache)).shift();
     }
 
     /**
@@ -49,12 +54,19 @@ export default class SalesforceLookupService {
      * `
      * @param lookupFields fields to lookup on the record, if not field list is provided this function will lookup All fields. 
      * Note that the Id field is always included in the results even when no fields are specified, or when a limited set is specified.
-     * @param limit limit the number of results to lookup, set to 0, null, undefined or false to not limit the lookup results.
+     * @param limit limit the number of results to lookup, set to 0, null, undefined or false to not limit the lookup results; when specified as 1 returns a single record instead of an array.
      * @param useCache when true instructs the QueryService to cache the result in case of a cache miss and otherwise retrive the cached response. The default behavhior depends on the @see QueryService configuration.
      */
     public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
         const filters = await Promise.all(asArray(filter).map(f => typeof f === 'string' ? Promise.resolve(f) : this.createWhereClause(type, f)));
-        return this.lookupWhere(type, filters.filter(f => !!f).map(f => `(${f})`).join(' or '), lookupFields || 'all', limit, useCache);
+        const results = new Array<QueryResult<T, K>>();
+        const filterChunks = joinLimit(filters.filter(f => f?.trim().length).map(f => `(${f})`), 8000, ' or '); // max query string is 10k characters
+
+        do {
+            results.push(...await this.lookupWhere<T, K>(type, filterChunks.shift(), lookupFields || 'all', limit, useCache));
+        } while(filterChunks.length);
+
+        return results;
     }
 
     private async lookupWhere<T, K extends PropertyAccessor = keyof T>(type: string, where?: string, selectFields: K[] | 'all' = 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]> {
@@ -79,8 +91,9 @@ export default class SalesforceLookupService {
         const realType = (await this.schemaService.describeSObject(type)).name;
         const limitClause = limit ? ` limit ${limit}` : '';
         const whereClause = where?.trim().length ? ` where ${  where}` : '';
-        this.logger.verbose(`LOOKUP: select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`);
-        return this.queryService.query(`select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`, useCache);
+        const queryString = `select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`;
+        this.logger.verbose(`LOOKUP: ${queryString}`);
+        return this.queryService.query(queryString, useCache);
     }
 
     private async createWhereClause<T>(type: string, values: { [P in keyof T]?: T[P] | Array<T[P]> | string } | undefined | null, relationshipName: string = '') : Promise<string> {

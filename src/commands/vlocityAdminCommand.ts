@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { VlocodeCommand, NAMESPACE_PLACEHOLDER } from '@constants';
+import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { CommandBase } from './commandBase';
 
@@ -81,7 +81,7 @@ class VlocityAdminCommand extends CommandBase {
     private async executeAnonymous(apex: string) : Promise<void> {
         this.logger.verbose('Execute Anonymous:', apex);
         const connection = await this.connectionProvider.getJsForceConnection();
-        const result = await connection.tooling.executeAnonymous(apex.replace(NAMESPACE_PLACEHOLDER, this.vlocode.datapackService.vlocityNamespace));
+        const result = await connection.tooling.executeAnonymous(apex.replace(NAMESPACE_PLACEHOLDER_PATTERN, this.vlocode.datapackService.vlocityNamespace));
         if (!result.compiled) {
             throw new Error(`${result.compileProblem} at ${result.line}:${result.column}`);
         }

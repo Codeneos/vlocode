@@ -23,14 +23,25 @@ export class VlocityNamespaceService {
     }
 
     /**
+     * Replace the name space with a placeholder string
+     * @param name text to update
+     */
+    public replaceWithPlaceholder(name: string) {
+        if (this.vlocityNamespace) {
+            return name.replace(new RegExp(`${this.vlocityNamespace}`, 'gi'), constants.NAMESPACE_PLACEHOLDER);
+        }
+        return name;
+    }
+
+    /**
      * Update the text replacing all namespace placeholders
      * @param name text to update
      */
     public updateNamespace(name: string) {
         if (this.vlocityNamespace) {
-            return name.replace(constants.NAMESPACE_PLACEHOLDER, this.vlocityNamespace);
+            return name.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, this.vlocityNamespace);
         }
-        return name.replace(constants.NAMESPACE_PLACEHOLDER, '').replace(/^__/, '');
+        return name.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, '').replace(/^__/, '');
     }
 
     /**

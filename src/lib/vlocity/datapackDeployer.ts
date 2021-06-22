@@ -3,10 +3,10 @@ import SalesforceService from 'lib/salesforce/salesforceService';
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import QueryService from 'lib/salesforce/queryService';
 import { LogManager, Logger } from 'lib/logging';
-import { Field } from 'jsforce';
+import { Connection, Field } from 'jsforce';
 import * as moment from 'moment';
 import Timer from 'lib/util/timer';
-import { DATAPACK_RESERVED_FIELDS } from '@constants';
+import { DATAPACK_RESERVED_FIELDS, NAMESPACE_PLACEHOLDER } from '@constants';
 import { isSalesforceId } from 'lib/util/salesforce';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { injectable } from 'lib/core/inject';
@@ -19,6 +19,8 @@ import DatapackDeploymentRecord from './datapackDeploymentRecord';
 import deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
+import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -51,19 +53,19 @@ export abstract class DatapackDeploymentSpec {
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export default class VlocityDatapackDeployer {
 
-    constructor(...args: any[]);
     constructor(
-        private readonly connectionProvider: SalesforceService,
-        private readonly matchingKeyService: VlocityMatchingKeyService,
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly objectLookupService: SalesforceLookupService,
         private readonly namespaceService: VlocityNamespaceService,
-        private readonly config: VlocodeConfiguration,
-        private readonly schemaService: SalesforceSchemaService = connectionProvider.schema,
-        private readonly logger: Logger = LogManager.get(VlocityDatapackDeployer)) {
-        if (!this.schemaService) {
-            throw new Error('Schema service is required constructor parameters and cannot be empty');
-        }
+        private readonly schemaService: SalesforceSchemaService,
+        private readonly logger: Logger) {
     }
 
+    /**
+     * Create new Datapack deployment
+     * @param datapacks Datapacks to deploy
+     * @returns Datapack deployment object
+     */
     public async createDeployment(datapacks: VlocityDatapack[]) {
         const local = container.new();
         local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
@@ -88,6 +90,30 @@ export default class VlocityDatapackDeployer {
     }
 
     /**
+     * Disable or enable all Vlocity triggers.
+     * @param enable sets all triggers
+     */
+    private async setVlocityTriggerState(newTriggerState: boolean) {
+        const timer = new Timer();
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const triggerSetupObject = await this.schemaService.describeSObject(`${NAMESPACE_PLACEHOLDER}__TriggerSetup__c`);
+        const triggerOnField = await this.schemaService.describeSObjectField(triggerSetupObject.name, 'IsTriggerOn__c');
+
+        const allTriggersName = 'AllTriggers';
+        const allTriggerSetup = await this.objectLookupService.lookupSingle(triggerSetupObject.name, { Name: allTriggersName }, [ 'Id', 'Name', triggerOnField.name ]);
+
+        if (!allTriggerSetup) {
+            // Triggers not setup; create new record to disable all triggers
+            await connection.insert(triggerSetupObject.name, { Name: allTriggersName, [triggerOnField.name]: newTriggerState });
+        } else if (allTriggerSetup[triggerOnField.name] != newTriggerState) {
+            // Update current trigger state when required
+            await connection.update(triggerSetupObject.name, { Id: allTriggerSetup.Id, [triggerOnField.name]: newTriggerState });
+        }
+
+        this.logger.verbose(`Update CustomSetting ${triggerSetupObject.name}.${triggerOnField.name} to '${newTriggerState}' [${timer.stop()}]`);
+    }
+
+    /**
      * Runs pre-processors on the specified datapack.
      * @param datapack Datapack to preprocess
      */
@@ -103,8 +129,8 @@ export default class VlocityDatapackDeployer {
      * Event handler running before the deployment 
      * @param datapackRecords Datapacks being deployed
      */
-    private beforeDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
-        // TODO: run APEX here
+    private async beforeDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
+        await this.setVlocityTriggerState(false);
         return this.runSpecFunction('beforeDeploy', datapackGroups);
     }
 
@@ -112,8 +138,8 @@ export default class VlocityDatapackDeployer {
      * Event handler running after the deployment
      * @param datapackRecords Datapacks that have been deployed
      */
-    private afterDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
-        // TODO: run APEX here
+    private async afterDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
+        await this.setVlocityTriggerState(true);
         return this.runSpecFunction('afterDeploy', datapackGroups);
     }
 
@@ -133,21 +159,12 @@ export default class VlocityDatapackDeployer {
         for (const [datapackType, recordGroups] of Object.entries(datapacksByType)) {
             const spec = this.getDeploySpec(datapackType);
             const specFunc = spec?.[type as string];
-            if (!specFunc) {
-                continue;
+            if (specFunc) {
+                await specFunc.call(spec, {
+                    recordGroups,
+                    getDeployedRecords: (type: string) => this.getDeployedRecords(type, recordGroups)
+                });
             }
-
-            const event: DatapackDeploymentEvent = {
-                recordGroups,
-                getDeployedRecords: type => this.getDeployedRecords(type, recordGroups)
-            };
-            await specFunc.call(spec, event);
-
-            // Split in equal slices
-            // while(values.length > 0) {
-            //     const slice = values.splice(0, 50);
-            //     await specFunc.call(spec, slice);
-            // }
         }
     }
 

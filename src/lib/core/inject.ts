@@ -18,7 +18,7 @@ export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
  * determines how and when the service is created. 
  * @param options Constructions options for the service
  */
-export function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) {
+export function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) : (ctor: T) => any {
     const lifecycle = options?.lifecycle || LifecyclePolicy.singleton;
     const services = asArray(options?.provides ?? []);
 

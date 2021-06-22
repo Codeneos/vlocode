@@ -3,7 +3,7 @@ const startTime = Date.now(); // Track start up performance
 // Easier debugging with source maps
 import 'source-map-support/register';
 
-import OnSavedEventHandler from 'events/onSavedEventHandler';
+import OnSavedEventHandler from 'events/onFileSaved';
 import HandleSalesforceFileDeleted from 'events/onFileDeleted';
 import HandleTriggerCreated from 'events/onTriggerCreated';
 import HandleClassCreated from 'events/onClassCreated';
@@ -76,7 +76,7 @@ class Vlocode {
         // Simple switch that decides how to log
         const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode')));
         const outputChannelWriter = lazy(() => this.service.registerDisposable(new OutputChannelWriter('Vlocode')));
-        let logInTerminal = false;
+        let logInTerminal = this.service.config.logInTerminal;
 
         LogManager.registerWriter({
             write: entry => logInTerminal ? terminalWriter.write(entry) : outputChannelWriter.write(entry),
@@ -126,7 +126,7 @@ class Vlocode {
         this.logger.verbose('Verbose logging enabled');
 
         // Salesforce support
-        ConfigurationManager.watchProperties(this.service.config.salesforce, [ 'enabled' ], c => this.service.enableSalesforceSupport(c.enabled));
+        ConfigurationManager.watchProperties(this.service.config.salesforce, 'enabled', c => this.service.enableSalesforceSupport(c.enabled));
         if (this.service.config.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
@@ -165,9 +165,13 @@ class Vlocode {
             this.logger.warn(`Unable to register symbol provider for APEX logs: ${err}`);
         }
 
+        // Watch conditionalContextMenus for changes
+        ConfigurationManager.watchProperties(this.service.config, 'conditionalContextMenus',
+            config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
+
         // watch for changes        
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', file => file.toLowerCase().endsWith('_datapack.json')).initialize());
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', new MetadataDetector().getFilter()).initialize());
+        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
 
         // track activation time
         this.logger.focus();

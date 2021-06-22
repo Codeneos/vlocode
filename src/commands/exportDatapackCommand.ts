@@ -68,7 +68,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
     private getExportQuery(datapackType: string, vlocityNamespace?: string) : string {
         if (exportQueryDefinitions[datapackType]) {
             return exportQueryDefinitions[datapackType].query
-                .replace(constants.NAMESPACE_PLACEHOLDER, vlocityNamespace || this.datapackService.vlocityNamespace);
+                .replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, vlocityNamespace || this.datapackService.vlocityNamespace);
         }
         throw new Error(`Cannot get export query for unknown datapack type: ${datapackType}`);
     }
@@ -87,7 +87,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         const datapackOptions = Object.values(exportQueryDefinitions).filter(queryDef => queryDef.query).map(
             queryDef => ({
                 label: queryDef.VlocityDataPackType,
-                detail: queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER, 'vlocity'),
+                detail: queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, 'vlocity'),
                 datapackType: queryDef.VlocityDataPackType
             })
         );

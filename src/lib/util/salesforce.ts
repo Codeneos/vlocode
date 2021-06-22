@@ -1,5 +1,4 @@
 
-import * as constants from '@constants';
 import { stringEquals } from 'lib/util/string';
 import { cacheFunction } from './cache';
 
@@ -96,15 +95,6 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
 }
 
 /**
- * Checks if the specified file name is a known Salesforce metadata file.
- * @param fileName file name to check
- */
-export function isSalesforceMetadataFile(fileName: string) : boolean {
-    return true;// constants.SF_META_EXTENSIONS.some(ext => fileName.endsWith(ext));
-}
-
-
-/**
  * Normalizes a Salesforce field or class name by removing the namespace prefix, dropping the __c postfix and replacing
  * any underscores in the middle of the name.
  */
@@ -116,7 +106,7 @@ export const normalizeSalesforceName = cacheFunction((name: string) : string => 
         strippedName = normalizeName(strippedName);
     }
     // Ensure we keep the __r for relationship fields
-    // or whne the relationship field has an id postfix
+    // or when the relationship field has an id postfix
     if (name.toLowerCase().endsWith('id__r')) {
         return strippedName.replace(/id$/i, '');
     } else if (name.toLowerCase().endsWith('__r')) {

@@ -14,6 +14,10 @@ import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer
 import DatapackDeploymentRecord, { DeploymentStatus } from './datapackDeploymentRecord';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import QueryService from 'lib/salesforce/queryService';
+import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
+import { NAMESPACE_PLACEHOLDER } from '@constants';
+import QueryBuilder from 'lib/salesforce/queryBuilder';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -51,7 +55,6 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly recordBatchOptions: RecordBatchOptions,
-        private readonly namespaceService: VlocityNamespaceService,
         private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
         super();
     }
@@ -147,26 +150,6 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         return [...(this.recordGroups.get(datapackKey) ?? [])];
     }
 
-    /**
-     * Disable or enable all Vlocity triggers.
-     * @param enabled sets all triggers
-     */
-    private async setVlocityTriggerState(connection: Connection, enabled: boolean) {
-        const timer = new Timer();
-        // await connection.tooling.executeAnonymous(`
-        //     vlocity_cmt__TriggerSetup__c allVlocityTriggers = vlocity_cmt__TriggerSetup__c.getInstance('AllTriggers');
-        //     allVlocityTriggers.vlocity_cmt__IsTriggerOn__c = ${enabled};
-        //     update allVlocityTriggers; 
-        // `);
-
-        const result = await connection.upsert('vlocity_cmt__TriggerSetup__c', {
-            Name: 'AllTriggers',
-            vlocity_cmt__IsTriggerOn__c: true
-        }, 'Name');
-
-        this.logger.verbose(`Set Vlocity trigger state ${enabled} [${timer.stop()}]`);
-    }
-
     private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>) {
         // prepare batch
         const batch = new RecordBatch(this.schemaService, this.recordBatchOptions);
@@ -213,7 +196,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
             if (datapackRecord.isPending) {
                 datapackRecord.updateStatus(DeploymentStatus.InProgress);
             } else {
-                throw new Error(`Dataoack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
+                throw new Error(`Datapack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
             }
 
             // Figure out which record-groups are getting deployed; we trigger the post deploy event only 
@@ -234,7 +217,6 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         const connection = await this.connectionProvider.getJsForceConnection();
         const newGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.isStarted());
         await this.emit('beforeDeployGroup', newGroups, { hideExceptions: true });
-        //await this.setVlocityTriggerState(connection, false);
 
         try {
             this.logger.log(`Deploying ${datapackRecords.size} records...`);

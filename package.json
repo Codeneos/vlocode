@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.15.3",
+    "version": "0.15.5",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -314,27 +314,27 @@
                 {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.exportDatapack",
@@ -343,7 +343,7 @@
                 {
                     "command": "vlocode.buildParentKeyFiles",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.buildDatapack",
@@ -382,17 +382,17 @@
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.selectApiVersion",
@@ -490,79 +490,79 @@
                 {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.renameDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 }
             ],
             "editor/context": [
                 {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.openSalesforce",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
-                    "when": "resourcePath in vlocode.datapacks"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourcePath in vlocode.metadata"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.viewInSalesforce",
@@ -750,12 +750,12 @@
                     "type": "string",
                     "pattern": "^\\d{2,3}\\.\\d$",
                     "examples": [
-                        "38.0",
-                        "45.0",
-                        "46.0",
-                        "47.0"
+                        "48.0",
+                        "49.0",
+                        "50.0",
+                        "51.0"
                     ],
-                    "default": "47.0",
+                    "default": "51.0",
                     "markdownDescription": "The API version used for Salesforce deployments and refresh operations. Invalid API versions will cause all Salesforce related commands to fail."
                 },
                 "vlocity.salesforce.deployOnSave": {
@@ -783,7 +783,7 @@
                 },
                 "vlocity.salesforce.developerLogsAutoRefresh": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "markdownDescription": "Auto refresh the Salesforce logs panel when the panel is visible \n\n> **Note** This setting only has effect for Developer instances; for production instances the logs panel needs to be refreshed manually"
                 },
                 "vlocity.logLevel": {
@@ -833,6 +833,11 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "When enabled the deployment process will use the bulk API for uploading records when the total record type for a single SObject surpassed the value configured as `bulkApiThreshold`"
+                },
+                "vlocity.conditionalContextMenus": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "When enabled context menu options on the workspace-explorer and editor are displayed only when applicable; when enabled Vlocode monitors your workspace folders and keeps track of a list of files which are either Salesforce metadata of Vlocity datapacks. If you disabled this both Vlocity and Salesforce context menu options will always be visible. __Note: if you don't see any context menu options disable this.__"
                 }
             }
         }

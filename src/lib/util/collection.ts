@@ -182,7 +182,7 @@ export function asArray<T>(...elements: Array<T[] | T | Iterable<T>>) : T[] {
     for (const element of elements) {
         if (Array.isArray(element)) {
             results.push(...element);
-        } else if (Iterable.isIterable(element)) {
+        } else if (typeof element !== 'string' && Iterable.isIterable(element)) {
             results.push(...element);
         } else {
             results.push(element);
@@ -212,3 +212,24 @@ export function last<T>(array: Array<T>): T | undefined {
     return array.length ? array[array.length - 1] : undefined;
 }
 
+/**
+ * Intersect the elements of tow arrays, returns a new array with only the elements present in both arrays.
+ * @param source source array
+ * @param target Target array
+ */
+export function intersect<T>(source: Array<T>, target: Array<T>): Array<T> {
+    const intersected = new Array<T>();
+    source.forEach(element => target.indexOf(element) != -1 && intersected.push(element));
+    return intersected;
+}
+
+/**
+ * Returns a new array with the elements source not present in the target array
+ * @param target Target array
+ * @param source source array
+ */
+export function except<T>(source: Array<T>, target: Array<T>): Array<T> {
+    const excepted = new Array<T>();
+    source.forEach(element => target.indexOf(element) == -1 && excepted.push(element));
+    return excepted;
+}

@@ -83,31 +83,37 @@ export default class SfdxUtil {
     }
 
     public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {
-        const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
-        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
-        for (const authFile of authFiles) {
-            try {
-                const authInfo = await salesforce.AuthInfo.create( { username: path.parse(authFile).name });
-                const authFields = authInfo.getFields();
+        try {
+            // Wrap in try catch as both AuthInfo and Aliases can throw exceptions when SFDX is not initialized
+            // this avoid that and returns an yields an empty array instead
+            const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
+            const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
+            for (const authFile of authFiles) {
+                try {
+                    const authInfo = await salesforce.AuthInfo.create( { username: path.parse(authFile).name });
+                    const authFields = authInfo.getFields();
 
-                if (!authFields.orgId || !authFields.username) {
-                    this.logger.warn(`Skip authfile '${authFile}'; required fields missing`);
-                    continue;
+                    if (!authFields.orgId || !authFields.username) {
+                        this.logger.warn(`Skip authfile '${authFile}'; required fields missing`);
+                        continue;
+                    }
+
+                    yield {
+                        orgId: authFields.orgId,
+                        accessToken: authFields.accessToken,
+                        instanceUrl: authFields.instanceUrl,
+                        loginUrl: authFields.loginUrl,
+                        username: authFields.username,
+                        clientId: authFields.clientId,
+                        refreshToken: authFields.refreshToken,
+                        alias: aliases?.getKeysByValue(authFields.username)[0]
+                    };
+                } catch(err) {
+                    this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
                 }
-
-                yield {
-                    orgId: authFields.orgId,
-                    accessToken: authFields.accessToken,
-                    instanceUrl: authFields.instanceUrl,
-                    loginUrl: authFields.loginUrl,
-                    username: authFields.username,
-                    clientId: authFields.clientId,
-                    refreshToken: authFields.refreshToken,
-                    alias: aliases?.getKeysByValue(authFields.username)[0]
-                };
-            } catch(err) {
-                this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
             }
+        } catch(err) {
+            this.logger.warn(`Error while listing SFDX info: ${err.message || err}`);
         }
     }
 

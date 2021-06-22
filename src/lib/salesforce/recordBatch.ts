@@ -184,7 +184,7 @@ export default class RecordBatch {
         this.logger.info(`Complete ${chunk.operation} of ${chunk.records.length} ${chunk.sobjectType} records (Collections API) [${timer.stop()}]`);
 
         // Process results
-        const failedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
+        const failedCount = results.reduce((sum, i) => sum + (i.success ? 0 : 1), 0);
         this.failedCount += failedCount;
         this.processedCount += results.length - failedCount;
 
@@ -231,7 +231,7 @@ export default class RecordBatch {
 
             // const results = await promisify(batchJob.execute)(chunk.records) as RecordResult[];
             // increment counters yield sp that parallel jobs can run
-            const batchFailedCount = results.reduce((sum, i) => i.success ? ++sum : sum, 0);
+            const batchFailedCount = results.reduce((sum, i) => sum + (i.success ? 0 : 1), 0);
             this.failedCount += -failedCount - (batchFailedCount);
             this.processedCount += -processedCount + (results.length - failedCount);
             return results;

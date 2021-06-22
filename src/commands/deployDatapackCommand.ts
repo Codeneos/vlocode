@@ -95,10 +95,9 @@ export default class DeployDatapackCommand extends DatapackCommand {
                     await deployment.start();
                 }
             });
-
         } catch (err) {
             this.logger.error(err);
-            throw 'Vlocode encountered an error while deploying the selected datapacks, see the log for details.';
+            throw new Error('Vlocode encountered an error while deploying the selected datapacks, see the log for details.');
         }
     }
 

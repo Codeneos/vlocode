@@ -49,6 +49,7 @@ class CommandExecutor implements Command {
             await Promise.resolve(this.command.execute.apply(this.command, args));
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {
+            console.error(err);
             const message = err.message || err;
             this.logger.error(`Command error: ${message}`);
             void vscode.window.showErrorMessage(message, 'Show').then(value => value === 'Show' && this.logger.focus());

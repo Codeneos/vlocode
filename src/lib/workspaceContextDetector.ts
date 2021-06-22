@@ -95,10 +95,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private async updateContext() {
         this.scheduledContextUpdate = undefined;
         const timer = new Timer();
-        const folders = {};
-        for (const fullPath of this.contextFiles) {
-            folders[fullPath] = true;
-        }
+        const folders = this.contextFiles.reduce((map, fullPath) => Object.assign(map, { [fullPath]: true }), {});
         await vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.${this.editorContextKey}`, folders);
         this.logger.verbose(`Updated context ${constants.CONTEXT_PREFIX}.${this.editorContextKey} [${timer.stop()}]`);
     }
@@ -106,7 +103,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private async getApplicableFoldersInWorkspace() {
         const files = new Array<string>();
         for (const workspace of vscode.workspace.workspaceFolders ?? []) {
-            this.logger.info(`Probing workspace ${workspace.name} (${workspace.uri}) for ${this.editorContextKey}...`);
+            this.logger.info(`Probing workspace ${workspace.name} (${workspace.uri.path}) for ${this.editorContextKey}...`);
             const timer = new Timer();
             const workspaceFiles = await this.getApplicableFiles(workspace.uri.fsPath);
             this.logger.info(`Detected ${workspaceFiles.length} applicable files for context [${this.editorContextKey}] in workspace ${workspace.name} [${timer.stop()}]`);

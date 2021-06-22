@@ -44,7 +44,9 @@ export function destroyAllSingletons() {
 export function singletonMixin<T extends { new (...args: any[]): {} }>(constructor: T) {
     const ident = constructor.name;
     const store = global[singletonSymbol] || (global[singletonSymbol] = {});
-    return class extends constructor {
+
+    // Ensure our newly created dependency shares the same class name as the parent,
+    return Object.defineProperty(class extends constructor {
         constructor(...args: any[]) {
             if (!store[ident]) {
                 super(...args);
@@ -52,5 +54,5 @@ export function singletonMixin<T extends { new (...args: any[]): {} }>(construct
             }
             return store[ident];
         }
-    };
+    }, 'name', { value: constructor.name, configurable: false, writable: false });
 }

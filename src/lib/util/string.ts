@@ -110,3 +110,29 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
     }
     return value;
 }
+
+/**
+ * Joins array parts together in one or more strings based on the max size of the string
+ * @param parts 
+ * @param delimiter 
+ * @param limit 
+ */
+export function joinLimit(parts: any[], limit: number, delimiter?: string) : string[] {
+    const result = new Array<any>();
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < parts.length; i++) {
+        const element = String(parts[i]);
+        const resultIndex = (result.length || 1) - 1;
+        // eslint-disable-next-line @typescript-eslint/tslint/config
+        if (result[resultIndex] === undefined) {
+            result[resultIndex] = element;
+        } else {
+            result[resultIndex] += (delimiter ?? '') + element;
+        }
+
+        if (result[resultIndex].length > limit && parts.length !== i-1) {
+            result.push(undefined);
+        }
+    }
+    return result;
+}

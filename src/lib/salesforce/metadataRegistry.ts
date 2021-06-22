@@ -4,7 +4,7 @@ import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
 import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { MetadataObject } from 'jsforce';
 import { singletonMixin } from 'lib/util/singleton';
-import { injectable } from 'lib/core';
+import { injectable, LifecyclePolicy } from 'lib/core';
 
 export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
     isBundle: boolean;
@@ -13,7 +13,7 @@ export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject 
 }
 
 @singletonMixin
-@injectable()
+@injectable( { lifecycle: LifecyclePolicy.singleton } )
 export class MetadataRegistry {
 
     private readonly registry = new Array<MetadataType>();

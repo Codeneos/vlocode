@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { unique, filterUndefined } from 'lib/util/collection';
-import { Iterable } from 'lib/util/iterable';
+import * as fs from 'fs-extra';
+import { except } from 'lib/util/collection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import MetadataCommand from './metadataCommand';
 
@@ -32,8 +32,8 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             void vscode.window.showWarningMessage('None of the selected files or folders are refreshable Salesforce Metadata');
             return;
         }
-        const componentNames = sfPackage.getComponentNames();
-        const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
+        const componentsRequested = sfPackage.getComponentNames();
+        const progressTitle = sfPackage.size() == 1 ? componentsRequested[0] : `${sfPackage.size()} components`;
         this.logger.info(`Refresh ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
 
         await this.vlocode.withActivity({
@@ -53,29 +53,42 @@ export default class RefreshMetadataCommand extends MetadataCommand {
                 throw new Error('Failed to refresh selected metadata.');
             }
 
-            const componentsNotFound = new Array<string>();
-            for (const { packagePath, fsPath } of sfPackage.sourceFiles()) {
-                if (fsPath) {
-                    try {
-                        await result.unpackFile(packagePath, fsPath);
-                    } catch(err) {
-                        this.logger.error(`${packagePath} -- ${err.message || err}`);
-                        componentsNotFound.push(packagePath);
-                    }
+            if (result.retrieveCount == 0) {
+                throw new Error('None of the requested components could be found in the target org.');
+            }
+
+            // Clear bundle folders so they are in-sync with what we get back from SF
+            // this is to make sure Aura and LWC folders are cleared and old files do not linger arround
+            // when they are not active any more
+            for (const component of result.components()) {
+                const sourceFolder = sfPackage.getSourceFolder(component.componentType, component.componentName);
+                if (!component.componentType.includes('bundle') && sourceFolder) {
+                    await fs.emptyDir(sourceFolder);
                 }
             }
 
-            // if (uniqueComponents.length - componentsNotFound.length <= 0) {
-            //     throw new Error('Unable to retrieve any of the requested components; it could be that the requested components are not deployed on the target org.');
-            // }
+            for (const component of result.components()) {
+                const sourceFolder = sfPackage.getSourceFolder(component.componentType, component.componentName);
 
-            if (componentsNotFound.length > 0) {
-                this.logger.warn(`Unable to refresh: ${componentsNotFound.join(', ')}`);
+                if (!sourceFolder) {
+                    // Skip components that were not requested
+                    continue;
+                }
+
+                // Extract each file into the appropriate source folder
+                for (const file of component.files) {
+                    await file.unpackToFolder(sourceFolder);
+                }
             }
-            // this.logger.info(`Refreshed ${uniqueComponents.filter(name => !componentsNotFound.includes(name)).join(', ')} succeeded`);
+
+            const componentsNotFound = except(componentsRequested, result.componentNames());
 
             if (componentsNotFound.length > 0) {
-                void vscode.window.showWarningMessage(`Refreshed ${componentNames.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);
+                this.logger.warn(`Unable to refresh the following components: ${componentsNotFound.join(', ')}`);
+            }
+
+            if (componentsNotFound.length > 0) {
+                void vscode.window.showWarningMessage(`Refreshed ${componentsRequested.length - componentsNotFound.length} out of ${componentsNotFound.length} components`);
             } else {
                 void vscode.window.showInformationMessage(`Refreshed ${progressTitle}`);
             }

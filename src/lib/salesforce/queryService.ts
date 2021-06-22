@@ -90,7 +90,7 @@ export default class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public bulkquery<T = any, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
+    public bulkQuery<T = any, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
         const sobjectType = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
         if (!sobjectType) {
             throw new Error(`SObject type not detected in query: ${query}`);
@@ -145,7 +145,7 @@ export default class QueryService {
      * Format the value of a field to match the Salesforce object schema value so it can be inserted or uploaded
      * @param type SObject Type
      * @param fieldName Field Name
-     * @param options Extra optiosn such as wrapping and escaping; both default to true
+     * @param options Extra options such as wrapping and escaping; both default to true
      */
     public static formatFieldValue(value: any, field: Field, options = { wrapStrings: true, escapeStrings: true }) : string {
         if (value === null || value === undefined) {

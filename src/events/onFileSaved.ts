@@ -2,14 +2,16 @@ import { EventHandlerBase } from 'events/eventHandlerBase';
 import * as vscode from 'vscode';
 import { VlocodeCommand } from '@constants';
 import { isPartOfDatapack } from 'lib/vlocity/datapackUtil';
-import { isSalesforceMetadataFile } from 'lib/util/salesforce';
+import { container } from 'lib/core';
+import { MetadataDetector } from 'lib/salesforce/metadataDetector';
 
-export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDocument> {
+export default class extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [
         '\\.vscode',
         '\\.sfdx',
         '\\.git'
     ];
+    private readonly metadataDetector = container.get(MetadataDetector);
 
     public get enabled() : boolean {
         if (!this.vloService.config.sfdxUsername) {
@@ -30,24 +32,39 @@ export default class OnSavedEventHandler extends EventHandlerBase<vscode.TextDoc
             return; // ignore these
         }
 
-        if (this.vloService.salesforceService && await this.vloService.salesforceService.isProductionOrg()) {
+        if (await this.vloService.salesforceService?.isProductionOrg()) {
             // Never auto deploy to production orgs
             return;
         }
 
         if (await isPartOfDatapack(document.fileName)) {
             return this.deployAsDatapack(document);
-        } else if(isSalesforceMetadataFile(document.fileName)) {
+        } else if(this.isSalesforceMetadata(document.fileName)) {
             return this.deployAsMetadata(document);
         }
     }
 
-    protected deployAsDatapack(document: vscode.TextDocument) : Promise<any> {
+    private isSalesforceMetadata(fileName: string) {
+        if (this.metadataDetector.isMetadataFile(fileName)) {
+            return true;
+        }
+
+        // check for Aura/LWC bundle
+        const folderParts = fileName.split(/[\\/]+/g);
+        if (folderParts.length > 3) {
+            const bundleCollectionPath = folderParts.slice(-3).shift();
+            if (bundleCollectionPath == 'lwc' || bundleCollectionPath == 'aura') {
+                return true;
+            }
+        }
+    }
+
+    private deployAsDatapack(document: vscode.TextDocument) : Promise<any> {
         this.logger.verbose(`Requesting datapack deploy for: ${document.uri.fsPath}`);
         return this.vloService.commands.execute(VlocodeCommand.deployDatapack, document.uri, null, false);
     }
 
-    protected async deployAsMetadata(document: vscode.TextDocument) : Promise<void> {
+    private async deployAsMetadata(document: vscode.TextDocument) : Promise<void> {
         if (!this.vloService.config.salesforce.enabled) {
             this.logger.warn('Skip deployment; enable Salesforce support in Vlocode configuration to deploy Salesforce metadata');
             return;
