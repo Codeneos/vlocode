@@ -16,8 +16,11 @@ async function bumpVersion(type: 'major' | 'minor' | 'patch' | string) {
     // What to bump
     if (type == 'major') {
         major++;
+        patch = 0;
+        minor = 0;
     } else if (type == 'minor') {
         minor++;
+        patch = 0;
     } else if (type == 'patch') {
         patch++;
     } else {
@@ -36,5 +39,6 @@ async function bumpVersion(type: 'major' | 'minor' | 'patch' | string) {
 }
 
 // Run update command
-const [ type ] = process.argv.slice(2);
+const [ type ] = process.argv.slice(-1);
+console.debug(process.argv.slice(-1));
 bumpVersion(type);
