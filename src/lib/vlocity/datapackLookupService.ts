@@ -1,6 +1,6 @@
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
-import { LogManager } from 'lib/logging';
+import { Logger, LogManager } from 'lib/logging';
 import * as constants from '@constants';
 import Timer from 'lib/util/timer';
 import { arrayMapPush, last } from 'lib/util/collection';
@@ -15,6 +15,7 @@ export class DatapackLookupService implements DependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();
     private readonly lastRefresh: Date = new Date(0);
+    private readonly singleWarnings = new Set<string>();
 
     constructor(
         private readonly vlocityNamespaceService: VlocityNamespaceService,
@@ -40,7 +41,7 @@ export class DatapackLookupService implements DependencyResolver {
         }
 
         if (Object.keys(filter).length == 0) {
-            this.logger.warn('None of the dependencies lookup fields have values; skipping lookup as it will fail');
+            this.logger.error(`Skipped lookup of the dependencies for ${dependency.VlocityDataPackType} (${dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey}) -- none of the dependencies is resolvable`);
             return;
         }
 
@@ -106,7 +107,6 @@ export class DatapackLookupService implements DependencyResolver {
         const filter = this.buildFilter(data, matchingFields);
 
         if (Object.keys(filter).length == 0) {
-            this.logger.warn(`Skipping lookup; none matching fields (${matchingFields.join(', ')}) for ${sobjectType} have values`);
             return;
         }
 
@@ -164,7 +164,7 @@ export class DatapackLookupService implements DependencyResolver {
             // Split up lookup in chunks @see batchSize records at a time - otherwise we might overflow our SOQL limit
             do {
                 const lookupEntries = entries.splice(0, batchSize);
-                const lookupFilters = lookupEntries.map(entry => this.buildFilter(entry, matchingFields));
+                const lookupFilters = lookupEntries.map(entry => this.buildFilter(entry, matchingFields)).filter(f => Object.keys(f).length);
                 const results = await this.lookupService.lookup(sobjectType, lookupFilters, [ 'Id', ...matchingFields ], undefined, false);
 
                 for (const rec of results) {
@@ -183,7 +183,7 @@ export class DatapackLookupService implements DependencyResolver {
                     }
 
                     if (lookupResults[resultsIndex]) {
-                        this.logger.error(`Duplicate match for lookup key ${lookupKey}; existing lookup ${lookupResults[resultsIndex]}; overwriting lookup result with ${rec.id}`);
+                        this.logger.warn(`Duplicate match for lookup key ${lookupKey}; existing lookup ${lookupResults[resultsIndex]}; overwriting lookup result with ${rec.id}`);
                     }
 
                     lookupResults[resultsIndex] = rec.id;
@@ -213,6 +213,10 @@ export class DatapackLookupService implements DependencyResolver {
             }
         }
 
+        if (Object.keys(filter).length == 0) {
+            this.logger.error(`None of ${fields.length} the matching key fields (${fields.join(', ')}) have values; this indicates a problem with your datapacks or your matching keys`, data);
+        }
+
         return filter;
     }
 
@@ -228,16 +232,26 @@ export class DatapackLookupService implements DependencyResolver {
 
     private async getMatchingFields(sobjectType: string, record: object) : Promise<string[]> {
         const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
-        if (matchingKey.fields.length) {
-            return matchingKey.fields;
+        const fields = new Array<string>();
+
+        if (!matchingKey.fields.length) {
+            // Always prefer global key as matching key for types without and matching keys defined
+            const globalKeyField = await this.schema.describeSObjectField(sobjectType, constants.GLOBAL_KEY_FIELD, false);
+            if (globalKeyField) {
+                if (record[constants.GLOBAL_KEY_FIELD] != null) {
+                    return [ constants.GLOBAL_KEY_FIELD ];
+                }
+                this.logger.error(`There is a problem with your datapack (${sobjectType}) -- ${constants.GLOBAL_KEY_FIELD} is NULL or empty:`, record);
+            } else {
+                this.logSingleWarning(`Object ${sobjectType} does not have matching keys, matching records against the target org will be inefficient. Create a VlocityMatchingKey__mdt record in Salesforce to improve reliability and prevent duplicate records.`);
+            }
         }
 
-        const fields = new Array<string>();
-        for (let field of Object.keys(record)) {
+        for (let field of (matchingKey.fields.length ? matchingKey.fields : Object.keys(record))) {
             const fieldDescribe = last((await this.schema.describeSObjectFieldPath(sobjectType, field, false)) || []);
             if (!fieldDescribe) {
                 // Exclude fields that do not exists on the target 
-                this.logger.error(`Matching field ${sobjectType}.${field} does not exists:`, record);
+                this.logSingleWarning(`Matching field ${sobjectType}.${field} does not exists:`, record);
                 continue;
             }
 
@@ -249,23 +263,23 @@ export class DatapackLookupService implements DependencyResolver {
                 if (fieldDescribe.calculatedFormula && this.isLookupFormula(fieldDescribe.calculatedFormula)) {
                     field = fieldDescribe.calculatedFormula;
                 } else if (isSalesforceId(record[field])) {
-                    this.logger.error(`Matching field ${sobjectType}.${field} is ignored due to non-resolvable formula definition:`, fieldDescribe.calculatedFormula);
+                    this.logSingleWarning(`Matching field ${sobjectType}.${field} is ignored due to non-resolvable formula definition:`, fieldDescribe.calculatedFormula);
                     continue;
                 }
             }
 
             if (!fieldDescribe.filterable) {
-                this.logger.error(`Matching field ${sobjectType}.${field} is ignored due to not being filterable (${fieldDescribe.type})`);
+                this.logSingleWarning(`Matching field ${sobjectType}.${field} is ignored due to not being filterable (${fieldDescribe.type})`);
                 continue;
             }
 
             // @ts-expect-error typo in jsforce.FieldInfo: should `field.autoNumber` and not `autonumber`
             if (fieldDescribe.autoNumber) {
-                this.logger.error(`Matching field ${sobjectType}.${field} is ignored for being an auto generate number (${fieldDescribe.type})`);
+                this.logSingleWarning(`Matching field ${sobjectType}.${field} is ignored for being an auto generate number (${fieldDescribe.type})`);
                 continue;
             }
 
-            fields.push(field);
+            fields.push(this.updateNamespace(field));
         }
 
         return fields;
@@ -330,5 +344,13 @@ export class DatapackLookupService implements DependencyResolver {
             this.lookupCache.set(sobjectType.toLowerCase(), cache = { refreshed: 0, entries: new Map() });
         }
         return cache;
+    }
+
+    private logSingleWarning(msg: string, ...args: any[]) {
+        if (this.singleWarnings.has(msg)) {
+            return;
+        }
+        this.singleWarnings.add(msg);
+        this.logger.warn(msg, ...args);
     }
 }

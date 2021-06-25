@@ -4,6 +4,7 @@ import { removeNamespacePrefix } from 'lib/util/salesforce';
 import { ManifestEntry, ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
 import { v4 as generateGuid } from 'uuid';
 import { LogManager } from '../logging';
+import { stringEquals } from 'lib/util/string';
 
 export type VlocityDatapackReference = {
     [key: string]: string;
@@ -60,6 +61,19 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             get: (target, name) => target.getProperty(name),
             set: (target, name, value) => target.setProperty(name, value),
         });
+    }
+
+    /**
+     * Deletes a property key from a datapack or any of it's embedded datapacks
+     * @param fullPath Full property path of the datapack property to delete
+     */
+    public deleteKey(fullPath : string) {
+        for (const [property,, owner, fullPropertyPath] of this.getProperties()) {
+            if (stringEquals(fullPropertyPath, fullPath)) {
+                // eslint-disable-next-line @typescript-eslint/tslint/config
+                delete owner[property];
+            }
+        }
     }
 
     public rename(name : string) {
@@ -170,20 +184,21 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
      * Recursively iterate over the properties of this datapack and it's child objects
      * @param object Object to iterate over
      */
-    private* getProperties(object: object = this.data) : Generator<[ string, string, any ]> {
+    private* getProperties(object: object = this.data, path?: string) : Generator<[ string, string, any, string ]> {
         for (const [key, value] of Object.entries(object)) {
+            const currentPropertyPath = path ? [path, key].join('.') : key;
             if (Array.isArray(value)) {
                 for (const arrayValue of value) {
                     if (typeof arrayValue === 'object') {
-                        yield* this.getProperties(arrayValue);
+                        yield* this.getProperties(arrayValue, currentPropertyPath);
                     } else {
-                        yield [ key, arrayValue, value ];
+                        yield [ key, arrayValue, value, currentPropertyPath ];
                     }
                 }
             } else if (typeof value === 'object') {
                 yield* this.getProperties(value);
             } else {
-                yield [ key, value, object ];
+                yield [ key, value, object, currentPropertyPath ];
             }
         }
     }

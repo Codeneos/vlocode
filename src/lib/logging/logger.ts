@@ -1,5 +1,6 @@
 import { LogLevel } from 'lib/logging';
 import { isPromise } from 'lib/util/async';
+import { lazy, lazyProperty } from 'lib/util/lazy';
 import LogManager from './logManager';
 
 export interface LogEntry {
@@ -11,8 +12,7 @@ export interface LogEntry {
 
 export type LogFilter = ( ops: {
     logger: Logger;
-    severity: LogLevel;
-    args: any[];
+    entry: LogEntry;
 }) => boolean;
 
 export interface LogWriter {
@@ -59,13 +59,15 @@ export class Logger {
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
 
     public write(level: LogLevel, ...args: any[]) : void {
+        const entry = this.createEntry(level, args);
+
         if (this.manager) {
             const logLevel = this.manager.getLogLevel(this.name);
             if (level < logLevel) {
                 return;
             }
             const filter = this.manager.getFilter(this.name);
-            if (filter && !filter({ logger: this, severity: level, args: args })) {
+            if (filter && !filter({ logger: this, entry })) {
                 return;
             }
         }
@@ -74,12 +76,15 @@ export class Logger {
             console.error(...args.filter(arg => typeof arg === 'string' || arg instanceof Error));
         }
 
-        this.writeEntry({
+        this.writeEntry(entry);
+    }
+
+    private createEntry(level: LogLevel, args: any[]) : LogEntry {
+        return lazyProperty({
             category: this.name,
             level,
-            time: new Date(),
-            message: args.map(this.formatArg).join(' ')
-        });
+            time: new Date()
+        }, 'message', () => args.map(this.formatArg).join(' '));
     }
 
     public writeEntry(entry: LogEntry) : void {

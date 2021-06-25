@@ -3,12 +3,13 @@ import { Logger } from 'lib/logging';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { stringEquals } from 'lib/util/string';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from 'vlocityExportDefinitions.yaml';
 import cache from 'lib/util/cache';
 import { removeNamespacePrefix } from 'lib/util/salesforce';
 import { injectable } from 'lib/core/inject';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import DatapackInfoService from './datapackInfoService';
+import * as embeddedMatchingFields from './data/extraMatchingFields.json';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
@@ -121,10 +122,7 @@ export default class VlocityMatchingKeyService {
                 return matchingKey;
             }
         }
-        // const nameField = this.salesforce.schema.describeSObjectField(type, 'Name', false);
-        // if (!nameField) {
-        //     throw new Error(`No matching key defined for type ${type} in Salesforce and default matching key field 'Name' does not exists.`);
-        // }
+
         // Default matching key
         return {
             sobjectType: type,
@@ -134,19 +132,22 @@ export default class VlocityMatchingKeyService {
     }
 
     private async loadAllMatchingKeys() : Promise<Map<string, VlocityMatchingKey>> {
-        const matchingKeys = [ ...await this.queryMatchingKeys(), ...await this.loadMatchingKeysFromQueryDefinitions() ];
+        const matchingKeys = [ ...await this.queryMatchingKeys(), ...this.loadExtraMatchingKeys() ];
         const values = new Map<string, VlocityMatchingKey>();
 
         for (const value of matchingKeys) {
-            values.set(value.sobjectType, value);
-
-            const objectWithoutPrefix = removeNamespacePrefix(value.sobjectType);
-            if (objectWithoutPrefix !== value.sobjectType) {
-                // Make matching keys accessible without namespace prefix
-                values.set(objectWithoutPrefix, value);
+            const currentMatchingKey = values.get(value.sobjectType);
+            if (currentMatchingKey) {
+                // Update current fields when empty
+                if (!currentMatchingKey.fields?.length) {
+                    (currentMatchingKey as any).fields = value.fields;
+                }
+            } else {
+                values.set(value.sobjectType, value);
+                values.set(removeNamespacePrefix(value.sobjectType), value);
             }
 
-            if (value.datapackType) {
+            if (value.datapackType && !values.has(value.datapackType)) {
                 // Make matching keys accessible through datapack type
                 values.set(value.datapackType, value);
             }
@@ -155,21 +156,35 @@ export default class VlocityMatchingKeyService {
         return values;
     }
 
+    private loadExtraMatchingKeys(): Array<VlocityMatchingKey> {
+        return (Object.entries(embeddedMatchingFields) as [ string, Partial<VlocityMatchingKey> ][])
+            .map(([type, key])=> ({
+                sobjectType: type,
+                fields: key.fields ?? [],
+                returnField: key.returnField || 'Id'
+            }));
+    }
+
     private async queryMatchingKeys(): Promise<Array<VlocityMatchingKey>> {
         this.logger.verbose('Querying matching keys from Salesforce');
 
         const matchingKeyResults = await this.salesforce.lookup('vlocity_namespace__DRMatchingKey__mdt', undefined, 'all');
-        const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
-            const fields = record.matchingKeyFields.split(',').map(s => s.trim());
-            const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
-            const datapackType = await this.datapackInfo.getDatapackType(record.objectAPIName);
-            return {
-                sobjectType: record.objectAPIName,
-                datapackType: datapackType,
-                fields: validFields,
-                returnField: record.returnKeyField
-            };
-        }));
+        const matchingKeyObjects = (await Promise.all(matchingKeyResults
+            .map(async record => {
+                const fields = record.matchingKeyFields.split(/;|,/).map(field => field.trim());
+                if (!fields.length) {
+                    this.logger.error(`Matching key ${record.name} (${record.Id}) does not have matching fields; this likely is a configuration mistake. Update the matching key record to have at least 1 field`);
+                }
+                const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
+                const datapackType = await this.datapackInfo.getDatapackType(record.objectAPIName);
+                return {
+                    sobjectType: record.objectAPIName,
+                    datapackType: datapackType,
+                    fields: validFields,
+                    returnField: record.returnKeyField
+                };
+            })
+        ));
 
         this.logger.log(`Loaded ${matchingKeyObjects.length} matching keys definitions from Salesforce`);
         return matchingKeyObjects;
@@ -189,8 +204,9 @@ export default class VlocityMatchingKeyService {
                 continue;
             }
             matchingKeys.push({
-                sobjectType, fields,
+                sobjectType,
                 datapackType: qd.VlocityDataPackType,
+                fields,
                 returnField: qd.matchingKey.returnField || 'Id'
             });
         }

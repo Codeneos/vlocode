@@ -6,7 +6,7 @@ import { groupBy } from 'lib/util/collection';
 import { createRecordProxy } from 'lib/util/salesforce';
 import { evalExpr } from 'lib/util/string';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from 'vlocityExportDefinitions.yaml';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';

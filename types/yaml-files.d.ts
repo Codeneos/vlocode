@@ -1,7 +1,7 @@
 /**
  * Defines the queries for accessing Vlocity objects in Salesforce.
  */
-declare module 'exportQueryDefinitions.yaml' {
+declare module 'vlocityExportDefinitions.yaml' {
     interface DatapackQueryDefinition {
         VlocityDataPackType: string
         query: string

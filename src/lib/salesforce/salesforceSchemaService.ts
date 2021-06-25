@@ -109,7 +109,7 @@ export default class SalesforceSchemaService {
      * @param type SObject Type
      * @param fieldName Field Name
      */
-    public async sObjectHasField(type: string, fieldName: string) : Promise<boolean> {
+    public async hasField(type: string, fieldName: string) : Promise<boolean> {
         return !!this.describeSObjectField(type, fieldName, false);
     }
 
@@ -118,9 +118,9 @@ export default class SalesforceSchemaService {
      * @param type SObject Type
      * @param fieldName Field Name
      */
-    public async sObjectGetFieldType(type: string, fieldName: string): Promise<jsforce.FieldType>
-    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<jsforce.FieldType | undefined>
-    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<jsforce.FieldType | undefined> {
+    public async getFieldType(type: string, fieldName: string): Promise<jsforce.FieldType>
+    public async getFieldType(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<jsforce.FieldType | undefined>
+    public async getFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<jsforce.FieldType | undefined> {
         return (await this.describeSObjectField(type, fieldName, throwWhenNotFound))?.type;
     }
 

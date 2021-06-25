@@ -5,7 +5,7 @@ import DatapackUtil from 'lib/vlocity/datapackUtil';
 import { evalExpr } from 'lib/util/string';
 import { groupBy } from 'lib/util/collection';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from 'vlocityExportDefinitions.yaml';
 import { addFieldsToQuery, normalizeSalesforceName } from 'lib/util/salesforce';
 import { injectable } from 'lib/core/inject';
 import { container } from 'lib/core/container';

@@ -11,7 +11,7 @@ import SalesforceService from 'lib/salesforce/salesforceService';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from 'vlocityExportDefinitions.yaml';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
 import { groupBy, mapAsync } from 'lib/util/collection';
 import { getDocumentBodyAsString } from 'lib/util/fs';
@@ -37,7 +37,7 @@ export interface ObjectEntry {
 
 type ObjectEntryWithId = ObjectEntry & { id: string };
 
-type QueryDefinitions = typeof import('exportQueryDefinitions.yaml');
+type QueryDefinitions = typeof import('vlocityExportDefinitions.yaml');
 
 export interface DatapackResult {
     key: string;

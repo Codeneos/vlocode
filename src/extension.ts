@@ -38,11 +38,11 @@ class VlocityLogFilter {
         return this.filter.bind(this);
     }
 
-    public filter({ logger, args }) {
+    public filter({ logger, entry }) {
         if (LogManager.getLogLevel(logger.name) >= LogLevel.verbose) {
             return true;
         }
-        return !this.vlocityLogFilterRegex.some(r => r.test(args.join(' ')));
+        return !this.vlocityLogFilterRegex.some(r => r.test(entry.message));
     }
 }
 

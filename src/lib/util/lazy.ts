@@ -33,3 +33,28 @@ export function lazy<T extends (...args: any[]) => any>(initializer: T, ...args:
         }
     }) as ReturnType<T>;
 }
+
+const lazyPropertyMap = Symbol('[[lazy]]');
+
+/**
+ * Define a Lazy property on an object which will be initialized once accessed for the first time.
+ * @param object Object
+ * @param property name of the property
+ * @param initializer property initializer
+ * @param args arguments
+ * @returns 
+ */
+export function lazyProperty<O extends object, T extends (...args: any[]) => any, P extends string>(object: O, property: P, initializer: T, ...args: Parameters<T>) : O & { [k in P]: ReturnType<T> }  {
+    if (!object[lazyPropertyMap]) {
+        object[lazyPropertyMap] = new Map<string, any>();
+    }
+    return Object.defineProperty(object, property, {
+        get: function() {
+            const lazyValues = object[lazyPropertyMap] as Map<string, any>;
+            if (!lazyValues.has(property)) {
+                lazyValues.set(property, initializer(...args));
+            }
+            return lazyValues.get(property);
+        }
+    }) as any;
+}

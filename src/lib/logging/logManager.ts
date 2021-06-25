@@ -19,7 +19,7 @@ export default class LogManager {
 
     public get<T>(type: (new (...args: any[]) => T) | string) : Logger {
         const name = typeof type === 'string' ? type : type.name;
-        return this.activeLoggers[name] || (this.activeLoggers[name] = this.createLogger(name));
+        return this.activeLoggers[name] || (this.activeLoggers[name] = this.create(name));
     }
 
     public setGlobalLogLevel(level: LogLevel) : void {
@@ -67,7 +67,7 @@ export default class LogManager {
         return this.logFilters[logName];
     }
 
-    private createLogger(logName: string) : Logger {
+    public create(logName: string) : Logger {
         return new Logger(this, logName, {
             write: entry => {
                 for (const writer of this.logWriters[logName] || this.logWriterChain) {

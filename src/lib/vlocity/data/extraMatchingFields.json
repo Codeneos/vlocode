@@ -1,0 +1,41 @@
+{
+    "%vlocity_namespace%__ContextMapping__c": {
+        "returnField": "Id",
+        "fields": [
+            "%vlocity_namespace%__GlobalKey__c",
+            "%vlocity_namespace%__ContextScopeId__c",
+            "%vlocity_namespace%__Dimension__c",
+            "%vlocity_namespace%__Destination__c",
+            "%vlocity_namespace%__Source__c"
+        ]
+    },
+    "%vlocity_namespace%__VlocityUILayout__c": {
+        "fields": [
+            "Name",
+            "%vlocity_namespace%__Version__c",
+            "%vlocity_namespace%__Author__c"
+        ]
+    },
+    "%vlocity_namespace%__VlocityUITemplate__c": {
+        "fields": [
+            "Name",
+            "%vlocity_namespace%__Version__c",
+            "%vlocity_namespace%__Author__c"
+        ]
+    },
+    "%vlocity_namespace%__VlocityCard__c": {
+        "fields": [
+            "Name",
+            "%vlocity_namespace%__Version__c",
+            "%vlocity_namespace%__Author__c"
+        ]
+    },
+    "%vlocity_namespace%__OmniScript__c": {
+        "fields": [
+            "%vlocity_namespace%__SubType__c",
+            "%vlocity_namespace%__Type__c",
+            "%vlocity_namespace%__Version__c",
+            "%vlocity_namespace%__Language__c"
+        ]
+    }
+}

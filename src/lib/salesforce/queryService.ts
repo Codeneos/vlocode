@@ -17,7 +17,7 @@ export default class QueryService {
 
     private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();
     private readonly recordFieldNames: WeakMap<any, Map<string, string | number | symbol>> = new WeakMap();
-    private queryCacheEnabled = true;
+    private queryCacheEnabled = false;
     private queryCacheDefault = false;
 
     constructor(
@@ -162,7 +162,7 @@ export default class QueryService {
             if (!value) {
                 return 'null';
             }
-            const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDThh:mm:ssZ';
+            const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm:ssZ';
             const date = moment(value);
             if (!date.isValid()) {
                 throw new Error(`Value is not a valid date: ${value}`);

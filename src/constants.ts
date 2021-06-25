@@ -16,6 +16,7 @@ export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 export const NAMESPACE_PLACEHOLDER = '%vlocity_namespace%';
 export const NAMESPACE_PLACEHOLDER_PATTERN = /(%|)vlocity_namespace(%|)/gi;
+export const GLOBAL_KEY_FIELD = `${NAMESPACE_PLACEHOLDER}__GlobalKey__c`;
 export const CONTEXT_PREFIX = 'vlocode';
 export const MD_XML_OPTIONS = {
     xmldec: { version: '1.0', encoding: 'UTF-8' },

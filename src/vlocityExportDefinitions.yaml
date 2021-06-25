@@ -1,7 +1,7 @@
 # include files -- processed by custom loader
 include: [ ./node_modules/vlocity/lib/querydefinition.yaml ]
 
-# Extend default configuration from querydefinition
+# Extend default configuration from Extra export defs
 VlocityUILayout:
   salesforceUrl:
     namespace: vlocity
@@ -12,8 +12,6 @@ VlocityUILayout:
     groupName: Name
     description: "Author__c + (Active__c ? (Author__c ? ' - ' : '') + 'Active' : '')"
     name: "'Version ' + (Version__c || 0)"
-  matchingKey: 
-    fields: [ Name, "%vlocity_namespace%__Version__c", "%vlocity_namespace%__Author__c" ]
 
 VlocityUITemplate:
   salesforceUrl:
@@ -21,8 +19,6 @@ VlocityUITemplate:
     path: "'/apex/' + namespace + '__uitemplatedesigner?id=' + id"
   query: Select Id, Name, %vlocity_namespace%__Version__c, %vlocity_namespace%__Author__c, %vlocity_namespace%__Active__c from %vlocity_namespace%__VlocityUITemplate__c
   <<: *basicGroupProps
-  matchingKey: 
-    fields: [ Name, "%vlocity_namespace%__Version__c", "%vlocity_namespace%__Author__c" ]
 
 VlocityCard:
   salesforceUrl:
@@ -30,8 +26,6 @@ VlocityCard:
     path: "'/apex/' + namespace + '__carddesignernew?id=' + id"
   query: SELECT Id, Name, LastModifiedDate, %vlocity_namespace%__Version__c, %vlocity_namespace%__Active__c, %vlocity_namespace%__Author__c FROM %vlocity_namespace%__VlocityCard__c
   <<: *basicGroupProps
-  matchingKey: 
-    fields: [ Name, "%vlocity_namespace%__Version__c", "%vlocity_namespace%__Author__c"  ]
 
 OmniScript:
   salesforceUrl:
@@ -42,12 +36,6 @@ OmniScript:
   groupKey: Type__c + SubType__c + Language__c
   groupName: Type__c+'/'+SubType__c+' ('+Language__c+')'  
   description: "(IsActive__c ? 'Active' : '')"
-  matchingKey: 
-    fields: 
-      - "%vlocity_namespace%__SubType__c"
-      - "%vlocity_namespace%__Type__c"
-      - "%vlocity_namespace%__Version__c"
-      - "%vlocity_namespace%__Language__c"
 
 IntegrationProcedure:
   salesforceUrl:
@@ -58,11 +46,6 @@ IntegrationProcedure:
   groupKey: Type__c + SubType__c
   groupName: Type__c + '/' + SubType__c
   description: "(IsActive__c ? 'Active' : null)"
-  matchingKey: 
-    fields: 
-      - "%vlocity_namespace%__SubType__c"
-      - "%vlocity_namespace%__Type__c"
-      - "%vlocity_namespace%__Version__c"
       
 DataRaptor:
   salesforceUrl:

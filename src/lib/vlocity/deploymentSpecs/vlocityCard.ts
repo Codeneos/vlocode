@@ -5,12 +5,10 @@ import { LifecyclePolicy } from 'lib/core/container';
 import { Logger } from 'lib/logging';
 import { VlocityDatapack } from '../datapack';
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@injectable({ lifecycle: LifecyclePolicy.singleton })
 export class VlocityCardSpec implements DatapackDeploymentSpec {
 
-    public constructor(
-        private readonly salesforceService: SalesforceService,
-        private readonly logger: Logger) {
+    constructor() {
     }
 
     public async preprocess(datapack: VlocityDatapack) {

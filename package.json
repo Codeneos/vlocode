@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.0",
+    "version": "0.16.1",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -812,7 +812,7 @@
                         "compatibility",
                         "direct"
                     ],
-                    "default": "compatibility",
+                    "default": "direct",
                     "enumDescriptions": [
                         "Use Vlocity Deployment library; maximizes compatibility at the cost of deployment speed",
                         "Directly load records using bulk or collections API; significantly faster then but still beta"

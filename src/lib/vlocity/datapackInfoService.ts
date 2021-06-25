@@ -85,7 +85,7 @@ export default class DatapackInfoService {
         const regex = new RegExp(`${removeNamespacePrefix(sobjectType)}`,'ig');
         const datapackInfo = (await this.getDatapacks()).find(dataPack => dataPack.sobjectType && regex.test(removeNamespacePrefix(dataPack.sobjectType)));
         if (!datapackInfo) {
-            this.logger.warn(`No Datapack with SObject '${sobjectType}' configured in Salesforce (see VlocityDataPackConfiguration object)`);
+            this.logger.verbose(`No Datapack with SObject '${sobjectType}' configured in Salesforce (see VlocityDataPackConfiguration object)`);
         }
         return datapackInfo?.datapackType;
     }
