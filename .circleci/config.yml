@@ -1,0 +1,58 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine. 
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+orbs:
+  node: circleci/node@4.1
+  sonarcloud: sonarsource/sonarcloud@1.0.2
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/node:lts-browsers
+    steps:
+      - checkout
+      - node/install-packages
+      - restore_cache:
+          keys: 
+            - vscode
+      - run:
+          name: Run tests
+          command: npm test
+      - save_cache:
+          key: vscode
+          paths:
+            - ".vscode"
+      - store_test_results:
+          path: junit.xml
+      - run:
+          name: Run eslint
+          command: npm run lint -- -o eslint-report.json --format json
+      - sonarcloud/scan
+  publish:
+    docker:
+      - image: cimg/node:lts-browsers
+    steps:
+      - checkout
+      - node/install-packages
+      - run:
+          name: Get version        
+          command: export PACKAGE_VERSION=$(node -p "require('./package.json').version")
+      - run:
+          name: Package and publish
+          command: npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
+
+workflows:
+  main: 
+    jobs:
+      - build-and-test:
+          context: sonarcloud
+      - publish:
+          context: vsce
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
