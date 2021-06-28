@@ -326,7 +326,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(1); // Inclues package.xml
+                expect(filesAdded.length).equals(2); // includes package.xml
                 expect(filesAdded).includes.members([ 'destructiveChangesPost.xml' ]);
                 expect(manifest.types.length).equals(0);
             });
@@ -340,7 +340,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(1);
+                expect(filesAdded.length).equals(2);
                 expect(filesAdded).includes.members([ 'destructiveChangesPost.xml' ]);
                 expect(manifest.types.length).equals(0);
             });
@@ -353,7 +353,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(1);
+                expect(filesAdded.length).equals(2);
                 expect(filesAdded).includes.members([ 'destructiveChangesPre.xml' ]);
                 expect(manifest.types.length).equals(0);
             });
@@ -368,7 +368,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(2);
+                expect(filesAdded.length).equals(3);
                 expect(filesAdded).includes.members([
                     'destructiveChangesPre.xml',
                     'destructiveChangesPost.xml'

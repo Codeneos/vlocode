@@ -7,7 +7,7 @@ import { LogLevel } from "../logLevels";
 export class DuplicateMessageFilter {
 
     private readonly displayedMessages = new Set<string>();
-    private resetTimeout: NodeJS.Timeout;
+    private resetTimeout: NodeJS.Timeout | number;
 
     constructor(private readonly appliesTo: LogLevel[] = [ LogLevel.error, LogLevel.warn ], private readonly resetTime = 5000) {
     }

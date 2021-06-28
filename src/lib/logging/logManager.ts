@@ -1,17 +1,16 @@
+import { MapLike } from 'typescript';
 import { LogFilter, Logger, LogWriter } from './logger';
 import { LogLevel } from './logLevels';
-
-interface LogManagerMap<T> { [logName: string]: T }
 
 /**
  * Manges the active logger and writers associated to them.
  */
 export default class LogManager {
 
-    private readonly activeLoggers : LogManagerMap<any> = {};
-    private readonly detailedLogLevels: LogManagerMap<LogLevel> = {};
-    private readonly logFilters: LogManagerMap<LogFilter> = {};
-    private readonly logWriters: LogManagerMap<LogWriter[]> = {};
+    private readonly activeLoggers : MapLike<any> = {};
+    private readonly detailedLogLevels: MapLike<LogLevel> = {};
+    private readonly logFilters: MapLike<LogFilter> = {};
+    private readonly logWriters: MapLike<LogWriter[]> = {};
     private readonly logWriterChain: LogWriter[] = [];
 
     constructor(private globalLogLevel: LogLevel) {
