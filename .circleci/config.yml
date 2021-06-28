@@ -22,22 +22,30 @@ jobs:
           name: Run eslint
           command: npm run lint -- -o eslint-report.json --format json
       - sonarcloud/scan
-  build-and-publish:
+  publish:
     docker:
       - image: cimg/node:lts-browsers
     steps:
       - checkout
       - node/install-packages
       - run:
-          name: Run tests
-          command: npm test
+          name: Get version        
+          command: export PACKAGE_VERSION=$(node -p "require('./package.json').version")
+      - run:
+          name: Package and publish
+          command: npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
 
 workflows:
-  # Below is the definition of your workflow.
-  # Inside the workflow, you provide the jobs you want to run, e.g this workflow runs the build-and-test job above.
-  # CircleCI will run this workflow on every commit.
-  # For more details on extending your workflow, see the configuration docs: https://circleci.com/docs/2.0/configuration-reference/#workflows
   main: 
     jobs:
       - build-and-test:
           context: sonarcloud
+      - publish:
+          context: vsce
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
