@@ -10,12 +10,16 @@ jobs:
   build-and-test:
     docker:
       - image: cimg/node:lts-browsers
+    environment:
+      TEST_RESULTS_FILE: test-results.xml
     steps:
       - checkout
       - node/install-packages
       - run:
           name: Run tests
           command: npm test      
+      - store_test_results:
+          path: test-results.xml
       - run:
           name: Run eslint
           command: npm run lint -- -o eslint-report.json --format json
@@ -37,4 +41,5 @@ workflows:
   # For more details on extending your workflow, see the configuration docs: https://circleci.com/docs/2.0/configuration-reference/#workflows
   main: 
     jobs:
-      - build-and-test
+      - build-and-test:
+          context: sonarcloud
