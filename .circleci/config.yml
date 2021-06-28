@@ -10,8 +10,6 @@ jobs:
   build-and-test:
     docker:
       - image: cimg/node:lts-browsers
-    environment:
-      TEST_RESULTS_FILE: test-results.xml
     steps:
       - checkout
       - node/install-packages
@@ -19,7 +17,7 @@ jobs:
           name: Run tests
           command: npm test      
       - store_test_results:
-          path: test-results.xml
+          path: junit.xml
       - run:
           name: Run eslint
           command: npm run lint -- -o eslint-report.json --format json
