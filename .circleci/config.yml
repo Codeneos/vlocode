@@ -13,9 +13,16 @@ jobs:
     steps:
       - checkout
       - node/install-packages
+      - restore_cache:
+          keys: 
+            - vscode
       - run:
           name: Run tests
-          command: npm test      
+          command: npm test
+      - save_cache:
+          key: vscode
+          paths:
+            - ".vscode"
       - store_test_results:
           path: junit.xml
       - run:
