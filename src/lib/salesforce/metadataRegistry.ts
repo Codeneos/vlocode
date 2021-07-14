@@ -18,7 +18,7 @@ export class MetadataRegistry {
 
     private readonly registry = new Array<MetadataType>();
     private readonly types = new Map<string, MetadataType>();
-    private readonly suffixes = new Map<string, MetadataType[]>();
+    private readonly suffixes = new Map<string, string>();
 
     constructor() {
         // Init metadata
@@ -54,6 +54,11 @@ export class MetadataRegistry {
                 });
             }
         }
+
+        // Init case insensitive suffix to type map
+        for (const suffix of Object.keys(registryData.suffixes)) {
+            this.suffixes.set(suffix.toLowerCase(), registryData[suffix]);
+        }
     }
 
     /**
@@ -67,7 +72,7 @@ export class MetadataRegistry {
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
     public getMetadataSuffixes() : string[] {
-        return [... Object.keys(registryData.suffixes)];
+        return [...Object.keys(registryData.suffixes)];
     }
 
     /**
@@ -76,7 +81,7 @@ export class MetadataRegistry {
      * @returns 
      */
     public isMetadataSuffix(suffix: string) {
-        return registryData.suffixes[suffix.toLowerCase()] !== undefined;
+        return this.suffixes.has(suffix.toLowerCase());
     }
 
     /**
@@ -93,8 +98,8 @@ export class MetadataRegistry {
      * @param suffix File suffix without .
      * @returns 
      */
-    public getMetadataTypeBySuffix(suffix: string) {
-        const metadataType = registryData.suffixes[suffix.toLowerCase()];
-        return metadataType && this.getMetadataType(metadataType);
+    public getMetadataTypeBySuffix(suffix: string) : MetadataType | undefined {
+        const metadataType = this.suffixes.get(suffix.toLowerCase());
+        return metadataType ? this.getMetadataType(metadataType) : undefined;
     }
 }

@@ -118,7 +118,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         const hasApplicableFiles = dirEntries.some(entry => entry.isFile() && this.isApplicableFile(entry.name));
 
         for (const entry of dirEntries) {
-            if (entry.name.startsWith('.')) {
+            if (entry.name.startsWith('.') || entry.name == 'node_modules') {
                 continue;
             }
             const fullPath = path.join(folder, entry.name);
