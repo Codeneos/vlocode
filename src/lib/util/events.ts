@@ -11,7 +11,7 @@ interface EventEmitOptions {
      */
     hideExceptions?: boolean;
     /**
-     * Queues handler execution util after the next event loop processing using `setImmediatePromise`. Async processing of the event does not forces `hideExceptions` to `true`. 
+     * Queues handler execution util after the next event loop processing using `setImmediatePromise`. Async processing of the event forces `hideExceptions` to `true`. 
      */
     async?: boolean;
 }
@@ -63,7 +63,7 @@ export class AsyncEventEmitter<T extends EventMap = any> {
                     if (!options?.hideExceptions && !options?.async) {
                         throw err;
                     } else {
-                        // for Debugging syill log errors to the console but don't fail
+                        // for Debugging: log errors to the console but don't fail
                         console.error(err.message ?? err);
                     }
                 }

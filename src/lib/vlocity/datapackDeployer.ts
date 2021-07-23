@@ -21,6 +21,8 @@ import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import { Iterable } from 'lib/util/iterable';
+import RecordBatch from 'lib/salesforce/recordBatch';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -42,6 +44,13 @@ export interface DependencyResolver {
 export interface DatapackDeploymentEvent {
     readonly recordGroups: DatapackDeploymentRecordGroup[];
     getDeployedRecords(type: string): Iterable<DatapackDeploymentRecord & { recordId: string }>;
+}
+
+export interface DatapackDeploymentOptions {
+    /**
+     * Disable all Vlocity Triggers,
+     */
+    disableTriggers?: boolean;
 }
 
 export abstract class DatapackDeploymentSpec {
@@ -66,13 +75,15 @@ export default class VlocityDatapackDeployer {
      * @param datapacks Datapacks to deploy
      * @returns Datapack deployment object
      */
-    public async createDeployment(datapacks: VlocityDatapack[]) {
+    public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions) {
         const local = container.new();
         local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
         const deployment = local.get(DatapackDeployment);
 
         deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(group));
         deployment.on('beforeDeployGroup', group => this.beforeDeployRecordGroup(group));
+        deployment.on('afterDeployRecord', records => this.afterDeployRecord(records, options));
+        deployment.on('beforeDeployRecord', records => this.beforeDeployRecord(records, options));
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
@@ -113,6 +124,47 @@ export default class VlocityDatapackDeployer {
         this.logger.verbose(`Update CustomSetting ${triggerSetupObject.name}.${triggerOnField.name} to '${newTriggerState}' [${timer.stop()}]`);
     }
 
+    private async verifyGlobalKeys(records: Iterable<DatapackDeploymentRecord>) {
+        const deployedRecordsByType = groupBy(Iterable.filter(records, r => r.isDeployed), r => r.sobjectType);
+        const recordBatch = new RecordBatch(this.schemaService, { useBulkApi: false, chunkSize: 100 });
+
+        for (const [sobjectType, records] of Object.entries(deployedRecordsByType)) {
+            const field = await this.schemaService.describeSObjectField(sobjectType, 'GlobalKey__c', false);
+            if (!field) {
+                continue;
+            }
+
+            const recordsById = new Map(records.map(r => [r.recordId as string, r]));
+            const results = await this.objectLookupService.lookupById(sobjectType, recordsById.keys(), [ 'GlobalKey__c' ], false);
+
+            for (const result of results) {
+                const datapackGlobalKey = recordsById.get(result.Id)?.values[field.name];
+                if (result.GlobalKey__c !== datapackGlobalKey) {
+                    recordBatch.add(sobjectType, {
+                        Id: result.Id,
+                        [field.name]: datapackGlobalKey
+                    });
+                }
+            }
+        }
+
+        if (recordBatch.size() > 0) {
+            this.logger.info(`Updating ${recordBatch.size()} records with mismatching global keys`);
+
+            // For global key updates to always succeed ensure that the triggers are off
+            await this.setVlocityTriggerState(false);
+            try {
+                for await (const result of recordBatch.execute(await this.connectionProvider.getJsForceConnection())) {
+                    if (result.error) {
+                        this.logger.error(`Global key update failed for ${result.recordId} -- ${result.error}`);
+                    }
+                }
+            } finally {
+                await this.setVlocityTriggerState(true);
+            }
+        }
+    }
+
     /**
      * Runs pre-processors on the specified datapack.
      * @param datapack Datapack to preprocess
@@ -125,12 +177,24 @@ export default class VlocityDatapackDeployer {
         }
     }
 
+    private async beforeDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>, options?: DatapackDeploymentOptions) {
+        if (options?.disableTriggers) {
+            await this.setVlocityTriggerState(false);
+        }
+    }
+
+    private async afterDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>, options?: DatapackDeploymentOptions) {
+        if (options?.disableTriggers) {
+            await this.setVlocityTriggerState(true);
+        }
+        await this.verifyGlobalKeys(datapackRecords);
+    }
+
     /**
      * Event handler running before the deployment 
      * @param datapackRecords Datapacks being deployed
      */
     private async beforeDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
-        await this.setVlocityTriggerState(false);
         return this.runSpecFunction('beforeDeploy', datapackGroups);
     }
 
@@ -139,7 +203,6 @@ export default class VlocityDatapackDeployer {
      * @param datapackRecords Datapacks that have been deployed
      */
     private async afterDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
-        await this.setVlocityTriggerState(true);
         return this.runSpecFunction('afterDeploy', datapackGroups);
     }
 

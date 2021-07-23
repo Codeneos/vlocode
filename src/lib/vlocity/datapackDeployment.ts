@@ -5,7 +5,7 @@ import { Connection } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
 import { AsyncEventEmitter } from 'lib/util/events';
-import { mapGetOrCreate } from 'lib/util/collection';
+import { groupBy, mapGetOrCreate } from 'lib/util/collection';
 import { LifecyclePolicy, injectable } from 'lib/core';
 import { Iterable } from 'lib/util/iterable';
 import RecordBatch, { RecordBatchOptions } from '../salesforce/recordBatch';
@@ -32,18 +32,25 @@ export interface DatapackDeploymentEvents {
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> implements DependencyResolver {
-
+    private readonly errors = new Array<DatapackDeploymentRecord>();
+    private readonly deployed = new Array<DatapackDeploymentRecord>();
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
-    private deployedRecords: number = 0;
-    private failedRecords: number = 0;
 
     public get deployedRecordCount() {
-        return this.deployedRecords;
+        return this.deployed.length;
     }
 
     public get failedRecordCount() {
-        return this.failedRecords;
+        return this.errors.length;
+    }
+
+    public get failedRecords() : ReadonlyArray<DatapackDeploymentRecord> {
+        return this.errors;
+    }
+
+    public get deployedRecords() : ReadonlyArray<DatapackDeploymentRecord> {
+        return this.deployed;
     }
 
     public get totalRecordCount() {
@@ -216,6 +223,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
         const newGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.isStarted());
+        await this.emit('beforeDeployRecord', datapackRecords.values(), { hideExceptions: true });
         await this.emit('beforeDeployGroup', newGroups, { hideExceptions: true });
 
         try {
@@ -232,17 +240,18 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
                 if (result.success) {
                     datapackRecord.updateStatus(DeploymentStatus.Deployed, result.recordId);
                     this.logger.verbose(`Deployed ${datapackRecord.sourceKey}`);
-                    this.deployedRecords++;
+                    this.deployed.push(datapackRecord);
                 } else if (!result.success) {
                     datapackRecord.updateStatus(DeploymentStatus.Failed, result.error);
                     this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
                     await this.emit('onError', datapackRecord);
-                    this.failedRecords++;
+                    this.errors.push(datapackRecord);
                 }
             }
         } finally {
-            const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());
-            await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: true });
+            const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());            
+            await this.emit('afterDeployRecord', datapackRecords.values(), { hideExceptions: true });
+            await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: false });
         }
     }
 

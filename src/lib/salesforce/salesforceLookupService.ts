@@ -25,6 +25,10 @@ export default class SalesforceLookupService {
         return (await this.lookup(type, filter, lookupFields, 1, useCache)).shift();
     }
 
+    public lookupById<K extends PropertyAccessor>(type: string, ids: Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean): Promise<QueryResult<{ Id: string }, K>[]> {
+        return this.lookup(type, asArray(ids).map(Id => ({ Id })), lookupFields, undefined, useCache);
+    }
+
     /**
      * Query multiple records based on the where condition. The filter condition can either be a string or a complex filter object.
      * @param type Name of the SObject type to lookup

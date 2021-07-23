@@ -33,7 +33,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
      * Saved all unsaved changes in the files related to each of the selected datapack files.
      * @param datapackHeaders The datapack header files.
      */
-    private async saveUnsavedChanges(sfPackage: SalesforcePackage) : Promise<vscode.TextDocument[]> {
+    private saveUnsavedChanges(sfPackage: SalesforcePackage) : Promise<vscode.TextDocument[]> {
         const filesToSave = new Set(sfPackage.files());
         const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && filesToSave.has(d.uri.fsPath));
         return forEachAsyncParallel(openDocuments, doc => doc.save());

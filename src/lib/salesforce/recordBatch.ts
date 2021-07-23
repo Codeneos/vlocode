@@ -71,6 +71,13 @@ export default class RecordBatch {
         }
     }
 
+    /**
+     * Returns true when there are no records in the batch otherwise false.
+     */
+    public size() {
+        return this.recordCount;
+    }
+
     public async *execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
         if (this.isExecuting) {
             throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
@@ -252,14 +259,14 @@ export default class RecordBatch {
         }
     }
 
-    public add(type: string, data: any, ref: string): this {
+    public add(type: string, data: any, ref?: string): this {
         if (data.Id || data.id) {
             return this.addUpdate(type, data, data.Id, ref);
         }
         return this.addInsert(type, data, ref);
     }
 
-    public addUpdate(type: string, data: any, id: string, ref: string): this {
+    public addUpdate(type: string, data: any, id: string, ref?: string): this {
         data.Id = id;
         arrayMapPush(this.update, type, { ref, data });
         this.recordCount++;
