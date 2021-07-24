@@ -8,6 +8,7 @@ import { forEachAsyncParallel } from 'lib/util/collection';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import DatapackDeployer from 'lib/vlocity/datapackDeployer';
 import { container } from 'lib/core';
+import chalk = require('chalk');
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -86,13 +87,13 @@ export default class DeployDatapackCommand extends DatapackCommand {
                 this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
 
                 if (this.vlocode.config.deploymentMode == 'compatibility') {
-                    this.showResultMessage(
-                        await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token)
-                    );
+                    await this.deployUsingBuildTools(datapackHeaders, token);
                 } else {
-                    const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-                    const deployment = await container.get(DatapackDeployer).createDeployment(datapacks);
-                    await deployment.start();
+                    await this.directDeploy(datapackHeaders, token);
+                }
+
+                if (token.isCancellationRequested) {
+                    void vscode.window.showWarningMessage('Datapack deployment cancelled');
                 }
             });
         } catch (err) {
@@ -101,7 +102,43 @@ export default class DeployDatapackCommand extends DatapackCommand {
         }
     }
 
-    protected showResultMessage(results : DatapackResultCollection) {
+    private async directDeploy(datapackHeaders: vscode.Uri[], token: vscode.CancellationToken) {
+        const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks);
+        await deployment.start(token);
+
+        if (token.isCancellationRequested) {
+            return;
+        }
+
+        if (deployment.hasErrors) {
+            const errors = deployment.getErrorsByDatapack();
+            const failedDatapackCount = Object.keys(errors).length;
+            for (const [datapackKey, failedRecords] of Object.entries(errors)) {
+                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${failedRecords.length} failed records`);
+                for (let i = 0; i < failedRecords.length; i++) {
+                    this.logger.error(` ${i + 1}. ${chalk.underline(failedRecords[i].sourceKey)} -- ${failedRecords[i].statusMessage}`);
+                }
+            }
+
+            if (datapacks.length != failedDatapackCount) {
+                void vscode.window.showWarningMessage(`Failed to deployed ${failedDatapackCount}/${datapacks.length} datapacks`);
+            } else {
+                void vscode.window.showErrorMessage(`Failed to deployed all (${failedDatapackCount}) datapacks`);
+            }
+        } else {
+            void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
+        }
+    }
+
+    private async deployUsingBuildTools(datapackHeaders: vscode.Uri[], token: vscode.CancellationToken) {
+        const results = await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
+        if (!token.isCancellationRequested) {
+            this.printDatapackDeployResults(results);
+        }
+    }
+
+    protected printDatapackDeployResults(results : DatapackResultCollection) {
         [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.errorMessage || 'No error message'}`));
         const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
         if (results.hasErrors) {

@@ -157,12 +157,6 @@ export class SalesforceDeployService {
             let lastProgress = 0;
             let pollCount = 0;
             while (await wait(checkInterval)) {
-                if (cancellationToken && cancellationToken.isCancellationRequested) {
-                    // @ts-expect-error; cancelDeploy is not available in jsforce types
-                    void connection.metadata.cancelDeploy(deployJob.id);
-                    throw new Error(`${deploymentTypeText} cancelled`);
-                }
-
                 // Reduce polling frequency for long running deployments
                 if (pollCount++ > 10 && checkInterval < 5000) {
                     pollCount = 0;
@@ -170,6 +164,12 @@ export class SalesforceDeployService {
                 }
 
                 const status = await connection.metadata.checkDeployStatus(deployJob.id, true);
+
+                if (cancellationToken && cancellationToken.isCancellationRequested) {
+                    // @ts-expect-error; cancelDeploy is not available in jsforce types
+                    void connection.metadata.cancelDeploy(deployJob.id);
+                    return status;
+                }
 
                 if (Date.now() - lastConsoleLog > logInterval) {
                     // Do not create separate interval for logging but use the main status check loop

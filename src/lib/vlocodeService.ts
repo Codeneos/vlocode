@@ -19,13 +19,27 @@ import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
 import SfdxUtil from './util/sfdx';
 import { isPromise } from './util/async';
 
-interface ActivityOptions {
+export interface ActivityOptions {
     progressTitle: string;
     activityTitle?: string;
     cancellable: boolean;
     location: vscode.ProgressLocation;
     /** Task runner throws exceptions back to so they can be caught by the called */
     propagateExceptions?: boolean;
+}
+
+export type ActivityProgress = vscode.Progress<{ message?: string; increment?: number }>;
+
+export interface Activity<T> {
+    (progress: ActivityProgress, token?: vscode.CancellationToken): Promise<T>;
+}
+
+export interface CancellableActivity<T> extends Activity<T> {
+    (progress: ActivityProgress, token: vscode.CancellationToken): Promise<T>;
+}
+
+export interface NoncancellableActivity<T> extends Activity<T>  {
+    (progress: ActivityProgress): Promise<T>;
 }
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
@@ -153,7 +167,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param title Title of the task
      * @param task task to run
      */
-    public withProgress<T>(title: string, task: ((progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>) | Promise<T>) : Promise<T> {
+    public withProgress<T>(title: string, task: NoncancellableActivity<T> | Promise<T>) : Promise<T> {
         return this.withActivity({
             progressTitle: title,
             cancellable: false,
@@ -166,7 +180,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param title Title of the task
      * @param task task to run
      */
-    public withCancelableProgress<T>(title: string, task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Promise<T>) : Promise<T> {
+    public withCancelableProgress<T>(title: string, task: CancellableActivity<T>) : Promise<T> {
         return this.withActivity({
             progressTitle: title,
             cancellable: true,
@@ -179,23 +193,20 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param title Title of the task
      * @param task task to run
      */
-    public withStatusBarProgress<T>(title: string, task: ((progress: vscode.Progress<{ message?: string }>) => Promise<T>) | Promise<T>) : Promise<T> {
+    public withStatusBarProgress<T>(title: string, task: NoncancellableActivity<T> | Promise<T>) : Promise<T> {
         return this.withActivity({
             progressTitle: title,
-            cancellable: true,
+            cancellable: false,
             location: vscode.ProgressLocation.Window
         }, typeof task === 'function' ? task : () => task);
     }
 
     /**
-     * Wrapper around `vscode.window.withProgress` that registers the task as an activity visisble in the activity exporer if used.
+     * Wrapper around `vscode.window.withProgress` that registers the task as an activity visible in the activity explorer if used.
      * @param options Activity options
      * @param task Task to run
      */
-    public withActivity<T>(
-        options: ActivityOptions,
-        task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token?: vscode.CancellationToken) => Promise<T>) : Promise<T> {
-
+    public withActivity<T>(options: ActivityOptions, task: Activity<T>) {
         // Create activity record to track activity progress
         const cancelTokenSource = options.cancellable ? new vscode.CancellationTokenSource() : undefined;
         const onCompleteEmitter = new vscode.EventEmitter<VlocodeActivity>();

@@ -7,6 +7,8 @@ import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 import { Iterable } from 'lib/util/iterable';
 import * as open from 'open';
 import MetadataCommand from './metadataCommand';
+import { Activity, ActivityProgress } from 'lib/vlocodeService';
+import { CancellationToken } from 'typescript';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -72,51 +74,55 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async doDeployMetadata(files: vscode.Uri[]) {
         const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
-
-        // Build manifest
-        const sfPackage = await vscode.window.withProgress({
-            title: 'Building Package...',
-            location: vscode.ProgressLocation.Notification,
-        }, async (progress, token) => {
-            const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.deploy);
-            return (await packageBuilder.addFiles(files, token)).getPackage();
-        });
-
-        // Get task title
-        if (sfPackage.size() == 0) {
-            void vscode.window.showWarningMessage('None of the selected files or folders are be deployable');
-            return;
-        }
-        const componentNames = sfPackage.getComponentNames();
-        const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
-        this.logger.info(`Added ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
-
-        // Save manifest
-        await this.saveUnsavedChanges(sfPackage);
-
-        // Clear errors before starting the deployment
-        this.clearPreviousErrors(sfPackage.files());
-
         await this.vlocode.withActivity({
-            progressTitle: `Deploying ${progressTitle}`,
+            progressTitle: 'Deploy Metadata',
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
-        }, async (progress, token) => {
+        }, this.getDeploymentActivity(apiVersion, files));
+    }
+
+    protected getDeploymentActivity(apiVersion: string, files: vscode.Uri[]) {
+        return async (progress: ActivityProgress, token: vscode.CancellationToken) => {
+            token.onCancellationRequested(() => progress.report({ message: 'cancellation in progress' }));
+
+            // Build manifest
+            progress.report({ message: 'building package' });
+            const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.deploy);
+            const sfPackage = (await packageBuilder.addFiles(files, token)).getPackage();
+
+            if (!sfPackage || token?.isCancellationRequested) {
+                return;
+            }
+
+            // Get task title
+            if (sfPackage.size() == 0) {
+                void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
+                return;
+            }
+
+            const componentNames = sfPackage.getComponentNames();
+            const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
+            this.logger.info(`Added ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
+
+            // Save manifest
+            await this.saveUnsavedChanges(sfPackage);
+
+            // Clear errors before starting the deployment
+            this.clearPreviousErrors(sfPackage.files());
+
             const result = await this.salesforce.deploy.deployPackage(sfPackage, {
                 ignoreWarnings: true
             }, { report: ({ message, increment, total }) => {
                 progress.report( { message, total: 100, increment: total ? ((increment ?? 0) / total) * 100 : undefined } );
             } }, token);
 
-            if (!result || token?.isCancellationRequested) {
-                this.logger.info(`Cancelled deploy of ${componentNames.join(', ')}`);
-                return;
-            }
-
-            this.clearPreviousErrors(sfPackage.files());
             if (result.details?.componentFailures?.length) {
                 await this.showComponentFailures(sfPackage, result.details.componentFailures);
+            }
+
+            if (token?.isCancellationRequested) {
+                return;
             }
 
             if (!result.success) {
@@ -139,13 +145,6 @@ export default class DeployMetadataCommand extends MetadataCommand {
             } else {
                 void vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
             }
-
-            if (result.details) {
-                this.logger.debug(`Deployment ${result.id} details`);
-                for (const message of Iterable.join(result.details.componentFailures, result.details.componentSuccesses)) {
-                    this.logger.debug(`${message.fullName} (${message.componentType}) -- ${message.success ? 'success' : 'error'}`);
-                }
-            }
-        });
+        }
     }
 }

@@ -22,7 +22,7 @@ import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { Iterable } from 'lib/util/iterable';
-import RecordBatch from 'lib/salesforce/recordBatch';
+import RecordBatch, { RecordBatchOptions } from 'lib/salesforce/recordBatch';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -46,7 +46,7 @@ export interface DatapackDeploymentEvent {
     getDeployedRecords(type: string): Iterable<DatapackDeploymentRecord & { recordId: string }>;
 }
 
-export interface DatapackDeploymentOptions {
+export interface DatapackDeploymentOptions extends RecordBatchOptions {
     /**
      * Disable all Vlocity Triggers,
      */
@@ -78,7 +78,7 @@ export default class VlocityDatapackDeployer {
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions) {
         const local = container.new();
         local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
-        const deployment = local.get(DatapackDeployment);
+        const deployment = local.create(DatapackDeployment, options);
 
         deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(group));
         deployment.on('beforeDeployGroup', group => this.beforeDeployRecordGroup(group));
@@ -124,6 +124,11 @@ export default class VlocityDatapackDeployer {
         this.logger.verbose(`Update CustomSetting ${triggerSetupObject.name}.${triggerOnField.name} to '${newTriggerState}' [${timer.stop()}]`);
     }
 
+    /**
+     * Verifies the Global keys of the records match the datapack values, when records are deployed their global key can change due to Vlocity triggers assigning a new global key to records. 
+     * This method checks the Global key values from the records against the values in the data pack and updates them when required.
+     * @param records 
+     */
     private async verifyGlobalKeys(records: Iterable<DatapackDeploymentRecord>) {
         const deployedRecordsByType = groupBy(Iterable.filter(records, r => r.isDeployed), r => r.sobjectType);
         const recordBatch = new RecordBatch(this.schemaService, { useBulkApi: false, chunkSize: 100 });

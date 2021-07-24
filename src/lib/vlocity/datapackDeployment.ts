@@ -6,7 +6,7 @@ import { CancellationToken } from 'vscode';
 import Timer from 'lib/util/timer';
 import { AsyncEventEmitter } from 'lib/util/events';
 import { groupBy, mapGetOrCreate } from 'lib/util/collection';
-import { LifecyclePolicy, injectable } from 'lib/core';
+import { LifecyclePolicy, injectable, container } from 'lib/core';
 import { Iterable } from 'lib/util/iterable';
 import RecordBatch, { RecordBatchOptions } from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
@@ -25,6 +25,7 @@ export interface DatapackDeploymentEvents {
     beforeDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
     afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
     onError: DatapackDeploymentRecord;
+    onCancel: DatapackDeployment;
 }
 
 /**
@@ -53,16 +54,20 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         return this.deployed;
     }
 
+    public get hasErrors() {
+        return this.errors.length > 0;
+    }
+
     public get totalRecordCount() {
         return this.records.size;
     }
 
     constructor(
+        private readonly recordBatchOptions: RecordBatchOptions,
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
-        private readonly schemaService: SalesforceSchemaService,
-        private readonly recordBatchOptions: RecordBatchOptions,
-        private readonly logger: Logger = LogManager.get(DatapackDeployment)) {
+        private readonly schemaService: SalesforceSchemaService ,
+        private readonly logger: Logger) {
         super();
     }
 
@@ -87,6 +92,10 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         }
 
         this.logger.log(`Deployed ${this.deployedRecordCount}/${this.totalRecordCount} records [${timer.stop()}]`);
+    }
+
+    public getErrorsByDatapack() {
+        return groupBy(this.errors, err => err.datapackKey);
     }
 
     /**
@@ -181,7 +190,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
     private async resolveDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         for (const datapack of datapacks.values()) {
-            if (cancelToken && cancelToken.isCancellationRequested) {
+            if (cancelToken?.isCancellationRequested) {
                 return;
             }
 
@@ -220,6 +229,11 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         await this.resolveDependencies(datapackRecords, cancelToken);
         const batch = await this.createDeploymentBatch(datapackRecords);
 
+        if (cancelToken?.isCancellationRequested) {
+            await this.emit('onCancel', this, { hideExceptions: true, async: true });
+            return;
+        }
+
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
         const newGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.isStarted());
@@ -249,7 +263,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
                 }
             }
         } finally {
-            const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());            
+            const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());
             await this.emit('afterDeployRecord', datapackRecords.values(), { hideExceptions: true });
             await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: false });
         }

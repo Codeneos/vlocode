@@ -62,17 +62,19 @@ export default class RecordBatch {
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,
-        options: RecordBatchOptions = {},
+        options?: RecordBatchOptions,
         private readonly logger = LogManager.get(RecordBatch)) {
-        for (const option of Object.keys(options)) {
-            if (options[option] !== undefined && options[option] !== null) {
-                this.options[option] = options[option];
+        if (options) {
+            for (const option of Object.keys(options)) {
+                if (options[option] !== undefined && options[option] !== null) {
+                    this.options[option] = options[option];
+                }
             }
         }
     }
 
     /**
-     * Returns true when there are no records in the batch otherwise false.
+     * Returns the number of records in this batch
      */
     public size() {
         return this.recordCount;
