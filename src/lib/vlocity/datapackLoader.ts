@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { CancellationToken } from 'vscode';
 import { FileSystem } from 'lib/core/fs';
 import { Logger, LogManager } from 'lib/logging';
 import { mapAsyncParallel, filterUndefined } from 'lib/util/collection';
@@ -50,8 +51,13 @@ export default class DatapackLoader {
         }
     }
 
-    public async loadAll(datapackHeaders : string[]) : Promise<VlocityDatapack[]> {
-        const datapacks = await mapAsyncParallel(datapackHeaders, header => this.loadFrom(header, false), 4);
+    public async loadAll(datapackHeaders : string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
+        const datapacks = await mapAsyncParallel(datapackHeaders, async header => {
+            if (cancellationToken?.isCancellationRequested) {
+                return undefined;
+            }
+            return this.loadFrom(header, false);
+        }, 4);
         return filterUndefined(datapacks);
     }
 

@@ -231,7 +231,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
 
         // prepare batch
         await this.resolveDependencies(datapackRecords, cancelToken);
-        const batch = await this.createDeploymentBatch(datapackRecords);
+        const batch = await this.createDeploymentBatch(datapackRecords, cancelToken);
 
         if (cancelToken?.isCancellationRequested) {
             await this.emit('onCancel', this, { hideExceptions: true, async: true });

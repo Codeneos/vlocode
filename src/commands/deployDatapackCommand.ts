@@ -103,7 +103,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
     }
 
     private async directDeploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
-        const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+        const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
         const deployment = await container.get(DatapackDeployer).createDeployment(datapacks, { cancellationToken });
         await deployment.start(cancellationToken);
 
@@ -113,7 +113,6 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
         if (deployment.hasErrors) {
             const errors = deployment.getErrorsByDatapack();
-            const failedDatapackCount = Object.keys(errors).length;
             for (const [datapackKey, failedRecords] of Object.entries(errors)) {
                 this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${failedRecords.length} failed records`);
                 for (let i = 0; i < failedRecords.length; i++) {

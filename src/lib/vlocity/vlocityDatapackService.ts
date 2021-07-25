@@ -329,8 +329,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
     /**
      * Loads all datapacks from the specified folder
      */
-    public async loadAllDatapacks(files: vscode.Uri[]) : Promise<VlocityDatapack[]> {
-        return this.loader.loadAll(files.map(file => file.fsPath));
+    public async loadAllDatapacks(files: vscode.Uri[], cancellationToken?: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
+        return this.loader.loadAll(files.map(file => file.fsPath), cancellationToken);
     }
 
     /**
