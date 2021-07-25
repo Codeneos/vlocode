@@ -9,6 +9,7 @@ import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { isSalesforceId } from 'lib/util/salesforce';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
+import { CancellationToken } from 'vscode';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackLookupService implements DependencyResolver {
@@ -122,7 +123,7 @@ export class DatapackLookupService implements DependencyResolver {
      * @param batchSize Batch size for the lookup queries; number of records that will be looked up in a single query
      * @returns Array with all IDs found in Salesforce; array index matches the order of the records as provided
      */
-    public async lookupIds(records: Array<{ sobjectType: string; values: object }>, batchSize: 50): Promise<string[]> {
+    public async lookupIds(records: Array<{ sobjectType: string; values: object }>, batchSize: 50, cancelToken?: CancellationToken): Promise<string[]> {
         const lookupResults = new Array<string>();
         const lookupKeyToResultsIndex = new Map<string, number>();
         const lookupTypes = new Map<string, object[]>();
@@ -145,6 +146,10 @@ export class DatapackLookupService implements DependencyResolver {
                 continue;
             }
 
+            if (cancelToken?.isCancellationRequested) {
+                return [];
+            }
+
             lookupKeyToResultsIndex.set(lookupKey, i);
             arrayMapPush(lookupTypes, [sobjectType, ...matchingFields].join(':'), values);
         }
@@ -163,6 +168,10 @@ export class DatapackLookupService implements DependencyResolver {
 
             // Split up lookup in chunks @see batchSize records at a time - otherwise we might overflow our SOQL limit
             do {
+                if (cancelToken?.isCancellationRequested) {
+                    return [];
+                }
+
                 const lookupEntries = entries.splice(0, batchSize);
                 const lookupFilters = lookupEntries.map(entry => this.buildFilter(entry, matchingFields));
                 const results = await this.lookupService.lookup(sobjectType, lookupFilters, [ 'Id', ...matchingFields ], undefined, false);

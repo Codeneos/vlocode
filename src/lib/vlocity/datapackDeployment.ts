@@ -66,7 +66,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         private readonly recordBatchOptions: RecordBatchOptions,
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
-        private readonly schemaService: SalesforceSchemaService ,
+        private readonly schemaService: SalesforceSchemaService,
         private readonly logger: Logger) {
         super();
     }
@@ -166,13 +166,13 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
         return [...(this.recordGroups.get(datapackKey) ?? [])];
     }
 
-    private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>) {
+    private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
         const batch = new RecordBatch(this.schemaService, this.recordBatchOptions);
         const records = [...datapacks.values()];
 
         this.logger.verbose(`Resolving existing IDs for ${datapacks.size} records`);
-        const ids = await this.lookupService.lookupIds(records, 50);
+        const ids = await this.lookupService.lookupIds(records, 50, cancelToken);
 
         for (const [i, datapack] of records.entries()) {
             const existingId = ids[i];
@@ -181,6 +181,10 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
                 batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
             } else {
                 batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);
+            }
+
+            if (cancelToken?.isCancellationRequested) {
+                break;
             }
         }
 

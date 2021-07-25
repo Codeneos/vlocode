@@ -23,6 +23,7 @@ import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { Iterable } from 'lib/util/iterable';
 import RecordBatch, { RecordBatchOptions } from 'lib/salesforce/recordBatch';
+import { CancellationToken } from 'vscode';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -51,6 +52,7 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * Disable all Vlocity Triggers,
      */
     disableTriggers?: boolean;
+    cancellationToken?: CancellationToken;
 }
 
 export abstract class DatapackDeploymentSpec {
@@ -88,6 +90,9 @@ export default class VlocityDatapackDeployer {
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
         for (const datapack of datapacks) {
+            if (options?.cancellationToken?.isCancellationRequested) {
+                break;
+            }
             try {
                 await this.runPreprocessors(datapack);
                 deployment.add(await this.toSalesforceRecords(datapack));

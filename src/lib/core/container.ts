@@ -90,6 +90,10 @@ export class Container {
             //console.debug(`Resolving for inhertired container: ${resolver.containerGuid}`);
         }
 
+        if (serviceName == 'Object') {
+            return undefined;
+        }
+
         const provider = this.providers.get(serviceName);
         if (provider && receiver) {
             //console.debug(`Provided ${serviceName}`);
@@ -133,7 +137,6 @@ export class Container {
         }
 
         // Cannot resolve this
-        //console.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
         this.logger.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
     }
 

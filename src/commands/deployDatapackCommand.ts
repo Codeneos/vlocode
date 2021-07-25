@@ -102,12 +102,12 @@ export default class DeployDatapackCommand extends DatapackCommand {
         }
     }
 
-    private async directDeploy(datapackHeaders: vscode.Uri[], token: vscode.CancellationToken) {
+    private async directDeploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks);
-        await deployment.start(token);
+        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks, { cancellationToken });
+        await deployment.start(cancellationToken);
 
-        if (token.isCancellationRequested) {
+        if (cancellationToken.isCancellationRequested) {
             return;
         }
 
@@ -117,18 +117,32 @@ export default class DeployDatapackCommand extends DatapackCommand {
             for (const [datapackKey, failedRecords] of Object.entries(errors)) {
                 this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${failedRecords.length} failed records`);
                 for (let i = 0; i < failedRecords.length; i++) {
-                    this.logger.error(` ${i + 1}. ${chalk.underline(failedRecords[i].sourceKey)} -- ${failedRecords[i].statusMessage}`);
+                    this.logger.error(` ${i + 1}. ${chalk.underline(failedRecords[i].sourceKey)} -- ${this.formatDirectDeployError(failedRecords[i].statusMessage)}`);
                 }
             }
-
-            if (datapacks.length != failedDatapackCount) {
-                void vscode.window.showWarningMessage(`Failed to deployed ${failedDatapackCount}/${datapacks.length} datapacks`);
-            } else {
-                void vscode.window.showErrorMessage(`Failed to deployed all (${failedDatapackCount}) datapacks`);
-            }
+            void vscode.window.showWarningMessage(`Datapack deployment completed with errors: ${deployment.failedRecordCount}`);
         } else {
             void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
         }
+    }
+
+    private formatDirectDeployError(message?: string) {
+        if (!message) {
+            return 'Salesforce provided no error message';
+        }
+
+        if (message.includes('Script-thrown exception')) {
+            const triggerTypeMatch = message.match(/execution of ([\w\d_-]+)/);
+            const causedByMatch = message.match(/caused by: ([\w\d_.-]+)/);
+            if (triggerTypeMatch) {
+                const triggerType = triggerTypeMatch[1];
+                return `APEX ${triggerType} trigger caused exception; try inserting this datapack with triggers disabled`;
+            } else if (causedByMatch) {
+                return `APEX exception caused by (${causedByMatch[1]}); try inserting this datapack with triggers disabled`;
+            }
+        }
+
+        return message.split(/\n|\r/g).filter(line => line.trim().length > 0).join('\n');
     }
 
     private async deployUsingBuildTools(datapackHeaders: vscode.Uri[], token: vscode.CancellationToken) {
