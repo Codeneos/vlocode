@@ -12,12 +12,14 @@ export default class ClearDeveloperLogsCommand extends MetadataCommand {
      */
     public async execute() {
         return this.vlocode.withActivity({
-            cancellable: false,
+            cancellable: true,
             location: vscode.ProgressLocation.Notification,
             progressTitle: 'Deleting developer logs from server...'
-        }, async () => {
-            const result = await this.vlocode.salesforceService.clearDeveloperLogs();
-            void vscode.window.showInformationMessage(`Successfully deleted ${result} developer logs from Salesforce`);
+        }, async (progress, token) => {
+            const result = await this.vlocode.salesforceService.clearDeveloperLogs(token);
+            if (!token?.isCancellationRequested) {
+                void vscode.window.showInformationMessage(`Successfully deleted ${result} developer logs from Salesforce`);
+            }
         });
     }
 }

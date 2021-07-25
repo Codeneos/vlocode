@@ -39,7 +39,7 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
     }
 
     protected getCommands() : {
-        [name: string]: ((...args: any[]) => void) | Promise<CommandCtor> | CommandCtor;
+        [name: string]: ((...args: any[]) => void) | CommandCtor;
     } {
         return {};
     }

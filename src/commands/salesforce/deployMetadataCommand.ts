@@ -6,9 +6,10 @@ import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 import { Iterable } from 'lib/util/iterable';
 import * as open from 'open';
-import MetadataCommand from './metadataCommand';
-import { Activity, ActivityProgress } from 'lib/vlocodeService';
 import { CancellationToken } from 'typescript';
+import { SalesforceDeployment } from 'lib/salesforce/salesforceDeployment';
+import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
+import MetadataCommand from './metadataCommand';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -20,6 +21,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
      */
     private readonly filesPendingDeployment = new Set<vscode.Uri>();
     private deploymentTimeout?: any;
+    private enabled = true;
+
+    public get pendingFiles() {
+        return this.filesPendingDeployment.size;
+    }
 
     public execute(...args: any[]): Promise<void> {
         return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
@@ -29,6 +35,17 @@ export default class DeployMetadataCommand extends MetadataCommand {
         const files = [...this.filesPendingDeployment];
         this.filesPendingDeployment.clear();
         return files;
+    }
+
+    public setEnabled(state: boolean) {
+        this.enabled = state;
+        if (state && this.deploymentTimeout === undefined && this.filesPendingDeployment.size > 0) {
+            void this.deployMetadata([]);
+        }
+    }
+
+    public clearQueue() {
+        this.filesPendingDeployment.clear();
     }
 
     /**
@@ -43,7 +60,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {
         // Prevent prod deployment if not intended
-        if (await this.salesforce.isProductionOrg()) {
+        if (this.enabled && await this.salesforce.isProductionOrg()) {
             if (!await this.showProductionWarning(false)) {
                 return;
             }
@@ -53,22 +70,24 @@ export default class DeployMetadataCommand extends MetadataCommand {
         selectedFiles.forEach(this.filesPendingDeployment.add, this.filesPendingDeployment);
 
         // Start deployment
-        if (this.deploymentTimeout === undefined) {
+        if (this.deploymentTimeout === undefined && this.enabled) {
             this.deploymentTimeout = setTimeout(async () => {
                 while (this.filesPendingDeployment.size > 0) {
                     try {
                         await this.doDeployMetadata(this.popPendingFiles());
-                    } catch(e) {
-                        this.logger.error(e);
-                        void vscode.window.showErrorMessage(`Deployment error: ${e.message || e}`);
                     } finally {
                         this.deploymentTimeout = undefined;
                     }
                 }
             }, 0);
         } else {
-            this.logger.info(`Deployment of ${selectedFiles.map(file => path.basename(file.fsPath))} queued till after pending deployment completes`);
-            void vscode.window.showInformationMessage(`Queued deploy of ${selectedFiles.length}...`);
+            const fileNameText = selectedFiles.length == 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
+            this.logger.info(`Deployment queued of ${fileNameText}`);
+            void vscode.window.showInformationMessage(`Queued deployment of ${fileNameText} (queue: ${this.filesPendingDeployment.size})...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
+                if (cancel) {
+                    selectedFiles.forEach(this.filesPendingDeployment.delete, this.filesPendingDeployment);
+                }
+            });
         }
     }
 
@@ -77,7 +96,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         await this.vlocode.withActivity({
             progressTitle: 'Deploy Metadata',
             location: vscode.ProgressLocation.Notification,
-            propagateExceptions: true,
+            propagateExceptions: false,
             cancellable: true
         }, this.getDeploymentActivity(apiVersion, files));
     }
@@ -111,40 +130,45 @@ export default class DeployMetadataCommand extends MetadataCommand {
             // Clear errors before starting the deployment
             this.clearPreviousErrors(sfPackage.files());
 
-            const result = await this.salesforce.deploy.deployPackage(sfPackage, {
-                ignoreWarnings: true
-            }, { report: ({ message, increment, total }) => {
-                progress.report( { message, total: 100, increment: total ? ((increment ?? 0) / total) * 100 : undefined } );
-            } }, token);
+            // start deployment
+            const deployment = new SalesforceDeployment(sfPackage);
+            deployment.on('progress', status => {
+                progress.report({
+                    message: `${status.status} ${status.total ? `${status.deployed}/${status.total}` : ''}`,
+                    increment: status.increment,
+                    total: status.total
+                });
+            });
+            token.onCancellationRequested(() => deployment.cancel());
+            await deployment.start({ ignoreWarnings: true });
 
-            if (result.details?.componentFailures?.length) {
-                await this.showComponentFailures(sfPackage, result.details.componentFailures);
-            }
-
-            if (token?.isCancellationRequested) {
-                return;
-            }
+            this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
+            const result = await deployment.getResult();
 
             if (!result.success) {
-                const errors = result.details?.componentFailures?.filter(err => err && err.problemType == 'Error');
-                const errorMessage = errors?.length == 1 ? errors[0].problem : `Deployment failed with ${errors?.length || 'unknown'} errors`;
-                throw new Error(errorMessage);
+                const deploymentStatus = token?.isCancellationRequested ? 'cancelled' : result.status;
+                void vscode.window.showErrorMessage(`Deployment ${result?.id} ${deploymentStatus}`, 'See details').then(async selected =>
+                    selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
+                );
+                progress.report({ status: VlocodeActivityStatus.Failed });
+                this.logger.error(`Deployment ${result?.id} -- ${deploymentStatus}`);
+                return;
             }
 
             // success will be `true` even when not all components are successfully deployed
             // so check if we had any errors
             const partialSuccess = !!result.details?.componentFailures?.length;
-            const deploymentDetailsUrl = `/changemgmt/monitorDeploymentsDetails.apexp?asyncId=${result.id}`;
-            const setupPageUrl = `lightning/setup/DeployStatus/page?address=${deploymentDetailsUrl}`;
 
             if (partialSuccess) {
                 // Partial success
+                this.logger.warn(`Deployment ${result?.id} -- partially completed; see log for details`);
                 void vscode.window.showWarningMessage(`Partially deployed ${progressTitle}`, 'See details').then(async selected =>
-                    selected && void open(await this.vlocode.salesforceService.getPageUrl(setupPageUrl, { useFrontdoor: true }))
+                    selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
                 );
             } else {
+                this.logger.info(`Deployment ${result?.id} -- successfully deployed ${progressTitle}`);
                 void vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
             }
-        }
+        };
     }
 }

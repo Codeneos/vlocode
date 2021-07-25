@@ -6,7 +6,7 @@ import * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
 import * as vscode from 'vscode';
 
-import { Logger } from 'lib/logging';
+import { Logger, LogManager } from 'lib/logging';
 import { wait } from 'lib/util/async';
 import { filterAsyncParallel, mapAsyncParallel, filterUndefined } from 'lib/util/collection';
 import { getDocumentBodyAsString } from 'lib/util/fs';
@@ -18,9 +18,10 @@ import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import { MetadataManifest, PackageManifest } from './deploy/packageXml';
 import { AsyncEventEmitter } from 'lib/util/events';
 import { container } from 'lib/core';
+import { DeploymentStatus } from 'lib/vlocity/datapackDeploymentRecord';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
-    details?: { 
+    details?: {
         componentFailures: FailureDeployMessage[];
         componentSuccesses: DeployMessage[];
     };
@@ -85,8 +86,8 @@ interface RetrieveStatus extends jsforce.RetrieveResult {
 
 export interface SalesforceDeploymentEvents {
     progress: DeployProgress;
-    cancel: jsforce.DeployResult;
-    complete: jsforce.DeployResult;
+    cancel: DetailedDeployResult;
+    complete: DetailedDeployResult;
 }
 
 export interface DeployProgress {
@@ -113,7 +114,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     private checkInterval = 1000;
     private deploymentId: string;
     private connection: jsforce.Connection;
-    private lastStatus: jsforce.DeployResult;
+    private lastStatus: DetailedDeployResult;
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
     private lastProgress = 0;
@@ -137,6 +138,13 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     }
 
     /**
+     * Determine if the deployment has errprs
+     */
+    public get hasErrors() {
+        return (this.lastStatus?.numberComponentErrors ?? 0) > 0 || (this.lastStatus?.numberTestErrors ?? 0) > 0;
+    }
+
+    /**
      * ID of the deployment; set after the deployment is queued on the server.
      */
     public get id() {
@@ -154,19 +162,16 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
 
     constructor(
         private readonly sfPackage: SalesforcePackage,
-        private readonly deployOptions: DeployOptions,
         private readonly salesforce = container.get(SalesforceService),
-        private readonly logger = container.get(Logger)) {
+        private readonly logger = LogManager.get(SalesforceDeployment)) {
         super();
     }
 
     /**
      * Deploy the specified SalesforcePackage into the target org
-     * @param manifest Destructive changes to apply
-     * @param options Optional deployment options to use
-     * @param token A cancellation token to stop the process
+     * @param options Options
      */
-    public async start(): Promise<this> {
+    public async start(options?: DeployOptions): Promise<this> {
         // Set deploy options passed to JSforce; options arg can override the defaults
         const deployOptions = {
             singlePackage: true,
@@ -177,7 +182,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             // We assume we only run on developer orgs by default
             purgeOnDelete: true,
             rollbackOnError: false,
-            ...this.deployOptions
+            ...(options ?? {})
         };
 
         if (await this.salesforce.isProductionOrg()) {
@@ -193,6 +198,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         const zipInput = await this.sfPackage.getBuffer(this.compressionLevel);
         const deployJob = await this.connection.metadata.deploy(zipInput, deployOptions);
         this.deploymentId = deployJob.id;
+        this.nextProgressTimeoutId = setImmediate(() => this.checkDeployment());
 
         return this;
     }
@@ -211,8 +217,15 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         await deployCancelRequest;
     }
 
+    public getResult() {
+        return new Promise<DetailedDeployResult>(resolve => {
+            this.once('complete', resolve);
+            this.once('cancel', resolve);
+        });
+    }
+
     private async checkDeployment() {
-        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
+        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as DetailedDeployResult;
 
         // Reduce polling frequency for long running deployments
         if (this.pollCount++ > 10 && this.checkInterval < 5000) {
@@ -227,12 +240,12 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                 `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})` +
                 `${status.numberComponentErrors ? ` -- Errors ${status.numberComponentErrors}` : ''}`);
 
-            if (status.numberComponentsTotal) {
+            if (status.numberComponentsTotal !== undefined) {
                 void this.emit('progress', {
                     status: status.status,
                     deployed: status.numberComponentsDeployed ?? 0,
                     increment: (status.numberComponentsDeployed ?? 0) - this.lastProgress,
-                    total: status.numberComponentsTotal ?? 0,
+                    total: status.numberComponentsTotal,
                     errors: status.numberComponentErrors ?? 0
                 });
                 this.lastProgress = status.numberComponentsDeployed ?? 0;
@@ -247,9 +260,10 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                 details.componentFailures = [ details.componentFailures ];
             }
             void this.emit('complete', status);
+        } else {
+            this.nextProgressTimeoutId = setTimeout(() => this.checkDeployment(), this.checkInterval);
         }
 
-        this.nextProgressTimeoutId = setTimeout(() => this.checkDeployment(), this.checkInterval);
         this.lastStatus = status;
     }
 }

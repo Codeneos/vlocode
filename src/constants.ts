@@ -59,5 +59,8 @@ export enum VlocodeCommand {
     setTraceFlags = 'vlocode.setTraceFlags',
     setLogVisibility = 'vlocode.setLogVisibility',
     execRestApi = 'vlocode.execRestApi',
-    retrieveMetadata = 'vlocode.retrieveMetadata'
+    retrieveMetadata = 'vlocode.retrieveMetadata',
+    clearDeploymentQueue = 'vlocode.clearDeploymentQueue',
+    pauseDeploymentQueue = 'vlocode.pauseDeploymentQueue',
+    resumeDeploymentQueue = 'vlocode.resumeDeploymentQueue'
 }

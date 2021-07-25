@@ -189,6 +189,24 @@ vlocode.retrieveMetadata:
   when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette   
+vlocode.pauseDeploymentQueue:
+  title: 'Salesforce: Pause deployments...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette   
+vlocode.resumeDeploymentQueue:
+  title: 'Salesforce: Resume deployments...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette   
+vlocode.clearDeploymentQueue:
+  title: 'Salesforce: Clear pending deployment queue...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport
+  menus:
+    - menu: commandPalette
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:

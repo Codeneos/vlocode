@@ -68,7 +68,10 @@
         "onCommand:vlocode.setLogVisibility",
         "onCommand:vlocode.developerLogs.setLogVisibility",
         "onCommand:vlocode.execRestApi",
-        "onCommand:vlocode.retrieveMetadata"
+        "onCommand:vlocode.retrieveMetadata",
+        "onCommand:vlocode.pauseDeploymentQueue",
+        "onCommand:vlocode.resumeDeploymentQueue",
+        "onCommand:vlocode.clearDeploymentQueue"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -231,6 +234,18 @@
             {
                 "command": "vlocode.retrieveMetadata",
                 "title": "Salesforce: Retrieve metadata..."
+            },
+            {
+                "command": "vlocode.pauseDeploymentQueue",
+                "title": "Salesforce: Pause deployments..."
+            },
+            {
+                "command": "vlocode.resumeDeploymentQueue",
+                "title": "Salesforce: Pause deployments..."
+            },
+            {
+                "command": "vlocode.clearDeploymentQueue",
+                "title": "Salesforce: Clear pending deployment queue..."
             },
             {
                 "command": "vlocode.datapackExplorer.export",
@@ -446,6 +461,21 @@
                 },
                 {
                     "command": "vlocode.retrieveMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.pauseDeploymentQueue",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.resumeDeploymentQueue",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.clearDeploymentQueue",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
                 },

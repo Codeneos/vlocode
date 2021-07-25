@@ -495,14 +495,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
     /**
      * Deletes all Developers for All users from the server and returns te number of delete log entries as number.
      */
-    public async clearDeveloperLogs() {
+    public async clearDeveloperLogs(token?: vscode.CancellationToken) {
         const [ { logCount } ] = (await this.query<{ logCount: number }>('Select count(Id) logCount From ApexLog'));
         if (logCount == 0) {
             return 0;
         }
         const connection = await this.getJsForceConnection();
         let logsDeleted = 0;
-        while(true) {
+        while (token?.isCancellationRequested != true) {
             // Query and delete logs in chunks to avoid overloading the server
             const ids = (await this.query<DeveloperLogRecord>('Select Id From ApexLog limit 100')).map(record => record.id);
             if (ids.length == 0) {

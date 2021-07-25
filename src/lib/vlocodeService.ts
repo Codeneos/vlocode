@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
 import { VlocodeCommand } from '@constants';
-import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
+import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import * as chalk from 'chalk';
 import VlocodeConfiguration from './vlocodeConfiguration';
@@ -18,29 +18,6 @@ import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
 import SfdxUtil from './util/sfdx';
 import { isPromise } from './util/async';
-
-export interface ActivityOptions {
-    progressTitle: string;
-    activityTitle?: string;
-    cancellable: boolean;
-    location: vscode.ProgressLocation;
-    /** Task runner throws exceptions back to so they can be caught by the called */
-    propagateExceptions?: boolean;
-}
-
-export type ActivityProgress = vscode.Progress<{ message?: string; increment?: number }>;
-
-export interface Activity<T> {
-    (progress: ActivityProgress, token?: vscode.CancellationToken): Promise<T>;
-}
-
-export interface CancellableActivity<T> extends Activity<T> {
-    (progress: ActivityProgress, token: vscode.CancellationToken): Promise<T>;
-}
-
-export interface NoncancellableActivity<T> extends Activity<T>  {
-    (progress: ActivityProgress): Promise<T>;
-}
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
@@ -136,8 +113,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.registerDisposable(this.diagnostics[name] = vscode.languages.createDiagnosticCollection(name));
     }
 
-
-
     public showStatus(text: string, command?: VlocodeCommand | string | undefined) : void {
         if (!this.statusBar) {
             this.statusBar = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10));
@@ -206,7 +181,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param options Activity options
      * @param task Task to run
      */
-    public withActivity<T>(options: ActivityOptions, task: Activity<T>) {
+    public withActivity<T>(options: ActivityOptions, task: ActivityTask<T>) {
         // Create activity record to track activity progress
         const cancelTokenSource = options.cancellable ? new vscode.CancellationTokenSource() : undefined;
         const onCompleteEmitter = new vscode.EventEmitter<VlocodeActivity>();
@@ -226,24 +201,40 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
         });
 
+        const progressInterceptor = (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+            return {
+                report({message, increment, total, status}) {
+                    progress.report( { message, increment: total && increment ? (increment/total) * 100 : increment } );
+                    if (status !== undefined) {
+                        activityRecord.status = status;
+                    }
+                }
+            } as ActivityProgress;
+        };
+
         // anon-function that is going to run our task
         const taskRunner = async (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => {
             token?.onCancellationRequested(() => cancelTokenSource && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
             activityRecord.status = VlocodeActivityStatus.InProgress;
             try {
-                const result = await task(progress, cancelTokenSource?.token);
-                activityRecord.status = cancelTokenSource?.token.isCancellationRequested
-                    ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Completed;
+                const result = await task(progressInterceptor(progress), cancelTokenSource?.token);
+                if (activityRecord.status == VlocodeActivityStatus.InProgress) {
+                    activityRecord.status = VlocodeActivityStatus.Completed;
+                }
                 return result;
             } catch(e) {
-                activityRecord.status = cancelTokenSource?.token.isCancellationRequested
-                    ? VlocodeActivityStatus.Cancelled : VlocodeActivityStatus.Failed;
+                if (activityRecord.status == VlocodeActivityStatus.InProgress) {
+                    activityRecord.status = VlocodeActivityStatus.Failed;
+                }
                 if (options.propagateExceptions !== false) {
                     throw e;
                 } else {
                     this.logger.error(e);
                 }
             } finally {
+                if (cancelTokenSource?.token.isCancellationRequested) {
+                    activityRecord.status = VlocodeActivityStatus.Cancelled;
+                }
                 activityRecord.endTime = Date.now();
                 onCompleteEmitter.fire(activityRecord);
             }
