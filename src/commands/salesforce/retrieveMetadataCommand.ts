@@ -137,7 +137,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
                 }
             }
 
-            const successMessage = `Succesfully retrieved ${unpackedFiles.length} components`;
+            const successMessage = `Successfully retrieved ${unpackedFiles.length} components`;
             if (unpackedFiles.length == 1) {
                 void vscode.window.showInformationMessage(successMessage, 'Open')
                     .then(value => value ? void vscode.window.showTextDocument(vscode.Uri.file(unpackedFiles[0])) : undefined);
@@ -155,7 +155,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         })).sort((a, b) => a.label.localeCompare(b.label));
 
         const objectSelection = await vscode.window.showQuickPick(objectOptions, {
-            placeHolder: 'Select metdata object to export'
+            placeHolder: 'Select metadata object to export'
         });
         if (!objectSelection) {
             return; // selection cancelled;

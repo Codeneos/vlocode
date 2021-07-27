@@ -62,7 +62,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             // when they are not active any more
             for (const component of result.components()) {
                 const sourceFolder = sfPackage.getSourceFolder(component.componentType, component.componentName);
-                if (!component.componentType.includes('bundle') && sourceFolder) {
+                if (component.componentType.includes('bundle') && sourceFolder) {
                     await fs.emptyDir(sourceFolder);
                 }
             }

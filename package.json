@@ -241,7 +241,7 @@
             },
             {
                 "command": "vlocode.resumeDeploymentQueue",
-                "title": "Salesforce: Pause deployments..."
+                "title": "Salesforce: Resume deployments..."
             },
             {
                 "command": "vlocode.clearDeploymentQueue",
