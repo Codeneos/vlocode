@@ -9,8 +9,8 @@ export namespace Iterable {
      * @param depth Depth to flat to
      */
     export function flatten<T>(itr: RecursiveIterable<T>): Iterable<UnpackIterable<T>> {
-        // @ts-expect-error
         return {
+            // @ts-expect-error
             *[Symbol.iterator]() {
                 for (const item of itr) {
                     if (Iterable.isIterable<T>(item)) {

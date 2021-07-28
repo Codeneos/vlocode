@@ -1,9 +1,9 @@
 diff --git a/node_modules/@types/jsforce/connection.d.ts b/node_modules/@types/jsforce/connection.d.ts
-index c6ad643..bcc556e 100644
+index 2c755dc..ac6034f 100644
 --- a/node_modules/@types/jsforce/connection.d.ts
 +++ b/node_modules/@types/jsforce/connection.d.ts
-@@ -25,6 +25,13 @@ export interface RestApiOptions {
-     allOrNone?: boolean;
+@@ -31,6 +31,13 @@ export interface RestApiOptions {
+     allOrNone?: boolean | undefined;
  }
  
 +export interface RetrieveOptions extends RestApiOptions {
@@ -30,7 +30,7 @@ index df77ef2..05d4dff 100644
  }
  
 diff --git a/node_modules/@types/jsforce/salesforce-object.d.ts b/node_modules/@types/jsforce/salesforce-object.d.ts
-index 4967332..d410191 100644
+index 3199311..f87c428 100644
 --- a/node_modules/@types/jsforce/salesforce-object.d.ts
 +++ b/node_modules/@types/jsforce/salesforce-object.d.ts
 @@ -5,7 +5,7 @@ import { DescribeSObjectResult } from './describe-result';
@@ -42,20 +42,11 @@ index 4967332..d410191 100644
  import { SalesforceId } from './salesforce-id';
  import { Batch, BatchResultInfo } from './batch';
  import { QuickAction, QuickActionInfo } from './quick-action';
-@@ -13,9 +13,9 @@ import { QuickAction, QuickActionInfo } from './quick-action';
- export class SObject<T> {
-     record(id: SalesforceId): RecordReference<T>;
-     retrieve(id: SalesforceId, callback?: Callback<Record<T>>): Promise<Record<T>>;
--    retrieve(id: SalesforceId, options?: object, callback?: Callback<Record<T>>): Promise<Record<T>>;
-+    retrieve(id: SalesforceId, options?: RetrieveOptions, callback?: Callback<Record<T>>): Promise<Record<T>>;
-     retrieve(ids: SalesforceId[], callback?: Callback<Array<Record<T>>>): Promise<Array<Record<T>>>;
--    retrieve(ids: SalesforceId[], options?: object, callback?: Callback<Array<Record<T>>>): Promise<Array<Record<T>>>;
-+    retrieve(ids: SalesforceId[], options?: RetrieveOptions, callback?: Callback<Array<Record<T>>>): Promise<Array<Record<T>>>;
-     // Should update require that the record Id field be provided?
-     update(record: Partial<T>, callback?: Callback<RecordResult>): Promise<RecordResult>;
-     update(record: Partial<T>, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
-@@ -58,11 +58,17 @@ export class SObject<T> {
+@@ -56,18 +56,23 @@ export class SObject<T> {
+     create(record: T, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     create(record: Array<T>, options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
      create(record: Array<T>, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    create(record: Array<T>, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
      createBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
      del(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
 +    del(id: string, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
@@ -72,3 +63,8 @@ index 4967332..d410191 100644
      deleteBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
      destroyBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
      destroyHardBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+-    deleted(start: Date | string, end: Date | string, callback?: Callback<DeletedRecordsInfo>): Promise<DeletedRecordsInfo>;
+-    deleteHardBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     describe(callback?: Callback<DescribeSObjectResult>): Promise<DescribeSObjectResult>;
+     describe$: {
+         /** Returns a value from the cache if it exists, otherwise calls SObject.describe */

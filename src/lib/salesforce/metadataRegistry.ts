@@ -1,5 +1,5 @@
 // node_modules\@salesforce\source-deploy-retrieve\lib\src\metadata-registry\data\registry.json
-import { registryData, MetadataType as SfdxMetadataType } from '@salesforce/source-deploy-retrieve';
+import { registry as registryData, MetadataType as SfdxMetadataType } from '@salesforce/source-deploy-retrieve';
 import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
 import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { MetadataObject } from 'jsforce';

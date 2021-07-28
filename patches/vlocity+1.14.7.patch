@@ -69,7 +69,7 @@ index 6aabe7a..41a974f 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
-index 535f9d2..76359be 100644
+index 2e8810c..37e7942 100644
 --- a/node_modules/vlocity/lib/datapacksbuilder.js
 +++ b/node_modules/vlocity/lib/datapacksbuilder.js
 @@ -1,7 +1,6 @@
@@ -90,7 +90,7 @@ index 535f9d2..76359be 100644
  
      this.dataPackSizes = {};
  
-@@ -232,10 +231,7 @@ DataPacksBuilder.prototype.buildImport = async function(importPath, jobInfo, val
+@@ -240,10 +239,7 @@ DataPacksBuilder.prototype.buildImport = async function(importPath, jobInfo, val
  
          if (jobInfo.upgradeDataPackFields) {
              jobInfo.platformObjectMappings = this.vlocity.datapacksutils.updateExpandedDefinitionNamespace(
@@ -102,7 +102,7 @@ index 535f9d2..76359be 100644
              );
              dataPackImport.dataPacks.forEach(dataPack => {
                  if (Object.keys(jobInfo.platformObjectMappings).includes(dataPack.VlocityDataPackType)) {
-@@ -416,33 +412,52 @@ DataPacksBuilder.prototype.getFileData = function() {
+@@ -424,33 +420,52 @@ DataPacksBuilder.prototype.getFileData = function() {
  }
  
  DataPacksBuilder.prototype.setFileData = async function(filePath, encoding) {
@@ -171,7 +171,7 @@ index 535f9d2..76359be 100644
  }
  
  DataPacksBuilder.prototype.loadFilesAtPath = async function(srcpath, jobInfo, dataPackKey) {
-@@ -1297,6 +1312,11 @@ DataPacksBuilder.prototype.compile = function(lang, source, options, cb) {
+@@ -1305,6 +1320,11 @@ DataPacksBuilder.prototype.compile = function(lang, source, options, cb) {
      // add addtional languages here to support more compilation types    
      switch(lang) {
          case 'scss': {
@@ -200,7 +200,7 @@ index 26cb86f..cae7464 100644
  
  DataPacksErrorHandling.prototype.getSanitizedErrorMessage = async function(jobInfo, dataPack) {
 diff --git a/node_modules/vlocity/lib/datapacksjob.js b/node_modules/vlocity/lib/datapacksjob.js
-index 7879216..b45c50f 100644
+index ec780e1..2243e94 100644
 --- a/node_modules/vlocity/lib/datapacksjob.js
 +++ b/node_modules/vlocity/lib/datapacksjob.js
 @@ -9,8 +9,8 @@ const open = require("opn");
@@ -237,7 +237,7 @@ index 7879216..b45c50f 100644
          return true;
      });
  
-@@ -2478,7 +2481,8 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
+@@ -2477,7 +2480,8 @@ DataPacksJob.prototype.deployPack = async function(inputMap) {
              throw e;
          }
  

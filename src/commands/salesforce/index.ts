@@ -13,7 +13,7 @@ import ExecuteRestApiCommand from './execRestApiCommand';
 import RetrieveMetadataCommand from './retrieveMetadataCommand';
 import PauseMetadataDeploymentsCommand from './pauseDeploymentsCommand';
 import ResumeMetadataDeploymentsCommand from './resumeDeploymentsCommand';
-import ClearMetadataDeploymentQueueCommand from './ClearMetadataDeploymentQueueCommand';
+import ClearMetadataDeploymentQueueCommand from './clearMetadataDeploymentQueueCommand';
 
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,

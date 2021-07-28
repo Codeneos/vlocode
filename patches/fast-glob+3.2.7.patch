@@ -1,0 +1,20 @@
+diff --git a/node_modules/fast-glob/out/settings.js b/node_modules/fast-glob/out/settings.js
+index 3752806..3badec0 100644
+--- a/node_modules/fast-glob/out/settings.js
++++ b/node_modules/fast-glob/out/settings.js
+@@ -51,7 +51,14 @@ class Settings {
+         return option === undefined ? value : option;
+     }
+     _getFileSystemMethods(methods = {}) {
+-        return Object.assign(Object.assign({}, exports.DEFAULT_FILE_SYSTEM_ADAPTER), methods);
++        return new Proxy(methods, {
++            get: (target, prop) => {
++                if (typeof target[prop] !== undefined) {
++                    return target[prop];
++                }
++                return exports.DEFAULT_FILE_SYSTEM_ADAPTER[prop];
++            }
++        });
+     }
+ }
+ exports.default = Settings;

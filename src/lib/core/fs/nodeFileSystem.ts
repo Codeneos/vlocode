@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as globby from 'globby';
+import { globby } from 'globby';
 import { injectable, LifecyclePolicy } from 'lib/core';
 import { sanitizePath } from 'lib/util/fs';
 import { FileSystem, StatsOptions } from './types';
