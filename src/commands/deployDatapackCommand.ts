@@ -112,14 +112,13 @@ export default class DeployDatapackCommand extends DatapackCommand {
         }
 
         if (deployment.hasErrors) {
-            const errors = deployment.getErrorsByDatapack();
-            for (const [datapackKey, failedRecords] of Object.entries(errors)) {
-                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${failedRecords.length} failed records`);
-                for (let i = 0; i < failedRecords.length; i++) {
-                    this.logger.error(` ${i + 1}. ${chalk.underline(failedRecords[i].sourceKey)} -- ${this.formatDirectDeployError(failedRecords[i].statusMessage)}`);
+            for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
+                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${deployment.getFailedRecords(datapackKey).length} failed records (${messages.length} messages)`);
+                for (let i = 0; i < messages.length; i++) {
+                    this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatDirectDeployError(messages[i].message)} (${messages[i].type.toUpperCase()})`);
                 }
             }
-            void vscode.window.showWarningMessage(`Datapack deployment completed with errors: ${deployment.failedRecordCount}`);
+            void vscode.window.showWarningMessage(`Datapack deployment completed with errors: unable to update/insert ${deployment.failedRecordCount} records`);
         } else {
             void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
         }

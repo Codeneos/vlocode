@@ -90,7 +90,7 @@ export function fileName(pathLike: string) {
  */
 export function fileSuffix(pathLike: string) {
     const basename = fileName(pathLike);
-    const suffixSplit = basename.indexOf('.');
+    const suffixSplit = basename.lastIndexOf('.');
     if (suffixSplit >= 0) {
         return basename.substring(suffixSplit + 1);
     }

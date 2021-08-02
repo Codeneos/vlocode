@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.3",
+    "version": "0.16.4",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.56.0"
+        "vscode": "^1.57.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -875,43 +875,25 @@
                 }
             }
         },
+        "grammars": [
+            {
+                "language": "vldp",
+                "scopeName": "source.json",
+                "path": "./syntax/datapack.tmLanguage.json"
+            }
+        ],
         "languages": [
             {
-                "id": "json",
-                "extensions": [
-                    ".json"
-                ],
+                "id": "vldp",
                 "aliases": [
                     "Vlocity Datapack"
                 ],
+                "extensions": [],
                 "filenamePatterns": [
                     "*_DataPack.json",
                     "*_ParentKeys.json"
-                ]
-            },
-            {
-                "id": "xml",
-                "extensions": [
-                    ".xml"
                 ],
-                "aliases": [
-                    "Salesforce Meta File"
-                ],
-                "filenamePatterns": [
-                    "*-meta.xml"
-                ]
-            },
-            {
-                "id": "xml",
-                "extensions": [
-                    ".md"
-                ],
-                "aliases": [
-                    "Salesforce Custom Metadata"
-                ],
-                "filenamePatterns": [
-                    "*.*.md"
-                ]
+                "configuration": "./syntax/datapack-language.json"
             },
             {
                 "id": "xml",
@@ -1112,10 +1094,8 @@
                     ".workflow",
                     ".workSkillRouting",
                     ".xmd",
-                    ".xorghub"
-                ],
-                "aliases": [
-                    "Salesforce Metadata"
+                    ".xorghub",
+                    ".xml"
                 ]
             }
         ]
@@ -1151,7 +1131,7 @@
         "@types/sinon": "^10.0.2",
         "@types/terser-webpack-plugin": "^5.0.4",
         "@types/uuid": "^8.3.1",
-        "@types/vscode": "^1.58.1",
+        "@types/vscode": "^1.57.0",
         "@types/webpack": "^5.28.0",
         "@types/webpack-merge": "^4.1.5",
         "@types/xml2js": "^0.4.9",

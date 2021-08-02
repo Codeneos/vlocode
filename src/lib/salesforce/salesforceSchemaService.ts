@@ -94,6 +94,10 @@ export default class SalesforceSchemaService {
                 return undefined;
             }
 
+            if (field.referenceTo?.length) {
+                type = field.referenceTo[0];
+            }
+
             resolved.push(field);
         }
 

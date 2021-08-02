@@ -192,6 +192,10 @@ export class DatapackLookupService implements DependencyResolver {
                     }
 
                     if (lookupResults[resultsIndex]) {
+                        if (lookupResults[resultsIndex] == rec.Id) {
+                            // When the existing lookup and new lookup are the same it is not considered an error
+                            continue;
+                        }
                         this.logger.error(`Duplicate match for lookup key ${lookupKey}; existing lookup ${lookupResults[resultsIndex]}; overwriting lookup result with ${rec.id}`);
                     }
 

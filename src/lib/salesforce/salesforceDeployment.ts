@@ -211,10 +211,23 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         if (this.nextProgressTimeoutId != 0) {
             clearTimeout(this.nextProgressTimeoutId);
         }
-        // @ts-expect-error; cancelDeploy is not available in jsforce types
-        const deployCancelRequest = this.connection.metadata.cancelDeploy(this.deploymentId);
-        void this.emit('cancel', this.lastStatus);
-        await deployCancelRequest;
+
+        try {
+            // @ts-expect-error; cancelDeploy is not available in jsforce types
+            const result = await this.connection.metadata.cancelDeploy(this.deploymentId);
+        } catch(err) {
+            // if the deployment is already completed we will get an error
+            // if so ignore iy
+        }
+
+        try {
+            // Refresh status
+            this.lastStatus = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as DetailedDeployResult;
+        } catch(err) {
+            // Ignore errors that occur here;
+        } finally {
+            void this.emit('cancel', this.lastStatus);
+        }
     }
 
     public getResult() {

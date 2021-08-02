@@ -123,6 +123,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             const componentNames = sfPackage.getComponentNames();
             const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
             this.logger.info(`Added ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
+            progress.report({ message: `deploying ${sfPackage.size()} components` });
 
             // Save manifest
             await this.saveUnsavedChanges(sfPackage);
@@ -142,16 +143,15 @@ export default class DeployMetadataCommand extends MetadataCommand {
             token.onCancellationRequested(() => deployment.cancel());
             await deployment.start({ ignoreWarnings: true });
 
-            this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
+            this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);            
             const result = await deployment.getResult();
+            await this.logDeployResult(sfPackage, result);
 
             if (!result.success) {
-                const deploymentStatus = token?.isCancellationRequested ? 'cancelled' : result.status;
-                void vscode.window.showErrorMessage(`Deployment ${result?.id} ${deploymentStatus}`, 'See details').then(async selected =>
+                void vscode.window.showErrorMessage(`Deployment ${result?.id} ${result.status}`, 'See details').then(async selected =>
                     selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
                 );
                 progress.report({ status: VlocodeActivityStatus.Failed });
-                this.logger.error(`Deployment ${result?.id} -- ${deploymentStatus}`);
                 return;
             }
 

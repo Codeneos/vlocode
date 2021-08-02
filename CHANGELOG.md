@@ -1,6 +1,24 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
-
-## Version 0.15.2 - 2021-05-17
+## Version 0.16.4 - 2021-08-21
+ - Significant improvements to direct deployment mode for Vlocity
+   - Verify global keys to ensure data is inserted correctly.
+   - Do not disabled triggers by Default; this caused to much incorrect deployment data on new orgs
+   - Auto retry fo failed records in small chunks
+   - Collect warnings due to failed lookups
+   - Report warnings and errors in a structured way at the end of the deployment
+   - Fix multi level lookups resolved to the wrong datapacks or caused fatal exceptions
+   - Better support cancellation of datapack deployments
+ - Fix issue where metadata with double dots in the file name where not seen as metadata
+ - Better reporting of metadata deployment errors
+ - Only show dropdown menus when applicable
+ - Fix issue causing refresh commands to incorrectly empty the parent folder 
+ - Support for pausing the auto deployment of changes allowing easy creating of a multi file deployment
+ - Update Salesforce dependencies to version 52
+ - Update Vlocity Build Tools to v0.14.7
+ - Add syntax and grammar for Vlocity datapacks based allowing custom icons as well as allowing for suggestions by the VSCode marketplace.
+   ## known issues
+   - VisualForce remoting might not work properly when strict authentication is enabled. 
+ ## Version 0.15.2 - 2021-05-17
  - Fix issue where meta files are not created for sub-folders of classes and trigger folders.
  - FIx issue where trigger meta file is not using the Trigger Tag
 

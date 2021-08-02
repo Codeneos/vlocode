@@ -1,9 +1,7 @@
 import { VlocityDatapack } from 'lib/vlocity/datapack';
-import SalesforceService from 'lib/salesforce/salesforceService';
-import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import QueryService from 'lib/salesforce/queryService';
-import { LogManager, Logger } from 'lib/logging';
-import { Connection, Field } from 'jsforce';
+import { Logger } from 'lib/logging';
+import { Field } from 'jsforce';
 import * as moment from 'moment';
 import Timer from 'lib/util/timer';
 import { DATAPACK_RESERVED_FIELDS, NAMESPACE_PLACEHOLDER } from '@constants';
@@ -12,18 +10,17 @@ import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
 import { injectable } from 'lib/core/inject';
 import { container, LifecyclePolicy } from 'lib/core';
 import { asArray, groupBy } from 'lib/util/collection';
-import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import * as uuid from 'uuid';
-import DatapackDeployment from './datapackDeployment';
-import DatapackDeploymentRecord from './datapackDeploymentRecord';
-import deploymentSpecs from './deploymentSpecs';
-import { VlocityNamespaceService } from './vlocityNamespaceService';
-import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { Iterable } from 'lib/util/iterable';
 import RecordBatch, { RecordBatchOptions } from 'lib/salesforce/recordBatch';
 import { CancellationToken } from 'vscode';
+import DatapackDeployment from './datapackDeployment';
+import DatapackDeploymentRecord from './datapackDeploymentRecord';
+import deploymentSpecs from './deploymentSpecs';
+import { VlocityNamespaceService } from './vlocityNamespaceService';
+import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -53,6 +50,14 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     disableTriggers?: boolean;
     cancellationToken?: CancellationToken;
+    /**
+     * Number of times to retry the update/insert operations; defaults to 1
+     */
+    maxRetries?: number;
+    /**
+     * Chunk size for retrying failed records; defaults to 5
+     */
+    retryChunkSize?: number;
 }
 
 export abstract class DatapackDeploymentSpec {

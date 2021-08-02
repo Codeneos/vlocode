@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { getDocumentBodyAsString } from 'lib/util/fs';
 import { CommandBase } from 'commands/commandBase';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { FailureDeployMessage } from 'lib/salesforce/salesforceDeployService';
+import { DetailedDeployResult, FailureDeployMessage } from 'lib/salesforce/salesforceDeployService';
 import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 
@@ -40,10 +40,20 @@ export default abstract class MetadataCommand extends CommandBase {
      * @param manifest The deployment or destructive changes manifest
      * @param failures Array of component failures
      */
-    protected async showComponentFailures(sfPackage: SalesforcePackage, failures: FailureDeployMessage[]) {
+    protected async logDeployResult(sfPackage: SalesforcePackage, result: DetailedDeployResult) {
+        if (result.success) {
+            this.logger.info(`Deployment ${result?.id} -- ${result.status}`);
+        } else {
+            this.logger.error(`Deployment ${result?.id} -- ${result.status}`);
+        }
+
+        if (!result.details?.componentFailures?.length) {
+            return;
+        }
+
         // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
-        // these are not usefull to display so we instead filter these out
-        const filterFailures = failures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
+        // these are not useful to display so we instead filter these out        
+        const filterFailures = result.details?.componentFailures?.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
 
         for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
             const info = sfPackage.getSourceFile(failure.fileName.replace(/^src\//i, ''));
@@ -54,9 +64,9 @@ export default abstract class MetadataCommand extends CommandBase {
         }
 
         // Log all failures to the console even those that have no file info
-        for (const failure of filterFailures.filter(failure => failure)) {
-            this.logger.warn(`${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
-        }
+        filterFailures.filter(failure => failure).forEach((failure, i) => {
+            this.logger.warn(` ${i + 1}. ${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
+        });
     }
 
     protected async reportProblem(localPath: vscode.Uri, failure: { problem: string; lineNumber: any; columnNumber: any }) {

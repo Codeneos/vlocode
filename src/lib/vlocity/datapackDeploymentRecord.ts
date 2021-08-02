@@ -11,11 +11,13 @@ export enum DeploymentStatus {
 
 export default class DatapackDeploymentRecord {
 
+    private readonly _warnings = new Array<string>();
     private readonly _dependencies = new Map<string, DatapackRecordDependency>();
     private readonly _deployTimer: Timer = new Timer();
     private _status: DeploymentStatus = DeploymentStatus.Pending;
     private _statusDetail?: string;
     private _existingId?: string;
+    private _retryCount = 0;
 
     public get status(): DeploymentStatus {
         return this._status;
@@ -37,6 +39,10 @@ export default class DatapackDeploymentRecord {
         return this._status === DeploymentStatus.Failed;
     }
 
+    public get hasWarnings(): boolean {
+        return this._warnings.length > 0;
+    }
+
     public get recordId(): string | undefined {
         return this._status === DeploymentStatus.Deployed ? this._statusDetail : this._existingId;
     }
@@ -45,12 +51,20 @@ export default class DatapackDeploymentRecord {
         return this._status !== DeploymentStatus.Deployed ? this._statusDetail : undefined;
     }
 
+    public get warnings(): ReadonlyArray<string> {
+        return this._warnings;
+    }
+
     public get deployTime(): number {
         return this._deployTimer.elapsed;
     }
 
     public get hasUnresolvedDependencies(): boolean {
         return this._dependencies.size > 0;
+    }
+
+    public get retryCount(): number {
+        return this._retryCount;
     }
 
     constructor(
@@ -69,6 +83,15 @@ export default class DatapackDeploymentRecord {
         }
         this._status = status;
         this._statusDetail = detail;
+    }
+
+    public retry() {
+        this._retryCount++;
+        this._status = DeploymentStatus.Pending;
+    }
+
+    public addWarning(message: string) {
+        this._warnings.push(message);
     }
 
     public setExistingId(value: string) {

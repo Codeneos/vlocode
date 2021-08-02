@@ -22,7 +22,7 @@ export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
     }
 
     public async afterDeploy(event: DatapackDeploymentEvent) {
-        for (const record of event.getDeployedRecords('OmniScript__c')) {
+        await forEachAsyncParallel(event.getDeployedRecords('OmniScript__c'), async record => {
             try {
                 this.logger.info(`Activating ${record.datapackKey}...`);
                 await this.activateOmniScript(record.recordId);
@@ -30,7 +30,7 @@ export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {
                 this.logger.error(`Failed to activate OmniScript ${record.datapackKey} due to activation error: ${err}`);
                 record.updateStatus(DeploymentStatus.Failed, err.message || err);
             }
-        }
+        }, 4);
     }
 
     /**
