@@ -244,3 +244,17 @@ export function except<T>(source: Array<T>, target: Array<T>): Array<T> {
     source.forEach(element => target.indexOf(element) == -1 && excepted.push(element));
     return excepted;
 }
+
+/**
+ * Remove the first element from the array that matches the specified predicate 
+ * @param source Source array
+ * @param predicate predicate to match
+ * @returns Item or undefined when not found
+ */
+export function remove<T>(source: Array<T>, predicate: (item: T, index: number) => boolean): T | undefined {
+    const index = source.findIndex(predicate);
+    if (index != -1) {
+        const [ removedItem ] = source.splice(index, 1);
+        return removedItem;
+    }
+}

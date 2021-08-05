@@ -2,8 +2,6 @@ import DatapackDeploymentRecord from './datapackDeploymentRecord';
 
 export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymentRecord> {
 
-    private readonly records = new Array<DatapackDeploymentRecord>();
-
     public get datapackType() {
         return this.records?.[0]?.datapackType;
     }
@@ -11,8 +9,9 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
     /**
      * Create a new group instance.
      * @param key Key of this group
+     * @param records Records
      */
-    public constructor(public readonly key: string) {
+    public constructor(public readonly key: string, private readonly records = new Array<DatapackDeploymentRecord>()) {
     }
 
     public [Symbol.iterator]() {

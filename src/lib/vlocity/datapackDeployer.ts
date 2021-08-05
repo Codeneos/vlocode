@@ -60,14 +60,18 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
     retryChunkSize?: number;
 }
 
-export abstract class DatapackDeploymentSpec {
-    abstract preprocess?(datapack: VlocityDatapack): Promise<any> | any;
-    abstract beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
-    abstract afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
+export interface DatapackDeploymentSpec {
+    preprocess?(datapack: VlocityDatapack): Promise<any> | any;
+    afterRecordConversion?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
+    beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
+    afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
 }
+
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export default class VlocityDatapackDeployer {
+
+    private readonly container = container.new();
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -83,9 +87,8 @@ export default class VlocityDatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions) {
-        const local = container.new();
-        local.register(new QueryService(this.connectionProvider).setCacheDefault(true));
-        const deployment = local.create(DatapackDeployment, options);
+        this.container.register(new QueryService(this.connectionProvider).setCacheDefault(true));
+        const deployment = this.container.create(DatapackDeployment, options);
 
         deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(group));
         deployment.on('beforeDeployGroup', group => this.beforeDeployRecordGroup(group));
@@ -99,8 +102,10 @@ export default class VlocityDatapackDeployer {
                 break;
             }
             try {
-                await this.runPreprocessors(datapack);
-                deployment.add(await this.toSalesforceRecords(datapack));
+                await this.runSpecFunction(datapack.datapackType, 'preprocess', datapack);
+                const records = await this.toSalesforceRecords(datapack);
+                await this.runSpecFunction(datapack.datapackType, 'afterRecordConversion', records);
+                deployment.add(records);
             } catch(err) {
                 this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
             }
@@ -210,7 +215,7 @@ export default class VlocityDatapackDeployer {
      * @param datapackRecords Datapacks being deployed
      */
     private async beforeDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
-        return this.runSpecFunction('beforeDeploy', datapackGroups);
+        return this.runSpecEventFunction('beforeDeploy', datapackGroups);
     }
 
     /**
@@ -218,31 +223,40 @@ export default class VlocityDatapackDeployer {
      * @param datapackRecords Datapacks that have been deployed
      */
     private async afterDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
-        return this.runSpecFunction('afterDeploy', datapackGroups);
+        return this.runSpecEventFunction('afterDeploy', datapackGroups);
     }
 
-    private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
-        if (deploymentSpecs[datapackType]) {
-            return container.resolve(deploymentSpecs[datapackType]);
-        }
-    }
 
     /**
      * Event handler running before the deployment 
      * @param datapacks Datapacks being deployed
      */
-    private async runSpecFunction<Type extends keyof DatapackDeploymentSpec>(type: Type, datapacks: Iterable<DatapackDeploymentRecordGroup>) {
+    private async runSpecEventFunction(type: 'beforeDeploy' | 'afterDeploy', datapacks: Iterable<DatapackDeploymentRecordGroup>) {
         const datapacksByType = groupBy(asArray(datapacks), dp => dp.datapackType);
-
         for (const [datapackType, recordGroups] of Object.entries(datapacksByType)) {
-            const spec = this.getDeploySpec(datapackType);
-            const specFunc = spec?.[type as string];
-            if (specFunc) {
-                await specFunc.call(spec, {
-                    recordGroups,
-                    getDeployedRecords: (type: string) => this.getDeployedRecords(type, recordGroups)
-                });
-            }
+            await this.runSpecFunction(datapackType, type, {
+                recordGroups,
+                getDeployedRecords: (type: string) => this.getDeployedRecords(type, recordGroups)
+            } as any);
+        }
+    }
+
+    /**
+     * Run a datapack spec function and await the result
+     * @param datapackType Datapack type
+     * @param eventType Event/function type to run
+     * @param args Arguments
+     */
+    private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(datapackType: string, eventType: T, ...args: Parameters<E>) {
+        const spec = this.getDeploySpec(datapackType);
+        if (typeof spec?.[eventType] === 'function') {
+            await spec[eventType]?.apply(spec, args) as ReturnType<E>;
+        }
+    }
+
+    private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
+        if (deploymentSpecs[datapackType]) {
+            return this.container.get(deploymentSpecs[datapackType]);
         }
     }
 

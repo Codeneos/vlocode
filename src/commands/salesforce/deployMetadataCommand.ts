@@ -10,6 +10,7 @@ import { CancellationToken } from 'typescript';
 import { SalesforceDeployment } from 'lib/salesforce/salesforceDeployment';
 import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import MetadataCommand from './metadataCommand';
+import { fileName } from 'lib/util/fs';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -20,7 +21,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
      * In order to prevent double deployment keep a list of pending deploy ops
      */
     private readonly filesPendingDeployment = new Set<vscode.Uri>();
-    private deploymentTimeout?: any;
+    private deploymentTaskRef?: any;
     private enabled = true;
 
     public get pendingFiles() {
@@ -39,7 +40,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     public setEnabled(state: boolean) {
         this.enabled = state;
-        if (state && this.deploymentTimeout === undefined && this.filesPendingDeployment.size > 0) {
+        if (state && this.deploymentTaskRef === undefined && this.filesPendingDeployment.size > 0) {
             void this.deployMetadata([]);
         }
     }
@@ -70,16 +71,16 @@ export default class DeployMetadataCommand extends MetadataCommand {
         selectedFiles.forEach(this.filesPendingDeployment.add, this.filesPendingDeployment);
 
         // Start deployment
-        if (this.deploymentTimeout === undefined && this.enabled) {
-            this.deploymentTimeout = setTimeout(async () => {
-                while (this.filesPendingDeployment.size > 0) {
-                    try {
+        if (this.deploymentTaskRef === undefined && this.enabled) {
+            this.deploymentTaskRef = setImmediate(async () => {
+                try {
+                    while (this.filesPendingDeployment.size > 0) {
                         await this.doDeployMetadata(this.popPendingFiles());
-                    } finally {
-                        this.deploymentTimeout = undefined;
                     }
+                } finally {
+                    this.deploymentTaskRef = undefined;
                 }
-            }, 0);
+            });
         } else {
             const fileNameText = selectedFiles.length == 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
             this.logger.info(`Deployment queued of ${fileNameText}`);
@@ -93,8 +94,9 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async doDeployMetadata(files: vscode.Uri[]) {
         const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
+        const taskTitle = files.length == 1 ? `Deploy ${fileName(files[0].fsPath, true)}` : 'Deploy Metadata';
         await this.vlocode.withActivity({
-            progressTitle: 'Deploy Metadata',
+            progressTitle: taskTitle,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: false,
             cancellable: true
@@ -143,7 +145,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             token.onCancellationRequested(() => deployment.cancel());
             await deployment.start({ ignoreWarnings: true });
 
-            this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);            
+            this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
             const result = await deployment.getResult();
             await this.logDeployResult(sfPackage, result);
 

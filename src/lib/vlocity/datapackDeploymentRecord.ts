@@ -105,6 +105,22 @@ export default class DatapackDeploymentRecord {
     public addLookup(field: string, dependency: DatapackRecordDependency) {
         this._dependencies.set(field, dependency);
     }
+    public getLookup(field: string) {
+        return this._dependencies.get(field);
+    }
+
+    public addDependency(dependency: DatapackRecordDependency | DatapackDeploymentRecord) {
+        if (dependency instanceof DatapackDeploymentRecord) {
+            return this.addDependency({
+                VlocityRecordSObjectType: dependency.sobjectType,
+                VlocityDataPackType: 'VlocityMatchingKeyObject',
+                VlocityMatchingRecordSourceKey: dependency.sourceKey,
+                VlocityLookupRecordSourceKey: undefined
+            });
+        }
+        const dependencyGuid = `$${dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey}`;
+        this._dependencies.set(dependencyGuid, dependency);
+    }
 
     public getDependencySourceKeys() {
         return Iterable.map(this._dependencies.values(), d => d.VlocityMatchingRecordSourceKey ?? d.VlocityLookupRecordSourceKey);
@@ -119,7 +135,9 @@ export default class DatapackDeploymentRecord {
         for(const [field, dependency] of depArray) {
             const resolution = await resolver.resolveDependency(dependency);
             if (resolution) {
-                this.values[field] = resolution;
+                if (!field.startsWith('$')) {
+                    this.values[field] = resolution;
+                }
                 this._dependencies.delete(field);
             }
         }

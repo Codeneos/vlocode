@@ -317,7 +317,7 @@ export default class DatapackDeployment extends AsyncEventEmitter<DatapackDeploy
     }
 
     private isRetryable(error: string) {
-        return error.includes('Script-thrown exception');
+        return true;
     }
 
     private handleProgressReport({ processed, total }) {

@@ -74,13 +74,14 @@ export function directoryName(pathLike: string) {
 }
 
 /**
- *  Platform agnostic method to get the file name or basename of a path treating both / as well as \\ as directory separators.
- * @param pathLike path like string
+ * Platform agnostic method to get the file name or basename of a path treating both / as well as \\ as directory separators.
+ * @param pathLike path like string 
+ * @param removeExtension remove the deil extension if any
  * @returns Basename of a path with the file suffix
  */
-export function fileName(pathLike: string) {
+export function fileName(pathLike: string, removeExtension: boolean = false) {
     const pathParts = pathLike.split(/[\\/]/g);
-    return pathParts[pathParts.length - 1];
+    return removeExtension ? pathParts[pathParts.length - 1].split('.').slice(0,-1).join('.') : pathParts[pathParts.length - 1];
 }
 
 /**
