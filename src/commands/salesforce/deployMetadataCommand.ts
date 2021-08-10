@@ -11,6 +11,7 @@ import { SalesforceDeployment } from 'lib/salesforce/salesforceDeployment';
 import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import MetadataCommand from './metadataCommand';
 import { fileName } from 'lib/util/fs';
+import { VlocodeCommand } from '@constants';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -32,6 +33,10 @@ export default class DeployMetadataCommand extends MetadataCommand {
         return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
     }
 
+    public initialize() {
+        this.setEnabled(true);
+    }
+
     private popPendingFiles() : vscode.Uri[] {
         const files = [...this.filesPendingDeployment];
         this.filesPendingDeployment.clear();
@@ -40,6 +45,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     public setEnabled(state: boolean) {
         this.enabled = state;
+        this.vlocode.createUpdateStatusBarItem('metadataDeployStatus', {
+            text: state ? '$(debug-pause)' : '$(debug-continue)',
+            tooltip: state ? 'Pause Salesforce deployments' : 'Resume Salesforce deployments',
+            command: state ? VlocodeCommand.pauseDeploymentQueue : VlocodeCommand.resumeDeploymentQueue
+        });
         if (state && this.deploymentTaskRef === undefined && this.filesPendingDeployment.size > 0) {
             void this.deployMetadata([]);
         }

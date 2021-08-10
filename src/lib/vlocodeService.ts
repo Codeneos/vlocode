@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import { VlocodeCommand } from '@constants';
+import { CONFIG_SECTION, VlocodeCommand } from '@constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
 import * as chalk from 'chalk';
@@ -16,23 +16,22 @@ import { HookManager } from './util/hookManager';
 import { injectable } from './core/inject';
 import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
-import SfdxUtil from './util/sfdx';
+import sfdx from './util/sfdx';
 import { isPromise } from './util/async';
+import { intersect } from './util/collection';
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates
     private disposables: {dispose() : any}[] = [];
-    private statusBar?: vscode.StatusBarItem;
-    private apiStatus?: vscode.StatusBarItem;
+    private statusItems: { [id: string] : vscode.StatusBarItem } = {};
     private connector?: JsForceConnectionProvider;
 
     private readonly connectionHooks = new HookManager<jsforce.Connection>();
-    private readonly commandRouter = new CommandRouter(this);
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly activitiesChangedEmitter = new vscode.EventEmitter<VlocodeActivity[]>();
-    private readonly namespaceSymbol = Symbol();
+    @injectable.property private readonly nsService: VlocityNamespaceService;
 
     // Publics
     public readonly activities: ObservableArray<Observable<VlocodeActivity>> = observeArray([]);
@@ -64,7 +63,10 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     // Ctor + Methods
-    constructor(public readonly config: VlocodeConfiguration, public readonly nsService: VlocityNamespaceService, private readonly logger: Logger) {
+    constructor(
+        public readonly config: VlocodeConfiguration,
+        private readonly commandRouter: CommandRouter,
+        private readonly logger: Logger) {
         this.createConfigWatcher();
         this.connectionHooks.registerHook({ pre: this.updateNamespaceHook.bind(this) });
     }
@@ -87,7 +89,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
             if (this._datapackService) {
                 container.unregister(this._datapackService);
-                this._datapackService.dispose();
             }
             if (this.config.sfdxUsername) {
                 await this.nsService.initialize(this); // reload namespace
@@ -96,8 +97,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
             this.updateStatusBar(this.config);
         } catch (err) {
-            console.error(err);
-            this.logger.error(err.message);
+            this.logger.error(err);
             if (err?.message == 'NamedOrgNotFound') {
                 this.showStatus(`$(error) Unknown Salesforce user: ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
             } else {
@@ -113,28 +113,41 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.registerDisposable(this.diagnostics[name] = vscode.languages.createDiagnosticCollection(name));
     }
 
-    public showStatus(text: string, command?: VlocodeCommand | string | undefined) : void {
-        if (!this.statusBar) {
-            this.statusBar = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10));
-        }
-        this.statusBar.command = command;
-        this.statusBar.text = text;
-        this.statusBar.show();
+    public showStatus(text: string, command?: VlocodeCommand) : void {
+        this.createUpdateStatusBarItem(
+            'connection', {
+                text, command,
+                tooltip: `Click to select a different Salesforce org for Vlocode`
+            }
+        );
     }
 
     private showApiVersionStatusItem() : void {
-        if (!this.apiStatus) {
-            this.apiStatus = this.registerDisposable(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9));
-        }
-        this.apiStatus.command = VlocodeCommand.selectApiVersion;
-        this.apiStatus.text = this.config.salesforce.apiVersion || 'Select Salesforce API Version';
-        this.apiStatus.show();
+        this.createUpdateStatusBarItem(
+            'apiVersion', {
+                text: this.config.salesforce.apiVersion || 'Select Salesforce API Version',
+                tooltip: `Currently using API version ${this.config.salesforce.apiVersion}, click to select a different API version`,
+                command: VlocodeCommand.selectApiVersion
+            }
+        );
     }
 
-    public hideStatus() : void {
-        if (this.statusBar) {
-            this.statusBar.hide();
+    public hideAllStatusBarItems() : void {
+        for (const statusItem of Object.values(this.statusItems)) {
+            statusItem.hide();
         }
+    }
+
+    public createUpdateStatusBarItem(localName: string, options: Partial<vscode.StatusBarItem>) : vscode.StatusBarItem {
+        if (!this.statusItems[localName]) {
+            const priority = 30 - Object.keys(this.statusItems).length;
+            this.statusItems[localName] = this.registerDisposable(vscode.window.createStatusBarItem(`${CONFIG_SECTION}.${localName}`, vscode.StatusBarAlignment.Left, priority));
+        }
+        for (const key of intersect(Object.keys(options), ['text', 'tooltip', 'command'])) {
+            this.statusItems[localName][key] = options[key];
+        }
+        this.statusItems[localName].show();
+        return this.statusItems[localName];
     }
 
     /**
@@ -296,7 +309,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
-        }, (progress, token) => SfdxUtil.refreshOAuthTokens(this.config.sfdxUsername!, token));
+        }, (progress, token) => sfdx.refreshOAuthTokens(this.config.sfdxUsername!, token));
     }
 
     private updateNamespaceHook({ args }) {
@@ -321,12 +334,15 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     private updateStatusBar(config: VlocodeConfiguration) {
         if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length == 0) {
-            return this.hideStatus();
+            return this.hideAllStatusBarItems();
         }
-        if (!config.sfdxUsername ) {
-            return this.showStatus('$(gear) Select Vlocity org', VlocodeCommand.selectOrg);
+        if (!config.sfdxUsername) {
+            return this.showStatus('$(gear) Select Salesforce org', VlocodeCommand.selectOrg);
         }
-        return this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
+        this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
+        void sfdx.getSfdxAlias(config.sfdxUsername).then(userAliasOrName =>
+            this.showStatus(`$(cloud-upload) Vlocode ${userAliasOrName}`, VlocodeCommand.selectOrg)
+        );
     }
 
     public registerDisposable<T extends {dispose() : any}>(disposable: T) : T

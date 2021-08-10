@@ -10,7 +10,6 @@ export interface DependencyOptions {
     /** Determines how a service is created and maintained in the system  */
     lifecycle?: LifecyclePolicy;
 }
-
 export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
 
 /**
@@ -18,34 +17,20 @@ export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
  * determines how and when the service is created. 
  * @param options Constructions options for the service
  */
-export function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) : (ctor: T) => any {
+export const injectable = Object.assign(function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) : (ctor: T) => any {
     const lifecycle = options?.lifecycle || LifecyclePolicy.singleton;
     const services = asArray(options?.provides ?? []);
 
     return function(ctor: T) {
-        // Extend the constructor and inject any dependencies not provided
         const paramTypes = lazy(getDesignParamTypes, ctor);
-
-        function resolveParamValue(parameterIndex: number) {
-            const ignored = Reflect.getMetadata(`dependency:inject:${parameterIndex}:ignore`, ctor);
-            if (ignored !== true) {
-                const serviceType = Reflect.getMetadata(`dependency:inject:${parameterIndex}`, ctor) ?? paramTypes[parameterIndex];
-                if (serviceType !== undefined) {
-                    return container.resolve(paramTypes[parameterIndex], undefined, ctor);
-                }
-            }
-            return undefined;
-        }
 
         // @ts-ignore ctor extension is valid here if when there is no intersection
         const classProto = class extends ctor {
             constructor(...args: any[]) {
-                for (let i = 0; i < paramTypes.length; i++) {
-                    if (args[i] === undefined) {
-                        args[i] = resolveParamValue(i);
-                    }
-                }
+                const v = paramTypes;
+                container.resolveParameters(ctor, args);
                 super(...args);
+                container.resolveProperties(this);
             }
         };
 
@@ -60,20 +45,50 @@ export function injectable<T extends { new(...args: any[]): InstanceType<T> }>(o
         }
 
         // Register dependency metadata on new class ctor
-        Reflect.defineMetadata('dependency:provides', services, ctor);
-        Reflect.defineMetadata('dependency:lifecycle', lifecycle, ctor);
+        Reflect.defineMetadata('service:provides', services, ctor);
+        Reflect.defineMetadata('service:lifecycle', lifecycle, ctor);
 
         // Ensure our newly created dependency shares the same class name as the parent,
         return Object.defineProperty(classProto, 'name', { value: ctor.name, configurable: false, writable: false });
     };
-}
-
-export function inject(serviceType: ServiceType) {
-    return function(target: Object, propertyKey: string | symbol, parameterIndex: number) {
-        const serviceName = typeof serviceType === 'string' ? serviceType : (serviceType.prototype?.constructor?.name ?? serviceType.name);
-        Reflect.defineMetadata(`dependency:inject:${parameterIndex}`, serviceName, target);
-    };
-}
+}, {
+    /**
+     * Define as injectable with transient lifecycle
+     * @param options Constructions options for the service
+     * @returns 
+     */
+    transient: function(options?: DependencyOptions & { lifecycle: undefined }) {
+        return this({ ...options, lifecycle: LifecyclePolicy.transient } );
+    },
+    /**
+     * Define as injectable with Single instance lifecycle
+     * @param options Constructions options for the service
+     * @returns 
+     */
+    singleton: function(options?: DependencyOptions & { lifecycle: undefined }) {
+        return this({ ...options, lifecycle: LifecyclePolicy.singleton } );
+    },
+    /**
+     * Defines the property as injectable that is resolved during instantiation of the class
+     * @param target Target
+     * @param propertyKey Property name
+     */
+    property: function(target: any, propertyKey: string) {
+        const properties = (Reflect.getMetadata('service:properties', target) ?? []).concat([ propertyKey ]);
+        Reflect.defineMetadata('service:properties', properties, target);
+    },
+    /**
+     * Resolve paramter to a specific service type
+     * @param serviceType 
+     * @returns 
+     */
+    param: function (serviceType: ServiceType) {
+        return function(target: Object, propertyKey: string | symbol, parameterIndex: number) {
+            const serviceName = typeof serviceType === 'string' ? serviceType : (serviceType.prototype?.constructor?.name ?? serviceType.name);
+            Reflect.defineMetadata(`dependency:inject:${parameterIndex}`, serviceName, target);
+        };
+    }
+});
 
 /**
  * Do not onject

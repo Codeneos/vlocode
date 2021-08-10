@@ -71,7 +71,6 @@ class Vlocode {
         }
     }
 
-
     private startLogger() {
         // Simple switch that decides how to log
         const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode')));

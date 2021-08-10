@@ -224,7 +224,7 @@ export function last<T>(array: Array<T>): T | undefined {
 }
 
 /**
- * Intersect the elements of tow arrays, returns a new array with only the elements present in both arrays.
+ * Intersect the elements of two arrays, returns a new array with only the elements present in both arrays.
  * @param source source array
  * @param target Target array
  */

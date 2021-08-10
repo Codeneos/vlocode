@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { substringAfterLast } from 'lib/util/string';
 import * as xml2js from 'xml2js';
 import * as constants from '@constants';
-import { inject, injectable } from 'lib/core/inject';
+import { injectable } from 'lib/core/inject';
 import { LifecyclePolicy } from 'lib/core/container';
 import { Iterable } from 'lib/util/iterable';
 import { FileSystem } from 'lib/core/fs';
@@ -39,7 +39,7 @@ export class SalesforcePackageBuilder {
     constructor(
         public readonly apiVersion: string,
         public readonly type: SalesforcePackageType,
-        @inject('FileSystem') private readonly fs: FileSystem,
+        private readonly fs: FileSystem,
         private readonly logger: Logger) {
         this.mdPackage = new SalesforcePackage(apiVersion, '', fs);
     }

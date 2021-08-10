@@ -1,20 +1,20 @@
 import * as jsforce from 'jsforce';
 import { LogManager, Logger } from 'lib/logging';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import cache from 'lib/util/cache';
 import { isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
 import Timer from 'lib/util/timer';
 import { injectable } from 'lib/core/inject';
+import SalesforceService from './salesforceService';
 
 /**
- * Provices access to Database Schema methods like describe.
+ * Provides access to Database Schema methods like describe.
  */
-@injectable()
+@injectable.singleton()
 export default class SalesforceSchemaService {
 
-    constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly logger: Logger = LogManager.get(SalesforceSchemaService)) {
+    @injectable.property private readonly logger: Logger;
+
+    constructor(private readonly connectionProvider: SalesforceService) {
     }
 
     @cache(-1)

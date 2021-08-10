@@ -25,14 +25,18 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
             throw 'The selected file is not a known Salesforce metadata component';
         }
 
-        const metadataType = this.salesforce.getMetadataType(metadataInfo?.componentType)!;
         const objectData = await this.salesforce.describeComponent(metadataInfo?.componentType, metadataInfo?.fullName);
-        const urlFormat = this.getUrlFormat(metadataType);
-        if (!urlFormat || !metadataInfo) {
-            throw 'Cannot open the specified file in Salesforce; url format not defined.';
+        if (!objectData) {
+            throw 'Cannot open the specified file in Salesforce; component cannot be described';
         }
 
-        const salesforcePath = formatString(urlFormat, {...metadataInfo, ...objectData});
+        const metadataType = this.salesforce.getMetadataType(metadataInfo?.componentType)!;
+        const urlFormat = this.getUrlFormat(metadataType);
+        if (!urlFormat || !metadataInfo) {
+            throw 'Cannot open the specified file in Salesforce; url format not defined';
+        }
+
+        const salesforcePath = formatString(urlFormat, { ...metadataInfo, ...objectData});
         this.logger.info(`Opening URL: ${salesforcePath}`);
         void open(await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true }));
     }

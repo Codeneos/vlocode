@@ -1,24 +1,24 @@
-import { LogManager, Logger } from 'lib/logging';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import { Logger } from 'lib/logging';
 import { asArray, last } from 'lib/util/collection';
 import { PropertyAccessor } from 'lib/types';
-import { injectable } from 'lib/core/inject';
+import { injectable, } from 'lib/core/inject';
 import { transform } from 'lib/util/object';
+import { LifecyclePolicy } from 'lib/core';
+import { joinLimit } from 'lib/util/string';
 import QueryService, { QueryResult } from './queryService';
 import SalesforceSchemaService from './salesforceSchemaService';
-import { joinLimit } from 'lib/util/string';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
  */
-@injectable()
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export default class SalesforceLookupService {
 
+    @injectable.property private readonly logger: Logger;
+
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly schemaService: SalesforceSchemaService = new SalesforceSchemaService(connectionProvider),
-        private readonly queryService: QueryService = new QueryService(connectionProvider),
-        private readonly logger: Logger = LogManager.get(SalesforceLookupService)) {
+        private readonly schemaService: SalesforceSchemaService,
+        private readonly queryService: QueryService) {
     }
 
     public async lookupSingle<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', useCache?: boolean): Promise<QueryResult<T, K> | undefined>  {

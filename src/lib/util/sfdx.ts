@@ -1,10 +1,10 @@
-import * as http from 'http';
 import * as path from 'path';
 import * as jsforce from 'jsforce';
 import * as open from 'open';
 import * as salesforce from '@salesforce/core';
-import { LogManager, Logger } from 'lib/logging';
+import { LogManager } from 'lib/logging';
 import { CancellationToken } from 'vscode';
+import { lazy } from './lazy';
 
 export interface SalesforceAuthResult {
     orgId: string;
@@ -32,9 +32,11 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
 /**
  * A shim for accessing SFDX functionality
  */
-export default class SfdxUtil {
+namespace sfdx {
 
-    public static async webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
+    const logger = lazy(() => LogManager.get('sfdx'));
+
+    export async function webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
         const oauthServer = await salesforce.WebOAuthServer.create({
             oauthConfig: {
                 loginUrl: options.instanceUrl ?? 'https://test.salesforce.com'
@@ -68,21 +70,21 @@ export default class SfdxUtil {
         return result;
     }
 
-    public static async refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
-        const username = await this.resolveAlias(usernameOrAlias) || usernameOrAlias;
+    export async function refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
+        const username = await resolveAlias(usernameOrAlias) || usernameOrAlias;
         const authInfo = await salesforce.AuthInfo.create({ username });
-        return SfdxUtil.webLogin(authInfo.getFields(false), cancelToken);
+        return webLogin(authInfo.getFields(false), cancelToken);
     }
 
-    public static async getAllKnownOrgDetails() : Promise<SalesforceOrgInfo[]> {
+    export async function getAllKnownOrgDetails() : Promise<SalesforceOrgInfo[]> {
         const configs: SalesforceOrgInfo[] = [];
-        for await (const config of this.getAllValidatedConfigs()) {
+        for await (const config of getAllValidatedConfigs()) {
             configs.push(config);
         }
         return configs;
     }
 
-    public static async* getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {
+    export async function *getAllValidatedConfigs() : AsyncGenerator<SalesforceOrgInfo> {
         try {
             // Wrap in try catch as both AuthInfo and Aliases can throw exceptions when SFDX is not initialized
             // this avoid that and returns an yields an empty array instead
@@ -94,7 +96,7 @@ export default class SfdxUtil {
                     const authFields = authInfo.getFields();
 
                     if (!authFields.orgId || !authFields.username) {
-                        this.logger.warn(`Skip authfile '${authFile}'; required fields missing`);
+                        logger.warn(`Skip authfile '${authFile}'; required fields missing`);
                         continue;
                     }
 
@@ -109,16 +111,16 @@ export default class SfdxUtil {
                         alias: aliases?.getKeysByValue(authFields.username)[0]
                     };
                 } catch(err) {
-                    this.logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
+                    logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
                 }
             }
         } catch(err) {
-            this.logger.warn(`Error while listing SFDX info: ${err.message || err}`);
+            logger.warn(`Error while listing SFDX info: ${err.message || err}`);
         }
     }
 
-    public static async getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {
-        const username = await this.resolveAlias(usernameOrAlias) || usernameOrAlias;
+    export async function getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {
+        const username = await resolveAlias(usernameOrAlias) || usernameOrAlias;
         const org = await salesforce.Org.create({
             connection: await salesforce.Connection.create({
                 authInfo: await salesforce.AuthInfo.create({ username })
@@ -128,17 +130,20 @@ export default class SfdxUtil {
         return org;
     }
 
-    public static async resolveAlias(alias?: string) : Promise<string | undefined> {
+    async function resolveAlias(alias?: string) : Promise<string | undefined> {
         return alias ? salesforce.Aliases.fetch(alias) : undefined;
     }
 
-    public static async getJsForceConnection(username?: string) : Promise<jsforce.Connection> {
-        const org = await SfdxUtil.getOrg(username);
+    export async function getSfdxAlias(userName: string) : Promise<string | undefined> {
+        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
+        return aliases.getKeysByValue(userName).shift() ?? userName;
+    }
+
+    export async function getJsForceConnection(username?: string) : Promise<jsforce.Connection> {
+        const org = await getOrg(username);
         const connection = org.getConnection() as unknown;
         return connection as jsforce.Connection;
     }
-
-    protected static get logger() : Logger {
-        return LogManager.get(SfdxUtil);
-    }
 }
+
+export default sfdx;

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import SfdxUtil, { SalesforceOrgInfo } from 'lib/util/sfdx';
+import sfdx, { SalesforceOrgInfo } from 'lib/util/sfdx';
 import { CommandBase } from './commandBase';
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
@@ -44,8 +44,8 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     protected async getAuthorizedOrgs() : Promise<SelectOrgQuickPickItem[]> {
-        const orgList = await SfdxUtil.getAllKnownOrgDetails();
-        return orgList.map(orgInfo => ({ label: orgInfo.alias || orgInfo.username, description: orgInfo.instanceUrl, orgInfo }));
+        const orgList = await sfdx.getAllKnownOrgDetails();
+        return orgList.map(orgInfo => ({ label: orgInfo.alias ? `${orgInfo.alias} - ${orgInfo.username}` : orgInfo.username, description: orgInfo.instanceUrl, orgInfo }));
     }
 
     public async execute() : Promise<void> {
@@ -96,7 +96,7 @@ export default class SelectOrgCommand extends CommandBase {
             progressTitle: 'Opening browser to authorize new org...',
             cancellable: true
         }, async (_, token) => {
-            const loginResult = await SfdxUtil.webLogin({ instanceUrl }, token);
+            const loginResult = await sfdx.webLogin({ instanceUrl }, token);
             if (loginResult && loginResult.accessToken) {
                 return loginResult;
             }

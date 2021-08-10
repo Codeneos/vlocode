@@ -38,6 +38,10 @@ class CommandExecutor implements Command {
     public validate(... args: any[]) : Promise<void> | void {
         return this.command.validate?.(...args);
     }
+
+    public initialize() : Promise<void> | void {
+        return this.command.initialize?.();
+    }
 }
 
 /**
@@ -49,7 +53,7 @@ export default class CommandRouter {
     private readonly commands = new Map<string, CommandExecutor>();
     private readonly commandTypes = new Map<string, string>();
 
-    constructor(private readonly vlocode: VlocodeService) {
+    constructor(private readonly vlocode: VlocodeService, private readonly logger: Logger) {
     }
 
     private get count() : number {
@@ -66,6 +70,7 @@ export default class CommandRouter {
 
     public register(name: string, commandCtor: ((...args: any[]) => void) | CommandCtor | Command) : Command {
         const command = new CommandExecutor(name, this.createCommand(commandCtor));
+        this.initializeCommand(name, command);
         this.commands.set(name, command);
 
         if (typeof commandCtor === 'function' && commandCtor.name) {
@@ -74,6 +79,19 @@ export default class CommandRouter {
 
         this.vlocode.registerDisposable(vscode.commands.registerCommand(name, command.execute, command));
         return command;
+    }
+
+    private initializeCommand(id: string, cmd: Command) {
+        const commandInitialize = cmd.initialize;
+        if (commandInitialize) {
+            setImmediate(async () => {
+                try {
+                    await commandInitialize.call(cmd);
+                } catch(err) {
+                    this.logger.error(`Failed to initialize command ${id} due to initialization error: ${err}`);
+                }
+            });
+        }
     }
 
     public get<T extends Command>(type: (new() => T) | string) : T {

@@ -20,9 +20,10 @@ import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
-import { SalesforcePackageBuilder } from './deploymentPackageBuilder';
+import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 import QueryBuilder from './queryBuilder';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
+import { container } from 'lib/core';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -169,10 +170,10 @@ interface SoapResponse {
 @injectable()
 export default class SalesforceService implements JsForceConnectionProvider {
 
-    public readonly metadataRegistry = new MetadataRegistry();
-    public readonly schema = new SalesforceSchemaService(this);
-    public readonly lookupService = new SalesforceLookupService(this, this.schema, this.queryService);
-    public readonly deploy = new SalesforceDeployService(this);
+    @injectable.property public readonly metadataRegistry: MetadataRegistry;
+    @injectable.property public readonly schema: SalesforceSchemaService;
+    @injectable.property public readonly lookupService: SalesforceLookupService;
+    @injectable.property public readonly deploy: SalesforceDeployService;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -410,7 +411,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
      */
     public async getMetadataInfo(filePath: string | vscode.Uri) : Promise<{ componentType: string; fullName: string; name: string } | undefined> {
         const apiVersion = await this.getApiVersion();
-        const sfPackage = (await new SalesforcePackageBuilder(apiVersion, 'retrieve', this).addFiles([ filePath ])).getPackage();
+        const sfPackage = (await new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.retrieve).addFiles([ filePath ])).getPackage();
         const info = sfPackage.getSourceFileInfo(typeof filePath === 'string' ? filePath : filePath.fsPath);
         if (info) {
             return {

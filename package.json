@@ -1195,5 +1195,8 @@
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^5.8.0",
         "xml2js": "^0.4.23"
+    },
+    "dependencies": {
+        "unique-names-generator": "^4.6.0"
     }
 }

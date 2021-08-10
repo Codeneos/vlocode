@@ -5,11 +5,11 @@ import * as jsforce from 'jsforce';
 import * as chalk from 'chalk';
 import { injectable } from 'lib/core/inject';
 import * as constants from '@constants';
+import SalesforceService from 'lib/salesforce/salesforceService';
 
 @injectable()
 export class VlocityNamespaceService {
 
-    constructor(...args: any[])
     constructor(
         private vlocityNamespace: string | null,
         private readonly logger: Logger) {

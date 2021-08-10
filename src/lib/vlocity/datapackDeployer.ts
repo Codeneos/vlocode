@@ -67,8 +67,7 @@ export interface DatapackDeploymentSpec {
     afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
 }
 
-
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@injectable.transient()
 export default class VlocityDatapackDeployer {
 
     private readonly container = container.new();
@@ -256,7 +255,7 @@ export default class VlocityDatapackDeployer {
 
     private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
         if (deploymentSpecs[datapackType]) {
-            return this.container.get(deploymentSpecs[datapackType]);
+            return this.container.get(deploymentSpecs[datapackType], LifecyclePolicy.singleton);
         }
     }
 

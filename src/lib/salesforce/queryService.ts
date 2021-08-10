@@ -12,17 +12,16 @@ import { injectable } from 'lib/core/inject';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
-@injectable()
+@injectable.transient()
 export default class QueryService {
 
     private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();
     private readonly recordFieldNames: WeakMap<any, Map<string, string | number | symbol>> = new WeakMap();
     private queryCacheEnabled = true;
     private queryCacheDefault = false;
+    @injectable.property private readonly logger: Logger;
 
-    constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly logger: Logger = LogManager.get(QueryService)) {
+    constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
 
     /**
