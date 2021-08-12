@@ -57,7 +57,7 @@ export class MetadataRegistry {
 
         // Init case insensitive suffix to type map
         for (const suffix of Object.keys(registryData.suffixes)) {
-            this.suffixes.set(suffix.toLowerCase(), registryData[suffix]);
+            this.suffixes.set(suffix.toLowerCase(), registryData.suffixes[suffix]);
         }
     }
 

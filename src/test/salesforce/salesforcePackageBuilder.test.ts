@@ -12,6 +12,7 @@ import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
 import QueryService from 'lib/salesforce/queryService';
 import { mockDep, normalizePath } from 'test/helpers';
 import { MemoryFileSystem } from 'lib/core/fs';
+import { container } from 'lib/core';
 
 function buildXml(rootName: string, data?: any) {
     const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
@@ -97,12 +98,7 @@ describe('SalesforcePackageBuilder', () => {
         'src/destructiveChanges.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'g', 'h' ] } ] }),
     });
 
-    const salesforceService = new SalesforceService(
-        mockDep<JsForceConnectionProvider>(),
-        mockDep(VlocityNamespaceService),
-        mockDep(QueryService),
-        Logger.null
-    );
+    before(() =>  container.registerAs(Logger.null, Logger));
 
     describe('#addFiles', () => {
         describe('#lwcComponent', () => {
@@ -326,7 +322,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(1); // Inclues package.xml
+                expect(filesAdded.length).equals(2); // includes package.xml
                 expect(filesAdded).includes.members([ 'destructiveChangesPost.xml' ]);
                 expect(manifest.types.length).equals(0);
             });
@@ -340,7 +336,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(1);
+                expect(filesAdded.length).equals(2);
                 expect(filesAdded).includes.members([ 'destructiveChangesPost.xml' ]);
                 expect(manifest.types.length).equals(0);
             });
@@ -353,7 +349,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(1);
+                expect(filesAdded.length).equals(2);
                 expect(filesAdded).includes.members([ 'destructiveChangesPre.xml' ]);
                 expect(manifest.types.length).equals(0);
             });
@@ -368,7 +364,7 @@ describe('SalesforcePackageBuilder', () => {
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
-                expect(filesAdded.length).equals(2);
+                expect(filesAdded.length).equals(3);
                 expect(filesAdded).includes.members([
                     'destructiveChangesPre.xml',
                     'destructiveChangesPost.xml'

@@ -6,6 +6,8 @@ import 'mocha';
 import { createRecordProxy, removeNamespacePrefix } from 'lib/util/salesforce';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import QueryService from 'lib/salesforce/queryService';
+import { container } from 'lib/core';
+import { Logger } from 'lib/logging';
 
 declare let VlocityUtils: any;
 describe('queryService', () => {
@@ -21,6 +23,8 @@ describe('queryService', () => {
             })
         } as any) as JsForceConnectionProvider;
     }
+
+    before(() =>  container.registerAs(Logger.null, Logger));
 
     describe('#query', () => {
         const testRecord = {

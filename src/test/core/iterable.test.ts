@@ -18,7 +18,7 @@ describe('iterable', () => {
     });
 
     describe('#filter', () => {
-        it('should remove values not matching predictate', () => {
+        it('should remove values not matching predicate', () => {
             const itr = Iterable.filter(new Set([ 1,2,3,4 ]), v => v % 2 == 0);
             expect([...itr]).to.eql([2,4]);
         });

@@ -125,7 +125,7 @@ export namespace Iterable {
      * @param obj Object to check
      */
     export function isIterable<T>(obj: any): obj is Iterable<T> {
-        return obj && Object.getPrototypeOf(obj)?.[Symbol.iterator] === 'function';
+        return obj && typeof Object.getPrototypeOf(obj)?.[Symbol.iterator] === 'function';
     }
 
     /**
