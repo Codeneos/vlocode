@@ -1,11 +1,15 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
+ 
+## Version 0.16.6 - 2021-08-10
+ - Support pausing/resuming of deployments through the toolbar.
+ - Update IoC container to track dependencies between services and support initialization of circular references.
 
-## Version 0.16.5 - 2021-08-21
+## Version 0.16.5 - 2021-07-21
  - Fix issues causing parallel deployments being triggered from Vlocode towards Salesforce.
  - Improve deployment order for Products.
  - Retry all exceptions during datapack deployments; increases the success chances.
 
-## Version 0.16.4 - 2021-08-21
+## Version 0.16.4 - 2021-07-21
  - Significant improvements to direct deployment mode for Vlocity
    - Verify global keys to ensure data is inserted correctly.
    - Do not disabled triggers by Default; this caused to much incorrect deployment data on new orgs
