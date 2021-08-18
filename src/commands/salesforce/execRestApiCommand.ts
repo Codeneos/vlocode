@@ -1,4 +1,4 @@
-import Timer from 'lib/util/timer';
+import { Timer } from '@vlocode/util';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
 

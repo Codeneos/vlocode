@@ -1,9 +1,9 @@
-import { Logger } from 'lib/logging';
+import { Logger } from '@vlocode/core';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import Timer from 'lib/util/timer';
+import { Timer } from '@vlocode/util';
 import * as jsforce from 'jsforce';
 import * as chalk from 'chalk';
-import { injectable } from 'lib/core/inject';
+import { injectable } from '@vlocode/core';
 import * as constants from '@constants';
 import SalesforceService from 'lib/salesforce/salesforceService';
 

@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import 'mocha';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
-import { MemoryFileSystem } from 'lib/core/fs';
-import { Logger } from 'lib/logging';
+import { MemoryFileSystem } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 
 describe('datapackLoader', () => {
     describe('#loadFrom', () => {

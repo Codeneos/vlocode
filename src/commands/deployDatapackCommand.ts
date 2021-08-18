@@ -4,10 +4,10 @@ import * as fs from 'fs-extra';
 
 import { DatapackResultCollection } from 'lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from 'commands/datapackCommand';
-import { forEachAsyncParallel } from 'lib/util/collection';
+import { forEachAsyncParallel } from '@vlocode/util';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import DatapackDeployer from 'lib/vlocity/datapackDeployer';
-import { container } from 'lib/core';
+import { container } from '@vlocode/core';
 import chalk = require('chalk');
 
 export default class DeployDatapackCommand extends DatapackCommand {

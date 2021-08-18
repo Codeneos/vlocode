@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { Logger, LogManager } from 'lib/logging';
-import { filterAsyncParallel, mapAsyncParallel } from 'lib/util/collection';
-import { getDocumentBodyAsString } from 'lib/util/fs';
-import * as vscode from 'vscode';
+import { Logger, LogManager } from '@vlocode/core';
+import { filterAsyncParallel, mapAsyncParallel } from '@vlocode/util';
+import { getDocumentBodyAsString } from '@vlocode/util';
+import { Uri } from 'vscode';
 
 /**
  * Gets a list of datapack headers 
@@ -34,8 +34,8 @@ export async function getDatapackHeaders(paths: string[] | string, recursive: bo
 /**
  * Get all datapack header file in the current workspace folders.
  */
-export async function getDatapackHeadersInWorkspace() : Promise<vscode.Uri[]> {
-    return vscode.workspace.findFiles('**/*_DataPack.json');
+export async function getDatapackHeadersInWorkspace() : Promise<Uri[]> {
+    return require('vscode').workspace.findFiles('**/*_DataPack.json');
 }
 
 /**

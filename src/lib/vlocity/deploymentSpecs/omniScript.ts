@@ -1,9 +1,9 @@
-import { injectable } from 'lib/core/inject';
+import { injectable } from '@vlocode/core';
 import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { LifecyclePolicy } from 'lib/core/container';
-import { forEachAsyncParallel } from 'lib/util/collection';
-import { Logger } from 'lib/logging';
+import { LifecyclePolicy } from '@vlocode/core';
+import { forEachAsyncParallel } from '@vlocode/util';
+import { Logger } from '@vlocode/core';
 import { DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
 

@@ -3,8 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import type * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
-import { directoryName, fileName as baseName } from 'lib/util/fs';
-import { groupBy } from 'lib/util/collection';
+import { directoryName, fileName as baseName } from '@vlocode/util';
+import { groupBy } from '@vlocode/util';
 
 interface ExtendedFileProperties extends jsforce.FileProperties {
     fullFileName: string,

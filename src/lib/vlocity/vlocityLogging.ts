@@ -1,5 +1,5 @@
-import { Logger } from 'lib/logging';
-import * as util from 'lib/util/callStack';
+import { Logger } from '@vlocode/core';
+import * as util from '@vlocode/util';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 import 'vlocity';
 

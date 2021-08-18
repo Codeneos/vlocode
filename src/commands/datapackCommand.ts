@@ -3,7 +3,7 @@ import * as fs from 'fs-extra';
 
 import VlocityDatapackService, { ManifestEntry } from 'lib/vlocity/vlocityDatapackService';
 import { CommandBase } from 'commands/commandBase';
-import { mapAsyncParallel } from 'lib/util/collection';
+import { mapAsyncParallel } from '@vlocode/util';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackHeaders, getDatapackManifestKey } from 'lib/vlocity/datapackUtil';
 import SalesforceService from 'lib/salesforce/salesforceService';

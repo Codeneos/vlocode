@@ -4,17 +4,17 @@ import axios from 'axios';
 import * as jsforce from 'jsforce';
 import * as xml2js from 'xml2js';
 
-import { Logger } from 'lib/logging';
+import { Logger } from '@vlocode/core';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
-import cache from 'lib/util/cache';
+import { cache } from '@vlocode/util';
 import { PropertyAccessor } from 'lib/types';
 import { stripPrefix } from 'xml2js/lib/processors';
-import { injectable as injectable } from 'lib/core/inject';
+import { injectable as injectable } from '@vlocode/core';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
-import Timer from 'lib/util/timer';
-import { substringAfter } from 'lib/util/string';
-import QueryService from './queryService';
+import { Timer } from '@vlocode/util';
+import { substringAfter } from '@vlocode/util';
+import QueryService, { QueryResult } from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
 import SalesforceSchemaService from './salesforceSchemaService';
@@ -23,7 +23,6 @@ import RecordBatch from './recordBatch';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 import QueryBuilder from './queryBuilder';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
-import { container } from 'lib/core';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -107,8 +106,6 @@ export interface SoapDebuggingHeader {
     Wave?: SoapDebuggingLevel;
     All?: SoapDebuggingLevel;
 }
-
-export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
 /**
  * Simple Salesforce SOAP request formatter

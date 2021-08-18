@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 
 import { CONFIG_FILE } from '@constants';
-import { LogManager, Logger } from '../logging';
-import { arrayMapPush, asArray, groupBy } from '../util/collection';
-import { lazy } from '../util/lazy';
+import { LogManager, Logger } from '@vlocode/core';
+import { arrayMapPush, asArray, groupBy, lazy } from '@vlocode/util';
 import { WorkspaceOverrideConfiguration } from './overrideConfiguration';
 import { VscodeWorkspaceConfigProvider } from './workspaceConfigProvider';
 import { ConfigProxyHandler } from './proxyHandler';

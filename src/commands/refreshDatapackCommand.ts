@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { groupBy, mapAsync } from 'lib/util/collection';
+import { groupBy, mapAsync } from '@vlocode/util';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
 import ExportDatapackCommand from './exportDatapackCommand';
 

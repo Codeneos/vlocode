@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
-import { default as sfdxUtil } from 'lib/util/sfdx';
-import { LogManager, Logger, LogLevel } from 'lib/logging';
+import { sfdx } from '@vlocode/util';
+import { LogManager, Logger, LogLevel } from '@vlocode/core';
 import JsForceConnectionProvider from './jsForceConnectionProvider';
 
 interface PooledJsforceConnection extends jsforce.Connection {
@@ -33,7 +33,7 @@ export default class SfdxConnectionProvider implements JsForceConnectionProvider
     }
 
     private async createConnection() {
-        const connection = await sfdxUtil.getJsForceConnection(this.username) as PooledJsforceConnection;
+        const connection = await sfdx.getJsForceConnection(this.username) as PooledJsforceConnection;
         connection._logger = this.createJsForceLogger(LogManager.get('jsforce.Connection'));
         connection.tooling._logger = this.createJsForceLogger(LogManager.get('jsforce.Tooling'));
         connection._lastTested = Date.now();

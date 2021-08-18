@@ -6,18 +6,18 @@ import * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
 import * as vscode from 'vscode';
 
-import { Logger, LogManager } from 'lib/logging';
-import { wait } from 'lib/util/async';
-import { filterAsyncParallel, mapAsyncParallel, filterUndefined } from 'lib/util/collection';
-import { getDocumentBodyAsString } from 'lib/util/fs';
-import { injectable } from 'lib/core/inject';
+import { Logger, LogManager } from '@vlocode/core';
+import { wait } from '@vlocode/util';
+import { filterAsyncParallel, mapAsyncParallel, filterUndefined } from '@vlocode/util';
+import { getDocumentBodyAsString } from '@vlocode/util';
+import { injectable } from '@vlocode/core';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService from './salesforceService';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import { MetadataManifest, PackageManifest } from './deploy/packageXml';
-import { AsyncEventEmitter } from 'lib/util/events';
-import { container } from 'lib/core';
+import { AsyncEventEmitter } from '@vlocode/util';
+import { container } from '@vlocode/core';
 import { DeploymentStatus } from 'lib/vlocity/datapackDeploymentRecord';
 
 export type DetailedDeployResult = jsforce.DeployResult & {

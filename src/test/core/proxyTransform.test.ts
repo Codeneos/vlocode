@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import 'mocha';
-import { transformPropertyProxy } from 'lib/util/object';
+import { transformPropertyProxy } from '@vlocode/util';
 
 describe('PropertyTransformHandler', () => {
 

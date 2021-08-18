@@ -1,10 +1,10 @@
-import { Logger, LogManager } from 'lib/logging';
+import { Logger, LogManager } from '@vlocode/core';
 import VlocodeService from 'lib/vlocodeService';
 import * as vscode from 'vscode';
 import { Command } from 'lib/command';
 import { VlocodeCommand } from '@constants';
-import { injectable, LifecyclePolicy } from './core';
-import { lazy } from './util/lazy';
+import { injectable, LifecyclePolicy } from '@vlocode/core';
+import { lazy } from '@vlocode/util';
 
 export type CommandCtor = (new() => Command);
 export interface CommandList {

@@ -7,7 +7,7 @@ import * as packageJson from './package.json';
 import { NodePrefixResolverPlugin } from './build/resolvers/node';
 import * as ts from 'typescript';
 
-const externals = [
+const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
     // as external to avoid conflicts when loaded by the VSCode test runner
     'mocha',
@@ -19,7 +19,6 @@ const externals = [
     'electron'
 ];
 
-const packageExternals = [...Object.keys(packageJson['dependencies'] ?? {}), ...externals];
 const webpackBuildWatchPlugin = {
     buildCounter: 0,
     apply(compiler) {
@@ -88,14 +87,15 @@ const common : webpack.Configuration = {
             'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
             'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
             'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml'),
-            'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux')
+            'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux'),
+            '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src'),
+            '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src')
         }
     },
     output: {
         filename: '[name].js',
         chunkFilename: '[id].js',
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]',
-        strictModuleExceptionHandling: true
+        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
     },
     plugins: [ webpackBuildWatchPlugin ],
     node: {
@@ -123,7 +123,7 @@ const common : webpack.Configuration = {
                 vendor: {
                     test: /[\\/]node_modules[\\/]/,
                     name: 'vendor'
-                },
+                }
             },
         },
     },

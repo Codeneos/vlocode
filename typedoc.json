@@ -1,0 +1,13 @@
+
+{
+    "entryPoints": [
+        "./packages/core/src/index.ts",        
+        "./packages/util/src/index.ts"
+    ],
+    "readme": "SITE.md",
+    "out": "doc",
+    "hideGenerator": true,
+    "excludePrivate": true,
+    "excludeExternals": true,
+    "tsconfig": "./tsconfig.typedoc.json"
+}

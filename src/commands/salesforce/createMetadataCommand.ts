@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { formatString } from 'lib/util/string';
+import { formatString } from '@vlocode/util';
 import * as fs from 'fs-extra';
 import MetadataCommand from './metadataCommand';
 

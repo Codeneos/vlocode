@@ -1,6 +1,6 @@
 import * as path from 'path';
 import type { ExtensionContext } from 'vscode';
-import { singleton, getInstance } from 'lib/util/singleton';
+import { singleton, getInstance } from '@vlocode/util';
 import type VlocodeService from './vlocodeService';
 
 /**

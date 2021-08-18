@@ -1,4 +1,4 @@
-import cache from 'lib/util/cache';
+import { cache } from '@vlocode/util';
 import JsForceConnectionProvider from './connection/jsForceConnectionProvider';
 
 /**

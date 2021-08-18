@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Iterable } from 'lib/util/iterable';
+import { Iterable } from '@vlocode/util';
 
 describe('iterable', () => {
 

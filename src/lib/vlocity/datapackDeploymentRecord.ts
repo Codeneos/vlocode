@@ -1,5 +1,5 @@
-import Timer from 'lib/util/timer';
-import { Iterable } from 'lib/util/iterable';
+import { Timer } from '@vlocode/util';
+import { Iterable } from '@vlocode/util';
 import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer';
 
 export enum DeploymentStatus {

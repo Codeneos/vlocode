@@ -1,9 +1,9 @@
 import * as jsforce from 'jsforce';
-import { LogManager, Logger } from 'lib/logging';
-import cache from 'lib/util/cache';
-import { isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from 'lib/util/salesforce';
-import Timer from 'lib/util/timer';
-import { injectable } from 'lib/core/inject';
+import { LogManager, Logger } from '@vlocode/core';
+import { cache } from '@vlocode/util';
+import { isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
+import { Timer } from '@vlocode/util';
+import { injectable } from '@vlocode/core';
 import SalesforceService from './salesforceService';
 
 /**

@@ -1,0 +1,41 @@
+{
+    "name": "@vlocode/core",
+    "version": "0.16.6",
+    "description": "",
+    "main": "lib/index.js",
+    "directories": {
+        "lib": "./lib"
+    },
+    "scripts": {
+        "watch": "tsc -w",
+        "build": "tsc -b"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Codeneos/vlocode.git"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Codeneos/vlocode/issues"
+    },
+    "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "dependencies": {
+        "@vlocode/util": "file:../util",
+        "chalk": "^4.1.2",
+        "globby": "^11.0.4",
+        "memfs": "^3.2.2",
+        "moment": "^2.29.1",
+        "optional-require": "^1.1.7",
+        "reflect-metadata": "^0.1.13",
+        "unique-names-generator": "^4.6.0",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.59.0"
+    },
+    "publisher": "curlybracket"
+}

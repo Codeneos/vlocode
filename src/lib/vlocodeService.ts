@@ -2,29 +2,29 @@ import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
 import { CONFIG_SECTION, VlocodeCommand } from '@constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
-import { observeArray, ObservableArray, observeObject, Observable } from 'lib/util/observer';
+import { observeArray, ObservableArray, observeObject, Observable } from '@vlocode/util';
 import * as chalk from 'chalk';
+import { Logger } from '@vlocode/core';
+import { HookManager } from '@vlocode/util';
+import { injectable } from '@vlocode/core';
+import { container } from '@vlocode/core';
+import { sfdx } from '@vlocode/util';
+import { isPromise } from '@vlocode/util';
+import { intersect } from '@vlocode/util';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
-import { Logger } from './logging';
 import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
 import SfdxConnectionProvider from './salesforce/connection/sfdxConnectionProvider';
 import SalesforceService from './salesforce/salesforceService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
-import { HookManager } from './util/hookManager';
-import { injectable } from './core/inject';
-import { container } from './core/container';
 import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
-import sfdx from './util/sfdx';
-import { isPromise } from './util/async';
-import { intersect } from './util/collection';
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates
-    private disposables: {dispose() : any}[] = [];
+    private disposables: { dispose() : any }[] = [];
     private statusItems: { [id: string] : vscode.StatusBarItem } = {};
     private connector?: JsForceConnectionProvider;
 
@@ -117,7 +117,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.createUpdateStatusBarItem(
             'connection', {
                 text, command,
-                tooltip: `Click to select a different Salesforce org for Vlocode`
+                tooltip: 'Click to select a different Salesforce org for Vlocode'
             }
         );
     }

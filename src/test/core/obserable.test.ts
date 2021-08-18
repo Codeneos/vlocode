@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { observeObject, PropertyChangedEventArgs, observeArray, ArrayChangedEventArgs } from 'lib/util/observer';
+import { observeObject, PropertyChangedEventArgs, observeArray, ArrayChangedEventArgs } from '@vlocode/util';
 
 describe('observable', () => {
 

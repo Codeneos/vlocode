@@ -1,16 +1,16 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel } from 'lib/util/collection';
+import { forEachAsyncParallel } from '@vlocode/util';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
-import { Iterable } from 'lib/util/iterable';
+import { Iterable } from '@vlocode/util';
 import * as open from 'open';
 import { CancellationToken } from 'typescript';
 import { SalesforceDeployment } from 'lib/salesforce/salesforceDeployment';
 import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import MetadataCommand from './metadataCommand';
-import { fileName } from 'lib/util/fs';
+import { fileName } from '@vlocode/util';
 import { VlocodeCommand } from '@constants';
 
 /**

@@ -1,6 +1,6 @@
 
 import * as constants from '@constants';
-import { Iterable } from 'lib/util/iterable';
+import { Iterable } from '@vlocode/util';
 import * as xml2js from 'xml2js';
 
 export interface MetadataManifest {

@@ -1,4 +1,4 @@
-import { LogManager } from 'lib/logging';
+import { LogManager } from '@vlocode/core';
 
 export interface QueryCondition {
     readonly field: string;

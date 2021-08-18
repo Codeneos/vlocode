@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { CONFIG_FILE } from '@constants';
-import { LogManager, Logger } from 'lib/logging';
+import { LogManager, Logger } from '@vlocode/core';
 
 export interface WorkspaceOverrideConfigurationChangeEvent extends vscode.ConfigurationChangeEvent {
     getAffectedConfigurationProperties(): ReadonlySet<string>;

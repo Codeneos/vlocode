@@ -2,12 +2,12 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import VlocityDatapackService, { ObjectEntry } from 'lib/vlocity/vlocityDatapackService';
-import { LogManager, Logger } from 'lib/logging';
+import { LogManager, Logger } from '@vlocode/core';
 import * as yaml from 'js-yaml';
 
 import VlocityJobFile from 'lib/vlocity/vlocityJobFile';
 import * as vlocity from 'vlocity';
-import { filterUndefined } from 'lib/util/collection';
+import { filterUndefined } from '@vlocode/util';
 import BaseDataProvider from './baseDataProvider';
 
 export default class JobDataProvider extends BaseDataProvider<JobNode> {

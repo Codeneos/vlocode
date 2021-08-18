@@ -1,14 +1,14 @@
 import * as jsforce from 'jsforce';
-import { Logger } from 'lib/logging';
+import { Logger } from '@vlocode/core';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { stringEquals } from 'lib/util/string';
+import { stringEquals } from '@vlocode/util';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import cache from 'lib/util/cache';
-import { removeNamespacePrefix } from 'lib/util/salesforce';
-import { injectable } from 'lib/core/inject';
+import { cache } from '@vlocode/util';
+import { removeNamespacePrefix } from '@vlocode/util';
+import { injectable } from '@vlocode/core';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import DatapackInfoService from './datapackInfoService';
+import { QueryDefinitions } from './types';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
@@ -20,11 +20,14 @@ export interface VlocityMatchingKey {
 @injectable()
 export default class VlocityMatchingKeyService {
 
+    private readonly exportQueryDefinitions: QueryDefinitions;
+
     constructor(
         private readonly logger: Logger,
         private readonly vlocityNamespace: VlocityNamespaceService,
         private readonly datapackInfo: DatapackInfoService,
         private readonly salesforce: SalesforceService) {
+        this.exportQueryDefinitions = require('exportQueryDefinitions.yaml')?.default ?? {};
     }
 
     @cache(-1)
@@ -33,7 +36,7 @@ export default class VlocityMatchingKeyService {
     }
 
     private get queryDefinitions() {
-        return exportQueryDefinitions;
+        return this.exportQueryDefinitions;
     }
 
     /**

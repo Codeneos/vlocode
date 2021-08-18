@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import VlocodeService from 'lib/vlocodeService';
-import { LogManager, Logger } from 'lib/logging';
+import { LogManager, Logger } from '@vlocode/core';
 
 export abstract class EventHandlerBase<T> implements vscode.Disposable {
     private eventListner: vscode.Disposable | null;

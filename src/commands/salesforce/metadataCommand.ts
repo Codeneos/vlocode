@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getDocumentBodyAsString } from 'lib/util/fs';
+import { getDocumentBodyAsString } from '@vlocode/util';
 import { CommandBase } from 'commands/commandBase';
 import SalesforceService from 'lib/salesforce/salesforceService';
 import { DetailedDeployResult, FailureDeployMessage } from 'lib/salesforce/salesforceDeployService';

@@ -1,21 +1,15 @@
-import * as path from 'path';
 import { Stream } from 'stream';
-import * as chalk from 'chalk';
-import * as fs from 'fs-extra';
 import * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
-import * as vscode from 'vscode';
 
-import { Logger } from 'lib/logging';
-import { wait } from 'lib/util/async';
-import { filterAsyncParallel, mapAsyncParallel, filterUndefined } from 'lib/util/collection';
-import { getDocumentBodyAsString } from 'lib/util/fs';
-import { injectable } from 'lib/core/inject';
+import { Logger } from '@vlocode/core';
+import { CancellationToken, wait } from '@vlocode/util';
+import { injectable } from '@vlocode/core';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService from './salesforceService';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
-import { MetadataManifest, PackageManifest } from './deploy/packageXml';
+import {  PackageManifest } from './deploy/packageXml';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: { 
@@ -67,11 +61,13 @@ export interface FailureDeployMessage extends DeployMessage {
     lineNumber: string;
 }
 
-export type DeploymentProgress = vscode.Progress<{
-    message?: string;
-    increment?: number;
-    total?: number;
-}>;
+export interface DeploymentProgress {
+    report(value: {
+        message?: string;
+        increment?: number;
+        total?: number;
+    }): void;
+}
 
 interface RetrieveStatus extends jsforce.RetrieveResult {
     done: boolean | string;
@@ -97,7 +93,7 @@ export class SalesforceDeployService {
      * @param options Optional deployment options to use
      * @param token A cancellation token to stop the process
      */
-    public async deployPackage(sfPackage: SalesforcePackage, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    public async deployPackage(sfPackage: SalesforcePackage, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DetailedDeployResult> {
         return this.deploy(await sfPackage.getBuffer(), options, progress, token);
     }
 
@@ -107,12 +103,12 @@ export class SalesforceDeployService {
      * @param options additional deploy options
      * @param progressOptions progress options
      */
-    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: vscode.CancellationToken) : Promise<DetailedDeployResult> {
+    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: jsforce.DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DetailedDeployResult> {
         let checkInterval = 1000;
         const logInterval = 5000;
         const deploymentTypeText = options && options.checkOnly ? 'Validate' : 'Deploy';
 
-        const deploymentTask = async (progress?: DeploymentProgress, cancellationToken?: vscode.CancellationToken) => {
+        const deploymentTask = async (progress?: DeploymentProgress, cancellationToken?: CancellationToken) => {
             // Convert jszip object to Buffer object
             if (zipInput instanceof ZipArchive) {
                 zipInput = await zipInput.generateAsync({
@@ -123,9 +119,6 @@ export class SalesforceDeployService {
                     }
                 });
             }
-
-            const testZip = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, 'test.zip');
-            await fs.writeFile(testZip, zipInput);
 
             // Set deploy options passed to JSforce; options arg can override the defaults
             const deployOptions = {
@@ -210,10 +203,10 @@ export class SalesforceDeployService {
      * @param options Extra deploy options
      * @param progressOptions Progress options
      */
-    public async retrieveManifest(manifest: PackageManifest, apiVersion?: string, token?: vscode.CancellationToken) : Promise<RetrieveResultPackage> {
+    public async retrieveManifest(manifest: PackageManifest, apiVersion?: string, token?: CancellationToken) : Promise<RetrieveResultPackage> {
         const checkInterval = 2000;
 
-        const retrieveTask = async (cancellationToken?: vscode.CancellationToken) => {
+        const retrieveTask = async (cancellationToken?: CancellationToken) => {
             // Create package
             apiVersion = apiVersion ?? this.config.salesforce.apiVersion ?? await this.salesforce.getApiVersion();
             const singlePackage = true;

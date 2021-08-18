@@ -1,11 +1,9 @@
 import * as vscode from 'vscode';
 
 import VlocodeService from 'lib/vlocodeService';
-import { Logger, LogManager } from 'lib/logging';
+import { Logger, LogManager } from '@vlocode/core';
 import { Command } from 'lib/command';
 import { getContext } from 'lib/vlocodeContext';
-import cache from 'lib/util/cache';
-import SalesforceService from 'lib/salesforce/salesforceService';
 
 export class ProgressToken {
     private resolved = false;

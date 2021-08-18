@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import VlocodeService from 'lib/vlocodeService';
-import { injectable } from 'lib/core/inject';
+import { injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
 
 /**

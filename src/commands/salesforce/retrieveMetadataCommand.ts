@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { unique, filterUndefined } from 'lib/util/collection';
-import { Iterable } from 'lib/util/iterable';
+import { unique, filterUndefined } from '@vlocode/util';
+import { Iterable } from '@vlocode/util';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import MetadataCommand from './metadataCommand';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 import { PackageManifest } from 'lib/salesforce/deploy/packageXml';
-import { stringEquals } from 'lib/util/string';
+import { stringEquals } from '@vlocode/util';
 import { MapLike } from 'typescript';
 import { DescribeGlobalSObjectResult, FileProperties } from 'jsforce';
 import * as path from 'path';

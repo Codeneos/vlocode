@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { Builder as XmlBuilder } from 'xml2js';
 import * as constants from '@constants';
-import { getDocumentBodyAsString } from 'lib/util/fs';
+import { getDocumentBodyAsString } from '@vlocode/util';
 
 export default class extends EventHandlerBase<vscode.Uri> {
 

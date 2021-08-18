@@ -5,8 +5,8 @@ import * as moment from 'moment';
 import { ConfigurationManager } from 'lib/config';
 import { VlocodeCommand } from '@constants';
 import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
-import { Logger } from 'lib/logging';
-import { injectable } from 'lib/core/inject';
+import { Logger } from '@vlocode/core';
+import { injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
 
 /**

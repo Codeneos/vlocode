@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { singleton, getInstance } from 'lib/util/singleton';
+import { singleton, getInstance } from '@vlocode/util';
 import 'mocha';
 
 describe('singleton', () => {

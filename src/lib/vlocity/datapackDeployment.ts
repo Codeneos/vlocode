@@ -1,12 +1,12 @@
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
-import { Logger } from 'lib/logging';
+import { Logger } from '@vlocode/core';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import { CancellationToken } from 'vscode';
-import Timer from 'lib/util/timer';
-import { AsyncEventEmitter } from 'lib/util/events';
-import { arrayMapPush, arrayMapUnshift, mapGetOrCreate } from 'lib/util/collection';
-import { LifecyclePolicy, injectable } from 'lib/core';
-import { Iterable } from 'lib/util/iterable';
+import { Timer } from '@vlocode/util';
+import { AsyncEventEmitter } from '@vlocode/util';
+import { arrayMapPush, arrayMapUnshift, mapGetOrCreate } from '@vlocode/util';
+import { LifecyclePolicy, injectable } from '@vlocode/core';
+import { Iterable } from '@vlocode/util';
 import RecordBatch from '../salesforce/recordBatch';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';

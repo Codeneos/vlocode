@@ -3,8 +3,8 @@ import { registry as registryData, MetadataType as SfdxMetadataType } from '@sal
 import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
 import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { MetadataObject } from 'jsforce';
-import { singletonMixin } from 'lib/util/singleton';
-import { injectable, LifecyclePolicy } from 'lib/core';
+import { singletonMixin } from '@vlocode/util';
+import { injectable, LifecyclePolicy } from '@vlocode/core';
 
 export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
     isBundle: boolean;

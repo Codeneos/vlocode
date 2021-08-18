@@ -3,10 +3,10 @@ import * as path from 'path';
 import { expect } from 'chai';
 import 'mocha';
 
-import { sanitizePath } from 'lib/util/fs';
-import { filterAsyncParallel, groupBy } from 'lib/util/collection';
-import { formatString, evalExpr } from 'lib/util/string';
-import { getObjectValues as getValues } from 'lib/util/object';
+import { sanitizePath } from '@vlocode/util';
+import { filterAsyncParallel, groupBy } from '@vlocode/util';
+import { formatString, evalExpr } from '@vlocode/util';
+import { getObjectValues as getValues } from '@vlocode/util';
 
 describe('util', () => {
 

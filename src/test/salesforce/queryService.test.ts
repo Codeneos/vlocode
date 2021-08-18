@@ -3,11 +3,11 @@ import { expect } from 'chai';
 import { spy } from 'sinon';
 import 'mocha';
 
-import { createRecordProxy, removeNamespacePrefix } from 'lib/util/salesforce';
+import { createRecordProxy, removeNamespacePrefix } from '@vlocode/util';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import QueryService from 'lib/salesforce/queryService';
-import { container } from 'lib/core';
-import { Logger } from 'lib/logging';
+import { container } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 
 declare let VlocityUtils: any;
 describe('queryService', () => {

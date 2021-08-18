@@ -1,6 +1,6 @@
 
 import * as vscode from 'vscode';
-import { formatString } from 'lib/util/string';
+import { formatString } from '@vlocode/util';
 import * as open from 'open';
 import { MetadataType } from 'lib/salesforce/metadataRegistry';
 import MetadataCommand from './metadataCommand';

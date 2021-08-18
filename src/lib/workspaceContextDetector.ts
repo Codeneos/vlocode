@@ -3,9 +3,8 @@ import { clearTimeout, setTimeout } from 'timers';
 import * as constants from '@constants';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import { Logger } from './logging';
-import { FileSystem, injectable, LifecyclePolicy } from './core';
-import Timer from './util/timer';
+import { Logger, FileSystem, injectable, LifecyclePolicy } from '@vlocode/core';
+import { Timer } from '@vlocode/util';
 
 /**
  * Works in conjunction with the workspace context detector 

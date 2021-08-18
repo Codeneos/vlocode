@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as sass from 'sass.js';
 import * as fs from 'fs-extra';
-import { DeferredPromise } from 'lib/util/deferred';
+import { DeferredPromise } from '@vlocode/util';
 import type { SassCompilerOptions, SassImportRequest, SassImportResponse } from '../compiler';
 import type { Message } from './compiler';
 
