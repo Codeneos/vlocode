@@ -5,7 +5,7 @@
         "./packages/util/src/index.ts"
     ],
     "readme": "SITE.md",
-    "out": "doc",
+    "out": "docs",
     "hideGenerator": true,
     "excludePrivate": true,
     "excludeExternals": true,
