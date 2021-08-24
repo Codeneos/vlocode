@@ -24,6 +24,8 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "dependencies": {
+        "fast-xml-parser": "^3.19.0",
+        "he": "^1.2.0",
         "memfs": "^3.2.2",
         "moment": "^2.29.1",
         "reflect-metadata": "^0.1.13",

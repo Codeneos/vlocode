@@ -12,6 +12,7 @@ import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
 import MetadataCommand from './metadataCommand';
 import { fileName } from '@vlocode/util';
 import { VlocodeCommand } from '@constants';
+import * as fs from 'fs-extra';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -142,6 +143,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
             // Clear errors before starting the deployment
             this.clearPreviousErrors(sfPackage.files());
+
+            fs.outputFileSync('./package.zip', await sfPackage.getBuffer());
 
             // start deployment
             const deployment = new SalesforceDeployment(sfPackage);

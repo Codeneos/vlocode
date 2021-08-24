@@ -1,17 +1,18 @@
 import * as path from 'path';
 import { Logger } from '@vlocode/core';
 import * as vscode from 'vscode';
-import { substringAfterLast } from '@vlocode/util';
-import * as xml2js from 'xml2js';
+import { cache, fileName, substringAfterLast } from '@vlocode/util';
 import * as constants from '@constants';
 import { injectable } from '@vlocode/core';
 import { LifecyclePolicy } from '@vlocode/core';
-import { Iterable } from '@vlocode/util';
+import { Iterable, XML } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import * as chalk from 'chalk';
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage } from './deploymentPackage';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
+import { CachedFileSystemAdapter } from '../../../packages/core/src/fs/cachedFileSystem';
+import JSZip = require('jszip');
 
 export enum SalesforcePackageType {
     /**
@@ -41,7 +42,8 @@ export class SalesforcePackageBuilder {
         public readonly type: SalesforcePackageType,
         private readonly fs: FileSystem,
         private readonly logger: Logger) {
-        this.mdPackage = new SalesforcePackage(apiVersion, '', fs);
+        this.fs = new CachedFileSystemAdapter(fs);
+        this.mdPackage = new SalesforcePackage(apiVersion, '', this.fs);
     }
 
     /**
@@ -52,37 +54,10 @@ export class SalesforcePackageBuilder {
      */
     public async addFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken) : Promise<this> {
         const childMetadataFiles = new Set<[string, string, MetadataType]>();
-        const fileUris = Iterable.map(files, file => typeof file !== 'string' ? file.fsPath : file);
 
         // Build zip archive for all expanded file; filter out files already parsed
         // Note use posix path separators when building package.zip
-        for (const file of Iterable.filter(fileUris, file => !this.parsedFiles.has(file) && this.parsedFiles.add(file))) {
-
-            // Stop directly and return null
-            if (token && token.isCancellationRequested) {
-                break;
-            }
-
-            // parse folders recursively
-            const fileStat = await this.fs.stat(file);
-            if (fileStat == null) {
-                throw new Error(`The specified file does not exist or is inaccessible: ${file}`);
-            }
-
-            if (fileStat.isDirectory()) {
-                await this.addFiles((await this.fs.readDirectory(file)).map(folderFileName => path.join(file, folderFileName)), token);
-                continue;
-            }
-
-            // If selected file is a meta file check the source file instead
-            const isMetaFile = file.endsWith('-meta.xml');
-            if (isMetaFile) {
-                const sourceFile = file.slice(0, -9);
-                if (await this.fs.isFile(sourceFile)) {
-                    await this.addFiles([ sourceFile ], token);
-                    continue;
-                }
-            }
+        for await (const file of this.getFiles(files, token)) {
 
             // get metadata type
             const xmlName = await this.getComponentType(file);
@@ -94,7 +69,11 @@ export class SalesforcePackageBuilder {
 
             const metadataType = xmlName && this.getMetadataType(xmlName);
             if (!xmlName || !metadataType) {
-                this.logger.warn(`Adding ${file} (xmlName: ${xmlName ?? '?'}) is not a known Salesforce metadata type`);
+                const isInStaticResourceFolder = file.split(/\/|\\/).includes('staticresources');
+                if (!isInStaticResourceFolder) {
+                    // This is just here to avoid complaining on static resources that are part of an extracted zip file
+                    this.logger.warn(`Adding ${file} (xmlName: ${xmlName ?? '?'}) is not a known Salesforce metadata type`);
+                }
                 continue;
             }
 
@@ -102,6 +81,14 @@ export class SalesforcePackageBuilder {
                 // Support for SFDX formatted source code
                 childMetadataFiles.add([ file, xmlName, metadataType]);
                 continue;
+            }
+
+            if (metadataType.id == 'staticresource' && file.endsWith('-meta.xml')) {
+                const folder = this.stripFileExtension(file, 2);
+                const isFolder = await this.fs.isDirectory(folder);
+                if (isFolder) {
+                    await this.addStaticResourceBundle(folder);
+                }
             }
 
             if (metadataType.isBundle) {
@@ -119,6 +106,67 @@ export class SalesforcePackageBuilder {
         }
 
         return this;
+    }
+
+    private async* getFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken) {
+        const fileNames = Iterable.map(files, file => typeof file !== 'string' ? file.fsPath : file);
+
+        // Build zip archive for all expanded file; filter out files already parsed
+        // Note use posix path separators when building package.zip
+        for (const file of Iterable.filter(fileNames, file => this.addParsedFile(file))) {
+
+            // Stop directly and return null
+            if (token && token.isCancellationRequested) {
+                break;
+            }
+
+            // parse folders recursively
+            const fileStat = await this.fs.stat(file);
+            if (fileStat == null) {
+                throw new Error(`The specified file does not exist or is inaccessible: ${file}`);
+            }
+
+            if (fileStat.isDirectory()) {
+                yield* this.getFiles((await this.fs.readDirectory(file)).map(folder => path.join(file, folder)), token);
+                continue;
+            }
+
+            // If selected file is a meta file check the source file instead
+            const isMetaFile = file.endsWith('-meta.xml');
+            if (isMetaFile) {
+                const sourceFile = await this.findContentFile(file);
+                if (sourceFile && this.addParsedFile(sourceFile)) {
+                    // If the source file is a folder yield the folder content sources
+                    // this ensures when just a meta file for a folder is selected the content is also deployed
+                    if (await this.fs.isDirectory(sourceFile)) {
+                        yield* this.getFiles((await this.fs.readDirectory(sourceFile)).map(folder => path.join(file, folder)), token);
+                    } else {
+                        yield sourceFile;
+                    }
+                }
+            } else {
+                const metaFile = await this.findMetaFile(file);
+                if (metaFile && this.addParsedFile(metaFile)) {
+                    yield metaFile;
+                }
+            }
+
+            yield file;
+        }
+    }
+
+    /**
+     * Add file a file to the parsed file set when not already added. Normalizes the file path when required/
+     * @param file file to add
+     * @returns Returns true when the file is nto yet parsed; returns false when the file is already parsed. 
+     */
+    private addParsedFile(file: string){
+        const normalizedFileName = file.split(/\\|\//g).join('/');
+        if (!this.parsedFiles.has(normalizedFileName)) {
+            this.parsedFiles.add(normalizedFileName);
+            return true;
+        }
+        return false;
     }
 
     private async addBundledSources(bundleFolder: string, metadataType: MetadataType) {
@@ -140,28 +188,63 @@ export class SalesforcePackageBuilder {
         if (this.type === SalesforcePackageType.destruct) {
             this.mdPackage.addDestructiveChange(metadataType.xmlName, componentName);
         } else {
-            const packagePath = this.getPackagePath(file, metadataType);
+            const packagePath = await this.getPackagePath(file, metadataType);
             this.mdPackage.add({
                 xmlName: metadataType.xmlName,
                 componentName,
                 packagePath,
-                fsPath: file
+                fsPath: this.type == SalesforcePackageType.deploy ? file : undefined
             });
-
-            // Make sure the meta file when it exists is also added to the deployment
-            const isMetaFile = file.endsWith('-meta.xml');
-            const isMetaFilePackaged = this.mdPackage.hasPackageData(`${packagePath}-meta.xml`);
-            if (!isMetaFile && !isMetaFilePackaged && await this.fs.isFile(`${file}-meta.xml`)) {
-                this.mdPackage.add({
-                    xmlName: metadataType.xmlName,
-                    componentName,
-                    packagePath: `${packagePath}-meta.xml`,
-                    fsPath: `${file}-meta.xml`
-                });
-            }
         }
 
         this.logger.verbose(`Added ${path.basename(file)} (${componentName}) as [${chalk.green(metadataType.xmlName)}]`);
+    }
+
+    /**
+     * Add compressed static resource bundle to the package; compresses all the resources in the folder into a zip file but does not add
+     * the meta-data file for the resource folder.
+     * @param folder Folder name to add and compress
+     */
+    private async addStaticResourceBundle(folder: string) {
+        const componentName = folder.split(/\/|\\/g).pop()!;
+        const packagePath = `staticresources/${componentName}.resource`;
+
+        if (this.type === SalesforcePackageType.destruct) {
+            this.mdPackage.addDestructiveChange('StaticResource', componentName);
+        } else if (this.type === SalesforcePackageType.retrieve) {
+            this.mdPackage.add({ xmlName: 'StaticResource', componentName, packagePath });
+        } else {
+            this.mdPackage.add({
+                xmlName: 'StaticResource', componentName, packagePath,
+                data: await this.compressFolder(folder)
+            });
+        }
+    }
+
+    /**
+     * Compress all files in the specified folder into a single ZIP archive and returns the Buffer to the ZIP archive generated
+     * @param folder Folder name to add and compress
+     */
+    private async compressFolder(folder: string) {
+        // Build zip 
+        const resourceBundle = new JSZip();
+        for await (const file of this.readDirectoryRecursive(folder)) {
+            const relativePath = path.relative(folder, file).replace(/\/|\\/g, '/');
+            resourceBundle.file(relativePath, await this.fs.readFile(file));
+            this.addParsedFile(file);        }
+
+        return resourceBundle.generateAsync({ type: 'nodebuffer' });
+    }
+
+    private async* readDirectoryRecursive(folder: string) {
+        for(const file of await this.fs.readDirectory(folder)) {
+            const fullPath = path.join(folder, file);
+            if (await this.fs.isDirectory(fullPath)) {
+                return yield* this.readDirectoryRecursive(fullPath);
+            } else {
+                yield fullPath;
+            }
+        }
     }
 
     /**
@@ -172,21 +255,23 @@ export class SalesforcePackageBuilder {
      */
     private async mergeChildSourceWithParent(sourceFile: string, xmlName: string, metadataType: MetadataType) {
         // Get metadata type for a source file
-        const tagNameInParent = substringAfterLast(path.dirname(sourceFile), /\\|\//);
-        const childComponentName = this.getPackageComponentName(sourceFile, metadataType);
-        const childMetadata = (await xml2js.parseStringPromise(await this.fs.readFileAsString(sourceFile)))[xmlName];
+        const decomposition = metadataType.decompositionConfig?.decompositions.find(d => d.metadataName == xmlName);
+        if (!decomposition) {
+            this.logger.error(`No decomposition configuration for: ${chalk.green(sourceFile)} (${xmlName})`);
+            return;
+        }
 
-        const parentComponentFolder = path.join(...sourceFile.split(/\\|\//g).slice(0,-2));
+        const childComponentName = this.getPackageComponentName(sourceFile, metadataType);
+        const folderPerType = metadataType.strategies.decomposition == 'folderPerType';
+
+        const parentComponentFolder = path.join(...sourceFile.split(/\\|\//g).slice(0, folderPerType ? -2 : -1));
         const parentComponentName = path.basename(parentComponentFolder);
         const parentComponentMetaFile =  path.join(parentComponentFolder, `${parentComponentName}.${metadataType.suffix}-meta.xml`);
-        const parentPackagePath = this.getPackagePath(parentComponentMetaFile, metadataType);
-        const parentPackageData = await this.mdPackage.getPackageData(parentPackagePath);
-        const parentMetadata = parentPackageData ? await xml2js.parseStringPromise(parentPackageData)[metadataType.xmlName] : {};
+        const parentPackagePath = await this.getPackagePath(parentComponentMetaFile, metadataType);
 
-        // Merge child metadata into parent metadata 
-        const mergedMetadata = this.mergeMetadata(parentMetadata, { [tagNameInParent]: childMetadata });
+        // Merge child metadata into parent metadata   
         if (this.type == SalesforcePackageType.deploy) {
-            this.mdPackage.setPackageData(parentPackagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata) });
+            await this.mergeMetadataFragment(parentPackagePath, sourceFile, metadataType);
         }
 
         // Add as member to the package when not yet mentioned
@@ -194,7 +279,9 @@ export class SalesforcePackageBuilder {
             this.mdPackage.addDestructiveChange(xmlName, `${parentComponentName}.${childComponentName}`);
         } else {
             this.mdPackage.addManifestEntry(metadataType.xmlName, parentComponentName);
-            this.mdPackage.addManifestEntry(xmlName, `${parentComponentName}.${childComponentName}`);
+            if (decomposition.isAddressable) {
+                this.mdPackage.addManifestEntry(xmlName, `${parentComponentName}.${childComponentName}`);
+            }
             this.mdPackage.addSourceMap(sourceFile, { xmlName, componentName: childComponentName, packagePath: parentPackagePath });
         }
 
@@ -206,35 +293,28 @@ export class SalesforcePackageBuilder {
      * @param packagePath Relative path of the source file in the package
      * @param fileToMerge Path of the metedata file to merge into the existing package file
      * @param metadataType Type of metadata to merge
-     * @returns true if the file is merged otherwise false.
+     * @param xmlFragmentName Name of the XML fragement tag to use
      */
-    private async mergeWithExistingMetadata(packagePath: string, sourceFile: vscode.Uri, metadataType: MetadataType) {
-        const existingPackageData = await this.mdPackage.getPackageData(packagePath);
-        if (!existingPackageData) {
-            return false;
+    private async mergeMetadataFragment(packagePath: string, fragmentFile: string, metadataType: MetadataType) {
+        const [[fragmentTag, fragmentMetadata]] = Object.entries(XML.parse(await this.fs.readFileAsString(fragmentFile), { trimValues: true }));
+        const decomposition = metadataType.decompositionConfig?.decompositions.find(d => d.metadataName == fragmentTag);
+
+        if (!decomposition) {
+            this.logger.error(`No decomposition configuration for: ${chalk.green(fragmentFile)} (${fragmentTag})`);
+            return;
         }
 
-        const existingMetadata = await xml2js.parseStringPromise(existingPackageData);
-        const newMetadata = await xml2js.parseStringPromise(await this.fs.readFileAsString(sourceFile.fsPath));
-        const mergedMetadata = this.mergeMetadata(existingMetadata[metadataType.xmlName], newMetadata[metadataType.xmlName]);
-        this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata), fsPath: sourceFile.fsPath});
-        return true;
+        // Load existing XML
+        const existingPackageData = await this.mdPackage.getPackageData(packagePath);
+        const existingMetadata = existingPackageData ? XML.parse(existingPackageData, { trimValues: true })[metadataType.xmlName] : {};
+
+        // Merge child metadata into parent metadata 
+        const mergedMetadata = this.mergeMetadata(existingMetadata, { [decomposition.xmlFragmentName]: fragmentMetadata });
+        this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata) });
     }
 
-    //  private async addEmbeddedMetadataMembers(sourceFile: vscode.Uri, metadataType: MetadataType) {
-    //     const metadata = await xml2js.parseStringPromise(await getDocumentBodyAsString(sourceFile));
-    //     for(const [key, value] of Object.entries(metadata[metadataType.xmlName])) {
-    //         //const isChildElement = 
-    //         if (typeof value === 'object') {
-    //             for (const child of asArray(value)) {
-
-    //             }
-    //         }
-    //     }
-    // }
-
-    private mergeMetadata(targetMetadata: object, sourceMetdata: object) {
-        for (let [key, value] of Object.entries(sourceMetdata)) {
+    private mergeMetadata(targetMetadata: object, sourceMetadata: object) {
+        for (let [key, value] of Object.entries(sourceMetadata)) {
             if (value === undefined) {
                 continue; // skip undefined
             }
@@ -305,55 +385,29 @@ export class SalesforcePackageBuilder {
         }
 
         // Suffix check
-        const fileSuffix = file.split('.').pop()?.toLocaleLowerCase();
+        const fileSuffix = this.getFileSuffix(file)?.toLocaleLowerCase();
         if (fileSuffix) {
             return this.metadataRegistry.getMetadataTypeBySuffix(fileSuffix)?.xmlName;
         }
+    }
 
-        // const fileLowerCase = file.fsPath.toLowerCase();
-        // const directoryNameOnlyMatches = new Array<string>();
-
-        // for (const type of this.salesforce.getMetadataTypes()) {
-        //     const suffixMatches = type.suffix && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}`);
-        //     const metaSuffixMatches = type.suffix && type.metaFile && fileLowerCase.endsWith(`.${type.suffix.toLowerCase()}-meta.xml`);
-        //     const fileDirName = type.isBundle ? path.dirname(path.dirname(file.fsPath)) : path.dirname(file.fsPath);
-        //     const directoryNameMatches = type.directoryName && fileDirName.split(/[/\\]/g).some(dirname => stringEquals(dirname, type.directoryName));
-
-        //     if (type.strictDirectoryName && !directoryNameMatches) {
-        //         continue;
-        //     }
-
-        //     if (metaSuffixMatches) {
-        //         return type.xmlName;
-        //     }
-
-        //     if (suffixMatches) {
-        //         if (type.metaFile && fileExists(`${file.fsPath}-meta.xml`)) {
-        //             return type.xmlName;
-        //         }
-
-        //         if (directoryNameMatches) {
-        //             return type.xmlName;
-        //         }
-        //     }
-
-        //     if (directoryNameMatches) {
-        //         // Matches aura and lwc bundled files primarly
-        //         directoryNameOnlyMatches.push(type.xmlName);
-        //     }
-        // }
-
-        // if (directoryNameOnlyMatches.length == 1) {
-        //     return directoryNameOnlyMatches.pop();
-        // }
+    private getFileSuffix(file: string) {
+        const metaSuffixMatch = file.match(/\.([^-]+)-meta\.xml$/i);
+        if (metaSuffixMatch) {
+            return metaSuffixMatch[1];
+        }
+        return file.split(/\\|\//g).pop()?.match(/\.([^.]+)$/i)?.[1];
     }
 
     private async getComponentTypeFromSource(file: string) {
-        const metaFile = `${file}-meta.xml`;
+        const isMetaFile = file.endsWith('-meta.xml');
 
-        if (await this.fs.isFile(metaFile)) {
-            // Prefer meta file if they exist
-            return this.getComponentTypeFromSource(metaFile);
+        if (!isMetaFile) {
+            const metaFile = await this.findMetaFile(file);
+            if (metaFile) {
+                // Prefer meta file if they exist
+                return this.getComponentTypeFromSource(metaFile);
+            }
         }
 
         const metadataTypes = this.metadataRegistry.getMetadataTypes();
@@ -381,14 +435,7 @@ export class SalesforcePackageBuilder {
      * @param file Path to the XML file from which to get the root element name.
      */
     private async getRootElementName(file: string) {
-        const body = await this.fs.readFileAsString(file);
-        if (body.trimStart().startsWith('<?xml ')) {
-            try {
-                return Object.keys(await xml2js.parseStringPromise(body)).shift();
-            } catch{
-                return undefined;
-            }
-        }
+        return XML.getRootTagName(await this.fs.readFile(file));
     }
 
     /**
@@ -435,17 +482,78 @@ export class SalesforcePackageBuilder {
         return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/g);
     }
 
-    private getPackagePath(sourceFile: string, metadataType: MetadataType) {
-        return path.posix.join(this.getPackageFolder(sourceFile, metadataType), path.basename(sourceFile));
+    private async getPackagePath(sourceFile: string, metadataType: MetadataType) {
+        const isMetaFile = sourceFile.endsWith('-meta.xml');
+        const packageFolder = this.getPackageFolder(sourceFile, metadataType);
+        const baseName =  sourceFile.split(/\\|\//g).pop()!;
+        if (isMetaFile && !metadataType.metaFile && !metadataType.hasContent) {
+            // SFDX adds a '-meta.xml' to each file, when deploying we need to strip these
+            // when the source does not have a meta data file
+            return path.posix.join(packageFolder, baseName.slice(0, -9));
+        }
+
+        if (metadataType.id == 'document') {
+            // For documents ensure each meta file matches the contents suffix
+            if (isMetaFile) {
+                const contentFile = await this.findContentFile(sourceFile);
+                if (contentFile) {
+                    return path.posix.join(packageFolder, `${contentFile.split(/\\|\//g).pop()!}-meta.xml`);
+                }
+            }
+        } else {
+            // for non-document source files should match the metadata suffix
+            if (!isMetaFile && metadataType.suffix && !baseName.endsWith(metadataType.suffix)) {
+                return path.posix.join(packageFolder, `${this.stripFileExtension(baseName)}.${metadataType.suffix}`);
+            }
+        }
+
+        return path.posix.join(packageFolder, baseName);
+    }
+
+    @cache()
+    private async findContentFile(metaFile: string) {
+        const metaFileSuggestedContentFile = metaFile.slice(0, -9);
+        if (await this.fs.pathExists(metaFileSuggestedContentFile)) {
+            return metaFileSuggestedContentFile;
+        }
+
+        const contentFilePattern = `${this.stripFileExtension(metaFile, 2)}.*`;
+        const contentMatches = (await this.fs.findFiles(contentFilePattern)).filter(f => f !== metaFile)
+            .filter(file => !file.endsWith('-meta.xml'));
+        if (contentMatches.length) {
+            return contentMatches[0];
+        }
+    }
+
+    @cache()
+    private async findMetaFile(contentFile: string) {
+        const metaFile = `${contentFile}-meta.xml`;
+        if (await this.fs.isFile(metaFile)) {
+            return metaFile;
+        }
+
+        const genericMetaGlob = `${this.stripFileExtension(contentFile)}.*-meta.xml`;
+        const globMetaMatch = await this.fs.findFiles(genericMetaGlob);
+        if (globMetaMatch.length) {
+            return globMetaMatch[0];
+        }
+    }
+
+    private stripFileExtension(fileName: string, maxCount: number = 1) {
+        const baseName = fileName.split(/\\|\//g).pop()!;
+        const extensions = baseName.split('.');
+        if (extensions.length == 1) {
+            return fileName;
+        }
+        return fileName.split('.').slice(0,-(Math.min(extensions.length - 1, maxCount))).join('.');
     }
 
     private buildMetadataXml(rootName: string, data?: any) {
-        const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
-        return xmlBuilder.buildObject({
+        return XML.stringify({
             [rootName]: {
                 $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
                 ...(data || {})
             }
-        });
+        }, 4);
     }
 }

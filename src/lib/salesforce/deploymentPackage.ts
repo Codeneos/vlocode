@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as constants from '@constants';
 import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
-import { Iterable } from '@vlocode/util';
+import { Iterable, XML } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { directoryName } from '@vlocode/util';
 import { PackageManifest } from './deploy/packageXml';
@@ -237,7 +237,12 @@ export class SalesforcePackage {
         }
 
         for (const [packagePath, { data, fsPath }] of this.packageData.entries()) {
-            packageZip.file(path.posix.join(this.packageDir, packagePath), data ?? await this.fs.readFile(fsPath!));
+            let fileData = data ?? await this.fs.readFile(fsPath!);
+            if (XML.isXml(fileData)) {
+                // Normalize all XML data to avoid SF deployment errors due to excess spaces
+                fileData = XML.normalize(fileData);
+            }
+            packageZip.file(path.posix.join(this.packageDir, packagePath), fileData);
         }
 
         return packageZip;

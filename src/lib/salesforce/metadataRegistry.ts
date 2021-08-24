@@ -8,8 +8,23 @@ import { injectable, LifecyclePolicy } from '@vlocode/core';
 
 export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
     isBundle: boolean;
+    hasContent: boolean;
     nameForMsgs?: string;
     nameForMsgsPlural?: string;
+    decompositionConfig?: {
+        useSparseComposition: boolean;
+        strategy: 'nonDecomposed' | 'describeMetadata';
+        decompositions: Array<{
+            isAddressable: boolean;
+            metadataName: string;
+            xmlFragmentName: string;
+        }>;
+    };
+    strategies: {
+        adapter: string;
+        decomposition: string;
+        transformer: string;
+    };
 }
 
 @singletonMixin
@@ -35,6 +50,10 @@ export class MetadataRegistry {
             const metadataTypeDef = typeDefs[metadataObject.xmlName];
             if (metadataTypeDef) {
                 Object.assign(metadataObject, metadataTypeDef);
+            }
+
+            if (typeof metadataObject.metaFile === 'string') {
+                metadataObject.metaFile = metadataObject.metaFile == 'true';
             }
 
             // Store in registry

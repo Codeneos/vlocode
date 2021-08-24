@@ -42,7 +42,7 @@ export default abstract class MetadataCommand extends CommandBase {
      */
     protected async logDeployResult(sfPackage: SalesforcePackage, result: DetailedDeployResult) {
         if (result.success) {
-            this.logger.info(`Deployment ${result?.id} -- ${result.status}`);
+            this.logger.info(`Deployment ${result?.id} -- ${result.status} (${result.numberComponentsDeployed}/${result.numberComponentsTotal})`);
         } else {
             this.logger.error(`Deployment ${result?.id} -- ${result.status}`);
         }

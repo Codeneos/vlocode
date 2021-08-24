@@ -40,7 +40,7 @@ export abstract class FileSystem {
     /**
      * Read a file and returns the file body as String
      */
-    public async readFileAsString(path: string, encoding: BufferEncoding = 'utf-8'): Promise<String> {
+    public async readFileAsString(path: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
         return (await this.readFile(path)).toString(encoding);
     }
 

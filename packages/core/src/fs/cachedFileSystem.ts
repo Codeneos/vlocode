@@ -1,25 +1,31 @@
 import * as fs from 'fs';
-import { workspace } from 'vscode';
-import { FileSystem, StatsOptions } from '@vlocode/core';
+import { cache, clearCache } from '@vlocode/util';
+import { FileSystem, StatsOptions } from './types';
 
-export class VSCodeFileSystemAdapter extends FileSystem {
+/**
+ * Decorate any existing file system with caching functionality; caches the write and stat operations towards the target file system.
+ * The methods `readDirectory` and `findFiles` are not cached and will be redirected to the base file system.
+ */
+export class CachedFileSystemAdapter extends FileSystem {
 
     constructor(private readonly innerFs: FileSystem) {
         super();
     }
 
     public async readFileAsString(fileName: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
-        const doc = workspace.textDocuments.find(doc => doc.fileName == fileName);
-        if (doc) {
-            return doc.getText();
-        }
-        return this.innerFs.readFileAsString(fileName, encoding);
+        return (await this.readFile(fileName)).toString(encoding);
     }
 
+    public clearCache() {
+        clearCache(this);
+    }
+
+    @cache()
     public readFile(fileName: string): Promise<Buffer> {
         return this.innerFs.readFile(fileName);
     }
 
+    @cache()
     public stat(path: string, options?: StatsOptions): Promise<fs.Stats | undefined> {
         return this.innerFs.stat(path, options);
     }
@@ -27,6 +33,7 @@ export class VSCodeFileSystemAdapter extends FileSystem {
     public readDirectory(path: string): Promise<string[]> {
         return this.innerFs.readDirectory(path);
     }
+
     public findFiles(patterns: string | string[]): Promise<string[]> {
         return this.innerFs.findFiles(patterns);
     }

@@ -25,3 +25,4 @@ export * from './singleton';
 export * from './string';
 export * from './task';
 export * from './timer';
+export * from './xml';

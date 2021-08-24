@@ -5,6 +5,8 @@
     },
     "include": [
         "src",
+        "node_modules/@vlocode/**/*",
+        "packages/*/src",
         "types"
     ]
 }

@@ -19,7 +19,7 @@ export const NAMESPACE_PLACEHOLDER_PATTERN = /(%|)vlocity_namespace(%|)/gi;
 export const CONTEXT_PREFIX = 'vlocode';
 export const MD_XML_OPTIONS = {
     xmldec: { version: '1.0', encoding: 'UTF-8' },
-    renderOpts: { pretty: true, indent: '    ', newline: '\n' }
+    renderOpts: { pretty: true, indent: '    ', newline: '\n', normalizeTags: false, normalize: false }
 };
 export const DATAPACK_RESERVED_FIELDS = [
     'VlocityDataPackType',

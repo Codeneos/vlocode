@@ -88,8 +88,8 @@ const common : webpack.Configuration = {
             'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
             'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml'),
             'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux'),
-            '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src'),
-            '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src')
+            '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
+            '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
         }
     },
     output: {

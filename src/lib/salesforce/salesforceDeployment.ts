@@ -250,7 +250,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             // Do not create separate interval for logging but use the main status check loop
             this.logger.info(
                 `Deployment ${status.id} -- ${status.status} ` +
-                `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})` +
+                `${status.numberComponentsTotal ? `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})` : ''}` +
                 `${status.numberComponentErrors ? ` -- Errors ${status.numberComponentErrors}` : ''}`);
 
             if (status.numberComponentsTotal !== undefined) {
