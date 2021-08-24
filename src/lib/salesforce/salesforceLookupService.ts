@@ -1,10 +1,6 @@
-import { Logger } from '@vlocode/core';
-import { asArray, last } from '@vlocode/util';
+import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
+import { asArray, last , transform , joinLimit } from '@vlocode/util';
 import { PropertyAccessor } from 'lib/types';
-import { injectable, } from '@vlocode/core';
-import { transform } from '@vlocode/util';
-import { LifecyclePolicy } from '@vlocode/core';
-import { joinLimit } from '@vlocode/util';
 import QueryService, { QueryResult } from './queryService';
 import SalesforceSchemaService from './salesforceSchemaService';
 

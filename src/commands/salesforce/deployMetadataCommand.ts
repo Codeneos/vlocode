@@ -1,18 +1,16 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel } from '@vlocode/util';
+import { forEachAsyncParallel , Iterable , fileName } from '@vlocode/util';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
-import { Iterable } from '@vlocode/util';
 import * as open from 'open';
 import { CancellationToken } from 'typescript';
 import { SalesforceDeployment } from 'lib/salesforce/salesforceDeployment';
 import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
-import MetadataCommand from './metadataCommand';
-import { fileName } from '@vlocode/util';
 import { VlocodeCommand } from '@constants';
 import * as fs from 'fs-extra';
+import MetadataCommand from './metadataCommand';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce

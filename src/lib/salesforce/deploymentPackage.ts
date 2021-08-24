@@ -3,9 +3,8 @@ import * as path from 'path';
 import * as constants from '@constants';
 import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
-import { Iterable, XML } from '@vlocode/util';
+import { Iterable, XML , directoryName } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
-import { directoryName } from '@vlocode/util';
 import { PackageManifest } from './deploy/packageXml';
 
 interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer }

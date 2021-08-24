@@ -1,5 +1,5 @@
 import { Event, Disposable } from 'vscode';
-import { optionalRequire } from "optional-require";
+import { optionalRequire } from 'optional-require';
 
 import type * as vscodeModule from 'vscode';
 const vscode: typeof vscodeModule = optionalRequire('vscode');

@@ -3,12 +3,11 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import type * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
-import { directoryName, fileName as baseName } from '@vlocode/util';
-import { groupBy } from '@vlocode/util';
+import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
 
 interface ExtendedFileProperties extends jsforce.FileProperties {
-    fullFileName: string,
-    fullMetaFileName: string,
+    fullFileName: string;
+    fullMetaFileName: string;
     componentName?: string;
     hasMetaFile: boolean;
     unpackToFolder(targetFolder: string): Promise<void>;

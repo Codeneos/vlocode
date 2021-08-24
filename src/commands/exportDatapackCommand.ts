@@ -2,9 +2,7 @@ import * as vscode from 'vscode';
 import * as constants from '@constants';
 
 import DatapackUtil from 'lib/vlocity/datapackUtil';
-import { groupBy } from '@vlocode/util';
-import { createRecordProxy } from '@vlocode/util';
-import { evalExpr } from '@vlocode/util';
+import { groupBy , createRecordProxy , evalExpr } from '@vlocode/util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';

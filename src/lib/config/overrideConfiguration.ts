@@ -48,7 +48,7 @@ export class WorkspaceOverrideConfiguration {
             if (!lastProperty) {
                 throw new Error('propertyPath is empty');
             }
-            const target = propertyPathParts.reduce((values, prop) => values[prop] ?? (values[prop] = {}), 
+            const target = propertyPathParts.reduce((values, prop) => values[prop] ?? (values[prop] = {}),
                 overrideConfig.values ?? (overrideConfig.values = {}));
             target[lastProperty] = value;
             fs.outputJSONSync(overrideConfig.fsPath, overrideConfig.values);

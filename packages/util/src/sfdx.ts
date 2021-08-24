@@ -32,10 +32,10 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
  */
 export namespace sfdx {
 
-    export const logger: { 
-        error: (...args: any[]) => any
-        warn: (...args: any[]) => any
-        info: (...args: any[]) => any
+    export const logger: {
+        error(...args: any[]): any;
+        warn(...args: any[]): any;
+        info(...args: any[]): any;
     } = console;
 
     export async function webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {

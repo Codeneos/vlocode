@@ -1,9 +1,8 @@
-import { Logger, LogManager } from '@vlocode/core';
+import { Logger, LogManager , injectable, LifecyclePolicy } from '@vlocode/core';
 import VlocodeService from 'lib/vlocodeService';
 import * as vscode from 'vscode';
 import { Command } from 'lib/command';
 import { VlocodeCommand } from '@constants';
-import { injectable, LifecyclePolicy } from '@vlocode/core';
 import { lazy } from '@vlocode/util';
 
 export type CommandCtor = (new() => Command);

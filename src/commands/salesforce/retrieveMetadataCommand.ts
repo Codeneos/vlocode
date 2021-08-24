@@ -1,15 +1,13 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
-import { unique, filterUndefined } from '@vlocode/util';
-import { Iterable } from '@vlocode/util';
+import { unique, filterUndefined , Iterable , stringEquals } from '@vlocode/util';
 import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
-import MetadataCommand from './metadataCommand';
 import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
 import { PackageManifest } from 'lib/salesforce/deploy/packageXml';
-import { stringEquals } from '@vlocode/util';
 import { MapLike } from 'typescript';
 import { DescribeGlobalSObjectResult, FileProperties } from 'jsforce';
-import * as path from 'path';
 import { MetadataType } from 'lib/salesforce/metadataRegistry';
+import MetadataCommand from './metadataCommand';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
@@ -68,8 +66,8 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         const components = await connection.metadata.list({ type: metadataType.xmlName });
         if (metadataType.xmlName === 'CustomMetadata') {
             const getTypeName = (fullName: string) => fullName.split('.')[0];
-            return [...unique(components, 
-                cmp => getTypeName(cmp.fullName), 
+            return [...unique(components,
+                cmp => getTypeName(cmp.fullName),
                 cmp => Object.assign(cmp, { label: getTypeName(cmp.fullName), fullName: `${getTypeName(cmp.fullName)}.*`}))
             ];
         }

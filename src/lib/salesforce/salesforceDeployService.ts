@@ -2,9 +2,8 @@ import { Stream } from 'stream';
 import * as jsforce from 'jsforce';
 import * as ZipArchive from 'jszip';
 
-import { Logger } from '@vlocode/core';
+import { Logger , injectable } from '@vlocode/core';
 import { CancellationToken, wait } from '@vlocode/util';
-import { injectable } from '@vlocode/core';
 import VlocodeConfiguration from 'lib/vlocodeConfiguration';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService from './salesforceService';
@@ -12,7 +11,7 @@ import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
 import {  PackageManifest } from './deploy/packageXml';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
-    details?: { 
+    details?: {
         componentFailures: FailureDeployMessage[];
         componentSuccesses: DeployMessage[];
     };

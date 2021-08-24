@@ -14,18 +14,12 @@ module.exports = {
         "plugin:import/typescript"
     ],
     "parser": "@typescript-eslint/parser",
-    "overrides": [ {
-            "files": ['src/**/*.ts'],
-            "parserOptions": {
-                "project": ['./tsconfig.json']
-            }
-        }, {
-            "files": ['packages/core/**/*.ts'],
-            "parserOptions": {
-                "project": ['./packages/core/tsconfig.json']
-            }
-        }
-    ],
+    "parserOptions": {
+		"project": [ 
+            './packages/**/tsconfig.json',
+            './tsconfig.json'
+        ]
+	},
     "plugins": [
         "@typescript-eslint",
         "@typescript-eslint/tslint",
@@ -134,6 +128,8 @@ module.exports = {
         ],
         "use-isnan": "warn",
         "valid-typeof": "warn",
+        "no-duplicate-imports": "off",
+        "import/no-duplicates": "warn",
         "@typescript-eslint/tslint/config": [
             "error",
             {

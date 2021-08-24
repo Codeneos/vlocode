@@ -150,7 +150,7 @@ export function arrayMapPush<T, K>(map: Map<K, Array<T>>, key: K, value: T) : nu
  * @param key Key in the map
  * @param value Value to add to the array
  */
- export function arrayMapUnshift<T, K>(map: Map<K, Array<T>>, key: K, value: T) : number {
+export function arrayMapUnshift<T, K>(map: Map<K, Array<T>>, key: K, value: T) : number {
     // @ts-expect-error set followed by get for the same key will never return undefined
     return (map.get(key) || map.set(key, []).get(key)).unshift(value);
 }

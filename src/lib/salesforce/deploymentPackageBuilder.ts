@@ -1,18 +1,12 @@
 import * as path from 'path';
-import { Logger } from '@vlocode/core';
+import { Logger , injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
 import * as vscode from 'vscode';
-import { cache, fileName, substringAfterLast } from '@vlocode/util';
-import * as constants from '@constants';
-import { injectable } from '@vlocode/core';
-import { LifecyclePolicy } from '@vlocode/core';
-import { Iterable, XML } from '@vlocode/util';
-import { FileSystem } from '@vlocode/core';
+import { cache, substringAfterLast , Iterable, XML } from '@vlocode/util';
 import * as chalk from 'chalk';
+import * as ZipArchive from 'jszip';
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage } from './deploymentPackage';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
-import { CachedFileSystemAdapter } from '../../../packages/core/src/fs/cachedFileSystem';
-import JSZip = require('jszip');
 
 export enum SalesforcePackageType {
     /**
@@ -227,7 +221,7 @@ export class SalesforcePackageBuilder {
      */
     private async compressFolder(folder: string) {
         // Build zip 
-        const resourceBundle = new JSZip();
+        const resourceBundle = new ZipArchive();
         for await (const file of this.readDirectoryRecursive(folder)) {
             const relativePath = path.relative(folder, file).replace(/\/|\\/g, '/');
             resourceBundle.file(relativePath, await this.fs.readFile(file));

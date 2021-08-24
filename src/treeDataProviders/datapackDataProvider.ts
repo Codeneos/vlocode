@@ -1,22 +1,18 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
-import { LogManager, Logger } from '@vlocode/core';
+import { LogManager, Logger , injectable , container } from '@vlocode/core';
 import DatapackUtil from 'lib/vlocity/datapackUtil';
-import { evalExpr } from '@vlocode/util';
-import { groupBy } from '@vlocode/util';
+import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName } from '@vlocode/util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import { addFieldsToQuery, normalizeSalesforceName } from '@vlocode/util';
-import { injectable } from '@vlocode/core';
-import { container } from '@vlocode/core';
 import DatapackInfoService from 'lib/vlocity/datapackInfoService';
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
+import SalesforceService from 'lib/salesforce/salesforceService';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
-import SalesforceService from 'lib/salesforce/salesforceService';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {

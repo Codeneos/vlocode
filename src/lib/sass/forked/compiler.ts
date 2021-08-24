@@ -1,9 +1,7 @@
 import { ChildProcess, fork } from 'child_process';
 import * as path from 'path';
-import { Logger } from '@vlocode/core';
+import { Logger , injectable , LifecyclePolicy } from '@vlocode/core';
 import { SassCompiler, SassCompileSuccessResult, SassCompileErrorResult } from 'lib/sass/compiler';
-import { injectable } from '@vlocode/core';
-import { LifecyclePolicy } from '@vlocode/core';
 import * as uuid from 'uuid';
 
 export interface Message {

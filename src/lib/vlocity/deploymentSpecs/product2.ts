@@ -1,12 +1,12 @@
-import { injectable } from '@vlocode/core';
+import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
 import { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { LifecyclePolicy } from '@vlocode/core';
-import { Logger } from '@vlocode/core';
-import { VlocityDatapack } from '../datapack';
-import DatapackDeploymentRecord from '../datapackDeploymentRecord';
+
+
 import { debug } from 'webpack';
 import { remove } from '@vlocode/util';
+import { VlocityDatapack } from '../datapack';
+import DatapackDeploymentRecord from '../datapackDeploymentRecord';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class Product2Spec implements DatapackDeploymentSpec {

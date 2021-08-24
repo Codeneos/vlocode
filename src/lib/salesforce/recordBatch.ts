@@ -4,8 +4,7 @@ import { LogManager } from '@vlocode/core';
 import { Connection, RecordResult, BatchInfo } from 'jsforce';
 import { CancellationToken } from 'vscode';
 import { AwaitReturnType } from 'lib/types';
-import { Timer } from '@vlocode/util';
-import { arrayMapPush } from '@vlocode/util';
+import { Timer , arrayMapPush } from '@vlocode/util';
 
 type RecordOperationType = 'update' | 'insert';
 

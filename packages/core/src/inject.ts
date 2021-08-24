@@ -25,7 +25,6 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         // @ts-ignore ctor extension is valid here if when there is no intersection
         const classProto = class extends ctor {
             constructor(...args: any[]) {
-                const v = paramTypes;
                 container.resolveParameters(ctor, args);
                 super(...args);
                 container.resolveProperties(this);

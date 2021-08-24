@@ -1,8 +1,9 @@
 {
     "name": "@vlocode/util",
     "version": "0.16.6",
-    "description": "",
+    "description": "Vlocode utility library",
     "main": "lib/index.js",
+    "readme": "../SITE.md",
     "directories": {
         "lib": "./lib"
     },
@@ -18,6 +19,10 @@
         "name": "Peter van Gulik",
         "email": "peter@curlybracket.nl"
     },
+    "files": [
+        "lib/**/*.d.ts",
+        "lib/**/*.js"
+    ],
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/Codeneos/vlocode/issues"

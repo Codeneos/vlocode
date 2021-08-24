@@ -1,8 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import { Logger, LogManager } from '@vlocode/core';
-import { filterAsyncParallel, mapAsyncParallel } from '@vlocode/util';
-import { getDocumentBodyAsString } from '@vlocode/util';
+import { filterAsyncParallel, mapAsyncParallel , getDocumentBodyAsString } from '@vlocode/util';
 import { Uri } from 'vscode';
 
 /**

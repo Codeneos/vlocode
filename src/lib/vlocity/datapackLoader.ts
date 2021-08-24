@@ -1,11 +1,9 @@
 import * as path from 'path';
 import { CancellationToken } from 'vscode';
-import { FileSystem } from '@vlocode/core';
-import { Logger, LogManager } from '@vlocode/core';
+import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
 import { mapAsyncParallel, filterUndefined } from '@vlocode/util';
 import { VlocityDatapack } from 'lib/vlocity/datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from 'lib/vlocity/datapackUtil';
-import { injectable } from '@vlocode/core';
 
 
 type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);

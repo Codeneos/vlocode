@@ -50,8 +50,8 @@ export function format(formatStr: string, ...args: any[]) {
  * Helper to allow cache decorator to be used.
  */
 class ExpressionCache {
-    
-    private expressions = require('angular-expressions');
+
+    private readonly expressions = require('angular-expressions');
 
     @cache(-1)
     public compile(expr: string) : (context: any) => string {

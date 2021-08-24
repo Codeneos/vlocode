@@ -4,16 +4,13 @@ import axios from 'axios';
 import * as jsforce from 'jsforce';
 import * as xml2js from 'xml2js';
 
-import { Logger } from '@vlocode/core';
+import { Logger , injectable as injectable } from '@vlocode/core';
 import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from 'lib/salesforce/sobjectRecord';
-import { cache } from '@vlocode/util';
+import { cache , Timer , substringAfter } from '@vlocode/util';
 import { PropertyAccessor } from 'lib/types';
 import { stripPrefix } from 'xml2js/lib/processors';
-import { injectable as injectable } from '@vlocode/core';
 import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
-import { Timer } from '@vlocode/util';
-import { substringAfter } from '@vlocode/util';
 import QueryService, { QueryResult } from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';

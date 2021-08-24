@@ -236,7 +236,6 @@ export class Container {
 
         // Get argument types
         const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
-        const typeInfo2 = Reflect.getMetadata('design:paramtypes', ctor);
         const paramTypes = typeInfo?.paramTypes();
 
         if (!paramTypes) {

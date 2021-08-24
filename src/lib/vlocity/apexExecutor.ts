@@ -3,9 +3,8 @@ import * as fs from 'fs-extra';
 import * as vscode from 'vscode';
 
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { LogManager, Logger } from '@vlocode/core';
+import { LogManager, Logger , injectable } from '@vlocode/core';
 import { cache } from '@vlocode/util';
-import { injectable } from '@vlocode/core';
 
 @injectable()
 export class ApexExecutor {

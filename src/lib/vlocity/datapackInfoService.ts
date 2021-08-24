@@ -1,10 +1,7 @@
-import { Logger, LogManager } from '@vlocode/core';
+import { Logger, LogManager , injectable } from '@vlocode/core';
 import SalesforceService from 'lib/salesforce/salesforceService';
 
-import { cache } from '@vlocode/util';
-import { removeNamespacePrefix } from '@vlocode/util';
-import { injectable } from '@vlocode/core';
-import { arrayMapPush } from '@vlocode/util';
+import { cache , removeNamespacePrefix , arrayMapPush } from '@vlocode/util';
 
 export interface VlocityDatapackInfo {
     /**

@@ -2,12 +2,10 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import { getDocumentBodyAsString } from '@vlocode/util';
+import { getDocumentBodyAsString , filterUndefined , substringAfterLast } from '@vlocode/util';
 import * as DatapackUtil from 'lib/vlocity/datapackUtil';
 import { VlocityDatapack, VlocityDatapackReference } from 'lib/vlocity/datapack';
 import DatapackLoader from 'lib/vlocity/datapackLoader';
-import { filterUndefined } from '@vlocode/util';
-import { substringAfterLast } from '@vlocode/util';
 import { container } from '@vlocode/core';
 import { DatapackCommand } from './datapackCommand';
 

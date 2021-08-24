@@ -1,15 +1,12 @@
 import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
 import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
-import { LogManager } from '@vlocode/core';
+import { LogManager , injectable, LifecyclePolicy } from '@vlocode/core';
 import * as constants from '@constants';
-import { Timer } from '@vlocode/util';
-import { arrayMapPush, last } from '@vlocode/util';
-import { injectable, LifecyclePolicy } from '@vlocode/core';
+import { Timer , arrayMapPush, last , isSalesforceId } from '@vlocode/util';
 import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
-import { isSalesforceId } from '@vlocode/util';
+import { CancellationToken } from 'vscode';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
-import { CancellationToken } from 'vscode';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackLookupService implements DependencyResolver {

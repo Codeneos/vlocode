@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 
 // Import vscode as optional module, only load it when available
-const vscode = import('vscode').catch(e => null);
+const vscode = import('vscode').catch(() => null);
 
 // FS options
 export const options : { mode: 'sync'|'async' } = {

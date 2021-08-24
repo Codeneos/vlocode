@@ -1,11 +1,8 @@
 import * as jsforce from 'jsforce';
-import { Logger } from '@vlocode/core';
+import { Logger , injectable } from '@vlocode/core';
 import SalesforceService from 'lib/salesforce/salesforceService';
-import { stringEquals } from '@vlocode/util';
+import { stringEquals , cache , removeNamespacePrefix } from '@vlocode/util';
 
-import { cache } from '@vlocode/util';
-import { removeNamespacePrefix } from '@vlocode/util';
-import { injectable } from '@vlocode/core';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import DatapackInfoService from './datapackInfoService';
 import { QueryDefinitions } from './types';
