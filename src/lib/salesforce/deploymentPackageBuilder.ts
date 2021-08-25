@@ -28,14 +28,14 @@ export class SalesforcePackageBuilder {
 
     private readonly mdPackage: SalesforcePackage;
     private readonly parsedFiles = new Set<string>();
-    private readonly metadataRegistry = new MetadataRegistry();
+    @injectable.property private readonly metadataRegistry: MetadataRegistry;
+    @injectable.property private readonly logger: Logger;
 
     constructor(...args: any[]);
     constructor(
         public readonly apiVersion: string,
         public readonly type: SalesforcePackageType,
-        private readonly fs: FileSystem,
-        private readonly logger: Logger) {
+        private readonly fs: FileSystem) {
         this.fs = new CachedFileSystemAdapter(fs);
         this.mdPackage = new SalesforcePackage(apiVersion, '', this.fs);
     }

@@ -5,6 +5,7 @@ import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { MetadataObject } from 'jsforce';
 import { singletonMixin } from '@vlocode/util';
 import { injectable, LifecyclePolicy } from '@vlocode/core';
+import { Logger } from '@salesforce/core';
 
 export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
     isBundle: boolean;
@@ -35,7 +36,7 @@ export class MetadataRegistry {
     private readonly types = new Map<string, MetadataType>();
     private readonly suffixes = new Map<string, string>();
 
-    constructor() {
+    constructor(private readonly logger: Logger) {
         // Init metadata
         for (const metadataObject of metadataObjects.map(md => Object.assign({}, md) as MetadataType)) {
             const sfdxRegistryData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
@@ -59,7 +60,7 @@ export class MetadataRegistry {
             // Store in registry
             this.registry.push(metadataObject);
             if (this.types.has(metadataObject.xmlName.toLowerCase())) {
-                console.debug(`XML Name already in-use: ${metadataObject.xmlName.toLowerCase()}`);
+                this.logger.warn(`XML Name already in-use: ${metadataObject.xmlName.toLowerCase()}`);
                 continue;
             }
 

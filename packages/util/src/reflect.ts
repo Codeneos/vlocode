@@ -4,8 +4,8 @@ import 'reflect-metadata';
  * Get the design:paramtypes using Reflect.getMetadata for the specified constructor prototype.
  * @param ctor type-constructor 
  */
-export function getDesignParamTypes(ctor: any) : any[] {
-    const paramTypes = Reflect.getMetadata('design:paramtypes', ctor) as any[];
+export function getCtorParameterTypes(ctor: any) : any[] | undefined {
+    const paramTypes = Reflect.getMetadata('design:paramtypes', ctor);
     if (paramTypes) {
         return paramTypes;
     }
@@ -13,16 +13,20 @@ export function getDesignParamTypes(ctor: any) : any[] {
     // Probe new style attributes
     const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
     if (typeInfo?.paramTypes) {
-        return typeof typeInfo?.type === 'function' ? typeInfo.paramTypes() : typeInfo.paramTypes;
+        return typeof typeInfo?.paramTypes === 'function' ? typeInfo.paramTypes() : typeInfo.paramTypes;
     }
-    return new Array<any>();
 }
 
 /**
  * Get the design:typeinfo using Reflect.getMetadata for the specified prototype and property.
  * @param ctor type-constructor 
  */
-export function getDesignTypeInfo(type: any, propertyKey: string) : string | undefined {
+export function getPropertyType(type: any, propertyKey: string) : string | undefined {
+    const propertyType = Reflect.getMetadata('design:type', type, propertyKey);
+    if (propertyType) {
+        return propertyType;
+    }
+
     // Probe new style attributes
     const typeInfo = Reflect.getMetadata('design:typeinfo', type, propertyKey);
     if (typeInfo?.type) {

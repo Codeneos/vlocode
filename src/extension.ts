@@ -8,7 +8,7 @@ import HandleSalesforceFileDeleted from 'events/onFileDeleted';
 import HandleTriggerCreated from 'events/onTriggerCreated';
 import HandleClassCreated from 'events/onClassCreated';
 import * as constants from '@constants';
-import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy } from '@vlocode/core';
+import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container } from '@vlocode/core';
 import Commands from 'commands';
 import * as vlocityUtil from 'lib/vlocity/vlocityLogging';
 import { initializeContext } from 'lib/vlocodeContext';
@@ -46,6 +46,7 @@ class VlocityLogFilter {
 
 class Vlocode {
 
+    private readonly isDebug = /--debug|--inspect-brk/.test(process.execArgv.join(' '));
     private static instance: Vlocode;
     private service: VlocodeService;
 
@@ -78,7 +79,11 @@ class Vlocode {
         LogManager.registerWriter({
             write: entry => logInTerminal ? terminalWriter.write(entry) : outputChannelWriter.write(entry),
             focus: () => logInTerminal ? terminalWriter.focus() : outputChannelWriter.focus(),
-        }, new ConsoleWriter());
+        });
+
+        if (this.isDebug) {
+            LogManager.registerWriter(new ConsoleWriter());
+        }
 
         // set logging level
         ConfigurationManager.watchProperties(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(LogLevel[config.logLevel]), { initial: true });
@@ -90,7 +95,7 @@ class Vlocode {
     }
 
     /**
-     * Creates an instance of the Developer log panel and regsiters the required event handlers
+     * Creates an instance of the Developer log panel and registers the required event handlers
      */
     private createDeveloperLogView() {
         const developerLogDataProvider = container.get(DeveloperLogDataProvider);
@@ -109,6 +114,8 @@ class Vlocode {
         this.setWorkingDirectory();
 
         // Init logging and register services
+        LogManager.registerWriterFor(Container, new ConsoleWriter());
+        LogManager.setLogLevel(Container, LogLevel.verbose);
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
 

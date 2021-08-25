@@ -1,4 +1,3 @@
-import { Event, Disposable } from 'vscode';
 import { optionalRequire } from 'optional-require';
 
 import type * as vscodeModule from 'vscode';
@@ -10,7 +9,7 @@ export interface PropertyChangedEventArgs {
     oldValue?: any;
 }
 
-export type Observable<T extends Object> = T & { onPropertyChanged: Event<PropertyChangedEventArgs> } & Disposable;
+export type Observable<T extends Object> = T & { onPropertyChanged: vscodeModule.Event<PropertyChangedEventArgs> } & vscodeModule.Disposable;
 
 export interface ArrayChangedEventArgs<T> {
     type: 'add' | 'remove' | 'replace';
@@ -19,7 +18,7 @@ export interface ArrayChangedEventArgs<T> {
     oldValues?: T[];
 }
 
-export type ObservableArray<T> = Array<T> & { onArrayChanged: Event<ArrayChangedEventArgs<T>> } & Disposable;
+export type ObservableArray<T> = Array<T> & { onArrayChanged: vscodeModule.Event<ArrayChangedEventArgs<T>> } & vscodeModule.Disposable;
 
 /**
  * Creates an observer that watches all properties in the target objects, when ever a change is detected it fires the change event triggers

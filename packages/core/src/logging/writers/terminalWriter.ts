@@ -6,7 +6,7 @@ import { LogLevel, LogWriter, LogEntry } from '../../logging';
 const TERMINAL_EOL = '\r\n';
 const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 
-export class TerminalWriter implements LogWriter, vscode.Disposable {
+export class TerminalWriter implements LogWriter {
 
     private writeEmitter : vscode.EventEmitter<string>;
     private closeEmitter : vscode.EventEmitter<void>;

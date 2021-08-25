@@ -10,6 +10,6 @@ export function isPromise(value: any): value is Promise<any> {
     return typeof value === 'object' && typeof value.then === 'function' && typeof value.catch === 'function';
 }
 
-export function isThenable(value: any): value is Thenable<any> {
+export function isThenable(value: any): value is PromiseLike<any> {
     return typeof value === 'object' && typeof value.then === 'function';
 }

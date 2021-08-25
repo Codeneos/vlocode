@@ -4,3 +4,4 @@ export * from './types';
 // implementations + Adapters
 export * from './nodeFileSystem';
 export * from './memoryFileSystem';
+export * from './cachedFileSystem';

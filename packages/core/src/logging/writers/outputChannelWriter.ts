@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 import * as moment from 'moment';
 import { LogWriter, LogEntry, LogLevel } from '../../logging';
 
-export class OutputChannelWriter implements LogWriter, vscode.Disposable {
+export class OutputChannelWriter implements LogWriter {
 
     public static LOG_DATE_FORMAT = "HH:mm:ss.SS";
 

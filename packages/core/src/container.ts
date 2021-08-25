@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { EventEmitter } from 'stream';
-import { singleton, Iterable, arrayMapPush, asArray } from '@vlocode/util';
+import { singleton, Iterable, arrayMapPush, asArray, getCtorParameterTypes, getPropertyType } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
 
@@ -68,7 +68,7 @@ export class Container {
     private readonly providers = new Map<string, (receiver: any) => any>();
 
     constructor(private readonly logger = LogManager.get(Container), private readonly parent?: Container) {
-        console.debug(`Starting container: ${this.containerGuid} (${parent ? 'CHILD' : 'MAIN'})`);
+        logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? 'CHILD' : 'MAIN'})`);
     }
 
     /**
@@ -139,7 +139,7 @@ export class Container {
             const circularReference = this.resolveStack.includes(type.ctor.name);
             const instance = this.createLazyProxy<T>(() => this.resolve<T>(service, overrideLifecycle, receiver, resolver) as any, type.ctor.prototype);
             if (circularReference) {
-                console.debug(`Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${type.ctor.name}`);
+                this.logger.verbose(`Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${type.ctor.name}`);
                 return instance;
             }
 
@@ -235,9 +235,7 @@ export class Container {
         }
 
         // Get argument types
-        const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
-        const paramTypes = typeInfo?.paramTypes();
-
+        const paramTypes = getCtorParameterTypes(ctor);
         if (!paramTypes) {
             throw new Error('Cannot resolve parameters of an object without design time decoration');
         }
@@ -273,8 +271,11 @@ export class Container {
                 continue;
             }
             // Resolve property to an actual service
-            const typeInfo = Reflect.getMetadata('design:typeinfo', prototype, property);
-            const resolvedPropertyValue = this.resolve(typeInfo.type(), undefined, prototype.constructor);
+            const typeInfo = getPropertyType(prototype, property);
+            if (!typeInfo) {
+                throw new Error('Code compiled with emitting required type metadata');
+            }
+            const resolvedPropertyValue = this.resolve(typeInfo, undefined, prototype.constructor);
             if (resolvedPropertyValue) {
                 instance[property] = resolvedPropertyValue;
                 this.registerDependentService(instance[serviceGuidSymbol], resolvedPropertyValue);
@@ -320,7 +321,7 @@ export class Container {
             return;
         }
 
-        console.debug(`Unregister: ${instance.constructor.name} (${instance[serviceGuidSymbol]}) (${this.containerGuid})`);
+        this.logger.debug(`Unregister: ${instance.constructor.name} (${instance[serviceGuidSymbol]}) (${this.containerGuid})`);
 
         instance[this.servicesProvided]?.clear();
         instance[serviceGuidSymbol] = undefined;
@@ -366,10 +367,10 @@ export class Container {
             }
 
             if (this.instances.has(providedService)) {
-                console.warn(`Overriding existing service from ${this.instances.get(providedService.constructor.name)}->${instance.constructor.name}`);
+                this.logger.warn(`Overriding existing service from ${this.instances.get(providedService.constructor.name)}->${instance.constructor.name}`);
             }
 
-            console.debug(`Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
+            this.logger.debug(`Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
             this.instances.set(providedService, instance);
             providedServices.add(providedService);
         }

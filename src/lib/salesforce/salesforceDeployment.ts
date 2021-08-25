@@ -1,24 +1,10 @@
-import * as path from 'path';
-import { Stream } from 'stream';
-import * as chalk from 'chalk';
-import * as fs from 'fs-extra';
 import * as jsforce from 'jsforce';
-import * as ZipArchive from 'jszip';
 import * as vscode from 'vscode';
 
-import { Logger, LogManager , injectable , container } from '@vlocode/core';
-import { wait , filterAsyncParallel, mapAsyncParallel, filterUndefined , getDocumentBodyAsString , AsyncEventEmitter } from '@vlocode/util';
-
-
-
-import VlocodeConfiguration from 'lib/vlocodeConfiguration';
-
-
-import { DeploymentStatus } from 'lib/vlocity/datapackDeploymentRecord';
+import { LogManager , container } from '@vlocode/core';
+import { AsyncEventEmitter } from '@vlocode/util';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService from './salesforceService';
-import { RetrieveResultPackage } from './deploy/retrieveResultPackage';
-import { MetadataManifest, PackageManifest } from './deploy/packageXml';
 
 export type DetailedDeployResult = jsforce.DeployResult & {
     details?: {

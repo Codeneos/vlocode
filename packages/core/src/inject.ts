@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { asArray, lazy, getDesignParamTypes } from '@vlocode/util';
+import { asArray, lazy, getCtorParameterTypes } from '@vlocode/util';
 import { container, ServiceType, LifecyclePolicy } from './container';
 
 export interface DependencyOptions {
@@ -20,8 +20,6 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
     const services = asArray(options?.provides ?? []);
 
     return function(ctor: T) {
-        const paramTypes = lazy(getDesignParamTypes, ctor);
-
         // @ts-ignore ctor extension is valid here if when there is no intersection
         const classProto = class extends ctor {
             constructor(...args: any[]) {
