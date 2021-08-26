@@ -80,6 +80,7 @@
 							<h3>Namespaces</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="util.Iterable.html" class="tsd-kind-icon">Iterable</a></li>
+								<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="util.XML.html" class="tsd-kind-icon">XML</a></li>
 								<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="util.sfdx.html" class="tsd-kind-icon">sfdx</a></li>
 							</ul>
 						</section>
@@ -106,6 +107,8 @@
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/util.SalesforceOrgInfo.html" class="tsd-kind-icon">Salesforce<wbr>Org<wbr>Info</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/util.StackFrame.html" class="tsd-kind-icon">Stack<wbr>Frame</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module tsd-has-type-parameter"><a href="../interfaces/util.TaskPromise.html" class="tsd-kind-icon">Task<wbr>Promise</a></li>
+								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/util.XMLParseOptions.html" class="tsd-kind-icon">XMLParse<wbr>Options</a></li>
+								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/util.XMLStringfyOptions.html" class="tsd-kind-icon">XMLStringfy<wbr>Options</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
@@ -150,12 +153,12 @@
 								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="util.html#forEachAsyncParallel" class="tsd-kind-icon">for<wbr>Each<wbr>Async<wbr>Parallel</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#format" class="tsd-kind-icon">format</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#formatString" class="tsd-kind-icon">format<wbr>String</a></li>
-								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getDesignParamTypes" class="tsd-kind-icon">get<wbr>Design<wbr>Param<wbr>Types</a></li>
-								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getDesignTypeInfo" class="tsd-kind-icon">get<wbr>Design<wbr>Type<wbr>Info</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getCtorParameterTypes" class="tsd-kind-icon">get<wbr>Ctor<wbr>Parameter<wbr>Types</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getDocumentBody" class="tsd-kind-icon">get<wbr>Document<wbr>Body</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getDocumentBodyAsString" class="tsd-kind-icon">get<wbr>Document<wbr>Body<wbr>AsString</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="util.html#getInstance" class="tsd-kind-icon">get<wbr>Instance</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getObjectValues" class="tsd-kind-icon">get<wbr>Object<wbr>Values</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getPropertyType" class="tsd-kind-icon">get<wbr>Property<wbr>Type</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="util.html#getStackFrameDetails" class="tsd-kind-icon">get<wbr>Stack<wbr>Frame<wbr>Details</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="util.html#groupBy" class="tsd-kind-icon">group<wbr>By</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="util.html#intersect" class="tsd-kind-icon">intersect</a></li>
@@ -201,7 +204,7 @@
 					<div class="tsd-signature tsd-kind-icon">Async<wbr>Event<wbr>Handler&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span><span class="tsd-signature-symbol">[ </span><span class="tsd-signature-type">K</span><span class="tsd-signature-symbol"> in </span><span class="tsd-signature-symbol">keyof </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">EventReceiver</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">K</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in util/src/events.ts:27</li>
+							<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/events.ts#L27">util/src/events.ts:27</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -214,10 +217,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
 					<a name="Observable" class="tsd-anchor"></a>
 					<h3>Observable</h3>
-					<div class="tsd-signature tsd-kind-icon">Observable&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>onPropertyChanged<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Event</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/util.PropertyChangedEventArgs.html" class="tsd-signature-type" data-tsd-kind="Interface">PropertyChangedEventArgs</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">Disposable</span></div>
+					<div class="tsd-signature tsd-kind-icon">Observable&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>onPropertyChanged<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">vscodeModule.Event</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/util.PropertyChangedEventArgs.html" class="tsd-signature-type" data-tsd-kind="Interface">PropertyChangedEventArgs</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">vscodeModule.Disposable</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in util/src/observer.ts:13</li>
+							<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/observer.ts#L12">util/src/observer.ts:12</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -230,10 +233,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
 					<a name="ObservableArray" class="tsd-anchor"></a>
 					<h3>Observable<wbr>Array</h3>
-					<div class="tsd-signature tsd-kind-icon">Observable<wbr>Array&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>onArrayChanged<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Event</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/util.ArrayChangedEventArgs.html" class="tsd-signature-type" data-tsd-kind="Interface">ArrayChangedEventArgs</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">Disposable</span></div>
+					<div class="tsd-signature tsd-kind-icon">Observable<wbr>Array&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>onArrayChanged<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">vscodeModule.Event</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/util.ArrayChangedEventArgs.html" class="tsd-signature-type" data-tsd-kind="Interface">ArrayChangedEventArgs</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">vscodeModule.Disposable</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in util/src/observer.ts:22</li>
+							<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/observer.ts#L21">util/src/observer.ts:21</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -249,7 +252,7 @@
 					<div class="tsd-signature tsd-kind-icon">Property<wbr>Transformer&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>target<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">symbol</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">symbol</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in util/src/object.ts:7</li>
+							<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/object.ts#L7">util/src/object.ts:7</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -292,7 +295,7 @@
 					<div class="tsd-signature tsd-kind-icon">options<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>mode<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">&quot;sync&quot;</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">&quot;async&quot;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in util/src/fs.ts:8</li>
+							<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L8">util/src/fs.ts:8</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -317,7 +320,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:85</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L85">util/src/salesforce.ts:85</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -354,7 +357,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:142</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L142">util/src/collection.ts:142</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -406,7 +409,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:153</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L153">util/src/collection.ts:153</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -458,7 +461,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:186</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L186">util/src/collection.ts:186</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -495,7 +498,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/cache.ts:96</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/cache.ts#L96">util/src/cache.ts:96</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -550,7 +553,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/cache.ts:115</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/cache.ts#L115">util/src/cache.ts:115</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -593,7 +596,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/cache.ts:84</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/cache.ts#L84">util/src/cache.ts:84</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -627,7 +630,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:8</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L8">util/src/salesforce.ts:8</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -667,7 +670,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/singleton.ts:35</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/singleton.ts#L35">util/src/singleton.ts:35</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -689,7 +692,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:65</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L65">util/src/fs.ts:65</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -721,7 +724,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:32</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L32">util/src/string.ts:32</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -761,7 +764,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:67</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L67">util/src/string.ts:67</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -798,7 +801,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:240</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L240">util/src/collection.ts:240</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -841,7 +844,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:56</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L56">util/src/salesforce.ts:56</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -880,7 +883,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:45</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L45">util/src/fs.ts:45</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -903,7 +906,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:81</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L81">util/src/fs.ts:81</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -941,7 +944,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:91</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L91">util/src/fs.ts:91</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -973,7 +976,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:130</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L130">util/src/collection.ts:130</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1037,7 +1040,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:206</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L206">util/src/collection.ts:206</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1071,7 +1074,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:9</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L9">util/src/collection.ts:9</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1108,13 +1111,13 @@
 					<a name="forEachAsync" class="tsd-anchor"></a>
 					<h3>for<wbr>Each<wbr>Async</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
-						<li class="tsd-signature tsd-kind-icon">for<wbr>Each<wbr>Async&lt;T&gt;<span class="tsd-signature-symbol">(</span>array<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">for<wbr>Each<wbr>Async&lt;T&gt;<span class="tsd-signature-symbol">(</span>array<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:92</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L92">util/src/collection.ts:92</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1137,14 +1140,14 @@
 									</div>
 								</li>
 								<li>
-									<h5>callback: <span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h5>
+									<h5>callback: <span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>The callback to execute for each item</p>
 									</div>
 									<ul class="tsd-parameters">
 										<li class="tsd-parameter-signature">
 											<ul class="tsd-signatures tsd-kind-type-literal">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
 											</ul>
 											<ul class="tsd-descriptions">
 												<li class="tsd-description">
@@ -1160,7 +1163,7 @@
 															<h5><span class="tsd-flag ts-flagOptional">Optional</span> array: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span></h5>
 														</li>
 													</ul>
-													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
 												</li>
 											</ul>
 										</li>
@@ -1175,13 +1178,13 @@
 					<a name="forEachAsyncParallel" class="tsd-anchor"></a>
 					<h3>for<wbr>Each<wbr>Async<wbr>Parallel</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
-						<li class="tsd-signature tsd-kind-icon">for<wbr>Each<wbr>Async<wbr>Parallel&lt;T&gt;<span class="tsd-signature-symbol">(</span>iterable<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Iterable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span>, parallelism<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">for<wbr>Each<wbr>Async<wbr>Parallel&lt;T&gt;<span class="tsd-signature-symbol">(</span>iterable<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Iterable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span>, parallelism<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:105</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L105">util/src/collection.ts:105</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1204,14 +1207,14 @@
 									</div>
 								</li>
 								<li>
-									<h5>callback: <span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h5>
+									<h5>callback: <span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>The callback to execute for each item</p>
 									</div>
 									<ul class="tsd-parameters">
 										<li class="tsd-parameter-signature">
 											<ul class="tsd-signatures tsd-kind-type-literal">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span>, index<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, array<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
 											</ul>
 											<ul class="tsd-descriptions">
 												<li class="tsd-description">
@@ -1227,7 +1230,7 @@
 															<h5><span class="tsd-flag ts-flagOptional">Optional</span> array: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span></h5>
 														</li>
 													</ul>
-													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
 												</li>
 											</ul>
 										</li>
@@ -1251,7 +1254,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:45</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L45">util/src/string.ts:45</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1277,7 +1280,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:76</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L76">util/src/string.ts:76</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1305,16 +1308,16 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
-					<a name="getDesignParamTypes" class="tsd-anchor"></a>
-					<h3>get<wbr>Design<wbr>Param<wbr>Types</h3>
+					<a name="getCtorParameterTypes" class="tsd-anchor"></a>
+					<h3>get<wbr>Ctor<wbr>Parameter<wbr>Types</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
-						<li class="tsd-signature tsd-kind-icon">get<wbr>Design<wbr>Param<wbr>Types<span class="tsd-signature-symbol">(</span>ctor<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></li>
+						<li class="tsd-signature tsd-kind-icon">get<wbr>Ctor<wbr>Parameter<wbr>Types<span class="tsd-signature-symbol">(</span>ctor<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/reflect.ts:7</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/reflect.ts#L7">util/src/reflect.ts:7</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1331,38 +1334,7 @@
 									</div>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
-					<a name="getDesignTypeInfo" class="tsd-anchor"></a>
-					<h3>get<wbr>Design<wbr>Type<wbr>Info</h3>
-					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
-						<li class="tsd-signature tsd-kind-icon">get<wbr>Design<wbr>Type<wbr>Info<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, propertyKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in util/src/reflect.ts:25</li>
-								</ul>
-							</aside>
-							<div class="tsd-comment tsd-typography">
-								<div class="lead">
-									<p>Get the design:typeinfo using Reflect.getMetadata for the specified prototype and property.</p>
-								</div>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>type: <span class="tsd-signature-type">any</span></h5>
-								</li>
-								<li>
-									<h5>propertyKey: <span class="tsd-signature-type">string</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -1376,7 +1348,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:24</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L24">util/src/fs.ts:24</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1407,7 +1379,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:16</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L16">util/src/fs.ts:16</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1441,7 +1413,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/singleton.ts:24</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/singleton.ts#L24">util/src/singleton.ts:24</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1478,7 +1450,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/object.ts:116</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/object.ts#L116">util/src/object.ts:116</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1506,6 +1478,37 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
+					<a name="getPropertyType" class="tsd-anchor"></a>
+					<h3>get<wbr>Property<wbr>Type</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
+						<li class="tsd-signature tsd-kind-icon">get<wbr>Property<wbr>Type<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, propertyKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/reflect.ts#L24">util/src/reflect.ts:24</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Get the design:typeinfo using Reflect.getMetadata for the specified prototype and property.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>type: <span class="tsd-signature-type">any</span></h5>
+								</li>
+								<li>
+									<h5>propertyKey: <span class="tsd-signature-type">string</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
 					<a name="getStackFrameDetails" class="tsd-anchor"></a>
 					<h3>get<wbr>Stack<wbr>Frame<wbr>Details</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
@@ -1515,7 +1518,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/callStack.ts:14</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/callStack.ts#L14">util/src/callStack.ts:14</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1544,7 +1547,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:47</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L47">util/src/collection.ts:47</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1607,7 +1610,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:229</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L229">util/src/collection.ts:229</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1650,7 +1653,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/async.ts:9</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/async.ts#L9">util/src/async.ts:9</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1673,7 +1676,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:76</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L76">util/src/salesforce.ts:76</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1698,13 +1701,13 @@
 					<a name="isThenable" class="tsd-anchor"></a>
 					<h3>is<wbr>Thenable</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
-						<li class="tsd-signature tsd-kind-icon">is<wbr>Thenable<span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">value</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Thenable<span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">value</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/async.ts:13</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/async.ts#L13">util/src/async.ts:13</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1713,7 +1716,7 @@
 									<h5>value: <span class="tsd-signature-type">any</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">value</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">Thenable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">value</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -1727,7 +1730,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/guards.ts:1</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/guards.ts#L1">util/src/guards.ts:1</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1750,7 +1753,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:122</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L122">util/src/string.ts:122</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1786,7 +1789,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:220</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L220">util/src/collection.ts:220</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1823,7 +1826,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/lazy.ts:7</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/lazy.ts#L7">util/src/lazy.ts:7</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1867,7 +1870,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:79</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L79">util/src/collection.ts:79</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1925,13 +1928,13 @@
 					<a name="mapAsyncParallel" class="tsd-anchor"></a>
 					<h3>map<wbr>Async<wbr>Parallel</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
-						<li class="tsd-signature tsd-kind-icon">map<wbr>Async<wbr>Parallel&lt;T, R&gt;<span class="tsd-signature-symbol">(</span>iterable<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Iterable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span>, parallelism<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">map<wbr>Async<wbr>Parallel&lt;T, R&gt;<span class="tsd-signature-symbol">(</span>iterable<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Iterable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span>, parallelism<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:117</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L117">util/src/collection.ts:117</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1954,14 +1957,14 @@
 									<h5>iterable: <span class="tsd-signature-type">Iterable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span></h5>
 								</li>
 								<li>
-									<h5>callback: <span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span></h5>
+									<h5>callback: <span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>The callback to execute for each item</p>
 									</div>
 									<ul class="tsd-parameters">
 										<li class="tsd-parameter-signature">
 											<ul class="tsd-signatures tsd-kind-type-literal">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span></li>
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span></li>
 											</ul>
 											<ul class="tsd-descriptions">
 												<li class="tsd-description">
@@ -1971,7 +1974,7 @@
 															<h5>item: <span class="tsd-signature-type">T</span></h5>
 														</li>
 													</ul>
-													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span></h4>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">PromiseLike</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span></h4>
 												</li>
 											</ul>
 										</li>
@@ -1995,7 +1998,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:175</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L175">util/src/collection.ts:175</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2059,7 +2062,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:122</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L122">util/src/salesforce.ts:122</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2091,7 +2094,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:100</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L100">util/src/salesforce.ts:100</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2120,7 +2123,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/observer.ts:68</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/observer.ts#L67">util/src/observer.ts:67</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2156,7 +2159,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/observer.ts:28</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/observer.ts#L27">util/src/observer.ts:27</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2192,7 +2195,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:53</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L53">util/src/fs.ts:53</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2215,7 +2218,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:252</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L252">util/src/collection.ts:252</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2280,7 +2283,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/salesforce.ts:48</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/salesforce.ts#L48">util/src/salesforce.ts:48</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2311,7 +2314,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/fs.ts:36</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/fs.ts#L36">util/src/fs.ts:36</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2337,7 +2340,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:164</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L164">util/src/collection.ts:164</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2389,7 +2392,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/singleton.ts:11</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/singleton.ts#L11">util/src/singleton.ts:11</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2426,7 +2429,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/singleton.ts:44</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/singleton.ts#L44">util/src/singleton.ts:44</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -2455,7 +2458,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:10</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L10">util/src/string.ts:10</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2495,7 +2498,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:99</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L99">util/src/string.ts:99</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2532,7 +2535,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/string.ts:89</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/string.ts#L89">util/src/string.ts:89</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2569,7 +2572,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/object.ts:135</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/object.ts#L135">util/src/object.ts:135</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2624,7 +2627,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/object.ts:107</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/object.ts#L107">util/src/object.ts:107</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2667,7 +2670,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/collection.ts:27</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/collection.ts#L27">util/src/collection.ts:27</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2752,7 +2755,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/async.ts:5</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/async.ts#L5">util/src/async.ts:5</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2783,7 +2786,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in util/src/defaults.ts:7</li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/defaults.ts#L7">util/src/defaults.ts:7</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2883,6 +2886,12 @@
 					<li class=" tsd-kind-interface tsd-parent-kind-module tsd-has-type-parameter">
 						<a href="../interfaces/util.TaskPromise.html" class="tsd-kind-icon">Task<wbr>Promise</a>
 					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-module">
+						<a href="../interfaces/util.XMLParseOptions.html" class="tsd-kind-icon">XMLParse<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-module">
+						<a href="../interfaces/util.XMLStringfyOptions.html" class="tsd-kind-icon">XMLStringfy<wbr>Options</a>
+					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
 						<a href="util.html#AsyncEventHandler" class="tsd-kind-icon">Async<wbr>Event<wbr>Handler</a>
 					</li>
@@ -2971,10 +2980,7 @@
 						<a href="util.html#formatString" class="tsd-kind-icon">format<wbr>String</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
-						<a href="util.html#getDesignParamTypes" class="tsd-kind-icon">get<wbr>Design<wbr>Param<wbr>Types</a>
-					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-module">
-						<a href="util.html#getDesignTypeInfo" class="tsd-kind-icon">get<wbr>Design<wbr>Type<wbr>Info</a>
+						<a href="util.html#getCtorParameterTypes" class="tsd-kind-icon">get<wbr>Ctor<wbr>Parameter<wbr>Types</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
 						<a href="util.html#getDocumentBody" class="tsd-kind-icon">get<wbr>Document<wbr>Body</a>
@@ -2987,6 +2993,9 @@
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
 						<a href="util.html#getObjectValues" class="tsd-kind-icon">get<wbr>Object<wbr>Values</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module">
+						<a href="util.html#getPropertyType" class="tsd-kind-icon">get<wbr>Property<wbr>Type</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
 						<a href="util.html#getStackFrameDetails" class="tsd-kind-icon">get<wbr>Stack<wbr>Frame<wbr>Details</a>

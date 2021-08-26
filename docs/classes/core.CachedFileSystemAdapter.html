@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>MemoryFileSystem | vlocode</title>
+	<title>CachedFileSystemAdapter | vlocode</title>
 	<meta name="description" content="Documentation for vlocode">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -56,10 +56,10 @@
 					<a href="../modules/core.html">core</a>
 				</li>
 				<li>
-					<a href="core.MemoryFileSystem.html">MemoryFileSystem</a>
+					<a href="core.CachedFileSystemAdapter.html">CachedFileSystemAdapter</a>
 				</li>
 			</ul>
-			<h1>Class MemoryFileSystem</h1>
+			<h1>Class CachedFileSystemAdapter</h1>
 		</div>
 	</div>
 </header>
@@ -69,7 +69,8 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p>Basic class that can wrap any API implementation the NodeJS FS API into a more reduced FileSystem interface.</p>
+						<p>Decorate any existing file system with caching functionality; caches the write and stat operations towards the target file system.
+						The methods <code>readDirectory</code> and <code>findFiles</code> are not cached and will be redirected to the base file system.</p>
 					</div>
 				</div>
 			</section>
@@ -77,10 +78,10 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<a href="core.NodeFileSystem.html" class="tsd-signature-type" data-tsd-kind="Class">NodeFileSystem</a>
+						<a href="core.FileSystem.html" class="tsd-signature-type" data-tsd-kind="Class">FileSystem</a>
 						<ul class="tsd-hierarchy">
 							<li>
-								<span class="target">MemoryFileSystem</span>
+								<span class="target">CachedFileSystemAdapter</span>
 							</li>
 						</ul>
 					</li>
@@ -93,21 +94,21 @@
 						<section class="tsd-index-section ">
 							<h3>Constructors</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-overwrite"><a href="core.MemoryFileSystem.html#constructor" class="tsd-kind-icon">constructor</a></li>
+								<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-overwrite"><a href="core.CachedFileSystemAdapter.html#constructor" class="tsd-kind-icon">constructor</a></li>
 							</ul>
 						</section>
-						<section class="tsd-index-section tsd-is-inherited">
+						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#findFiles" class="tsd-kind-icon">find<wbr>Files</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#isDirectory" class="tsd-kind-icon">is<wbr>Directory</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#isFile" class="tsd-kind-icon">is<wbr>File</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-protected"><a href="core.MemoryFileSystem.html#normalizeGlobPatterns" class="tsd-kind-icon">normalize<wbr>Glob<wbr>Patterns</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#pathExists" class="tsd-kind-icon">path<wbr>Exists</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#readDirectory" class="tsd-kind-icon">read<wbr>Directory</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#readFile" class="tsd-kind-icon">read<wbr>File</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#readFileAsString" class="tsd-kind-icon">read<wbr>File<wbr>AsString</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.MemoryFileSystem.html#stat" class="tsd-kind-icon">stat</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="core.CachedFileSystemAdapter.html#clearCache" class="tsd-kind-icon">clear<wbr>Cache</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="core.CachedFileSystemAdapter.html#findFiles" class="tsd-kind-icon">find<wbr>Files</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.CachedFileSystemAdapter.html#isDirectory" class="tsd-kind-icon">is<wbr>Directory</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.CachedFileSystemAdapter.html#isFile" class="tsd-kind-icon">is<wbr>File</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="core.CachedFileSystemAdapter.html#pathExists" class="tsd-kind-icon">path<wbr>Exists</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="core.CachedFileSystemAdapter.html#readDirectory" class="tsd-kind-icon">read<wbr>Directory</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="core.CachedFileSystemAdapter.html#readFile" class="tsd-kind-icon">read<wbr>File</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="core.CachedFileSystemAdapter.html#readFileAsString" class="tsd-kind-icon">read<wbr>File<wbr>AsString</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="core.CachedFileSystemAdapter.html#stat" class="tsd-kind-icon">stat</a></li>
 							</ul>
 						</section>
 					</div>
@@ -119,46 +120,58 @@
 					<a name="constructor" class="tsd-anchor"></a>
 					<h3>constructor</h3>
 					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">new <wbr>Memory<wbr>File<wbr>System<span class="tsd-signature-symbol">(</span>files<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{}</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="core.MemoryFileSystem.html" class="tsd-signature-type" data-tsd-kind="Class">MemoryFileSystem</a></li>
+						<li class="tsd-signature tsd-kind-icon">new <wbr>Cached<wbr>File<wbr>System<wbr>Adapter<span class="tsd-signature-symbol">(</span>innerFs<span class="tsd-signature-symbol">: </span><a href="core.FileSystem.html" class="tsd-signature-type" data-tsd-kind="Class">FileSystem</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="core.CachedFileSystemAdapter.html" class="tsd-signature-type" data-tsd-kind="Class">CachedFileSystemAdapter</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Overrides <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#constructor">constructor</a></p>
+								<p>Overrides <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#constructor">constructor</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/memoryFileSystem.ts#L8">core/src/fs/memoryFileSystem.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L11">core/src/fs/cachedFileSystem.ts:11</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>files: <span class="tsd-signature-symbol">{}</span><span class="tsd-signature-symbol"> = {}</span></h5>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-index-signature">
-											<h5><span class="tsd-signature-symbol">[</span>fileName: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">string</span></h5>
-										</li>
-									</ul>
+									<h5>innerFs: <a href="core.FileSystem.html" class="tsd-signature-type" data-tsd-kind="Class">FileSystem</a></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="core.MemoryFileSystem.html" class="tsd-signature-type" data-tsd-kind="Class">MemoryFileSystem</a></h4>
+							<h4 class="tsd-returns-title">Returns <a href="core.CachedFileSystemAdapter.html" class="tsd-signature-type" data-tsd-kind="Class">CachedFileSystemAdapter</a></h4>
 						</li>
 					</ul>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group tsd-is-inherited">
+			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Methods</h2>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="clearCache" class="tsd-anchor"></a>
+					<h3>clear<wbr>Cache</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">clear<wbr>Cache<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L19">core/src/fs/cachedFileSystem.ts:19</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 					<a name="findFiles" class="tsd-anchor"></a>
 					<h3>find<wbr>Files</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 						<li class="tsd-signature tsd-kind-icon">find<wbr>Files<span class="tsd-signature-symbol">(</span>patterns<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#findFiles">findFiles</a></p>
+								<p>Overrides <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#findFiles">findFiles</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/nodeFileSystem.ts#L51">core/src/fs/nodeFileSystem.ts:51</a></li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L37">core/src/fs/cachedFileSystem.ts:37</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -185,7 +198,7 @@
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#isDirectory">isDirectory</a></p>
+								<p>Inherited from <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#isDirectory">isDirectory</a></p>
 								<ul>
 									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/types.ts#L28">core/src/fs/types.ts:28</a></li>
 								</ul>
@@ -217,7 +230,7 @@
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#isFile">isFile</a></p>
+								<p>Inherited from <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#isFile">isFile</a></p>
 								<ul>
 									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/types.ts#L20">core/src/fs/types.ts:20</a></li>
 								</ul>
@@ -240,30 +253,6 @@
 						</li>
 					</ul>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-protected">
-					<a name="normalizeGlobPatterns" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagProtected">Protected</span> normalize<wbr>Glob<wbr>Patterns</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-protected">
-						<li class="tsd-signature tsd-kind-icon">normalize<wbr>Glob<wbr>Patterns<span class="tsd-signature-symbol">(</span>patterns<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#normalizeGlobPatterns">normalizeGlobPatterns</a></p>
-								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/nodeFileSystem.ts#L64">core/src/fs/nodeFileSystem.ts:64</a></li>
-								</ul>
-							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>patterns: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
-						</li>
-					</ul>
-				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
 					<a name="pathExists" class="tsd-anchor"></a>
 					<h3>path<wbr>Exists</h3>
@@ -273,7 +262,7 @@
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#pathExists">pathExists</a></p>
+								<p>Inherited from <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#pathExists">pathExists</a></p>
 								<ul>
 									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/types.ts#L36">core/src/fs/types.ts:36</a></li>
 								</ul>
@@ -296,18 +285,18 @@
 						</li>
 					</ul>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 					<a name="readDirectory" class="tsd-anchor"></a>
 					<h3>read<wbr>Directory</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 						<li class="tsd-signature tsd-kind-icon">read<wbr>Directory<span class="tsd-signature-symbol">(</span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#readDirectory">readDirectory</a></p>
+								<p>Overrides <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#readDirectory">readDirectory</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/nodeFileSystem.ts#L41">core/src/fs/nodeFileSystem.ts:41</a></li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L33">core/src/fs/cachedFileSystem.ts:33</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -325,18 +314,18 @@
 						</li>
 					</ul>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 					<a name="readFile" class="tsd-anchor"></a>
 					<h3>read<wbr>File</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">read<wbr>File<span class="tsd-signature-symbol">(</span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Buffer</span><span class="tsd-signature-symbol">&gt;</span></li>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+						<li class="tsd-signature tsd-kind-icon">read<wbr>File<span class="tsd-signature-symbol">(</span>fileName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Buffer</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#readFile">readFile</a></p>
+								<p>Overrides <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#readFile">readFile</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/nodeFileSystem.ts#L31">core/src/fs/nodeFileSystem.ts:31</a></li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L24">core/src/fs/cachedFileSystem.ts:24</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -347,25 +336,25 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>path: <span class="tsd-signature-type">string</span></h5>
+									<h5>fileName: <span class="tsd-signature-type">string</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Buffer</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 					<a name="readFileAsString" class="tsd-anchor"></a>
 					<h3>read<wbr>File<wbr>AsString</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">read<wbr>File<wbr>AsString<span class="tsd-signature-symbol">(</span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, encoding<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">BufferEncoding</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+						<li class="tsd-signature tsd-kind-icon">read<wbr>File<wbr>AsString<span class="tsd-signature-symbol">(</span>fileName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, encoding<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">BufferEncoding</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#readFileAsString">readFileAsString</a></p>
+								<p>Overrides <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#readFileAsString">readFileAsString</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/types.ts#L43">core/src/fs/types.ts:43</a></li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L15">core/src/fs/cachedFileSystem.ts:15</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -376,7 +365,7 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>path: <span class="tsd-signature-type">string</span></h5>
+									<h5>fileName: <span class="tsd-signature-type">string</span></h5>
 								</li>
 								<li>
 									<h5>encoding: <span class="tsd-signature-type">BufferEncoding</span><span class="tsd-signature-symbol"> = &#x27;utf-8&#x27;</span></h5>
@@ -386,18 +375,18 @@
 						</li>
 					</ul>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 					<a name="stat" class="tsd-anchor"></a>
 					<h3>stat</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
 						<li class="tsd-signature tsd-kind-icon">stat<span class="tsd-signature-symbol">(</span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><a href="../interfaces/core.StatsOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">StatsOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Stats</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="core.NodeFileSystem.html">NodeFileSystem</a>.<a href="core.NodeFileSystem.html#stat">stat</a></p>
+								<p>Overrides <a href="core.FileSystem.html">FileSystem</a>.<a href="core.FileSystem.html#stat">stat</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/nodeFileSystem.ts#L17">core/src/fs/nodeFileSystem.ts:17</a></li>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/core/src/fs/cachedFileSystem.ts#L29">core/src/fs/cachedFileSystem.ts:29</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -442,9 +431,45 @@
 					<li class=" tsd-kind-enum tsd-parent-kind-module">
 						<a href="../enums/core.LogLevel.html" class="tsd-kind-icon">Log<wbr>Level</a>
 					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-module">
+				</ul>
+				<ul class="current">
+					<li class="current tsd-kind-class tsd-parent-kind-module">
 						<a href="core.CachedFileSystemAdapter.html" class="tsd-kind-icon">Cached<wbr>File<wbr>System<wbr>Adapter</a>
+						<ul>
+							<li class=" tsd-kind-constructor tsd-parent-kind-class tsd-is-overwrite">
+								<a href="core.CachedFileSystemAdapter.html#constructor" class="tsd-kind-icon">constructor</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="core.CachedFileSystemAdapter.html#clearCache" class="tsd-kind-icon">clear<wbr>Cache</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+								<a href="core.CachedFileSystemAdapter.html#findFiles" class="tsd-kind-icon">find<wbr>Files</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="core.CachedFileSystemAdapter.html#isDirectory" class="tsd-kind-icon">is<wbr>Directory</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="core.CachedFileSystemAdapter.html#isFile" class="tsd-kind-icon">is<wbr>File</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="core.CachedFileSystemAdapter.html#pathExists" class="tsd-kind-icon">path<wbr>Exists</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+								<a href="core.CachedFileSystemAdapter.html#readDirectory" class="tsd-kind-icon">read<wbr>Directory</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+								<a href="core.CachedFileSystemAdapter.html#readFile" class="tsd-kind-icon">read<wbr>File</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+								<a href="core.CachedFileSystemAdapter.html#readFileAsString" class="tsd-kind-icon">read<wbr>File<wbr>AsString</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+								<a href="core.CachedFileSystemAdapter.html#stat" class="tsd-kind-icon">stat</a>
+							</li>
+						</ul>
 					</li>
+				</ul>
+				<ul class="after-current">
 					<li class=" tsd-kind-class tsd-parent-kind-module">
 						<a href="core.ChainWriter.html" class="tsd-kind-icon">Chain<wbr>Writer</a>
 					</li>
@@ -460,45 +485,9 @@
 					<li class=" tsd-kind-class tsd-parent-kind-module">
 						<a href="core.Logger.html" class="tsd-kind-icon">Logger</a>
 					</li>
-				</ul>
-				<ul class="current">
-					<li class="current tsd-kind-class tsd-parent-kind-module">
+					<li class=" tsd-kind-class tsd-parent-kind-module">
 						<a href="core.MemoryFileSystem.html" class="tsd-kind-icon">Memory<wbr>File<wbr>System</a>
-						<ul>
-							<li class=" tsd-kind-constructor tsd-parent-kind-class tsd-is-overwrite">
-								<a href="core.MemoryFileSystem.html#constructor" class="tsd-kind-icon">constructor</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#findFiles" class="tsd-kind-icon">find<wbr>Files</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#isDirectory" class="tsd-kind-icon">is<wbr>Directory</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#isFile" class="tsd-kind-icon">is<wbr>File</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-protected">
-								<a href="core.MemoryFileSystem.html#normalizeGlobPatterns" class="tsd-kind-icon">normalize<wbr>Glob<wbr>Patterns</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#pathExists" class="tsd-kind-icon">path<wbr>Exists</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#readDirectory" class="tsd-kind-icon">read<wbr>Directory</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#readFile" class="tsd-kind-icon">read<wbr>File</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#readFileAsString" class="tsd-kind-icon">read<wbr>File<wbr>AsString</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="core.MemoryFileSystem.html#stat" class="tsd-kind-icon">stat</a>
-							</li>
-						</ul>
 					</li>
-				</ul>
-				<ul class="after-current">
 					<li class=" tsd-kind-class tsd-parent-kind-module">
 						<a href="core.NodeFileSystem.html" class="tsd-kind-icon">Node<wbr>File<wbr>System</a>
 					</li>
@@ -574,6 +563,7 @@
 				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
 				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
 				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
 			</ul>
 			<ul class="tsd-legend">
 				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>

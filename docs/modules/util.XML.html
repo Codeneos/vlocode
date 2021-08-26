@@ -1,0 +1,324 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>XML | vlocode</title>
+	<meta name="description" content="Documentation for vlocode">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../assets/css/main.css">
+	<script async src="../assets/js/search.js" id="search-script"></script>
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="../index.html" class="title">vlocode</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="../modules.html">vlocode</a>
+				</li>
+				<li>
+					<a href="util.html">util</a>
+				</li>
+				<li>
+					<a href="util.XML.html">XML</a>
+				</li>
+			</ul>
+			<h1>Namespace XML</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<section class="tsd-panel-group tsd-index-group">
+				<h2>Index</h2>
+				<section class="tsd-panel tsd-index-panel">
+					<div class="tsd-index-content">
+						<section class="tsd-index-section ">
+							<h3>Functions</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="util.XML.html#getRootTagName" class="tsd-kind-icon">get<wbr>Root<wbr>Tag<wbr>Name</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="util.XML.html#isXml" class="tsd-kind-icon">is<wbr>Xml</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="util.XML.html#normalize" class="tsd-kind-icon">normalize</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="util.XML.html#parse" class="tsd-kind-icon">parse</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="util.XML.html#stringify" class="tsd-kind-icon">stringify</a></li>
+							</ul>
+						</section>
+					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Functions</h2>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+					<a name="getRootTagName" class="tsd-anchor"></a>
+					<h3>get<wbr>Root<wbr>Tag<wbr>Name</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
+						<li class="tsd-signature tsd-kind-icon">get<wbr>Root<wbr>Tag<wbr>Name<span class="tsd-signature-symbol">(</span>xml<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/xml.ts#L82">util/src/xml.ts:82</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Get the name of the root element of a XML string excluding the XML deceleration:</p>
+									<pre><code class="language-xml"><span style="color: #008000">&lt;!-- Returns name of first none-comment root tag: rootTag --&gt;</span>
+<span style="color: #800000">&lt;rootTag&gt;</span>
+<span style="color: #000000">   </span><span style="color: #800000">&lt;inner</span><span style="color: #000000"> </span><span style="color: #800000">/&gt;</span>
+<span style="color: #800000">&lt;/rootTag</span>
+</code></pre>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>xml: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>XML string or buffer</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h4>
+							<p>Name of the root tag in the XML file</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+					<a name="isXml" class="tsd-anchor"></a>
+					<h3>is<wbr>Xml</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Xml<span class="tsd-signature-symbol">(</span>xml<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/xml.ts#L96">util/src/xml.ts:96</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Determine if the specified string has a XML declaration and a root tag if so returns true otherwise false (depends on getRootTagName)</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>xml: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>XML string or buffer</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p>true when this the buffer has a valid XML declaration and root tag otherwise false</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+					<a name="normalize" class="tsd-anchor"></a>
+					<h3>normalize</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
+						<li class="tsd-signature tsd-kind-icon">normalize<span class="tsd-signature-symbol">(</span>xml<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/xml.ts#L105">util/src/xml.ts:105</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Normalize an XML string by removing any line breaks, tabs and comment blocks. Trims all values from trailing spaces.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>xml: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>XML string or buffer</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
+							<p>normalized XML string without comments or line-breaks.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+					<a name="parse" class="tsd-anchor"></a>
+					<h3>parse</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
+						<li class="tsd-signature tsd-kind-icon">parse<span class="tsd-signature-symbol">(</span>xml<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span>, options<span class="tsd-signature-symbol">?: </span><a href="../interfaces/util.XMLParseOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">XMLParseOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/xml.ts#L45">util/src/xml.ts:45</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Parse XML into a JSON object with the default options.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>xml: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Buffer</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>XML String</p>
+									</div>
+								</li>
+								<li>
+									<h5>options: <a href="../interfaces/util.XMLParseOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">XMLParseOptions</a><span class="tsd-signature-symbol"> = {}</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+					<a name="stringify" class="tsd-anchor"></a>
+					<h3>stringify</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
+						<li class="tsd-signature tsd-kind-icon">stringify<span class="tsd-signature-symbol">(</span>jsonObj<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, indent<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><a href="../interfaces/util.XMLStringfyOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">XMLStringfyOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/Codeneos/vlocode/blob/bd2e921/packages/util/src/xml.ts#L58">util/src/xml.ts:58</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Convert JSON object into XML string</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>jsonObj: <span class="tsd-signature-type">any</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>JSOn Object</p>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> indent: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Indent level; if set pretty prints the XML otherwise omits pretty prtining</p>
+									</div>
+								</li>
+								<li>
+									<h5>options: <a href="../interfaces/util.XMLStringfyOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">XMLStringfyOptions</a><span class="tsd-signature-symbol"> = {}</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class=" ">
+						<a href="../modules.html">Modules</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-function tsd-parent-kind-namespace">
+						<a href="util.XML.html#getRootTagName" class="tsd-kind-icon">get<wbr>Root<wbr>Tag<wbr>Name</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-namespace">
+						<a href="util.XML.html#isXml" class="tsd-kind-icon">is<wbr>Xml</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-namespace">
+						<a href="util.XML.html#normalize" class="tsd-kind-icon">normalize</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-namespace">
+						<a href="util.XML.html#parse" class="tsd-kind-icon">parse</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-namespace">
+						<a href="util.XML.html#stringify" class="tsd-kind-icon">stringify</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer>
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="overlay"></div>
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
