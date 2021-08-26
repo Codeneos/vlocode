@@ -1,5 +1,11 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.12 - 2021-08-26
+ - Fix issue causing GlobalKey verification to fail on direct deployment; this causes datapacks to not get the correct global key when deploying using direct deployment mode.
+
+## Version 0.16.11 - 2021-08-26
+ - Fix node_modules got packaged in VSIX
+ 
 ## Version 0.16.10 - 2021-08-26
  - Support for compression resource folders before deployment
  - Greatly improve ability to deploy SFDX formated metadata
@@ -7,7 +13,7 @@
  - Fix recomposition of top-level decomposes SFDX sources (object translations)
  - Fix issue where logging would only write to the first logger in the chain
  - Seperate core and util into seperate modules 
-### known issues
+### **Known issues**
  - Refreshing Salesforce Metadata in SFDX format does not map the refresh source correctly if the source file name is differs from the SFDX file name
  - Refreshing decomposed Metadata like objects does not decompose into nultiple files after refresh or retrieve
 
@@ -37,7 +43,7 @@
  - Update Salesforce dependencies to version 52
  - Update Vlocity Build Tools to v0.14.7
  - Add syntax and grammar for Vlocity datapacks based allowing custom icons as well as allowing for suggestions by the VSCode marketplace.
-### known issues
+### **Known issues**
  - VisualForce remoting might not work properly when strict authentication is enabled. 
    
 ## Version 0.15.2 - 2021-05-17

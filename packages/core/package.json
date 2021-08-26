@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/core",
-    "version": "0.16.10",
+    "version": "0.16.12",
     "description": "Vlocode core IoC container framework library",
     "main": "lib/index.js",
     "readme": "../SITE.md",
@@ -30,7 +30,7 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "dependencies": {
-        "@vlocode/util": "0.16.10",
+        "@vlocode/util": "0.16.12",
         "chalk": "^4.1.2",
         "globby": "^11.0.4",
         "memfs": "^3.2.2",

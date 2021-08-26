@@ -125,6 +125,11 @@ export namespace Iterable {
      * @param obj Object to check
      */
     export function isIterable<T>(obj: any): obj is Iterable<T> {
+        const propertyDescriptor = obj && Object.getOwnPropertyDescriptor(obj, Symbol.iterator);
+        const isFunction = typeof propertyDescriptor?.value === 'function' ||  typeof propertyDescriptor?.get === 'function';
+        if (isFunction) {
+            return true;
+        }
         return obj && typeof Object.getPrototypeOf(obj)?.[Symbol.iterator] === 'function';
     }
 
