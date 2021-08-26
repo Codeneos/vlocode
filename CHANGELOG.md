@@ -1,5 +1,16 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
- 
+
+## Version 0.16.10 - 2021-08-26
+ - Support for compression resource folders before deployment
+ - Greatly improve ability to deploy SFDX formated metadata
+ - Fix issues where incorrectly spaced metadata would generate deployment errors
+ - Fix recomposition of top-level decomposes SFDX sources (object translations)
+ - Fix issue where logging would only write to the first logger in the chain
+ - Seperate core and util into seperate modules 
+### known issues
+ - Refreshing Salesforce Metadata in SFDX format does not map the refresh source correctly if the source file name is differs from the SFDX file name
+ - Refreshing decomposed Metadata like objects does not decompose into nultiple files after refresh or retrieve
+
 ## Version 0.16.6 - 2021-08-10
  - Support pausing/resuming of deployments through the toolbar.
  - Update IoC container to track dependencies between services and support initialization of circular references.
@@ -26,9 +37,10 @@
  - Update Salesforce dependencies to version 52
  - Update Vlocity Build Tools to v0.14.7
  - Add syntax and grammar for Vlocity datapacks based allowing custom icons as well as allowing for suggestions by the VSCode marketplace.
-   ## known issues
-   - VisualForce remoting might not work properly when strict authentication is enabled. 
- ## Version 0.15.2 - 2021-05-17
+### known issues
+ - VisualForce remoting might not work properly when strict authentication is enabled. 
+   
+## Version 0.15.2 - 2021-05-17
  - Fix issue where meta files are not created for sub-folders of classes and trigger folders.
  - FIx issue where trigger meta file is not using the Trigger Tag
 
