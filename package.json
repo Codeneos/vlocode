@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.10",
+    "version": "0.16.12",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -1101,7 +1101,7 @@
         ]
     },
     "scripts": {
-        "prepare": "patch-package && npm run prepare:commands",
+        "prepare": "patch-package && npm run prepare:commands && npm run prepare:sync && npm run build --workspaces",
         "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
         "prepare:exts": "ts-node ./build/addSalesforceExtensions.ts ./package.json",
         "prepare:sync": "ts-node ./build/syncPackages.ts",
@@ -1198,8 +1198,7 @@
         "vlocity": "^1.14.7",
         "xml2js": "^0.4.23"
     },
-    "dependencies": {
-    },
+    "dependencies": {},
     "workspaces": [
         "packages\\util",
         "packages\\core"

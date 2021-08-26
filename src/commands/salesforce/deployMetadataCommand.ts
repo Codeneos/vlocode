@@ -142,8 +142,6 @@ export default class DeployMetadataCommand extends MetadataCommand {
             // Clear errors before starting the deployment
             this.clearPreviousErrors(sfPackage.files());
 
-            fs.outputFileSync('./package.zip', await sfPackage.getBuffer());
-
             // start deployment
             const deployment = new SalesforceDeployment(sfPackage);
             deployment.on('progress', status => {
