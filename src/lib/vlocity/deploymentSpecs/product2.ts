@@ -1,6 +1,6 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
-import SalesforceService from 'lib/salesforce/salesforceService';
+import { DatapackDeploymentSpec } from '@lib/vlocity/datapackDeployer';
+import SalesforceService from '@lib/salesforce/salesforceService';
 
 
 import { debug } from 'webpack';

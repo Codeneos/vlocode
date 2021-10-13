@@ -2,29 +2,30 @@ const startTime = Date.now(); // Track start up performance
 
 // Easier debugging with source maps
 import 'source-map-support/register';
-
-import OnSavedEventHandler from 'events/onFileSaved';
-import HandleSalesforceFileDeleted from 'events/onFileDeleted';
-import HandleTriggerCreated from 'events/onTriggerCreated';
-import HandleClassCreated from 'events/onClassCreated';
-import * as constants from '@constants';
-import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container } from '@vlocode/core';
-import Commands from 'commands';
-import * as vlocityUtil from 'lib/vlocity/vlocityLogging';
-import { initializeContext } from 'lib/vlocodeContext';
-import DatapackProvider from 'treeDataProviders/datapackDataProvider';
-import JobDataProvider from 'treeDataProviders/jobExplorer';
-import ActivityDataProvider from 'treeDataProviders/activityDataProvider';
-import { ConfigurationManager } from 'lib/config';
 import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
-import DeveloperLogDataProvider from 'treeDataProviders/developerLogDataProvider';
-import VlocodeService from 'lib/vlocodeService';
-import VlocodeConfiguration from 'lib/vlocodeConfiguration';
-import { ApexLogSymbolProvider } from 'symbolProviders/apexLogSymbolProvider';
+
+import * as constants from '@constants';
+import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container } from '@vlocode/core';
+import * as vlocityUtil from '@lib/vlocity/vlocityLogging';
+import { initializeContext } from '@lib/vlocodeContext';
+import { ConfigurationManager } from '@lib/config';
+import VlocodeService from '@lib/vlocodeService';
+import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 import { lazy } from '@vlocode/util';
-import { WorkspaceContextDetector } from 'lib/workspaceContextDetector';
-import { MetadataDetector } from 'lib/salesforce/metadataDetector';
+import { WorkspaceContextDetector } from '@lib/workspaceContextDetector';
+import { MetadataDetector } from '@lib/salesforce/metadataDetector';
+
+import DeveloperLogDataProvider from './treeDataProviders/developerLogDataProvider';
+import ActivityDataProvider from './treeDataProviders/activityDataProvider';
+import JobDataProvider from './treeDataProviders/jobExplorer';
+import DatapackProvider from './treeDataProviders/datapackDataProvider';
+import Commands from './commands';
+import HandleClassCreated from './events/onClassCreated';
+import HandleTriggerCreated from './events/onTriggerCreated';
+import HandleSalesforceFileDeleted from './events/onFileDeleted';
+import OnSavedEventHandler from './events/onFileSaved';
+import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [

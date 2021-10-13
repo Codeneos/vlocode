@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 
 import { getDocumentBodyAsString } from '@vlocode/util';
-import { CommandBase } from 'commands/commandBase';
-import SalesforceService from 'lib/salesforce/salesforceService';
-import { DetailedDeployResult, FailureDeployMessage } from 'lib/salesforce/salesforceDeployService';
-import type { MetadataManifest } from 'lib/salesforce/deploy/packageXml';
-import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
+import { CommandBase } from '@root/commands/commandBase';
+import SalesforceService from '@lib/salesforce/salesforceService';
+import { DetailedDeployResult, FailureDeployMessage } from '@lib/salesforce/salesforceDeployService';
+import type { MetadataManifest } from '@lib/salesforce/deploy/packageXml';
+import { SalesforcePackage } from '@lib/salesforce/deploymentPackage';
 
 /**
  * Salesfoece metadata base command 

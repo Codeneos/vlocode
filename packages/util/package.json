@@ -7,6 +7,10 @@
     "directories": {
         "lib": "./lib"
     },
+    "engines": {
+        "node": ">=12.0.0",
+        "npm": ">=6.0.0"
+    },
     "scripts": {
         "watch": "tsc -w",
         "build": "tsc -b"
@@ -29,12 +33,13 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "dependencies": {
+        "@salesforce/core": "^2.27.2",
         "fast-xml-parser": "^3.19.0",
+        "fs-extra": "^10.0.0",
         "he": "^1.2.0",
-        "memfs": "^3.2.2",
-        "moment": "^2.29.1",
+        "open": "^8.2.1",
+        "optional-require": "^1.1.7",
         "reflect-metadata": "^0.1.13",
-        "unique-names-generator": "^4.6.0",
         "uuid": "^8.3.2"
     },
     "publisher": "curlybracket"

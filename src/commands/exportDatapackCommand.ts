@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
 
-import DatapackUtil from 'lib/vlocity/datapackUtil';
+import DatapackUtil from '@lib/vlocity/datapackUtil';
 import { groupBy , createRecordProxy , evalExpr } from '@vlocode/util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';

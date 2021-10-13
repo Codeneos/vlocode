@@ -4,7 +4,7 @@ import * as ZipArchive from 'jszip';
 
 import { Logger , injectable } from '@vlocode/core';
 import { CancellationToken, wait } from '@vlocode/util';
-import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService from './salesforceService';
 import { RetrieveResultPackage } from './deploy/retrieveResultPackage';

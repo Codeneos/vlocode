@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { spy } from 'sinon';
 import 'mocha';
 
-import * as vlocityLogging from 'lib/vlocity/vlocityLogging';
+import * as vlocityLogging from '@lib/vlocity/vlocityLogging';
 import { Logger } from '@vlocode/core';
 
 declare let VlocityUtils: any;

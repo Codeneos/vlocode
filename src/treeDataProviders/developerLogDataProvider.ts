@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import VlocodeService from 'lib/vlocodeService';
-import { DeveloperLog } from 'lib/salesforce/developerLog';
+import VlocodeService from '@lib/vlocodeService';
+import { DeveloperLog } from '@lib/salesforce/developerLog';
 import * as moment from 'moment';
-import { ConfigurationManager } from 'lib/config';
+import { ConfigurationManager } from '@lib/config';
 import { VlocodeCommand } from '@constants';
-import { DebugLogViewer } from 'lib/salesforce/debugLogViewer';
+import { DebugLogViewer } from '@lib/salesforce/debugLogViewer';
 import { Logger , injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
 
@@ -94,6 +94,8 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             if (!this.autoRefreshingPaused && await this.refreshLogs()) {
                 this.refresh();
             }
+        } catch(err) {
+            this.logger.error(err);
         } finally {
             this.scheduleRefresh(this.autoRefreshInterval);
         }

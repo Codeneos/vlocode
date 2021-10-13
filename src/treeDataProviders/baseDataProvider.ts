@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import VlocodeService from 'lib/vlocodeService';
-import { CommandCtor } from 'lib/commandRouter';
-import { getContext } from 'lib/vlocodeContext';
+import VlocodeService from '@lib/vlocodeService';
+import { CommandCtor } from '@lib/commandRouter';
+import { getContext } from '@lib/vlocodeContext';
 import * as uuid from 'uuid';
 import { VlocodeCommand } from '@constants';
 
@@ -22,7 +22,10 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
         if (this.onClick) {
             this.vlocode.commands.register(this.clickHandlerGuid, this.onClick.bind(this));
         }
+        this.initialize();
     }
+
+    protected initialize() : any { }
 
     protected getAbsolutePath(path: string) {
         return getContext().asAbsolutePath(path);

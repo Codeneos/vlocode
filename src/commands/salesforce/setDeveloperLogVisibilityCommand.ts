@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { VlocodeSalesforceConfiguration } from 'lib/vlocodeConfiguration';
+import type { VlocodeSalesforceConfiguration } from '@lib/vlocodeConfiguration';
 import MetadataCommand from './metadataCommand';
 
 /**

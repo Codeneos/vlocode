@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SalesforceDebugLevel } from 'lib/salesforce/salesforceService';
+import { SalesforceDebugLevel } from '@lib/salesforce/salesforceService';
 import MetadataCommand from './metadataCommand';
 
 /**

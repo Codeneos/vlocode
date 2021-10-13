@@ -1,4 +1,4 @@
-import { EventHandlerBase } from 'events/eventHandlerBase';
+import { EventHandlerBase } from '@events/eventHandlerBase';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';

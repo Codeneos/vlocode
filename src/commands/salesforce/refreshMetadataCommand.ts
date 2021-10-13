@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { except } from '@vlocode/util';
-import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
+import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
 import MetadataCommand from './metadataCommand';
 
 /**

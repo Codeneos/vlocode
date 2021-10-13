@@ -7,6 +7,10 @@
     "directories": {
         "lib": "./lib"
     },
+    "engines": {
+        "node": ">=12.0.0",
+        "npm": ">=6.0.0"
+    },
     "scripts": {
         "watch": "tsc -w",
         "build": "tsc -b"
@@ -35,10 +39,8 @@
         "globby": "^11.0.4",
         "memfs": "^3.2.2",
         "moment": "^2.29.1",
-        "optional-require": "^1.1.7",
         "reflect-metadata": "^0.1.13",
-        "unique-names-generator": "^4.6.0",
-        "uuid": "^8.3.2"
+        "unique-names-generator": "^4.6.0"
     },
     "devDependencies": {
         "@types/vscode": "^1.59.0"

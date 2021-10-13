@@ -1,6 +1,6 @@
-import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
+import SalesforceSchemaService from '@lib/salesforce/salesforceSchemaService';
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
 import { CancellationToken } from 'vscode';
 import { Timer , AsyncEventEmitter , arrayMapPush, arrayMapUnshift, mapGetOrCreate , Iterable } from '@vlocode/util';
 import RecordBatch from '../salesforce/recordBatch';

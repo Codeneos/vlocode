@@ -4,8 +4,8 @@ import { spy } from 'sinon';
 import 'mocha';
 
 import { createRecordProxy, removeNamespacePrefix } from '@vlocode/util';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import QueryService from 'lib/salesforce/queryService';
+import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
+import QueryService from '@lib/salesforce/queryService';
 import { container , Logger } from '@vlocode/core';
 
 declare let VlocityUtils: any;

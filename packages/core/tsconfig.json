@@ -1,8 +1,9 @@
 {
     "extends": "../../tsconfig",
     "compilerOptions": {
-        "target": "esnext",
+        "lib": ["ES2019"],
         "module": "commonjs",
+        "target": "ES2019",
         "outDir": "lib",
         "baseUrl": "src",
         "rootDir": "src",

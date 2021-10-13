@@ -6,6 +6,14 @@ import { MetadataObject } from 'jsforce';
 import { singletonMixin } from '@vlocode/util';
 import { injectable, LifecyclePolicy } from '@vlocode/core';
 import { Logger } from '@salesforce/core';
+import * as urlFormats from './metadataUrls.json';
+
+export interface MetadataUrlFormat {
+    query: string;
+    nameField: string;
+    url: string;
+    strategy: 'tooling' | 'standard';
+}
 
 export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
     isBundle: boolean;
@@ -26,6 +34,7 @@ export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject 
         decomposition: string;
         transformer: string;
     };
+    urlFormat: MetadataUrlFormat;
 }
 
 @singletonMixin
@@ -56,6 +65,9 @@ export class MetadataRegistry {
             if (typeof metadataObject.metaFile === 'string') {
                 metadataObject.metaFile = metadataObject.metaFile == 'true';
             }
+
+            // Merge URL format
+            Object.assign(metadataObject, { urlFormat: { ...urlFormats.$default, ...(urlFormats[metadataObject.xmlName] ?? {}) } } );
 
             // Store in registry
             this.registry.push(metadataObject);

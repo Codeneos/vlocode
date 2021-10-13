@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import { CONFIG_SECTION, VlocodeCommand } from '@constants';
-import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from 'lib/vlocodeActivity';
+import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '@constants';
+import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '@lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect } from '@vlocode/util';
 import * as chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';
@@ -89,7 +89,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 this._salesforceService = container.get(SalesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
             }
-            this.updateStatusBar(this.config);
+            this.updateExtensionStatus(this.config);
         } catch (err) {
             this.logger.error(err);
             if (err?.message == 'NamedOrgNotFound') {
@@ -326,17 +326,26 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return (await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString();
     }
 
-    private updateStatusBar(config: VlocodeConfiguration) {
+    private updateExtensionStatus(config: VlocodeConfiguration) {
         if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length == 0) {
+            this.setExtensionContext('orgSelected', false);
             return this.hideAllStatusBarItems();
         }
+
         if (!config.sfdxUsername) {
+            this.setExtensionContext('orgSelected', false);
             return this.showStatus('$(gear) Select Salesforce org', VlocodeCommand.selectOrg);
         }
+
+        this.setExtensionContext('orgSelected', true);
         this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
         void sfdx.getSfdxAlias(config.sfdxUsername).then(userAliasOrName =>
             this.showStatus(`$(cloud-upload) Vlocode ${userAliasOrName}`, VlocodeCommand.selectOrg)
         );
+    }
+
+    private setExtensionContext(key: string, value: any) {
+        void vscode.commands.executeCommand('setContext', `${CONTEXT_PREFIX}.${key}`, value);
     }
 
     public registerDisposable<T extends {dispose() : any}>(disposable: T) : T
@@ -350,7 +359,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     private createConfigWatcher() {
-        this.updateStatusBar(this.config);
+        this.updateExtensionStatus(this.config);
         this.showApiVersionStatusItem();
         this.disposables.push(
             ConfigurationManager.watchProperties(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
@@ -366,7 +375,16 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     public async validateSalesforceConnectivity() : Promise<string | undefined> {
         if (!this.config.sfdxUsername) {
-            return 'Select a Salesforce instance for this workspace to use Vlocode';
+            const message = 'Select a Salesforce instance for this workspace to use Vlocode';
+            const selectedAction = await vscode.window.showInformationMessage(message, 'Connect to Salesforce');
+            if (selectedAction) {
+                await this.commands.execute(VlocodeCommand.selectOrg);
+                if (!this.config.sfdxUsername) {
+                    return 'Salesforce org selection cancelled';
+                }
+            } else {
+                return message;
+            }
         }
         if (!this.connected) {
             await this.initialize();

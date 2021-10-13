@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import * as mockFs from 'mock-fs';
 import 'mocha';
 
-import * as dp from 'lib/vlocity/datapackUtil';
+import * as dp from '@lib/vlocity/datapackUtil';
 
 describe('datapackUtil', () => {
     describe('#getDatapackHeaders', () => {

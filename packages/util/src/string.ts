@@ -1,3 +1,4 @@
+import { compileFunction } from 'compiler';
 import { cache } from './cache';
 import { singleton } from './singleton';
 
@@ -65,7 +66,18 @@ class ExpressionCache {
  * @param contextValues context values supplied
  */
 export function evalExpr(expr: string, contextValues: any) : string {
-    return singleton(ExpressionCache).compile(expr)(contextValues);
+    const updatedContext = compileFunction(`$$result = ${expr}`)(contextValues);
+    return updatedContext.$$result;
+}
+
+/**
+ * Evaluates ES6 like template string using the specified contest
+ * @param expr Format string
+ * @param contextValues context values supplied 
+ */
+export function evalTemplate(expr: string, contextValues: any) : string {
+    const updatedContext = compileFunction(`$$result = \`${expr}\``)(contextValues);
+    return updatedContext.$$result;
 }
 
 /**

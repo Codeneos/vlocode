@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { groupBy, mapAsync } from '@vlocode/util';
-import DatapackUtil from 'lib/vlocity/datapackUtil';
+import DatapackUtil from '@lib/vlocity/datapackUtil';
 import ExportDatapackCommand from './exportDatapackCommand';
 
 export default class RefreshDatapackCommand extends ExportDatapackCommand {

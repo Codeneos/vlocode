@@ -2,11 +2,11 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import { DatapackResultCollection } from 'lib/vlocity/vlocityDatapackService';
-import { DatapackCommand } from 'commands/datapackCommand';
+import { DatapackResultCollection } from '@lib/vlocity/vlocityDatapackService';
+import { DatapackCommand } from '@commands/datapackCommand';
 import { forEachAsyncParallel } from '@vlocode/util';
-import DatapackUtil from 'lib/vlocity/datapackUtil';
-import DatapackDeployer from 'lib/vlocity/datapackDeployer';
+import DatapackUtil from '@lib/vlocity/datapackUtil';
+import DatapackDeployer from '@lib/vlocity/datapackDeployer';
 import { container } from '@vlocode/core';
 import chalk = require('chalk');
 

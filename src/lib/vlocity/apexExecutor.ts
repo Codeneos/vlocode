@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as vscode from 'vscode';
 
-import SalesforceService from 'lib/salesforce/salesforceService';
+import SalesforceService from '@lib/salesforce/salesforceService';
 import { LogManager, Logger , injectable } from '@vlocode/core';
 import { cache } from '@vlocode/util';
 

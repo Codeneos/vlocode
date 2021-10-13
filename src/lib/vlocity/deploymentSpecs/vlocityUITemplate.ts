@@ -1,9 +1,9 @@
 import * as path from 'path';
-import { SassCompiler } from 'lib/sass';
+import { SassCompiler } from '@lib/sass';
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
-import { VlocityDatapack } from 'lib/vlocity/datapack';
-import SalesforceService from 'lib/salesforce/salesforceService';
+import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '@lib/vlocity/datapackDeployer';
+import { VlocityDatapack } from '@lib/vlocity/datapack';
+import SalesforceService from '@lib/salesforce/salesforceService';
 import { Timer } from '@vlocode/util';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })

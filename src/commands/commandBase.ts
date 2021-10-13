@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-import VlocodeService from 'lib/vlocodeService';
+import VlocodeService from '@lib/vlocodeService';
 import { Logger, LogManager } from '@vlocode/core';
-import { Command } from 'lib/command';
-import { getContext } from 'lib/vlocodeContext';
+import { Command } from '@lib/command';
+import { getContext } from '@lib/vlocodeContext';
 
 export class ProgressToken {
     private resolved = false;

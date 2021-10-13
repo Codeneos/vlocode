@@ -4,7 +4,7 @@ import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import * as CopyPlugin from 'copy-webpack-plugin';
 import * as packageJson from './package.json';
-import { NodePrefixResolverPlugin } from './build/resolvers/node';
+import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import * as ts from 'typescript';
 
 const packageExternals = [
@@ -60,8 +60,7 @@ const common : webpack.Configuration = {
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        transpileOnly: false,
-                        configFile: 'tsconfig.build.json'
+                        transpileOnly: false
                         //getCustomTransformers: () => ({ before: [transformerFactory] })
                     }
                 }],
@@ -78,10 +77,8 @@ const common : webpack.Configuration = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json'],
-        modules: ['node_modules', 'src'],
+        modules: [ 'node_modules', 'src'],
         alias: {
-            '@constants$': path.resolve(__dirname, 'src', 'constants'),
-            '@util$': path.resolve(__dirname, 'src', 'util'),
             'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
             '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
             'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
@@ -90,7 +87,8 @@ const common : webpack.Configuration = {
             'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux'),
             '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
             '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
-        }
+        },
+        plugins: [ new TsconfigPathsPlugin() ]
     },
     output: {
         filename: '[name].js',
@@ -134,7 +132,7 @@ const common : webpack.Configuration = {
             );
             if (isExternal){
                 // @ts-ignore
-                return callback(undefined, `commonjs ${  request}`);
+                return callback(undefined, `commonjs ${request}`);
             }
             // @ts-ignore
             callback();

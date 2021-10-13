@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { Logger , injectable } from '@vlocode/core';
-import SalesforceService from 'lib/salesforce/salesforceService';
+import SalesforceService from '@lib/salesforce/salesforceService';
 import { stringEquals , cache , removeNamespacePrefix } from '@vlocode/util';
 
 import { VlocityNamespaceService } from './vlocityNamespaceService';

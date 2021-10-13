@@ -1,6 +1,6 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { asArray, last , transform , joinLimit } from '@vlocode/util';
-import { PropertyAccessor } from 'lib/types';
+import { PropertyAccessor } from '@lib/types';
 import QueryService, { QueryResult } from './queryService';
 import SalesforceSchemaService from './salesforceSchemaService';
 

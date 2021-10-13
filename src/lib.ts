@@ -1,1 +1,1 @@
-export * from 'lib/vlocity/datapackDeployer';
+export * from '@lib/vlocity/datapackDeployer';

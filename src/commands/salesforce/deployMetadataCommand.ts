@@ -2,12 +2,12 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { forEachAsyncParallel , Iterable , fileName } from '@vlocode/util';
-import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
-import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
+import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
+import { SalesforcePackage } from '@lib/salesforce/deploymentPackage';
 import * as open from 'open';
 import { CancellationToken } from 'typescript';
-import { SalesforceDeployment } from 'lib/salesforce/salesforceDeployment';
-import { ActivityProgress, VlocodeActivityStatus } from 'lib/vlocodeActivity';
+import { SalesforceDeployment } from '@lib/salesforce/salesforceDeployment';
+import { ActivityProgress, VlocodeActivityStatus } from '@lib/vlocodeActivity';
 import { VlocodeCommand } from '@constants';
 import * as fs from 'fs-extra';
 import MetadataCommand from './metadataCommand';

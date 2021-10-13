@@ -1,12 +1,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { unique, filterUndefined , Iterable , stringEquals } from '@vlocode/util';
-import { SalesforcePackageBuilder, SalesforcePackageType } from 'lib/salesforce/deploymentPackageBuilder';
-import { SalesforcePackage } from 'lib/salesforce/deploymentPackage';
-import { PackageManifest } from 'lib/salesforce/deploy/packageXml';
+import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
+import { SalesforcePackage } from '@lib/salesforce/deploymentPackage';
+import { PackageManifest } from '@lib/salesforce/deploy/packageXml';
 import { MapLike } from 'typescript';
 import { DescribeGlobalSObjectResult, FileProperties } from 'jsforce';
-import { MetadataType } from 'lib/salesforce/metadataRegistry';
+import { MetadataType } from '@lib/salesforce/metadataRegistry';
 import MetadataCommand from './metadataCommand';
 
 /**

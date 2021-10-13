@@ -1,7 +1,7 @@
 import { Logger, LogManager , injectable, LifecyclePolicy } from '@vlocode/core';
-import VlocodeService from 'lib/vlocodeService';
+import VlocodeService from '@lib/vlocodeService';
 import * as vscode from 'vscode';
-import { Command } from 'lib/command';
+import { Command } from '@lib/command';
 import { VlocodeCommand } from '@constants';
 import { lazy } from '@vlocode/util';
 
@@ -22,15 +22,15 @@ class CommandExecutor implements Command {
 
     public async execute(... args: any[]) : Promise<void> {
         this.logger.verbose(`Invoke command ${this.name}`);
-        await Promise.resolve(this.validate(...args));
         try {
+            await Promise.resolve(this.validate(...args));
             await Promise.resolve(this.command.execute.apply(this.command, args));
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {
             console.error(err);
             const message = err.message || err;
             this.logger.error(`Command error: ${message}`);
-            void vscode.window.showErrorMessage(message, 'Show').then(value => value === 'Show' && this.logger.focus());
+            void vscode.window.showErrorMessage(message, 'Show Error').then(value => value && this.logger.focus());
         }
     }
 

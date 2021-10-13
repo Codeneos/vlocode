@@ -13,15 +13,22 @@
         "suppressExcessPropertyErrors": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "baseUrl": "./src",
+        "baseUrl": "./",
         "forceConsistentCasingInFileNames": true,
         "paths": {
-            "@constants": ["constants"],
-            "@util": ["lib/util"],
-            "@lib": ["lib"],
-            "@logging": ["lib/logging"]
+            "@root/*": ["src/*"],
+            "@constants": ["src/constants"],
+            "@util/*": ["src/lib/util/*"],
+            "@lib/*": ["src/lib/*"],
+            "@logging/*": ["src/lib/logging/*"],
+            "@events/*": ["src/events/*"],
+            "@commands/*": ["src/commands/*"],
+            "@vlocode/*": ["packages/*"]
         },
-        "typeRoots": []
+        "types": [
+            "node",
+            "webpack-env"
+        ]
     },
     "include": [
         "src",

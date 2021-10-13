@@ -4,13 +4,13 @@ import axios from 'axios';
 import * as jsforce from 'jsforce';
 import * as xml2js from 'xml2js';
 
-import { Logger , injectable as injectable } from '@vlocode/core';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import SObjectRecord from 'lib/salesforce/sobjectRecord';
-import { cache , Timer , substringAfter } from '@vlocode/util';
-import { PropertyAccessor } from 'lib/types';
+import { Logger, injectable, FileSystem } from '@vlocode/core';
+import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
+import SObjectRecord from '@lib/salesforce/sobjectRecord';
+import { cache , Timer , substringAfter, XML, evalExpr, formatString, evalTemplate } from '@vlocode/util';
+import { PropertyAccessor } from '@lib/types';
 import { stripPrefix } from 'xml2js/lib/processors';
-import { VlocityNamespaceService } from 'lib/vlocity/vlocityNamespaceService';
+import { VlocityNamespaceService } from '@lib/vlocity/vlocityNamespaceService';
 import QueryService, { QueryResult } from './queryService';
 import { SalesforceDeployService } from './salesforceDeployService';
 import SalesforceLookupService from './salesforceLookupService';
@@ -168,6 +168,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     @injectable.property public readonly schema: SalesforceSchemaService;
     @injectable.property public readonly lookupService: SalesforceLookupService;
     @injectable.property public readonly deploy: SalesforceDeployService;
+    @injectable.property public readonly fs: FileSystem;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -367,51 +368,65 @@ export default class SalesforceService implements JsForceConnectionProvider {
         };
     }
 
-    /**
-     * Query the component data from Salesforce, returns all basic information of a Metadata component throug the tooling API.
-     * @param componentType Component type
-     * @param fullName FQ name of the component
-     * @returns 
-     */
-    public async describeComponent(componentType: string, fullName: string) {
-        const connection = await this.getJsForceConnection();
-        const nameInfo = this.getNameInfo({ componentType, name: fullName });
-        const toolingObject = componentType.replace(/$Custom/i, '');
+    public async getMetadataSetupUrl(file: string) : Promise<string> {
+        const metadataInfo = await this.getMetadataInfo(file);
+        const metadataType = metadataInfo && this.metadataRegistry.getMetadataType(metadataInfo.type);
 
-        const toolingObjectDescribe = await connection.tooling.describe(toolingObject);
-        const nameField = toolingObjectDescribe.fields.find(field => field.nameField);
-        const hasNamespaceField = toolingObjectDescribe.fields.some(field => field.name == 'NamespacePrefix');
-
-        if (!nameField) {
-            return;
+        if (!metadataInfo || !metadataType) {
+            throw new Error(`Unable to resolve metadata type (is this a valid Salesforce metadata?) for: ${file}`);
         }
 
-        const toolingQuery = new QueryBuilder(toolingObjectDescribe.name)
-            .select(nameField, 'Id')
-            .whereEq(nameField, nameInfo.name);
+        const objectData = {
+            nameField: metadataType.urlFormat.nameField,
+            namespace: metadataInfo.namespace ?? '',
+            type: metadataType.xmlName.replace(/$Custom/i, ''),
+            fullName: metadataInfo.fullName,
+            name: metadataInfo.name,
+            metadata: metadataInfo.metadata
+        };
 
-        if (hasNamespaceField) {
-            toolingQuery.whereEq('NamespacePrefix', nameInfo.namespace ?? '');
+        if (metadataType.urlFormat.query) {
+            const connection = await this.getJsForceConnection();
+            const queryFormat = evalTemplate(metadataType.urlFormat.query, objectData);
+            const queryService = metadataType.urlFormat.strategy == 'tooling' ? connection.tooling : connection;
+            const { records } = await queryService.query<any>(queryFormat);
+
+            if (!records.length) {
+                throw new Error(`Unable to find the metadata record ${metadataInfo.fullName} in the current Salesforce org`);
+            }
+
+            if (records.length == 1) {
+                Object.assign(objectData, { id: records[0].Id });
+            } else {
+                const nameFieldPath = metadataType.urlFormat.nameField.split('.');
+                const filteredRecord = records.find(r => nameFieldPath.reduce((obj, p) => obj && obj[p], r) == metadataInfo.fullName);
+                Object.assign(objectData, { id: (filteredRecord ?? records[0]).Id });
+            }
+
+            Object.assign(objectData, { id: records[0]?.Id });
         }
 
-        const { records } = await connection.tooling.query<{Id: string}>(toolingQuery.getQueryString());
-        return records[0];
+        return evalTemplate(metadataType.urlFormat.url, objectData);
     }
 
-    /**
+    /** 
      * Get metadata info about any file; returns metadata type and name or undefined if the specified type is not a Metadata source.
      * @param filePath Source file path
      * @returns 
      */
-    public async getMetadataInfo(filePath: string | vscode.Uri) : Promise<{ componentType: string; fullName: string; name: string } | undefined> {
+    public async getMetadataInfo(filePath: string | vscode.Uri) : Promise<{ type: string; fullName: string; namespace?: string; name: string; metadata?: any } | undefined> {
+        const file = typeof filePath === 'string' ? filePath : filePath.fsPath;
         const apiVersion = await this.getApiVersion();
         const sfPackage = (await new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.retrieve).addFiles([ filePath ])).getPackage();
-        const info = sfPackage.getSourceFileInfo(typeof filePath === 'string' ? filePath : filePath.fsPath);
+        const info = sfPackage.getSourceFileInfo(file);
         if (info) {
+            const metadataInfoFile = [...sfPackage.sourceFiles()].find(f => f.fsPath?.endsWith('.xml'))?.fsPath ?? file;
+            const metadata = metadataInfoFile ? XML.parse(await this.fs.readFileAsString(metadataInfoFile), { ignoreAttributes: true }) : undefined;
             return {
-                ...info,
                 ...this.getNameInfo(info),
-                fullName: info.name
+                type: info.componentType,
+                fullName: info.name,
+                metadata: metadata && Object.values(metadata).pop()
             };
         }
     }
@@ -470,7 +485,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
     /**
      * Retrieves developer logs from the server
      * @param from Since date
-     * @param currentUserOnly treu if to only query the logs fro the current user otherwise retiree all logs 
+     * @param currentUserOnly true if to only query the logs fro the current user otherwise retiree all logs 
      */
     public async getDeveloperLogs(from?: Date, currentUserOnly: boolean = false): Promise<DeveloperLog[]> {
         const selectFields = ['Id', 'Application', 'DurationMilliseconds', 'Location', 'LogLength', 'LogUser.Name', 'Operation', 'Request', 'StartTime', 'Status' ];

@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { ApexLogSymbolProvider } from 'symbolProviders/apexLogSymbolProvider';
+import { ApexLogSymbolProvider } from '@root/symbolProviders/apexLogSymbolProvider';
 import * as vscode from 'vscode';
 
 const apexLogContent = `09:41:19.369 (369138479)|METHOD_ENTRY|[1]|01p0Y00000O9SLP|OrderRepository.OrderRepository()

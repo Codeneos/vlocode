@@ -1,9 +1,9 @@
-import VlocityMatchingKeyService from 'lib/vlocity/vlocityMatchingKeyService';
-import SalesforceLookupService from 'lib/salesforce/salesforceLookupService';
+import VlocityMatchingKeyService from '@lib/vlocity/vlocityMatchingKeyService';
+import SalesforceLookupService from '@lib/salesforce/salesforceLookupService';
 import { LogManager , injectable, LifecyclePolicy } from '@vlocode/core';
 import * as constants from '@constants';
 import { Timer , arrayMapPush, last , isSalesforceId } from '@vlocode/util';
-import SalesforceSchemaService from 'lib/salesforce/salesforceSchemaService';
+import SalesforceSchemaService from '@lib/salesforce/salesforceSchemaService';
 import { CancellationToken } from 'vscode';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';

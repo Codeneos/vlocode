@@ -1,10 +1,10 @@
 import { Logger , injectable } from '@vlocode/core';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
+import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
 import { Timer } from '@vlocode/util';
 import * as jsforce from 'jsforce';
 import * as chalk from 'chalk';
 import * as constants from '@constants';
-import SalesforceService from 'lib/salesforce/salesforceService';
+import SalesforceService from '@lib/salesforce/salesforceService';
 
 @injectable()
 export class VlocityNamespaceService {

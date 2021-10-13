@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { formatString } from '@vlocode/util';
 import * as open from 'open';
-import { MetadataType } from 'lib/salesforce/metadataRegistry';
+import { MetadataType } from '@lib/salesforce/metadataRegistry';
 import MetadataCommand from './metadataCommand';
 
 export default class ViewInSalesforceCommand extends MetadataCommand {
@@ -20,24 +20,12 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
     }
 
     protected async openFileInSalesforce(selectedFile: vscode.Uri) {
-        const metadataInfo = await this.salesforce.getMetadataInfo(selectedFile);
-        if (!metadataInfo) {
-            throw 'The selected file is not a known Salesforce metadata component';
+        const setupUrl = await this.salesforce.getMetadataSetupUrl(selectedFile.fsPath);
+        if (!setupUrl) {
+            throw `The selected file (${selectedFile.fsPath}) is not a known Salesforce metadata type`;
         }
 
-        const objectData = await this.salesforce.describeComponent(metadataInfo?.componentType, metadataInfo?.fullName);
-        if (!objectData) {
-            throw 'Cannot open the specified file in Salesforce; component cannot be described';
-        }
-
-        const metadataType = this.salesforce.getMetadataType(metadataInfo?.componentType)!;
-        const urlFormat = this.getUrlFormat(metadataType);
-        if (!urlFormat || !metadataInfo) {
-            throw 'Cannot open the specified file in Salesforce; url format not defined';
-        }
-
-        const salesforcePath = formatString(urlFormat, { ...metadataInfo, ...objectData});
-        this.logger.info(`Opening URL: ${salesforcePath}`);
-        void open(await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true }));
+        this.logger.info(`Opening URL: ${setupUrl}`);
+        void open(await this.vlocode.salesforceService.getPageUrl(setupUrl, { useFrontdoor: true }));
     }
 }

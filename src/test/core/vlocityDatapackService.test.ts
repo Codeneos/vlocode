@@ -8,7 +8,7 @@ import 'mocha';
 import { fail } from 'assert';
 import * as vscode from 'vscode';
 import { Logger } from '@vlocode/core';
-import VlocodeConfiguration from 'lib/vlocodeConfiguration';
+import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 import vlocityDatapackService, * as vds from '../../lib/vlocity/vlocityDatapackService';
 
 declare let VlocityUtils: any;

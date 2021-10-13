@@ -1,6 +1,6 @@
 import { MapLike } from 'typescript';
 
-import { DatapackDeploymentSpec } from 'lib/vlocity/datapackDeployer';
+import { DatapackDeploymentSpec } from '@lib/vlocity/datapackDeployer';
 import { VlocityUITemplateSpec } from './vlocityUITemplate';
 import { VlocityOmniScriptSpec } from './omniScript';
 import { VlocityActionSpec } from './vlocityAction';

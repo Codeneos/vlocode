@@ -1,5 +1,5 @@
 import { Logger, LogManager , injectable } from '@vlocode/core';
-import SalesforceService from 'lib/salesforce/salesforceService';
+import SalesforceService from '@lib/salesforce/salesforceService';
 
 import { cache , removeNamespacePrefix , arrayMapPush } from '@vlocode/util';
 

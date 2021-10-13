@@ -1,10 +1,10 @@
 import { Readable } from 'stream';
 import { Field } from 'jsforce';
 import { LogManager, Logger , injectable } from '@vlocode/core';
-import JsForceConnectionProvider from 'lib/salesforce/connection/jsForceConnectionProvider';
-import SObjectRecord from 'lib/salesforce/sobjectRecord';
+import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
+import SObjectRecord from '@lib/salesforce/sobjectRecord';
 import { PropertyTransformHandler , normalizeSalesforceName , Timer } from '@vlocode/util';
-import { PropertyAccessor } from 'lib/types';
+import { PropertyAccessor } from '@lib/types';
 import * as moment from 'moment';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };

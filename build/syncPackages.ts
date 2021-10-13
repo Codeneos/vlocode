@@ -12,7 +12,7 @@ async function syncPackageVersion() {
 
     const workspaces = await Promise.all(packageJson.workspaces.map(async ws => [ws, (await fs.readJSON(join(ws, 'package.json'))) as typeof PackageJsonType])) as Array<[string, typeof PackageJsonType]>;
 
-    for (const [workspace, workspaceJson] of workspaces) {
+    for (const [workspace, workspaceJson] of workspaces as [string, any][]) {
         for (const prop of propertiesToSync) {
             workspaceJson[prop] = packageJson[prop];
         }

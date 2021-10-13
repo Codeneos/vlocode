@@ -1,6 +1,6 @@
 import { dirname } from 'path';
 import { PropertyTransformHandler, removeNamespacePrefix } from '@vlocode/util';
-import { ManifestEntry, ObjectEntry } from 'lib/vlocity/types';
+import { ManifestEntry, ObjectEntry } from '@lib/vlocity/types';
 import { v4 as generateGuid } from 'uuid';
 import { LogManager } from '@vlocode/core';
 
