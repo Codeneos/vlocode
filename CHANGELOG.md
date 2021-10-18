@@ -1,5 +1,13 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.13 - 2021-10-18
+ - Improve view in salesforce command for many Salesforce Metadata components; the command will now work for most common metadata types.
+ - Fix issue causing meta-xml files to be omitted on export of Metadata
+ - Make export oath for Salesforce metadata configurable
+ - Fix issue where the Vlocity Metadata browser did not clear the cache on refresh causing new components or datapacks to bnot show up until switching between orgs
+ - Improve readme markdown file
+ - Add welcome page to Vlocity Metadata browser when no org is selected
+
 ## Version 0.16.12 - 2021-08-26
  - Fix issue causing GlobalKey verification to fail on direct deployment; this causes datapacks to not get the correct global key when deploying using direct deployment mode.
 

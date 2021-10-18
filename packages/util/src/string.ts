@@ -1,4 +1,4 @@
-import { compileFunction } from 'compiler';
+import { compileFunction } from './compiler';
 import { cache } from './cache';
 /**
  * Compares strings for equality; by default comparisons are case insensitive

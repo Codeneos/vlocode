@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.12",
+    "version": "0.16.13",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -882,12 +882,12 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "When enabled context menu options on the workspace-explorer and editor are displayed only when applicable; when enabled Vlocode monitors your workspace folders and keeps track of a list of files which are either Salesforce metadata of Vlocity datapacks. If you disabled this both Vlocity and Salesforce context menu options will always be visible. __Note: if you don't see any context menu options disable this.__"
-                },                
+                },
                 "vlocity.salesforce.exportFolder": {
                     "type": "string",
                     "default": "./src",
                     "markdownDescription": "Folder to which Vlocode export Salesforce metadata"
-                },               
+                },
                 "vlocity.salesforce.exportFormat": {
                     "type": "string",
                     "enum": [
@@ -896,7 +896,7 @@
                     ],
                     "default": "classic",
                     "enumDescriptions": [
-                        "Export Salesforce Metadata in **classic metadata** format without decomposing metadata and adding additional -meta.xml suffixes as retrieved from Salesforce through the metadata API.",                        
+                        "Export Salesforce Metadata in **classic metadata** format without decomposing metadata and adding additional -meta.xml suffixes as retrieved from Salesforce through the metadata API.",
                         "Export Salesforce Metadata in **decomposed SFDX** format without. Decomposes metadata in multiple files and adds additional -meta.xml all exported metadata without content."
                     ],
                     "markdownDescription": "Folder to which Vlocode export Salesforce metadata"
