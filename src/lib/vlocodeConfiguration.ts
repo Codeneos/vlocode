@@ -8,6 +8,8 @@ export abstract class VlocodeSalesforceConfiguration extends BaseConfiguration {
     developerLogsVisible: boolean;
     developerLogsAutoRefresh: boolean;
     developerLogsVisibility: 'self' | 'all';
+    exportFolder: string;
+    exportFormat: 'classic' | 'sfdx';
 }
 
 export abstract class VlocodeVlocityDeployConfiguration extends BaseConfiguration {

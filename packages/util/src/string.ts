@@ -1,7 +1,5 @@
 import { compileFunction } from 'compiler';
 import { cache } from './cache';
-import { singleton } from './singleton';
-
 /**
  * Compares strings for equality; by default comparisons are case insensitive
  * @param a String a

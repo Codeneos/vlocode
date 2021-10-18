@@ -21,6 +21,13 @@ export default class SalesforceSchemaService {
         return sobjects;
     }
 
+    @cache(-1)
+    public async describeCustomMetadataObjects() : Promise<Array<string>> {
+        const con = await this.connectionProvider.getJsForceConnection();
+        const components = await con.metadata.list({ type: 'CustomMetadata' });
+        return components.map(cmp => cmp.fullName);
+    }
+
     public async describeSObject(type: string) : Promise<jsforce.DescribeSObjectResult>
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<jsforce.DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<jsforce.DescribeSObjectResult | undefined> {

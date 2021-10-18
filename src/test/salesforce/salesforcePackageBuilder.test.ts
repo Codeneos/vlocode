@@ -5,12 +5,8 @@ import 'mocha';
 import * as constants from '@constants';
 import * as xml2js from 'xml2js';
 import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
-import SalesforceService from '@lib/salesforce/salesforceService';
 import { Logger , MemoryFileSystem , container } from '@vlocode/core';
-import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
-import { VlocityNamespaceService } from '@lib/vlocity/vlocityNamespaceService';
-import QueryService from '@lib/salesforce/queryService';
-import { mockDep, normalizePath } from '@root/test/helpers';
+import { normalizePath } from '@root/test/helpers';
 
 function buildXml(rootName: string, data?: any) {
     const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);

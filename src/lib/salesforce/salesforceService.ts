@@ -7,7 +7,7 @@ import * as xml2js from 'xml2js';
 import { Logger, injectable, FileSystem } from '@vlocode/core';
 import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from '@lib/salesforce/sobjectRecord';
-import { cache , Timer , substringAfter, XML, evalExpr, formatString, evalTemplate } from '@vlocode/util';
+import { cache , Timer , substringAfter, XML, evalTemplate } from '@vlocode/util';
 import { PropertyAccessor } from '@lib/types';
 import { stripPrefix } from 'xml2js/lib/processors';
 import { VlocityNamespaceService } from '@lib/vlocity/vlocityNamespaceService';
@@ -18,7 +18,6 @@ import SalesforceSchemaService from './salesforceSchemaService';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
-import QueryBuilder from './queryBuilder';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {

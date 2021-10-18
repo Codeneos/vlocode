@@ -8,34 +8,45 @@
 
 # **Vlocode**: Vlocity/Salesforce development integration for Visual Studio Code
 
-This extension provides functionality for deploying, extracting and refreshing **Vlocity metadata** with Visual Studio Code.
-It is targeted at **Vlocity/Salesforce developers** who  work with **Vlocity** and **Salesforce metadata** making commands available directly from with Visual Studio Code. 
+This extension provides functionality for deploying, extracting, and refreshing **Vlocity metadata** with Visual Studio Code.
+It is targeted at **Vlocity/Salesforce developers** who work with **Vlocity (Salesforce Industries)** and **Salesforce Metadata**.
 
-![Demo](resources/salesforceDemo.gif)
+Vlocode makes your life as a _Salesforce_ or _Vlocity_ developer easier by providing you with a set of powerful commands to work with both Salesforce as well as Vlocity (Salesforce Industries) Metadata. 
 
-This extension uses JSForce, SFDX and the Vlocity build tools library for executing commands. 
+_Vlocode is an additive extension to the SFDX extension pack from Salesforce_
 
-All settings for Vlocode are part of the .vscode settings file making it easy to maintain and change.
+## Notable features of **Vlocode**
+* Direct access to the **Developer/Debug Logs** through a new UI pannel.
+* **Auto creates -meta.xml files** for you when you create an APEX class or APEX Trigger
+* Allows you to **open** exported **Metadata directly in Salesforce** through a context menu action
+* Change the debug log level on the connected org
+* **Delete all debug logs** on the connected org directly from the *Developer/Debug Logs panel
+* Execute anonymous APEX and directly open the log as if you were working from the developer console
+* Full support for packaging and **deploying SFDX** metadata 
+* Powerful **Vlocity Metadata browser** to export and open Vlocity Metadata
+* Commands to directly execute common **Vlocity CMT Admin commands** such as Refresh Product Hierarchy
 
-Vlocode also has broad support **Salesforce metadata** enabling deployment and retrieval of Salesforce metadata.
+This extension embeds the popular libraries such as JSForce, SFDX (_@salesforce/core_) and the Vlocity build tools library allowing you to directly manipulate your Salesforce org from within your IDE. As opposed to the official SFDX extension Vlocode aims at providing a more guide and integrated experience. You can (and should) use Vlocode next to the official SFDX extension pack.
 
-![Demo](resources/datapackExport.gif)
+All settings for Vlocode in the `.vscode` settings file making it easy to maintain and change. You can use a special `.vlocode` config file to define project defaults which can be versioned in git. See the bottom of this readme which describes how to use a `.vlocode` config file.
 
-## Features
+## All Features
 
 ### Salesforce
+* **Export metadata** export all Salesforce metadata from the Command Pallet
+![Developer logs](resources/exportMetadata.gif)
 * **Auto create and update -meta.xml files** automatically rename and create _-meta.xml_ files when you create or rename APEX classes
-* **Export metadata** export any metadata object using the command pallet
 * **Advance metadata deployments**
   * Support deployment of both __SFDX__ and __Classic__ Metadata format
   * Support mixed source code deployment with Netadata defined both in SFDX format as well as in classic format 
-* **Support LWC/Aura** Support for both LWC and Aura deployments
-* **Deploy on save** deploy files to the connected org on save
-* **Deploy multiple metadata files** deploy one or more files in a single request to Salesforce
-* **Refresh/Retrieve metadata** refresh/retrieve one or more files in a single request to Salesforce
-* **Easy creation of APEX classes** automatically generate a boiler plate class definition and meta.xml file once you create a new APEX class file
-* **Execute anonymous** support for executing anonymous APEX with different log levels and profiling 
-* **Delete metadata from org** delete APEX classes or other metadata from your org from within vscode
+* **Support LWC/Aura** support for both LWC and Aura deployments
+* **Deploy on save** automatically deploy Salesforce Metadata to the connected org on save
+* **Deploy multiple metadata files** deploy one or more Salesforce Metadata components directly from within VSCode
+* **Refresh/Export metadata** refresh or export one or more Salesforce Metadata components with a single click of your mouse
+* **Easy creation of APEX classes** automatically generate a boiler plate class definitions and -meta.xml file for APEX Classes, Triggers and more
+* **Execute anonymous** execute anonymous APEX with a configurable log level and profiling and directly open the log in VSCode after execution
+* **Execute Salesforce REST APIs** easy Salesforce RESP API testing directlly opening the response in VScode
+* **Delete metadata from org** delete Salesforce Metadata components from your org from within vscode
 * ** Salesforce Logs viewer** using the integrated Log viewer you can view and open Salesforce debug logs directly from VSCode
 ![Developer logs](resources/developerLogs.png)
 

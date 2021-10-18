@@ -3,7 +3,7 @@ import { isPromise, isThenable } from './async';
 /**
  * Private property on the target object used to store cached results;
  */
-const CacheStoreProperty = Symbol.for('cache');
+const cacheStoreProperty = Symbol('[[cacheStore]]');
 
 /**
  * Describes a entry in the cache of an object; allows the cache to return promise wrapped values and determine the age of a cache entry upon retrieval
@@ -71,10 +71,12 @@ class CacheEntry {
  * @param this Then entry on which to get the cache
  */
 function getCacheStore(target: any) : Map<string, CacheEntry> {
-    if (!target[CacheStoreProperty]) {
-        target[CacheStoreProperty] = new Map<string, CacheEntry>();
+    let cacheStore = target[cacheStoreProperty];
+    if (!cacheStore) {
+        cacheStore = new Map<string, CacheEntry>();
+        target[cacheStoreProperty] = cacheStore;
     }
-    return target[CacheStoreProperty];
+    return cacheStore;
 }
 
 /**
@@ -82,9 +84,10 @@ function getCacheStore(target: any) : Map<string, CacheEntry> {
  * @param this The object instances for which to clear the cache.
  */
 export function clearCache<T>(target: T) : T {
-    if (target[CacheStoreProperty]) {
+    const cacheStore = target[cacheStoreProperty];
+    if (cacheStore) {
         // eslint-disable-next-line @typescript-eslint/tslint/config
-        delete target[CacheStoreProperty];
+        cacheStore.clear();
     }
     return target;
 }

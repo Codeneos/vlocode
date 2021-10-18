@@ -7,7 +7,7 @@ import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
 
 interface ExtendedFileProperties extends jsforce.FileProperties {
     fullFileName: string;
-    fullMetaFileName: string;
+    fullMetaFileName?: string;
     componentName?: string;
     hasMetaFile: boolean;
     unpackToFolder(targetFolder: string): Promise<void>;
@@ -63,14 +63,14 @@ export class RetrieveResultPackage {
                 fileName,
                 fullFileName,
                 hasMetaFile: !!metaFile,
-                metaFileName,
-                fullMetaFileName: `${fullFileName}-meta.xml`,
+                metaFileName: metaFile ? metaFileName : undefined,
+                fullMetaFileName: metaFile ? `${fullFileName}-meta.xml` : undefined,
                 unpackToFolder: async (targetFolder: string) => {
                     if (sourceFile) {
-                        await this.streamFileToDisk(sourceFile, path.join(targetFolder, baseName(file.fileName)));
+                        await this.streamFileToDisk(sourceFile, path.join(targetFolder, file.fileName));
                     }
                     if (metaFile) {
-                        await this.streamFileToDisk(metaFile, path.join(targetFolder, baseName(metaFileName)));
+                        await this.streamFileToDisk(metaFile, path.join(targetFolder, metaFileName));
                     }
                 },
                 getBuffer: () => sourceFile?.async('nodebuffer'),

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as constants from '@constants';
 import { LogManager, Logger , injectable , container } from '@vlocode/core';
 import DatapackUtil from '@lib/vlocity/datapackUtil';
-import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName } from '@vlocode/util';
+import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName, clearCache } from '@vlocode/util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import DatapackInfoService from '@lib/vlocity/datapackInfoService';
@@ -52,11 +52,17 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         }
     }
 
+    private onRefresh(): void {
+        clearCache(container.get(DatapackInfoService));
+        clearCache(this.vlocode.salesforceService.schema);
+        super.refresh();
+    }
+
     protected getCommands() {
         return {
             'vlocode.datapackExplorer.export': async node => this.onExport(node),
             'vlocode.datapackExplorer.openSalesforce': OpenSalesforceCommand,
-            'vlocode.datapackExplorer.refresh': () => this.refresh()
+            'vlocode.datapackExplorer.refresh': () => this.onRefresh()
         };
     }
 
@@ -106,7 +112,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
                 const datapacks = await container.get(DatapackInfoService).getDatapacks();
                 return datapacks.map(info => new DatapackCategoryNode(info.datapackType));
             } else if (node.label === 'SObjects') {
-                return this.getExportableSObjectTypes(await this.vlocode.salesforceService.schema.describeSObjects());
+                return this.getExportableSObjectTypes();
             }
         } else if (node instanceof DatapackCategoryNode) {
             return this.expandCategoryNode(node);
@@ -152,11 +158,12 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         return `Select Id, Name from ${sobjectType}`;
     }
 
-    private async getExportableSObjectTypes(records: DescribeGlobalSObjectResult[]) {
+    private async getExportableSObjectTypes() {
+        const customObjects = await this.vlocode.salesforceService.schema.describeSObjects();
         const datapacks = (await container.get(DatapackInfoService).getDatapacks()).filter(dp => !!dp.sobjectType);
         const hasDatapack = (sobject: string) => datapacks.some(dp => normalizeSalesforceName(dp.sobjectType) === normalizeSalesforceName(sobject));
         const isExportable = (sobject: DescribeGlobalSObjectResult) => sobject.retrieveable && sobject.updateable && sobject.createable && !sobject.deprecatedAndHidden;
-        const nonDatapackObjects = records.filter(record => isExportable(record) && !hasDatapack(record.name));
+        const nonDatapackObjects = customObjects.filter(record => isExportable(record) && !hasDatapack(record.name));
         return nonDatapackObjects.map(record => new DatapackSObjectTypeNode(record.name));
     }
 
