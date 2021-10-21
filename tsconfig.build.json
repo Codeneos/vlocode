@@ -1,12 +1,6 @@
 {
     "extends": "./tsconfig",
-    "compilerOptions": {
-        "module": "commonjs"
-    },
-    "include": [
-        "src",
-        "node_modules/@vlocode/**/*",
-        "packages/*/src",
-        "types"
+    "exclude": [
+        "src/test"
     ]
 }

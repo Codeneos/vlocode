@@ -233,7 +233,7 @@ export function intersect<T>(source: Array<T>, target: Array<T>): Array<T> {
 }
 
 /**
- * Returns a new array with the elements source not present in the target array
+ * Returns a new array with the elements from the source array that are not present in the target array
  * @param target Target array
  * @param source source array
  */
@@ -255,4 +255,17 @@ export function remove<T>(source: Array<T>, predicate: (item: T, index: number) 
         const [ removedItem ] = source.splice(index, 1);
         return removedItem;
     }
+}
+
+/**
+ * Spread async generators into an array 
+ * @param gen Async generator to spread
+ * @returns Array of results from the generator
+ */
+export async function spreadAsync<T>(gen: AsyncGenerator<T>): Promise<T[]>{
+    const items = Array<T>();
+    for await (const item of gen) {
+        items.push(item);
+    }
+    return items;
 }

@@ -62,5 +62,6 @@ export enum VlocodeCommand {
     retrieveMetadata = 'vlocode.retrieveMetadata',
     clearDeploymentQueue = 'vlocode.clearDeploymentQueue',
     pauseDeploymentQueue = 'vlocode.pauseDeploymentQueue',
-    resumeDeploymentQueue = 'vlocode.resumeDeploymentQueue'
+    resumeDeploymentQueue = 'vlocode.resumeDeploymentQueue',
+    addToProfile = 'vlocode.addToProfile',
 }

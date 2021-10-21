@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.13",
+    "version": "0.16.14",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -75,7 +75,8 @@
         "onCommand:vlocode.retrieveMetadata",
         "onCommand:vlocode.pauseDeploymentQueue",
         "onCommand:vlocode.resumeDeploymentQueue",
-        "onCommand:vlocode.clearDeploymentQueue"
+        "onCommand:vlocode.clearDeploymentQueue",
+        "onCommand:vlocode.addToProfile"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -262,6 +263,10 @@
                 "title": "Salesforce: Clear pending deployment queue..."
             },
             {
+                "command": "vlocode.addToProfile",
+                "title": "Salesforce: Add selection to profiles..."
+            },
+            {
                 "command": "vlocode.datapackExplorer.export",
                 "title": "Export",
                 "icon": {
@@ -441,7 +446,7 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
                     "command": "vlocode.createLwc",
@@ -492,6 +497,11 @@
                     "command": "vlocode.clearDeploymentQueue",
                     "group": "v_salesforce",
                     "when": "vlocodeSalesforceSupport"
+                },
+                {
+                    "command": "vlocode.addToProfile",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
@@ -570,6 +580,16 @@
                     "command": "vlocode.destroyMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                },
+                {
+                    "command": "vlocode.viewInSalesforce",
+                    "group": "v_salesforce",
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                },
+                {
+                    "command": "vlocode.addToProfile",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
                 }
             ],
             "editor/context": [
@@ -611,7 +631,12 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                },
+                {
+                    "command": "vlocode.addToProfile",
+                    "group": "v_salesforce",
+                    "when": "vlocodeSalesforceSupport && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
                 }
             ],
             "view/item/context": [

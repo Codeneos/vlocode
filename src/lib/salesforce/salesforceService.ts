@@ -7,7 +7,7 @@ import * as xml2js from 'xml2js';
 import { Logger, injectable, FileSystem } from '@vlocode/core';
 import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
 import SObjectRecord from '@lib/salesforce/sobjectRecord';
-import { cache , Timer , substringAfter, XML, evalTemplate } from '@vlocode/util';
+import { cache , Timer , substringAfter, XML, evalTemplate, fileName, mapAsyncParallel } from '@vlocode/util';
 import { PropertyAccessor } from '@lib/types';
 import { stripPrefix } from 'xml2js/lib/processors';
 import { VlocityNamespaceService } from '@lib/vlocity/vlocityNamespaceService';
@@ -19,6 +19,7 @@ import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import RecordBatch from './recordBatch';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
+import { SalesforceProfile } from './salesforceProfile';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -159,6 +160,8 @@ interface SoapResponse {
         };
     };
 }
+
+interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string };
 
 @injectable()
 export default class SalesforceService implements JsForceConnectionProvider {
@@ -413,21 +416,26 @@ export default class SalesforceService implements JsForceConnectionProvider {
      * @param filePath Source file path
      * @returns 
      */
-    public async getMetadataInfo(filePath: string | vscode.Uri) : Promise<{ type: string; fullName: string; namespace?: string; name: string; metadata?: any } | undefined> {
-        const file = typeof filePath === 'string' ? filePath : filePath.fsPath;
-        const apiVersion = await this.getApiVersion();
-        const sfPackage = (await new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.retrieve).addFiles([ filePath ])).getPackage();
-        const info = sfPackage.getSourceFileInfo(file);
-        if (info) {
-            const metadataInfoFile = [...sfPackage.sourceFiles()].find(f => f.fsPath?.endsWith('.xml'))?.fsPath ?? file;
-            const metadata = metadataInfoFile ? XML.parse(await this.fs.readFileAsString(metadataInfoFile), { ignoreAttributes: true }) : undefined;
-            return {
-                ...this.getNameInfo(info),
-                type: info.componentType,
-                fullName: info.name,
-                metadata: metadata && Object.values(metadata).pop()
-            };
-        }
+    public async getMetadataInfo(filePath: string | vscode.Uri) : Promise<MetadataInfo | undefined>;
+    public async getMetadataInfo(filePaths: Array<string | vscode.Uri>) : Promise<(MetadataInfo | undefined)[]>;
+    public async getMetadataInfo(input: string | vscode.Uri | Array<string | vscode.Uri>): Promise<MetadataInfo | undefined | (MetadataInfo | undefined)[]> {
+        const filePaths = (Array.isArray(input) ? input : [ input ]);
+        const files = filePaths.map(filePath => typeof filePath === 'string' ? filePath : filePath.fsPath);
+        const sfPackage = (await new SalesforcePackageBuilder(SalesforcePackageType.retrieve).addFiles(files)).getPackage();
+        const infos = await mapAsyncParallel(files, async file => {
+            const info = sfPackage.getSourceFileInfo(file);
+            if (info) {
+                const metadataInfoFile = [...sfPackage.sourceFiles()].find(f => f.fsPath?.endsWith('.xml'))?.fsPath ?? file;
+                const metadata = metadataInfoFile ? XML.parse(await this.fs.readFileAsString(metadataInfoFile), { ignoreAttributes: true }) : undefined;
+                return {
+                    ...this.getNameInfo(info),
+                    type: info.componentType,
+                    fullName: info.name,
+                    metadata: metadata && Object.values(metadata).pop()
+                };
+            }
+        });
+        return Array.isArray(input) ? infos : infos.pop();
     }
 
     private getNameInfo(metadataInfo: { componentType: string; name: string }) : { name: string; namespace?: string } {
@@ -445,6 +453,24 @@ export default class SalesforceService implements JsForceConnectionProvider {
         }
 
         return { name };
+    }
+
+    /**
+     * Load all known Salesforce profiles in the current workspace with the *.profile-meta.xml and the *.profile extension from the file system
+     */
+    public async loadProfilesFromDisk() {
+        const profilesFiles = await this.fs.findFiles([ '**/*.profile-meta.xml', '**/*.profile' ]);
+        const profiles: { file: string; profile: SalesforceProfile }[] = [];
+        for (const file of profilesFiles) {
+            const name = decodeURIComponent(fileName(file).split('.').shift()!);
+            const data = this.fs.readFileAsString(file, 'utf-8');
+            try {
+                profiles.push({ file, profile: await new SalesforceProfile(name).loadProfile(await data) });
+            } catch(err) {
+                this.logger.error(`Unable load profile ${name} due a parsing of file system error`, err);
+            }
+        }
+        return profiles;
     }
 
     /**

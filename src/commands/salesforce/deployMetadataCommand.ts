@@ -118,7 +118,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
             // Build manifest
             progress.report({ message: 'building package' });
-            const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.deploy);
+            const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
             const sfPackage = (await packageBuilder.addFiles(files, token)).getPackage();
 
             if (!sfPackage || token?.isCancellationRequested) {

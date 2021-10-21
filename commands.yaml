@@ -103,7 +103,7 @@ vlocode.deployMetadata:
   group: v_salesforce
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:    
-    - menu: commandPalette      
+    - menu: commandPalette
     - menu: editor/context
     - menu: explorer/context      
 vlocode.refreshMetadata:
@@ -143,10 +143,11 @@ vlocode.execAnonymousCommand:
 vlocode.viewInSalesforce:
   title: 'Salesforce: Open in Salesforce'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:
-    - menu: commandPalette
+    - menu: commandPalette      
     - menu: editor/context
+    - menu: explorer/context 
 vlocode.createLwc:
   title: 'Salesforce: New Lightning Web Component (LWC)'
   group: v_salesforce
@@ -207,6 +208,14 @@ vlocode.clearDeploymentQueue:
   when: vlocodeSalesforceSupport
   menus:
     - menu: commandPalette
+vlocode.addToProfile:
+  title: 'Salesforce: Add to profiles...'
+  group: v_salesforce
+  when: vlocodeSalesforceSupport && resourceFilename =~ /(\.object|\.field-meta\.xml|\.cls|\.cls-meta\.xml)$/
+  menus:
+    - menu: commandPalette      
+    - menu: editor/context
+    - menu: explorer/context 
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:

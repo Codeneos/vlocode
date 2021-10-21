@@ -22,7 +22,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             title: 'Building component manifest...',
             location: vscode.ProgressLocation.Notification,
         }, async (progress, token) => {
-            const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.retrieve);
+            const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
             return (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
         });
         this.clearPreviousErrors(sfPackage.files());

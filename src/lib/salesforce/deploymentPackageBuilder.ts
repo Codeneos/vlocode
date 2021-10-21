@@ -33,11 +33,11 @@ export class SalesforcePackageBuilder {
     @injectable.property private readonly logger: Logger;
 
     constructor(
-        public readonly apiVersion: string,
         public readonly type: SalesforcePackageType,
+        public readonly apiVersion?: string,
         fs?: FileSystem) {
         this.fs = new CachedFileSystemAdapter(fs!);
-        this.mdPackage = new SalesforcePackage(apiVersion, '', this.fs);
+        this.mdPackage = new SalesforcePackage(apiVersion ?? '50.0', '', this.fs);
     }
 
     /**

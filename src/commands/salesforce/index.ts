@@ -14,6 +14,7 @@ import RetrieveMetadataCommand from './retrieveMetadataCommand';
 import PauseMetadataDeploymentsCommand from './pauseDeploymentsCommand';
 import ResumeMetadataDeploymentsCommand from './resumeDeploymentsCommand';
 import ClearMetadataDeploymentQueueCommand from './clearMetadataDeploymentQueueCommand';
+import AddToProfileCommand from './addToProfileCommand';
 
 export default {
     [VlocodeCommand.deployMetadata]: DeployMetadataCommand,
@@ -32,5 +33,6 @@ export default {
     [VlocodeCommand.retrieveMetadata]: RetrieveMetadataCommand,
     [VlocodeCommand.pauseDeploymentQueue]: PauseMetadataDeploymentsCommand,
     [VlocodeCommand.resumeDeploymentQueue]: ResumeMetadataDeploymentsCommand,
-    [VlocodeCommand.clearDeploymentQueue]: ClearMetadataDeploymentQueueCommand
+    [VlocodeCommand.clearDeploymentQueue]: ClearMetadataDeploymentQueueCommand,
+    [VlocodeCommand.addToProfile]: AddToProfileCommand
 };

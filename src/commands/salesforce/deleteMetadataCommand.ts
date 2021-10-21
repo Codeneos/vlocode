@@ -23,7 +23,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             cancellable: true
         }, async (progress, token) => {
             const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
-            const packageBuilder = new SalesforcePackageBuilder(apiVersion, SalesforcePackageType.destruct);
+            const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.destruct, apiVersion);
             const sfPackage = (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
 
             if (token?.isCancellationRequested) {
