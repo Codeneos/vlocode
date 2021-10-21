@@ -372,25 +372,28 @@ export default class SalesforceService implements JsForceConnectionProvider {
 
     public async getMetadataSetupUrl(file: string) : Promise<string> {
         const metadataInfo = await this.getMetadataInfo(file);
-        const metadataType = metadataInfo && this.metadataRegistry.getMetadataType(metadataInfo.type);
+        if (metadataInfo?.fullName.includes('__mdt')) {
+            metadataInfo.type = metadataInfo.type.replace('Custom', 'CustomMetadata');
+        }
+        const metadataUrlFormat = metadataInfo && this.metadataRegistry.getUrlFormat(metadataInfo.type);
 
-        if (!metadataInfo || !metadataType) {
+        if (!metadataInfo || !metadataUrlFormat) {
             throw new Error(`Unable to resolve metadata type (is this a valid Salesforce metadata?) for: ${file}`);
         }
 
         const objectData = {
-            nameField: metadataType.urlFormat.nameField,
+            nameField: metadataUrlFormat.nameField,
             namespace: metadataInfo.namespace ?? '',
-            type: metadataType.xmlName.replace(/$Custom/i, ''),
+            type: metadataInfo.type,
             fullName: metadataInfo.fullName,
             name: metadataInfo.name,
             metadata: metadataInfo.metadata
         };
 
-        if (metadataType.urlFormat.query) {
+        if (metadataUrlFormat.query) {
             const connection = await this.getJsForceConnection();
-            const queryFormat = evalTemplate(metadataType.urlFormat.query, objectData);
-            const queryService = metadataType.urlFormat.strategy == 'tooling' ? connection.tooling : connection;
+            const queryFormat = evalTemplate(metadataUrlFormat.query, objectData);
+            const queryService = metadataUrlFormat.strategy == 'tooling' ? connection.tooling : connection;
             const { records } = await queryService.query<any>(queryFormat);
 
             if (!records.length) {
@@ -400,7 +403,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             if (records.length == 1) {
                 Object.assign(objectData, { id: records[0].Id });
             } else {
-                const nameFieldPath = metadataType.urlFormat.nameField.split('.');
+                const nameFieldPath = metadataUrlFormat.nameField.split('.');
                 const filteredRecord = records.find(r => nameFieldPath.reduce((obj, p) => obj && obj[p], r) == metadataInfo.fullName);
                 Object.assign(objectData, { id: (filteredRecord ?? records[0]).Id });
             }
@@ -408,7 +411,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
             Object.assign(objectData, { id: records[0]?.Id });
         }
 
-        return evalTemplate(metadataType.urlFormat.url, objectData);
+        return evalTemplate(metadataUrlFormat.url, objectData);
     }
 
     /** 
@@ -445,7 +448,7 @@ export default class SalesforceService implements JsForceConnectionProvider {
         }
 
         const nameParts = name.split('__');
-        if (nameParts.length > 1 && nameParts[nameParts.length - 1] != 'c') {
+        if (nameParts.length > 2) {
             return {
                 namespace: nameParts.shift()!,
                 name: nameParts.join('__')

@@ -34,7 +34,6 @@ export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject 
         decomposition: string;
         transformer: string;
     };
-    urlFormat: MetadataUrlFormat;
 }
 
 @singletonMixin
@@ -43,6 +42,7 @@ export class MetadataRegistry {
 
     private readonly registry = new Array<MetadataType>();
     private readonly types = new Map<string, MetadataType>();
+    private readonly urlFormats = new Map<string, MetadataUrlFormat>();
     private readonly suffixes = new Map<string, string>();
 
     constructor(private readonly logger: Logger) {
@@ -66,9 +66,6 @@ export class MetadataRegistry {
                 metadataObject.metaFile = metadataObject.metaFile == 'true';
             }
 
-            // Merge URL format
-            Object.assign(metadataObject, { urlFormat: { ...urlFormats.$default, ...(urlFormats[metadataObject.xmlName] ?? {}) } } );
-
             // Store in registry
             this.registry.push(metadataObject);
             if (this.types.has(metadataObject.xmlName.toLowerCase())) {
@@ -91,6 +88,10 @@ export class MetadataRegistry {
         for (const suffix of Object.keys(registryData.suffixes)) {
             this.suffixes.set(suffix.toLowerCase(), registryData.suffixes[suffix]);
         }
+    }
+
+    public getUrlFormat(type: string) {
+        return { ...urlFormats.$default, ...(urlFormats[type] ?? {}) };
     }
 
     /**

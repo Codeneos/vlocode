@@ -56,6 +56,18 @@
         "query": null,
         "url": "/lightning/setup/ObjectManager/${fullName}/Details/view"    
     },
+    "CustomField": {
+        "query": "select Id from ${type} where ${nameField} = '${name.split('.').pop().split('__').shift()}' and EntityDefinitionId = '${fullName.split('.').shift()}' and NamespacePrefix = '${namespace}'",
+        "url": "/lightning/setup/ObjectManager/${name.split('.').shift()}/FieldsAndRelationships/${id}/view"    
+    },
+    "CustomMetadataObject": {
+        "query": "select Id from CustomObject where ${nameField} = '${name.split('__').shift()}' and NamespacePrefix = '${namespace}'",
+        "url": "/lightning/setup/CustomMetadata/page?address=/${id}?setupid=CustomMetadata"    
+    },
+    "CustomMetadataField": {
+        "query": "select Id from ${type} where ${nameField} = '${name.split('.').pop().split('__').shift()}' and EntityDefinitionId = '${fullName.split('.').shift()}' and NamespacePrefix = '${namespace}'",
+        "url": "/lightning/setup/CustomMetadata/page?address=/${id}?setupid=CustomMetadata"    
+    },
     "CustomObjectTranslation": {
         "query": null,
         "url": "/lightning/setup/LabelWorkbenchTranslate/home"    

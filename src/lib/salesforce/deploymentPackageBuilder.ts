@@ -295,7 +295,7 @@ export class SalesforcePackageBuilder {
             } else {
                 this.mdPackage.addManifestEntry(metadataType.xmlName, parentComponentName);
             }
-            this.mdPackage.addSourceMap(sourceFile, { xmlName, componentName: childComponentName, packagePath: parentPackagePath });
+            this.mdPackage.addSourceMap(sourceFile, { xmlName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
         }
 
         this.logger.verbose(`Adding ${path.basename(sourceFile)} as ${parentComponentName}.${childComponentName}`);
