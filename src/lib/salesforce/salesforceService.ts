@@ -20,6 +20,7 @@ import RecordBatch from './recordBatch';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
 import { SalesforceProfile } from './salesforceProfile';
+import { VSCodeFileSystemAdapter } from '../fs/vscodeFileSystemAdapter';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -170,13 +171,14 @@ export default class SalesforceService implements JsForceConnectionProvider {
     @injectable.property public readonly schema: SalesforceSchemaService;
     @injectable.property public readonly lookupService: SalesforceLookupService;
     @injectable.property public readonly deploy: SalesforceDeployService;
-    @injectable.property public readonly fs: FileSystem;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly namespaceService: VlocityNamespaceService,
         private readonly queryService: QueryService,
-        private readonly logger: Logger) {
+        private readonly logger: Logger,
+        private readonly fs: FileSystem) {
+        this.fs = new VSCodeFileSystemAdapter(fs);
     }
 
     public async isProductionOrg() : Promise<boolean> {

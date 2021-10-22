@@ -41,10 +41,9 @@ export class ProgressToken {
 
 export abstract class CommandBase implements Command {
 
-    public abstract execute(...args: any[]): void | Promise<void>;
+    public abstract execute(...args: any[]): any | Promise<any>;
 
-    public validate?(...args: any[]): void | Promise<void> {
-    }
+    public validate?(...args: any[]): any | Promise<any> { }
 
     protected get currentOpenDocument() : vscode.Uri | undefined {
         return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;

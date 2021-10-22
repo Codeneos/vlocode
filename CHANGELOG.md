@@ -1,5 +1,10 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.15 - 2021-10-22
+ - Add new feature to update profiles from the context menu; allows adding and removing of APEX Classes, VF Pages and CustomFields to locally versioned profiles
+ - Fixed issues with View-in-salesforce command not working properly for CustomObjects, CustomFields and CustomMetadata
+ - Renamed commands for consistency with official SF Extension
+
 ## Version 0.16.13 - 2021-10-18
  - Improve view in salesforce command for many Salesforce Metadata components; the command will now work for most common metadata types.
  - Fix issue causing meta-xml files to be omitted on export of Metadata
@@ -16,11 +21,11 @@
  
 ## Version 0.16.10 - 2021-08-26
  - Support for compression resource folders before deployment
- - Greatly improve ability to deploy SFDX formated metadata
+ - Greatly improve ability to deploy SFDX formatted metadata
  - Fix issues where incorrectly spaced metadata would generate deployment errors
  - Fix recomposition of top-level decomposes SFDX sources (object translations)
  - Fix issue where logging would only write to the first logger in the chain
- - Seperate core and util into seperate modules 
+ - Separate core and util into separate modules 
 ### **Known issues**
  - Refreshing Salesforce Metadata in SFDX format does not map the refresh source correctly if the source file name is differs from the SFDX file name
  - Refreshing decomposed Metadata like objects does not decompose into nultiple files after refresh or retrieve

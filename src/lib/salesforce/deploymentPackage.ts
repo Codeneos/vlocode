@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as constants from '@constants';
 import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
-import { Iterable, XML , directoryName } from '@vlocode/util';
+import { Iterable, XML , directoryName, arrayMapPush } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 
@@ -32,6 +32,11 @@ export class SalesforcePackage {
      */
     private readonly sourceFileMap = new Map<string, SalesforcePackageSourceMap>();
 
+    /**
+     * Map each component to package files
+     */
+    private readonly packageComponents = new Map<string, string[]>();
+
     constructor(
         public readonly apiVersion: string,
         private readonly packageDir: string,
@@ -58,6 +63,7 @@ export class SalesforcePackage {
             name: entry.componentName,
             componentType: entry.xmlName
         });
+        arrayMapPush(this.packageComponents, `${entry.xmlName}.${entry.componentName}`.toLowerCase(), fsPath);
     }
 
     public setPackageData(packagePath: string, data: SalesforcePackageFileData) {
@@ -89,6 +95,16 @@ export class SalesforcePackage {
      */
     public getSourceFile(packagePath: string) {
         return this.packageData.get(packagePath)?.fsPath;
+    }
+
+    /**
+     * Get the name of the source file.
+     * @param type XML Type
+     * @param name Component name
+     * @returns FS path from which the component was loaded or undefined when not loaded or not in the current package
+     */
+    public getComponentSourceFiles(type: string, name: string) {
+        return this.packageComponents.get(`${type}.${name}`.toLowerCase());
     }
 
     /**
@@ -261,6 +277,26 @@ export class SalesforcePackage {
                 // APEX classes
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
                     this.packageData.set(`${packagePath}-meta.xml`, { data: this.buildTriggerMetadata(this.apiVersion) });
+                }
+            }
+        }
+    }
+
+    /**
+     * Try to read the metadata associated to the specified component.
+     * @param type Type of the component
+     * @param name Name of the component
+     * @returns Parsed XML metadata associated to the component as defined in the package
+     */
+    public async getPackageMetadata(type: string, name: string) : Promise<any> {
+        const fsPaths = this.getComponentSourceFiles(type, name);
+        if (fsPaths?.length) {
+            const metaFile = fsPaths.length == 1 ? fsPaths[0] : fsPaths.find(f => f.toLowerCase().endsWith('.xml'));
+            const metaFileSourceMap = metaFile && this.sourceFileMap.get(metaFile);
+            if (metaFileSourceMap) {
+                const packageData = await this.getPackageData(metaFileSourceMap.packagePath);
+                if (packageData && XML.isXml(packageData)) {
+                    return Object.values(XML.parse(packageData)).pop();
                 }
             }
         }

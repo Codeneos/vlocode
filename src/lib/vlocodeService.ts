@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '@constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '@lib/vlocodeActivity';
-import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect } from '@vlocode/util';
+import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options } from '@vlocode/util';
 import * as chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';
 import VlocodeConfiguration from './vlocodeConfiguration';
@@ -185,11 +185,26 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
     /**
      * Wrapper around `vscode.window.withProgress` that registers the task as an activity visible in the activity explorer if used.
+     * @param title Title of the task to run as it will appear on the progress and UI
+     * @param task Task to run
+     */
+    public withActivity<T>(title: string, task: ActivityTask<T>) : Promise<T>;
+    /**
+     * Wrapper around `vscode.window.withProgress` that registers the task as an activity visible in the activity explorer if used.
      * @param options Activity options
      * @param task Task to run
      */
-    public withActivity<T>(options: ActivityOptions, task: ActivityTask<T>) {
+    public withActivity<T>(options: ActivityOptions, task: ActivityTask<T>) : Promise<T>;
+    public withActivity<T>(input: ActivityOptions | string, task: ActivityTask<T>) {
         // Create activity record to track activity progress
+        const options: ActivityOptions = typeof input == 'string' ? {
+            activityTitle: input,
+            progressTitle: input,
+            propagateExceptions: true,
+            cancellable: task.length > 2,
+            location: vscode.ProgressLocation.Notification
+        } : input;
+
         const cancelTokenSource = options.cancellable ? new vscode.CancellationTokenSource() : undefined;
         const onCompleteEmitter = new vscode.EventEmitter<VlocodeActivity>();
         const activityRecord = observeObject({

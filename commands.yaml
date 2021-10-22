@@ -7,7 +7,7 @@ vlocode.selectOrg:
 
 # Vlocity basic commands
 vlocode.refreshDatapack:
-  title: 'Vlocity: Refresh Datapack(s)'
+  title: 'Vlocity: Refresh Datapack from Org'
   group: v_vlocity
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
   menus:
@@ -15,7 +15,7 @@ vlocode.refreshDatapack:
     - menu: explorer/context
     - menu: editor/context
 vlocode.deployDatapack:
-  title: 'Vlocity: Deploy Datapack(s)'
+  title: 'Vlocity: Deploy Datapack to Org'
   group: v_vlocity  
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
   menus:
@@ -23,7 +23,7 @@ vlocode.deployDatapack:
     - menu: explorer/context
     - menu: editor/context
 vlocode.openSalesforce:
-  title: 'Vlocity: Open in Salesforce'
+  title: 'Vlocity: Open in Org'
   group: v_vlocity
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
   menus:
@@ -46,7 +46,7 @@ vlocode.cloneDatapack:
     - menu: explorer/context
     - menu: editor/context
 vlocode.exportDatapack:
-  title: 'Vlocity: Export Datapack from Salesforce'
+  title: 'Vlocity: Export Datapack from Org'
   group: v_vlocity
   menus:
     - menu: commandPalette
@@ -99,7 +99,7 @@ vlocode.admin.clearPlatformCache:
 
 # Salesforce commands
 vlocode.deployMetadata:
-  title: 'Salesforce: Deploy'
+  title: 'Salesforce: Deploy to Org'
   group: v_salesforce
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:    
@@ -107,7 +107,7 @@ vlocode.deployMetadata:
     - menu: editor/context
     - menu: explorer/context      
 vlocode.refreshMetadata:
-  title: 'Salesforce: Refresh'
+  title: 'Salesforce: Refresh from Org'
   group: v_salesforce
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:
@@ -115,7 +115,7 @@ vlocode.refreshMetadata:
     - menu: editor/context
     - menu: explorer/context
 vlocode.destroyMetadata:
-  title: 'Salesforce: Delete'
+  title: 'Salesforce: Delete from Org'
   group: v_salesforce
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:
@@ -125,23 +125,23 @@ vlocode.destroyMetadata:
 vlocode.selectApiVersion:
   title: 'Salesforce: Select API Version'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
 vlocode.createMetadataCommand:
   title: 'Salesforce: New component'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette      
 vlocode.execAnonymousCommand:
   title: 'Salesforce: Execute Anonymous APEX'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette      
 vlocode.viewInSalesforce:
-  title: 'Salesforce: Open in Salesforce'
+  title: 'Salesforce: Open in Org'
   group: v_salesforce
   when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:
@@ -151,71 +151,78 @@ vlocode.viewInSalesforce:
 vlocode.createLwc:
   title: 'Salesforce: New Lightning Web Component (LWC)'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette      
 vlocode.createApexClass:
   title: 'Salesforce: New APEX class'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
 vlocode.clearDeveloperLogs:
   title: 'Salesforce: Clear Developer Logs'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
 vlocode.setTraceFlags:
-  title: 'Salesforce: Set Debug Log Level...'
+  title: 'Salesforce: Set Debug Log Level'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
 vlocode.setLogVisibility:
-  title: 'Salesforce: Set Developer Log Visibility...'
+  title: 'Salesforce: Set Developer Log Visibility'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette   
 vlocode.execRestApi:
-  title: 'Salesforce: Execute REST API...'
+  title: 'Salesforce: Execute REST API'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette   
 vlocode.retrieveMetadata:
-  title: 'Salesforce: Retrieve metadata...'
+  title: 'Salesforce: Export/Retrieve metadata from Org'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette   
 vlocode.pauseDeploymentQueue:
-  title: 'Salesforce: Pause deployments...'
+  title: 'Salesforce: Pause deployments'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette   
 vlocode.resumeDeploymentQueue:
-  title: 'Salesforce: Resume deployments...'
+  title: 'Salesforce: Resume deployments'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette   
 vlocode.clearDeploymentQueue:
-  title: 'Salesforce: Clear pending deployment queue...'
+  title: 'Salesforce: Clear pending deployment queue'
   group: v_salesforce
-  when: vlocodeSalesforceSupport
+  when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
 vlocode.addToProfile:
-  title: 'Salesforce: Add to profiles...'
-  group: v_salesforce
-  when: vlocodeSalesforceSupport && resourceFilename =~ /(\.object|\.field-meta\.xml|\.cls|\.cls-meta\.xml)$/
-  menus:
+  title: 'Salesforce: Add to profiles'
+  group: v_salesforce_profile
+  menus: &profileCmdMenuConfig 
     - menu: commandPalette      
     - menu: editor/context
+      when: &profileCmdFileWhen config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\.object|\.field-meta\.xml|\.cls|\.cls-meta\.xml)$/
     - menu: explorer/context 
+      when: *profileCmdFileWhen
+    - menu: explorer/context 
+      when: config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && explorerResourceIsFolder && resourceDirname =~ /(objects|classes)/
+vlocode.removeFromProfile:
+  title: 'Salesforce: Remove from profiles'
+  group: v_salesforce_profile
+  menus: *profileCmdMenuConfig
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:

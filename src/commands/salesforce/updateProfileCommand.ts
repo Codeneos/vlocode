@@ -1,53 +1,88 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { SalesforcePackageBuilder, SalesforcePackageType } from '@root/lib/salesforce/deploymentPackageBuilder';
 import { SalesforceFieldPermission, SalesforceProfile } from '@root/lib/salesforce/salesforceProfile';
 import { PackageManifest } from '@root/lib/salesforce/deploy/packageXml';
+import { CustomFieldMetadataType } from '@root/lib/salesforce/metadata/customFieldMetadataType';
 import MetadataCommand from './metadataCommand';
-import path = require('path');
 
-export default abstract class UpdateRelatedProfileCommand extends MetadataCommand {
+export default class UpdateRelatedProfileCommand extends MetadataCommand {
+
+    constructor(private readonly action:  'add' | 'remove') {
+        super();
+    }
+
+    public execute(...args: any[]) { 
+        return this.updateProfiles([...(args[1] || [args[0] || this.currentOpenDocument]), ...args.slice(2)]);
+    }
 
     /**
-     * 
+     * Update the selected profiles adding the specified metadata objects.
      * @param selectedFiles Selected metadata files
      * @param action Add/update or remove the metadata object from the profile
-     * @param options Extra options when adding new metadata to the profile
-     * @returns 
+     * @returns void
      */
-    protected async updateProfiles(selectedFiles: vscode.Uri[], action: 'remove' | 'add') {
-        const mdPackage = new SalesforcePackageBuilder(SalesforcePackageType.retrieve).addFiles(selectedFiles);
+    private async updateProfiles(selectedFiles: vscode.Uri[]) {
+        const mdPackage = await this.vlocode.withActivity('Parsing metadata...', async () =>
+            (await new SalesforcePackageBuilder(SalesforcePackageType.deploy).addFiles(selectedFiles)).getPackage()
+        );
+        const manifest = mdPackage.manifest;
+
+        const classes = manifest.list('ApexClass');
+        const pages = manifest.list('ApexPage');
+        const fields = await Promise.all(manifest.list('CustomField').map(async field => ({
+            field,
+            metadata: (await mdPackage.getPackageMetadata('CustomField', field)).fields.find(f => f.fullName == field.split('.').pop()) as CustomFieldMetadataType
+        })));
+        const addableFields = fields.filter(( { metadata } ) => this.isProfileCompatibleField(metadata));
+
+        if (!manifest.count()) {
+            return void vscode.window.showErrorMessage('None of the selected files are detected as Salesforce metadata');
+        }
+
+        if (!classes.length && !fields.length) {
+            return void vscode.window.showErrorMessage('None of the selected files can be added to the profiles; currently only APEX classes/pages and CustomFields are supported');
+        }
 
         const selectedProfiles = await this.showProfileSelection();
         if (!selectedProfiles) {
-            void mdPackage;
             return;
         }
 
-        const isAdd = action == 'add';
-        const manifest = (await mdPackage).getManifest();
-        const options = isAdd ? await this.showOptionSelection(manifest) : undefined;
-        if (isAdd && !options) {
+        const options = await this.showOptionSelection(manifest);
+        if (!options) {
             return;
         }
 
-        const classes = manifest.list('ApexClass');
-        const fields = manifest.list('CustomField');
-
-        for (const { profile } of selectedProfiles) {
-            if (isAdd) {
-                classes.forEach(className => profile.addClass(className, options!.apexAccess));
-                fields.forEach(fieldName => profile.addField(fieldName, options!.fieldPermission));
-            } else {
-                classes.forEach(className => profile.removeClass(className));
-                fields.forEach(fieldName => profile.removeField(fieldName));
+        const updatedProfiles = await this.vlocode.withActivity('Updating profiles...', () => {
+            for (const { profile } of selectedProfiles) {
+                if (this.action == 'add') {
+                    classes.forEach(className => profile.addClass(className, options.apexAccess));
+                    pages.forEach(pageName => profile.addPage(pageName, options.apexAccess));
+                    addableFields.forEach(({ field }) =>profile.addField(field, options.fieldPermission));
+                } else {
+                    classes.forEach(className => profile.removeClass(className));
+                    pages.forEach(pageName => profile.removePage(pageName));
+                    fields.forEach(({ field }) => profile.removeField(field));
+                }
             }
-        }
+            return this.applyProfileChanges(selectedProfiles);
+        });
 
-        await this.applyProfileChanges(selectedProfiles);
+        if (updatedProfiles.length > 0) {
+            void vscode.window.showInformationMessage(`Successfully updated ${updatedProfiles.length} (${this.action}) profile${updatedProfiles.length == 1 ? '' : 's'}`);
+        } else {
+            void vscode.window.showInformationMessage('Selected profiles already up to date');
+        }
+    }
+
+    private isProfileCompatibleField(metadata: CustomFieldMetadataType) {
+        return metadata.type !== 'CheckBox' && !metadata.required;
     }
 
     private async applyProfileChanges(profiles: { file: string; profile: SalesforceProfile }[]) {
         const profileChanges = new vscode.WorkspaceEdit();
+        const updatedProfiles: SalesforceProfile[] = [];
         for (const { file, profile } of profiles) {
             if (!profile.hasChanges) {
                 continue;
@@ -56,37 +91,43 @@ export default abstract class UpdateRelatedProfileCommand extends MetadataComman
             const fullDocumentRange = new vscode.Range(new vscode.Position(0,0), new vscode.Position(profileDoc.lineCount, 0));
             this.logger.info(`Updating profile ${profile.name}`);
             profileChanges.replace(profileDoc.uri, fullDocumentRange, profile.toXml());
+            updatedProfiles.push(profile);
         }
         await vscode.workspace.applyEdit(profileChanges);
+        return updatedProfiles;
     }
 
     private async showOptionSelection(manifest: PackageManifest) {
         const options = {
             apexAccess: true,
-            fieldPermission: 'editable' as SalesforceFieldPermission
+            fieldPermission: SalesforceFieldPermission.editable
         };
 
-        if (manifest.list('ApexClass').length) {
-            const access = await vscode.window.showQuickPick([
-                { label: '$(pass) Enabled', apexAccess: true },
-                { label: '$(circle-slash) Disabled', apexAccess: false }
-            ], { placeHolder: 'Select Apex access level' });
-            if (!access) {
-                return;
-            }
-            options.apexAccess = true;
+        if (this.action == 'remove') {
+            return options;
         }
 
-        if (manifest.list('CustomField').length) {
+        if (manifest.has('ApexClass') || manifest.has('ApexPage')) {
             const access = await vscode.window.showQuickPick([
-                { label: '$(edit) Editable (read-write)', fieldPermission: 'editable' },
-                { label: '$(eye) Readonly', fieldPermission: 'readonly' },
-                { label: '$(circle-slash) No access', fieldPermission: 'none' }
-            ], { placeHolder: 'Select field permissions' });
+                { label: '$(check) Enabled Apex Class/Page', apexAccess: true },
+                { label: '$(circle-slash) Disabled Apex Class/Page', apexAccess: false }
+            ], { placeHolder: 'Select Apex Class and Page access level', ignoreFocusOut: true });
             if (!access) {
                 return;
             }
-            options.apexAccess = true;
+            options.apexAccess = access.apexAccess;
+        }
+
+        if (manifest.has('CustomField')) {
+            const access = await vscode.window.showQuickPick([
+                { label: '$(edit) Editable (read-write)', fieldPermission: SalesforceFieldPermission.editable },
+                { label: '$(eye) Readonly', fieldPermission: SalesforceFieldPermission.readable },
+                { label: '$(circle-slash) No access', fieldPermission: SalesforceFieldPermission.none }
+            ], { placeHolder: 'Select field permissions', ignoreFocusOut: true });
+            if (!access) {
+                return;
+            }
+            options.fieldPermission = access.fieldPermission;
         }
 
         return options;
@@ -95,8 +136,8 @@ export default abstract class UpdateRelatedProfileCommand extends MetadataComman
     private async showProfileSelection() {
         const profiles = this.salesforce.loadProfilesFromDisk();
         const selectionType = await vscode.window.showQuickPick([
-            { label: '$(replace) Manually select profiles to update', selectManually: true },
-            { label: '$(replace-all) Update all profiles', selectManually: false }
+            { label: '$(versions) Update all profiles', selectManually: false },
+            { label: '$(checklist) Manually select profiles to update', selectManually: true }
         ], { placeHolder: 'Which profiles should be updated?' });
 
         if (!selectionType) {
@@ -104,7 +145,8 @@ export default abstract class UpdateRelatedProfileCommand extends MetadataComman
         }
 
         if (selectionType.selectManually) {
-            const selectedProfile = await vscode.window.showQuickPick((await profiles).map(profile => ({ label: profile.profile.name, profile })), { canPickMany: true });
+            const selectedProfile = await vscode.window.showQuickPick((await profiles).map(profile => ({ label: profile.profile.name, profile })), 
+                { canPickMany: true, ignoreFocusOut: true, placeHolder: 'Which profiles should be updated?' });
             if (!selectedProfile?.length) {
                 return;
             }

@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { workspace } from 'vscode';
 import { FileSystem, StatsOptions } from '@vlocode/core';
 
@@ -9,10 +10,11 @@ export class VSCodeFileSystemAdapter extends FileSystem {
     }
 
     public async readFileAsString(fileName: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
-        const doc = workspace.textDocuments.find(doc => doc.fileName == fileName);
+        const p = workspace.textDocuments;
+        const doc = workspace.textDocuments.find(doc => doc.fileName == path.resolve(fileName));
         if (doc) {
             return doc.getText();
-        }
+        }   
         return this.innerFs.readFileAsString(fileName, encoding);
     }
 
@@ -27,6 +29,7 @@ export class VSCodeFileSystemAdapter extends FileSystem {
     public readDirectory(path: string): Promise<string[]> {
         return this.innerFs.readDirectory(path);
     }
+
     public findFiles(patterns: string | string[]): Promise<string[]> {
         return this.innerFs.findFiles(patterns);
     }

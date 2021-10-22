@@ -1,7 +1,12 @@
 import * as xml2js from 'xml2js';
 import { stringEquals } from '@vlocode/util';
 
-export type SalesforceFieldPermission = 'editable' | 'readable' | 'none';
+export enum SalesforceFieldPermission {
+    editable = 'editable',
+    readable = 'readable',
+    none = 'none'
+}
+type ArrayElement<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 
 interface ProfileApexClass {
     apexClass: string;
@@ -43,13 +48,6 @@ interface ProfileModel {
 }
 
 export class SalesforceProfile {
-    private profileModel: Object & ProfileModel = {
-        classAccesses: [],
-        pageAccess: [],
-        customPermissions: [],
-        fieldPermissions: [],
-        objectPermissions: []
-    };
     #hasChanges: boolean = false;
     #changeTrackHandler = {
         set: (t, p, v) => {
@@ -61,23 +59,31 @@ export class SalesforceProfile {
         }
     };
 
+    private profileModel = {
+        classAccesses: [],
+        pageAccess: [],
+        customPermissions: [],
+        fieldPermissions: [],
+        objectPermissions: []
+    } as Object & ProfileModel;
+
     public get hasChanges() : boolean {
         return this.#hasChanges;
     }
 
-    public get classes() : ProfileApexClass[] {
+    public get classes() : readonly ProfileApexClass[] {
         return this.profileModel.classAccesses;
     }
 
-    public get fields() : ProfileFieldPermission[] {
+    public get fields() : readonly ProfileFieldPermission[] {
         return this.profileModel.fieldPermissions;
     }
 
-    public get objects() : ProfileObjectPermission[] {
+    public get objects() : readonly ProfileObjectPermission[] {
         return this.profileModel.objectPermissions;
     }
 
-    public get pages() : ProfilePageAccess[] {
+    public get pages() : readonly ProfilePageAccess[] {
         return this.profileModel.pageAccess;
     }
 
@@ -124,7 +130,7 @@ export class SalesforceProfile {
                 }
             } else {
                 // Make sure we don't lose unmapped props
-                this.profileModel[key] = value;
+                this.profileModel[key] = typeof value === 'object' && !Array.isArray(value) && key != '$' && key != '@' && key != '#' ? [ value ] : value;
             }
         }
     }
@@ -136,11 +142,11 @@ export class SalesforceProfile {
     public getFieldAccess(fieldName: string): SalesforceFieldPermission | undefined {
         const field = this.fields.find(c => stringEquals(c.field, fieldName));
         if (field?.editable) {
-            return 'editable';
+            return SalesforceFieldPermission.editable;
         } else if (field?.readable) {
-            return 'readable';
+            return SalesforceFieldPermission.readable;
         } else if (field) {
-            return 'none';
+            return SalesforceFieldPermission.none;
         }
     }
 
@@ -150,16 +156,17 @@ export class SalesforceProfile {
             existing.editable = access == 'editable';
             existing.readable = access == 'editable' || access == 'readable';
         } else {
-            this.fields.push({
-                field: field,
+            this.profileModel.fieldPermissions.push({
                 editable: access == 'editable',
+                field: field,
                 readable: access == 'editable' || access == 'readable'
             });
+            this.#hasChanges = true;
         }
     }
 
     public removeField(name: string) {
-        this.profileModel.fieldPermissions = this.fields.filter(c => c.field != name);
+        this.removeItem(this.profileModel.fieldPermissions, c => c.field == name);
     }
 
     public hasPage(name: string) {
@@ -171,11 +178,16 @@ export class SalesforceProfile {
         if (existing) {
             existing.enabled = enabled;
         } else {
-            this.pages.push({
+            this.profileModel.pageAccess.push({
                 apexPage: name,
                 enabled
             });
+            this.#hasChanges = true;
         }
+    }
+
+    public removePage(name: string) {
+        this.removeItem(this.profileModel.pageAccess, c => c.apexPage == name);
     }
 
     public hasClass(name: string) {
@@ -192,15 +204,16 @@ export class SalesforceProfile {
         if (existing) {
             existing.enabled = enabled;
         } else {
-            this.classes.push({
+            this.profileModel.classAccesses.push({
                 apexClass: name,
                 enabled
             });
+            this.#hasChanges = true;
         }
     }
 
     public removeClass(name: string) {
-        this.profileModel.classAccesses = this.profileModel.classAccesses.filter(c => c.apexClass != name);
+        this.removeItem(this.profileModel.classAccesses, c => c.apexClass == name);
     }
 
     public toXml() {
@@ -208,12 +221,22 @@ export class SalesforceProfile {
             xmldec: { version: '1.0', encoding: 'UTF-8' },
             renderOpts: { pretty: true, indent: ' '.repeat(4), 'newline': '\n' }
         });
+        const sortedProfileModel = Object.entries(this.profileModel)
+            .sort(([a, p1], [b, p2]) => Array.isArray(p1) == Array.isArray(p2) ? a.localeCompare(b, 'en') : (Array.isArray(p1) ? 1 : -1))
+            .reduce((obj, [key, value]) => Object.assign(obj, { [key]: value }), { $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' } });
         return xmlBuilder.buildObject({
-            Profile: {
-                $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' },
-                ...this.profileModel
-            }
+            Profile: sortedProfileModel
         });
+    }
+
+    private removeItem<TElement>(array: TElement[], predicate: (item: TElement) => boolean) {
+        const indexOf = array.findIndex(predicate);
+        if (indexOf >= 0) {
+            array.splice(indexOf, 1);
+            this.#hasChanges = true;
+            return this.removeItem(array, predicate);
+        }
+        return false;
     }
 
     private trackChanges<T extends object>(obj: T | undefined): T | undefined {

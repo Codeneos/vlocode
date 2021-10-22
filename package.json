@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.14",
+    "version": "0.16.15",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -11,7 +11,7 @@
     },
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.57.0"
+        "vscode": "^1.61.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "categories": [
@@ -76,7 +76,8 @@
         "onCommand:vlocode.pauseDeploymentQueue",
         "onCommand:vlocode.resumeDeploymentQueue",
         "onCommand:vlocode.clearDeploymentQueue",
-        "onCommand:vlocode.addToProfile"
+        "onCommand:vlocode.addToProfile",
+        "onCommand:vlocode.removeFromProfile"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -136,15 +137,15 @@
             },
             {
                 "command": "vlocode.refreshDatapack",
-                "title": "Vlocity: Refresh Datapack(s)"
+                "title": "Vlocity: Refresh Datapack from Org"
             },
             {
                 "command": "vlocode.deployDatapack",
-                "title": "Vlocity: Deploy Datapack(s)"
+                "title": "Vlocity: Deploy Datapack to Org"
             },
             {
                 "command": "vlocode.openSalesforce",
-                "title": "Vlocity: Open in Salesforce"
+                "title": "Vlocity: Open in Org"
             },
             {
                 "command": "vlocode.renameDatapack",
@@ -156,7 +157,7 @@
             },
             {
                 "command": "vlocode.exportDatapack",
-                "title": "Vlocity: Export Datapack from Salesforce"
+                "title": "Vlocity: Export Datapack from Org"
             },
             {
                 "command": "vlocode.buildParentKeyFiles",
@@ -196,15 +197,15 @@
             },
             {
                 "command": "vlocode.deployMetadata",
-                "title": "Salesforce: Deploy"
+                "title": "Salesforce: Deploy to Org"
             },
             {
                 "command": "vlocode.refreshMetadata",
-                "title": "Salesforce: Refresh"
+                "title": "Salesforce: Refresh from Org"
             },
             {
                 "command": "vlocode.destroyMetadata",
-                "title": "Salesforce: Delete"
+                "title": "Salesforce: Delete from Org"
             },
             {
                 "command": "vlocode.selectApiVersion",
@@ -220,7 +221,7 @@
             },
             {
                 "command": "vlocode.viewInSalesforce",
-                "title": "Salesforce: Open in Salesforce"
+                "title": "Salesforce: Open in Org"
             },
             {
                 "command": "vlocode.createLwc",
@@ -236,35 +237,39 @@
             },
             {
                 "command": "vlocode.setTraceFlags",
-                "title": "Salesforce: Set Debug Log Level..."
+                "title": "Salesforce: Set Debug Log Level"
             },
             {
                 "command": "vlocode.setLogVisibility",
-                "title": "Salesforce: Set Developer Log Visibility..."
+                "title": "Salesforce: Set Developer Log Visibility"
             },
             {
                 "command": "vlocode.execRestApi",
-                "title": "Salesforce: Execute REST API..."
+                "title": "Salesforce: Execute REST API"
             },
             {
                 "command": "vlocode.retrieveMetadata",
-                "title": "Salesforce: Retrieve metadata..."
+                "title": "Salesforce: Export/Retrieve metadata from Org"
             },
             {
                 "command": "vlocode.pauseDeploymentQueue",
-                "title": "Salesforce: Pause deployments..."
+                "title": "Salesforce: Pause deployments"
             },
             {
                 "command": "vlocode.resumeDeploymentQueue",
-                "title": "Salesforce: Resume deployments..."
+                "title": "Salesforce: Resume deployments"
             },
             {
                 "command": "vlocode.clearDeploymentQueue",
-                "title": "Salesforce: Clear pending deployment queue..."
+                "title": "Salesforce: Clear pending deployment queue"
             },
             {
                 "command": "vlocode.addToProfile",
-                "title": "Salesforce: Add selection to profiles..."
+                "title": "Salesforce: Add to profiles"
+            },
+            {
+                "command": "vlocode.removeFromProfile",
+                "title": "Salesforce: Remove from profiles"
             },
             {
                 "command": "vlocode.datapackExplorer.export",
@@ -431,17 +436,17 @@
                 {
                     "command": "vlocode.selectApiVersion",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.createMetadataCommand",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.execAnonymousCommand",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.viewInSalesforce",
@@ -451,57 +456,60 @@
                 {
                     "command": "vlocode.createLwc",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.createApexClass",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.clearDeveloperLogs",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.setTraceFlags",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.setLogVisibility",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.execRestApi",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.retrieveMetadata",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.pauseDeploymentQueue",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.resumeDeploymentQueue",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.clearDeploymentQueue",
                     "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport"
+                    "when": "config.vlocity.salesforce.enabled"
                 },
                 {
                     "command": "vlocode.addToProfile",
-                    "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                    "group": "v_salesforce_profile"
+                },
+                {
+                    "command": "vlocode.removeFromProfile",
+                    "group": "v_salesforce_profile"
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
@@ -588,8 +596,23 @@
                 },
                 {
                     "command": "vlocode.addToProfile",
-                    "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                },
+                {
+                    "command": "vlocode.addToProfile",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && explorerResourceIsFolder && resourceDirname =~ /(objects|classes)/"
+                },
+                {
+                    "command": "vlocode.removeFromProfile",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                },
+                {
+                    "command": "vlocode.removeFromProfile",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && explorerResourceIsFolder && resourceDirname =~ /(objects|classes)/"
                 }
             ],
             "editor/context": [
@@ -635,8 +658,13 @@
                 },
                 {
                     "command": "vlocode.addToProfile",
-                    "group": "v_salesforce",
-                    "when": "vlocodeSalesforceSupport && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                },
+                {
+                    "command": "vlocode.removeFromProfile",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
                 }
             ],
             "view/item/context": [
@@ -739,195 +767,192 @@
                 }
             ]
         },
-        "configuration": {
-            "type": "object",
-            "title": "Vlocity",
-            "properties": {
-                "vlocity.verbose": {
-                    "type": "boolean",
-                    "default": false,
-                    "deprecationMessage": "Verbose mode is replaced by the `logLevel` setting",
-                    "markdownDescription": "Enable verbose logging to the output window"
-                },
-                "vlocity.sfdxUsername": {
-                    "type": "string",
-                    "scope": "machine-overridable",
-                    "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
-                },
-                "vlocity.username": {
-                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
-                    "type": "string",
-                    "markdownDescription": "Salesforce username"
-                },
-                "vlocity.password": {
-                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
-                    "type": "string",
-                    "markdownDescription": "Salesforce account password appended with your Salesforce security token"
-                },
-                "vlocity.loginUrl": {
-                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
-                    "type": "string",
-                    "pattern": "(^http(s){0,1}:\\/\\/[^/]+\\.[a-z]+(:[0-9]+|)$)|(^\\s*$)",
-                    "markdownDescription": "Login URL for salesforce, i.e: <https://test.salesforce.com>"
-                },
-                "vlocity.instanceUrl": {
-                    "deprecationMessage": "Explicit Salesforce connection details are no longer supported, configure an SFDX username instead using the `sfdxUsername` property.",
-                    "type": "string",
-                    "pattern": "(^http(s){0,1}:\\/\\/[^/]+\\.[a-z]+(:[0-9]+|)$)|(^\\s*$)",
-                    "markdownDescription": "Instance URL for salesforce, i.e: <https://test.salesforce.com>"
-                },
-                "vlocity.httpProxy": {
-                    "type": "string",
-                    "description": "Optional HTTP proxy for connecting to Salesforce"
-                },
-                "vlocity.projectPath": {
-                    "type": "string",
-                    "scope": "machine-overridable",
-                    "markdownDescription": "Path to the folder containing the Vlocity datapacks relative to the workspace root folder, for example:\n - `./vlocity`\n - `./datapacks`"
-                },
-                "vlocity.customJobOptionsYaml": {
-                    "type": "string",
-                    "scope": "machine-overridable",
-                    "markdownDescription": "Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.\n\n> **Note** most of the job options are controlled by Vlocode therefore only the **`preStepApex`**, **`postStepApex`** and **`OverrideSettings`** settings will be used from specified YAML file."
-                },
-                "vlocity.deployOnSave": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "Automatically deploy datapacks to Salesforce when changes are saved."
-                },
-                "vlocity.compileOnBuild": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Compile SCSS source before deploying to the target org."
-                },
-                "vlocity.autoActivate": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Automatically activate datapacks after deployment to the target org."
-                },
-                "vlocity.salesforce.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Enables support for **Salesforce commands** such as _Deploy_ and _Refresh_ of Salesforce Metadata Objects through Vlocode"
-                },
-                "vlocity.salesforce.manageMetaXmlFiles": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Enables auto renaming and creation of _-meta.xml_ files for APEX classes. _Note: only has effect when **vlocity.salesforce.enabled** is enabled_"
-                },
-                "vlocity.salesforce.apiVersion": {
-                    "type": "string",
-                    "pattern": "^\\d{2,3}\\.\\d$",
-                    "examples": [
-                        "48.0",
-                        "49.0",
-                        "50.0",
-                        "51.0"
-                    ],
-                    "default": "51.0",
-                    "markdownDescription": "The API version used for Salesforce deployments and refresh operations. Invalid API versions will cause all Salesforce related commands to fail."
-                },
-                "vlocity.salesforce.deployOnSave": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "Automatically deploy metadata files to Salesforce when saved."
-                },
-                "vlocity.salesforce.developerLogsVisible": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Show the Salesforce developer logs panel"
-                },
-                "vlocity.salesforce.developerLogsVisibility": {
-                    "type": "string",
-                    "enum": [
-                        "self",
-                        "all"
-                    ],
-                    "default": "self",
-                    "enumDescriptions": [
-                        "Display only the logs generated by the currently connected user",
-                        "Display all developer logs on the connected org from all users with active trace flags"
-                    ],
-                    "markdownDescription": "Change which logs are displayed and visible in the Developer logs panel"
-                },
-                "vlocity.salesforce.developerLogsAutoRefresh": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Auto refresh the Salesforce logs panel when the panel is visible \n\n> **Note** This setting only has effect for Developer instances; for production instances the logs panel needs to be refreshed manually"
-                },
-                "vlocity.logLevel": {
-                    "type": "string",
-                    "default": "info",
-                    "enum": [
-                        "info",
-                        "verbose",
-                        "debug"
-                    ],
-                    "markdownDescription": "Determines the amount of details printed to the integrated terminal for Vlocode"
-                },
-                "vlocity.logInTerminal": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Enable logging in `TERMINAL` tab instead of in the `OUTPUT` tab, terminal logging uses a vscode *Pseudoterminal* and has support for colors but might not work correctly on all platforms.\n\n**Note** Changing this will require you to restart for the changes to be applied."
-                },
-                "vlocity.parallelLimit": {
-                    "type": "number",
-                    "default": 50,
-                    "markdownDescription": "The number of parallel exports to run when exporting or refreshing Vlocity datapacks"
-                },
-                "vlocity.deploymentMode": {
-                    "type": "string",
-                    "enum": [
-                        "compatibility",
-                        "direct"
-                    ],
-                    "default": "compatibility",
-                    "enumDescriptions": [
-                        "Use Vlocity Deployment library; maximizes compatibility at the cost of deployment speed",
-                        "Directly load records using bulk or collections API; significantly faster then but still beta"
-                    ],
-                    "markdownDescription": "Change how Datapacks are deployment by Vlocode; select _direct_ mode for faster deployments (currently this is a beta feature)"
-                },
-                "vlocity.deploy.chunkSize": {
-                    "type": "number",
-                    "default": 100,
-                    "markdownDescription": "Number of records to deploy in as single operation using the collection API, only affects deployments when *direct* mode is enabled"
-                },
-                "vlocity.deploy.bulkApiThreshold": {
-                    "type": "number",
-                    "default": 500,
-                    "markdownDescription": "Record count when to start using the bulk API only has effect when `vlocity.deploy.useBulkApi` is set to true `true`"
-                },
-                "vlocity.deploy.useBulkApi": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "When enabled the deployment process will use the bulk API for uploading records when the total record type for a single SObject surpassed the value configured as `bulkApiThreshold`"
-                },
-                "vlocity.conditionalContextMenus": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "When enabled context menu options on the workspace-explorer and editor are displayed only when applicable; when enabled Vlocode monitors your workspace folders and keeps track of a list of files which are either Salesforce metadata of Vlocity datapacks. If you disabled this both Vlocity and Salesforce context menu options will always be visible. __Note: if you don't see any context menu options disable this.__"
-                },
-                "vlocity.salesforce.exportFolder": {
-                    "type": "string",
-                    "default": "./src",
-                    "markdownDescription": "Folder to which Vlocode export Salesforce metadata"
-                },
-                "vlocity.salesforce.exportFormat": {
-                    "type": "string",
-                    "enum": [
-                        "classic",
-                        "sfdx"
-                    ],
-                    "default": "classic",
-                    "enumDescriptions": [
-                        "Export Salesforce Metadata in **classic metadata** format without decomposing metadata and adding additional -meta.xml suffixes as retrieved from Salesforce through the metadata API.",
-                        "Export Salesforce Metadata in **decomposed SFDX** format without. Decomposes metadata in multiple files and adds additional -meta.xml all exported metadata without content."
-                    ],
-                    "markdownDescription": "Folder to which Vlocode export Salesforce metadata"
+        "configuration": [
+            {
+                "type": "object",
+                "title": "General",
+                "properties": {
+                    "vlocity.sfdxUsername": {
+                        "type": "string",
+                        "scope": "machine-overridable",
+                        "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
+                    },
+                    "vlocity.httpProxy": {
+                        "type": "string",
+                        "description": "Optional HTTP proxy for connecting to Salesforce"
+                    },
+                    "vlocity.logLevel": {
+                        "type": "string",
+                        "default": "info",
+                        "enum": [
+                            "info",
+                            "verbose",
+                            "debug"
+                        ],
+                        "markdownDescription": "Determines the amount of details printed to the integrated terminal for Vlocode"
+                    },
+                    "vlocity.logInTerminal": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Enable logging in `TERMINAL` tab instead of in the `OUTPUT` tab, terminal logging uses a vscode *Pseudoterminal* and has support for colors but might not work correctly on all platforms.\n\n**Note** Changing this will require you to restart for the changes to be applied."
+                    },
+                    "vlocity.conditionalContextMenus": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "When enabled context menu options on the workspace-explorer and editor are displayed only when applicable; when enabled Vlocode monitors your workspace folders and keeps track of a list of files which are either Salesforce metadata of Vlocity datapacks. If you disabled this both Vlocity and Salesforce context menu options will always be visible. __Note: if you don't see any context menu options disable this.__"
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "Vlocity",
+                "properties": {
+                    "vlocity.projectPath": {
+                        "type": "string",
+                        "scope": "machine-overridable",
+                        "markdownDescription": "Path to the folder containing the Vlocity datapacks relative to the workspace root folder, for example:\n - `./vlocity`\n - `./datapacks`"
+                    },
+                    "vlocity.customJobOptionsYaml": {
+                        "type": "string",
+                        "scope": "machine-overridable",
+                        "markdownDescription": "Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.\n\n> **Note** most of the job options are controlled by Vlocode therefore only the **`preStepApex`**, **`postStepApex`** and **`OverrideSettings`** settings will be used from specified YAML file."
+                    },
+                    "vlocity.deployOnSave": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "Automatically deploy datapacks to Salesforce when changes are saved."
+                    },
+                    "vlocity.compileOnBuild": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Compile SCSS source before deploying to the target org."
+                    },
+                    "vlocity.autoActivate": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Automatically activate datapacks after deployment to the target org."
+                    },
+                    "vlocity.parallelLimit": {
+                        "type": "number",
+                        "default": 50,
+                        "markdownDescription": "The number of parallel exports to run when exporting or refreshing Vlocity datapacks"
+                    },
+                    "vlocity.deploymentMode": {
+                        "type": "string",
+                        "enum": [
+                            "compatibility",
+                            "direct"
+                        ],
+                        "default": "compatibility",
+                        "enumDescriptions": [
+                            "Use Vlocity Deployment library; maximizes compatibility at the cost of deployment speed",
+                            "Directly load records using bulk or collections API; significantly faster then but still beta"
+                        ],
+                        "markdownDescription": "Change how Datapacks are deployment by Vlocode; select _direct_ mode for faster deployments (currently this is a beta feature)"
+                    },
+                    "vlocity.deploy.chunkSize": {
+                        "type": "number",
+                        "default": 100,
+                        "markdownDescription": "Number of records to deploy in as single operation using the collection API, only affects deployments when *direct* mode is enabled"
+                    },
+                    "vlocity.deploy.bulkApiThreshold": {
+                        "type": "number",
+                        "default": 500,
+                        "markdownDescription": "Record count when to start using the bulk API only has effect when `vlocity.deploy.useBulkApi` is set to true `true`"
+                    },
+                    "vlocity.deploy.useBulkApi": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "When enabled the deployment process will use the bulk API for uploading records when the total record type for a single SObject surpassed the value configured as `bulkApiThreshold`"
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "Salesforce",
+                "properties": {
+                    "vlocity.salesforce.enabled": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Enables support for **Salesforce commands** such as _Deploy_ and _Refresh_ of Salesforce Metadata Objects through Vlocode"
+                    },
+                    "vlocity.salesforce.apiVersion": {
+                        "type": "string",
+                        "pattern": "^\\d{2,3}\\.\\d$",
+                        "examples": [
+                            "48.0",
+                            "49.0",
+                            "50.0",
+                            "51.0"
+                        ],
+                        "default": "51.0",
+                        "markdownDescription": "The API version used for Salesforce deployments and refresh operations. Invalid API versions will cause all Salesforce related commands to fail."
+                    },
+                    "vlocity.salesforce.deployOnSave": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "Automatically deploy metadata files to Salesforce when saved."
+                    },
+                    "vlocity.salesforce.profileActionsInContextMenu": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Display add __and to profiles__ and __remove from profiles__ commands in the editor and explorer context menu. If unchecked profile actions are only available from the command pallet."
+                    },
+                    "vlocity.salesforce.manageMetaXmlFiles": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Enables auto renaming and creation of _-meta.xml_ files for APEX classes. _Note: only has effect when **vlocity.salesforce.enabled** is enabled_"
+                    },
+                    "vlocity.salesforce.exportFolder": {
+                        "type": "string",
+                        "default": "./src",
+                        "markdownDescription": "Folder to which Vlocode export Salesforce metadata"
+                    },
+                    "vlocity.salesforce.exportFormat": {
+                        "type": "string",
+                        "enum": [
+                            "classic",
+                            "sfdx"
+                        ],
+                        "default": "classic",
+                        "enumDescriptions": [
+                            "Export Salesforce Metadata in **classic metadata** format without decomposing metadata and adding additional -meta.xml suffixes as retrieved from Salesforce through the metadata API.",
+                            "Export Salesforce Metadata in **decomposed SFDX** format without. Decomposes metadata in multiple files and adds additional -meta.xml all exported metadata without content."
+                        ],
+                        "markdownDescription": "Folder to which Vlocode export Salesforce metadata"
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "Salesforce Developer Logs",
+                "properties": {
+                    "vlocity.salesforce.developerLogsVisible": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Show the Salesforce developer logs panel"
+                    },
+                    "vlocity.salesforce.developerLogsVisibility": {
+                        "type": "string",
+                        "enum": [
+                            "self",
+                            "all"
+                        ],
+                        "default": "self",
+                        "enumDescriptions": [
+                            "Display only the logs generated by the currently connected user",
+                            "Display all developer logs on the connected org from all users with active trace flags"
+                        ],
+                        "markdownDescription": "Change which logs are displayed and visible in the Developer logs panel"
+                    },
+                    "vlocity.salesforce.developerLogsAutoRefresh": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Auto refresh the Salesforce logs panel when the panel is visible \n\n> **Note** This setting only has effect for Developer instances; for production instances the logs panel needs to be refreshed manually"
+                    }
                 }
             }
-        },
+        ],
         "grammars": [
             {
                 "language": "vldp",
@@ -1187,7 +1212,7 @@
         "@types/sinon": "^10.0.2",
         "@types/terser-webpack-plugin": "^5.0.4",
         "@types/uuid": "^8.3.1",
-        "@types/vscode": "^1.57.0",
+        "@types/vscode": "^1.61.0",
         "@types/webpack": "^5.28.0",
         "@types/webpack-env": "^1.16.2",
         "@types/webpack-merge": "^4.1.5",

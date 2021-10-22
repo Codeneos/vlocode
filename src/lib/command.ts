@@ -2,7 +2,7 @@
  * Defines an executable command that
  */
 export interface Command {
-    execute(... args: any[]): void | Promise<void>;
-    validate?(... args: any[]): void | Promise<void>;
-    initialize?(): void | Promise<void>;
+    execute(... args: any[]): any | Promise<any>;
+    validate?(... args: any[]): any | Promise<any>;
+    initialize?(): any | Promise<any>;
 }
