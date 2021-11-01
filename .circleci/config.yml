@@ -16,18 +16,14 @@ jobs:
       - restore_cache:
           keys: 
             - vscode
-      - run:
-          name: Run tests
-          command: npm test
+      - run: npm test
       - save_cache:
           key: vscode
           paths:
             - ".vscode"
       - store_test_results:
           path: junit.xml
-      - run:
-          name: Run eslint
-          command: npm run lint -- -o eslint-report.json --format json
+      - run: npm run lint -- -o eslint-report.json --format json
       - sonarcloud/scan
   publish:
     docker:
@@ -36,23 +32,42 @@ jobs:
       - checkout
       - node/install-packages
       - run:
-          name: Get version        
-          command: export PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          name: "Publish extension on VSCode Marketplace"
+          command: |
+            echo $(node -p "require('./package.json').version") > .version
+            npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
+      - persist_to_workspace:
+          root: .
+          paths: [ *.vsix, .version ]
+  github-release:
+    docker:
+      - image: cibuilds/github:0.13
+    steps:
+      - attach_workspace:
+          at: ./artifacts
       - run:
-          name: Package and publish
-          command: npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
+          name: "Publish Release on GitHub"
+          command: |
+            VERSION=$(cat ./artifacts/.version)
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/vlocode-${VERSION}.vsix
 
 workflows:
-  main: 
+  validate: 
     jobs:
       - build-and-test:
           context: sonarcloud
+  publish: 
+    jobs:
       - publish:
           context: vsce
-          requires:
-            - build-and-test
-          filters:
+          filters: &filters-publish
             branches:
               ignore: /.*/
             tags:
               only: /^v\d+\.\d+\.\d+$/
+      - github-release:
+          context: github
+          requires:
+            - publish
+          filters:
+            <<: *filters-publish

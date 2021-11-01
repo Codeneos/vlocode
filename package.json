@@ -1179,9 +1179,8 @@
         ]
     },
     "scripts": {
-        "prepare": "patch-package && npm run prepare:commands && npm run prepare:sync && npm run build --workspaces",
+        "prepare": "npm run prepare:commands && npm run prepare:sync && npm run build --workspaces",
         "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
-        "prepare:exts": "ts-node ./build/addSalesforceExtensions.ts ./package.json",
         "prepare:sync": "ts-node ./build/syncPackages.ts",
         "build": "npm run prepare && typedoc && webpack --config webpack.prod.ts --env extension --env views",
         "build:debug": "npm run prepare && webpack --config webpack.dev.ts --env extension",
@@ -1196,10 +1195,11 @@
         "bump": "ts-node ./build/bumpVersion.ts patch",
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "npm run clean && npm run build"
+        "vscode:prepublish": "npm run clean && npm run build",
+        "postinstall": "patch-package"
     },
     "devDependencies": {
-        "@salesforce/core": "^2.26.1",
+        "@salesforce/core": "^2.28.2",
         "@types/chai": "^4.2.21",
         "@types/copy-webpack-plugin": "^8.0.1",
         "@types/fs-extra": "^9.0.12",
