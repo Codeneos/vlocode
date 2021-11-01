@@ -47,11 +47,12 @@ jobs:
       - image: cimg/node:lts-browsers
     steps:
       - checkout_install
+      - run: npm run package
       - run:
           name: "Publish extension on VSCode Marketplace"
           command: |
             echo $(node -p "require('./package.json').version") > .version
-            npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
+            npm run publish -- -p "$VSCE_TOKEN" --packagePath "vlocode-$(node -p "require('./package.json').version").vsix"
       - persist_to_workspace:
           root: .
           paths: [ "*.vsix", ".version" ]
@@ -60,14 +61,9 @@ jobs:
       - image: circleci/node:16
     steps:
       - checkout_install
-      - run:
-          name: "Build packages"
-          command: npm run build --workspaces
-      - run:
-          name: "Publish NPM packages"
-          command: |
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-            npm publish --workspaces
+      - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+      - run: npm run build --workspaces
+      - run: npm publish --workspaces || true
   github-release:
     docker:
       - image: cibuilds/github:0.13
