@@ -87,13 +87,11 @@ workflows:
           context: sonarcloud
       - publish-vsc-extension:
           context: vsce
-          requires:
-            - build-and-test
           filters: &filters-publish
+            tags:
+              only: /^v.*/
             branches:
               ignore: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+$/
       - publish-npm-packages:
           context: npm
           filters: *filters-publish
