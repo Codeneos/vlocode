@@ -1,10 +1,12 @@
 import * as path from 'path';
+import * as fs from 'fs-extra';
 import { promisify } from 'util';
 import * as Mocha from 'mocha';
 import * as glob from 'glob';
 import 'source-map-support/register';
 
 const isDebuggerAttached = /--debug|--inspect/.test(process.execArgv.join(' '));
+const resultsFolder =  path.resolve(__dirname, '..', '..', 'test-results');
 
 const testRunnerConfig : Mocha.MochaOptions = {
     ui: 'bdd',
@@ -14,10 +16,10 @@ const testRunnerConfig : Mocha.MochaOptions = {
     reporterOptions: {
         reporterEnabled: 'spec, mocha-junit-reporter, mocha-sonarqube-reporter',
         mochaJunitReporterReporterOptions: {
-            mochaFile: path.join(__dirname, '../../junit.xml')
+            mochaFile: path.join(resultsFolder, 'junit.xml')
         },
         mochaSonarqubeReporterReporterOptions: {
-            output: path.join(__dirname, '../../testReport.xml')
+            output: path.join(resultsFolder, 'testReport.xml')
         }
     }
 };
@@ -25,6 +27,9 @@ const testRunnerConfig : Mocha.MochaOptions = {
 export async function run(): Promise<void> {
     // ensure mock fs is loaded
     require('mock-fs');
+
+    // create results folder
+    await fs.ensureDir(resultsFolder);
 
     // Create the mocha test
     const mocha = new Mocha(testRunnerConfig);
