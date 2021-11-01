@@ -2,11 +2,11 @@ name: Validate
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-    types: [ opened, synchronize, reopened ]
+  # push:
+  #   branches: [ master ]
+  # pull_request:
+  #   branches: [ master ]
+  #   types: [ opened, synchronize, reopened ]
 
 jobs:
   validate:
