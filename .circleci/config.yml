@@ -35,10 +35,10 @@ jobs:
           name: "Publish extension on VSCode Marketplace"
           command: |
             echo $(node -p "require('./package.json').version") > .version
-            npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
+            npm run package
       - persist_to_workspace:
           root: .
-          paths: [ *.vsix, .version ]
+          paths: [ "*.vsix", ".version" ]
   github-release:
     docker:
       - image: cibuilds/github:0.13
@@ -52,14 +52,14 @@ jobs:
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/vlocode-${VERSION}.vsix
 
 workflows:
-  validate: 
+  main: 
     jobs:
       - build-and-test:
           context: sonarcloud
-  publish: 
-    jobs:
       - publish:
           context: vsce
+          requires:
+            - build-and-test
           filters: &filters-publish
             branches:
               ignore: /.*/

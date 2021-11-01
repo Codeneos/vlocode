@@ -1,5 +1,5 @@
 // Parse commands YAML into a package JSON command structure
-import { join } from 'path';
+import { join, resolve } from 'path';
 import * as chalk from 'chalk';
 import * as fs from 'fs-extra';
 import * as logSymbols from 'log-symbols';
@@ -10,7 +10,7 @@ async function syncPackageVersion() {
     const packageJson: typeof PackageJsonType = await fs.readJSON('package.json');
     const propertiesToSync = [ 'version', 'author', 'license', 'publisher' ];
 
-    const workspaces = await Promise.all(packageJson.workspaces.map(async ws => [ws, (await fs.readJSON(join(ws, 'package.json'))) as typeof PackageJsonType])) as Array<[string, typeof PackageJsonType]>;
+    const workspaces = await Promise.all(packageJson.workspaces.map(async ws => [resolve(...ws.split(/\|\//g)), (await fs.readJSON(join(...ws.split(/\|\//g), 'package.json'))) as typeof PackageJsonType])) as Array<[string, typeof PackageJsonType]>;
 
     for (const [workspace, workspaceJson] of workspaces as [string, any][]) {
         for (const prop of propertiesToSync) {
