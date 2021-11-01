@@ -51,7 +51,7 @@ jobs:
           name: "Publish extension on VSCode Marketplace"
           command: |
             echo $(node -p "require('./package.json').version") > .version
-            npm run package
+            npm run publish -- -p $VSCE_TOKEN --packagePath *.vsix
       - persist_to_workspace:
           root: .
           paths: [ "*.vsix", ".version" ]
@@ -67,7 +67,7 @@ jobs:
           name: "Publish NPM packages"
           command: |
             echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-            npm publish --workspaces --dry-run
+            npm publish --workspaces
   github-release:
     docker:
       - image: cibuilds/github:0.13
@@ -78,7 +78,7 @@ jobs:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/vlocode-${VERSION}.vsix
+            ghr -t ${GITHUB_TOKEN} -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/vlocode-${VERSION}.vsix
 
 workflows:
   main: 
@@ -89,12 +89,19 @@ workflows:
           context: vsce
           requires:
             - build-and-test
+          filters: &filters-publish
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
       - publish-npm-packages:
           context: npm
+          filters: *filters-publish
           requires:
             - build-and-test
       - github-release:
           context: github
+          filters: *filters-publish
           requires:
             - publish-vsc-extension
             - publish-npm-packages
