@@ -95,8 +95,6 @@ workflows:
       - publish-npm-packages:
           context: npm
           filters: *filters-publish
-          requires:
-            - build-and-test
       - github-release:
           context: github
           filters: *filters-publish
