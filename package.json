@@ -1179,24 +1179,23 @@
         ]
     },
     "scripts": {
-        "prepare": "npm run prepare:commands && npm run prepare:sync && npm run build --workspaces",
+        "prepare": "patch-package && npm run prepare:commands && npm run prepare:sync && npm run build --workspaces",
         "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
         "prepare:sync": "ts-node ./build/syncPackages.ts",
-        "build": "npm run prepare && typedoc && webpack --config webpack.prod.ts --env extension --env views",
+        "build": "npm run prepare && typedoc && webpack --config webpack.prod.ts --env extension",
         "build:debug": "npm run prepare && webpack --config webpack.dev.ts --env extension",
-        "build:tests": "npm run prepare && webpack --config webpack.dev.ts --env tests --env transpileOnly",
+        "build:tests": "npm run prepare && webpack --config webpack.dev.ts --env tests",
         "build:workspaces": "npm run build --workspaces --quite",
         "watch": "webpack --watch --config webpack.dev.ts --env extension --env tests",
         "watch:prod": "webpack --watch --config webpack.prod.ts --env extension",
         "clean": "rimraf ./out",
-        "lint": "eslint ./src/**/*.ts ./packages/*/src/*",
+        "lint": "eslint ./src/**/*.ts ./packages/*/src/*.ts",
         "test": "npm run build:tests && node ./out/test/runTest.js",
         "docs": "typedoc",
         "bump": "ts-node ./build/bumpVersion.ts patch",
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "npm run clean && npm run build",
-        "postinstall": "patch-package"
+        "vscode:prepublish": "npm run clean && npm run build"
     },
     "devDependencies": {
         "@salesforce/core": "^2.28.2",
