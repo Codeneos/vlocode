@@ -35,18 +35,12 @@ interface CommandInfo {
     menus?: CommandMenuInfo[];
 }
 
-interface CommandsYaml {
+export interface CommandsYaml {
     [commandName: string]: CommandInfo;
 }
 
 interface PackageContributions {
-    commands: {
-        command: string;
-        title: string;
-        category?: string;
-        enablement?: string;
-        icon?: string | { light?: string; dark?: string };
-    }[];
+    commands: PackageContributionCommand[];
     menus: {
         [name: string]: {
             command: string;
@@ -54,6 +48,19 @@ interface PackageContributions {
             when?: string;
         }[];
     };
+}
+
+interface PackageContributionCommand {
+    command: string;
+    title: string;
+    category?: string;
+    enablement?: string;
+    icon?: string | { light?: string; dark?: string };
+}
+
+export interface PackageJson {
+    contributes: PackageContributions;
+    activationEvents?: string[];
 }
 
 async function loadCommandsMeta(yamlFile: string): Promise<CommandsYaml> {
@@ -71,20 +78,18 @@ function stripUndefined<T extends object>(obj: T) : T {
     return obj;
 }
 
-async function updatePackageJson(packageJsonFile: string, commandFile: string) {
+export function mergeCommandContributions(packageJson: PackageJson, commands: CommandsYaml): PackageJson {
     console.log('Adding VSCode commands to package...');
 
-    const packageJson = await fs.readJSON(packageJsonFile);
-    const commands = await loadCommandsMeta(commandFile);
     const contributes : PackageContributions = { commands: [], menus: {} };
     const activationEvents = new Set<string>(packageJson.activationEvents || []);
 
     for (const [name, command] of Object.entries(commands)) {
         // Add command base structure
-        const newCommand : any = {
+        const newCommand: PackageContributionCommand = {
             command: name,
             title: command.title,
-            groucategoryp: command.category
+            category: command.category
         };
 
         if (command.icon) {
@@ -139,11 +144,11 @@ async function updatePackageJson(packageJsonFile: string, commandFile: string) {
     // Update package JSON
     packageJson.activationEvents = [...activationEvents];
     packageJson.contributes = {...packageJson.contributes, ...contributes};
-    await fs.writeJSON(packageJsonFile, packageJson, { spaces: 4 });
     console.log(`${chalk.bold(logSymbols.success)} Added ${chalk.bold(Object.entries(commands).length)} commands`);
+    return packageJson;
 }
 
-async function updateCommandsYaml(packageJsonFile: string, commandFile: string) {
+export async function updateCommandsYaml(packageJsonFile: string, commandFile: string) {
     const packageJson = await fs.readJSON(packageJsonFile);
     const contributes : PackageContributions = packageJson.contributes;
     const commands : CommandsYaml = {};
@@ -185,6 +190,14 @@ async function updateCommandsYaml(packageJsonFile: string, commandFile: string) 
     // Update Commands yaml
     console.log(`Updating ${chalk.green.bold(path.basename(commandFile))}`);
     await fs.writeFile(commandFile, yaml.dump(commands));
+}
+
+async function updatePackageJson(packageJsonFile: string, commandFile: string) {
+    const packageJson = await fs.readJSON(packageJsonFile);
+    const commands = await loadCommandsMeta(commandFile);
+    mergeCommandContributions(packageJson, commands);
+    // Update package JSON
+    await fs.writeJSON(packageJsonFile, packageJson, { spaces: 4 });
 }
 
 // Run update command

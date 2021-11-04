@@ -3,9 +3,9 @@ import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import * as CopyPlugin from 'copy-webpack-plugin';
-import * as packageJson from './package.json';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import * as ts from 'typescript';
+import WatchMarkersPlugin from './build/plugins/watchMarkers';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -18,25 +18,6 @@ const packageExternals = [
     'vscode-languageclient',
     'electron'
 ];
-
-const webpackBuildWatchPlugin = {
-    buildCounter: 0,
-    apply(compiler) {
-        // Create text markers in webpacks output to make it easier
-        // for VSCode to detect errors during the build in watch mode
-        compiler.hooks.compile.tap('WatchMarker', () => {
-            if (this.buildCounter++ == 0) {
-                console.log('Webpack: build starting...');
-            }
-        });
-        [compiler.hooks.failed, compiler.hooks.afterEmit].forEach(e => e.tap('WatchMarker', () => {
-            if (--this.buildCounter == 0) {
-                console.log('Webpack: build completed!');
-            }
-        }));
-    }
-};
-
 
 export function transformerFactory(context: ts.TransformationContext) : ts.Transformer<ts.SourceFile> {
     return (node: ts.SourceFile) => {
@@ -57,6 +38,7 @@ const common : webpack.Configuration = {
         rules: [
             {
                 test: /\.ts$/,
+                include: path.resolve(__dirname, 'src'),
                 use: [{
                     loader: 'ts-loader',
                     options: {
@@ -71,12 +53,13 @@ const common : webpack.Configuration = {
             },
             {
                 test: /\.js$/,
+                include: path.resolve(__dirname, 'node_modules'),
                 use: ['./build/loaders/prefixTransform']
             }
         ]
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', '.html', '.json'],
+        extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
         modules: [ 'node_modules', 'src'],
         alias: {
             'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
@@ -95,7 +78,9 @@ const common : webpack.Configuration = {
         chunkFilename: '[id].js',
         devtoolModuleFilenameTemplate: '[absolute-resource-path]'
     },
-    plugins: [ webpackBuildWatchPlugin ],
+    plugins: [
+        new WatchMarkersPlugin()
+    ],
     node: {
         __dirname: false,
         __filename: false
@@ -124,6 +109,9 @@ const common : webpack.Configuration = {
                 }
             },
         },
+    },
+    cache: {
+        type: 'memory'
     },
     externals:
         function({ request }, callback) {

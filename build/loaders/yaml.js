@@ -19,7 +19,7 @@ function loadYamlFile(yamlFile) {
 
 module.exports = function (source) {
     if (this.cacheable) {
-        this.cacheable();
+        this.cacheable(true);
     }
 
     const value = JSON.stringify(loadYaml(source))
