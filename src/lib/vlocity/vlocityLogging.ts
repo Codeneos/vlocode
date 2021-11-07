@@ -1,7 +1,6 @@
 import { Logger } from '@vlocode/core';
 import * as util from '@vlocode/util';
-import * as vlocityPackageManifest from 'vlocity/package.json';
-import 'vlocity';
+import 'vlocity/lib/vlocityutils';
 
 // Import VlocityUtils as global from Vlocity NodeJS module
 declare let VlocityUtils: {

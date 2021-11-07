@@ -1,6 +1,9 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
-## Version 0.16.15 - 2021-10-22
+## Version 0.16.16 - 2021-11-07
+ - Fixed #362; issue with tsconfig-paths-webpack-plugin causing relative imports in modules to be incorrectly resolved to local files if they could be resolved locally
+
+## Version 0.16.15 - 2021-11-04
  - Add new feature to update profiles from the context menu; allows adding and removing of APEX Classes, VF Pages and CustomFields to locally versioned profiles
  - Fixed issues with View-in-salesforce command not working properly for CustomObjects, CustomFields and CustomMetadata
  - Renamed commands for consistency with official SF Extension

@@ -1,0 +1,16 @@
+diff --git a/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js b/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js
+index 51c5502..1138970 100644
+--- a/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js
++++ b/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js
+@@ -70,8 +70,9 @@ function createPluginCallback(matchPath, resolver, absoluteBaseUrl, hook, extens
+     return (request, resolveContext, callback) => {
+         const innerRequest = getInnerRequest(resolver, request);
+         if (!innerRequest || 
+-            innerRequest.startsWith(".") ||
+-            innerRequest.startsWith("..")) {
++            !request || !request.request ||
++            request.request.startsWith(".") ||
++            request.request.startsWith("..")) {
+             return callback();
+         }
+         matchPath(innerRequest, readJsonAsync, fileExistAsync, extensions, (err, foundMatch) => {
