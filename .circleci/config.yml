@@ -3,7 +3,6 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@4.7
   sonarcloud: sonarsource/sonarcloud@1.0.2
 
 commands: 
@@ -42,20 +41,31 @@ jobs:
       - vsce_test
       - run: npm run lint -- -o eslint-report.json --format json
       - sonarcloud/scan
+  package:
+    docker:
+      - image: cimg/node:lts-browsers
+    steps:
+      - checkout_install
+      - run:
+          name: "Build VSIX package"
+          command: |
+            npm run package
+            echo $(node -p "require('./package.json').version") > .version
+      - persist_to_workspace:
+          root: .
+          paths: [ "*.vsix", ".version" ]
   publish-vsc-extension:
     docker:
       - image: cimg/node:lts-browsers
     steps:
       - checkout_install
-      - run: npm run package
+      - attach_workspace:
+          at: ./artifacts
       - run:
           name: "Publish extension on VSCode Marketplace"
           command: |
-            echo $(node -p "require('./package.json').version") > .version
-            npm run publish -- -p "$VSCE_TOKEN" --packagePath "vlocode-$(node -p "require('./package.json').version").vsix"
-      - persist_to_workspace:
-          root: .
-          paths: [ "*.vsix", ".version" ]
+            VERSION=$(cat ./artifacts/.version)
+            npm run publish -- -p "$VSCE_TOKEN" --packagePath "./artifacts/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
       - image: circleci/node:16
@@ -77,23 +87,37 @@ jobs:
             ghr -t ${GITHUB_TOKEN} -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/vlocode-${VERSION}.vsix
 
 workflows:
-  main: 
+  validate:
     jobs:
       - build-and-test:
           context: sonarcloud
-      - publish-vsc-extension:
+  release:
+    jobs:
+      - package:
           context: vsce
           filters: &filters-publish
             tags:
               only: /^v.*/
             branches:
               ignore: /.*/
-      - publish-npm-packages:
-          context: npm
-          filters: *filters-publish
       - github-release:
           context: github
           filters: *filters-publish
           requires:
-            - publish-vsc-extension
-            - publish-npm-packages
+            - package
+      - publish-approval:
+          type: approval
+          filters: *filters-publish
+          requires:
+            - package
+            - github-release
+      - publish-vsc-extension:
+        context: vsce
+          filters: *filters-publish
+          requires:
+            - publish-approval
+      - publish-npm-packages:
+          context: npm
+          filters: *filters-publish
+          requires:
+            - publish-approval
