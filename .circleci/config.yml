@@ -112,7 +112,7 @@ workflows:
             - package
             - github-release
       - publish-vsc-extension:
-        context: vsce
+          context: vsce
           filters: *filters-publish
           requires:
             - publish-approval
