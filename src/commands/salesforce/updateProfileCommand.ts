@@ -4,6 +4,7 @@ import { SalesforcePackageBuilder, SalesforcePackageType } from '@root/lib/sales
 import { SalesforceFieldPermission, SalesforceProfile } from '@root/lib/salesforce/salesforceProfile';
 import { PackageManifest } from '@root/lib/salesforce/deploy/packageXml';
 import { CustomFieldMetadataType } from '@root/lib/salesforce/metadata/customFieldMetadataType';
+import { asArray } from '@vlocode/util';
 import MetadataCommand from './metadataCommand';
 
 export default class UpdateRelatedProfileCommand extends MetadataCommand {
@@ -30,10 +31,13 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
 
         const classes = manifest.list('ApexClass');
         const pages = manifest.list('ApexPage');
-        const fields = await Promise.all(manifest.list('CustomField').map(async field => ({
-            field,
-            metadata: (await mdPackage.getPackageMetadata('CustomField', field)).fields.find(f => f.fullName == field.split('.').pop()) as CustomFieldMetadataType
-        })));
+        const fields = await Promise.all(manifest.list('CustomField').map(async field => {
+            const data = await mdPackage.getPackageMetadata('CustomField', field);
+            return {
+                field,
+                metadata: asArray(data.fields).find(f => f.fullName == field.split('.').pop()) as CustomFieldMetadataType
+            };
+        }));
         const addableFields = fields.filter(( { metadata } ) => this.isProfileCompatibleField(metadata));
 
         if (!manifest.count()) {
