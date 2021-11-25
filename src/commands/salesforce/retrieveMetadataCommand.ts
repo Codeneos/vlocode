@@ -25,7 +25,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }
 
         // query available records
-        const components = await this.getExportableComponents(metadataType);
+        const components = await this.vlocode.withProgress(`Query ${metadataType.nameForMsgsPlural}...`, this.getExportableComponents(metadataType));
         if (components.length == 0) {
             void vscode.window.showWarningMessage(`No exportable records for ${metadataType}`);
             return;
@@ -37,14 +37,10 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
             return; // selection cancelled;
         }
 
-        return this.retrieveMetadata([{
-            fullname: this.getManifestName(metadataType, componentToExport),
+        return this.retrieveMetadata(componentToExport.map(item => ({ 
+            fullname: item.fullName, 
             componentType: metadataType.xmlName
-        }]);
-    }
-
-    private getManifestName(metadataType: MetadataType, component: { fullName: string }) : string {
-        return component.fullName;
+        })));
     }
 
     protected async getExportableObjectLikeTypes(nameFilter: RegExp) : Promise<{ fullName: string }[]>
@@ -60,7 +56,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }));
     }
 
-    protected async getExportableComponents(metadataType : MetadataType) : Promise<{ fullName: string }[]> {
+    protected async getExportableComponents(metadataType : MetadataType) : Promise<FileProperties[]> {
         // query available records
         const connection = await this.salesforce.getJsForceConnection();
         const components = await connection.metadata.list({ type: metadataType.xmlName });
@@ -147,20 +143,21 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         });
     }
 
-    protected async showComponentSelection<T extends { fullName: string; label?: string }>(records: T[]) : Promise<T | undefined> {
+    protected async showComponentSelection<T extends FileProperties>(records: T[]) : Promise<Array<T> | undefined> {
         const objectOptions =  records.map(record => ({
-            label: record.label ?? record.fullName,
-            description: record.label ? record.fullName : undefined,
+            label: record.fullName,
+            description: `last modified: ${record.lastModifiedByName} (${record.lastModifiedDate})`,
             record
         })).sort((a, b) => a.label.localeCompare(b.label));
 
         const objectSelection = await vscode.window.showQuickPick(objectOptions, {
-            placeHolder: 'Select metadata object to export'
+            placeHolder: 'Select metadata object to export',
+            canPickMany: true
         });
         if (!objectSelection) {
             return; // selection cancelled;
         }
-        return objectSelection.record;
+        return objectSelection.map(item => item.record);
     }
 
     protected async showExportPathSelection() : Promise<string | undefined> {

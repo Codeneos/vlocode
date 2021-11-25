@@ -189,7 +189,6 @@ class Vlocode {
     private async deactivate() {
         // Log to debug as other output channels will be disposed
         this.service.dispose();
-        console.debug('Vlocode extension deactivated');
     }
 
     static activate(context: vscode.ExtensionContext) {
@@ -206,5 +205,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+    console.log('deactivate');
     return Vlocode.deactivate();
 }

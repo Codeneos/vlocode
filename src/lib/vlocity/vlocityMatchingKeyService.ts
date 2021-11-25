@@ -3,6 +3,7 @@ import { Logger , injectable } from '@vlocode/core';
 import SalesforceService from '@lib/salesforce/salesforceService';
 import { stringEquals , cache , removeNamespacePrefix } from '@vlocode/util';
 
+import * as ExportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import DatapackInfoService from './datapackInfoService';
 import { QueryDefinitions } from './types';
@@ -24,7 +25,6 @@ export default class VlocityMatchingKeyService {
         private readonly vlocityNamespace: VlocityNamespaceService,
         private readonly datapackInfo: DatapackInfoService,
         private readonly salesforce: SalesforceService) {
-        this.exportQueryDefinitions = require('exportQueryDefinitions.yaml')?.default ?? {};
     }
 
     @cache(-1)
@@ -33,7 +33,7 @@ export default class VlocityMatchingKeyService {
     }
 
     private get queryDefinitions() {
-        return this.exportQueryDefinitions;
+        return ExportQueryDefinitions;
     }
 
     /**
@@ -61,10 +61,16 @@ export default class VlocityMatchingKeyService {
             sobject.fields.find(field => stringEquals(field.name, this.vlocityNamespace.updateNamespace(fieldName), true))?.type;
 
         // Append matching key fields
-        baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
-        baseQuery += matchingKey.fields.filter(field => entry[field])
-            .map(field => `${field} = ${this.formatValue(entry[field], getFieldType(field))}`).join(' and ');
+        if (matchingKey.fields.length) {
+            baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
+            baseQuery += matchingKey.fields.filter(field => entry[field])
+                .map(field => `${field} = ${this.formatValue(entry[field], getFieldType(field))}`).join(' and ');
+        }
         baseQuery += ' ORDER BY LastModifiedDate DESC LIMIT 1';
+
+        if (!/ where /gi.test(baseQuery)) {
+            throw new Error(`The specified ${type} does not have a matching key`);
+        }
 
         return baseQuery;
     }

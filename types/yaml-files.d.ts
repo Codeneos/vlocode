@@ -3,21 +3,22 @@
  */
 declare module 'exportQueryDefinitions.yaml' {
     interface DatapackQueryDefinition {
-        VlocityDataPackType: string
-        query: string
-        name: string
-        groupKey?: string
-        groupName?: string
-        groupDescription?: string
-        description?: string
+        VlocityDataPackType: string;
+        query: string;
+        name: string;
+        requiredSetting: string;
+        groupKey?: string;
+        groupName?: string;
+        groupDescription?: string;
+        description?: string;
         matchingKey?: {
-            fields: string[],
-            returnField?: string
+            fields: string[];
+            returnField?: string;
         }
         salesforceUrl?: {
-            namespace?: string,
-            path: string
-        } | string
+            namespace?: string;
+            path: string;
+        } | string;
     }
     const exportQueryDefinitions : { 
         [datapackType: string] : DatapackQueryDefinition

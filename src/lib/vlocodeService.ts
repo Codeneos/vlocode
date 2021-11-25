@@ -66,6 +66,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     public dispose() {
+        console.log('dispose service');
         this.disposables.forEach(disposable => disposable.dispose());
         this.disposables = [];
         if (this._datapackService) {

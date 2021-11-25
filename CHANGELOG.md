@@ -1,5 +1,10 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.17 - 2021-25-11
+ - Fixed add to profiles does not work when selecting a single field
+ - Fixed issue with refresh and open didn't work for certain datapacks without matching keys
+ - Added multi select for exporting salesforce metadata
+
 ## Version 0.16.16 - 2021-11-07
  - Fixed #362; issue with tsconfig-paths-webpack-plugin causing relative imports in modules to be incorrectly resolved to local files if they could be resolved locally
 

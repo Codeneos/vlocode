@@ -82,13 +82,13 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     protected async showDatapackTypeSelection() : Promise<string | undefined> {
-        const datapackOptions = Object.values(exportQueryDefinitions).filter(queryDef => queryDef.query).map(
-            queryDef => ({
-                label: queryDef.VlocityDataPackType,
+        const datapackOptions = Object.entries(exportQueryDefinitions)
+            .filter(([,queryDef]) => queryDef.query && !queryDef.requiredSetting)
+            .map(([key, queryDef]) => ({
+                label: key,
                 detail: queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, 'vlocity'),
                 datapackType: queryDef.VlocityDataPackType
-            })
-        );
+            }));
 
         const datapackToExport = await vscode.window.showQuickPick(datapackOptions, {
             matchOnDetail: true,
