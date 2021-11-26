@@ -26,6 +26,7 @@ import HandleTriggerCreated from './events/onTriggerCreated';
 import HandleSalesforceFileDeleted from './events/onFileDeleted';
 import OnSavedEventHandler from './events/onFileSaved';
 import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
+import OnMetadataRenamed from './events/onMetadataRenamed';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -162,6 +163,7 @@ class Vlocode {
 
         // Watch any file saved
         this.service.registerDisposable(new OnSavedEventHandler(vscode.workspace.onDidSaveTextDocument, this.service));
+        this.service.registerDisposable(new OnMetadataRenamed(vscode.workspace.onDidRenameFiles, this.service));
 
         // Add apex LOG symbol provider
         try {
