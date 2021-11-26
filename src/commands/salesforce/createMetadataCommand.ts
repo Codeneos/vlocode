@@ -1,37 +1,15 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { formatString } from '@vlocode/util';
+import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
+import * as itemTemplates from 'newItemTemplates.yaml';
 import MetadataCommand from './metadataCommand';
-
-type NewItemInputType = {
-    type: 'text';
-    placeholder?: string;
-    prompt?: string;
-} | {
-    type: 'select';
-    placeholder?: string;
-    prompt?: string;
-    options: { label: string; value?: any }[];
-};
-
-type NewItemQuickPickItem = vscode.QuickPickItem & {
-    successNotification?: string;
-    files: {
-        path: string;
-        template: string;
-    }[];
-    input: {
-        [key: string]: NewItemInputType;
-    };
-};
+import globby = require('globby');
 
 /**
  * Command for handling creation of Metadata components in Salesforce
  */
 export default class CreateMetadataCommand extends MetadataCommand {
-
-    private readonly itemTemplates : { [name: string] : NewItemQuickPickItem } = require('newItemTemplates.yaml');
 
     constructor(private readonly typeName?: string) {
         super();
@@ -57,12 +35,15 @@ export default class CreateMetadataCommand extends MetadataCommand {
         }
 
         // Todo: correctly detect the preferred workspace folder
-        const primaryWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '.';
+        const targetFolder = await this.getTargetFolder(newItemType);
+        if (!targetFolder) {
+            return;
+        }
 
         for (const [index, file] of Object.entries(newItemType.files)) {
             const filePath = formatString(file.path, contextValues).trim();
             const fileBody = formatString(file.template, contextValues).trim();
-            const fileUri = vscode.Uri.file(path.join(primaryWorkspace, filePath));
+            const fileUri = vscode.Uri.file(path.join(targetFolder, filePath));
 
             try {
                 await fs.ensureDir(path.dirname(fileUri.fsPath));
@@ -80,19 +61,49 @@ export default class CreateMetadataCommand extends MetadataCommand {
         void vscode.window.showInformationMessage(newItemType.successNotification || 'Successfully created new item');
     }
 
-    protected async getItemTemplate() : Promise<NewItemQuickPickItem | undefined> {
+    protected async getItemTemplate() : Promise<typeof itemTemplates[0] | undefined> {
         if (this.typeName) {
-            if (this.itemTemplates[this.typeName]) {
-                return this.itemTemplates[this.typeName];
+            if (itemTemplates[this.typeName]) {
+                return itemTemplates[this.typeName];
             }
             this.logger.warn(`The pre-specified template ${this.typeName} does not exist; defaulting to type selection`);
         }
 
-        return vscode.window.showQuickPick(Object.values(this.itemTemplates),
+        return vscode.window.showQuickPick(Object.values(itemTemplates),
             { placeHolder: 'Select the type of file you want to create' });
     }
 
-    protected async getUserValue(input: NewItemInputType) : Promise<any> {
+    protected async getTargetFolder(newItemType: typeof itemTemplates[0]) : Promise<string| undefined> {
+        if (!vscode.workspace.workspaceFolders) {
+            const selectedFolder = await vscode.window.showOpenDialog({
+                defaultUri: undefined,
+                openLabel: 'Select folder',
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false
+            });
+            return selectedFolder?.[0]?.fsPath;
+        }
+
+        const workspaceFolders = vscode.workspace.workspaceFolders.map(ws => sanitizePath(ws.uri.fsPath, path.posix.sep));
+        const patterns = workspaceFolders.map(ws => path.posix.join(ws, '**', newItemType.folderName));
+        const targetFolders = await globby(patterns, { onlyDirectories: true });
+
+        if (targetFolders.length == 1) {
+            return targetFolders[0];
+        } else if (targetFolders.length) {
+            const folderOptions = targetFolders.map(fullPath => ({
+                label: workspaceFolders.reduce((p, ws) => p.replace(ws + path.posix.sep, ''), fullPath),
+                fsPath: fullPath
+            }));
+            return (await vscode.window.showQuickPick(folderOptions, {
+                placeHolder: `Select the folder in which to create ${newItemType.label}`,
+                ignoreFocusOut: true
+            }))?.fsPath;
+        }
+    }
+
+    protected async getUserValue(input: typeof itemTemplates[0]['input'][0]) : Promise<any> {
         if (input.type === 'text') {
             return vscode.window.showInputBox({
                 prompt: input.prompt,
@@ -111,7 +122,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
             return value.value || value.label;
         }
 
-        // @ts-ignore inputs are loaded froma YAML file so a type could cause this to be hit yet TS insist
+        // @ts-ignore inputs are loaded format YAML file so a type could cause this to be hit yet TS insist
         // it can't happen based on it's view on the world
         throw new Error(`The specified input type is not supported: ${input.type}`);
     }

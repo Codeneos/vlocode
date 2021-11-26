@@ -9,7 +9,7 @@ vlocode.selectOrg:
 vlocode.refreshDatapack:
   title: 'Vlocity: Refresh Datapack from Org'
   group: v_vlocity
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+  when: &vlocityFileActionWhen "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -17,7 +17,7 @@ vlocode.refreshDatapack:
 vlocode.deployDatapack:
   title: 'Vlocity: Deploy Datapack to Org'
   group: v_vlocity  
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+  when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -25,7 +25,7 @@ vlocode.deployDatapack:
 vlocode.openSalesforce:
   title: 'Vlocity: Open in Org'
   group: v_vlocity
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+  when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -33,14 +33,14 @@ vlocode.openSalesforce:
 vlocode.renameDatapack:
   title: 'Vlocity: Rename Datapack'
   group: v_vlocity
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+  when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
     - menu: explorer/context
 vlocode.cloneDatapack:
   title: 'Vlocity: Clone Datapack'
   group: v_vlocity
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+  when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
     - menu: explorer/context
@@ -53,7 +53,7 @@ vlocode.exportDatapack:
 vlocode.buildParentKeyFiles:
   title: 'Vlocity: Repair Datapack dependencies'
   group: v_vlocity
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+  when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
 
@@ -101,7 +101,7 @@ vlocode.admin.clearPlatformCache:
 vlocode.deployMetadata:
   title: 'Salesforce: Deploy to Org'
   group: v_salesforce
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+  when: &salesforceFileActionWhen "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
   menus:    
     - menu: commandPalette
     - menu: editor/context
@@ -109,7 +109,7 @@ vlocode.deployMetadata:
 vlocode.refreshMetadata:
   title: 'Salesforce: Refresh from Org'
   group: v_salesforce
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+  when: *salesforceFileActionWhen
   menus:
     - menu: commandPalette            
     - menu: editor/context
@@ -117,11 +117,19 @@ vlocode.refreshMetadata:
 vlocode.destroyMetadata:
   title: 'Salesforce: Delete from Org'
   group: v_salesforce
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+  when: *salesforceFileActionWhen
   menus:
     - menu: commandPalette      
     - menu: editor/context
     - menu: explorer/context     
+vlocode.viewInSalesforce:
+  title: 'Salesforce: Open in Org'
+  group: v_salesforce
+  when: *salesforceFileActionWhen
+  menus:
+    - menu: commandPalette      
+    - menu: editor/context
+    - menu: explorer/context 
 vlocode.selectApiVersion:
   title: 'Salesforce: Select API Version'
   group: v_salesforce
@@ -139,15 +147,7 @@ vlocode.execAnonymousCommand:
   group: v_salesforce
   when: config.vlocity.salesforce.enabled
   menus:
-    - menu: commandPalette      
-vlocode.viewInSalesforce:
-  title: 'Salesforce: Open in Org'
-  group: v_salesforce
-  when: "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
-  menus:
-    - menu: commandPalette      
-    - menu: editor/context
-    - menu: explorer/context 
+    - menu: commandPalette
 vlocode.createLwc:
   title: 'Salesforce: New Lightning Web Component (LWC)'
   group: v_salesforce

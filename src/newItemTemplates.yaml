@@ -2,18 +2,19 @@
 apexClass:
   label: '$(file-code) New APEX Class'
   description: 'Create new public APEX class'
+  folderName: 'classes'
   input:
     name:
       placeholder: The name of the APEX class to create
       type: text
   files: 
-    - path: ./src/classes/${name}.cls
+    - path: ${name}.cls
       template: | 
         public class ${name} {
             
         }
     - &apex-meta 
-      path: ./src/classes/${name}.cls-meta.xml
+      path: ${name}.cls-meta.xml
       template: | 
         <?xml version="1.0" encoding="UTF-8"?>
         <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com" fqn="${name}">
@@ -25,12 +26,13 @@ apexClass:
 apexInterface:
   label: '$(file-code) New APEX Interface Class'
   description: 'Create new Interface class'
+  folderName: 'classes'
   input:
     name:
       placeholder: The name of the interface class to create
       type: text
   files: 
-    - path: ./src/classes/${name}.cls
+    - path: ${name}.cls
       template: | 
         public interface ${name} {
             
@@ -41,12 +43,13 @@ apexInterface:
 apexUnitTest:
   label: '$(beaker) New APEX Unit Test'
   description: Create new APEX unit test class
+  folderName: 'classes'
   input:
     name:
-      placeholder: _Note the name of the test class_
+      placeholder: Enter the name of the test class
       type: text
   files: 
-    - path: ./src/classes/${name}.cls
+    - path: ${name}.cls
       template: | 
         @isTest
         class ${name} {
@@ -64,21 +67,19 @@ apexUnitTest:
             }
         }
     - <<: *apex-meta
-      path: ./src/classes/${name}.cls-meta.xml
+      path: ${name}.cls-meta.xml
 
 # New LWC component
 lwc:
   label: '$(zap) New LWC Component'
   description: Create new Lightning Web Component
+  folderName: 'lwc'
   input:
     name:
-      placeholder: _Name for the new component_
-      type: text
-    masterLabel:
-      placeholder: Label as displayed in in Salesforce for the new component; *you can use spaces here* 
+      placeholder: Name for the new component
       type: text
   files: 
-    - path: ./src/lwc/${name}/${name}.js
+    - path: ${name}/${name}.js
       template: | 
         import { api, track, LightningElement } from 'lwc';
 
@@ -88,7 +89,7 @@ lwc:
             @api objectApiName;
 
             // This is an example of a variable tracked by LWC
-            // the layout is rerednered if any tracked variable is changed
+            // the layout is rerendered if any tracked variable is changed
             @track variable = null;
 
             /**
@@ -108,7 +109,7 @@ lwc:
                 // Todo: remove me or add code
             }
         }
-    - path: ./src/lwc/${name}/${name}.html
+    - path: ${name}/${name}.html
       template: | 
         <template>
             <lightning-card title="Hello Vlocode" icon-name="standard:account">
@@ -117,16 +118,161 @@ lwc:
                 <p slot="footer">Card Footer</p>
             </lightning-card>
         </template>
-    - path: ./src/lwc/${name}/${name}.css
+    - path: ${name}/${name}.css
       template: | 
         :host {
         }
-    - path: ./src/lwc/${name}/${name}.js-meta.xml
+    - path: ${name}/${name}.js-meta.xml
       template: | 
         <?xml version="1.0" encoding="UTF-8"?>
         <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="${name}">
             <apiVersion>${apiVersion}</apiVersion>
             <isExposed>true</isExposed>
-            <masterLabel>${masterLabel}</masterLabel>
+            <masterLabel>${name}</masterLabel>
         </LightningComponentBundle>
 
+# New LWC component
+omniscriptLwc:
+  label: '$(zap) New OmniScript LWC Component (override)'
+  description: Create new Vlocity OmniScript/FlexCard compatible Lightning Web Component that overrides an existing element type
+  folderName: 'lwc'
+  input:
+    name:
+      placeholder: Name for the new component
+      type: text
+  files: 
+    - path: ${name}/${name}.js
+      template: | 
+        import { api, track, LightningElement } from 'lwc';
+        import { OmniscriptBaseMixin } from '${vlocityNamespace}/omniscriptBaseMixin';
+
+        const VALIDATION_EVENTS = { [false]: 'omniinvalid', [true]: 'omnivalid' };
+        const AGGREGATE_EVENT = 'omniaggregate';
+
+        /**
+         * Vlocity LWC OmniScript Override component ${name}, you can use this component in an OmniScript to override any existing element.
+         * @note auto-generated boiler plate by Vlocode
+         */
+        export default class ${name} extends OmniscriptBaseMixin(LightningElement)  {
+
+            @api jsonDef;  
+            @api jsonDataStr;
+            @api jsonData;
+            @api layout;
+            @api resume;
+            @api scriptHeaderDef;
+            @api seedJson;
+            @api runMode;
+
+            // Expose properties
+            get properties() {
+                return this.jsonDef ? this.jsonDef.propSetMap : {};
+            }
+
+            /**
+             * Get the value inside the data response tree (Data JSON) for this element; watch this handle updates in the data JSON
+             */
+            getResponseValue() {
+                if (this.jsonData && this.jsonDef) {
+                    return this.jsonDef.JSONPath.split(':').reduce((map, key) => {
+                        const keyPath = key.split('|');
+                        const value = map && map[keyPath.shift()];
+                        return keyPath.reduce((arr, i) => Array.isArray(arr) ? arr[i] : arr, value);
+                    }, this.jsonData);
+                }
+            }
+
+           /**
+            * Invoke an APEX method on Salesforce; in order to invoke an APEX method the class should the VlocityController base class
+            * @param {string} apexMethod Name of the method and class to invoke the following format: `<class>.<method>`
+            * @param {any} [input] Request payload/input
+            * @param {Object} [options] Extra options
+            */
+            async invokeApex(apexMethod, input, options) {
+                const [ sClassName, sMethodName ] = apexMethod.split('.');
+                const this.omniRemoteCall({ sClassName, sMethodName,
+                    input: input ?? {}, 
+                    options: options ?? {
+                        useContinuation: false
+                    } 
+                });
+            }
+
+            /**
+             * Update the Data JSON of the OmniScript by dispatching an aggregate JS event; 
+             * @note This function is similar to omniUpdateDataJson but working; omniUpdateDataJson from the base mixin doesn't
+             *       work properly as it requires jsonDef to be mapped to omniJsonDef instead it is mapped to jsonDef currently by default.
+             * @param {any} value 
+             * @param {string} [elementId] Optionally the element to update
+             */
+            updateResponse(value, elementId) {
+                this.dispatchEvent(new CustomEvent(AGGREGATE_EVENT, {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    detail: {
+                        elementId: elementId ?? this.jsonDef.name,
+                        dataJsonPath: this.jsonDef.JSONPath,
+                        index: this.jsonDef.index,
+                        show: true,
+                        aggregateOverride: false,
+                        data: value 
+                    }
+                }));
+            };
+
+            dispatchValidationEvent(validity, nodeName) {
+                this.dispatchEvent(new CustomEvent(VALIDATION_EVENTS[validity], {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    detail: {
+                        jsonPath: nodeName ?? this.jsonDef.name
+                    }
+                }));
+            };
+ 
+            /**
+             * Executed when the component is added to the DOM.
+             * @returns {Promise<void> | void} 
+             */
+            connectedCallback() {
+                // add classes to container to ensure the correct sizing of this element
+                this.classList.add(
+                    'slds-p-right_small', 
+                    'slds-m-bottom_xx-small', 
+                    `slds-size_${this.properties.controlWidth ?? 12}-of-12`,
+                    `slds-medium-size_${this.properties.controlWidth ?? 12}-of-12`);
+            }
+
+            /**
+             * Executed by the framework when the LWC component is removed 
+             * from the DOM; use this to put any clean-up code when required
+             * @returns {Promise<void> | void} 
+             */
+            disconnectedCallback() {
+                // Todo: remove me or add code
+            }
+        }
+    - path: ${name}/${name}.html
+      template: | 
+        <template>
+            <lightning-card title="Hello Vlocode" icon-name="standard:account">
+                <lightning-button label="New" slot="actions"></lightning-button>
+                <p class="slds-p-horizontal_small">Card Body (custom component)</p>
+                <p slot="footer">Card Footer</p>
+            </lightning-card>
+        </template>
+    - path: ${name}/${name}.css
+      template: | 
+        :host {
+        }
+    - path: ${name}/${name}.js-meta.xml
+      template: | 
+        <?xml version="1.0" encoding="UTF-8"?>
+        <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="${name}">
+            <apiVersion>${apiVersion}</apiVersion>
+            <isExposed>true</isExposed>
+            <masterLabel>${name}</masterLabel>
+            <runtimeNamespace>${vlocityNamespace}</runtimeNamespace>
+        </LightningComponentBundle>
