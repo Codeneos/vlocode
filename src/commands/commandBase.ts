@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import VlocodeService from '@lib/vlocodeService';
-import { Logger, LogManager } from '@vlocode/core';
+import { LogManager } from '@vlocode/core';
 import { Command } from '@lib/command';
 import { getContext } from '@lib/vlocodeContext';
 
@@ -40,6 +40,8 @@ export class ProgressToken {
 }
 
 export abstract class CommandBase implements Command {
+
+    protected readonly logger = LogManager.get(this.getName());
 
     public abstract execute(...args: any[]): any | Promise<any>;
 
@@ -89,12 +91,6 @@ export abstract class CommandBase implements Command {
         return true;
     }
 
-    // @cache(-1)
-    protected get logger() : Logger {
-        return LogManager.get(this.getName());
-    }
-
-    // @cache(-1)
     protected get vlocode() : VlocodeService {
         return getContext().service;
     }
