@@ -39,7 +39,7 @@ export default class SelectApiVersionCommand extends CommandBase {
 
         // Update the config and show a nice message to our user
         void vscode.window.showInformationMessage(`Using Salesforce API version ${newApiVersion}`);
-        this.vlocode.config.salesforce.apiVersion = newApiVersion;
+        this.vlocode.updateApiVersion(newApiVersion);
     }
 
     private async getApiVersions() {
@@ -52,5 +52,3 @@ export default class SelectApiVersionCommand extends CommandBase {
         return [ ...versions.map(mapVersion), { label: 'Enter version manually', version: undefined } ];
     }
 }
-
-

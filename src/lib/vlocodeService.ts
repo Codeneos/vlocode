@@ -290,6 +290,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername));
         }
         const conn = await this.connector.getJsForceConnection();
+        if (this.config.salesforce.apiVersion) {
+            conn.version = this.config.salesforce.apiVersion;
+        }
         return conn;
     }
 
@@ -334,12 +337,12 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * Get the body of a document as string
      * @param file file name
      */
-    public async getDocumentBodyAsString(file: string) : Promise<string> {
-        const doc = vscode.workspace.textDocuments.find(doc => doc.fileName == file);
+    public async readWorkspaceFile(uri: vscode.Uri) : Promise<string> {
+        const doc = vscode.workspace.textDocuments.find(doc => doc.uri == uri);
         if (doc) {
             return doc.getText();
         }
-        return (await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString();
+        return (await vscode.workspace.fs.readFile(uri)).toString();
     }
 
     private updateExtensionStatus(config: VlocodeConfiguration) {
@@ -443,6 +446,14 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }
         void vscode.commands.executeCommand('setContext', 'vlocodeSalesforceDeveloperLogs', enabled);
         this.logger.info(`Salesforce developer logs view ${enabled ? chalk.green('enabled') : chalk.red('disabled')}`);
+    }
+
+    public updateApiVersion(apiVersion: string | number) {
+        if (typeof apiVersion === 'string') {
+            return this.updateApiVersion(parseInt(apiVersion, 10));
+        }
+        this.logger.verbose(`Using Salesforce API version: ${apiVersion}`);
+        this.config.salesforce.apiVersion = `${apiVersion}.0`;
     }
 }
 
