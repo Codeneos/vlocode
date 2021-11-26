@@ -10,11 +10,10 @@ export class VSCodeFileSystemAdapter extends FileSystem {
     }
 
     public async readFileAsString(fileName: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
-        const p = workspace.textDocuments;
         const doc = workspace.textDocuments.find(doc => doc.fileName == path.resolve(fileName));
         if (doc) {
             return doc.getText();
-        }   
+        }
         return this.innerFs.readFileAsString(fileName, encoding);
     }
 
