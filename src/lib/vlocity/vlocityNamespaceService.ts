@@ -4,7 +4,6 @@ import { Timer } from '@vlocode/util';
 import * as jsforce from 'jsforce';
 import * as chalk from 'chalk';
 import * as constants from '@constants';
-import SalesforceService from '@lib/salesforce/salesforceService';
 
 @injectable()
 export class VlocityNamespaceService {

@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { except } from '@vlocode/util';
@@ -77,7 +78,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
 
                 // Extract each file into the appropriate source folder
                 for (const file of component.files) {
-                    await file.unpackToFolder(sourceFolder);
+                    await file.unpackToFolder(sourceFolder, true);
                 }
             }
 

@@ -26,6 +26,7 @@ export default {
     [VlocodeCommand.viewInSalesforce]: ViewInSalesforceCommand,
     [VlocodeCommand.createApexClass]: new CreateMetadataCommand('apexClass'),
     [VlocodeCommand.createLwc]: new CreateMetadataCommand('lwc'),
+    [VlocodeCommand.createOmniscriptLwc]: new CreateMetadataCommand('omniscriptLwc'),
     [VlocodeCommand.clearDeveloperLogs]: ClearDeveloperLogsCommand,
     [VlocodeCommand.setTraceFlags]: SetTraceFlagsCommand,
     [VlocodeCommand.setLogVisibility]: SetDeveloperLogVisibilityCommand,

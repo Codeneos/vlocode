@@ -7,7 +7,7 @@ import { DetailedDeployResult } from '@lib/salesforce/salesforceDeployService';
 import { SalesforcePackage } from '@lib/salesforce/deploymentPackage';
 
 /**
- * Salesfoece metadata base command 
+ * Salesforce metadata base command 
  */
 export default abstract class MetadataCommand extends CommandBase {
 

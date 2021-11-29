@@ -55,6 +55,7 @@ export enum VlocodeCommand {
     viewInSalesforce = 'vlocode.viewInSalesforce',
     createApexClass = 'vlocode.createApexClass',
     createLwc = 'vlocode.createLwc',
+    createOmniscriptLwc = 'vlocode.createOmniscriptLwc',
     clearDeveloperLogs = 'vlocode.clearDeveloperLogs',
     setTraceFlags = 'vlocode.setTraceFlags',
     setLogVisibility = 'vlocode.setLogVisibility',

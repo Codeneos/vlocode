@@ -3,8 +3,10 @@ import * as vscode from 'vscode';
 import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
 import * as itemTemplates from 'newItemTemplates.yaml';
-import MetadataCommand from './metadataCommand';
 import globby = require('globby');
+import { VlocityNamespaceService } from '@root/lib/vlocity/vlocityNamespaceService';
+import { injectable, container } from '@vlocode/core';
+import MetadataCommand from './metadataCommand';
 
 /**
  * Command for handling creation of Metadata components in Salesforce
@@ -23,7 +25,8 @@ export default class CreateMetadataCommand extends MetadataCommand {
         }
 
         const contextValues = {
-            apiVersion: this.vlocode.config.salesforce?.apiVersion
+            apiVersion: this.vlocode.config.salesforce?.apiVersion,
+            vlocityNamespace: container.get(VlocityNamespaceService).getNamespace()
         };
 
         for (const [key, input] of Object.entries(newItemType.input ?? {})) {

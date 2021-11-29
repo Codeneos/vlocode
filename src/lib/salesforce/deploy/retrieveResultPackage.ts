@@ -10,7 +10,7 @@ interface ExtendedFileProperties extends jsforce.FileProperties {
     fullMetaFileName?: string;
     componentName?: string;
     hasMetaFile: boolean;
-    unpackToFolder(targetFolder: string): Promise<void>;
+    unpackToFolder(targetFolder: string, fileOnly?: boolean): Promise<void>;
     getBuffer(): Promise<Buffer> | undefined;
     getStream(): NodeJS.ReadableStream | undefined;
     getMetaBuffer(): Promise<Buffer> | undefined;
@@ -65,12 +65,12 @@ export class RetrieveResultPackage {
                 hasMetaFile: !!metaFile,
                 metaFileName: metaFile ? metaFileName : undefined,
                 fullMetaFileName: metaFile ? `${fullFileName}-meta.xml` : undefined,
-                unpackToFolder: async (targetFolder: string) => {
+                unpackToFolder: async (targetFolder: string, fileOnly: boolean) => {
                     if (sourceFile) {
-                        await this.streamFileToDisk(sourceFile, path.join(targetFolder, file.fileName));
+                        await this.streamFileToDisk(sourceFile, path.join(targetFolder, fileOnly ? path.basename(fileName) : fileName));
                     }
                     if (metaFile) {
-                        await this.streamFileToDisk(metaFile, path.join(targetFolder, metaFileName));
+                        await this.streamFileToDisk(metaFile, path.join(targetFolder, fileOnly ? path.basename(metaFileName) : metaFileName));
                     }
                 },
                 getBuffer: () => sourceFile?.async('nodebuffer'),

@@ -56,6 +56,11 @@ vlocode.buildParentKeyFiles:
   when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
+vlocode.createOmniscriptLwc:
+  title: 'Vlocity: New Omniscript Web Component (LWC)'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette    
 
 # hide commands
 vlocode.buildDatapack:
@@ -137,7 +142,7 @@ vlocode.selectApiVersion:
   menus:
     - menu: commandPalette
 vlocode.createMetadataCommand:
-  title: 'Salesforce: New component'
+  title: 'Salesforce: Create new metadata (LWC, APEX, Aura)'
   group: v_salesforce
   when: config.vlocity.salesforce.enabled
   menus:
@@ -153,7 +158,7 @@ vlocode.createLwc:
   group: v_salesforce
   when: config.vlocity.salesforce.enabled
   menus:
-    - menu: commandPalette      
+    - menu: commandPalette
 vlocode.createApexClass:
   title: 'Salesforce: New APEX class'
   group: v_salesforce
