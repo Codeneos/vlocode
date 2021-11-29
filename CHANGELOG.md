@@ -1,8 +1,16 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.18 - 2021-29-11
+ - New auto refactor feature that detects LWC and Aura component renames and auto-updating the sources files and all component references in both HTML and JS files.
+ - New create LWC Omniscript component as command in command pallet.
+ - Fix metadata refresh command issue causing SF metadata not be refreshed in the correct folder.
+ - Fix issue not replacing vlocityNamespace with the namespace of the vlocity package.
+ - Fix issue with SF API version setting being ignored for specific commands (exec anon, etc)
+ - Small performance improvements and code clean-up
+
 ## Version 0.16.17 - 2021-25-11
  - Fixed add to profiles does not work when selecting a single field
- - Fixed issue with refresh and open didn't work for certain datapacks without matching keys
+ - Fixed issue with refresh and open didn't work for certain datapacks without matching keys (#365)
  - Added multi select for exporting salesforce metadata
 
 ## Version 0.16.16 - 2021-11-07

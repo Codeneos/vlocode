@@ -49,7 +49,16 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
             }
         }
 
-        void vscode.workspace.applyEdit(trx);
+        if (trx.size > 0) {
+            const shouldRefactor = await vscode.window.showInformationMessage(
+                'You renamed Salesforce metadata; do you want Vlocode to update related files to match the new name?\n\nYou will be able to preview the changes before they are applied.',
+                { modal: true }, { title: 'Update related files', apply: true }, { title: 'No', apply: false, isCloseAffordance: true }
+            );
+            if (!shouldRefactor?.apply) {
+                return;
+            }
+            void vscode.workspace.applyEdit(trx);
+        }
     }
 
     private async updateLwcSourceFile(file: vscode.Uri, newName: string) {
