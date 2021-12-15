@@ -1,5 +1,8 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.19 - 2021-29-11
+ - Fix LWC refactor doesn't read dirty files correctly causing unintended effect while refactoring of dirty LWC source files
+
 ## Version 0.16.18 - 2021-29-11
  - New auto refactor feature that detects LWC and Aura component renames and auto-updating the sources files and all component references in both HTML and JS files.
  - New create LWC Omniscript component as command in command pallet.
