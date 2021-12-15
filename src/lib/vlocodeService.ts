@@ -338,7 +338,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
      * @param file file name
      */
     public async readWorkspaceFile(uri: vscode.Uri) : Promise<string> {
-        const doc = vscode.workspace.textDocuments.find(doc => doc.uri == uri);
+        const doc = vscode.workspace.textDocuments.find(doc => doc.uri.path == uri.path);
         if (doc) {
             return doc.getText();
         }
