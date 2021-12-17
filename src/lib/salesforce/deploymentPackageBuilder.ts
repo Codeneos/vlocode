@@ -503,10 +503,14 @@ export class SalesforcePackageBuilder {
         return componentPackageFolder ?? substringAfterLast(path.dirname(fullSourcePath), /\/|\\/g);
     }
 
-    private async getPackagePath(sourceFile: string, metadataType: MetadataType) {
-        const isMetaFile = sourceFile.endsWith('-meta.xml');
-        const packageFolder = this.getPackageFolder(sourceFile, metadataType);
-        const baseName =  sourceFile.split(/\\|\//g).pop()!;
+    private async getPackagePath(file: string, metadataType: MetadataType) {
+        const baseName =  file.split(/\\|\//g).pop()!;
+        const baseNameSource = baseName.replace(/-meta\.xml$/i,'');
+
+        const isMetaFile = baseName != baseNameSource;
+        const packageFolder = this.getPackageFolder(file, metadataType);
+        const expectedSuffix = isMetaFile ? `${metadataType.suffix}-meta.xml` : `${metadataType.suffix}`;
+
         if (isMetaFile && !metadataType.metaFile && !metadataType.hasContent) {
             // SFDX adds a '-meta.xml' to each file, when deploying we need to strip these
             // when the source does not have a meta data file
@@ -516,16 +520,14 @@ export class SalesforcePackageBuilder {
         if (metadataType.id == 'document') {
             // For documents ensure each meta file matches the contents suffix
             if (isMetaFile) {
-                const contentFile = await this.findContentFile(sourceFile);
+                const contentFile = await this.findContentFile(file);
                 if (contentFile) {
                     return path.posix.join(packageFolder, `${contentFile.split(/\\|\//g).pop()!}-meta.xml`);
                 }
             }
-        } else {
+        } else if (metadataType.suffix && !file.endsWith(expectedSuffix)) {
             // for non-document source files should match the metadata suffix
-            if (!isMetaFile && metadataType.suffix && !baseName.endsWith(metadataType.suffix)) {
-                return path.posix.join(packageFolder, `${this.stripFileExtension(baseName)}.${metadataType.suffix}`);
-            }
+            return path.posix.join(packageFolder, `${this.stripFileExtension(baseNameSource, 1)}.${expectedSuffix}`);
         }
 
         return path.posix.join(packageFolder, baseName);
