@@ -15,7 +15,6 @@ const production: webpack.Configuration = {
             new TerserPlugin({
                 // Optimize and compress code
                 terserOptions: {
-                    ecma: 2019,
                     compress: {
                         arrows: true,
                         drop_debugger: true,
