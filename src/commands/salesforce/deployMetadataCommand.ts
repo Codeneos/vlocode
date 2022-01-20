@@ -153,6 +153,8 @@ export default class DeployMetadataCommand extends MetadataCommand {
             });
             token.onCancellationRequested(() => deployment.cancel());
             await deployment.start({ ignoreWarnings: true });
+            
+            fs.outputFileSync(`./deploy-${deployment.id}.zip`, await sfPackage.getBuffer());
 
             this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
             const result = await deployment.getResult();

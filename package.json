@@ -846,6 +846,16 @@
                         "type": "boolean",
                         "default": true,
                         "markdownDescription": "When enabled context menu options on the workspace-explorer and editor are displayed only when applicable; when enabled Vlocode monitors your workspace folders and keeps track of a list of files which are either Salesforce metadata of Vlocity datapacks. If you disabled this both Vlocity and Salesforce context menu options will always be visible. __Note: if you don't see any context menu options disable this.__"
+                    },
+                    "vlocity.suggestRefactoringOnRename": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "When renaming metadata Vlocode will suggest a refactoring of your source code to match the new name; works for Datapacks and LWC/Aura source code."
+                    },
+                    "vlocity.applyRefactoringWithoutPreview": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "When `suggestRefactoringOnRename` is enabled this setting controls if refactroings are previewed in the refactoring panel before being applied. __Note: even when enabled you will get a pop-up to confirm Vlocode to apply __"
                     }
                 }
             },
@@ -998,6 +1008,7 @@
                     }
                 }
             }
+
         ],
         "grammars": [
             {

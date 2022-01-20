@@ -1,8 +1,8 @@
 diff --git a/node_modules/typescript/lib/tsc.js b/node_modules/typescript/lib/tsc.js
-index 78c5ec2..99655bc 100644
+index a72b108..c6a6393 100644
 --- a/node_modules/typescript/lib/tsc.js
 +++ b/node_modules/typescript/lib/tsc.js
-@@ -71972,7 +71972,7 @@ var ts;
+@@ -73376,7 +73376,7 @@ var ts;
  })(ts || (ts = {}));
  var ts;
  (function (ts) {
@@ -12,10 +12,10 @@ index 78c5ec2..99655bc 100644
          var factory = context.factory, emitHelpers = context.getEmitHelperFactory, startLexicalEnvironment = context.startLexicalEnvironment, resumeLexicalEnvironment = context.resumeLexicalEnvironment, endLexicalEnvironment = context.endLexicalEnvironment, hoistVariableDeclaration = context.hoistVariableDeclaration;
          var resolver = context.getEmitResolver();
 diff --git a/node_modules/typescript/lib/tsserver.js b/node_modules/typescript/lib/tsserver.js
-index f9cc0bc..389091f 100644
+index d97f9f4..9dbf970 100644
 --- a/node_modules/typescript/lib/tsserver.js
 +++ b/node_modules/typescript/lib/tsserver.js
-@@ -85587,7 +85587,7 @@ var ts;
+@@ -87182,7 +87182,7 @@ var ts;
      /**
       * Indicates whether to emit type metadata in the new format.
       */
@@ -25,10 +25,10 @@ index f9cc0bc..389091f 100644
      (function (TypeScriptSubstitutionFlags) {
          /** Enables substitutions for decorated classes. */
 diff --git a/node_modules/typescript/lib/tsserverlibrary.js b/node_modules/typescript/lib/tsserverlibrary.js
-index 8893292..6449e3d 100644
+index 83772c4..706e788 100644
 --- a/node_modules/typescript/lib/tsserverlibrary.js
 +++ b/node_modules/typescript/lib/tsserverlibrary.js
-@@ -85781,7 +85781,7 @@ var ts;
+@@ -87376,7 +87376,7 @@ var ts;
      /**
       * Indicates whether to emit type metadata in the new format.
       */
@@ -38,10 +38,10 @@ index 8893292..6449e3d 100644
      (function (TypeScriptSubstitutionFlags) {
          /** Enables substitutions for decorated classes. */
 diff --git a/node_modules/typescript/lib/typescript.js b/node_modules/typescript/lib/typescript.js
-index 85a70c4..9ebe314 100644
+index 323de6f..cd69055 100644
 --- a/node_modules/typescript/lib/typescript.js
 +++ b/node_modules/typescript/lib/typescript.js
-@@ -85781,7 +85781,7 @@ var ts;
+@@ -87376,7 +87376,7 @@ var ts;
      /**
       * Indicates whether to emit type metadata in the new format.
       */
@@ -51,10 +51,10 @@ index 85a70c4..9ebe314 100644
      (function (TypeScriptSubstitutionFlags) {
          /** Enables substitutions for decorated classes. */
 diff --git a/node_modules/typescript/lib/typescriptServices.js b/node_modules/typescript/lib/typescriptServices.js
-index 668927c..3cbbc31 100644
+index 3c67682..4f98c65 100644
 --- a/node_modules/typescript/lib/typescriptServices.js
 +++ b/node_modules/typescript/lib/typescriptServices.js
-@@ -85781,7 +85781,7 @@ var ts;
+@@ -87376,7 +87376,7 @@ var ts;
      /**
       * Indicates whether to emit type metadata in the new format.
       */
@@ -64,10 +64,10 @@ index 668927c..3cbbc31 100644
      (function (TypeScriptSubstitutionFlags) {
          /** Enables substitutions for decorated classes. */
 diff --git a/node_modules/typescript/lib/typingsInstaller.js b/node_modules/typescript/lib/typingsInstaller.js
-index 14d9f58..6098cf8 100644
+index 9d20b51..61ea0af 100644
 --- a/node_modules/typescript/lib/typingsInstaller.js
 +++ b/node_modules/typescript/lib/typingsInstaller.js
-@@ -85576,7 +85576,7 @@ var ts;
+@@ -87171,7 +87171,7 @@ var ts;
      /**
       * Indicates whether to emit type metadata in the new format.
       */

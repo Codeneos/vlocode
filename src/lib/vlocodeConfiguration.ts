@@ -32,4 +32,6 @@ export default abstract class VlocodeConfiguration extends BaseConfiguration {
     conditionalContextMenus: boolean;
     deploy: VlocodeVlocityDeployConfiguration;
     salesforce: VlocodeSalesforceConfiguration;
+    suggestRefactoringOnRename: boolean;
+    applyRefactoringWithoutPreview: boolean;
 }

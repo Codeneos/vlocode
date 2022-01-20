@@ -1,11 +1,11 @@
 diff --git a/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js b/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js
-index 51c5502..1138970 100644
+index fb5c813..95beeb0 100644
 --- a/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js
 +++ b/node_modules/tsconfig-paths-webpack-plugin/lib/plugin.js
-@@ -70,8 +70,9 @@ function createPluginCallback(matchPath, resolver, absoluteBaseUrl, hook, extens
-     return (request, resolveContext, callback) => {
+@@ -111,8 +111,9 @@ function createPluginLegacy(matchPath, resolver, absoluteBaseUrl, target, extens
+     return (request, callback) => {
          const innerRequest = getInnerRequest(resolver, request);
-         if (!innerRequest || 
+         if (!innerRequest ||
 -            innerRequest.startsWith(".") ||
 -            innerRequest.startsWith("..")) {
 +            !request || !request.request ||
