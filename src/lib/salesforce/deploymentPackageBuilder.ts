@@ -139,7 +139,7 @@ export class SalesforcePackageBuilder {
             }
 
             if (fileStat.isDirectory()) {
-                yield* this.getFiles((await this.fs.readDirectory(file)).map(folder => path.join(file, folder)), token);
+                yield* this.getFiles((await this.fs.readDirectory(file)).map(entry => path.join(file, entry.name)), token);
                 continue;
             }
 
@@ -151,7 +151,7 @@ export class SalesforcePackageBuilder {
                     // If the source file is a folder yield the folder content sources
                     // this ensures when just a meta file for a folder is selected the content is also deployed
                     if (await this.fs.isDirectory(sourceFile)) {
-                        yield* this.getFiles((await this.fs.readDirectory(sourceFile)).map(folder => path.join(sourceFile, folder)), token);
+                        yield* this.getFiles((await this.fs.readDirectory(sourceFile)).map(entry => path.join(sourceFile, entry.name)), token);
                     } else {
                         yield sourceFile;
                     }
@@ -184,7 +184,7 @@ export class SalesforcePackageBuilder {
     private async addBundledSources(bundleFolder: string, metadataType: MetadataType) {
         const bundleFiles = await this.fs.readDirectory(bundleFolder);
         const componentName = bundleFolder.split(/\\|\//g).pop()!;
-        for (const file of bundleFiles.map(fileName => path.join(bundleFolder, fileName))) {
+        for (const file of bundleFiles.map(entry => path.join(bundleFolder, entry.name))) {
             if (await this.fs.isFile(file)) {
                 await this.addSingleSourceFile(file, metadataType, componentName);
             }
@@ -250,8 +250,8 @@ export class SalesforcePackageBuilder {
 
     private async* readDirectoryRecursive(folder: string) {
         for(const file of await this.fs.readDirectory(folder)) {
-            const fullPath = path.join(folder, file);
-            if (await this.fs.isDirectory(fullPath)) {
+            const fullPath = path.join(folder, file.name);
+            if (file.isDirectory()) {
                 return yield* this.readDirectoryRecursive(fullPath);
             } else {
                 yield fullPath;

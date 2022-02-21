@@ -39,6 +39,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisibility' ], config => {
             this.currentUserOnly = config.developerLogsVisibility != 'all';
             this.lastRefresh = undefined;
+            this.logs.splice(0);
             this.refresh();
         }, { initial: true });
     }

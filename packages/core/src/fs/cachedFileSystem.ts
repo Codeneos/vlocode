@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { cache, clearCache } from '@vlocode/util';
-import { FileSystem, StatsOptions } from './types';
+import { FileInfo, FileSystem, StatsOptions } from './types';
 
 /**
  * Decorate any existing file system with caching functionality; caches the write and stat operations towards the target file system.
@@ -30,7 +30,7 @@ export class CachedFileSystemAdapter extends FileSystem {
         return this.innerFs.stat(path, options);
     }
 
-    public readDirectory(path: string): Promise<string[]> {
+    public readDirectory(path: string): Promise<FileInfo[]> {
         return this.innerFs.readDirectory(path);
     }
 

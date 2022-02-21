@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '@constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '@lib/vlocodeActivity';
-import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options } from '@vlocode/util';
+import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options, poll } from '@vlocode/util';
 import * as chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';
 import VlocodeConfiguration from './vlocodeConfiguration';
@@ -46,10 +46,6 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             throw new Error('Vlocode is not initialized; SalesforceService is null');
         }
         return this._salesforceService;
-    }
-
-    public get connected() : boolean {
-        return !!this._datapackService;
     }
 
     public get commands() : CommandRouter {
@@ -392,7 +388,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.showApiVersionStatusItem();
     }
 
-    public async validateSalesforceConnectivity() : Promise<string | undefined> {
+    public async validateSalesforceConnectivity() : Promise<string | undefined> {        
         if (!this.config.sfdxUsername) {
             const message = 'Select a Salesforce instance for this workspace to use Vlocode';
             const selectedAction = await vscode.window.showInformationMessage(message, 'Connect to Salesforce');
@@ -405,14 +401,16 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 return message;
             }
         }
-        if (!this.connected) {
-            await this.initialize();
-            if (!this.connected) {
-                return 'Unable to connect to Salesforce; are you connected to the Internet?';
+        if (!this._salesforceService) {
+            // Await 
+            try {
+                await poll(() => this._salesforceService && this._datapackService, 30000, 100);
+            } catch {
+                return 'Vlocode failed to initialize within the given time';
             }
         }
         if (!await this.datapackService.isVlocityPackageInstalled()) {
-            return 'The Vlocity managed package is not installed on your Salesforce instance; select a different Salesforce instance or install Vlocity';
+            return 'Vlocity not installed on this Salesforce instance; select a different Salesforce instance or install Vlocity';
         }
     }
 

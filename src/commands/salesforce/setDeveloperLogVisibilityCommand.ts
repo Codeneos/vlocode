@@ -19,7 +19,9 @@ export default class SetDeveloperLogVisibilityCommand extends MetadataCommand {
      * Clears all developer logs.
      */
     public async execute() {
-        const developerLogVisibility = await vscode.window.showQuickPick(this.logVisibilityOptions, { placeHolder: 'Set log visibility...' });
+        const currentSelection = this.vlocode.config.salesforce.developerLogsVisibility;
+        const options = this.logVisibilityOptions.map(option => option.value == currentSelection ? { ...option, label: `$(primitive-dot) ${option.label}` } : option);
+        const developerLogVisibility = await vscode.window.showQuickPick(options, { placeHolder: 'Set log visibility...' });
         if (!developerLogVisibility) {
             return;
         }

@@ -60,11 +60,26 @@ export abstract class FileSystem {
      * Read the contents of a directs; returns an array with the files and folders contained in the specified directory.
      * @param path Directory
      */
-    public abstract readDirectory(path: string): Promise<string[]>;
+    public abstract readDirectory(path: string): Promise<FileInfo[]>;
 
     /**
      * Find files matching the specified glob pattern(s)
      * @param globPatterns Glob patterns to match files with
      */
     public abstract findFiles(globPatterns: string | string[]): Promise<string[]>;
+}
+
+export interface FileInfo {
+    /**
+     * Returns `true` if the `fs.Dirent` object describes a regular file.
+     */
+    isFile(): boolean;
+    /**
+     * Returns `true` if the `fs.Dirent` object describes a file system directory.
+     */
+    isDirectory(): boolean;
+    /**
+     * The file name that this `DirectoryEntry` object refers to.
+     */
+    readonly name: string;
 }

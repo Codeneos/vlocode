@@ -2,16 +2,29 @@ import path = require('path');
 import { clearTimeout, setTimeout } from 'timers';
 import * as constants from '@constants';
 import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
-import { Logger, FileSystem, injectable, LifecyclePolicy } from '@vlocode/core';
-import { Timer } from '@vlocode/util';
+import { Logger, FileSystem, injectable, LifecyclePolicy, FileInfo } from '@vlocode/core';
+import { clearCache, Timer } from '@vlocode/util';
 
 /**
  * Works in conjunction with the workspace context detector 
  */
 export interface FileFilterFunction {
-    (fileName: string): boolean;
+    (item: FileFilterInfo): boolean;
 };
+
+export class FileFilterInfo {
+
+    constructor(
+        public readonly folderName: string,
+        public readonly name: string,
+        private readonly file: FileInfo,
+        public siblings: FileFilterInfo[] = [],
+        public readonly fullName = path.join(folderName, name)) {
+    }
+
+    public isFile() { return this.file.isFile(); }
+    public isDirectory(){ return this.file.isDirectory(); }
+}
 
 /**
  * Monitors the workspaces and detects workspace support folders for command's where conditions based on an specifiable _isApplicableFile_ FileFilterFunction
@@ -49,6 +62,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
     public async initialize() {
         this.workspaceFolderWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async e => {
+            clearCache(this);
             for (const removeWorkspace of e.removed) {
                 this.remove(removeWorkspace.uri.fsPath);
             }
@@ -60,22 +74,24 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
         this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, true, false);
         this.workspaceFileWatcher.onDidCreate(async newFile => {
-            const fsPath = newFile.fsPath;
-            if (await this.fs.isDirectory(fsPath)) {
-                const folderFiles = await this.getApplicableFiles(fsPath);
+            clearCache(this);
+            let entry = await this.fs.stat(newFile.fsPath);
+            if (!entry?.isDirectory()) {
+                entry = await this.fs.stat(path.dirname(newFile.fsPath));
+            }
+            if (entry?.isDirectory()) {
+                const folderFiles = await this.getApplicableFiles(newFile.fsPath);
                 if (folderFiles.length) {
-                    this.add(fsPath.split(/\\|\//).map((v,i,p) => [...p.slice(0, i), v].join(path.sep)));
+                    this.add(newFile.fsPath.split(/\\|\//).map((v,i,p) => [...p.slice(0, i), v].join(path.sep)));
                     this.add(folderFiles);
                     this.scheduleContextUpdate();
                 }
-            } else if (this.isApplicableFile(fsPath) ) {
-                this.add(fsPath.split(/\\|\//).map((v,i,p) => [...p.slice(0, i), v].join(path.sep)));
-                this.scheduleContextUpdate();
             }
         });
 
-        this.add(await this.getApplicableFoldersInWorkspace());
+        this.add(await this.getApplicableFilesInWorkspace());
         this.scheduleContextUpdate();
+        clearCache(this);
 
         return this;
     }
@@ -107,7 +123,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         this.logger.verbose(`Updated context ${constants.CONTEXT_PREFIX}.${this.editorContextKey} [${timer.stop()}]`);
     }
 
-    private async getApplicableFoldersInWorkspace() {
+    private async getApplicableFilesInWorkspace() {
         const files = new Array<string>();
         for (const workspace of vscode.workspace.workspaceFolders ?? []) {
             this.logger.info(`Probing workspace ${workspace.name} (${workspace.uri.path}) for ${this.editorContextKey}...`);
@@ -121,17 +137,16 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
     public async getApplicableFiles(folder: string) : Promise<string[]> {
         const files = new Array<string>();
-        const entries = await fs.readdir(folder, { withFileTypes: true });
+        const fileInfos = await this.getFolderFileInfo(folder);
 
-        for (const entry of entries) {
+        for (const entry of fileInfos) {
             if (entry.name.startsWith('.') || entry.name == 'node_modules') {
                 continue;
             }
-            const fullPath = path.join(folder, entry.name);
             if (entry.isDirectory()) {
-                files.push(...await this.getApplicableFiles(fullPath));
-            } else if (this.isApplicableFile(entry.name)) {
-                files.push(fullPath);
+                files.push(...await this.getApplicableFiles(entry.fullName));
+            } else if (this.isApplicableFile(entry)) {
+                files.push(entry.fullName);
             }
         }
 
@@ -141,5 +156,12 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         }
 
         return files;
+    }
+
+    private async getFolderFileInfo(folder: string) : Promise<FileFilterInfo[]> {
+        const entries = await this.fs.readDirectory(folder);
+        const fileInfos = entries.map(file => new FileFilterInfo(folder, file.name, file));
+        fileInfos.forEach(f => f.siblings = fileInfos);
+        return fileInfos;
     }
 }

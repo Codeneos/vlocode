@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as globby from 'globby';
 import { injectable, LifecyclePolicy } from '../index';
-import { FileSystem, StatsOptions } from './types';
+import { FileInfo, FileSystem, StatsOptions } from './types';
 
 /**
  * Basic class that can wrap any API implementation the NodeJS FS API into a more reduced FileSystem interface.
@@ -38,8 +38,8 @@ export class NodeFileSystem extends FileSystem {
         }));
     }
 
-    public readDirectory(path: string): Promise<string[]> {
-        return new Promise((resolve, reject) => this.innerFs.readdir(path, (err, result) => {
+    public readDirectory(path: string): Promise<FileInfo[]> {
+        return new Promise((resolve, reject) => this.innerFs.readdir(path, { withFileTypes: true }, (err, result) => {
             if (err) {
                 reject(err);
             } else {

@@ -178,8 +178,10 @@ class Vlocode {
         ConfigurationManager.watchProperties(this.service.config, 'conditionalContextMenus',
             config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
 
-        // watch for changes        
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', file => file.toLowerCase().endsWith('_datapack.json')).initialize());
+        // watch for changes 
+        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', file => {
+            return file.name.toLowerCase().endsWith('_datapack.json') || file.siblings.some(file => file.name.toLowerCase().endsWith('_datapack.json'));
+        }).initialize());
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
 
         // track activation time

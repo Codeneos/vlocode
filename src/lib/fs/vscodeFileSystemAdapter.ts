@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { workspace } from 'vscode';
-import { FileSystem, StatsOptions } from '@vlocode/core';
+import { FileSystem, StatsOptions, FileInfo } from '@vlocode/core';
 
 export class VSCodeFileSystemAdapter extends FileSystem {
 
@@ -25,7 +25,7 @@ export class VSCodeFileSystemAdapter extends FileSystem {
         return this.innerFs.stat(path, options);
     }
 
-    public readDirectory(path: string): Promise<string[]> {
+    public readDirectory(path: string): Promise<FileInfo[]> {
         return this.innerFs.readDirectory(path);
     }
 

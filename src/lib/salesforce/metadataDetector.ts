@@ -1,23 +1,33 @@
 
-import { FileFilterFunction } from '@lib/workspaceContextDetector';
+import { FileFilterFunction, FileFilterInfo } from '@lib/workspaceContextDetector';
 import { MetadataRegistry } from '@lib/salesforce/metadataRegistry';
 import { container, injectable } from '@vlocode/core';
-import { fileSuffix } from '@vlocode/util';
+import { fileSuffix, directoryName, fileName } from '@vlocode/util';
 
 @injectable()
 export class MetadataDetector {
     constructor(private readonly registry: MetadataRegistry) {
     }
 
-    public isMetadataFile(fileName: string) {
-        if (fileName.endsWith('-meta.xml')) {
+    public isMetadataFile(file: FileFilterInfo | string) {
+        if (typeof file === 'string') {
+            return this.isMetadataFile({ fullName: file, folderName: directoryName(file), name: fileName(file), siblings: new Array<any>() } as FileFilterInfo);
+        }
+        if (file.name.endsWith('-meta.xml')) {
             return true;
         }
-        const suffix = fileSuffix(fileName);
-        if (suffix) {
-            return this.registry.isMetadataSuffix(suffix);
+        const metadataInfo = this.registry.getMetadataTypeBySuffix(fileSuffix(file.name));
+        if (metadataInfo) {
+            return true;
         }
-        return false;
+        return file.siblings.some(f => {
+            const siblingType = this.registry.getMetadataTypeBySuffix(fileSuffix(f.name));
+            if (siblingType?.isBundle) {
+                // Aura/LWC
+                return true;
+            }
+            return false;
+        });
     }
 
     public static filter(): FileFilterFunction {
