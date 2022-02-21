@@ -30,10 +30,12 @@ export class CachedFileSystemAdapter extends FileSystem {
         return this.innerFs.stat(path, options);
     }
 
+    @cache()
     public readDirectory(path: string): Promise<FileInfo[]> {
         return this.innerFs.readDirectory(path);
     }
 
+    @cache()
     public findFiles(patterns: string | string[]): Promise<string[]> {
         return this.innerFs.findFiles(patterns);
     }

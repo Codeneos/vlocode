@@ -184,9 +184,10 @@ export class SalesforcePackageBuilder {
     private async addBundledSources(bundleFolder: string, metadataType: MetadataType) {
         const bundleFiles = await this.fs.readDirectory(bundleFolder);
         const componentName = bundleFolder.split(/\\|\//g).pop()!;
-        for (const file of bundleFiles.map(entry => path.join(bundleFolder, entry.name))) {
-            if (await this.fs.isFile(file)) {
-                await this.addSingleSourceFile(file, metadataType, componentName);
+        for (const file of bundleFiles) {
+            if (file.isFile()) {
+                await this.addSingleSourceFile(path.join(bundleFolder, file.name), metadataType, componentName);
+                this.addParsedFile(path.join(bundleFolder, file.name));
             }
         }
     }
@@ -417,7 +418,8 @@ export class SalesforcePackageBuilder {
         if (metaSuffixMatch) {
             return metaSuffixMatch[1];
         }
-        return file.split(/\\|\//g).pop()?.match(/\.([^.]+)$/i)?.[1];
+        const suffix = file.split(/\\|\//g).pop()?.match(/\.([^.]+)$/i)?.[1];
+        return suffix?.toLowerCase() != 'xml' ? suffix : undefined;
     }
 
     private async getComponentTypeFromSource(file: string) {
