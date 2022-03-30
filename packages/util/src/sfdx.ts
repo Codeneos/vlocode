@@ -141,6 +141,12 @@ export namespace sfdx {
         return aliases.getKeysByValue(userName).shift() ?? userName;
     }
 
+    export async function setSfdxAlias(alias: string, userName: string) : Promise<void> {
+        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
+        aliases.set(alias, userName);
+        await aliases.write();
+    }
+
     export async function getJsForceConnection(username?: string) : Promise<jsforce.Connection> {
         const org = await getOrg(username);
         const connection = org.getConnection() as unknown;
