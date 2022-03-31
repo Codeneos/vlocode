@@ -64,6 +64,7 @@
         }
     ],
     "activationEvents": [
+        "onStartupFinished",
         "onView:datapackExplorer",
         "onView:jobExplorer",
         "onView:developerLogsView",
