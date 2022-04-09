@@ -1305,7 +1305,7 @@
         "mocha-simple-html-reporter": "^2.0.0",
         "mocha-sonarqube-reporter": "^1.0.2",
         "mock-fs": "^5.0.0",
-        "moment": "^2.29.1",
+        "moment": "^2.29.2",
         "open": "^8.2.1",
         "patch-package": "^6.4.7",
         "reflect-metadata": "^0.1.13",
