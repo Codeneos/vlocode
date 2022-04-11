@@ -90,6 +90,10 @@ export default class SelectOrgCommand extends CommandBase {
             return;
         }
 
+        const alias = await vscode.window.showInputBox({
+            placeHolder: 'Enter an org alias or use the default alias (Press \'Enter\' to confirm or \'Escape\' to cancel)'
+        });
+
         this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
         const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Notification,
@@ -103,6 +107,9 @@ export default class SelectOrgCommand extends CommandBase {
         });
 
         if (authInfo) {
+            if (alias) {
+                await sfdx.setSfdxAlias(alias, authInfo.username);
+            }
             const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
             this.logger.log(successMessage);
             void vscode.window.showInformationMessage(successMessage);
