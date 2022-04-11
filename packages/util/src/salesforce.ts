@@ -74,7 +74,7 @@ export function extractNamespaceAndName(typeName : string) : { name: string; nam
  * @param id ID like string to check
  */
 export function isSalesforceId(id : string) : boolean {
-    return /^[a-z0-9]{15}|[a-z0-9]{18}$/i.test(id);
+    return /^([a-z0-9]{15}|[a-z0-9]{18})$/i.test(id);
 }
 
 /**
