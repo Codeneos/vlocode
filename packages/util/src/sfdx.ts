@@ -143,6 +143,7 @@ export namespace sfdx {
 
     export async function setSfdxAlias(alias: string, userName: string) : Promise<void> {
         const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
+        aliases.getKeysByValue(userName)?.forEach(key => aliases.unset(key));
         aliases.set(alias, userName);
         await aliases.write();
     }
