@@ -1,7 +1,4 @@
-// Types and interfaces
-export * from './types';
-
-// implementations + Adapters
-export * from './nodeFileSystem';
-export * from './memoryFileSystem';
 export * from './cachedFileSystem';
+export * from './memoryFileSystem';
+export * from './nodeFileSystem';
+export * from './types';

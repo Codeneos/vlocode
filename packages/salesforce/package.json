@@ -1,0 +1,66 @@
+{
+    "name": "@vlocode/salesforce",
+    "version": "0.16.21",
+    "description": "Salesforce utility library for Vlocode",
+    "keywords": [
+        "Salesforce"
+    ],
+    "main": "lib/index.js",
+    "readme": "../SITE.md",
+    "directories": {
+        "lib": "./lib"
+    },
+    "engines": {
+        "node": ">=12.0.0",
+        "npm": ">=6.0.0"
+    },
+    "scripts": {
+        "watch": "npm run pre-build && tsc -w & tsc-alias -w",
+        "build": "npm run pre-build && tsc && tsc-alias",
+        "pre-build": "cti -w -b ./src -i constants",
+        "postinstall": "npx patch-package"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Codeneos/vlocode.git"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "files": [
+        "lib/**/*.d.ts",
+        "lib/**/*.js",
+        "patches/*.patch",
+        "../SITE.md"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Codeneos/vlocode/issues"
+    },
+    "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "devDependencies": {
+        "@types/jsforce": "^1.9.38",
+        "create-ts-index": "^1.14.0",
+        "tsc-alias": "^1.6.7",
+        "typescript": "^4.5.4",
+        "webpack-env": "^0.8.0"
+    },
+    "dependencies": {
+        "@salesforce/core": "^2.28.2",
+        "@salesforce/source-deploy-retrieve": "^5.12.11",
+        "@vlocode/util": "workspace:..\\util",
+        "@vlocode/core": "workspace:..\\core",
+        "axios": "^0.25.0",
+        "chalk": "^4.1.1",
+        "glob": "^7.1.7",
+        "globby": "^11.0.4",
+        "js-yaml": "^4.1.0",
+        "jsforce": "^1.11.0",
+        "jszip": "^3.7.0",
+        "log-symbols": "^4.0.0",
+        "salesforce-alm": "^52.1.9",
+        "patch-package": "^6.4.7"
+    },
+    "publisher": "curlybracket"
+}

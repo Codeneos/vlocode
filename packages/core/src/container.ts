@@ -208,7 +208,7 @@ export class Container {
      * Creates a new instance of the specified type resolving dependencies using the current container context
      * @param ctor Constructor type/prototype class definition
      */
-    private createInstance<T extends { new(...args: any[]): I }, I extends Object>(ctor: T, args: Array<any> = []): I {
+    private createInstance<T extends { new(...args: any[]): I }, I>(ctor: T, args: Array<any> = []): I {
         // Get argument types
         const instanceGuid = this.generateServiceGuid(ctor);
 

@@ -1,4 +1,3 @@
-import { type } from 'os';
 import SalesforceSchemaService from '@lib/salesforce/salesforceSchemaService';
 import { LogManager } from '@vlocode/core';
 import { Connection, RecordResult, BatchInfo } from 'jsforce';
@@ -121,6 +120,7 @@ export default class RecordBatch {
                         ref: chunk.refs[i],
                         success: result.success,
                         recordId: result.success === true ? result.id : undefined,
+                        // @ts-expect-error
                         error: result.success === false ? result.errors.map(err => err.message || err).join(',') : undefined,
                     };
                 }

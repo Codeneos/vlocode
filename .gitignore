@@ -7,4 +7,4 @@ retire-cache
 !.github
 testReports
 tslint-report.json
-packages/*/lib/**
+packages/*/lib
