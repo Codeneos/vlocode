@@ -1,0 +1,22 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "lib": ["ES2019"],
+        "module": "commonjs",
+        "target": "ES2019",
+        "outDir": "lib",
+        "baseUrl": "./src",
+        "rootDir": "src",
+        "declaration": true,
+        "declarationMap": true,
+        "plugins": [],
+        "forceConsistentCasingInFileNames": true,
+        "paths": {
+            "@vlocode/*": ["../*"]
+        },
+        "types": [
+            "node"
+        ]
+    },
+    "include": [ "src/**/*" ]
+}

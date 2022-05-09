@@ -1,0 +1,38 @@
+diff --git a/node_modules/@salesforce/core/lib/messages.js b/node_modules/@salesforce/core/lib/messages.js
+index 4316bc8..87f1ef6 100644
+--- a/node_modules/@salesforce/core/lib/messages.js
++++ b/node_modules/@salesforce/core/lib/messages.js
+@@ -168,6 +168,7 @@ class Messages {
+      * @param packageName The npm package name. Figured out from the root directory's package.json.
+      */
+     static importMessagesDirectory(moduleDirectoryPath, truncateToProjectPath = true, packageName) {
++        return;
+         let moduleMessagesDirPath = moduleDirectoryPath;
+         let projectRoot = moduleDirectoryPath;
+         if (!path.isAbsolute(moduleDirectoryPath)) {
+@@ -222,6 +223,7 @@ class Messages {
+      * @param bundleName The name of the bundle to load.
+      */
+     static loadMessages(packageName, bundleName) {
++        return new Messages(bundleName, this.getLocale(), {});
+         const key = new Key(packageName, bundleName);
+         let messages;
+         if (this.isCached(packageName, bundleName)) {
+@@ -259,7 +261,7 @@ class Messages {
+      * **See** https://nodejs.org/api/util.html#util_util_format_format_args
+      */
+     getMessage(key, tokens = []) {
+-        return this.getMessageWithMap(key, tokens, this.messages);
++        return `${key}`;
+     }
+     getMessageWithMap(key, tokens = [], map) {
+         // Allow nested keys for better grouping
+@@ -302,6 +304,6 @@ Messages.bundles = new Map();
+  * @ignore
+  */
+ Messages.readFile = (filePath) => {
+-    return require(filePath);
++    return JSON.parse(fs.readFileSync(filePath).toString());
+ };
+ //# sourceMappingURL=messages.js.map
+\ No newline at end of file

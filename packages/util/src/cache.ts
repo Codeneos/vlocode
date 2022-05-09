@@ -1,9 +1,20 @@
 import { isPromise, isThenable } from './async';
 
+export interface CacheOptions {
+    /**
+     * Cache lifetime in seconds. Undefined, 0 or -1 are considered infinite or until the instance is removed
+     */
+    ttl?: number;
+    /**
+     * Scope of the cache, defaults to instance for non-static members and global for static methods
+     */
+    scope?: 'global' | 'instance';
+}
+
 /**
  * Private property on the target object used to store cached results;
  */
-const cacheStoreProperty = Symbol('[[cacheStore]]');
+const cacheStoreProperty = Symbol('[cacheStore]');
 
 /**
  * Describes a entry in the cache of an object; allows the cache to return promise wrapped values and determine the age of a cache entry upon retrieval
@@ -96,18 +107,19 @@ export function clearCache<T>(target: T) : T {
  * Cache all results from this function in a local cache with a specified TTL in seconds
  * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
-export function cache(ttl: number = -1) {
+export function cache(ttlOrOptions?: number | CacheOptions) {
     function replaceFunctionOrGetter(descriptor: PropertyDescriptor, newFn: any) {
         if (descriptor.get) {
             descriptor.get = newFn;
         } else {
             descriptor.value = newFn;
         }
+        return descriptor;
     }
 
-    return function (target: any, name: string, descriptor: PropertyDescriptor) {
+    return function (_target: any, name: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.get || descriptor.value;
-        replaceFunctionOrGetter(descriptor, cacheFunction(originalMethod, name, ttl));
+        return replaceFunctionOrGetter(descriptor, cacheFunction(originalMethod, name, ttlOrOptions));
     };
 }
 
@@ -115,10 +127,22 @@ export function cache(ttl: number = -1) {
  * Cache all results from this function in a local cache with a specified TTL in seconds
  * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
-export function cacheFunction<T extends (...args: any[]) => any>(target: T, name: string, ttl: number = -1) : T {
+export function cacheFunction<T extends (...args: any[]) => any>(target: T, name: string, ttlOrOptions?: number | CacheOptions | undefined) : T {
+    const options = typeof ttlOrOptions === 'number' || !ttlOrOptions ? { ttl: ttlOrOptions ?? -1 } : ttlOrOptions;
+    const boundMethodSymbol = Symbol(`[${name}-bound]`);
+
+    function invokeTarget(thisArg: any, args: any[]): unknown {
+        if (!thisArg) {
+            return target(...args);
+        }
+        if (!thisArg[boundMethodSymbol]) {
+            thisArg[boundMethodSymbol] = target.bind(this);
+        }
+        return thisArg[boundMethodSymbol](...args);
+    };
 
     const cachedFunction = function(...args: any[]) {
-        const cache = getCacheStore(this ?? target);
+        const cache = getCacheStore(options.scope == 'global' ? target : (this ?? target));
         const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? 'undef'), `${name}:`);
         const cacheEntry = cache.get(key);
         if (cacheEntry) {
@@ -126,10 +150,10 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
         }
 
         // Reload value and put it in the cache
-        let newValue = target.apply(this, args);
-        if (ttl > 0) {
+        let newValue = invokeTarget(this, args);
+        if (options.ttl && options.ttl > 0) {
             // Follow TTL
-            setTimeout(() => cache.delete(key), ttl * 1000);
+            setTimeout(() => cache.delete(key), options.ttl * 1000);
         }
 
         // When the result is a promise ensure it gets deleted when it causes an exception

@@ -1,0 +1,66 @@
+{
+    "name": "vlocity-deploy",
+    "version": "0.16.21",
+    "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
+    "keywords": [
+        "Vlocity",
+        "Salesforce",
+        "Datapacks",
+        "Deployment"
+    ],
+    "main": "lib/index.js",
+    "publishConfig": {
+        "main": "lib/index.js",
+        "typings": "lib/index.d.ts"
+    },
+    "readme": "../SITE.md",
+    "directories": {
+        "lib": "./lib"
+    },
+    "engines": {
+        "node": ">=12.0.0",
+        "npm": ">=6.0.0"
+    },
+    "scripts": {
+        "watch": "tsc -w & tsc-alias -w",
+        "build": "tsc && tsc-alias",
+        "prebuild": "cti -w -b ./src -i constants -e sass",
+        "prepack": "npm run build",
+        "postinstall": "npx patch-package"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Codeneos/vlocode.git"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "files": [
+        "lib/**/*.d.ts",
+        "lib/**/*.js",
+        "patches/*.patch"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Codeneos/vlocode/issues"
+    },
+    "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "devDependencies": {
+        "@vlocode/core": "workspace:../core",
+        "@vlocode/salesforce": "workspace:../salesforce",
+        "@vlocode/util": "workspace:../util",
+        "create-ts-index": "^1.14.0",
+        "tsc-alias": "^1.6.7",
+        "typescript": "^4.5.4",
+        "webpack-env": "^0.8.0"
+    },
+    "dependencies": {
+        "chalk": "^4.1.1",
+        "glob": "^7.1.7",
+        "globby": "^11.0.4",
+        "js-yaml": "^4.1.0",
+        "log-symbols": "^4.0.0"
+    },
+    "publisher": "curlybracket"
+}

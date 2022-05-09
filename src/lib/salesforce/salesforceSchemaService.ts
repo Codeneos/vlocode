@@ -1,7 +1,10 @@
-import * as jsforce from 'jsforce';
-import { LogManager, Logger , injectable } from '@vlocode/core';
-import { cache , isSalesforceId, normalizeSalesforceName, removeNamespacePrefix , Timer } from '@vlocode/util';
+import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from 'jsforce';
+import { Logger, injectable } from '@vlocode/core';
+import { cache, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix , Timer } from '@vlocode/util';
 import SalesforceService from './salesforceService';
+
+// Re-export jsforce types
+export { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType };
 
 /**
  * Provides access to Database Schema methods like describe.
@@ -15,7 +18,7 @@ export default class SalesforceSchemaService {
     }
 
     @cache(-1)
-    public async describeSObjects() : Promise<Array<jsforce.DescribeGlobalSObjectResult>> {
+    public async describeSObjects() : Promise<Array<DescribeGlobalSObjectResult>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const { sobjects } = await con.describeGlobal();
         return sobjects;
@@ -28,9 +31,9 @@ export default class SalesforceSchemaService {
         return components.map(cmp => cmp.fullName);
     }
 
-    public async describeSObject(type: string) : Promise<jsforce.DescribeSObjectResult>
-    public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<jsforce.DescribeSObjectResult | undefined>
-    public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<jsforce.DescribeSObjectResult | undefined> {
+    public async describeSObject(type: string) : Promise<DescribeSObjectResult>
+    public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
+    public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<DescribeSObjectResult | undefined> {
         try {
             return await this.describeSObjectCached(type);
         } catch(err) {
@@ -40,7 +43,7 @@ export default class SalesforceSchemaService {
         }
     }
 
-    public async describeSObjectById(id: string) : Promise<jsforce.DescribeSObjectResult>{
+    public async describeSObjectById(id: string) : Promise<DescribeSObjectResult>{
         if (!isSalesforceId(id)) {
             throw Error(`Invalid Salesfoce id: ${id}`);
         }
@@ -55,7 +58,7 @@ export default class SalesforceSchemaService {
     }
 
     @cache(-1)
-    private async describeSObjectCached(type: string) : Promise<jsforce.DescribeSObjectResult> {
+    private async describeSObjectCached(type: string) : Promise<DescribeSObjectResult> {
         const con = await this.connectionProvider.getJsForceConnection();
         const timer = new Timer();
         try {
@@ -65,15 +68,15 @@ export default class SalesforceSchemaService {
         }
     }
 
-    public async describeSObjectField(type: string, fieldName: string) : Promise<jsforce.Field>
-    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<jsforce.Field | undefined>
+    public async describeSObjectField(type: string, fieldName: string) : Promise<Field>
+    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<Field | undefined>
     @cache(-1)
-    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field | undefined> {
+    public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<Field | undefined> {
         return (await this.describeSObjectFieldPath(type, fieldName, throwWhenNotFound))?.slice(-1).pop();
     }
 
-    public async describeSObjectFieldPath(type: string, fieldName: string) : Promise<jsforce.Field[]>
-    public async describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<jsforce.Field[] | undefined>
+    public async describeSObjectFieldPath(type: string, fieldName: string) : Promise<Field[]>
+    public async describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<Field[] | undefined>
     /**
      * Resolve an SObject field based on it's path; returns an array of jsforce.Field's
      * @param type SObject type
@@ -81,8 +84,8 @@ export default class SalesforceSchemaService {
      * @param throwWhenNotFound trye to throw an exception when the type is not found otherwise return null;
      */
     @cache(-1)
-    public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<jsforce.Field[] | undefined> {
-        const resolved = new Array<jsforce.Field>();
+    public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<Field[] | undefined> {
+        const resolved = new Array<Field>();
 
         // Resolve a full Field path
         for (const fieldName of fieldPath.split('.')) {
@@ -108,7 +111,7 @@ export default class SalesforceSchemaService {
         return resolved;
     }
 
-    public async getSObjectFields(type: string) : Promise<jsforce.Field[]> {
+    public async getSObjectFields(type: string) : Promise<Field[]> {
         return (await this.describeSObject(type)).fields;
     }
 
@@ -126,9 +129,9 @@ export default class SalesforceSchemaService {
      * @param type SObject Type
      * @param fieldName Field Name
      */
-    public async sObjectGetFieldType(type: string, fieldName: string): Promise<jsforce.FieldType>
-    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<jsforce.FieldType | undefined>
-    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<jsforce.FieldType | undefined> {
+    public async sObjectGetFieldType(type: string, fieldName: string): Promise<FieldType>
+    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<FieldType | undefined>
+    public async sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<FieldType | undefined> {
         return (await this.describeSObjectField(type, fieldName, throwWhenNotFound))?.type;
     }
 

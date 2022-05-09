@@ -65,6 +65,19 @@
             }
         },
         {
+            "name": "Debug: Sync packages",
+            "type": "node",
+            "request": "launch",
+            "args": ["${workspaceRoot}/build/syncPackages.ts"],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "TS_NODE_IGNORE": "false"
+            }
+        },
+        {
             "name": "Debug: Webpack Build",
             "request": "launch",
             "runtimeArgs": [
