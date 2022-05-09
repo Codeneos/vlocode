@@ -10,10 +10,17 @@ export const options : { mode: 'sync'|'async' } = {
 };
 
 /**
+ * VSCode File system URI compatibility interface
+ */
+export interface FileSystemUri {
+    fsPath: string;
+}
+
+/**
  * Get the body of a document as string
  * @param file file name
  */
-export async function getDocumentBodyAsString(file: string | { fsPath: string }, encoding: BufferEncoding = 'utf-8') : Promise<string> {
+export async function getDocumentBodyAsString(file: string | FileSystemUri, encoding: BufferEncoding = 'utf-8') : Promise<string> {
     return (await getDocumentBody(file)).toString(encoding);
 }
 
@@ -21,7 +28,7 @@ export async function getDocumentBodyAsString(file: string | { fsPath: string },
  * Get the body of a document as Buffer
  * @param file file name
  */
-export async function getDocumentBody(file: string | { fsPath: string }) : Promise<Buffer> {
+export async function getDocumentBody(file: string | FileSystemUri) : Promise<Buffer> {
     const fileName = typeof file === 'string' ? file : file.fsPath;
     const doc = (await vscode)?.workspace.textDocuments.find(doc => doc.fileName == fileName);
     if (doc?.isDirty) {

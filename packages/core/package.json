@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/core",
-    "version": "0.16.22",
+    "version": "0.16.21",
     "description": "Vlocode core IoC container framework library",
     "main": "lib/index.js",
     "readme": "../SITE.md",
@@ -13,7 +13,8 @@
     },
     "scripts": {
         "watch": "tsc -w",
-        "build": "tsc -b"
+        "build": "tsc",
+        "prebuild": "cti -w -b ./src/fs ./src/logging/writers"
     },
     "repository": {
         "type": "git",
@@ -26,6 +27,7 @@
     "files": [
         "lib/**/*.d.ts",
         "lib/**/*.js",
+        "patches/*.patch",
         "../SITE.md"
     ],
     "license": "MIT",
@@ -33,17 +35,21 @@
         "url": "https://github.com/Codeneos/vlocode/issues"
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "devDependencies": {
+        "create-ts-index": "^1.14.0",
+        "typescript": "^4.5.4"
+    },
     "dependencies": {
-        "@vlocode/util": "0.16.22",
-        "chalk": "^4.1.2",
+        "@vlocode/util": "workspace:..\\util",
+        "chalk": "^4.1.1",
         "globby": "^11.0.4",
         "memfs": "^3.2.2",
         "moment": "^2.29.1",
         "reflect-metadata": "^0.1.13",
         "unique-names-generator": "^4.6.0"
     },
-    "devDependencies": {
-        "@types/vscode": "^1.59.0"
-    },
+    "workspaces": [
+        "../util"
+    ],
     "publisher": "curlybracket"
 }

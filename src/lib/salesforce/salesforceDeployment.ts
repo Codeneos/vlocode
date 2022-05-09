@@ -1,12 +1,12 @@
-import * as jsforce from 'jsforce';
-import * as vscode from 'vscode';
+import { DeployResult, RetrieveResult, Connection } from 'jsforce';
+import type { Progress } from 'vscode';
 
 import { LogManager , container } from '@vlocode/core';
 import { AsyncEventEmitter } from '@vlocode/util';
 import { SalesforcePackage } from './deploymentPackage';
 import SalesforceService from './salesforceService';
 
-export type DetailedDeployResult = jsforce.DeployResult & {
+export type DetailedDeployResult = DeployResult & {
     details?: {
         componentFailures: FailureDeployMessage[];
         componentSuccesses: DeployMessage[];
@@ -56,13 +56,13 @@ export interface FailureDeployMessage extends DeployMessage {
     lineNumber: string;
 }
 
-export type DeploymentProgress = vscode.Progress<{
+export type DeploymentProgress = Progress<{
     message?: string;
     increment?: number;
     total?: number;
 }>;
 
-interface RetrieveStatus extends jsforce.RetrieveResult {
+interface RetrieveStatus extends RetrieveResult {
     done: boolean | string;
     success: boolean | string;
     errorMessage?: string;
@@ -99,7 +99,7 @@ export interface DeployOptions {
 export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeploymentEvents> {
     private checkInterval = 1000;
     private deploymentId: string;
-    private connection: jsforce.Connection;
+    private connection: Connection;
     private lastStatus: DetailedDeployResult;
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
