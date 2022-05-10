@@ -1,6 +1,6 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import type { DatapackDeploymentSpec } from 'datapackDeployer';
 import { JsForceConnectionProvider } from '@vlocode/salesforce';
+import type { DatapackDeploymentSpec } from '../datapackDeployer';
 import { VlocityDatapack } from '../datapack';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })

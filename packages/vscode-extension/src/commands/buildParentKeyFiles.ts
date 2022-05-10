@@ -3,9 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
 import { getDocumentBodyAsString , filterUndefined , substringAfterLast } from '@vlocode/util';
-import * as DatapackUtil from '@lib/vlocity/datapackUtil';
-import { VlocityDatapack, VlocityDatapackReference } from '@lib/vlocity/datapack';
-import DatapackLoader from '@lib/vlocity/datapackLoader';
+import { VlocityDatapack, VlocityDatapackReference, DatapackUtil, DatapackLoader } from '@vlocode/vlocity-deploy';
 import { container } from '@vlocode/core';
 import { DatapackCommand } from './datapackCommand';
 

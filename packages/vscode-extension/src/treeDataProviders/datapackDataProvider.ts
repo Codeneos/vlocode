@@ -1,16 +1,13 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
 import { LogManager, Logger , injectable , container } from '@vlocode/core';
-import DatapackUtil from '@lib/vlocity/datapackUtil';
+import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity-deploy';
 import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName, clearCache } from '@vlocode/util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import DatapackInfoService from '@lib/vlocity/datapackInfoService';
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
-import SalesforceService from '@lib/salesforce/salesforceService';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';
-import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '@lib/config';

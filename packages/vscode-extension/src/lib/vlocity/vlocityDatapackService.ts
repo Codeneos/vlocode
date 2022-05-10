@@ -6,16 +6,13 @@ import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
 import { Logger , injectable } from '@vlocode/core';
-import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
-import SalesforceService from '@lib/salesforce/salesforceService';
-import { VlocityDatapack } from '@lib/vlocity/datapack';
+import { VlocityDatapack } from '@vlocode/vlocity-deploy';
 import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
 import SObjectRecord from '@lib/salesforce/sobjectRecord';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
-import DatapackLoader from '@lib/vlocity/datapackLoader';
-import { getDatapackManifestKey, getExportProjectFolder } from '@lib/vlocity/datapackUtil';
+import { getDatapackManifestKey, getExportProjectFolder } from '@vlocode/vlocity-deploy';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import VlocityMatchingKeyService from './vlocityMatchingKeyService';
 

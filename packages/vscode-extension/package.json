@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.22",
+    "version": "0.16.21",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -1237,8 +1237,8 @@
     },
     "scripts": {
         "postinstall": "patch-package",
-        "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
-        "prepare:sync": "ts-node ./build/syncPackages.ts",
+        "prepare:commands": "ts-node ../../build/buildCommands.ts ./package.json ./commands.yaml",
+        "prepare:sync": "ts-node ../../build/syncPackages.ts",
         "build": "npm run prepare:commands && webpack --config webpack.prod.ts --env extension",
         "build:debug": "npm run prepare:commands && webpack --config webpack.dev.ts --env extension",
         "build:tests": "npm run prepare:commands && webpack --config webpack.dev.ts --env tests",
@@ -1326,10 +1326,10 @@
         "tslint-loader": "^3.5.4",
         "type-fest": "^2.12.2",
         "typedoc": "^0.22.11",
-        "typescript": "4.5.4",
+        "typescript": "^4.5.4",
         "unique-names-generator": "^4.6.0",
         "uuid": "^8.3.2",
-        "vlocity": "1.14.18",
+        "vlocity": "^1.14.18",
         "vsce": "^2.6.3",
         "vscode-languageclient": "^7.0.0",
         "vscode-test": "^1.6.1",
@@ -1339,10 +1339,10 @@
         "webpack-merge": "^5.8.0",
         "webpack-node-externals": "^3.0.0",
         "xml2js": "^0.4.23",
-        "@vlocode/core": "workspace:packages/core",
-        "@vlocode/salesforce": "workspace:packages/salesforce",
-        "@vlocode/util": "workspace:packages/util",
-        "@vlocode/vlocity-deploy": "workspace:packages/vlocity-deploy"
+        "@vlocode/core": "workspace:../core",
+        "@vlocode/salesforce": "workspace:../salesforce",
+        "@vlocode/util": "workspace:../util",
+        "@vlocode/vlocity-deploy": "workspace:../vlocity-deploy"
     },
     "workspaces": [
         "packages/util",
