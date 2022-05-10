@@ -1,5 +1,5 @@
 import { compileFunction } from './compiler';
-import { cache } from './cache';
+
 /**
  * Compares strings for equality; by default comparisons are case insensitive
  * @param a String a
@@ -46,25 +46,12 @@ export function format(formatStr: string, ...args: any[]) {
 }
 
 /**
- * Helper to allow cache decorator to be used.
- */
-class ExpressionCache {
-
-    private readonly expressions = require('angular-expressions');
-
-    @cache(-1)
-    public compile(expr: string) : (context: any) => string {
-        return this.expressions.compile(expr);
-    }
-}
-
-/**
  * Evaluates an angular expression on the specified scope.
  * @param expr Format string
  * @param contextValues context values supplied
  */
 export function evalExpr(expr: string, contextValues: any) : string {
-    const updatedContext = compileFunction(`$$result = ${expr}`)(contextValues);
+    const updatedContext = compileFunction(`$$result = ${expr}`)(contextValues, false);
     return updatedContext.$$result;
 }
 
@@ -74,7 +61,7 @@ export function evalExpr(expr: string, contextValues: any) : string {
  * @param contextValues context values supplied 
  */
 export function evalTemplate(expr: string, contextValues: any) : string {
-    const updatedContext = compileFunction(`$$result = \`${expr}\``)(contextValues);
+    const updatedContext = compileFunction(`$$result = \`${expr}\``)(contextValues, false);
     return updatedContext.$$result;
 }
 

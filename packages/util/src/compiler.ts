@@ -18,14 +18,22 @@ class Compiler {
         }
 
         return function (context?: any, contextMutable?: boolean) {
-            const sandboxValues = contextMutable ? context : {};
-            const sandboxContext = new Proxy(context ?? {}, {
+            const sandboxValues = contextMutable ? (context ?? {}) : {};
+            const sandboxContext = new Proxy({}, {
                 get(target, prop) {
-                    return sandboxValues[prop] ?? target[prop];
+                    return sandboxValues[prop] ?? context[prop];
                 },
                 set(target, prop, value) {
                     sandboxValues[prop] = value;
                     return true;
+                },
+                getOwnPropertyDescriptor(target, prop) {
+                    const contextProperty = Object.getOwnPropertyDescriptor(context, prop);
+                    const sandboxProperty = Object.getOwnPropertyDescriptor(sandboxValues, prop);
+                    return sandboxProperty ?? contextProperty;
+                },
+                ownKeys() {
+                    return contextMutable ? Reflect.ownKeys(context) : [...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)];
                 }
             });
             compiledFn(sandboxContext);

@@ -269,7 +269,6 @@ export class DatapackLookupService implements DependencyResolver {
                 continue;
             }
 
-            // @ts-expect-error typo in jsforce.FieldInfo: should `field.autoNumber` and not `autonumber`
             if (fieldDescribe.autoNumber) {
                 this.logger.error(`Matching field ${sobjectType}.${field} is ignored for being an auto generate number (${fieldDescribe.type})`);
                 continue;

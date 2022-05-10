@@ -30,7 +30,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         };
 
         for (const serviceType of services) {
-            container.registerType(serviceType, ctor, lifecycle);
+            container.registerType(serviceType, ctor as any, lifecycle);
         }
 
         // Register this dependency in the main container

@@ -170,7 +170,7 @@ export class Container {
      * @returns New instance of an object who's dependencies are resolved by the container
      */
     public create<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>) : InstanceType<T> {
-        return this.createInstance(ctor, params);
+        return this.createInstance(ctor as any, params) as InstanceType<T>;
     }
 
     /**

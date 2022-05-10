@@ -1,5 +1,5 @@
 diff --git a/node_modules/@types/jsforce/connection.d.ts b/node_modules/@types/jsforce/connection.d.ts
-index f413c55..1b3b051 100644
+index f2b9e85..b135479 100644
 --- a/node_modules/@types/jsforce/connection.d.ts
 +++ b/node_modules/@types/jsforce/connection.d.ts
 @@ -31,6 +31,13 @@ export interface RestApiOptions {

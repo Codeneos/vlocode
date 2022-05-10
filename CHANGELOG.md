@@ -1,5 +1,9 @@
 # Changelog Vlocity/Salesforce Integration for VSCode
 
+## Version 0.16.22 - 2022-05-10
+ - Fix isSalesforceId bug
+ - Fix NodeJS breaking change in VSCode causing issues with grouping of Datapacks such as OmniScripts
+
 ## Version 0.16.20 - 2022-02-21
  - Fix deployment packages get saved before deployment
  - Fix context actions not visible for related files of datapacks and metadata
