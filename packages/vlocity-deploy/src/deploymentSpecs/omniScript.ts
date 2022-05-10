@@ -1,9 +1,9 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'datapackDeployer';
 import { SalesforceService } from '@vlocode/salesforce';
 import { forEachAsyncParallel } from '@vlocode/util';
 import { DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
+import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '../datapackDeployer';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class VlocityOmniScriptSpec implements DatapackDeploymentSpec {

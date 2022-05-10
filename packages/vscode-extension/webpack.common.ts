@@ -5,7 +5,7 @@ import * as glob from 'glob';
 import * as CopyPlugin from 'copy-webpack-plugin';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import * as ts from 'typescript';
-import WatchMarkersPlugin from './build/plugins/watchMarkers';
+import WatchMarkersPlugin from '../../build/plugins/watchMarkers';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked

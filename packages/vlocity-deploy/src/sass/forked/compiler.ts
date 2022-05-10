@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as uuid from 'uuid';
 import { Logger , injectable , LifecyclePolicy } from '@vlocode/core';
 
-import { SassCompiler, SassCompileSuccessResult, SassCompileErrorResult } from 'sass/compiler';
+import { SassCompiler, SassCompileSuccessResult, SassCompileErrorResult } from '../compiler';
 
 export interface Message {
     id?: string;

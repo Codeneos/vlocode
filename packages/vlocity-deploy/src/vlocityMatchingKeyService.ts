@@ -5,7 +5,7 @@ import { SalesforceSchemaService, SalesforceLookupService } from '@vlocode/sales
 
 
 import { VlocityNamespaceService } from './vlocityNamespaceService';
-import DatapackInfoService from './datapackInfoService';
+import { DatapackInfoService } from './datapackInfoService';
 //import { QueryDefinitions } from './types';
 
 export interface VlocityMatchingKey {

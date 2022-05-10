@@ -1,16 +1,16 @@
-import { VlocityDatapack } from 'datapack';
+
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger , injectable , container, LifecyclePolicy } from '@vlocode/core';
 import * as moment from 'moment';
-import { Timer , isSalesforceId , asArray, groupBy , Iterable, } from '@vlocode/util';
+import { Timer , isSalesforceId , asArray, groupBy , Iterable, CancellationToken, } from '@vlocode/util';
 import * as uuid from 'uuid';
-import type { CancellationToken } from 'vscode';
 import { DATAPACK_RESERVED_FIELDS, NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import * as deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import { VlocityDatapack } from './datapack';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;

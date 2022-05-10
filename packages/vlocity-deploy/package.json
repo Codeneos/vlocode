@@ -24,7 +24,7 @@
     "scripts": {
         "watch": "tsc -w & tsc-alias -w",
         "build": "tsc && tsc-alias",
-        "prebuild": "cti -w -b ./src -i constants -e sass",
+        "prebuild": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass",
         "prepack": "npm run build",
         "postinstall": "npx patch-package"
     },
