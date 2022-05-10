@@ -1,8 +1,8 @@
 import { dirname } from 'path';
 import { PropertyTransformHandler, removeNamespacePrefix } from '@vlocode/util';
-import { ManifestEntry, ObjectEntry } from 'types';
 import { v4 as generateGuid } from 'uuid';
 import { LogManager } from '@vlocode/core';
+import { ManifestEntry, ObjectEntry } from './types';
 
 export type VlocityDatapackReference = {
     [key: string]: string;

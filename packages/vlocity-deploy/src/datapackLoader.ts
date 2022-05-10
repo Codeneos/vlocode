@@ -1,10 +1,8 @@
 import * as path from 'path';
-import type { CancellationToken } from 'vscode';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined } from '@vlocode/util';
-import { VlocityDatapack } from 'datapack';
-import { getDatapackManifestKey, getExportProjectFolder } from 'datapackUtil';
-
+import { mapAsyncParallel, filterUndefined, CancellationToken } from '@vlocode/util';
+import { VlocityDatapack } from './datapack';
+import { getDatapackManifestKey, getExportProjectFolder } from './datapackUtil';
 
 type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);
 

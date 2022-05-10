@@ -1,9 +1,9 @@
 import * as path from 'path';
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from 'datapackDeployer';
-import { VlocityDatapack } from 'datapack';
 import { SalesforceService } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
+import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '../datapackDeployer';
+import { VlocityDatapack } from '../datapack';
 import { SassCompiler } from '../sass';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })

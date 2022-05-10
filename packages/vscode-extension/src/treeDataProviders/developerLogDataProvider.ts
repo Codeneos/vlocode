@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import VlocodeService from '@lib/vlocodeService';
-import { DeveloperLog } from '@lib/salesforce/developerLog';
+import { DeveloperLog } from '@vlocode/salesforce';
 import * as moment from 'moment';
 import { ConfigurationManager } from '@lib/config';
 import { VlocodeCommand } from '@constants';
-import { DebugLogViewer } from '@lib/salesforce/debugLogViewer';
+import { DebugLogViewer } from '@vlocode/salesforce';
 import { Logger , injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
 

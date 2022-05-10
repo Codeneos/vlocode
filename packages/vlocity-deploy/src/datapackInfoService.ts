@@ -41,7 +41,7 @@ interface DatapackConfigurationRecord {
 }
 
 @injectable()
-export default class DatapackInfoService {
+export class DatapackInfoService {
 
     constructor(
         public readonly logger: Logger,

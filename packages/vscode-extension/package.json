@@ -1237,8 +1237,8 @@
     },
     "scripts": {
         "postinstall": "patch-package",
-        "prepare:commands": "ts-node ./build/buildCommands.ts ./package.json ./commands.yaml",
-        "prepare:sync": "ts-node ./build/syncPackages.ts",
+        "prepare:commands": "ts-node ../../build/buildCommands.ts ./package.json ./commands.yaml",
+        "prepare:sync": "ts-node ../../build/syncPackages.ts",
         "build": "npm run prepare:commands && webpack --config webpack.prod.ts --env extension",
         "build:debug": "npm run prepare:commands && webpack --config webpack.dev.ts --env extension",
         "build:tests": "npm run prepare:commands && webpack --config webpack.dev.ts --env tests",
@@ -1339,10 +1339,10 @@
         "webpack-merge": "^5.8.0",
         "webpack-node-externals": "^3.0.0",
         "xml2js": "^0.4.23",
-        "@vlocode/core": "workspace:packages/core",
-        "@vlocode/salesforce": "workspace:packages/salesforce",
-        "@vlocode/util": "workspace:packages/util",
-        "@vlocode/vlocity-deploy": "workspace:packages/vlocity-deploy"
+        "@vlocode/core": "workspace:../core",
+        "@vlocode/salesforce": "workspace:../salesforce",
+        "@vlocode/util": "workspace:../util",
+        "@vlocode/vlocity-deploy": "workspace:../vlocity-deploy"
     },
     "workspaces": [
         "packages/util",
