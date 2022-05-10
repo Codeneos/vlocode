@@ -53,7 +53,6 @@ export default class CommandRouter {
     private readonly commandTypes = new Map<string, string>();
 
     constructor(private readonly vlocode: VlocodeService, private readonly logger: Logger) {
-        debugger;
     }
 
     private get count() : number {
