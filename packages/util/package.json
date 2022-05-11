@@ -8,14 +8,13 @@
         "lib": "./lib"
     },
     "engines": {
-        "node": ">=12.0.0",
-        "npm": ">=6.0.0"
+        "node": ">=16.0.0"
     },
     "scripts": {
         "watch": "tsc -w & tsc-alias -w",
         "build": "tsc && tsc-alias",
         "prebuild": "cti -w -b ./src -i constants",
-        "postinstall": "npx patch-package"
+        "postinstall": "patch-package"
     },
     "repository": {
         "type": "git",
@@ -37,20 +36,21 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "devDependencies": {
+        "@types/fs-extra": "^9",
+        "@types/node": "^16",
+        "@types/vscode": "^1.61.0",
         "create-ts-index": "^1.14.0",
-        "typescript": "^4.5.4",
         "tsc-alias": "1.6.7"
     },
     "dependencies": {
-        "@salesforce/core": "^2.28.2",
+        "@salesforce/core": "2.33.1",
         "fast-xml-parser": "^3.19.0",
-        "fs-extra": "^10.0.0",
+        "fs-extra": "^9.0",
         "he": "^1.2.0",
         "open": "^8.2.1",
         "optional-require": "^1.1.7",
         "reflect-metadata": "^0.1.13",
-        "uuid": "^8.3.2",
-        "patch-package": "^6.4.7"
+        "uuid": "^8.3.2"
     },
     "publisher": "curlybracket"
 }

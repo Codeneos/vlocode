@@ -4,9 +4,8 @@ import * as fs from 'fs-extra';
 import VlocityDatapackService, { ManifestEntry } from '@lib/vlocity/vlocityDatapackService';
 import { CommandBase } from '@commands/commandBase';
 import { mapAsyncParallel } from '@vlocode/util';
-import { VlocityDatapack } from '@lib/vlocity/datapack';
-import { getDatapackHeaders, getDatapackManifestKey } from '@lib/vlocity/datapackUtil';
-import SalesforceService from '@lib/salesforce/salesforceService';
+import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack } from '@vlocode/vlocity-deploy';
+import { SalesforceService } from '@vlocode/salesforce';
 
 export abstract class DatapackCommand extends CommandBase {
 

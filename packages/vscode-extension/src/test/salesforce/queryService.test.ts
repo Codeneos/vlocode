@@ -1,14 +1,10 @@
 /* eslint-disable camelcase */
 import { expect } from 'chai';
-import { spy } from 'sinon';
 import 'mocha';
 
-import { createRecordProxy, removeNamespacePrefix } from '@vlocode/util';
-import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
-import QueryService from '@lib/salesforce/queryService';
 import { container , Logger } from '@vlocode/core';
+import { JsForceConnectionProvider, QueryService } from '@vlocode/salesforce';
 
-declare let VlocityUtils: any;
 describe('queryService', () => {
 
     function mockConnectionProvider(results: any[]) {

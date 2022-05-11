@@ -11,13 +11,16 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "",
                 "--disable-extensions",
                 "--trace-deprecation",
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/vscode-extension/out/**/*.js"
             ], 
             "skipFiles": [
                 "<node_internals>/**/*.js",
@@ -25,7 +28,6 @@
                 "inspector_async_hook.js"
             ],
             "smartStep": true,
-            "preLaunchTask": "build",
             "stopOnEntry": false,
             "sourceMaps": true
         },

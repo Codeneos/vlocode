@@ -1,7 +1,7 @@
 {    
     "extends": "../../tsconfig",
     "compilerOptions": {
-        "outDir": "out",
+        "outDir": "lib",
         "sourceMap": true,
         "baseUrl": ".",
         "forceConsistentCasingInFileNames": true,
@@ -19,5 +19,9 @@
             "webpack-env"
         ]
     },
-    "include": [ "./src/**/*", "./weboack.*" ]
+    "include": [ 
+        "./src/**/*", 
+        "./weboack/**/*", 
+        "./types/**/*" 
+    ]
 }

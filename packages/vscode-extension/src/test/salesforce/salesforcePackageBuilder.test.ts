@@ -2,15 +2,13 @@
 import { expect } from 'chai';
 import 'mocha';
 
-import * as constants from '@constants';
-import * as xml2js from 'xml2js';
-import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
 import { Logger , MemoryFileSystem , container } from '@vlocode/core';
 import { normalizePath } from '@root/test/helpers';
+import { XML } from '@vlocode/util';
+import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 function buildXml(rootName: string, data?: any) {
-    const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
-    return xmlBuilder.buildObject({
+    return XML.stringify({
         [rootName]: {
             $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
             ...(data || {})
@@ -18,15 +16,10 @@ function buildXml(rootName: string, data?: any) {
     });
 }
 
-
 function buildMetadataXml(rootName: string, data?: any) {
-    const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
-    return xmlBuilder.buildObject({
-        [rootName]: {
-            $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
-            apiVersion: '51.0',
-            ...(data || {})
-        }
+    return buildXml(rootName, {
+        apiVersion: '51.0',
+        ...(data || {})
     });
 }
 

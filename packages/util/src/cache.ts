@@ -150,7 +150,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
         }
 
         // Reload value and put it in the cache
-        let newValue = invokeTarget(this, args);
+        let newValue = target.apply(this, args);
         if (options.ttl && options.ttl > 0) {
             // Follow TTL
             setTimeout(() => cache.delete(key), options.ttl * 1000);

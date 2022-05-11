@@ -1,5 +1,5 @@
+import { DeveloperLogs, SalesforceDebugLevel } from '@vlocode/salesforce';
 import * as vscode from 'vscode';
-import { SalesforceDebugLevel } from '@lib/salesforce/salesforceService';
 import MetadataCommand from './metadataCommand';
 
 /**
@@ -129,11 +129,11 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             if (this.traceFlagsWatcherId !== undefined) {
                 clearInterval(this.traceFlagsWatcherId);
             }
-            await this.salesforce.clearUserTraceFlags();
+            await this.salesforce.logs.clearUserTraceFlags();
 
             if (traceFlags) {
-                const debugLevel = await this.salesforce.createDebugLevel(debugLevelName, traceFlags);
-                this.currentTraceFlagsId = await this.salesforce.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
+                const debugLevel = await this.salesforce.logs.createDebugLevel(debugLevelName, traceFlags);
+                this.currentTraceFlagsId = await this.salesforce.logs.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
                 void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
 
                 // Keep trace flags active extend with 5 min each time; this esnures trace flags are removed once
@@ -169,7 +169,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
     public async traceFlagsWatcher() {
         if (this.currentTraceFlagsId) {
             this.logger.debug(`Extending active trace flags (${this.currentTraceFlagsId}) with ${this.traceFlagsDuration} seconds`);
-            await this.salesforce.extendTraceFlags(this.currentTraceFlagsId, this.traceFlagsDuration);
+            await this.salesforce.logs.extendTraceFlags(this.currentTraceFlagsId, this.traceFlagsDuration);
         }
     }
 }

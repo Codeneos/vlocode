@@ -14,6 +14,7 @@ import { SObjectRecord, PropertyAccessor } from './types';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
 import { NamespaceService } from './namespaceService';
 import { SoapClient, SoapDebuggingHeader } from './soapClient';
+import { DeveloperLogs } from './developerLogs';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -39,6 +40,7 @@ export class SalesforceService implements JsForceConnectionProvider {
     @injectable.property public readonly schema: SalesforceSchemaService;
     @injectable.property public readonly lookupService: SalesforceLookupService;
     @injectable.property public readonly deploy: SalesforceDeployService;
+    @injectable.property public readonly logs: DeveloperLogs;
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,

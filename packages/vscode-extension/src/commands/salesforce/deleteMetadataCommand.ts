@@ -1,5 +1,5 @@
+import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import * as path from 'path';
-import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
 

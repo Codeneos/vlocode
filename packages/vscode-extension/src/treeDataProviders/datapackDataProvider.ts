@@ -11,6 +11,7 @@ import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '@lib/config';
+import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {

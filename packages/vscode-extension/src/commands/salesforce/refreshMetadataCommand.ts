@@ -2,8 +2,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { except } from '@vlocode/util';
-import { SalesforcePackageBuilder, SalesforcePackageType } from '@lib/salesforce/deploymentPackageBuilder';
 import MetadataCommand from './metadataCommand';
+import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce

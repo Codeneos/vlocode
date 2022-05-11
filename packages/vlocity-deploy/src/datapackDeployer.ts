@@ -58,7 +58,7 @@ export interface DatapackDeploymentSpec {
 }
 
 @injectable.transient()
-export default class VlocityDatapackDeployer {
+export class VlocityDatapackDeployer {
 
     private readonly container = container.new();
 

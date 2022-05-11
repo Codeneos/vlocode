@@ -2,9 +2,7 @@ import { EventHandlerBase } from '@events/eventHandlerBase';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import { Builder as XmlBuilder } from 'xml2js';
-import * as constants from '@constants';
-import { getDocumentBodyAsString } from '@vlocode/util';
+import { getDocumentBodyAsString, XML } from '@vlocode/util';
 
 export default class extends EventHandlerBase<vscode.Uri> {
 
@@ -36,7 +34,7 @@ export default class extends EventHandlerBase<vscode.Uri> {
     }
 
     protected async createMetadataFileFor(document: vscode.Uri): Promise<void> {
-        const metaXml = new XmlBuilder(constants.MD_XML_OPTIONS).buildObject({
+        const metaXml = XML.stringify({
             ApexTrigger: {
                 $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' },
                 status: 'Active',
