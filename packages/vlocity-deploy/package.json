@@ -22,11 +22,11 @@
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "watch": "tsc -w & tsc-alias -w",
-        "build": "tsc && tsc-alias",
+        "watch": "tsc -w",
+        "build": "tsc",
         "prebuild": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass",
         "prepack": "npm run build",
-        "postinstall": "npx patch-package"
+        "postinstall": "patch-package"
     },
     "repository": {
         "type": "git",
@@ -47,20 +47,24 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "devDependencies": {
-        "@vlocode/core": "workspace:../core",
-        "@vlocode/salesforce": "workspace:../salesforce",
-        "@vlocode/util": "workspace:../util",
+        "@types/fs-extra": "^9",
+        "@types/node": "^16",
         "create-ts-index": "^1.14.0",
         "tsc-alias": "^1.6.7",
-        "typescript": "^4.5.4",
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
+        "@vlocode/core": "workspace:../core",
+        "@vlocode/salesforce": "workspace:../salesforce",
+        "@vlocode/util": "workspace:../util",
         "chalk": "^4.1.1",
+        "fs-extra": "^9.0",
         "glob": "^7.1.7",
-        "globby": "^11.0.4",
         "js-yaml": "^4.1.0",
-        "log-symbols": "^4.0.0"
+        "log-symbols": "^4.0.0",
+        "moment": "^2.29.1",
+        "sass.js": "^0.11.1",
+        "uuid": "^8.3.2"
     },
     "publisher": "curlybracket"
 }

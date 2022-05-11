@@ -1,7 +1,6 @@
 import { Logger , injectable } from '@vlocode/core';
-import { JsForceConnectionProvider } from '@vlocode/salesforce';
+import { Connection, JsForceConnectionProvider } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
-import * as jsforce from 'jsforce';
 import * as chalk from 'chalk';
 import * as constants from './constants';
 
@@ -52,7 +51,7 @@ export class VlocityNamespaceService {
         return this;
     }
 
-    private async getConnectionNamespace(connection: jsforce.Connection) {
+    private async getConnectionNamespace(connection: Connection) {
         // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
         const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');

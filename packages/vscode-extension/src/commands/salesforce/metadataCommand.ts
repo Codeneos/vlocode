@@ -2,9 +2,7 @@ import * as vscode from 'vscode';
 
 import { getDocumentBodyAsString } from '@vlocode/util';
 import { CommandBase } from '@root/commands/commandBase';
-import SalesforceService from '@lib/salesforce/salesforceService';
-import { DetailedDeployResult } from '@lib/salesforce/salesforceDeployService';
-import { SalesforcePackage } from '@lib/salesforce/deploymentPackage';
+import { DetailedDeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 
 /**
  * Salesforce metadata base command 

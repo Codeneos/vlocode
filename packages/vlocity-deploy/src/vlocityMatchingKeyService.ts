@@ -1,7 +1,6 @@
-import * as jsforce from 'jsforce';
 import { Logger, injectable } from '@vlocode/core';
 import { stringEquals , cache , removeNamespacePrefix } from '@vlocode/util';
-import { SalesforceSchemaService, SalesforceLookupService } from '@vlocode/salesforce';
+import { SalesforceSchemaService, SalesforceLookupService, FieldType } from '@vlocode/salesforce';
 
 
 import { VlocityNamespaceService } from './vlocityNamespaceService';
@@ -16,7 +15,7 @@ export interface VlocityMatchingKey {
 }
 
 @injectable()
-export default class VlocityMatchingKeyService {
+export class VlocityMatchingKeyService {
 
     constructor(
         private readonly logger: Logger,
@@ -74,7 +73,7 @@ export default class VlocityMatchingKeyService {
         return baseQuery;
     }
 
-    private formatValue(value: any, type: jsforce.FieldType | undefined) : string {
+    private formatValue(value: any, type: FieldType | undefined) : string {
         switch (type) {
             case 'int': return `${parseInt(value, 10)}`;
             case 'boolean': return `${value === null || value === undefined ? null : !!value}`;

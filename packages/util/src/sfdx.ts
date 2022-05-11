@@ -1,5 +1,4 @@
 import * as path from 'path';
-import * as jsforce from 'jsforce';
 import * as open from 'open';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
@@ -141,16 +140,9 @@ export namespace sfdx {
         return aliases.getKeysByValue(userName).shift() ?? userName;
     }
 
-    export async function setSfdxAlias(alias: string, userName: string) : Promise<void> {
-        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
-        aliases.getKeysByValue(userName)?.forEach(key => aliases.unset(key));
-        aliases.set(alias, userName);
-        await aliases.write();
-    }
-
-    export async function getJsForceConnection(username?: string) : Promise<jsforce.Connection> {
+    export async function getJsForceConnection(username?: string) : Promise<salesforce.Connection> {
         const org = await getOrg(username);
         const connection = org.getConnection() as unknown;
-        return connection as jsforce.Connection;
+        return connection as salesforce.Connection;
     }
 }

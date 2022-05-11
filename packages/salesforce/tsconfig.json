@@ -9,14 +9,12 @@
         "rootDir": "src",
         "declaration": true,
         "declarationMap": true,
+        "sourceMap": true,
         "plugins": [],
         "forceConsistentCasingInFileNames": true,
         "paths": {
             "@vlocode/*": ["../*"]
-        },
-        "types": [
-            "node"
-        ]
+        }
     },
     "include": [ "src/**/*" ]
 }

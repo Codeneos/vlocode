@@ -1,5 +1,5 @@
+import { VlocityDatapack } from '@vlocode/vlocity-deploy';
 import { expect } from 'chai';
-import { VlocityDatapack } from '@lib/vlocity/datapack';
 import 'mocha';
 
 const minimalTestDataPack = {

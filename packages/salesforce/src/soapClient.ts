@@ -1,6 +1,6 @@
 import * as xml2js from 'xml2js';
 import axios from 'axios';
-import { Connection } from 'connection';
+import { Connection } from './connection';
 
 const API_CLIENT_NAME = 'Vlocode SOAP client';
 const SOAP_XML_OPTIONS = {

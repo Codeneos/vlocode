@@ -163,7 +163,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
 
         // Load logs since last refresh
         const refreshDate = new Date();
-        const latestLogs = await this.vlocode.salesforceService.getDeveloperLogs(this.lastRefresh, this.currentUserOnly);
+        const latestLogs = await this.vlocode.salesforceService.logs.getDeveloperLogs(this.lastRefresh, this.currentUserOnly);
         this.lastRefresh = refreshDate;
         const uniqueLogEntries = new Map<string, DeveloperLog>(this.logs.concat(latestLogs).map(item => ([item.id, item])));
         let newLogs = Array.from(uniqueLogEntries.values());

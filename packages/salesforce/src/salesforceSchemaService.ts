@@ -1,10 +1,7 @@
-import { Logger , injectable } from '@vlocode/core';
+import { Logger, injectable } from '@vlocode/core';
 import { cache , isSalesforceId, normalizeSalesforceName, removeNamespacePrefix , Timer } from '@vlocode/util';
-import { JsForceConnectionProvider } from 'connection/jsForceConnectionProvider';
-import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from 'jsforce';
-
-// Re-export JS force describe types
-export { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from 'jsforce/describe-result';
+import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
+import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 
 /**
  * Provides access to Database Schema methods like describe.

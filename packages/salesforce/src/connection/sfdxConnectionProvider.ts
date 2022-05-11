@@ -5,7 +5,7 @@ import { JsForceConnectionProvider } from './jsForceConnectionProvider';
 
 interface PooledJsforceConnection extends Connection {
     _logger?: any;
-    _lastTested: number;
+    _lastTested?: number;
 }
 
 export { Connection };
@@ -14,15 +14,18 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
 
     private connection: PooledJsforceConnection;
     private version: string;
+    private explicitVersion: boolean;
     private readonly testInterval = 60 * 1000;
 
-    constructor(private readonly username: string, version: string) {
-        this.version = this.normalizeVersion(version);
+    constructor(private readonly username: string, version: string | undefined) {
+        this.explicitVersion = !!version;
+        this.version = version ? this.normalizeVersion(version) : '50.0';
     }
 
     public async getJsForceConnection() : Promise<Connection> {
         if (this.connection) {
-            if (Date.now() < this.connection._lastTested + this.testInterval) {
+            const lastTested = (this.connection._lastTested ?? 0) + this.testInterval;
+            if (!this.connection._lastTested || Date.now() < lastTested) {
                 this.connection._lastTested = Date.now();
                 return this.connection;
             }
@@ -37,11 +40,15 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
     }
 
     private async createConnection() {
-        const connection = await sfdx.getJsForceConnection(this.username) as PooledJsforceConnection;
+        const connection: PooledJsforceConnection = await sfdx.getJsForceConnection(this.username);
         connection._logger = this.createJsForceLogger(LogManager.get('Connection'));
         connection.tooling._logger = this.createJsForceLogger(LogManager.get('jsforce.Tooling'));
         connection._lastTested = Date.now();
-        connection.version = this.version;
+        if (this.explicitVersion) {
+            connection.version = this.version;
+        } else {
+            this.version = connection.version;
+        }
         return connection;
     }
 
@@ -72,7 +79,7 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
 
     protected get logger() : Logger {
         return LogManager.get(SfdxConnectionProvider);
-    }    
+    }
 
     @cache(-1)
     public async isProductionOrg() : Promise<boolean> {
@@ -85,7 +92,8 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
         return this.version;
     }
 
-    public setApiVersion(version: string) {        
+    public setApiVersion(version: string) {
+        this.explicitVersion = true;
         this.version = this.normalizeVersion(version);
         if (this.connection) {
             this.connection.version = this.version;
@@ -105,6 +113,6 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
         if (version < 10 || version > 100) {
             throw new Error(`Invalid API version: ${version}.0`);
         }
-        return `${version}.0`
+        return `${version}.0`;
     }
 }

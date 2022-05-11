@@ -7,7 +7,7 @@ import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import { QueryService } from './queryService';
 import { SalesforceDebugLevel } from './salesforceDebugLevel';
 
-export class DevelopersLogs {
+export class DeveloperLogs {
 
     public constructor(
         private readonly connectionProvider: JsForceConnectionProvider = container.get(JsForceConnectionProvider),

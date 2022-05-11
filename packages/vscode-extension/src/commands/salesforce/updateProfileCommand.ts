@@ -1,11 +1,8 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { SalesforcePackageBuilder, SalesforcePackageType } from '@root/lib/salesforce/deploymentPackageBuilder';
-import { SalesforceFieldPermission, SalesforceProfile } from '@root/lib/salesforce/salesforceProfile';
-import { PackageManifest } from '@root/lib/salesforce/deploy/packageXml';
-import { CustomFieldMetadataType } from '@root/lib/salesforce/metadata/customFieldMetadataType';
 import { asArray } from '@vlocode/util';
 import MetadataCommand from './metadataCommand';
+import { CustomFieldMetadataType, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
 
 export default class UpdateRelatedProfileCommand extends MetadataCommand {
 

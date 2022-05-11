@@ -3,9 +3,9 @@ import * as ZipArchive from 'jszip';
 
 import { Logger , injectable } from '@vlocode/core';
 import { CancellationToken, wait } from '@vlocode/util';
-import { JsForceConnectionProvider } from 'connection/jsForceConnectionProvider';
-import { DeploymentProgress, DetailedDeployResult, PackageManifest, RetrieveResultPackage, RetrieveStatus } from 'deploy';
-import { DeployOptions } from 'salesforceDeployment';
+import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
+import { DeploymentProgress, DetailedDeployResult, PackageManifest, RetrieveResultPackage, RetrieveStatus } from './deploy';
+import { DeployOptions } from './salesforceDeployment';
 import { SalesforcePackage } from './deploymentPackage';
 
 @injectable()

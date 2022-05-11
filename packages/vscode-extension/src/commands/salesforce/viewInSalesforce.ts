@@ -1,8 +1,8 @@
 
 import * as vscode from 'vscode';
 import * as open from 'open';
-import { MetadataType } from '@lib/salesforce/metadataRegistry';
 import MetadataCommand from './metadataCommand';
+import { MetadataType } from '@vlocode/salesforce';
 
 export default class ViewInSalesforceCommand extends MetadataCommand {
 

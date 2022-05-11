@@ -1,8 +1,7 @@
 import { LogManager , container } from '@vlocode/core';
 import { AsyncEventEmitter } from '@vlocode/util';
-import { Connection } from 'connection';
-import { JsForceConnectionProvider } from 'connection/jsForceConnectionProvider';
-import { DetailedDeployResult } from 'deploy';
+import { Connection, JsForceConnectionProvider } from './connection';
+import { DetailedDeployResult } from './deploy';
 import { SalesforcePackage } from './deploymentPackage';
 
 export interface SalesforceDeploymentEvents {

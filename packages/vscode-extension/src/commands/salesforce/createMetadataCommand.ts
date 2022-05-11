@@ -4,8 +4,8 @@ import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
 import * as itemTemplates from 'newItemTemplates.yaml';
 import globby = require('globby');
-import { VlocityNamespaceService } from '@root/lib/vlocity/vlocityNamespaceService';
-import { injectable, container } from '@vlocode/core';
+import { container } from '@vlocode/core';
+import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 import MetadataCommand from './metadataCommand';
 
 /**
