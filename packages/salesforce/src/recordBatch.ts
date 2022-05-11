@@ -1,9 +1,9 @@
-import { SalesforceSchemaService } from 'salesforceSchemaService';
 import { LogManager } from '@vlocode/core';
+import { Timer, arrayMapPush, CancellationToken } from '@vlocode/util';
 import { Connection, RecordResult, BatchInfo } from 'jsforce';
-import { CancellationToken } from 'vscode';
-import { AwaitReturnType } from 'types';
-import { Timer, arrayMapPush } from '@vlocode/util';
+
+import { AwaitReturnType } from './types';
+import { SalesforceSchemaService } from './salesforceSchemaService';
 
 type RecordOperationType = 'update' | 'insert';
 

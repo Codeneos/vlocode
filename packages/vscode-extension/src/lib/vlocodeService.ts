@@ -7,15 +7,13 @@ import * as chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
-import JsForceConnectionProvider from './salesforce/connection/jsForceConnectionProvider';
-import SfdxConnectionProvider from './salesforce/connection/sfdxConnectionProvider';
-import SalesforceService from './salesforce/salesforceService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
-import { VlocityNamespaceService } from './vlocity/vlocityNamespaceService';
+import { JsForceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
-export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
+export default class VlocodeService implements vscode.Disposable {
 
     // Privates
     private disposables: { dispose() : any }[] = [];
@@ -82,8 +80,8 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 container.unregister(this._datapackService);
             }
             if (this.config.sfdxUsername) {
-                await this.nsService.initialize(this); // reload namespace
                 this._salesforceService = container.get(SalesforceService);
+                await this.nsService.initialize(this._salesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
             }
             this.updateExtensionStatus(this.config);
@@ -283,13 +281,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                     }
                 }
             });
-            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername));
+            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, this.config.salesforce.apiVersion));
         }
-        const conn = await this.connector.getJsForceConnection();
-        if (this.config.salesforce.apiVersion) {
-            conn.version = this.config.salesforce.apiVersion;
-        }
-        return conn;
+        return this.connector.getJsForceConnection();
     }
 
     private async handleGetConnectionError(connector: JsForceConnectionProvider, err: Error | undefined) {

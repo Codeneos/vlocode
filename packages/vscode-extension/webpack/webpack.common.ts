@@ -4,8 +4,8 @@ import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import * as CopyPlugin from 'copy-webpack-plugin';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
-import * as ts from 'typescript';
-import WatchMarkersPlugin from '../../build/plugins/watchMarkers';
+//import * as ts from 'typescript';
+import WatchMarkersPlugin from './plugins/watchMarkers';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -19,26 +19,32 @@ const packageExternals = [
     'electron'
 ];
 
-export function transformerFactory(context: ts.TransformationContext) : ts.Transformer<ts.SourceFile> {
-    return (node: ts.SourceFile) => {
-        node.forEachChild(child => {
-            if (ts.isImportDeclaration(child)) {
-                console.debug(node.fileName + ' imports ' + child.importClause?.name?.text);
-            }
-        });
-        return node;
-    };
-}
+const contextFolder = path.resolve(__dirname, '..');
+const workspaceFolder = path.resolve(contextFolder, '..');
+
+// export function transformerFactory(context: ts.TransformationContext) : ts.Transformer<ts.SourceFile> {
+//     return (node: ts.SourceFile) => {
+//         node.forEachChild(child => {
+//             if (ts.isImportDeclaration(child)) {
+//                 console.debug(node.fileName + ' imports ' + child.importClause?.name?.text);
+//             }
+//         });
+//         return node;
+//     };
+// }
 
 const common : webpack.Configuration = {
-    context: __dirname,
+    context: contextFolder,
     devtool: 'source-map',
     target: 'node',
     module: {
         rules: [
             {
                 test: /\.ts$/,
-                include: path.resolve(__dirname, 'src'),
+                exclude: [
+                    /.*\.test\.ts$/i
+                ],
+                //include: path.resolve(__dirname, 'src'),
                 use: [{
                     loader: 'ts-loader',
                     options: {
@@ -53,23 +59,29 @@ const common : webpack.Configuration = {
             },
             {
                 test: /\.js$/,
-                include: path.resolve(__dirname, 'node_modules'),
+                include: path.resolve(contextFolder, 'node_modules'),
                 use: ['./build/loaders/prefixTransform']
             }
         ]
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
-        modules: [ 'node_modules', 'src'],
+        modules: [ '../../node_modules', 'node_modules', 'src'],
+        // alias: {
+        //     'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
+        //     '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
+        //     'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
+        //     'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
+        //     'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml'),
+        //     'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux'),
+        //     '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
+        //     '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
+        // },
         alias: {
-            'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
-            '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
-            'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
-            'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
-            'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml'),
-            'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux'),
-            '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
-            '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
+            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
+            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
+            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
         },
         plugins: [ new TsconfigPathsPlugin() ]
     },
@@ -130,20 +142,20 @@ const common : webpack.Configuration = {
 const vscodeExtension : webpack.Configuration = {
     entry: {
         'vlocode': './src/extension.ts',
-        'sass-compiler': './src/lib/sass/forked/fork.ts',
+        'sass-compiler': '../vlocity-deploy/src/sass/forked/fork.ts',
     },
     name: 'vlocode',
     devtool: 'source-map',
     output: {
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out'),
+        path: path.resolve(contextFolder, 'out'),
     },
     plugins: [
-        new CopyPlugin({
-            patterns: [
-                { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex' }
-            ]
-        }),
+        // new CopyPlugin({
+        //     patterns: [
+        //         { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex' }
+        //     ]
+        // }),
     ]
 };
 
@@ -162,7 +174,7 @@ const tests : webpack.Configuration = {
     name: 'tests',
     output: {
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out', 'test')
+        path: path.resolve(contextFolder, 'out', 'test')
     }
 };
 

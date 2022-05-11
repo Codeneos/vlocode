@@ -80,7 +80,7 @@ export async function isPartOfDatapack(fspath: string) : Promise<boolean> {
     return (await getDatapackHeaders(fspath)).length > 0;
 }
 
-export default class DatapackUtil {
+export class DatapackUtil {
 
     private static get logger() : Logger {
         return LogManager.get(DatapackUtil);

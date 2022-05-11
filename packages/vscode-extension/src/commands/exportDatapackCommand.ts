@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import * as constants from '@constants';
 
-import DatapackUtil from '@lib/vlocity/datapackUtil';
 import { groupBy , createRecordProxy , evalExpr } from '@vlocode/util';
 
 import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
-import SObjectRecord from '../lib/salesforce/sobjectRecord';
 import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
+import { SObjectRecord } from '@vlocode/salesforce';
+import { DatapackUtil } from '@vlocode/vlocity-deploy';
 
 export default class ExportDatapackCommand extends DatapackCommand {
 

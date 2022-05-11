@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
-import JsForceConnectionProvider from '@lib/salesforce/connection/jsForceConnectionProvider';
 import { CommandBase } from './commandBase';
+import { JsForceConnectionProvider } from '@vlocode/salesforce';
 
 class VlocityAdminCommand extends CommandBase {
 
@@ -37,8 +37,8 @@ class VlocityAdminCommand extends CommandBase {
         }
     ];
 
-    protected get connectionProvider() : JsForceConnectionProvider {
-        return this.vlocode.datapackService;
+    protected get connectionProvider(): JsForceConnectionProvider {
+        return this.vlocode.salesforceService;
     }
 
     public async validate() : Promise<void> {
