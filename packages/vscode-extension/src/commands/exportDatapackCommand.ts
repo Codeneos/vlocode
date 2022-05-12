@@ -3,7 +3,7 @@ import * as constants from '@constants';
 
 import { groupBy , createRecordProxy , evalExpr } from '@vlocode/util';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';
 import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { SObjectRecord } from '@vlocode/salesforce';

@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
-import * as itemTemplates from 'newItemTemplates.yaml';
+import * as itemTemplates from '../../newItemTemplates.yaml';
 import globby = require('globby');
 import { container } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';

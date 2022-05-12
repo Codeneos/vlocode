@@ -1,5 +1,5 @@
 {
-    "name": "vlocity-deploy",
+    "name": "@vlocode/vlocity-deploy",
     "version": "0.16.21",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
     "keywords": [
@@ -54,9 +54,10 @@
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
-        "@vlocode/core": "workspace:../core",
-        "@vlocode/salesforce": "workspace:../salesforce",
-        "@vlocode/util": "workspace:../util",
+        "@milahu/patch-package": "^6.4.11",
+        "@vlocode/core": "workspace:*",
+        "@vlocode/salesforce": "workspace:*",
+        "@vlocode/util": "workspace:*",
         "chalk": "^4.1.1",
         "fs-extra": "^9.0",
         "glob": "^7.1.7",

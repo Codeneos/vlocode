@@ -4,8 +4,7 @@ import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
 import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
 import { MetadataObject } from 'jsforce';
 import { singletonMixin } from '@vlocode/util';
-import { injectable, LifecyclePolicy } from '@vlocode/core';
-import { Logger } from '@salesforce/core';
+import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
 import * as urlFormats from './metadataUrls.json';
 
 export interface MetadataUrlFormat {

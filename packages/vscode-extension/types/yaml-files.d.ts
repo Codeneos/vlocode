@@ -1,7 +1,7 @@
 /**
  * Defines the queries for accessing Vlocity objects in Salesforce.
  */
-declare module 'exportQueryDefinitions.yaml' {
+declare module '*exportQueryDefinitions.yaml' {
     interface DatapackQueryDefinition {
         VlocityDataPackType: string;
         query: string;
@@ -26,14 +26,14 @@ declare module 'exportQueryDefinitions.yaml' {
     export = exportQueryDefinitions;
 }
 
-declare module 'metaFileTemplates.yaml' {
+declare module '*metaFileTemplates.yaml' {
     const exportMetaFileTemplates : {
         [metadataType: string] : string;
     };
     export = exportMetaFileTemplates;
 }
 
-declare module 'newItemTemplates.yaml' {
+declare module '*newItemTemplates.yaml' {
     type NewItemInput = {
         type: 'text';
         placeholder?: string;
@@ -61,7 +61,7 @@ declare module 'newItemTemplates.yaml' {
     export = TemplateItem;
 }
 
-declare module 'datapacksexpanddefinition.yaml' {
+declare module '*datapacksexpanddefinition.yaml' {
     interface SObjectFieldDefinition {
         [field: string]: {
             FileExt: string;
