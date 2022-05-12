@@ -43,6 +43,7 @@
         "tsc-alias": "1.6.7"
     },
     "dependencies": {
+        "@milahu/patch-package": "^6.4.11",
         "@salesforce/core": "2.33.1",
         "fast-xml-parser": "^3.19.0",
         "fs-extra": "^9.0",

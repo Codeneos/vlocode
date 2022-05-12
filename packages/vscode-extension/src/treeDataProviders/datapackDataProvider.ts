@@ -4,7 +4,7 @@ import { LogManager, Logger , injectable , container } from '@vlocode/core';
 import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity-deploy';
 import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName, clearCache } from '@vlocode/util';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
 import OpenSalesforceCommand from '../commands/openSalesforceCommand';

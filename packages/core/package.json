@@ -12,9 +12,9 @@
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "watch": "tsc -w",
-        "build": "tsc",
-        "prebuild": "cti -w -b ./src/fs ./src/logging/writers"
+        "watch": "yarn pre-build && tsc -w",
+        "build": "yarn pre-build && tsc",
+        "pre-build": "cti -w -b ./src/fs ./src/logging/writers"
     },
     "repository": {
         "type": "git",
@@ -41,7 +41,8 @@
         "create-ts-index": "^1.14.0"
     },
     "dependencies": {
-        "@vlocode/util": "workspace:..\\util",
+        "@milahu/patch-package": "^6.4.11",
+        "@vlocode/util": "workspace:*",
         "chalk": "^4.1.1",
         "globby": "^11.0.4",
         "memfs": "^3.2.2",
