@@ -12,9 +12,6 @@
         "sourceMap": true,
         "plugins": [],
         "forceConsistentCasingInFileNames": true,
-        "paths": {
-            "@vlocode/*": ["../*"]
-        }
     },
     "include": [ "src/**/*" ]
 }

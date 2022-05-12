@@ -1238,19 +1238,19 @@
     "scripts": {
         "postinstall": "patch-package",
         "prepare:commands": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
-        "build": "pnpm run prepare:commands && webpack --config webpack/webpack.prod.ts --env extension",
-        "build:debug": "pnpm run prepare:commands && webpack --config webpack/webpack.dev.ts --env extension",
-        "build:tests": "pnpm run prepare:commands && webpack --config webpack/webpack.dev.ts --env tests",
+        "build": "yarn prepare:commands && webpack --config webpack/webpack.prod.ts --env extension",
+        "build:debug": "yarn prepare:commands && webpack --config webpack/webpack.dev.ts --env extension",
+        "build:tests": "yarn prepare:commands && webpack --config webpack/webpack.dev.ts --env tests",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension --env tests",
         "watch:prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
         "clean": "rimraf ./out",
         "lint": "eslint ./src/**/*.ts ./packages/*/src/*.ts",
-        "test": "pnpm run build:tests && node ./out/test/runTest.js",
+        "test": "yarn build:tests && node ./out/test/runTest.js",
         "docs": "typedoc",
         "bump": "ts-node ./build/bumpVersion.ts patch",
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "pnpm run clean && pnpm run build"
+        "vscode:prepublish": "yarn clean && yarn build"
     },
     "devDependencies": {
         "@types/chai": "^4.2.21",
@@ -1301,10 +1301,11 @@
         "webpack-node-externals": "^3.0.0"
     },
     "dependencies": {
-        "@vlocode/core": "workspace:../core",
-        "@vlocode/salesforce": "workspace:../salesforce",
-        "@vlocode/util": "workspace:../util",
-        "@vlocode/vlocity-deploy": "workspace:../vlocity-deploy",
+        "@milahu/patch-package": "^6.4.11",
+        "@vlocode/core": "workspace:*",
+        "@vlocode/salesforce": "workspace:*",
+        "@vlocode/util": "workspace:*",
+        "@vlocode/vlocity-deploy": "workspace:*",
         "axios": "^0.25.0",
         "chalk": "^4.1.1",
         "cli-ux": "^5.6.3",

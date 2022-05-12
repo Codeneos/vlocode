@@ -5,11 +5,11 @@ import * as jsforce from 'jsforce';
 import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
-import { Logger , injectable } from '@vlocode/core';
+import { Logger, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity-deploy';
 import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 
-import * as exportQueryDefinitions from 'exportQueryDefinitions.yaml';
+import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { JsForceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';

@@ -6,6 +6,7 @@ import * as CopyPlugin from 'copy-webpack-plugin';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 //import * as ts from 'typescript';
 import WatchMarkersPlugin from './plugins/watchMarkers';
+import { debug } from 'console';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -66,7 +67,6 @@ const common : webpack.Configuration = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
-        modules: [ '../../node_modules', 'node_modules', 'src'],
         // alias: {
         //     'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
         //     '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
@@ -81,9 +81,12 @@ const common : webpack.Configuration = {
             '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
             '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
             '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts'),
+            "exportQueryDefinitions.yaml": path.resolve(contextFolder, 'exportQueryDefinitions.yaml')
         },
-        plugins: [ new TsconfigPathsPlugin() ]
+        plugins: [ 
+            new TsconfigPathsPlugin()
+        ]
     },
     output: {
         filename: '[name].js',
@@ -148,7 +151,7 @@ const vscodeExtension : webpack.Configuration = {
     devtool: 'source-map',
     output: {
         libraryTarget: 'commonjs2',
-        path: path.resolve(contextFolder, 'out'),
+        path: path.resolve(__dirname, 'out'),
     },
     plugins: [
         // new CopyPlugin({
