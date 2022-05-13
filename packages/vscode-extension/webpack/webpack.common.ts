@@ -6,7 +6,8 @@ import * as CopyPlugin from 'copy-webpack-plugin';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 //import * as ts from 'typescript';
 import WatchMarkersPlugin from './plugins/watchMarkers';
-import { debug } from 'console';
+import type { Options } from 'ts-loader';
+import { readdirSync } from 'fs';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -42,16 +43,14 @@ const common : webpack.Configuration = {
         rules: [
             {
                 test: /\.ts$/,
-                exclude: [
-                    /.*\.test\.ts$/i
-                ],
                 //include: path.resolve(__dirname, 'src'),
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        transpileOnly: false
-                        //getCustomTransformers: () => ({ before: [transformerFactory] })
-                    }
+                        onlyCompileBundledFiles: true,
+                        transpileOnly: false,
+                        configFile: 'tsconfig.json'
+                    } as Options
                 }],
             },
             {
@@ -81,8 +80,7 @@ const common : webpack.Configuration = {
             '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
             '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
             '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts'),
-            "exportQueryDefinitions.yaml": path.resolve(contextFolder, 'exportQueryDefinitions.yaml')
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
         },
         plugins: [ 
             new TsconfigPathsPlugin()
@@ -103,6 +101,8 @@ const common : webpack.Configuration = {
     mode: 'development',
     optimization: {
         runtimeChunk: false,
+        removeEmptyChunks: true,
+        removeAvailableModules: true,
         providedExports: false,
         usedExports: false,
         portableRecords: true,
@@ -113,14 +113,39 @@ const common : webpack.Configuration = {
             maxInitialRequests: Infinity,
             minSize: 0,
             cacheGroups: {
+                default: false,
+                defaultVendors: false,
                 sass: {
                     priority: 10,
                     test: /[\\/]sass\.js[\\/]/,
-                    name: 'lib-sass'
+                    name: 'lib-sass',
+                    reuseExistingChunk: false,
                 },
-                vendor: {
+                'vlocity-deploy': {
+                    priority: 10,
+                    test: /[\\/]packages[\\/]vlocity-deploy[\\/]/,
+                    name: 'vlocity-deploy'
+                },
+                salesforce: {
+                    priority: 10,
+                    test: /[\\/]packages[\\/]salesforce[\\/]/,
+                    name: 'salesforce'
+                },
+                core: {
+                    priority: 10,
+                    test: /[\\/]packages[\\/]core[\\/]/,
+                    name: 'core'
+                },
+                util: {
+                    priority: 10,
+                    test: /[\\/]packages[\\/]util[\\/]/,
+                    name: 'util'
+                },
+                shared: {
+                    priority: 5,
                     test: /[\\/]node_modules[\\/]/,
-                    name: 'vendor'
+                    name: 'shared',
+                    reuseExistingChunk: false
                 }
             },
         },
@@ -142,16 +167,16 @@ const common : webpack.Configuration = {
         }
 };
 
-const vscodeExtension : webpack.Configuration = {
+const extension : webpack.Configuration = {
     entry: {
         'vlocode': './src/extension.ts',
-        'sass-compiler': '../vlocity-deploy/src/sass/forked/fork.ts',
+        'sass-compiler': '../vlocity-deploy/src/sass/forked/fork.ts'
     },
     name: 'vlocode',
     devtool: 'source-map',
     output: {
         libraryTarget: 'commonjs2',
-        path: path.resolve(__dirname, 'out'),
+        path: path.resolve(contextFolder, 'out'),
     },
     plugins: [
         // new CopyPlugin({
@@ -181,10 +206,7 @@ const tests : webpack.Configuration = {
     }
 };
 
-const configVariations = {
-    extension: vscodeExtension,
-    tests: tests
-};
+const configVariations = { extension, tests };
 
 export default (env, extraConfig) => {
     return Object.keys(configVariations)

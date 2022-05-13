@@ -28,6 +28,7 @@ import OnSavedEventHandler from './events/onFileSaved';
 import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
 import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
+import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -121,6 +122,7 @@ class Vlocode {
         LogManager.setLogLevel(Container, LogLevel.verbose);
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
+        container.register(VlocityNamespaceService);
 
         this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);

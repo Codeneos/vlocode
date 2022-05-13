@@ -22,10 +22,10 @@
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "watch": "tsc -w",
-        "build": "tsc",
-        "prebuild": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass",
-        "prepack": "npm run build",
+        "watch": "yarn pre-build && tsc -w",
+        "build": "yarn pre-build && tsc",
+        "pack": "yarn build && yarn pack --out %s-%v.tgz",
+        "pre-build": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass",
         "postinstall": "patch-package"
     },
     "repository": {
@@ -51,6 +51,7 @@
         "@types/node": "^16",
         "create-ts-index": "^1.14.0",
         "tsc-alias": "^1.6.7",
+        "typescript": "4.6.4",
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
