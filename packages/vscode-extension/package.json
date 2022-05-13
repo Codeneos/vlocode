@@ -1236,21 +1236,19 @@
         ]
     },
     "scripts": {
-        "postinstall": "patch-package",
-        "prepare:commands": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
-        "build": "yarn prepare:commands && webpack --config webpack/webpack.prod.ts --env extension",
-        "build:debug": "yarn prepare:commands && webpack --config webpack/webpack.dev.ts --env extension",
-        "build:tests": "yarn prepare:commands && webpack --config webpack/webpack.dev.ts --env tests",
+        "build": "yarn pre-build && webpack --config webpack/webpack.prod.ts --env extension",
+        "build:debug": "yarn pre-build && webpack --config webpack/webpack.dev.ts --env extension",
+        "build:tests": "yarn pre-build && webpack --config webpack/webpack.dev.ts --env tests",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension --env tests",
         "watch:prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
+        "pack": "yarn build && vsce package",
+        "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "rimraf ./out",
-        "lint": "eslint ./src/**/*.ts ./packages/*/src/*.ts",
         "test": "yarn build:tests && node ./out/test/runTest.js",
         "docs": "typedoc",
-        "bump": "ts-node ./build/bumpVersion.ts patch",
-        "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "yarn clean && yarn build"
+        "vscode:prepublish": "yarn clean && yarn build",
+        "postinstall": "patch-package"
     },
     "devDependencies": {
         "@types/chai": "^4.2.21",
@@ -1291,6 +1289,7 @@
         "tsconfig-paths-webpack-plugin": "^3.5.2",
         "type-fest": "^2.12.2",
         "typedoc": "^0.22.11",
+        "typescript": "4.6.4",
         "vsce": "^2.6.3",
         "vscode-languageclient": "^7.0.0",
         "vscode-test": "^1.6.1",

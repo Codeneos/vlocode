@@ -11,9 +11,10 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "watch": "tsc -w & tsc-alias -w",
-        "build": "tsc && tsc-alias",
-        "prebuild": "cti -w -b ./src -i constants",
+        "watch": "yarn pre-build && tsc -w & tsc-alias -w",
+        "build": "yarn pre-build && tsc && tsc-alias",
+        "pack": "yarn build && yarn pack --out %s-%v.tgz",
+        "pre-build": "cti -w -b ./src -i constants",
         "postinstall": "patch-package"
     },
     "repository": {
@@ -40,7 +41,8 @@
         "@types/node": "^16",
         "@types/vscode": "^1.61.0",
         "create-ts-index": "^1.14.0",
-        "tsc-alias": "1.6.7"
+        "tsc-alias": "1.6.7",
+        "typescript": "4.6.4"
     },
     "dependencies": {
         "@milahu/patch-package": "^6.4.11",
