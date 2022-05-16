@@ -1,5 +1,6 @@
 import { Logger, injectable } from '@vlocode/core';
 import { cache , isSalesforceId, normalizeSalesforceName, removeNamespacePrefix , Timer } from '@vlocode/util';
+import { NamespaceService } from './namespaceService';
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 
@@ -10,6 +11,7 @@ import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } 
 export class SalesforceSchemaService {
 
     @injectable.property private readonly logger: Logger;
+    @injectable.property private readonly nsService: NamespaceService;
 
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
@@ -59,7 +61,7 @@ export class SalesforceSchemaService {
         const con = await this.connectionProvider.getJsForceConnection();
         const timer = new Timer();
         try {
-            return await con.describe(type);
+            return await con.describe(this.nsService?.updateNamespace(type) ?? type);
         } finally {
             this.logger.verbose(`Described ${type} [${timer.stop()}]`);
         }
@@ -85,7 +87,7 @@ export class SalesforceSchemaService {
         const resolved = new Array<Field>();
 
         // Resolve a full Field path
-        for (const fieldName of fieldPath.split('.')) {
+        for (const fieldName of fieldPath.split('.').map(fn => this.nsService?.updateNamespace(fn) ?? fn)) {
             const result = await this.describeSObject(type, throwWhenNotFound);
             const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
 

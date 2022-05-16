@@ -70,9 +70,9 @@ export class Logger {
             }
         }
 
-        if (level == LogLevel.error) {
-            console.error(...args.filter(arg => typeof arg === 'string' || arg instanceof Error));
-        }
+        // if (level == LogLevel.error) {
+        //     console.error(...args.filter(arg => typeof arg === 'string' || arg instanceof Error));
+        // }
 
         this.writeEntry({
             category: this.name,

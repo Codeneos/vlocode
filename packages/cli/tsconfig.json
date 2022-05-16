@@ -1,0 +1,14 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "outDir": "lib",
+        "baseUrl": "src",
+        "rootDir": "src",
+        "declaration": true,
+        "declarationMap": true,
+        "types": [
+            "node"
+        ]
+    },
+    "include": [ "src/**/*" ]
+}

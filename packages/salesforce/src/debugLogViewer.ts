@@ -18,34 +18,34 @@ export class DebugLogViewer {
         return storagePath ? path.join(storagePath, 'developerLogs') : undefined;
     }
 
-    public async showDeveloperLog(log: DeveloperLog) {
-        return this.openLog(await log.getBody(), `${moment(log.startTime).format('MM-DD-YYYY_HH-MM-SS')}_${log.id}.log`);
-    }
+    // public async showDeveloperLog(log: DeveloperLog) {
+    //     return this.openLog(await log.getBody(), `${moment(log.startTime).format('MM-DD-YYYY_HH-MM-SS')}_${log.id}.log`);
+    // }
 
-    public showExecutionLog(log: string) {
-        return this.openLog(this.formatExecutionLog(log), `${moment().format('MM-DD-YYYY_HH-MM-SS')}.log`);
-    }
+    // public showExecutionLog(log: string) {
+    //     return this.openLog(this.formatExecutionLog(log), `${moment().format('MM-DD-YYYY_HH-MM-SS')}.log`);
+    // }
 
-    private async openLog(logBody: string, logFileName: string) {
-        const formattedLog = this.formatLog(logBody);
+    // private async openLog(logBody: string, logFileName: string) {
+    //     const formattedLog = this.formatLog(logBody);
 
-        if (this.developerLogsPath) {
-            const fullLogPath = path.join(this.developerLogsPath, logFileName);
-            await fs.ensureDir(this.developerLogsPath);
-            await fs.writeFile(fullLogPath, formattedLog);
+    //     if (this.developerLogsPath) {
+    //         const fullLogPath = path.join(this.developerLogsPath, logFileName);
+    //         await fs.ensureDir(this.developerLogsPath);
+    //         await fs.writeFile(fullLogPath, formattedLog);
 
-            const debugLog = await vscode.workspace.openTextDocument(fullLogPath);
-            if (debugLog) {
-                void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
-                void vscode.window.showTextDocument(debugLog);
-            }
-        } else {
-            const debugLog = await vscode.workspace.openTextDocument({ language: 'apexlog', content: logBody });
-            if (debugLog) {
-                void vscode.window.showTextDocument(debugLog);
-            }
-        }
-    }
+    //         const debugLog = await vscode.workspace.openTextDocument(fullLogPath);
+    //         if (debugLog) {
+    //             void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
+    //             void vscode.window.showTextDocument(debugLog);
+    //         }
+    //     } else {
+    //         const debugLog = await vscode.workspace.openTextDocument({ language: 'apexlog', content: logBody });
+    //         if (debugLog) {
+    //             void vscode.window.showTextDocument(debugLog);
+    //         }
+    //     }
+    // }
 
     private formatExecutionLog(log: string) {
         const startIndex = log.indexOf(DebugLogViewer.START_MARKER);

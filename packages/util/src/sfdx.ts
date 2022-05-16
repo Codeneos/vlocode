@@ -122,13 +122,20 @@ export namespace sfdx {
 
     export async function getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {
         const username = await resolveAlias(usernameOrAlias) || usernameOrAlias;
-        const org = await salesforce.Org.create({
-            connection: await salesforce.Connection.create({
-                authInfo: await salesforce.AuthInfo.create({ username })
-            })
-        });
-        await org.refreshAuth();
-        return org;
+        try {
+            const org = await salesforce.Org.create({
+                connection: await salesforce.Connection.create({
+                    authInfo: await salesforce.AuthInfo.create({ username })
+                })
+            });
+            await org.refreshAuth();
+            return org;
+        } catch (err) {
+            if (err.name == 'NamedOrgNotFound') {
+                throw new Error(`The specified alias "${usernameOrAlias}" does not exists; resolve this error by register the alias using SFDX or try connecting using the username instead`)
+            }
+            throw err;
+        }
     }
 
     async function resolveAlias(alias?: string) : Promise<string | undefined> {

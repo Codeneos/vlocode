@@ -56,6 +56,7 @@ export class Container {
     private readonly serviceDependencies = new Map<string, Array<string>>();
     private readonly servicesProvided = Symbol('[[Container:ServicesProvided]]');
     private readonly containerGuid = uniqueNamesGenerator(uniqueNameConfig);
+    private readonly serviceShapes = new Map<string, Array<string>>();
 
     // Factories are lazy instances, when there is no instance it will be created
     // through a factory
@@ -223,14 +224,14 @@ export class Container {
 
     /**
      * Resolve injectable parameters for a service using this container.
-     * @param ctor Contructor function
+     * @param ctor Constructor function
      * @param args arguments
      * @param instanceGuid instance guid
      * @returns 
      */
     public resolveParameters<T extends new(...args: any[]) => any>(ctor: T, args: any[] = [], instanceGuid?: string) {
         if (ctor.length == 0) {
-            // Ignore parameterless ctors
+            // Ignore parameter-less ctors
             return args;
         }
 
@@ -449,15 +450,18 @@ export class Container {
                 }
                 return true;
             },
-            has(target, prop) { return prop in target.getInstance(); },
+            has(target, prop) { return (prop in prototype) || (prop in target.getInstance()); },
             getOwnPropertyDescriptor(target, prop) {
-                return Object.getOwnPropertyDescriptor(target.getInstance(), prop);
+                if (target.instance) {
+                    return Object.getOwnPropertyDescriptor(prototype, prop);
+                } 
+                return undefined;               
             },
             getPrototypeOf() {
                 return prototype;
             },
             ownKeys(target) {
-                return Object.keys(target.getInstance());
+                return target.instance ? Reflect.ownKeys(target.instance) : [];
             }
         }) as any;
     }
