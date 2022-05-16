@@ -3,13 +3,14 @@ import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
 import { mapAsyncParallel, filterUndefined, CancellationToken } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from './datapackUtil';
+import { join } from 'path/posix';
 
 type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);
 
 @injectable()
 export default class DatapackLoader {
 
-    protected readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [
+    private readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [
         { test: /\.json$/i, load: file => this.loadJson(file) },
         { test: /\.png|jpeg|jpg|doc|docx|xls|xlsx|zip$/i, load: file => this.loadBinary(file) },
         { test: /\.js|html|csv|txt|css|scss|sass\S+$/i, load: file => this.loadText(file) },
@@ -17,18 +18,23 @@ export default class DatapackLoader {
     ];
 
     constructor(
-        protected readonly fileSystem: FileSystem,
-        protected readonly logger: Logger = LogManager.get(DatapackLoader)) {
+        private readonly fileSystem: FileSystem,
+        private readonly logger: Logger = LogManager.get(DatapackLoader)) {
     }
 
     public addLoader(test: RegExp, loader: DatapackLoaderFunc) {
         this.loaders.push({ test, load: loader });
     }
 
-    public async loadFrom(datapackHeader: string): Promise<VlocityDatapack>;
-    public async loadFrom(datapackHeader: string, bubbleExceptions: true) : Promise<VlocityDatapack>;
-    public async loadFrom(datapackHeader: string, bubbleExceptions: false) : Promise<VlocityDatapack | undefined>;
-    public async loadFrom(datapackHeader: string, bubbleExceptions = true) : Promise<VlocityDatapack | undefined> {
+    public async loadDatapacksFromFolder(datapackFolder: string, cancellationToken?: CancellationToken) {
+        const datapackHeaders = await this.fileSystem.findFiles(join(datapackFolder, '**/*_DataPack.json'));
+        return this.loadDatapacks(datapackHeaders, cancellationToken);
+    }
+
+    public async loadDatapack(datapackHeader: string): Promise<VlocityDatapack>;
+    public async loadDatapack(datapackHeader: string, bubbleExceptions: true) : Promise<VlocityDatapack>;
+    public async loadDatapack(datapackHeader: string, bubbleExceptions: false) : Promise<VlocityDatapack | undefined>;
+    public async loadDatapack(datapackHeader: string, bubbleExceptions = true) : Promise<VlocityDatapack | undefined> {
         try {
             const manifestEntry = getDatapackManifestKey(datapackHeader);
             this.logger.info(`Loading datapack: ${manifestEntry.key}`);
@@ -47,12 +53,12 @@ export default class DatapackLoader {
         }
     }
 
-    public async loadAll(datapackHeaders : string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
+    public async loadDatapacks(datapackHeaders : string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
         const datapacks = await mapAsyncParallel(datapackHeaders, async header => {
             if (cancellationToken?.isCancellationRequested) {
                 return undefined;
             }
-            return this.loadFrom(header, false);
+            return this.loadDatapack(header, false);
         }, 4);
         return filterUndefined(datapacks);
     }
@@ -77,21 +83,21 @@ export default class DatapackLoader {
         return datapack;
     }
 
-    protected async loadText(fileName: string) : Promise<any> {
+    private async loadText(fileName: string) : Promise<any> {
         if (!await this.fileSystem.pathExists(fileName)) {
             return undefined;
         }
         return (await this.fileSystem.readFile(fileName)).toString('utf-8');
     }
 
-    protected async loadBinary(fileName: string) : Promise<any> {
+    private async loadBinary(fileName: string) : Promise<any> {
         if (!await this.fileSystem.pathExists(fileName)) {
             return undefined;
         }
         return this.fileSystem.readFile(fileName);
     }
 
-    protected async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
+    private async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
         if (typeof fieldValue === 'string') {
             const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fieldValue));
             if (loader) {

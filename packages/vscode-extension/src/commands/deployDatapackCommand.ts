@@ -7,7 +7,7 @@ import { DatapackCommand } from '@commands/datapackCommand';
 import { forEachAsyncParallel } from '@vlocode/util';
 import { container } from '@vlocode/core';
 import chalk = require('chalk');
-import { DatapackUtil, VlocityDatapackDeployer } from '@vlocode/vlocity-deploy';
+import { DatapackUtil, DatapackDeployer } from '@vlocode/vlocity-deploy';
 
 export default class DeployDatapackCommand extends DatapackCommand {
 
@@ -103,7 +103,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
     private async directDeploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
-        const deployment = await container.get(VlocityDatapackDeployer).createDeployment(datapacks, { cancellationToken });
+        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks, { cancellationToken });
         await deployment.start(cancellationToken);
 
         if (cancellationToken.isCancellationRequested) {

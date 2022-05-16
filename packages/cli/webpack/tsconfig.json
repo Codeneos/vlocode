@@ -1,0 +1,13 @@
+{    
+    "extends": "../tsconfig",
+    "compilerOptions": {
+        "outDir": "lib",
+        "sourceMap": true,
+        "baseUrl": ".",
+        "forceConsistentCasingInFileNames": true,
+        "types": [
+            "node",
+            "webpack-env"
+        ]
+    }
+}

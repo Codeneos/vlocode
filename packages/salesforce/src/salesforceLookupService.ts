@@ -3,6 +3,7 @@ import { asArray, last, transform, joinLimit } from '@vlocode/util';
 import { PropertyAccessor } from './types';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+import { NamespaceService } from './namespaceService';
 
 /**
  * Look up records from Salesforce using an more convenient syntax
@@ -11,6 +12,7 @@ import { SalesforceSchemaService } from './salesforceSchemaService';
 export class SalesforceLookupService {
 
     @injectable.property private readonly logger: Logger;
+    @injectable.property private readonly nsService: NamespaceService;
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,
