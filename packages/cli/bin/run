@@ -1,0 +1,8 @@
+
+#!/usr/bin/env node
+
+try {
+    require('../dist/cli');
+} catch(err) {
+    require('../lib');
+}
