@@ -3,7 +3,7 @@ import { SalesforceService } from '@vlocode/salesforce';
 import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '../datapackDeployer';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class VlocityActionSpec implements DatapackDeploymentSpec {
+export class VlocityAction implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly salesforceService: SalesforceService,

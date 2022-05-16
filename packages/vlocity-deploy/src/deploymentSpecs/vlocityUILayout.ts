@@ -3,7 +3,7 @@ import type { DatapackDeploymentSpec } from '../datapackDeployer';
 import { VlocityDatapack } from '../datapack';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class VlocityCard implements DatapackDeploymentSpec {
+export class vlocityUILayout implements DatapackDeploymentSpec {
     public async preprocess(datapack: VlocityDatapack) {
         datapack.Active__c = true;
     }

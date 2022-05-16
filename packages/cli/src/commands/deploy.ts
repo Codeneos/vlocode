@@ -1,10 +1,10 @@
-import { CachedFileSystemAdapter, ConsoleWriter, Container, container, injectable, Logger, LogLevel, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
+import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { DatapackDeployer } from '../../datapackDeployer';
+import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler } from '@vlocode/vlocity-deploy';
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
-import DatapackLoader from '../../datapackLoader';
-import { VlocityNamespaceService } from '../../vlocityNamespaceService';
+import * as logSymbols from 'log-symbols';
+import { join } from 'path';
 
 export default class extends Command {
 
@@ -42,6 +42,12 @@ export default class extends Command {
         // Setup a Cached file system for loading datapacks
         container.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
 
+        // Setup SASS packed compiler when available (usually only when CLI is packed)
+        const packedSassCompiler = join(__dirname, '../sassCompiler.js');
+        if (existsSync(packedSassCompiler)) {
+            container.register(container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
+        }
+
         // Load datapacks
         const datapacks = await container.create(DatapackLoader).loadDatapacksFromFolder(folder);
         if (datapacks.length == 0) {
@@ -54,6 +60,12 @@ export default class extends Command {
         await deployment.start();
 
         // done!!
-        this.logger.info('Hello!');
+        if (deployment.hasErrors) {
+            this.logger.info(`${logSymbols.error} Deployment completed with ${deployment.failedRecordCount} errors`);
+        } else {
+            this.logger.info(`${logSymbols.success} Deployment completed without errors!`);            
+        }
     }
+
+    private 
 }

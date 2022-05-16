@@ -4,7 +4,7 @@ import { DatapackDeploymentSpec } from '../datapackDeployer';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class Product2Spec implements DatapackDeploymentSpec {
+export class Product2 implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly salesforceService: JsForceConnectionProvider,

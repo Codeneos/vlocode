@@ -1,0 +1,83 @@
+diff --git a/node_modules/@types/jsforce/api/metadata.d.ts b/node_modules/@types/jsforce/api/metadata.d.ts
+index 808c6d5..d14412e 100644
+--- a/node_modules/@types/jsforce/api/metadata.d.ts
++++ b/node_modules/@types/jsforce/api/metadata.d.ts
+@@ -185,6 +185,8 @@ export class Metadata {
+ 
+     checkRetrieveStatus(id: string, callback?: Callback<RetrieveResult>): Promise<RetrieveResult>;
+ 
++    cancelDeploy(id: string, callback?: Callback<AsyncResult>) : Promise<AsyncResult>;
++
+     checkStatus(
+         ids: string | string[],
+         callback?: Callback<AsyncResult | Array<AsyncResult>>,
+diff --git a/node_modules/@types/jsforce/connection.d.ts b/node_modules/@types/jsforce/connection.d.ts
+index f2b9e85..b135479 100644
+--- a/node_modules/@types/jsforce/connection.d.ts
++++ b/node_modules/@types/jsforce/connection.d.ts
+@@ -31,6 +31,13 @@ export interface RestApiOptions {
+     allOrNone?: boolean | undefined;
+ }
+ 
++export interface RetrieveOptions extends RestApiOptions {
++    /**
++     * Fetching field names in retrieving record
++     */
++    fields?: Array<string>;
++}
++
+ // These are pulled out because according to http://jsforce.github.io/jsforce/doc/connection.js.html#line49
+ // the oauth options can either be in the `oauth2` property OR spread across the main connection
+ export interface PartialOAuth2Options {
+diff --git a/node_modules/@types/jsforce/record-result.d.ts b/node_modules/@types/jsforce/record-result.d.ts
+index df77ef2..05d4dff 100644
+--- a/node_modules/@types/jsforce/record-result.d.ts
++++ b/node_modules/@types/jsforce/record-result.d.ts
+@@ -1,7 +1,7 @@
+ import { SalesforceId } from './salesforce-id';
+ 
+ interface ErrorResult {
+-    errors: string[];
++    errors: { fields: string[], message: string, statusCode: string }[];
+     success: false;
+ }
+ 
+diff --git a/node_modules/@types/jsforce/salesforce-object.d.ts b/node_modules/@types/jsforce/salesforce-object.d.ts
+index 3199311..f87c428 100644
+--- a/node_modules/@types/jsforce/salesforce-object.d.ts
++++ b/node_modules/@types/jsforce/salesforce-object.d.ts
+@@ -5,7 +5,7 @@ import { DescribeSObjectResult } from './describe-result';
+ import { Query } from './query';
+ import { Record, RecordReference } from './record';
+ import { RecordResult } from './record-result';
+-import { Connection, RestApiOptions, Callback } from './connection';
++import { Connection, RetrieveOptions, RestApiOptions, Callback } from './connection';
+ import { SalesforceId } from './salesforce-id';
+ import { Batch, BatchResultInfo } from './batch';
+ import { QuickAction, QuickActionInfo } from './quick-action';
+@@ -56,18 +56,23 @@ export class SObject<T> {
+     create(record: T, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     create(record: Array<T>, options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     create(record: Array<T>, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    create(record: Array<T>, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     createBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     del(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    del(id: string, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     del(ids: string[], callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    del(ids: string[], options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     destroy(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    destroy(id: string, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     destroy(ids: string[], callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    destroy(ids: string[], options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     delete(id: string, callback?: Callback<RecordResult>): Promise<RecordResult>;
++    delete(id: string, options?: RestApiOptions, callback?: Callback<RecordResult>): Promise<RecordResult>;
+     delete(ids: string[], callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
++    delete(ids: string[], options?: RestApiOptions, callback?: Callback<RecordResult[]>): Promise<RecordResult[]>;
+     deleteBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     destroyBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     destroyHardBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+-    deleted(start: Date | string, end: Date | string, callback?: Callback<DeletedRecordsInfo>): Promise<DeletedRecordsInfo>;
+-    deleteHardBulk(input?: Array<Record<T>> | stream.Stream | string, callback?: Callback<RecordResult[]>): Batch;
+     describe(callback?: Callback<DescribeSObjectResult>): Promise<DescribeSObjectResult>;
+     describe$: {
+         /** Returns a value from the cache if it exists, otherwise calls SObject.describe */

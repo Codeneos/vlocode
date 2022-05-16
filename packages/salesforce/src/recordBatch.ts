@@ -157,13 +157,14 @@ export class RecordBatch {
                     resultRecords = records.splice(0, count);
                 }
 
+                const describedObjectType = await this.schemaService.describeSObject(sobjectType);
                 const recordData = Promise.all(resultRecords.map(record => this.validateRecordData(sobjectType, record.data, operation as any)));
                 const refs = resultRecords.map(record => record.ref);
 
                 return {
                     operation,
-                    sobjectType,
                     refs,
+                    sobjectType: describedObjectType.name,
                     records: await recordData
                 };
             }
