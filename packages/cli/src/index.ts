@@ -1,18 +1,27 @@
-#!/usr/bin/env node
-import { Command as Commander } from 'commander';
+import 'source-map-support/register';
+import { Command as Commander, Option } from 'commander';
 import { readdirSync } from 'fs';
 import * as path from 'path';
-import { ConsoleWriter, Container, container, Logger, LogLevel, LogManager } from '@vlocode/core';
+import { FancyConsoleWriter, Container, container, Logger, LogLevel, LogManager } from '@vlocode/core';
+
+// @ts-ignore
+const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
 
 class CLI {
+    private static programName = 'vlocode-cli';
     private static description = 'CLI for hyper fast Datapack deployment';
     private static version = '0.8.0';
 
-    private program = new Commander().name('vlocode-cli').description(CLI.description).version(CLI.version);
+    private program = new Commander().name(CLI.programName).description(CLI.description).version(CLI.version);
     private logger = LogManager.get(CLI);
 
+    static options = [
+        new Option('-v, --verbose', 'enable verbose logging').default(false),
+        new Option('--debug', 'print call stack when an unhandled error occurs').default(false)
+    ];
+
     static {
-        LogManager.registerWriter(new ConsoleWriter());
+        LogManager.registerWriter(new FancyConsoleWriter());
         LogManager.setLogLevel(Container, LogLevel.verbose);
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
     }
@@ -22,6 +31,13 @@ class CLI {
 
     public run(argv: any[] = process.argv) {
         this.program.parse(argv);
+    }
+
+    private init(options: any) { 
+        this.logger.info(`${CLI.programName} v${CLI.version} - ${CLI.description}`);       
+        if (options.verbose === true) {
+            LogManager.setGlobalLogLevel(LogLevel.verbose);
+        }
     }
     
     public loadCommands(folder: string = '.') {
@@ -45,8 +61,9 @@ class CLI {
     
     private registerCommand(parentCommand: Commander, commandFile: string) {
         try {    
-            const commandModule = require(commandFile);
-            
+            // @ts-ignore
+            const commandModule = nodeRequire(commandFile);
+
             if (commandModule.default) {
                 this.logger.debug(`Loading command from: ${commandFile}`);
 
@@ -55,13 +72,28 @@ class CLI {
                 const command = parentCommand.command(commandName).description(commandClass.description);
     
                 commandClass.args.forEach(arg => command.addArgument(arg));
-                commandClass.options.forEach(option => command.addOption(option));
+                [...CLI.options, ...commandClass.options].forEach(option => command.addOption(option));
 
-                command.action((...args) => {
+                command.action(async (...args) => {
                     const commandInstance = container.create(commandClass);
-                    commandInstance.options = args.length ? args[args.length - 1] : {};
-                    commandInstance.args = args.slice(0, -1);
-                    return commandInstance.run(...args);
+                    commandInstance.options = args.slice(0, -1).pop();
+                    commandInstance.args = args.slice(0, -2);
+                    this.init(commandInstance.options);
+                    if (commandInstance.init) {
+                        commandInstance.init(commandInstance.options);
+                    }
+                    try { 
+                        return await commandInstance.run(...args);
+                    } catch(err) {
+                        if (commandInstance.options.debug && err instanceof Error) {
+                            this.logger.error(err.message, '\n', err.stack);
+                        } else {
+                            this.logger.error(err.message ?? err);
+                        }                                               
+                        process.exit(1);
+                    } finally {
+                        process.exit(0);
+                    }
                 });
 
                 return command;

@@ -153,18 +153,17 @@ const common : webpack.Configuration = {
     cache: {
         type: 'memory'
     },
-    externals:
-        function({ request }, callback) {
-            const isExternal = packageExternals.some(
-                moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
-            );
-            if (isExternal){
-                // @ts-ignore
-                return callback(undefined, `commonjs ${request}`);
-            }
+    externals: function({ request }, callback) {
+        const isExternal = packageExternals.some(
+            moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
+        );
+        if (isExternal){
             // @ts-ignore
-            callback();
+            return callback(undefined, `commonjs ${request}`);
         }
+        // @ts-ignore
+        callback();
+    }
 };
 
 const extension : webpack.Configuration = {

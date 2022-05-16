@@ -5,9 +5,9 @@
     "tasks": [
         {
             "type": "shell",
-            "command": "pnpm -r run build",
-            "isBackground": false,
-            "label": "build",
+            "command": "yarn workspace vlocode run watch",
+            "isBackground": true,
+            "label": "build-extension",
             "presentation": {
                 "reveal": "always"
             },
@@ -74,6 +74,95 @@
                     }
                 }
             ]
+        },
+        {            
+            "label": "watch-cli-webpack",
+            "type": "shell",
+            "command": "yarn watch-cli-webpack",
+            "isBackground": false,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            }
+        },
+        {            
+            "label": "watch-cli",
+            "type": "shell",
+            "problemMatcher":"$tsc-watch",
+            "command": "yarn workspace @vlocode/cli tsc -w",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": [
+                "watch-vlocity-deploy"
+            ]
+        },
+        {            
+            "label": "watch-vlocity-deploy",
+            "type": "shell",
+            "problemMatcher":"$tsc-watch",
+            "command": "yarn workspace @vlocode/vlocity-deploy tsc -w",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": [
+                "watch-salesforce"
+            ]
+        },
+        {            
+            "label": "watch-salesforce",
+            "type": "shell",
+            "problemMatcher":"$tsc-watch",
+            "command": "yarn workspace @vlocode/salesforce tsc -w",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": [
+                "watch-core"
+            ]
+        },
+        {            
+            "label": "watch-core",
+            "type": "shell",
+            "problemMatcher":"$tsc-watch",
+            "command": "yarn workspace @vlocode/core tsc -w",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": [
+                "watch-util"
+            ]
+        },
+        {            
+            "label": "watch-util",
+            "type": "shell",
+            "problemMatcher":"$tsc-watch",
+            "command": "yarn workspace @vlocode/util tsc -w",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            }
         }
     ]
 }
