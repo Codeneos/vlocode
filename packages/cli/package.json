@@ -10,7 +10,7 @@
     ],
     "main": "lib/index.js",
     "bin": {
-        "vlocode": "lib/index.js"
+        "vlocode": "bin/run"
     },
     "publishConfig": {
         "main": "lib/index.js",
@@ -25,10 +25,14 @@
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "watch": "yarn pre-build && webpack --watch --config webpack/webpack.ts",
-        "build": "yarn pre-build && webpack --config webpack/webpack.ts",
-        "pack": "yarn build && yarn pack --out %s-%v.tgz",
-        "pre-build": "cti -w -b ./src/commands"
+        "watch": "yarn pre-build && tsc -w",
+        "watch-webpack": "yarn pre-build && webpack --watch --config webpack/webpack.ts",
+        "build": "yarn pre-build && tsc -b",
+        "build-webpack": "yarn pre-build && webpack --config webpack/webpack.ts",
+        "pre-build": "yarn workspace @vlocode/vlocity-deploy run pre-build",
+        "pack": "yarn clean && yarn build-webpack && tsc && yarn pack-only",
+        "pack-only": "yarn pack --out %s-%v.tgz",
+        "clean": "rimraf ./dist ./lib ./.ts-temp"
     },
     "repository": {
         "type": "git",
@@ -39,8 +43,9 @@
         "email": "peter@curlybracket.nl"
     },
     "files": [
-        "lib/**/*.d.ts",
-        "lib/**/*.js"
+        "/lib",
+        "/dist",
+        "/bin"
     ],
     "license": "MIT",
     "bugs": {
@@ -50,30 +55,32 @@
     "devDependencies": {
         "@types/fs-extra": "^9",
         "@types/node": "^16",
-        "create-ts-index": "^1.14.0",
-        "json-loader": "^0.5.7",
-        "ts-loader": "^9.2.6",
-        "tsconfig-paths-webpack-plugin": "^3.5.2",
-        "tsc-alias": "^1.6.7",
-        "typescript": "4.6.4",
-        "webpack": "^5.72.1",
-        "webpack-cli": "^4.9.2",
-        "webpack-env": "^0.8.0",
-        "webpack-glob-entry": "^2.1.1",
-        "webpack-merge": "^5.8.0",
-        "webpack-node-externals": "^3.0.0"
-    },
-    "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "chalk": "^4.1.1",
         "commander": "^9.2.0",
+        "create-ts-index": "^1.14.0",
         "fs-extra": "^9.0",
         "glob": "^7.1.7",
+        "json-loader": "^0.5.7",
         "log-symbols": "^4.0.0",
-        "moment": "^2.29.1"
+        "moment": "^2.29.1",
+        "rimraf": "^3.0.2",
+        "ts-loader": "^9.2.6",
+        "tsc-alias": "^1.6.7",
+        "tsconfig-paths-webpack-plugin": "^3.5.2",
+        "typescript": "4.6.4",
+        "webpack": "^5.72.1",
+        "webpack-cli": "^4.9.2",
+        "webpack-env": "^0.8.0",
+        "webpack-glob-entry": "^2.1.1",
+        "webpack-merge": "^5.8.0",
+        "webpack-node-externals": "^3.0.0",
+        "source-map-support": "^0.5.21"
+    },
+    "dependencies": {
     },
     "publisher": "curlybracket"
 }

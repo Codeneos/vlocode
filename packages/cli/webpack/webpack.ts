@@ -1,7 +1,14 @@
 import * as path from 'path';
+import * as glob from 'glob';
 import * as webpack from 'webpack';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import type { Options } from 'ts-loader';
+
+const packageExternals = [
+    'vscode',
+    'vscode-languageclient',
+    'electron'
+];
 
 const contextFolder = path.resolve(__dirname, '..');
 const workspaceFolder = path.resolve(contextFolder, '..');
@@ -11,36 +18,36 @@ const common : webpack.Configuration = {
     context: contextFolder,
     devtool: 'source-map',
     target: 'node',
-    entry: {
-        'cli': './src/index.ts'
-    },
+    entry:
+        glob.sync('./src/commands/**/*.ts').reduce((map, file) => Object.assign(map, {
+            [file.replace(/^.*commands[\//]([^.]+)\.ts$/i, 'commands/$1')]: {
+                dependOn: 'cli',
+                import: file,
+                runtime: false
+            }
+        }),
+        {
+            cli: './src/index.ts',
+            sassCompiler: '../vlocity-deploy/src/sass/forked/fork.ts'
+        }),
     module: {
         rules: [
             {
                 test: /\.ts$/,
-                //include: path.resolve(__dirname, 'src'),
                 use: [{
                     loader: 'ts-loader',
                     options: {
                         onlyCompileBundledFiles: true,
                         compilerOptions: {
-                            rootDir: workspaceFolder
+                            sourceMap: true,
+                            rootDir: undefined,
+                            outDir: path.resolve(contextFolder, '.ts-temp')
                         },
                         transpileOnly: false,
                         configFile: 'tsconfig.json'
                     } as Options
                 }],
             }
-            // ,
-            // {
-            //     test: /\.yaml$/,
-            //     use: ['./build/loaders/yaml']
-            // },
-            // {
-            //     test: /\.js$/,
-            //     include: path.resolve(contextFolder, 'node_modules'),
-            //     use: ['./build/loaders/prefixTransform']
-            // }
         ]
     },
     resolve: {
@@ -76,11 +83,22 @@ const common : webpack.Configuration = {
         portableRecords: true,
         moduleIds: 'named',
         chunkIds: 'named',
-        splitChunks: false
+        splitChunks: false,
     },
     cache: {
         type: 'memory'
-    }    
+    },
+    externals: function({ request }, callback) {
+        const isExternal = packageExternals.some(
+            moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
+        );
+        if (isExternal){
+            // @ts-ignore
+            return callback(undefined, `commonjs ${request}`);
+        }
+        // @ts-ignore
+        callback();
+    }
 };
 
 export default common;

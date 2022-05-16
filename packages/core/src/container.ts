@@ -69,7 +69,7 @@ export class Container {
     private readonly providers = new Map<string, (receiver: any) => any>();
 
     constructor(private readonly logger = LogManager.get(Container), private readonly parent?: Container) {
-        logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? 'CHILD' : 'MAIN'})`);
+        logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? `CHILD from ${parent.containerGuid}` : 'MAIN'})`);
     }
 
     /**
@@ -231,8 +231,13 @@ export class Container {
      */
     public resolveParameters<T extends new(...args: any[]) => any>(ctor: T, args: any[] = [], instanceGuid?: string) {
         if (ctor.length == 0) {
-            // Ignore parameter-less ctors
-            return args;
+            // No params on CTOR; double check we aren't dealing with an extended type 
+            // the inject decorator extends the original causing resolveParameters to fail as the new ctor will be parameter less
+            const paramTypes = getCtorParameterTypes(ctor);
+            if (!paramTypes?.length) {
+                // Ignore parameter-less ctors
+                return args;
+            }
         }
 
         // Get argument types

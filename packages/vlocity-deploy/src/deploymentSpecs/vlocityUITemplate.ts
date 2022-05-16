@@ -7,7 +7,7 @@ import { VlocityDatapack } from '../datapack';
 import { SassCompiler } from '../sass';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class VlocityUITemplateSpec implements DatapackDeploymentSpec {
+export class VlocityUITemplate implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly salesforceService: SalesforceService,

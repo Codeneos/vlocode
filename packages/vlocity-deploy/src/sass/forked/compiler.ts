@@ -1,5 +1,6 @@
 import { ChildProcess, fork } from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
 import * as uuid from 'uuid';
 import { Logger , injectable , LifecyclePolicy } from '@vlocode/core';
 
@@ -29,7 +30,9 @@ export class ForkedSassCompiler implements SassCompiler {
     private readonly maxIdleTime = 60; // in seconds
     private readonly pendingRequests = new Map<string, SassCompileRequest>();
 
-    public constructor(public readonly logger: Logger) {
+    public constructor(
+        public readonly compilerPath = path.join(__dirname, 'sass-compiler.js'), 
+        private readonly logger: Logger) {
     }
 
     public compile(sass: string, options?: any): Promise<SassCompileSuccessResult | SassCompileErrorResult> {
@@ -93,9 +96,9 @@ export class ForkedSassCompiler implements SassCompiler {
             return this.sassCompiler;
         }
 
-        this.logger.verbose('Starting new SASS compiler');
-        const sassCompilerPath = path.join(__dirname, 'sass-compiler.js');
-        this.sassCompiler = fork(sassCompilerPath);
+        const compilerPath = this.getSassCompilerPath();
+        this.logger.verbose(`Starting new SASS compiler: ${compilerPath}`);
+        this.sassCompiler = fork(compilerPath);
         this.sassCompiler.on('message', this.handleCompilerMessages.bind(this));
         this.sassCompiler.on('close', this.handleCompilerExit.bind(this));
 
@@ -108,6 +111,21 @@ export class ForkedSassCompiler implements SassCompiler {
         }, this.maxIdleTime * 1000);
 
         return this.sassCompiler;
+    }
+
+    private getSassCompilerPath() {
+        const compilerPaths = [
+            this.compilerPath,
+            path.join(__dirname, 'sass-compiler.js'),
+            path.join(__dirname, 'fork.js'),
+            path.join(__dirname, 'fork.ts')
+        ]        
+        for (const path of compilerPaths) {
+            if (fs.existsSync(path)) {
+                return path;
+            }
+        }
+        throw new Error('Forkable SASS compiler not found, verify bundle integrity or recompile from source.');
     }
 }
 

@@ -1,5 +1,6 @@
 export * from './deploymentSpecs';
 export * from './types';
+export * from './sass';
 export * from './apexExecutor';
 export * from './datapack';
 export * from './datapackDeployer';
