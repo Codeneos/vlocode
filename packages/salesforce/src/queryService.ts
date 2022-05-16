@@ -5,6 +5,7 @@ import { PropertyTransformHandler, normalizeSalesforceName, Timer } from '@vloco
 
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
+import { NamespaceService } from './namespaceService';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
 
@@ -15,7 +16,9 @@ export class QueryService {
     private readonly recordFieldNames: WeakMap<any, Map<string, string | number | symbol>> = new WeakMap();
     private queryCacheEnabled = true;
     private queryCacheDefault = false;
+
     @injectable.property private readonly logger: Logger;
+    @injectable.property private readonly nsService: NamespaceService;
 
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
@@ -51,8 +54,9 @@ export class QueryService {
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
     public query<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {
+        const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
         const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
-        const cachedResult = enableCache && this.queryCache.get(query);
+        const cachedResult = enableCache && this.queryCache.get(nsNormalizedQuery);
         if (cachedResult) {
             this.logger.verbose(`Query: ${query} [cache hit]`);
             return cachedResult;
@@ -61,7 +65,7 @@ export class QueryService {
         const promisedResult = (async () => {
             const queryTimer = new Timer();
             const connection = await this.connectionProvider.getJsForceConnection();
-            let queryResult = await connection.query<T>(query);
+            let queryResult = await connection.query<T>(nsNormalizedQuery);
             const records = queryResult.records;
             while (queryResult.nextRecordsUrl) {
                 queryResult = await connection.queryMore(queryResult.nextRecordsUrl);
@@ -74,7 +78,7 @@ export class QueryService {
         });
 
         if (enableCache) {
-            this.queryCache.set(query, promisedResult);
+            this.queryCache.set(nsNormalizedQuery, promisedResult);
         }
 
         return promisedResult;
@@ -86,7 +90,8 @@ export class QueryService {
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
     public bulkQuery<T = any, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
-        const sobjectType = query.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
+        const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
+        const sobjectType = nsNormalizedQuery.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
         if (!sobjectType) {
             throw new Error(`SObject type not detected in query: ${query}`);
         }
@@ -96,7 +101,7 @@ export class QueryService {
             const queryTimer = new Timer();
             const connection = await this.connectionProvider.getJsForceConnection();
             const records = await new Promise<any[]>((resolve, reject) => {
-                const recordStream = connection.bulk.query(query) as Readable;
+                const recordStream = connection.bulk.query(nsNormalizedQuery) as Readable;
                 const data: any[] = [];
                 recordStream.once('error', reject);
                 recordStream.on('record',record => {
@@ -143,6 +148,7 @@ export class QueryService {
      * @param options Extra options such as wrapping and escaping; both default to true
      */
     public static formatFieldValue(value: any, field: Field, options = { wrapStrings: true, escapeStrings: true }) : string {
+        // TODO: should not be here!
         if (value === null || value === undefined) {
             return 'null';
         }
