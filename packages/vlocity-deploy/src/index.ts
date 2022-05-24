@@ -7,6 +7,7 @@ export * from './datapackDeployer';
 export * from './datapackDeployment';
 export * from './datapackDeploymentRecord';
 export * from './datapackDeploymentRecordGroup';
+export * from './datapackRecordFactory';
 export * from './datapackInfoService';
 export { default as DatapackLoader } from './datapackLoader';
 export * from './datapackLookupService';

@@ -109,7 +109,8 @@ export class SalesforceService implements JsForceConnectionProvider {
     @cache(-1)
     public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {
         const con = await this.getJsForceConnection();
-        return con.metadata.list( { type: 'InstalledPackage' }) as Promise<InstalledPackageRecord[]>;
+        const metadata = await con.metadata.list( { type: 'InstalledPackage' }) as InstalledPackageRecord[];
+        return metadata ?? [];
     }
 
     @cache(-1)

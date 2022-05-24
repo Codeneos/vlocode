@@ -26,7 +26,8 @@ const datapackDeploymentDefaultOptions = {
     useBulkApi: false,
     maxRetries: 1,
     chunkSize: 100,
-    retryChunkSize: 5
+    retryChunkSize: 5,
+    lookupFailedDependencies: false
 };
 
 /**
@@ -102,13 +103,32 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const messagesByDatapack = new Map<string, Array<DatapackDeploymentRecordMessage>>();
         for (const record of this.records.values()) {
             if (record.isFailed && record.statusMessage) {
-                arrayMapUnshift(messagesByDatapack, record.datapackKey, { record, type: 'error', message: record.statusMessage });
+                arrayMapUnshift(messagesByDatapack, record.datapackKey, { record, type: 'error', message: this.formatDeployError(record.statusMessage) });
             }
             for (const message of record.warnings) {
                 arrayMapPush(messagesByDatapack, record.datapackKey, { record, type: 'warn', message });
             }
         }
         return messagesByDatapack;
+    }
+
+    private formatDeployError(message?: string) {
+        if (!message) {
+            return 'Salesforce provided no error message';
+        }
+
+        if (message.includes('Script-thrown exception')) {
+            const triggerTypeMatch = message.match(/execution of ([\w\d_-]+)/);
+            const causedByMatch = message.match(/caused by: ([\w\d_.-]+)/);
+            if (triggerTypeMatch) {
+                const triggerType = triggerTypeMatch[1];
+                return `APEX ${triggerType} trigger caused exception; try inserting this datapack with triggers disabled`;
+            } else if (causedByMatch) {
+                return `APEX exception caused by (${causedByMatch[1]}); try inserting this datapack with triggers disabled`;
+            }
+        }
+
+        return message.split(/\n|\r/g).filter(line => line.trim().length > 0).join('\n');
     }
 
     public getFailedRecords(datapackKey: string) :  Array<DatapackDeploymentRecord> {
@@ -167,12 +187,26 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     public async resolveDependency(dependency: DatapackRecordDependency) {
         const lookupKey = dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey;
         const deployRecord = this.records.get(lookupKey);
-        if (deployRecord?.isDeployed) {
-            return deployRecord.recordId;
+
+        if (deployRecord) {
+            if (!deployRecord.isFailed) {
+                return deployRecord.recordId;
+            }
+
+            if (!this.options.lookupFailedDependencies) {
+                throw new Error(`Dependency failed to deploy: ${lookupKey} -- fix the dependency or ignore this error by setting "lookupFailedDependencies" to true`);
+            }
+
+            this.logger.warn(`Looking up dependency which should have been deployed: ${lookupKey}`);
         }
+
+        if (dependency.VlocityMatchingRecordSourceKey && !this.options.lookupFailedDependencies) {
+            throw new Error(`Missing dependency: ${lookupKey} -- datapack is likely corrupted, include the missing dependency into this datapack to fix this error`);
+        }
+
         const resolved = await this.lookupService.resolveDependency(dependency);
         if (!resolved) {
-            this.logger.warn(`Unable to resolve dependency ${lookupKey}`);
+            this.logger.warn(`Unable to resolve lookup-dependency: ${lookupKey}`);
         }
         return resolved;
     }
@@ -226,7 +260,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
             if (datapack.hasUnresolvedDependencies) {
-                await datapack.resolveDependencies(this);
+                try {
+                    await datapack.resolveDependencies(this);
+                } catch(err) {
+                    this.handleError(datapack, err);
+                    datapacks.delete(datapack.sourceKey);
+                    continue;
+                }                
 
                 if (datapack.hasUnresolvedDependencies) {
                     const deps = datapack.getDependencies().map(dp => dp.VlocityMatchingRecordSourceKey || dp.VlocityLookupRecordSourceKey);
@@ -261,6 +301,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         // prepare batch
         await this.resolveDependencies(datapackRecords, cancelToken);
+        if (datapackRecords.size == 0) {
+            // After dependency resolution no datapacks left to deploy; move on to next chunk
+            // but it's likely already over from here on..
+            return;
+        }
         const batch = await this.createDeploymentBatch(datapackRecords, cancelToken);
 
         if (cancelToken?.isCancellationRequested) {
@@ -292,13 +337,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 } else if (!result.success) {
                     if (this.isRetryable(result.error) && datapackRecord.retryCount < this.options.maxRetries) {
                         datapackRecord.retry();
-                        this.logger.warn(`Retry ${datapackRecord.sourceKey}`);
+                        this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error}`);
                         this.pendingRetry.push(datapackRecord);
                     } else {
-                        datapackRecord.updateStatus(DeploymentStatus.Failed, result.error);
-                        this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
-                        await this.emit('onError', datapackRecord);
-                        this.errors.push(datapackRecord);
+                        this.handleError(datapackRecord, result.error);
                     }
                 }
             }
@@ -309,7 +351,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
     }
 
-    private isRetryable(error: string) {
+    private async handleError(datapackRecord: DatapackDeploymentRecord, error: Error | string) {
+        const errorMessage = typeof error === 'string' ? error : error.message;
+        datapackRecord.updateStatus(DeploymentStatus.Failed, errorMessage);
+        this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
+        await this.emit('onError', datapackRecord);
+        this.errors.push(datapackRecord);
+    }
+
+    private isRetryable(error: Error | string) {
         return true;
     }
 

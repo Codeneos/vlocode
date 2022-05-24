@@ -45,72 +45,72 @@ export class DatapackLookupService implements DependencyResolver {
         });
     }
 
-    /**
-     * Refreshes the lookup cache for a specific object type, building all mtching keys for the data currently in the org speeding up lookups.
-     * For id's by matching key.
-     * @param sobjectType Sobject type for which to cache the record ID's into the cache
-     */
-    public async refreshCache(sobjectType: string) {
-        const timer = new Timer();
+    // /**
+    //  * Refreshes the lookup cache for a specific object type, building all mtching keys for the data currently in the org speeding up lookups.
+    //  * For id's by matching key.
+    //  * @param sobjectType Sobject type for which to cache the record ID's into the cache
+    //  */
+    // public async refreshCache(sobjectType: string) {
+    //     const timer = new Timer();
 
-        const cache = this.getCache(sobjectType);
-        const beforeSize = cache.entries.size;
-        const filter = {
-            lastModifiedDate: `>${new Date(cache.refreshed).toISOString()}`
-        };
+    //     const cache = this.getCache(sobjectType);
+    //     const beforeSize = cache.entries.size;
+    //     const filter = {
+    //         lastModifiedDate: `>${new Date(cache.refreshed).toISOString()}`
+    //     };
 
-        await this.lookupAll(sobjectType, filter);
-        this.logger.log(`Refreshed ${sobjectType} lookup cache with ${cache.entries.size - beforeSize} new records [${timer.stop()}]`);
-        cache.refreshed = Date.now() - timer.elapsed;
-    }
+    //     await this.lookupAll(sobjectType, filter);
+    //     this.logger.log(`Refreshed ${sobjectType} lookup cache with ${cache.entries.size - beforeSize} new records [${timer.stop()}]`);
+    //     cache.refreshed = Date.now() - timer.elapsed;
+    // }
 
-    private async lookupAll(sobjectType: string, filter: object) {
-        const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
-        const matchingKeyFields = await this.getMatchingFields(sobjectType, filter);
-        const lookupMap = new Map<string, string>();
-        const results = await this.lookupService.lookup(sobjectType, filter, [...matchingKeyFields, matchingKey.returnField], undefined, false);
+    // private async lookupAll(sobjectType: string, filter: object) {
+    //     const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
+    //     const matchingKeyFields = await this.getMatchingFields(sobjectType, filter);
+    //     const lookupMap = new Map<string, string>();
+    //     const results = await this.lookupService.lookup(sobjectType, filter, [...matchingKeyFields, matchingKey.returnField], undefined, false);
 
-        for (const record of results) {
-            const lookupKey = this.buildLookupKey(sobjectType, matchingKeyFields, record);
-            if (lookupKey && record.Id !== undefined) {
-                lookupMap.set(lookupKey, this.updateCachedEntry(sobjectType, lookupKey, record.Id));
-            }
-        }
+    //     for (const record of results) {
+    //         const lookupKey = this.buildLookupKey(sobjectType, matchingKeyFields, record);
+    //         if (lookupKey && record.Id !== undefined) {
+    //             lookupMap.set(lookupKey, this.updateCachedEntry(sobjectType, lookupKey, record.Id));
+    //         }
+    //     }
 
-        return lookupMap;
-    }
+    //     return lookupMap;
+    // }
 
-    /**
-     * Lookup the ID of a Datapack Record in the local cache based on the matching keys configured in Vlocity
-     * @param sobjectType SObject type
-     * @param data Data of the datapack to lookup
-     * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
-     */
-    public async lookupIdFromCache(sobjectType: string, data: object): Promise<string | undefined> {
-        return this.lookupId(sobjectType, data, true);
-    }
+    // /**
+    //  * Lookup the ID of a Datapack Record in the local cache based on the matching keys configured in Vlocity
+    //  * @param sobjectType SObject type
+    //  * @param data Data of the datapack to lookup
+    //  * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
+    //  */
+    // public async lookupIdFromCache(sobjectType: string, data: object): Promise<string | undefined> {
+    //     return this.lookupId(sobjectType, data, true);
+    // }
 
-    /**
-     * Lookup the ID of a Datapack Record based on the matching keys configured in Vlocity
-     * @param sobjectType SObject type
-     * @param data Data of the datapack to lookup
-     * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
-     */
-    public async lookupId(sobjectType: string, data: object, cacheOnly?: boolean): Promise<string | undefined> {
-        const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
-        const matchingFields = await this.getMatchingFields(sobjectType, data);
-        const filter = this.buildFilter(data, matchingFields);
+    // /**
+    //  * Lookup the ID of a Datapack Record based on the matching keys configured in Vlocity
+    //  * @param sobjectType SObject type
+    //  * @param data Data of the datapack to lookup
+    //  * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
+    //  */
+    // public async lookupId(sobjectType: string, data: object, cacheOnly?: boolean): Promise<string | undefined> {
+    //     const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
+    //     const matchingFields = await this.getMatchingFields(sobjectType, data);
+    //     const filter = this.buildFilter(data, matchingFields);
 
-        if (Object.keys(filter).length == 0) {
-            this.logger.warn(`Skipping lookup; none matching fields (${matchingFields.join(', ')}) for ${sobjectType} have values`);
-            return;
-        }
+    //     if (Object.keys(filter).length == 0) {
+    //         this.logger.warn(`Skipping lookup; none matching fields (${matchingFields.join(', ')}) for ${sobjectType} have values`);
+    //         return;
+    //     }
 
-        const lookupKey = this.buildLookupKey(sobjectType, matchingFields, filter);
-        return this.getCachedEntry(sobjectType, lookupKey, cacheOnly ? undefined : async () => {
-            return (await this.lookupService.lookupSingle(sobjectType, filter, [matchingKey.returnField], false))?.Id;
-        });
-    }
+    //     const lookupKey = this.buildLookupKey(sobjectType, matchingFields, filter);
+    //     return this.getCachedEntry(sobjectType, lookupKey, cacheOnly ? undefined : async () => {
+    //         return (await this.lookupService.lookupSingle(sobjectType, filter, [matchingKey.returnField], false))?.Id;
+    //     });
+    // }
 
     /**
      * Bulk lookup of records in Salesforce using the current matching key configuration;
@@ -130,7 +130,7 @@ export class DatapackLookupService implements DependencyResolver {
             const lookupKey = this.buildLookupKey(sobjectType, matchingFields, values);
 
             if (!lookupKey) {
-                this.logger.error(`Unable to build lookup key for type ${sobjectType} with values:`, values);
+                //this.logger.error(`Unable to build lookup key for type ${sobjectType} with values:`, values);
                 continue;
             }
 
@@ -159,7 +159,6 @@ export class DatapackLookupService implements DependencyResolver {
             const timer = new Timer();
             const total = entries.length;
             let found = 0;
-            const e = [...entries];
 
             // Split up lookup in chunks @see batchSize records at a time - otherwise we might overflow our SOQL limit
             do {
@@ -239,8 +238,12 @@ export class DatapackLookupService implements DependencyResolver {
         if (matchingKey.fields.length) {
             return matchingKey.fields;
         }
+        return [];// this.getMatchingFieldsByValues(sobjectType, record);
+    }
 
+    private async getMatchingFieldsByValues(sobjectType: string, record: object) : Promise<string[]> {
         const fields = new Array<string>();
+
         for (let field of Object.keys(record)) {
             const fieldDescribe = last((await this.schema.describeSObjectFieldPath(sobjectType, field, false)) || []);
             if (!fieldDescribe) {
