@@ -22,7 +22,6 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
 
     [key: string] : any;
 
-    public get hasGlobalKey(): boolean { return this.globalKey !== undefined && this.globalKey !== null; }
     public get globalKey(): string { return this.data['%vlocity_namespace%__GlobalKey__c']; }
     public get name(): string { return this.data.Name; }
     public get sobjectType(): string { return this.data.VlocityRecordSObjectType; }
@@ -30,6 +29,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
     public get datapackFolder(): string { return dirname(this.headerFile); }
     public readonly data: object & { [key: string]: any };
+
     #dataProxy: any;
 
     constructor(
@@ -45,20 +45,28 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             try {
                 this.data = JSON.parse(data);
             } catch (err) {
-                LogManager.get(VlocityDatapack).error(`Unable to parse datapack JSON: ${  err.message || err}`);
+                throw Error(`Unable to parse datapack JSON: ${err.message || err}`);
             }
         } else if (typeof data === 'object') {
             this.data = data ?? {};
-        } else {
+        } else if (data === undefined || data === null) {
             this.data = {};
+        } else {
+            throw Error(`Specified data type not support: ${typeof data}`);
         }
 
+        this.#dataProxy = VlocityDatapackDataProxy.create(this.data);
+        
         // Proxies allow us to intercept all property calls
         // allowing us to simulate an indexer ([]) overload 
         return new Proxy(this, {
             get: (target, name) => target.getProperty(name),
             set: (target, name, value) => target.setProperty(name, value),
         });
+    }
+
+    public entries() {
+        return Object.entries(this.data);
     }
 
     public rename(name : string) {
@@ -214,28 +222,13 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         });
     }
 
-    private getDataProxy() {
-        if (!this.#dataProxy) {
-            const nameTransformer = (name: string) => removeNamespacePrefix(name).replace('_', '').toLowerCase();
-            const getPropertyKey = (target: object, name: string | number | symbol) => {
-                if (typeof name !== 'string' && target.hasOwnProperty(name)) {
-                    return name;
-                }
-                const normalizedName = nameTransformer(name.toString());
-                return Object.keys(target).find(key => nameTransformer(key) == normalizedName);
-            };
-            this.#dataProxy = new Proxy(this.data, new PropertyTransformHandler(getPropertyKey));
-        }
-        return this.#dataProxy;
-    }
-
     private getProperty(name: string | number | symbol) : any {
         if (name === undefined || name === null){
             return undefined;
         } else if (name in this && (this as any)[name] !== undefined){
             return (this as any)[name];
         }
-        return this.getDataProxy()[name];
+        return this.#dataProxy[name];
     }
 
     private setProperty(name: string | number | symbol, value : any) : boolean {
@@ -244,7 +237,29 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         } else if (name in this){
             (this as any)[name] = value;
         }
-        this.getDataProxy()[name] = value;
+        this.#dataProxy[name] = value;
         return true;
+    }
+}
+
+class VlocityDatapackDataProxy<T> extends PropertyTransformHandler<T> {
+    constructor() {
+        super(VlocityDatapackDataProxy.propertyTransformer);
+    }
+
+    public static create<T extends Object>(data: T) {
+        return new Proxy(data, new VlocityDatapackDataProxy<T>());
+    }
+
+    private static nameTransformer(name: string) { 
+        return removeNamespacePrefix(name).replace('_', '').toLowerCase();
+    }
+            
+    private static propertyTransformer(target: Object, name: string | number | symbol) {
+        if (typeof name !== 'string' && target.hasOwnProperty(name)) {
+            return name;
+        }
+        const normalizedName = VlocityDatapackDataProxy.nameTransformer(name.toString());
+        return Object.keys(target).find(key => VlocityDatapackDataProxy.nameTransformer(key) == normalizedName);
     }
 }

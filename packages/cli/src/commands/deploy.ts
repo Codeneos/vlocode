@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join } from 'path';
+import * as chalk from 'chalk';
 
 export default class extends Command {
 
@@ -62,10 +63,16 @@ export default class extends Command {
         // done!!
         if (deployment.hasErrors) {
             this.logger.info(`${logSymbols.error} Deployment completed with ${deployment.failedRecordCount} errors`);
+
+            for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
+                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${deployment.getFailedRecords(datapackKey).length} failed records (${messages.length} messages)`);
+                for (let i = 0; i < messages.length; i++) {
+                    this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${messages[i].message} (${messages[i].type.toUpperCase()})`);
+                }
+            }
+
         } else {
             this.logger.info(`${logSymbols.success} Deployment completed without errors!`);            
         }
     }
-
-    private 
 }

@@ -11,6 +11,7 @@ import * as deploymentSpecs from './deploymentSpecs';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
+import { DatapackRecordFactory } from './datapackRecordFactory';
 
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
@@ -48,6 +49,10 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * Chunk size for retrying failed records; defaults to 5
      */
     retryChunkSize?: number;
+    /**
+     * Attempt to lookup failed dependencies by their matching key; defaults to false
+     */
+    lookupFailedDependencies?: boolean
 }
 
 export interface DatapackDeploymentSpec {
@@ -65,7 +70,6 @@ export class DatapackDeployer {
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly objectLookupService: SalesforceLookupService,
-        private readonly namespaceService: VlocityNamespaceService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly logger: Logger) {
     }
@@ -78,6 +82,7 @@ export class DatapackDeployer {
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions) {
         this.container.register(new QueryService(this.connectionProvider).setCacheDefault(true));
         const deployment = this.container.create(DatapackDeployment, options);
+        const recordFactory = this.container.create(DatapackRecordFactory);
 
         deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(group));
         deployment.on('beforeDeployGroup', group => this.beforeDeployRecordGroup(group));
@@ -92,7 +97,7 @@ export class DatapackDeployer {
             }
             try {
                 await this.runSpecFunction(datapack.datapackType, 'preprocess', datapack);
-                const records = await this.toSalesforceRecords(datapack);
+                const records = await recordFactory.createRecords(datapack);
                 await this.runSpecFunction(datapack.datapackType, 'afterRecordConversion', records);
                 deployment.add(records);
             } catch(err) {
@@ -174,18 +179,6 @@ export class DatapackDeployer {
         }
     }
 
-    /**
-     * Runs pre-processors on the specified datapack.
-     * @param datapack Datapack to preprocess
-     */
-    private async runPreprocessors(datapack: VlocityDatapack) {
-        const spec = this.getDeploySpec(datapack.datapackType);
-        if (spec?.preprocess) {
-            const result = spec.preprocess(datapack);
-            await result;
-        }
-    }
-
     private async beforeDeployRecord(datapackRecords: Iterable<DatapackDeploymentRecord>, options?: DatapackDeploymentOptions) {
         if (options?.disableTriggers) {
             await this.setVlocityTriggerState(false);
@@ -214,7 +207,6 @@ export class DatapackDeployer {
     private async afterDeployRecordGroup(datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
         return this.runSpecEventFunction('afterDeploy', datapackGroups);
     }
-
 
     /**
      * Event handler running before the deployment 
@@ -257,149 +249,9 @@ export class DatapackDeployer {
         for (const group of groups) {
             const record = group.getRecordOfType(type);
             if (record?.recordId !== undefined) {
-                // @ts-expect-error recordId is not undefined; TS cannot yet detect this
+                // @ts-expect-error `record?.recordId` is not undefined as per the if condition earlier; TS does not yet detect this properly
                 yield record;
             }
         }
     }
-
-    // CURRENT_DATA_PACKS_CONTEXT will be replaced with:
-    // 1. The Manifest being exported
-    // 2. The Query results being exported
-    // 3. A Summary of the DataPack data being imported
-    // List<Object> dataSetObjects = (List<Object>)JSON.deserializeUntyped('CURRENT_DATA_PACKS_CONTEXT_DATA');
-
-    private async toSalesforceRecords(datapack: VlocityDatapack) {
-        const sobject = await this.schemaService.describeSObject(datapack.sobjectType, false);
-        if (!sobject) {
-            // Invalid Sobject name check
-            throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
-        }
-
-        const sourceKey = datapack.sourceKey ??`${sobject.name}/${uuid.v4()}`; // some objects do not have a source key - generate a unique key so we can deploy them
-        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
-        const records : Array<typeof record> = [ record ];
-
-        for (const [key, value] of Object.entries(datapack.data).filter(([key]) => !key.includes('.'))) {
-            const field = await this.schemaService.describeSObjectField(sobject.name, key, false);
-
-            // skip datapack fields
-            if (DATAPACK_RESERVED_FIELDS.includes(key)) {
-                continue;
-            }
-
-            // Objects are dependencies
-            if (typeof value === 'object' && value !== null) {
-
-                // handle lookups and embedded datapacks
-                for (const item of Array.isArray(value) ? value : [ value ]) {
-                    if (item.VlocityDataPackType === 'SObject') {
-                        // Embedded datapack
-                        const embeddedDatapack = new VlocityDatapack('', datapack.datapackType, datapack.key, '', item);
-                        const embeddedRecords = await this.toSalesforceRecords(embeddedDatapack);
-                        records.push(...embeddedRecords);
-                    } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
-                        if (!field) {
-                            this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
-                            continue;
-                        }
-                        // Lookups and matching keys are treated the same
-                        if (field.type !== 'reference' && field.type !== 'string') {
-                            this.logger.warn(`Skipping ${key}; cannot use lookup on non-string/reference fields`);
-                            continue;
-                        }
-                        record.addLookup(field.name, item);
-                    } else if (item.VlocityDataPackType) {
-                        this.logger.warn(`Unsupported datapack type ${item.VlocityDataPackType}`);
-                    } else {
-                        if (!field) {
-                            this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
-                            continue;
-                        }
-                        record.values[field.name] = this.convertValue(value, field);
-                    }
-                }
-
-            } else {
-                // make sure the field exists
-                if (!field) {
-                    this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
-                    continue;
-                }
-                record.values[field.name] = this.convertValue(value, field);
-            }
-        }
-
-        return records;
-    }
-
-    // eslint-disable-next-line complexity
-    private convertValue(value: any, field: Field) : string | boolean | number | null | Buffer {
-        if (value === null || value === undefined) {
-            return null;
-        }
-
-        switch(field.type) {
-            case 'boolean': {
-                if (typeof value === 'string') {
-                    if (!value) {
-                        return null;
-                    }
-                    return value.toLowerCase() === 'true';
-                }
-                return !!value;
-            }
-            case 'datetime':
-            case 'date': {
-                if (!value) {
-                    return null;
-                }
-                const dateFormat = {
-                    'date': 'YYYY-MM-DD',
-                    'datetime': 'YYYY-MM-DDTHH:mm:ssZ'
-                };
-                const date = moment(value);
-                if (!date.isValid()) {
-                    throw new Error(`Value is not a valid date: ${value}`);
-                }
-                return date.format(dateFormat[field.type]);
-            }
-            case 'percent':
-            case 'currency':
-            case 'double':
-            case 'int': {
-                if (typeof value === 'string') {
-                    if (!value) {
-                        return null;
-                    }
-                    return parseFloat(value);
-                } else if (typeof value === 'number') {
-                    return value;
-                }
-                throw new Error(`Value is not a valid number: ${value}`);
-            }
-            case 'reference': {
-                if (typeof value === 'string') {
-                    if (!value) {
-                        return null;
-                    }
-                    return isSalesforceId(value);
-                }
-                throw new Error(`Value is not a valid Salesforce ID: ${value}`);
-            }
-            case 'base64': {
-                return Buffer.from(value).toString('base64');
-            }
-            case 'string':
-            default: {
-                let stringValue = typeof value === 'object' ? JSON.stringify(value) : `${value}`;
-                stringValue = this.namespaceService.updateNamespace(stringValue);
-                if (stringValue.length > field.length) {
-                    throw new Error(`Value length (${stringValue.length}) surpassed max length of field ${field.name} (max: ${field.length})`);
-                }
-                return stringValue;
-            }
-        }
-    }
 }
-

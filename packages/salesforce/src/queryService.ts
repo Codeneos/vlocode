@@ -181,7 +181,7 @@ export class QueryService {
         }
 
         if (options.escapeStrings && field.type === 'string') {
-            value = value.replace('\\', '\\\\').replace("'", "\\'");
+            value = value.replaceAll(/(['\\])/ig, '\\$1');
         }
 
         return options.wrapStrings ? `'${value}'` : `${value}`;

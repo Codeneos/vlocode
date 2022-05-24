@@ -6,7 +6,7 @@ import { VlocityDatapack } from '../datapack';
 import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '../datapackDeployer';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class VlocityOmniScript implements DatapackDeploymentSpec {
+export class OmniScript implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly salesforceService: SalesforceService,
