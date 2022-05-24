@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/cli",
-    "version": "0.16.21",
+    "version": "0.16.22",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment CLI",
     "keywords": [
         "Vlocity",
@@ -68,6 +68,7 @@
         "log-symbols": "^4.0.0",
         "moment": "^2.29.1",
         "rimraf": "^3.0.2",
+        "source-map-support": "^0.5.21",
         "ts-loader": "^9.2.6",
         "tsc-alias": "^1.6.7",
         "tsconfig-paths-webpack-plugin": "^3.5.2",
@@ -77,10 +78,7 @@
         "webpack-env": "^0.8.0",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^5.8.0",
-        "webpack-node-externals": "^3.0.0",
-        "source-map-support": "^0.5.21"
-    },
-    "dependencies": {
+        "webpack-node-externals": "^3.0.0"
     },
     "publisher": "curlybracket"
 }
