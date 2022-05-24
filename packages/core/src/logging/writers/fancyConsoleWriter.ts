@@ -16,7 +16,7 @@ export class FancyConsoleWriter implements LogWriter {
     private readonly colors = {
         [LogLevel.debug]: this.chalk.magenta,
         [LogLevel.verbose]: this.chalk.dim,
-        [LogLevel.info]: this.chalk.grey,
+        [LogLevel.info]: this.chalk.green,
         [LogLevel.warn]: this.chalk.yellowBright,
         [LogLevel.error]: this.chalk.bold.redBright,
         [LogLevel.fatal]: this.chalk.bold.redBright,
@@ -26,7 +26,7 @@ export class FancyConsoleWriter implements LogWriter {
         this.options = {
             formatMessage: true,
             useColor: true,
-            dateFormat: 'HH:mm:ss.SS',
+            dateFormat: 'HH:mm:ss.SSS',
             terminalEol: '\n',
             ...options ?? {}
         };
@@ -45,7 +45,8 @@ export class FancyConsoleWriter implements LogWriter {
     public format(entry: LogEntry) {
         const levelColor = (this.colors[entry.level] || this.chalk.grey);
         const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
-        const logPrefix = `${this.chalk.green(`${moment(entry.time).format(this.options.dateFormat)}::`)} ${logLevelName} [${this.chalk.white.bold(entry.category)}]:`;        
+        const timestamp = this.chalk.white(`[${this.chalk.dim(`${moment(entry.time).format(this.options.dateFormat)}`)}]`);
+        const category = this.chalk.white(`[${entry.category}]`);
 
         let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, this.options.terminalEol);
         if (entry.level == LogLevel.warn) {
@@ -54,6 +55,6 @@ export class FancyConsoleWriter implements LogWriter {
             messageBody = levelColor(messageBody);
         }
         
-        return `${logPrefix} ${messageBody}`;
+        return `${timestamp} ${category} ${logLevelName} ${messageBody}`;
     }
 }

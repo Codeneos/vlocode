@@ -107,7 +107,6 @@ export class SalesforceLookupService {
             }
 
             const salesforceFields = await this.schemaService.describeSObjectFieldPath(type, fieldPath);
-            const fields = [...salesforceFields];
             const salesforceField = last(salesforceFields)!;
             const fieldName = [ ...salesforceFields.slice(0, -1).map(field => field.relationshipName), salesforceField.name ].join('.');
 

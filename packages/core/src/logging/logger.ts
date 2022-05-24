@@ -100,7 +100,7 @@ export class Logger {
             return arg.message;
         } else if (arg !== null && typeof arg === 'object') {
             try {
-                return JSON.stringify(arg);
+                return JSON.stringify(arg, undefined, 2);
             } catch(err) {
                 return '{Object}';
             }
