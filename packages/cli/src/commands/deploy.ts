@@ -1,6 +1,6 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler } from '@vlocode/vlocity-deploy';
+import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
@@ -22,7 +22,11 @@ export default class extends Command {
 
     static options = [
         new Option('-u, --user <username>', 'Salesforce username or alias of the org to deploy the datapacks to').makeOptionMandatory(false),        
-        new Option('-i, --instance <url>', 'the URL instance').default('test.salesforce.com')
+        new Option('-i, --instance <url>', 'the URL instance').default('test.salesforce.com'),
+        new Option('--purge-dependencies', 'purges records embedded in the datapack from the target org to ensure a clean deployment. Purging dependencies is slower').default(false),
+        new Option('--lookup-failed', 'lookup the Ids of records that failed to deploy but are dependencies for other parts of the deployment').default(false),        
+        new Option('--retry-count', 'the number of times a record deployment is retried before failing it').default(1),
+        new Option('--bulk-api', 'use the Salesforce bulk API to update and insert records').default(false),
     ];
 
     constructor(private logger: Logger = LogManager.get('vlocity-deploy')) {
@@ -56,8 +60,16 @@ export default class extends Command {
             return;
         }
 
+        // get options from command line
+        const deployOptions: DatapackDeploymentOptions = {
+            useBulkApi: !!options.bulkApi,
+            purgeMatchingDependencies: !!options.purgeDependencies,
+            lookupFailedDependencies: !!options.lookupFailed,
+            maxRetries: options.retryCount
+        };
+
         // Create deployment
-        const deployment = await container.create(DatapackDeployer).createDeployment(datapacks);
+        const deployment = await container.create(DatapackDeployer).createDeployment(datapacks, deployOptions);
         await deployment.start();
 
         // done!!
