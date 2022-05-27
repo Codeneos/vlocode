@@ -6,13 +6,16 @@ import { FancyConsoleWriter, Container, container, Logger, LogLevel, LogManager 
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
+// @ts-ignore
+const buildInfo = typeof __webpack_build_info__ === 'object' ? __webpack_build_info__ : {};
 
 class CLI {
     private static programName = 'vlocode-cli';
-    private static description = 'CLI for hyper fast Datapack deployment';
-    private static version = '0.8.0';
+    private static description = buildInfo.description ?? 'N/A';
+    private static version = buildInfo.version ?? '0.0.0';
+    private static versionString = `${CLI.programName} version ${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()})`;
 
-    private program = new Commander().name(CLI.programName).description(CLI.description).version(CLI.version);
+    private program = new Commander().name(CLI.programName).description(CLI.description).version(CLI.version, '-v --version', CLI.versionString);
     private logger = LogManager.get(CLI);
 
     static options = [
@@ -34,7 +37,7 @@ class CLI {
     }
 
     private init(options: any) { 
-        this.logger.info(`${CLI.programName} v${CLI.version} - ${CLI.description}`);       
+        this.logger.info(`${CLI.programName} v${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()}) - ${CLI.description}`);       
         if (options.verbose === true) {
             LogManager.setGlobalLogLevel(LogLevel.verbose);
         }
