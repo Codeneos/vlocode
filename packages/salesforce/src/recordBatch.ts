@@ -10,6 +10,7 @@ type RecordOperationType = 'update' | 'insert';
 export type BatchResultRecord = {
     ref: string;
     success: boolean;
+    operation: RecordOperationType;
     error?: string;
     recordId?: string;
 } &
@@ -107,7 +108,7 @@ export class RecordBatch {
                 // Record count lower then 50 use the normal collections API
                 const executionApiFunc = this.options.useBulkApi && chunk.records.length > this.options.chunkSize ? 'executeWithBulkApi' : 'executeWithCollectionApi';
                 const results = await this[executionApiFunc](connection, chunk, cancelToken).catch(err => {
-                    this.logger.error(`Failed to ${chunk.operation} ${chunk.records.length} records (${executionApiFunc.substr(11)}):`, err.message);
+                    this.logger.error(`Failed to ${chunk.operation} ${chunk.records.length} records (${executionApiFunc.substring(11)}):`, err.message);
                     this.logger.verbose(chunk.records);
                     throw new Error(err.message);
                 });
@@ -119,6 +120,7 @@ export class RecordBatch {
                     yield {
                         ref: chunk.refs[i],
                         success: result.success,
+                        operation: chunk.operation,
                         recordId: result.success === true ? result.id : undefined,
                         error: result.success === false ? result.errors.map(err => (err as any).message || err).join(',') : undefined,
                     };
