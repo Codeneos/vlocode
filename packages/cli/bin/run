@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+const { existsSync } = require('fs');
 
-try {
+if (existsSync('../dist/cli')) {
     require('../dist/cli');
-} catch(err) {
+} else {
     require('../lib');
 }
