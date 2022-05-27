@@ -67,7 +67,14 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * through a matching (not lookup) dependency. This is especially useful to delete for example PCI records and ensure that old relationships are deleted.
      * @default false
      */
-    purgeMatchingDependencies: boolean;
+    purgeMatchingDependencies?: boolean;
+    /**
+     * When @see DatapackDeploymentOptions.purgeMatchingDependencies is enabled this setting controls how embedded datapacks are deleted from the target org
+     * when enabled purging of existing records happens in bulk, this is more efficient but in this mode it is not possible to related errors while deleting
+     * records to a particular datapack.
+     * @default true
+     */
+    purgeLookupOptimization?: boolean;
 }
 
 export interface DatapackDeploymentSpec {

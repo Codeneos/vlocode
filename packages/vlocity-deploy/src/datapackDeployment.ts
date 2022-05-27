@@ -7,7 +7,6 @@ import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 
 export interface DatapackDeploymentEvents {
-    beforeResolveDependencies: Iterable<DatapackDeploymentRecord>;
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
     beforeDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
@@ -299,9 +298,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);
             }
         }
-
-        // Execute any actions required before the deployments        
-        await this.emit('beforeResolveDependencies', datapackRecords.values(), { hideExceptions: true });
 
         // prepare batch
         await this.resolveDependencies(datapackRecords, cancelToken);
