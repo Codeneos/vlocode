@@ -13,6 +13,8 @@ import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';
 
+export type VlocityDataPackDependencyType = 'VlocityMatchingKeyObject' | 'VlocityLookupMatchingKeyObject';
+
 export type DatapackRecordDependency = {
     VlocityRecordSObjectType: string;
     [key: string]: any;
@@ -31,33 +33,47 @@ export interface DependencyResolver {
 }
 
 export interface DatapackDeploymentEvent {
-    readonly recordGroups: DatapackDeploymentRecordGroup[];
+    readonly recordGroups: DatapackDeploymentRecordGroup[];    
+    getRecords(type: string): Iterable<DatapackDeploymentRecord>;
     getDeployedRecords(type: string): Iterable<DatapackDeploymentRecord & { recordId: string }>;
 }
 
 export interface DatapackDeploymentOptions extends RecordBatchOptions {
     /**
-     * Disable all Vlocity Triggers,
+     * Disable all Vlocity Triggers before starting the deployment; triggers are automatically re-enabled after the deployment completes.
+     * @default false
      */
     disableTriggers?: boolean;
     cancellationToken?: CancellationToken;
     /**
-     * Number of times to retry the update/insert operations; defaults to 1
+     * Number of times to retry the update or insert operation when it fails; defaults to 1 when not set
+     * @default 1
      */
     maxRetries?: number;
     /**
      * Chunk size for retrying failed records; defaults to 5
+     * @default 5
      */
     retryChunkSize?: number;
     /**
-     * Attempt to lookup failed dependencies by their matching key; defaults to false
+     * Attempt to lookup dependencies that are part of the deployment but failed to deploy. By setting this to true when part of a datapack fails to deploy
+     * the deployment will attempt to lookup an existing record that also matches the lookup requirements. This can help resolve deployment issues whe
+     * deploying datapacks from which the parent record cannot be updated, but it does introduce a risk of incorrectly linking records.
+     * @default false
      */
-    lookupFailedDependencies?: boolean
+    lookupFailedDependencies?: boolean;
+    /**
+     * Purge dependent records after deploying any record. This setting controls whether or not the deployment will delete direct dependencies linked
+     * through a matching (not lookup) dependency. This is especially useful to delete for example PCI records and ensure that old relationships are deleted.
+     * @default false
+     */
+    purgeMatchingDependencies: boolean;
 }
 
 export interface DatapackDeploymentSpec {
     preprocess?(datapack: VlocityDatapack): Promise<any> | any;
     afterRecordConversion?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
+    beforeDependencyResolution?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
     beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
     afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
 }
@@ -148,6 +164,7 @@ export class DatapackDeployer {
                 continue;
             }
 
+            this.logger.verbose(`Verifying global keys of ${records.length} deployed ${sobjectType} record(s)`);
             const recordsById = new Map(records.map(r => [r.recordId as string, r]));
             const results = await this.objectLookupService.lookupById(sobjectType, recordsById.keys(), [ 'GlobalKey__c' ], false);
 
@@ -217,6 +234,7 @@ export class DatapackDeployer {
         for (const [datapackType, recordGroups] of Object.entries(datapacksByType)) {
             await this.runSpecFunction(datapackType, type, {
                 recordGroups,
+                getRecords: (type: string) => recordGroups.map(group => group.getRecordsOfType(type)),
                 getDeployedRecords: (type: string) => this.getDeployedRecords(type, recordGroups)
             } as any);
         }
@@ -247,11 +265,8 @@ export class DatapackDeployer {
      */
     private *getDeployedRecords(type: string, groups: Iterable<DatapackDeploymentRecordGroup>) : Generator<DatapackDeploymentRecord & { recordId: string }> {
         for (const group of groups) {
-            const record = group.getRecordOfType(type);
-            if (record?.recordId !== undefined) {
-                // @ts-expect-error `record?.recordId` is not undefined as per the if condition earlier; TS does not yet detect this properly
-                yield record;
-            }
+            // @ts-expect-error `record?.recordId` is not undefined as per the if condition earlier; TS does not yet detect this properly
+            yield *group.getRecordsOfType(type).filter(rec => rec.isDeployed && rec.recordId);            
         }
     }
 }

@@ -1,11 +1,11 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import { forEachAsyncParallel } from '@vlocode/util';
-import { DeploymentStatus } from '../datapackDeploymentRecord';
+import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
 import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '../datapackDeployer';
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@injectable({ lifecycle: LifecyclePolicy.singleton })
 export class OmniScript implements DatapackDeploymentSpec {
 
     public constructor(
@@ -17,6 +17,13 @@ export class OmniScript implements DatapackDeploymentSpec {
         // Update to inactive to allow insert; later in the process these are activated
         datapack.IsActive__c = false;
         delete datapack.Version__c;
+    }
+
+    public async afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
+        // Skip looking up existing records and always create a new version when deploying datapacks
+        for (const record of records) {
+            record.skipLookup = true;
+        }
     }
 
     public async afterDeploy(event: DatapackDeploymentEvent) {

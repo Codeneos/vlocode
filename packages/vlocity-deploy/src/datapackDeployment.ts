@@ -1,12 +1,13 @@
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
-import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService } from '@vlocode/salesforce';
-import { Timer , AsyncEventEmitter, arrayMapPush, arrayMapUnshift, mapGetOrCreate, Iterable, CancellationToken } from '@vlocode/util';
+import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
+import { Timer , AsyncEventEmitter, arrayMapPush, arrayMapUnshift, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, segregate } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
-import { DatapackDeploymentRecord, DeploymentStatus } from './datapackDeploymentRecord';
+import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 
 export interface DatapackDeploymentEvents {
+    beforeResolveDependencies: Iterable<DatapackDeploymentRecord>;
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
     beforeDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
@@ -27,7 +28,9 @@ const datapackDeploymentDefaultOptions = {
     maxRetries: 1,
     chunkSize: 100,
     retryChunkSize: 5,
-    lookupFailedDependencies: false
+    lookupFailedDependencies: false,
+    purgeMatchingDependencies: true,
+    purgeLookupOptimization: true
 };
 
 /**
@@ -71,6 +74,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly connectionProvider: JsForceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
+        private readonly salesforceService: SalesforceService,
         private readonly logger: Logger) {
         super();
         this.options = { ...datapackDeploymentDefaultOptions, ...(options || {}) };
@@ -230,22 +234,19 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
         const batch = new RecordBatch(this.schemaService, this.options);
-        const records = [...datapacks.values()];
+        const [skippedRecords, recordsForLookup] = segregate([...datapacks.values()], rec => rec.skipLookup);
 
-        this.logger.verbose(`Resolving existing IDs for ${datapacks.size} records`);
-        const ids = await this.lookupService.lookupIds(records, 50, cancelToken);
+        this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
+        const ids = await this.lookupService.lookupIds(recordsForLookup, 50, cancelToken);
 
-        for (const [i, datapack] of records.entries()) {
+        for (const [i, datapack] of [...recordsForLookup, ...skippedRecords].entries()) {
             const existingId = ids[i];
             if (existingId) {
-                datapack.setExistingId(existingId);
+                datapack.setAction(DeploymentAction.Update, existingId);
                 batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
             } else {
+                datapack.setAction(DeploymentAction.Insert);
                 batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);
-            }
-
-            if (cancelToken?.isCancellationRequested) {
-                break;
             }
         }
 
@@ -299,13 +300,16 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
         }
 
+        // Execute any actions required before the deployments        
+        await this.emit('beforeResolveDependencies', datapackRecords.values(), { hideExceptions: true });
+
         // prepare batch
         await this.resolveDependencies(datapackRecords, cancelToken);
         if (datapackRecords.size == 0) {
             // After dependency resolution no datapacks left to deploy; move on to next chunk
             // but it's likely already over from here on..
             return;
-        }
+        }        
         const batch = await this.createDeploymentBatch(datapackRecords, cancelToken);
 
         if (cancelToken?.isCancellationRequested) {
@@ -344,6 +348,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     }
                 }
             }
+
+            if (this.options.purgeMatchingDependencies) {
+                await this.purgeMatchingDependencies(datapackRecords.values());
+            }
+
         } finally {
             const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());
             await this.emit('afterDeployRecord', datapackRecords.values(), { hideExceptions: true });
@@ -365,5 +374,52 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     private handleProgressReport({ processed, total }) {
         this.logger.verbose(`Deployment in progress ${processed}/${total}...`);
+    }
+
+    /**
+     * Purge matching key dependencies from Salesforce for the specified list of records.
+     * @param records 
+     */
+    private async purgeMatchingDependencies(records: Iterable<DatapackDeploymentRecord>) {
+        const deleteFilters = new Map<string, Set<string>>();
+        const recordsById = new Map(Iterable.transform(records, {
+            map: rec => [rec.recordId!, rec],
+            filter: rec => rec.isDeployed && rec.isUpdate
+        }));
+
+        const deleteRecords = async (record?: DatapackDeploymentRecord) => {
+            for (const [sobjectType, filters] of deleteFilters) {
+                const result = await this.salesforceService.delete(sobjectType, filters);
+                for (const {error, id} of result.filter(res => !res.success)) {
+                    const errorMessage = `Unable to delete ${sobjectType} with id '${id}' -- ${error}`;
+                    if (record) {
+                        this.handleError(record, errorMessage);
+                    } else {
+                        this.logger.warn(errorMessage);
+                    }
+                }
+            }
+            deleteFilters.clear();
+        };
+
+        for (const [recordId, record] of recordsById.entries()) {
+            for (const undeployRecord of Iterable.filter(this.records.values(), r => !r.isDeployed)) {
+                const dependency = undeployRecord.getDependency(record);
+                if (dependency?.dependency.VlocityMatchingRecordSourceKey) {
+                    setMapAdd(deleteFilters, undeployRecord.sobjectType, `${dependency.field} = '${recordId}'`);
+                } 
+            }
+
+            if (!this.options.purgeLookupOptimization) {
+                // WHen lookup purge optimizations are disabled the deployment
+                // will query all IDs of the records 1-by-1 which will reduce performance but ensures that any deletion error
+                // get's linked to a datapack; doing bulk lookups this is currently not possible
+                await deleteRecords(record)
+            }
+        }
+
+        if (this.options.purgeLookupOptimization) {
+            await deleteRecords();
+        }
     }
 }
