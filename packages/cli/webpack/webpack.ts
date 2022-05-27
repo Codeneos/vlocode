@@ -3,6 +3,7 @@ import * as glob from 'glob';
 import * as webpack from 'webpack';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import type { Options } from 'ts-loader';
+import * as packageJson from '../package.json';
 
 const packageExternals = [
     'vscode',
@@ -98,7 +99,16 @@ const common : webpack.Configuration = {
         }
         // @ts-ignore
         callback();
-    }
+    },
+    plugins: [
+        new webpack.DefinePlugin({
+            __webpack_build_info__: JSON.stringify({ 
+                version: packageJson.version, 
+                description: packageJson.description, 
+                buildDate: new Date().toISOString() 
+            })
+        })
+    ]
 };
 
 export default common;
