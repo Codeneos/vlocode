@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 const { existsSync } = require('fs');
+const { join } = require('path');
 
-if (existsSync('../dist/cli')) {
+if (existsSync(join(__dirname, '../dist/cli.js'))) {
     require('../dist/cli');
 } else {
     require('../lib');
