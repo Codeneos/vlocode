@@ -1,4 +1,5 @@
 // File contains several functions for manipulating or accessing collectiong like objects such as: Set, Map and Array
+import { TestMessage } from 'vscode';
 import { Iterable } from './iterable';
 
 /**
@@ -177,7 +178,6 @@ export function mapGetOrCreate<V, K>(map: Map<K, V>, key: K, valueInitializer: (
     return map.get(key) || map.set(key, valueInitializer()).get(key);
 }
 
-
 /**
  * Converts specified array-like arguments to a single array; may return original parameter if only a single param is specified and that 
  * param is already an array. Otherwise the provided parameters are copied to a new array.
@@ -241,6 +241,19 @@ export function except<T>(source: Array<T>, target: Array<T>): Array<T> {
     const excepted = new Array<T>();
     source.forEach(element => target.indexOf(element) == -1 && excepted.push(element));
     return excepted;
+}
+
+/**
+ * Segregate an Array into a true-ish and false-ish Array. The first element of the result will contain the all elements where the filter returns a 
+ * true-ish value the second element of the result of the result will contain all items for which the filter returned a false-ish value
+ * @param array Array
+ */
+export function segregate<T>(array: Array<T>, filter: (item: T) => any) : [ Array<T>, Array<T> ] {
+    const result: [ Array<T>, Array<T> ] = [ new Array<T>(), new Array<T>() ];
+    array.forEach(item => {
+        result[filter(item) ? 0 : 1].push(item)
+    });
+    return result;
 }
 
 /**

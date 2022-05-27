@@ -33,6 +33,10 @@ export class DatapackRecordFactory {
         const sourceKey = datapack.sourceKey ??`${sobject.name}/${uuid.v4()}`; // some objects do not have a source key - generate a unique key so we can deploy them
         const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
+        const reportWarning = (message: string) => {
+            record.addWarning(message);
+            this.logger.warn(message);
+        }
 
         for (const [key, value] of datapack.entries().filter(([key]) => !key.includes('.'))) {
             const field = await this.schemaService.describeSObjectField(sobject.name, key, false);
@@ -54,20 +58,20 @@ export class DatapackRecordFactory {
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
                         if (!field) {
-                            this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
+                            reportWarning(`Skipped property ${key}; no such field on ${sobject.name}`);
                             continue;
                         }
                         // Lookups and matching keys are treated the same
                         if (field.type !== 'reference' && field.type !== 'string') {
-                            this.logger.warn(`Skipping ${key}; cannot use lookup on non-string/reference fields`);
+                            reportWarning(`Skipped property ${key}; cannot use lookup on non-string/reference fields`);
                             continue;
                         }
                         record.addLookup(field.name, item);
                     } else if (item.VlocityDataPackType) {
-                        this.logger.warn(`Unsupported datapack type ${item.VlocityDataPackType}`);
+                        reportWarning(`Unsupported datapack type ${item.VlocityDataPackType}`);
                     } else {
                         if (!field) {
-                            this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
+                            reportWarning(`Skipped property ${key}; no such field on ${sobject.name}`);
                             continue;
                         }
                         record.values[field.name] = this.convertValue(value, field);

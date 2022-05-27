@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray } from '@vlocode/util';
 
 import { JsForceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -172,6 +172,34 @@ export class SalesforceService implements JsForceConnectionProvider {
             batch.addUpdate(type, record, record.id, record.id);
         }
         yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
+    }
+    
+    /**
+     * Delete one or more records based on a SOQL filter condition. Returns array of deleted record-ids
+     * @param type SObject type to delete
+     * @param filter Object filter or where-conditional selecting the records to delete 
+     * @param chunkSize Number of records to delete in a single call
+     */
+    public async delete(type: string, filter?: object | string | Array<object | string>, chunkSize = 200) : Promise<{ id: string, success: boolean, error?: string }[]> {
+        const connection = await this.getJsForceConnection();
+        const records = await this.lookup(type, filter, undefined, undefined, false);
+        const deleteResults = new Array<{ id: string, success: boolean, error?: string }>();
+
+        while(records.length > 0) {
+            const idChunk = records.splice(0, chunkSize).map(rec => rec.Id!);
+            this.logger.verbose(`Deleting ${records.length} ${type} record(s)`);
+            const result = await connection.del(type, idChunk, { allOrNone: false });
+
+            for (const [index, deleteResult]of asArray(result).entries()) {
+                deleteResults.push({
+                    id: idChunk[index],
+                    success: deleteResult.success,
+                    error: !deleteResult.success ? deleteResult.errors.map(f => `${f.message} (${f.fields.join(', ') || 'unknown'})`).join(', ') : undefined
+                });
+            }
+        }
+
+        return deleteResults;
     }
 
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
