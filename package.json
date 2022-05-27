@@ -3,7 +3,7 @@
     "name": "vlocode-project",
     "packageManager": "yarn@3.2.0",
     "description": "Vlocode project packages",
-    "version": "0.16.22",
+    "version": "0.16.24",
     "license": "MIT",
     "author": {
         "name": "Peter van Gulik",
