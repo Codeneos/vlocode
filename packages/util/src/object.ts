@@ -109,7 +109,7 @@ export function transformPropertyProxy<T extends Object>(target: T, transformer:
 }
 
 /**
- * Get all primitive non-object values in the specified object hiearchy up to the specified depth.
+ * Get all primitive non-object values in the specified object hierarchy up to the specified depth.
  * @param obj Object from which to get the values
  * @param depth Max object depth to go down the tree
  */
@@ -134,4 +134,14 @@ export function getObjectValues(obj: any, depth = -1) : any[] {
  */
 export function transform(obj: object, transformer: (key: string | number | symbol) => string | number | symbol): object {
     return Object.entries(obj).reduce((map, [key, value]) => Object.assign(map, { [transformer(key)]: value }), {});
+}
+
+/**
+ * Filter all keys matching the filter function and create a shallow clone ot the object without the filtered keys 
+ * @param obj object to filter the keys from
+ * @param filterFn filter function
+ * @returns 
+ */
+export function filterKeys<TOut extends object = object, TIn extends object = object>(obj: TIn, filterFn: (key: string) => any): TOut  {
+    return Object.keys(obj).filter(filterFn).reduce((acc, key) => Object.assign(acc, { [key]: obj[key] }), {} as TOut);
 }

@@ -10,4 +10,12 @@ export class NamespaceService {
     public updateNamespace(namespacedString: string): string {
         return namespacedString;
     }
+
+    /**
+     * Replace the namespace with a placeholder string
+     * @param name text to update
+     */
+     public replaceNamespace(name: string) {
+        return name;
+    }
 }

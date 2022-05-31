@@ -30,7 +30,7 @@ export class DatapackRecordFactory {
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
         }
 
-        const sourceKey = datapack.sourceKey ??`${sobject.name}/${uuid.v4()}`; // some objects do not have a source key - generate a unique key so we can deploy them
+        const sourceKey = this.getDatapackSourceKey(datapack); 
         const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
         const reportWarning = (message: string) => {
@@ -89,6 +89,15 @@ export class DatapackRecordFactory {
         }
 
         return records;
+    }
+
+    private getDatapackSourceKey(datapack: VlocityDatapack) {
+        if (datapack.sourceKey) {
+            return datapack.sourceKey;
+        }
+        // some objects do not have a source key - generate a unique key so we can deploy them
+        const primaryKey = datapack.globalKey || datapack.name || `Generated/${uuid.v4()}`;
+        return `${datapack.sobjectType}/${primaryKey}`;
     }
 
     // eslint-disable-next-line complexity
