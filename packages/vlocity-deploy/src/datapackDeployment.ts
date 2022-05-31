@@ -28,7 +28,7 @@ const datapackDeploymentDefaultOptions = {
     chunkSize: 100,
     retryChunkSize: 5,
     lookupFailedDependencies: false,
-    purgeMatchingDependencies: true,
+    purgeMatchingDependencies: false,
     purgeLookupOptimization: true
 };
 
@@ -62,6 +62,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     public get hasErrors() {
         return this.errors.length > 0;
+    }
+
+    public get hasWarnings() {
+        return Iterable.some(this.records.values(), rec => rec.hasWarnings);
     }
 
     public get totalRecordCount() {
@@ -188,6 +192,38 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param dependency Dependency
      */
     public async resolveDependency(dependency: DatapackRecordDependency) {
+        const deploymentDep = this.resolveDeploymentDependency(dependency);
+        if (deploymentDep) {
+            return deploymentDep;
+        }
+        return this.lookupService.resolveDependency(dependency);
+    }
+
+    /**
+     * Resolve a dependency either based on the records we are deploying -or- pass it on to the lookup resolver.
+     * @param dependency Dependency
+     */
+    public async resolveDependencies(dependencies: DatapackRecordDependency[]) {
+        const lookupResults = dependencies.map(dependency => this.resolveDeploymentDependency(dependency));
+        const unresolvedDependencies = dependencies.filter((dep, i) => !lookupResults[i]);
+        
+        if (unresolvedDependencies.length) {
+            const results = await this.lookupService.resolveDependencies(unresolvedDependencies);
+            lookupResults.forEach((value, index) => {
+                if (!value) {
+                    lookupResults[index] = results.shift();
+                }
+            });
+
+            if (results.length) {
+                throw new Error('BUG: unresolved lookup results should not be possible');
+            }
+        }
+
+        return lookupResults;
+    }
+
+    private resolveDeploymentDependency(dependency: DatapackRecordDependency) {
         const lookupKey = dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey;
         const deployRecord = this.records.get(lookupKey);
 
@@ -206,12 +242,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         if (dependency.VlocityMatchingRecordSourceKey && !this.options.lookupFailedDependencies) {
             throw new Error(`Missing dependency: ${lookupKey} -- datapack is likely corrupted, include the missing dependency into this datapack to fix this error`);
         }
-
-        const resolved = await this.lookupService.resolveDependency(dependency);
-        if (!resolved) {
-            this.logger.warn(`Unable to resolve lookup-dependency: ${lookupKey}`);
-        }
-        return resolved;
     }
 
     /**
@@ -252,31 +282,52 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return batch;
     }
 
-    private async resolveDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
-        for (const datapack of datapacks.values()) {
-            if (cancelToken?.isCancellationRequested) {
-                return;
-            }
+        const resolutionQueue = Iterable.transform(datapacks.values(), {
+            filter: datapack => datapack.hasUnresolvedDependencies,
+            map: datapack => datapack.resolveDependencies(this).catch(err => {
+                this.handleError(datapack, err);
+                datapacks.delete(datapack.sourceKey);
+            })
+        });
 
-            if (datapack.hasUnresolvedDependencies) {
-                try {
-                    await datapack.resolveDependencies(this);
-                } catch(err) {
-                    this.handleError(datapack, err);
-                    datapacks.delete(datapack.sourceKey);
-                    continue;
-                }                
+        // Await resolution
+        await Promise.all(resolutionQueue);
 
-                if (datapack.hasUnresolvedDependencies) {
-                    const deps = datapack.getDependencies().map(dp => dp.VlocityMatchingRecordSourceKey || dp.VlocityLookupRecordSourceKey);
-                    this.logger.warn(`Record ${datapack.sourceKey} has ${datapack.getDependencies().length} unresolvable dependencies: ${deps.join(', ')}`);
-                    for (const dependency of deps) {
-                        datapack.addWarning(`Unresolved dependency: ${dependency}`);
-                    }
-                }
+        for (const datapack of Iterable.filter(datapacks.values(), datapack => datapack.hasUnresolvedDependencies)) {
+            const unresolvedDependenciesKeys = datapack.getUnresolvedDependencies().map(({ dependency }) => dependency.VlocityMatchingRecordSourceKey || dependency.VlocityLookupRecordSourceKey);
+            this.logger.warn(`Record ${datapack.sourceKey} has ${unresolvedDependenciesKeys.length} unresolvable dependencies: ${unresolvedDependenciesKeys.join(', ')}`);
+            for (const { field, dependency } of datapack.getUnresolvedDependencies()) {
+                datapack.addWarning(`Unresolved dependency "${dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey}" (field: ${field})`);
             }
         }
+
+        // const results = 
+
+        // for (const datapack of datapacks.values()) {
+        //     if (cancelToken?.isCancellationRequested) {
+        //         return;
+        //     }
+
+        //     if (datapack.hasUnresolvedDependencies) {
+        //         try {
+        //             await datapack.resolveDependencies(this);
+        //         } catch(err) {
+        //             this.handleError(datapack, err);
+        //             datapacks.delete(datapack.sourceKey);
+        //             continue;
+        //         }                
+
+        //         if (datapack.hasUnresolvedDependencies) {
+        //             const deps = datapack.getDependencies().map(dp => dp.VlocityMatchingRecordSourceKey || dp.VlocityLookupRecordSourceKey);
+        //             this.logger.warn(`Record ${datapack.sourceKey} has ${datapack.getDependencies().length} unresolvable dependencies: ${deps.join(', ')}`);
+        //             for (const dependency of deps) {
+        //                 datapack.addWarning(`Unresolved dependency: ${dependency}`);
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
@@ -300,7 +351,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
 
         // prepare batch
-        await this.resolveDependencies(datapackRecords, cancelToken);
+        await this.resolveDatapackDependencies(datapackRecords, cancelToken);
         if (datapackRecords.size == 0) {
             // After dependency resolution no datapacks left to deploy; move on to next chunk
             // but it's likely already over from here on..

@@ -15,7 +15,7 @@ class CLI {
     private static version = buildInfo.version ?? '0.0.0';
     private static versionString = `${CLI.programName} version ${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()})`;
 
-    private program = new Commander().name(CLI.programName).description(CLI.description).version(CLI.version, '-v --version', CLI.versionString);
+    private program = new Commander().name(CLI.programName).description(CLI.description).version(CLI.version, '--version', CLI.versionString);
     private logger = LogManager.get(CLI);
 
     static options = [
