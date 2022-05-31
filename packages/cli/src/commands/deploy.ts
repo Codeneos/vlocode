@@ -25,7 +25,7 @@ export default class extends Command {
         new Option('-i, --instance <url>', 'the URL instance').default('test.salesforce.com'),
         new Option('--purge-dependencies', 'purges records embedded in the datapack from the target org to ensure a clean deployment. Purging dependencies is slower').default(false),
         new Option('--lookup-failed', 'lookup the Ids of records that failed to deploy but are dependencies for other parts of the deployment').default(false),        
-        new Option('--retry-count', 'the number of times a record deployment is retried before failing it').default(1),
+        new Option('--retry-count <count>', 'the number of times a record deployment is retried before failing it').default(1),
         new Option('--bulk-api', 'use the Salesforce bulk API to update and insert records').default(false),
     ];
 
@@ -73,16 +73,22 @@ export default class extends Command {
         await deployment.start();
 
         // done!!
-        if (deployment.hasErrors) {
-            this.logger.info(`${logSymbols.error} Deployment completed with ${deployment.failedRecordCount} errors`);
+        if (deployment.hasErrors || deployment.hasWarnings) {
+            this.logger.warn(`${logSymbols.error} Deployment completed with ${deployment.failedRecordCount} errors`);
 
             for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
                 this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${deployment.getFailedRecords(datapackKey).length} failed records (${messages.length} messages)`);
                 for (let i = 0; i < messages.length; i++) {
-                    this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${messages[i].message} (${messages[i].type.toUpperCase()})`);
+                    this.logger[messages[i].type](` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${messages[i].message}`);
                 }
             }
 
+            // let counter = 1;
+            // for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
+            //     for (const message of messages) {
+            //         this.logger[message.type](` ${counter++}. ${chalk.bold(datapackKey)} -- ${message.message}`);
+            //     }
+            // }
         } else {
             this.logger.info(`${logSymbols.success} Deployment completed without errors!`);            
         }

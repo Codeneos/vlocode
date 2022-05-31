@@ -64,6 +64,20 @@ export namespace Iterable {
     }
 
     /**
+     * Returns true if the predicate has a true-ish value for any of the items in the Iterable, otherwise false. Also see @see Array.prototype.some
+     * @param itr Iterator
+     * @param predicate Predicate function
+     */
+    export function some<T>(itr: Iterable<T>, predicate: (item: T) => any) : boolean {
+        for (const item of itr) {
+            if (predicate(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Map the values of an iterator to a new structure similar to @see Array.prototype.map
      * @param itr Iterator
      * @param mapFunc Mapping function

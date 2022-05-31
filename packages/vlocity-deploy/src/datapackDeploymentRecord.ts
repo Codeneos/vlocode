@@ -1,4 +1,4 @@
-import { Timer , Iterable } from '@vlocode/util';
+import { Timer , Iterable, stringEquals } from '@vlocode/util';
 import { DatapackRecordDependency, DependencyResolver, VlocityDataPackDependencyType } from './datapackDeployer';
 
 export enum DeploymentStatus {
@@ -132,11 +132,20 @@ export class DatapackDeploymentRecord {
         this._existingId = updateId;
     }
 
-    public setField(field: string, value: any) {
-        this.values[field] = value;
-        if (value) {
-            this._unresolvedDependencies.delete(field);
-        }
+    public hasGlobalKey() {
+        return this.getGlobalKeyField() !== undefined;
+    }
+
+    public getGlobalKey() {
+        const globalKeyField = this.getGlobalKeyField();
+        return globalKeyField ? this.values[globalKeyField] : undefined;
+    }
+
+    private getGlobalKeyField() {
+        const fieldNames = Object.keys(this.values);
+        const caseNormalizedFields = fieldNames.map(field => field.toLowerCase());
+        const globalKeyFieldIndex = caseNormalizedFields.indexOf('globalkey__c') || caseNormalizedFields.findIndex(f => f.endsWith('globalkey__c'));
+        return globalKeyFieldIndex >= 0 ? fieldNames[globalKeyFieldIndex] : undefined;
     }
 
     public addLookup(field: string, dependency: DatapackRecordDependency) {
@@ -191,8 +200,11 @@ export class DatapackDeploymentRecord {
      * embedded in the datapack; dependency type: `VlocityMatchingKeyObject` 
      * @returns Array with dependencies
      */
-    public getMatchingDependencies() {
-        return [...Iterable.filter(this._dependencies.values(), d => d.VlocityDataPackType === 'VlocityMatchingKeyObject')];
+    public getMatchingDependencies(): { field: string, dependency: DatapackRecordDependency }[] {
+        return [...Iterable.transform(this._dependencies, {
+            filter: ([,d]) => d.VlocityDataPackType === 'VlocityMatchingKeyObject',
+            map: ([field, dependency]) => ({ field, dependency }),
+        })];
     }
 
     /**
@@ -201,22 +213,35 @@ export class DatapackDeploymentRecord {
      * @returns Array with dependencies
      */
     public getLookupDependencies() {
-        return [...Iterable.filter(this._dependencies.values(), d => d.VlocityDataPackType === 'VlocityLookupMatchingKeyObject')];
+        return [...Iterable.transform(this._dependencies, {
+            filter: ([,d]) => d.VlocityDataPackType === 'VlocityLookupMatchingKeyObject',
+            map: ([field, dependency]) => ({ field, dependency }),
+        })];
     }
 
     public getUnresolvedDependencies() {
-        return [...Iterable.map(this._unresolvedDependencies, dep => this._dependencies.get(dep)!)];
+        return [...Iterable.map(this._unresolvedDependencies, field => ({ field, dependency: this._dependencies.get(field)! }))];
+    }
+
+    /**
+     * Check if a field that is dependent on another record is resolved.
+     * @param field name of the field
+     * @returns 
+     */
+    public isResolved(field: string): boolean {
+        return !this._unresolvedDependencies.has(field);
     }
 
     public async resolveDependencies(resolver: DependencyResolver) {
-        for(const [field, dependency] of this._dependencies.entries()) {
-            const resolution = await resolver.resolveDependency(dependency);
-            if (resolution !== undefined) {
-                if (!field.startsWith('$')) {
-                    this.values[field] = resolution;
+        return Promise.all(Iterable.map(this._unresolvedDependencies, field => 
+            resolver.resolveDependency(this._dependencies.get(field)!).then(resolution => {
+                if (resolution !== undefined) {
+                    if (!field.startsWith('$')) {
+                        this.values[field] = resolution;
+                    }
+                    this._unresolvedDependencies.delete(field);
                 }
-                this._unresolvedDependencies.delete(field);
-            }
-        }
+            }))
+        );
     }
 }

@@ -23,7 +23,7 @@ export class VlocityNamespaceService implements NamespaceService {
      * Replace the name space with a placeholder string
      * @param name text to update
      */
-    public replaceWithPlaceholder(name: string) {
+    public replaceNamespace(name: string) {
         if (this.vlocityNamespace) {
             return name.replace(new RegExp(`${this.vlocityNamespace}`, 'gi'), constants.NAMESPACE_PLACEHOLDER);
         }
