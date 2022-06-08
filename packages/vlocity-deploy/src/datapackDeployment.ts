@@ -1,10 +1,11 @@
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
 import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
-import { Timer , AsyncEventEmitter, arrayMapPush, arrayMapUnshift, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, segregate } from '@vlocode/util';
+import { Timer , AsyncEventEmitter, arrayMapPush, arrayMapUnshift, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, segregate, groupBy } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import { DeferredDependencyResolver } from './deferredDependencyResolver';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -21,7 +22,6 @@ export interface DatapackDeploymentRecordMessage {
     message: string;
 }
 
-
 const datapackDeploymentDefaultOptions = {
     useBulkApi: false,
     maxRetries: 1,
@@ -29,7 +29,8 @@ const datapackDeploymentDefaultOptions = {
     retryChunkSize: 5,
     lookupFailedDependencies: false,
     purgeMatchingDependencies: false,
-    purgeLookupOptimization: true
+    purgeLookupOptimization: true,
+    bulkDependencyResolution: true
 };
 
 /**
@@ -43,6 +44,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
     private readonly pendingRetry = new Array<DatapackDeploymentRecord>();
     private readonly options: DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions;
+    private readonly dependencyResolver: DependencyResolver;
 
     public get deployedRecordCount() {
         return this.deployed.length;
@@ -81,6 +83,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly logger: Logger) {
         super();
         this.options = { ...datapackDeploymentDefaultOptions, ...(options || {}) };
+        this.dependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
     }
 
     public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
@@ -106,17 +109,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.logger.log(`Deployed ${this.deployedRecordCount}/${this.totalRecordCount} records [${timer.stop()}]`);
     }
 
-    public getMessagesByDatapack() : Map<string, Array<DatapackDeploymentRecordMessage>> {
-        const messagesByDatapack = new Map<string, Array<DatapackDeploymentRecordMessage>>();
+    public getMessages() : Array<DatapackDeploymentRecordMessage> {
+        const messages = new Array<DatapackDeploymentRecordMessage>();
         for (const record of this.records.values()) {
             if (record.isFailed && record.statusMessage) {
-                arrayMapUnshift(messagesByDatapack, record.datapackKey, { record, type: 'error', message: this.formatDeployError(record.statusMessage) });
+                messages.push({ record, type: 'error', message: this.formatDeployError(record.statusMessage) });
             }
             for (const message of record.warnings) {
-                arrayMapPush(messagesByDatapack, record.datapackKey, { record, type: 'warn', message });
+                messages.push({ record, type: 'warn', message });
             }
         }
-        return messagesByDatapack;
+        return messages;
+    }
+
+    public getMessagesByDatapack() : { [datapackKey: string]: Array<DatapackDeploymentRecordMessage> } {
+        return groupBy(this.getMessages(), msg => msg.record.datapackKey);
     }
 
     private formatDeployError(message?: string) {
@@ -154,23 +161,22 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * Get all records that can be deployed; i.e records that do not have any pending dependencies.
      */
     private getDeployableRecords() {
-        const records = new Map<string, DatapackDeploymentRecord>();
-        if (this.pendingRetry.length > 0) {
-            return this.getRetryableRecords(this.options.retryChunkSize);
-        }
+        const records = new Map<string, DatapackDeploymentRecord>();        
         for (const record of this.records.values()) {
-            if (record.isPending && !this.hasPendingDependencies(record)) {
+            if (record.isPending && record.retryCount == 0 && !this.hasPendingDependencies(record)) {
                 records.set(record.sourceKey, record);
             }
         }
-        return records.size > 0 ? records : undefined;
-    }
 
-    private getRetryableRecords(batchSize: number) {
-        const records = new Map<string, DatapackDeploymentRecord>(
-            this.pendingRetry.splice(0, batchSize).map(record => [ record.sourceKey, record ])
-        );
-        return records;
+        if (records.size == 0) {
+            for (const record of this.records.values()) {
+                if (record.isPending && record.retryCount > 0) {
+                    records.set(record.sourceKey, record);
+                }
+            }
+        }
+        
+        return records.size > 0 ? records : undefined;
     }
 
     /**
@@ -196,7 +202,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         if (deploymentDep) {
             return deploymentDep;
         }
-        return this.lookupService.resolveDependency(dependency);
+        return this.dependencyResolver.resolveDependency(dependency);
     }
 
     /**
@@ -208,7 +214,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const unresolvedDependencies = dependencies.filter((dep, i) => !lookupResults[i]);
         
         if (unresolvedDependencies.length) {
-            const results = await this.lookupService.resolveDependencies(unresolvedDependencies);
+            const results = await this.dependencyResolver.resolveDependencies(unresolvedDependencies);
             lookupResults.forEach((value, index) => {
                 if (!value) {
                     lookupResults[index] = results.shift();
@@ -216,6 +222,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             });
 
             if (results.length) {
+                debugger;
                 throw new Error('BUG: unresolved lookup results should not be possible');
             }
         }
@@ -266,7 +273,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const [skippedRecords, recordsForLookup] = segregate([...datapacks.values()], rec => rec.skipLookup);
 
         this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
-        const ids = await this.lookupService.lookupIds(recordsForLookup, 50, cancelToken);
+        const ids = await this.lookupService.lookupIds(recordsForLookup, cancelToken);
 
         for (const [i, datapack] of [...recordsForLookup, ...skippedRecords].entries()) {
             const existingId = ids[i];
@@ -302,52 +309,30 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 datapack.addWarning(`Unresolved dependency "${dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey}" (field: ${field})`);
             }
         }
-
-        // const results = 
-
-        // for (const datapack of datapacks.values()) {
-        //     if (cancelToken?.isCancellationRequested) {
-        //         return;
-        //     }
-
-        //     if (datapack.hasUnresolvedDependencies) {
-        //         try {
-        //             await datapack.resolveDependencies(this);
-        //         } catch(err) {
-        //             this.handleError(datapack, err);
-        //             datapacks.delete(datapack.sourceKey);
-        //             continue;
-        //         }                
-
-        //         if (datapack.hasUnresolvedDependencies) {
-        //             const deps = datapack.getDependencies().map(dp => dp.VlocityMatchingRecordSourceKey || dp.VlocityLookupRecordSourceKey);
-        //             this.logger.warn(`Record ${datapack.sourceKey} has ${datapack.getDependencies().length} unresolvable dependencies: ${deps.join(', ')}`);
-        //             for (const dependency of deps) {
-        //                 datapack.addWarning(`Unresolved dependency: ${dependency}`);
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // Find out to which record groups the record to be deployed belong record groups 
-        const recordGroupsInDeployment = new Map<string, DatapackDeploymentRecordGroup>();
+        const recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
+        const recordGroupsStarted = new Set<string>();
         for (const datapackRecord of datapackRecords.values()) {
-            if (datapackRecord.isPending) {
-                datapackRecord.updateStatus(DeploymentStatus.InProgress);
-            } else {
+            if (!datapackRecord.isPending) {
                 throw new Error(`Datapack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
             }
 
-            // Figure out which record-groups are getting deployed; we trigger the post deploy event only 
+            // Figure out which record-groups are getting deployed; we trigger the post/pre deploy events only 
             // when a full record group is deployed
             const recordGroup = this.recordGroups.get(datapackRecord.datapackKey);
-            if (recordGroup != null) {
-                recordGroupsInDeployment.set(datapackRecord.datapackKey, recordGroup);
-            } else {
-                throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);
+            if (!recordGroup) {
+                throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);                
             }
+
+            recordGroups.set(datapackRecord.datapackKey, recordGroup);
+            if (!recordGroup.isStarted()) {
+                recordGroupsStarted.add(datapackRecord.datapackKey);
+            }
+
+            datapackRecord.updateStatus(DeploymentStatus.InProgress);
         }
 
         // prepare batch
@@ -366,9 +351,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
-        const newGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.isStarted());
         await this.emit('beforeDeployRecord', datapackRecords.values(), { hideExceptions: true });
-        await this.emit('beforeDeployGroup', newGroups, { hideExceptions: true });
+        await this.emit('beforeDeployGroup', Iterable.map(recordGroupsStarted, key => recordGroups.get(key)!), { hideExceptions: true });
 
         try {
             this.logger.log(`Deploying ${datapackRecords.size} records...`);
@@ -387,9 +371,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     this.deployed.push(datapackRecord);
                 } else if (!result.success) {
                     if (this.isRetryable(result.error) && datapackRecord.retryCount < this.options.maxRetries) {
-                        datapackRecord.retry();
+                        datapackRecord.updateStatus(DeploymentStatus.Retry, result.error);
                         this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error}`);
-                        this.pendingRetry.push(datapackRecord);
                     } else {
                         this.handleError(datapackRecord, result.error);
                     }
@@ -401,7 +384,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
         } finally {
-            const completedGroups = Iterable.filter(recordGroupsInDeployment.values(), group => !group.hasPendingRecords());
+            const completedGroups = Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords());
             await this.emit('afterDeployRecord', datapackRecords.values(), { hideExceptions: true });
             await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: false });
         }
@@ -436,7 +419,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         const deleteRecords = async (record?: DatapackDeploymentRecord) => {
             for (const [sobjectType, filters] of deleteFilters) {
-                const result = await this.salesforceService.delete(sobjectType, filters);
+                const result = await this.salesforceService.deleteWhere(sobjectType, filters);
                 for (const {error, id} of result.filter(res => !res.success)) {
                     const errorMessage = `Unable to delete ${sobjectType} with id '${id}' -- ${error}`;
                     if (record) {

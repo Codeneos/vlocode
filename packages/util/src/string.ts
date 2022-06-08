@@ -118,20 +118,17 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
  */
 export function joinLimit(parts: any[], limit: number, delimiter?: string) : string[] {
     const result = new Array<any>();
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    for (let i = 0; i < parts.length; i++) {
-        const element = String(parts[i]);
-        const resultIndex = (result.length || 1) - 1;
-        // eslint-disable-next-line @typescript-eslint/tslint/config
-        if (result[resultIndex] === undefined) {
+    let len = 0;
+
+    for (const item of parts) {
+        const element = String(item);        
+        const resultIndex = (len += element?.length ?? 0) / limit >> 0;
+        if (!result[resultIndex]) {
             result[resultIndex] = element;
         } else {
-            result[resultIndex] += (delimiter ?? '') + element;
-        }
-
-        if (result[resultIndex].length > limit && parts.length !== i-1) {
-            result.push(undefined);
+            result[resultIndex] += (delimiter ?? ',') + element;
         }
     }
+
     return result;
 }

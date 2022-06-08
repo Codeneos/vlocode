@@ -1,11 +1,10 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager , injectable, LifecyclePolicy } from '@vlocode/core';
-import { Timer , arrayMapPush, last , isSalesforceId, CancellationToken, stringEquals, filterKeys, groupBy, DeferredPromise } from '@vlocode/util';
+import { Timer , arrayMapPush, last , isSalesforceId, CancellationToken, filterKeys, groupBy, DeferredPromise, unique, remove, removeAll, normalizeSalesforceName, Iterable, mapAsync } from '@vlocode/util';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
-import { DatapackDeployment } from 'datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
@@ -13,12 +12,9 @@ export class DatapackLookupService implements DependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();
     private readonly lastRefresh: Date = new Date(0);
-    private readonly lookupQueue = new Array<{deferred: DeferredPromise<string | undefined>, dependency: DatapackRecordDependency}>();
-    private lookupQueueTimer?: NodeJS.Timeout;
-    private lookupWaitTime = 50; // time to wait until executing the queued lookups
 
     constructor(
-        private readonly vlocityNamespaceService: VlocityNamespaceService,
+        private readonly namespaceService: VlocityNamespaceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
         private readonly lookupService: SalesforceLookupService,
         private readonly schema: SalesforceSchemaService,
@@ -30,306 +26,215 @@ export class DatapackLookupService implements DependencyResolver {
      * @param dependency Dependency who's ID to resolve
      */
     public async resolveDependency(dependency: DatapackRecordDependency): Promise<string | undefined> {
-        const deferred = new DeferredPromise<string | undefined>();
-        this.lookupQueue.push({ deferred, dependency });
-        this.logger.verbose(`Queue dependency resolution -- queued: ${this.lookupQueue.length} (wait: ${this.lookupWaitTime}ms)`);
-
-        if (this.lookupQueueTimer) {
-            clearTimeout(this.lookupQueueTimer);
-            this.lookupQueueTimer = undefined;
-        }
-
-        if (!this.lookupQueueTimer) {
-            this.lookupQueueTimer = setTimeout(() => void this.processLookupQueue(), this.lookupWaitTime);
-        }
-
-        return deferred;
-    }
-
-    private async processLookupQueue() {
-        this.lookupQueueTimer = undefined; // clear timeout
-        const work = this.lookupQueue.splice(0);
-
-        try {
-            const results = await this.resolveDependencies(work.map(({ dependency }) => dependency));
-            for (const [index, lookupResult] of results.entries()) {
-                work[index].deferred.resolve(lookupResult);
-            }
-        } catch(err) {
-            // Reject all unresolved lookups when there is an error
-            // do this to avoid never resolving the defered work item
-            for (const { deferred } of work.filter(item => !item.deferred.isResolved)) {
-                deferred.reject(err);
-            }
-        }        
+        return (await this.resolveDependencies([dependency])).pop();
     }
 
     /**
      * Resolve the record if od a dependency in Salesforce; returns the real record ID of a decency.
      * @param dependency Dependency who's ID to resolve
      */
-     public async resolveDependencies(dependencies: DatapackRecordDependency[]): Promise<Array<string | undefined>> {
+    public async resolveDependencies(dependencies: DatapackRecordDependency[]): Promise<Array<string | undefined>> {
         const lookupResults = new Array<string | undefined>();
-
-        for (const [sobjectType, entries] of Object.entries(groupBy(dependencies.entries(), ([,dep]) => dep.VlocityRecordSObjectType))) {
-            // filter known deps
-            const unresolvedDependencies = entries.filter(([index, dependency]) => {
-                return !(lookupResults[index] = this.getCachedEntry(dependency.VlocityRecordSObjectType, this.getLookupKey(dependency)));
-            });
-
-            if (!unresolvedDependencies. length) {
-                // all dependencies resolved out of cache
-                continue;
-            }
-            
-            // Build filters
-            const filters = unresolvedDependencies.map(([index, dependency]) =>
-                ({ index, filter: filterKeys(dependency, field => !constants.DATAPACK_RESERVED_FIELDS.includes(field)) })
-            ).filter(({ filter }) => {
-                if (Object.keys(filter).length == 0) {
-                    this.logger.warn('None of the dependency\'s lookup fields have values; skipping lookup as it will fail');
+        const lookupRequests = dependencies.map((dependency, index) => ({
+                index, lookupKey: this.getLookupKey(dependency),
+                sobjectType: dependency.VlocityRecordSObjectType,
+                filter: this.normalizeFilter(filterKeys(dependency, field => !constants.DATAPACK_RESERVED_FIELDS.includes(field))), 
+            }))
+            .filter(({ sobjectType, lookupKey, index }) => {
+                return !(lookupResults[index] = this.getCachedEntry(sobjectType, lookupKey));
+            })
+            .filter(({ filter, lookupKey }) => {
+                if (!Object.keys(filter).length) {
+                    this.logger.warn(`None of the dependency\'s lookup fields have values (${lookupKey})`);
                     return false;
                 }
                 return true;
-            });;
-            
-            // Lookup all fields that are part of the filter
-            const fields = filters.reduce((acc, { filter }) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set<string>([ 'Id' ]));       
+            });
 
-            // lookup records
-            const records = await this.lookupService.lookup(sobjectType, filters.map(({ filter }) => filter), [...fields], undefined, false);
+        const records = await this.lookupMultiple(lookupRequests);
 
-            // map record results back to lookup requests 
-            for (const record of records) {
-                const lookupRequest = filters.find(({ filter }) => {
-                    // Note the field compare needs to be updated
-                    return Object.entries(filter).every(([field, value]) => record[field] == value);
-                });
-
-                if (lookupRequest) {
-                    lookupResults[lookupRequest.index] = record.Id!;
-                }
+        // map record results back to lookup requests 
+        for (const [i, matchedRecords] of records.entries()) {
+            const lookupRequest = lookupRequests[i];
+            if (!matchedRecords?.length) {
+                continue;
+            } else if (matchedRecords.length > 1) {
+                this.logger.warn(`Dependency with lookup key [${lookupRequest.lookupKey}] matches more than 1 record in target org: [${matchedRecords.join(', ')}]`);
             }
-        }
 
-        // Add lookup results to the cache
-        for (const {dependency, id} of lookupResults.map((id, index) => ({ dependency: dependencies[index], id })) ) {
-            if (id) {
-                this.updateCachedEntry(dependency.VlocityRecordSObjectType, this.getLookupKey(dependency), id);
-            }
+            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.lookupKey, matchedRecords[0]);
+            lookupResults[lookupRequest.index] = matchedRecords[0];
         }
 
         return lookupResults;
     }
-
-    /**
-     * Resolve the record if od a dependency in Salesforce; returns the real record ID of a decency.
-     * @param dependency Dependency who's ID to resolve
-     */
-    public async _resolveDependency(dependency: DatapackRecordDependency, defer: boolean = true): Promise<string | undefined> {
-        const lookupKey = this.getLookupKey(dependency);
-        const filter = {};
-
-        for (const field of Object.keys(dependency)) {
-            if (constants.DATAPACK_RESERVED_FIELDS.includes(field)) {
-                continue;
-            }
-            filter[field] = dependency[field];
-        }
-
-        if (Object.keys(filter).length == 0) {
-            this.logger.warn('None of the dependencies lookup fields have values; skipping lookup as it will fail');
-            return;
-        }
-
-        // return this.getCachedEntry(dependency.VlocityRecordSObjectType, lookupKey, async () => {
-        //     return (await this.lookupService.lookupSingle(dependency.VlocityRecordSObjectType, filter, [ 'Id' ], false))?.Id;
-        // });
-    }
-
-    // /**
-    //  * Refreshes the lookup cache for a specific object type, building all mtching keys for the data currently in the org speeding up lookups.
-    //  * For id's by matching key.
-    //  * @param sobjectType Sobject type for which to cache the record ID's into the cache
-    //  */
-    // public async refreshCache(sobjectType: string) {
-    //     const timer = new Timer();
-
-    //     const cache = this.getCache(sobjectType);
-    //     const beforeSize = cache.entries.size;
-    //     const filter = {
-    //         lastModifiedDate: `>${new Date(cache.refreshed).toISOString()}`
-    //     };
-
-    //     await this.lookupAll(sobjectType, filter);
-    //     this.logger.log(`Refreshed ${sobjectType} lookup cache with ${cache.entries.size - beforeSize} new records [${timer.stop()}]`);
-    //     cache.refreshed = Date.now() - timer.elapsed;
-    // }
-
-    // private async lookupAll(sobjectType: string, filter: object) {
-    //     const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
-    //     const matchingKeyFields = await this.getMatchingFields(sobjectType, filter);
-    //     const lookupMap = new Map<string, string>();
-    //     const results = await this.lookupService.lookup(sobjectType, filter, [...matchingKeyFields, matchingKey.returnField], undefined, false);
-
-    //     for (const record of results) {
-    //         const lookupKey = this.buildLookupKey(sobjectType, matchingKeyFields, record);
-    //         if (lookupKey && record.Id !== undefined) {
-    //             lookupMap.set(lookupKey, this.updateCachedEntry(sobjectType, lookupKey, record.Id));
-    //         }
-    //     }
-
-    //     return lookupMap;
-    // }
-
-    // /**
-    //  * Lookup the ID of a Datapack Record in the local cache based on the matching keys configured in Vlocity
-    //  * @param sobjectType SObject type
-    //  * @param data Data of the datapack to lookup
-    //  * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
-    //  */
-    // public async lookupIdFromCache(sobjectType: string, data: object): Promise<string | undefined> {
-    //     return this.lookupId(sobjectType, data, true);
-    // }
-
-    // /**
-    //  * Lookup the ID of a Datapack Record based on the matching keys configured in Vlocity
-    //  * @param sobjectType SObject type
-    //  * @param data Data of the datapack to lookup
-    //  * @param lookupKey Optional lookup key used for caching; if not provided the key is created based on the matching key fields.
-    //  */
-    // public async lookupId(sobjectType: string, data: object, cacheOnly?: boolean): Promise<string | undefined> {
-    //     const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
-    //     const matchingFields = await this.getMatchingFields(sobjectType, data);
-    //     const filter = this.buildFilter(data, matchingFields);
-
-    //     if (Object.keys(filter).length == 0) {
-    //         this.logger.warn(`Skipping lookup; none matching fields (${matchingFields.join(', ')}) for ${sobjectType} have values`);
-    //         return;
-    //     }
-
-    //     const lookupKey = this.buildLookupKey(sobjectType, matchingFields, filter);
-    //     return this.getCachedEntry(sobjectType, lookupKey, cacheOnly ? undefined : async () => {
-    //         return (await this.lookupService.lookupSingle(sobjectType, filter, [matchingKey.returnField], false))?.Id;
-    //     });
-    // }
 
     /**
      * Bulk lookup of records in Salesforce using the current matching key configuration;
-     * @param records Array of Records to lookup; note the indexes corresponds the the result array
-     * @param batchSize Batch size for the lookup queries; number of records that will be looked up in a single query
+     * @param records Array of Records to lookup; note the index of the record corresponds to the index in the result array
      * @returns Array with all IDs found in Salesforce; array index matches the order of the records as provided
      */
-    public async lookupIds(records: DatapackDeploymentRecord[], batchSize: 50, cancelToken?: CancellationToken): Promise<string[]> {
-        const lookupResults = new Array<string>();
-        const lookupKeyToResultsIndex = new Map<string, number>();
-        const lookupTypes = new Map<string, DatapackDeploymentRecord[]>();
+    public async lookupIds(datapackRecords: DatapackDeploymentRecord[], cancelToken?: CancellationToken): Promise<Array<string | undefined>> {
+        const lookupResults = new Array<string | undefined>();
+        
+        // Determine matching keys per object
+        const recordObjectTypes = unique(datapackRecords, r => r.sobjectType, r => r.sobjectType);
+        const recordMatchingFields = new Map(await mapAsync(recordObjectTypes, async sobjectType => [sobjectType, await this.getMatchingFields(sobjectType)]));
 
-        // Group lookups by sobject type and creat a mapping from input index to 
-        // matching key so we can translate this back to the original input in the lookup phase of this call
-        for (const [i, record] of records.entries()) {
-            const matchingFields = await this.getMatchingFields(record.sobjectType);
-            const lookupKey = this.buildLookupKey(record.sobjectType, matchingFields, record.values);
+        const lookupRequests = datapackRecords.map((record, index) => ({
+                index, record, sobjectType: record.sobjectType,
+                lookupKey: this.buildLookupKey(record.sobjectType, recordMatchingFields.get(record.sobjectType) ?? [], record.values)!,                
+                filter: this.buildFilter(record.values, recordMatchingFields.get(record.sobjectType) ?? []), 
+                reportWarning: (message: string) => { 
+                    record.addWarning(`Datapack ${record.sourceKey} -- ${message}`);
+                    this.logger.warn(message);  
+                }
+            }))
+            .filter(({ sobjectType, record, lookupKey, index }) => {
+                return !(lookupResults[index] = this.getCachedEntry(sobjectType, lookupKey) ?? this.getCachedEntry(sobjectType, record.sourceKey));
+            })
+            .filter(({ record, lookupKey, reportWarning }) => {
+                if (!lookupKey) {
+                    reportWarning(`Skip record lookup; unable to build a lookup key -- validate matching key configuration for ${record.sobjectType}`);
+                    return false;
+                }
+                return true;
+            });
 
-            if (!lookupKey) {
-                record.addWarning(`Unable to build lookup key`);
-                this.logger.error(`Unable to build lookup key for type ${record.sobjectType} with values:`, record.values);
-                continue;
+        // Restrict lookup filters further by limiting the lookup scope by already deployed parents
+        // i.e: restrict the lookup of an existing ID for an embedded datapack by it's already deployed parent records
+        // this prevents re-parenting of child records and can help avoid matching more then 1 target record
+        // but also has a risk of not matching any record and creating duplicates
+        for (const lookup of lookupRequests) {
+            const parentFields = await this.getParentRecordMatchingFields(lookup.record);
+            if (parentFields.length) {
+                Object.assign(lookup.filter, this.buildFilter(lookup.record.values, parentFields));
             }
-
-            const id = this.getCachedEntry(record.sobjectType, lookupKey);
-            if (id) {
-                // Do not query if there is a cached entry
-                lookupResults[i] = id;
-                continue;
-            }
-
-            if (cancelToken?.isCancellationRequested) {
-                return [];
-            }
-
-            lookupKeyToResultsIndex.set(lookupKey, i);
-            arrayMapPush(lookupTypes, [record.sobjectType, ...matchingFields].join(':'), record);
         }
 
-        for (const [typeKey, entries] of lookupTypes.entries()) {
-            // Extract details from type key
-            const matchingFields = typeKey.split(':');
-            const sobjectType = matchingFields.shift()!;
+        // execute lookup
+        const records = await this.lookupMultiple(lookupRequests);
 
-            // time the lookup and keep track of the results found
-            this.logger.verbose(`Looking up Ids for ${entries.length} records of type ${sobjectType} matching on ${matchingFields.length} fields`);
-            const timer = new Timer();
-            const total = entries.length;
-            let found = 0;
+        // map record results back to lookup requests 
+        for (const [i, matchedRecords] of records.entries()) {
+            const lookupRequest = lookupRequests[i];
+            if (!matchedRecords?.length) {
+                continue;
+            } else if (matchedRecords.length > 1) {
+                lookupRequest.reportWarning(`Matches more than 1 existing record in target org: [${matchedRecords.join(', ')}]`);
+            }
 
-            // Split up lookup in chunks @see batchSize records at a time - otherwise we might overflow our SOQL limit
-            do {
-                if (cancelToken?.isCancellationRequested) {
-                    return [];
-                }
+            const matchedRecord = matchedRecords[0];
 
-                const lookupEntries = entries.splice(0, batchSize);
-                const lookupFilters = lookupEntries.map(entry => this.buildFilter(entry.values, matchingFields));
-                const results = await this.lookupService.lookup(sobjectType, lookupFilters, [ 'Id', ...matchingFields ], undefined, false);
+            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.lookupKey, matchedRecord);
+            if (lookupRequest.record.sourceKey && lookupRequest.lookupKey !== lookupRequest.record.sourceKey) {
+                this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.record.sourceKey, matchedRecord);
+            }
 
-                for (const rec of results) {
-                    const lookupKey = this.buildLookupKey(sobjectType, matchingFields, rec);
-                    if (!lookupKey) {
-                        this.logger.error('Unable to rebuild lookup key for lookup result:', rec);
-                        continue;
-                    }
-
-                    this.updateCachedEntry(sobjectType, lookupKey, rec.id);
-                    const resultsIndex = lookupKeyToResultsIndex.get(lookupKey);
-
-                    if (resultsIndex === undefined) {
-                        this.logger.debug('Got result for record not requested:', lookupKey);
-                        continue;
-                    }
-
-                    const recordSourceKey = records[resultsIndex]?.sourceKey;
-                    if (recordSourceKey != lookupKey) {
-                        this.updateCachedEntry(sobjectType, recordSourceKey, rec.id);
-                    }
-
-                    if (lookupResults[resultsIndex]) {
-                        if (lookupResults[resultsIndex] == rec.Id) {
-                            // When the existing lookup and new lookup are the same it is not considered an error
-                            continue;
-                        }
-                        this.logger.error(`Duplicate match for lookup key ${lookupKey}; existing lookup ${lookupResults[resultsIndex]}; overwriting lookup result with ${rec.id}`);
-                        records[resultsIndex].addWarning(`Duplicate match for lookup key ${lookupKey}; existing lookup ${lookupResults[resultsIndex]}; overwriting lookup result with ${rec.id}`);
-                    }
-
-                    lookupResults[resultsIndex] = rec.id;
-                    found++;
-                }
-
-            } while(entries.length > 0);
-
-            this.logger.log(`Found ${found}/${total} requested ${sobjectType} records [${timer.stop()}]`);
+            lookupResults[lookupRequest.index] = matchedRecord;
         }
 
         return lookupResults;
     }
 
-    private buildFilter(data: object, fields: string[]) {
-        const filter = {};
+    /**
+     * Lookup multiple records over multiple SObjects using the specified filters
+     * @param lookups lookup requests
+     * @returns Array with all matched records or undefined when no matches found
+     */
+    private async lookupMultiple(lookups: { sobjectType: string, filter: object }[]): Promise<Array<Array<string> | undefined>> {
+        const lookupResults = new Array<string[] | undefined>();
 
-        for (const field of fields) {
-            const value = data[field];
-            if (value !== undefined) {
-                // Values can contain references to objects, if they do we need to make sure we replace it
-                // with the actual Vlocity namespace; that is what the update namespace method does
-                filter[field] = typeof value === 'string' ? this.updateNamespace(value) : value;
-            }
-            else {
-                this.logger.verbose(`One of the matching key fields (${field}) does not have a value`);
+        if (lookups.some(lookup => !lookup.filter || !Object.keys(lookup.filter).length)) {
+            throw new Error(`Cannot lookup records with empty or undefined filter criteria; validate input`);
+        }
+
+        for (const [sobjectType, entries] of Object.entries(groupBy(lookups.entries(), ([,entry]) => entry.sobjectType))) {
+            // Build filters
+            const distinctFilters = [...unique(entries, ([,{ filter }]) => JSON.stringify(filter), ([,{ filter }]) => filter)];
+            
+            // Lookup all fields that are part of the filter
+            const fields = distinctFilters.reduce<Set<string>>((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id' ]));       
+
+            // lookup records
+            const records = await this.lookupService.lookup(sobjectType, distinctFilters, [...fields], undefined, false);
+
+            // map record results back to lookup requests 
+            while (records.length) {
+                const record = records.shift()!;
+                const matchedLookups = entries.filter(([,{ filter }]) => {
+                    // Find all matching lookup requests
+                    return Object.entries(filter).every(([field, value]) => this.fieldEquals(record, field, value));
+                });
+
+                if (!matchedLookups.length) {
+                    debugger;
+                    throw new Error('BUG: records returned that do not match any filter criteria');
+                }
+
+                for (const [ index ] of matchedLookups) {
+                    if (lookupResults[index]) {
+                        // @ts-expect-error TS does not understand lookupResults[index] is not undefined
+                        lookupResults[index].push(record.Id!)
+                    }
+                    lookupResults[index] = [ record.Id! ];
+                }
             }
         }
 
-        return filter;
+        return lookupResults;
+    }
+
+    // private generateLookupKeyFromFilter(sobjectType: string, filter: object) {
+    //     const key = [normalizeSalesforceName(sobjectType)];
+    //     for (const [field, value] of Object.entries(filter)) {
+    //         key.push(normalizeSalesforceName(field));
+    //         key.push(typeof value === 'string' ? value.toLowerCase() : JSON.stringify(value ?? null));
+    //     }
+    //     return key.join('/');
+    // }
+
+    private fieldEquals(record: object, field: string, filterValue: any): boolean {
+        const recordValue = field.split('.').reduce((o, p) => o?.[p], record);
+        if (recordValue == filterValue) {
+            return true;
+        }
+
+        if (typeof filterValue === 'string' && typeof recordValue === 'string') {
+            if (isSalesforceId(recordValue) && recordValue.length != filterValue.length) {
+                // compare 15 to 18 char IDs -- simple compare covering 99% of the cases
+                return recordValue.substring(0, 15) == filterValue.substring(0, 15);
+            }
+            return this.namespaceService.updateNamespace(filterValue).toLowerCase() == recordValue.toLowerCase();
+        }
+
+        return false;
+    }
+
+    private buildFilter<K extends string>(data: any, fields?: K[]): { [P in K]?: any } {
+        const filter: { [P in K]?: any } = {};
+    
+        for (const field of fields ?? Object.keys(data)) {
+            const value = data[field];
+            if (value !== undefined) {
+                filter[field] = value;                
+            } else {
+                this.logger.verbose(`One of the matching key fields (${field}) does not have a value`);
+            }
+        }
+    
+        return this.normalizeFilter(filter);
+    }
+
+    private normalizeFilter<T>(data: T): T {
+        for (const field of Object.keys(data)) {
+            if (typeof data[field] === 'string') {
+                // Values can contain references to objects, if they do we need to make sure we replace it
+                // with the actual Vlocity namespace; that is what the update namespace method does
+                data[field] = this.namespaceService.updateNamespace(data[field]);
+            }
+        }    
+        return data;
     }
 
     private buildLookupKey(sobjectType: string, fields: Array<string>, data: object): string | undefined {
@@ -339,14 +244,14 @@ export class DatapackLookupService implements DependencyResolver {
         // }
         // As opposed to querying lookup keys should not contain a VLocity package namespace as they 
         // are org independent, as such we replace the namespace; if present back with the place holder
-        return values.length ? this.vlocityNamespaceService.replaceNamespace(`${sobjectType}/${values.join('/')}`) : undefined;
+        return values.length ? this.namespaceService.replaceNamespace(`${sobjectType}/${values.join('/')}`) : undefined;
     }
 
     private async getMatchingFields(sobjectType: string): Promise<string[]> {
         return this.getSObjectMatchingFields(sobjectType);
     }
 
-    private async getDependencyMatchingFields(record: DatapackDeploymentRecord): Promise<string[]> {
+    private async getParentRecordMatchingFields(record: DatapackDeploymentRecord): Promise<string[]> {
         const fields = new Array<string>();
         for (const { field } of record.getMatchingDependencies()) {
             if (!record.isResolved(field)) {
@@ -441,10 +346,6 @@ export class DatapackLookupService implements DependencyResolver {
         return obj.VlocityLookupRecordSourceKey || obj.VlocityMatchingRecordSourceKey;
     }
 
-    private updateNamespace(name: string) {
-        return this.vlocityNamespaceService.updateNamespace(name);
-    }
-
     private getCachedEntry(sobjectType: string, key: string | undefined): string | undefined;
     //private getCachedEntry(sobjectType: string, key: object): Promise<string | undefined>;
     private getCachedEntry(sobjectType: string, key: string | undefined, resolver?: (key: string) => string | Promise<string | undefined> | undefined): Promise<string>;
@@ -487,7 +388,7 @@ export class DatapackLookupService implements DependencyResolver {
     }
 
     private getCache(sobjectType: string) {
-        const normalizedObjectName = this.vlocityNamespaceService.replaceNamespace(sobjectType).toLowerCase();
+        const normalizedObjectName = this.namespaceService.replaceNamespace(sobjectType).toLowerCase();
         let cacheStore = this.lookupCache.get(normalizedObjectName);
         if (!cacheStore) {
             this.lookupCache.set(normalizedObjectName, cacheStore = { refreshed: 0, entries: new Map() });

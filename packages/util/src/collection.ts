@@ -1,4 +1,5 @@
 // File contains several functions for manipulating or accessing collectiong like objects such as: Set, Map and Array
+import { isPromise } from './async';
 import { TestMessage } from 'vscode';
 import { Iterable } from './iterable';
 
@@ -43,21 +44,56 @@ export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T)
 /**
  * Groups an array into key accessible groups of objects
  * @param iterable iterable items to group
- * @param predicate function to get the group by key
+ * @param keySelector function to get the group by key
  */
-export function groupBy<T>(iterable: Iterable<T>, keySelector: (item: T) => string | undefined) : { [objectKey: string]: T[] } {
-    return asArray(iterable).reduce(
-        (arr, item) => {
-            const key = keySelector(item);
-            if (key) {
-                if (!arr[key]) {
-                    arr[key] = [];
-                }
-                arr[key].push(item);
+export function groupBy<T, I = T>(
+    iterable: Iterable<T>, 
+    keySelector: (item: T) => string | undefined,
+    itemSelector?: (item: T) => I) : { [objectKey: string]: I[] }
+
+/**
+ * Groups an array into key accessible groups of objects
+ * @param iterable iterable items to group
+ * @param keySelector function to get the group by key
+ */
+export function groupBy<T, I = T>(
+    iterable: Iterable<T>, 
+    keySelector: (item: T) => Promise<string | undefined>,
+    itemSelector?: (item: T) => I) : Promise<{ [objectKey: string]: I[] }>
+
+/**
+ * Groups an array into key accessible groups of objects
+ * @param iterable iterable items to group
+ * @param keySelector function to get the group by key
+ */
+export function groupBy<T, I = T>(iterable: Iterable<T>, 
+    keySelector: (item: T) => string | undefined | Promise<string | undefined>,
+    itemSelector?: (item: T) => I) : { [objectKey: string]: I[] } | Promise<{ [objectKey: string]: I[] }> {
+    const acc = {};
+    const awaitables = new Array<Promise<any>>();
+    
+    function accUpdate(acc: any, key: string | undefined, item: T) {
+        if (key) {
+            if (!acc[key]) {
+                acc[key] = [];
             }
-            return arr;
-        }, {} as { [objectKey: string]: T[] }
-    );
+            acc[key].push(itemSelector ? itemSelector(item) : item);
+        }
+    }
+
+    for (const item of iterable) {
+        const key = keySelector(item);
+        if (isPromise(key)) {
+            awaitables.push(key.then(k => accUpdate(acc, k, item)));
+        } else {
+            accUpdate(acc, key, item);
+        }
+    }
+
+    if (awaitables.length > 0) {
+        return Promise.all(awaitables).then(() => acc);
+    }
+    return acc;
 }
 
 /**
@@ -80,7 +116,10 @@ function* enumerateWithIndex<T>(iterable: Iterable<T>) : IterableIterator<[numbe
 export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Promise<R>) : Promise<R[]> {
     let mapPromise = Promise.resolve(new Array<R>());
     for (const value of array) {
-        mapPromise = mapPromise.then(async result => result.concat(await callback(value)));
+        mapPromise = mapPromise.then(async result => {
+            result.push(await callback(value));
+            return result;
+        });
     }
     return mapPromise;
 }
@@ -268,6 +307,23 @@ export function remove<T>(source: Array<T>, predicate: (item: T, index: number) 
         const [ removedItem ] = source.splice(index, 1);
         return removedItem;
     }
+}
+
+/**
+ * Remove all elements from the array that matches the specified predicate 
+ * @param source Source array
+ * @param predicate predicate to match
+ * @returns Items removed from the array
+ */
+ export function removeAll<T>(source: Array<T>, predicate: (item: T, index: number) => boolean): T[] {
+    const matched = new Array<T>();
+    for (let i = 0; i < source.length; i++) {
+        const element = source[i];
+        if (predicate(element, i)) {
+            matched.push(...source.splice(i, 1));
+        }
+    }
+    return matched;
 }
 
 /**
