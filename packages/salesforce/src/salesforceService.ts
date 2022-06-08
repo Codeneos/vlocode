@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy } from '@vlocode/util';
 
 import { JsForceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -180,22 +180,40 @@ export class SalesforceService implements JsForceConnectionProvider {
      * @param filter Object filter or where-conditional selecting the records to delete 
      * @param chunkSize Number of records to delete in a single call
      */
-    public async delete(type: string, filter?: object | string | Array<object | string>, chunkSize = 200) : Promise<{ id: string, success: boolean, error?: string }[]> {
+    public async deleteWhere(type: string, filter?: object | string | Array<object | string>, chunkSize = 200) : Promise<{ id: string, success: boolean, error?: string }[]> {
+        const records = await this.lookup(type, filter, ['Id'], undefined, false);
+        return this.delete(records.map(rec => rec.Id), chunkSize);
+    }
+
+    /**
+     * Delete one or more records by ID
+     * @param ids list of IDs
+     * @param chunkSize 
+     * @returns 
+     */
+    public async delete(ids: Iterable<string | SObjectRecord>, chunkSize = 200) : Promise<{ id: string, success: boolean, error?: string }[]> {
         const connection = await this.getJsForceConnection();
-        const records = await this.lookup(type, filter, undefined, undefined, false);
         const deleteResults = new Array<{ id: string, success: boolean, error?: string }>();
 
-        while(records.length > 0) {
-            const idChunk = records.splice(0, chunkSize).map(rec => rec.Id!);
-            this.logger.verbose(`Deleting ${records.length} ${type} record(s)`);
-            const result = await connection.del(type, idChunk, { allOrNone: false });
+        const groupedByType = Object.entries(await groupBy(ids, 
+                async item => typeof item === 'string' ? (await this.schema.describeSObjectById(item)).name : item.attributes.type,
+                item => typeof item === 'string' ? item : item.Id));
 
-            for (const [index, deleteResult]of asArray(result).entries()) {
-                deleteResults.push({
-                    id: idChunk[index],
-                    success: deleteResult.success,
-                    error: !deleteResult.success ? deleteResult.errors.map(f => `${f.message} (${f.fields.join(', ') || 'unknown'})`).join(', ') : undefined
-                });
+        while(groupedByType.length) {
+            const [type, typedIds] = groupedByType.pop()!;
+
+            while(typedIds.length) {
+                const idChunk = typedIds.splice(0, chunkSize);
+                this.logger.verbose(`Deleting ${idChunk.length} ${type} record(s)`);
+                const result = await connection.del(type, idChunk, { allOrNone: false });
+
+                for (const [index, deleteResult]of asArray(result).entries()) {
+                    deleteResults.push({
+                        id: idChunk[index],
+                        success: deleteResult.success,
+                        error: !deleteResult.success ? deleteResult.errors.map(f => `${f.message} (${f.fields.join(', ') || 'unknown'})`).join(', ') : undefined
+                    });
+                }
             }
         }
 

@@ -42,18 +42,23 @@ export class SalesforceSchemaService {
         }
     }
 
-    public async describeSObjectById(id: string) : Promise<DescribeSObjectResult>{
-        if (!isSalesforceId(id)) {
-            throw Error(`Invalid Salesfoce id: ${id}`);
+    public describeSObjectByPrefix(prefix: string) {
+        return this.describeSObjectById(prefix);
+    }
+
+    public async describeSObjectById(id: string) : Promise<DescribeSObjectResult> {
+        if (id.length != 3 && !isSalesforceId(id)) {
+            throw Error(`Invalid Salesforce id: ${id}`);
         }
 
+        const prefix = id.slice(0, 3);
         for (const obj of await this.describeSObjects()) {
-            if (obj.keyPrefix && id.startsWith(obj.keyPrefix)) {
+            if (obj.keyPrefix == prefix) {
                 return this.describeSObject(obj.name);
             }
         }
 
-        throw Error(`No object found matching the key prefix specified: ${id}`);
+        throw Error(`No object found matching the key prefix specified: ${prefix}`);
     }
 
     @cache(-1)

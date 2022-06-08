@@ -4,8 +4,9 @@ import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCo
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
-import { join } from 'path';
+import { join, relative } from 'path';
 import * as chalk from 'chalk';
+import { groupBy, segregate } from '@vlocode/util';
 
 export default class extends Command {
 
@@ -73,24 +74,30 @@ export default class extends Command {
         await deployment.start();
 
         // done!!
-        if (deployment.hasErrors || deployment.hasWarnings) {
-            this.logger.warn(`${logSymbols.error} Deployment completed with ${deployment.failedRecordCount} errors`);
+        const deploymentMessages = deployment.getMessages().filter(({ type }) => type === 'error' || type === 'warn');
+        const [ errors, warnings ] = segregate(deploymentMessages, ({type}) => type === 'error');        
 
-            for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
-                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${deployment.getFailedRecords(datapackKey).length} failed records (${messages.length} messages)`);
-                for (let i = 0; i < messages.length; i++) {
-                    this.logger[messages[i].type](` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${messages[i].message}`);
-                }
-            }
-
-            // let counter = 1;
-            // for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
-            //     for (const message of messages) {
-            //         this.logger[message.type](` ${counter++}. ${chalk.bold(datapackKey)} -- ${message.message}`);
-            //     }
-            // }
+        if (errors.length ) {
+            this.logger.warn(`${logSymbols.error} Deployment completed with ${errors.length} error(s) and ${warnings.length} warning(s)`);
+        } else if (warnings.length) {
+            this.logger.warn(`${logSymbols.warning} Deployment completed ${warnings.length} warning(s)`);
         } else {
-            this.logger.info(`${logSymbols.success} Deployment completed without errors!`);            
+            this.logger.info(`${logSymbols.success} Deployment completed without errors or warnings!`);          
+        }
+        
+        const prefixFormat = {
+            error: chalk.bgRedBright.white.bold(`ERROR`),
+            warn: chalk.bgYellowBright.black.bold(`WARN`)
+        };
+
+        const groupedSortedMessages = Object.entries(groupBy(deploymentMessages, 
+            ({type, message}) => `${prefixFormat[type]} ${message}`))
+            .sort((a,b) => a[0].localeCompare(b[0]));
+
+        for (const [message, recordMessages] of groupedSortedMessages) {
+            const sourceKeys = recordMessages.map(({ record }) => record.sourceKey.replaceAll(/%[^%]+%__/ig,''));
+            const affected = sourceKeys.splice(0, 10).join(', ') + (sourceKeys.length > 0 ? `... (and ${sourceKeys.length} more)` : '');
+            this.logger.info(`${message} for ${recordMessages.length} records: ${affected}`);
         }
     }
 }

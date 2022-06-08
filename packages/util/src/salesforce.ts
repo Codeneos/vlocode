@@ -51,14 +51,14 @@ export function removeNamespacePrefix(field : string) : string {
 
 /**
  * Extract both the name of a type as well as the namespace if any
- * @param typeName Field to seperate namespace and type
+ * @param typeName Field to separate namespace and type
  */
 export function extractNamespaceAndName(typeName : string) : { name: string; namespace?: string } {
     // Also can use regex: /^(.+?__)?(?!c$|$)(.*?)(__c)?$/ replace with '$2$3'
     const namespaceIndex = typeName.indexOf('__');
     if (namespaceIndex > 0) {
         // Custom fields are postfixed with __c, avoid detection field name as namespace
-        const hasNamespace = typeName.substr(-3, 2) != '__' || namespaceIndex !== typeName.lastIndexOf('__') ;
+        const hasNamespace = typeName.substring(-3, 2) != '__' || namespaceIndex !== typeName.lastIndexOf('__') ;
         if (hasNamespace) {
             return {
                 name: typeName.substring(namespaceIndex + 2),

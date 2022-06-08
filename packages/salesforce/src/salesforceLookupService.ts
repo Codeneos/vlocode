@@ -1,5 +1,5 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { asArray, last, transform, joinLimit } from '@vlocode/util';
+import { asArray, last, transform, joinLimit, isSalesforceId } from '@vlocode/util';
 import { PropertyAccessor } from './types';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -72,6 +72,7 @@ export class SalesforceLookupService {
     }
 
     private async lookupWhere<T, K extends PropertyAccessor = keyof T>(type: string, where?: string, selectFields: K[] | 'all' = 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]> {
+        this.logger.verbose(`Lookup ${type} records ${limit ? `- limit ${limit} ` : ``}- fields:`, () => JSON.stringify(selectFields));
         const fields = new Set(['Id']);
 
         if (selectFields) {
@@ -94,7 +95,6 @@ export class SalesforceLookupService {
         const limitClause = limit ? ` limit ${limit}` : '';
         const whereClause = where?.trim().length ? ` where ${  where}` : '';
         const queryString = `select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`;
-        this.logger.verbose(`LOOKUP: ${queryString}`);
         return this.queryService.query(queryString, useCache);
     }
 
@@ -106,9 +106,9 @@ export class SalesforceLookupService {
                 continue;
             }
 
-            const salesforceFields = await this.schemaService.describeSObjectFieldPath(type, fieldPath);
-            const salesforceField = last(salesforceFields)!;
-            const fieldName = [ ...salesforceFields.slice(0, -1).map(field => field.relationshipName), salesforceField.name ].join('.');
+            const salesforceFields = [...await this.schemaService.describeSObjectFieldPath(type, fieldPath)];
+            const salesforceField = salesforceFields.pop()!;
+            const fieldName = [ ...salesforceFields.map(field => field.relationshipName), salesforceField.name ].join('.');
 
             if (typeof value === 'object' && !Array.isArray(value)) {
                 if (salesforceField.type != 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName) {
@@ -131,11 +131,20 @@ export class SalesforceLookupService {
                     } else if (value.startsWith('~')) {
                         operator = 'like';
                         value = value.substring(1);
-                    }
+                    } 
                 } else if (typeof value === 'object' && Array.isArray(value)) {
-                    operator = 'includes';
-                }
-
+                    operator = 'in';
+                    if (salesforceField.type == 'multipicklist') {
+                        operator = 'includes';
+                    }
+                }                
+                        
+                if (typeof value === 'string' && isSalesforceId(value) && salesforceField.type === 'string') {
+                    // doesn't work for Arrays nor does it handle < and > operators properly
+                    value = [ value, value.substring(0, 15) ];
+                    operator = operator == '=' ? 'in' : 'not in';
+                } 
+                
                 const fieldValue = QueryService.formatFieldValue(value, salesforceField);
                 lookupFilters.push(`${fieldName} ${operator} ${fieldValue}`);
             }
@@ -143,5 +152,4 @@ export class SalesforceLookupService {
 
         return lookupFilters.join(' and ');
     }
-
 }

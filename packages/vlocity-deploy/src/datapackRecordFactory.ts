@@ -11,6 +11,8 @@ import { VlocityDatapack } from './datapack';
 @injectable()
 export class DatapackRecordFactory {
 
+    private uniqueWarnings = new Set<string>();
+
     constructor(
         private readonly namespaceService: NamespaceService,
         private readonly schemaService: SalesforceSchemaService,
@@ -34,8 +36,12 @@ export class DatapackRecordFactory {
         const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
         const records : Array<typeof record> = [ record ];
         const reportWarning = (message: string) => {
+            if (!this.uniqueWarnings.has(message)) {
+                // Only report unique warnings in the console
+                this.uniqueWarnings.add(message);
+                this.logger.warn(message);
+            }
             record.addWarning(message);
-            this.logger.warn(message);
         }
 
         for (const [key, value] of datapack.entries().filter(([key]) => !key.includes('.'))) {
@@ -81,7 +87,7 @@ export class DatapackRecordFactory {
             } else {
                 // make sure the field exists
                 if (!field) {
-                    this.logger.warn(`Skipping ${key}; no such field on ${sobject.name}`);
+                    reportWarning(`Skipping ${key}; no such field on ${sobject.name}`);
                     continue;
                 }
                 record.values[field.name] = this.convertValue(value, field);
@@ -96,7 +102,7 @@ export class DatapackRecordFactory {
             return datapack.sourceKey;
         }
         // some objects do not have a source key - generate a unique key so we can deploy them
-        const primaryKey = datapack.globalKey || datapack.name || `Generated/${uuid.v4()}`;
+        const primaryKey = datapack.globalKey || `Generated/${uuid.v4()}`;
         return `${datapack.sobjectType}/${primaryKey}`;
     }
 
