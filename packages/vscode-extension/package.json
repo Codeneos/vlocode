@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.24",
+    "version": "0.16.25",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
