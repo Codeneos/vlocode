@@ -78,7 +78,7 @@ export class Logger {
             category: this.name,
             level,
             time: new Date(),
-            message: args.map(this.formatArg).join(' ')
+            message: args.map(item => this.formatArg(item)).join(' ')
         });
     }
 
@@ -103,6 +103,12 @@ export class Logger {
                 return JSON.stringify(arg, undefined, 2);
             } catch(err) {
                 return '{Object}';
+            }
+        } else if (typeof arg === 'function') {
+            try {
+                return this.formatArg(arg());
+            } catch(err) {
+                return `(<function error> ${this.formatArg(err)})`;
             }
         }
         return arg;

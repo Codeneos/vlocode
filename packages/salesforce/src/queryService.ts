@@ -1,13 +1,13 @@
 import { Readable } from 'stream';
 import * as moment from 'moment';
 import { Logger, injectable } from '@vlocode/core';
-import { PropertyTransformHandler, normalizeSalesforceName, Timer } from '@vlocode/util';
+import { PropertyTransformHandler, normalizeSalesforceName, Timer, isSalesforceId } from '@vlocode/util';
 
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
 import { NamespaceService } from './namespaceService';
 
-export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & Partial<SObjectRecord> & { [P in TProps]: any; };
+export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & SObjectRecord & { [P in TProps]: any; };
 
 @injectable.transient()
 export class QueryService {
@@ -155,7 +155,7 @@ export class QueryService {
 
         if (typeof value === 'object' && Array.isArray(value)) {
             return `(${value.map(v => this.formatFieldValue(v, field)).join(',')})`;
-        } else if (typeof value === 'object') {
+        } else if (typeof value === 'object' && !(value instanceof Date)) {
             throw new Error('Cannot format Object value to a valid Salesforce field value.');
         }
 
@@ -178,7 +178,7 @@ export class QueryService {
             return (!!value).toString();
         } else if (['double', 'int', 'currency', 'percent'].includes(field.type)) {
             return value.toString().replace(/[,.]([0-9]{3})/g,'$1').toString().replace(/[.,]/, '.');
-        }
+        } 
 
         if (options.escapeStrings && field.type === 'string') {
             value = value.replaceAll(/(['\\])/ig, '\\$1');

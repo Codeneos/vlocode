@@ -30,6 +30,7 @@ export type DatapackRecordDependency = {
 
 export interface DependencyResolver {
     resolveDependency(dep: DatapackRecordDependency): Promise<string | undefined>;
+    resolveDependencies(dependencies: DatapackRecordDependency[]): Promise<Array<string | undefined>>;
 }
 
 export interface DatapackDeploymentEvent {
@@ -241,7 +242,7 @@ export class DatapackDeployer {
         for (const [datapackType, recordGroups] of Object.entries(datapacksByType)) {
             await this.runSpecFunction(datapackType, type, {
                 recordGroups,
-                getRecords: (type: string) => recordGroups.map(group => group.getRecordsOfType(type)),
+                getRecords: (type: string) => recordGroups.map(group => group.getRecordsOfType(type)).flat(),
                 getDeployedRecords: (type: string) => this.getDeployedRecords(type, recordGroups)
             } as any);
         }

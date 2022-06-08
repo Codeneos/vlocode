@@ -1,10 +1,11 @@
-import { Timer , Iterable, stringEquals } from '@vlocode/util';
+import { Timer , Iterable, stringEquals, removeNamespacePrefix } from '@vlocode/util';
 import { DatapackRecordDependency, DependencyResolver, VlocityDataPackDependencyType } from './datapackDeployer';
 
 export enum DeploymentStatus {
     Pending,
     InProgress,
     Deployed,
+    Retry,
     Failed
 }
 
@@ -27,7 +28,16 @@ export class DatapackDeploymentRecord {
     private _retryCount = 0;
     private _datapackAction: DeploymentAction = DeploymentAction.None;
 
+    /**
+     * True if looking up existing records to update is skipped causing the deployment
+     * to always create a new object using insert
+     */
     public skipLookup: boolean;
+
+    /**
+     * Namespace normalized SObjectName; contains the SObjectType without the namespace prefix.
+     */
+    public readonly normalizedSObjectType: string;
 
     public get status(): DeploymentStatus {
         return this._status;
@@ -38,11 +48,11 @@ export class DatapackDeploymentRecord {
     }
 
     public get isPending(): boolean {
-        return this._status === DeploymentStatus.Pending;
+        return this._status === DeploymentStatus.Pending || this._status === DeploymentStatus.Retry;
     }
 
     public get isStarted(): boolean {
-        return this._status === DeploymentStatus.InProgress;
+        return this._status === DeploymentStatus.InProgress || this._status === DeploymentStatus.Retry;
     }
 
     public get isFailed(): boolean {
@@ -99,6 +109,37 @@ export class DatapackDeploymentRecord {
         public readonly sourceKey: string,
         public readonly datapackKey: string,
         public readonly values: Object = {}) {
+        this.normalizedSObjectType = removeNamespacePrefix(this.sobjectType);
+    }
+
+    /**
+     * Namespace and case normalized check to determine if the current datapack is of the specified type.
+     * @param sobjectType SObject type with or without namespace prefix
+     * @returns 
+     */
+    public isSObjectOfType(sobjectType: string) {
+        return sobjectType === this.sobjectType || 
+            sobjectType.toLowerCase() === this.sobjectType.toLowerCase() ||
+            removeNamespacePrefix(sobjectType).toLowerCase() === this.normalizedSObjectType.toLowerCase();
+    }
+
+    /**
+     *  Get or set a value in the underlying record data
+     * @param field field name
+     * @param value value to set if 
+     * @returns 
+     */
+    public value(field: string, value?: any): any {
+        const fieldNames = Object.keys(this.values);
+        const matchingField = 
+            fieldNames.find(name => name.toLowerCase() === field.toLowerCase()) ?? 
+            fieldNames.find(name => removeNamespacePrefix(name) === removeNamespacePrefix(field));
+
+        if (arguments.length == 1) {
+            return matchingField ? this.values[matchingField] : undefined;
+        } else {
+            this.values[matchingField ?? field] = value;
+        }
     }
 
     public updateStatus(status: DeploymentStatus, detail?: string) {
@@ -106,14 +147,12 @@ export class DatapackDeploymentRecord {
             this._deployTimer.reset();
         } else if (status === DeploymentStatus.Failed || status === DeploymentStatus.Deployed) {
             this._deployTimer.stop();
+        } else if (status === DeploymentStatus.Retry) {
+            this._deployTimer.stop();
+            this._retryCount++;
         }
         this._status = status;
         this._statusDetail = detail;
-    }
-
-    public retry() {
-        this._retryCount++;
-        this._status = DeploymentStatus.Pending;
     }
 
     public addWarning(message: string) {
@@ -196,8 +235,8 @@ export class DatapackDeploymentRecord {
     }
 
     /**
-     * Get dependencies dependencies that are **not** resolved through a lookup, these dependencies are
-     * embedded in the datapack; dependency type: `VlocityMatchingKeyObject` 
+     * Get embedded dependencies that are **not** resolved through lookup but instead are provided as part of the datapack. 
+     * These dependencies of datapack type **VlocityMatchingKeyObject** 
      * @returns Array with dependencies
      */
     public getMatchingDependencies(): { field: string, dependency: DatapackRecordDependency }[] {
@@ -208,8 +247,8 @@ export class DatapackDeploymentRecord {
     }
 
     /**
-     * Get dependencies dependencies that are resolved through a lookup-query and **not**
-     * embedded in this datapack; dependency type: `VlocityLookupMatchingKey`
+     * Get dependencies that are resolved through a lookup and **not** provided as part of the datapack. 
+     * These dependencies of datapack type **VlocityLookupMatchingKey**
      * @returns Array with dependencies
      */
     public getLookupDependencies() {
