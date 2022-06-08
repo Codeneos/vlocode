@@ -102,15 +102,11 @@ export class SalesforceLookupService {
         const lookupFilters: any[] = [];
 
         for (let [fieldPath, value] of Object.entries(values || {})) {
-            if (value === undefined || value === null) {
-                continue;
-            }
-
             const salesforceFields = [...await this.schemaService.describeSObjectFieldPath(type, fieldPath)];
             const salesforceField = salesforceFields.pop()!;
             const fieldName = [ ...salesforceFields.map(field => field.relationshipName), salesforceField.name ].join('.');
 
-            if (typeof value === 'object' && !Array.isArray(value)) {
+            if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
                 if (salesforceField.type != 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName) {
                     throw new Error(`Object type set for non-reference field ${fieldPath} on type ${type}`);
                 }
@@ -137,7 +133,7 @@ export class SalesforceLookupService {
                     if (salesforceField.type == 'multipicklist') {
                         operator = 'includes';
                     }
-                }                
+                }
                         
                 if (typeof value === 'string' && isSalesforceId(value) && salesforceField.type === 'string') {
                     // doesn't work for Arrays nor does it handle < and > operators properly
