@@ -57,9 +57,8 @@ export function extractNamespaceAndName(typeName : string) : { name: string; nam
     // Also can use regex: /^(.+?__)?(?!c$|$)(.*?)(__c)?$/ replace with '$2$3'
     const namespaceIndex = typeName.indexOf('__');
     if (namespaceIndex > 0) {
-        // Custom fields are postfixed with __c, avoid detection field name as namespace
-        const hasNamespace = typeName.substring(-3, 2) != '__' || namespaceIndex !== typeName.lastIndexOf('__') ;
-        if (hasNamespace) {
+        const postfixIndex = typeName.indexOf('__', namespaceIndex + 2);
+        if (postfixIndex > namespaceIndex) {
             return {
                 name: typeName.substring(namespaceIndex + 2),
                 namespace: typeName.substring(0, namespaceIndex)
