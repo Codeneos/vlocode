@@ -52,7 +52,7 @@ export class DatapackInfoService {
      * Get the SObject Type and Datapack Type of all datapacks defined in Salesforce through a Datapack Configuration record.
      * @returns {Promise<VlocityDatapackInfo[]>} Array of datapack info objects linking datapacks to SObjects 
      */
-    @cache(-1)
+    @cache()
     public async getDatapacks() : Promise<VlocityDatapackInfo[]> {
         this.logger.verbose('Querying DataPack configuration from Salesforce');
         const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('vlocity_namespace__VlocityDataPackConfiguration__mdt', undefined, 'all');

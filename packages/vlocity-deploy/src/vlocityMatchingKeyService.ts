@@ -25,7 +25,7 @@ export class VlocityMatchingKeyService {
         private readonly lookup: SalesforceLookupService) {
     }
 
-    @cache(-1)
+    @cache({ unwrapPromise: true, cacheExceptions: true })
     private get matchingKeys() {
         return this.loadAllMatchingKeys();
     }

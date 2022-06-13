@@ -14,6 +14,7 @@ export enum LogLevel {
 }
 
 export * from './logger';
+export * from './distinctLogger';
 export * from './logManager';
 
 export function withLogger<T extends { new (...args: any[]): {} }>(constructor: T) {

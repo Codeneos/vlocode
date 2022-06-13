@@ -1,12 +1,11 @@
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
-import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
-import { Timer , AsyncEventEmitter, arrayMapPush, arrayMapUnshift, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, segregate, groupBy } from '@vlocode/util';
-import { DatapackLookupService } from './datapackLookupService';
+import { JsForceConnectionProvider, NamespaceService, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count } from '@vlocode/util';
+import { DatapackLookupService, OrgRecordStatus } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
-
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -22,6 +21,25 @@ export interface DatapackDeploymentRecordMessage {
     message: string;
 }
 
+type RecordPurgePredicate = (item: { 
+    /**
+     * Field which has the lookup dependency
+     */
+    field: string, 
+    /**
+     * Record that contains the field @see this.field
+     */
+    record: DatapackDeploymentRecord, 
+    /**
+     * Dependencies lookup details and source key
+     */
+    dependency: DatapackRecordDependency, 
+    /**
+     * Record of the dependency itself
+     */
+    dependencyRecord: DatapackDeploymentRecord 
+}) => any;
+
 const datapackDeploymentDefaultOptions = {
     useBulkApi: false,
     maxRetries: 1,
@@ -30,7 +48,8 @@ const datapackDeploymentDefaultOptions = {
     lookupFailedDependencies: false,
     purgeMatchingDependencies: false,
     purgeLookupOptimization: true,
-    bulkDependencyResolution: true
+    bulkDependencyResolution: true,
+    deltaCheck: false
 };
 
 /**
@@ -42,12 +61,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly deployed = new Array<DatapackDeploymentRecord>();
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
-    private readonly pendingRetry = new Array<DatapackDeploymentRecord>();
     private readonly options: DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions;
     private readonly dependencyResolver: DependencyResolver;
 
     public get deployedRecordCount() {
         return this.deployed.length;
+    }
+
+    public get skippedRecordCount() {
+        return count(this.records.values(), r => r.isSkipped);
     }
 
     public get failedRecordCount() {
@@ -80,6 +102,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly salesforceService: SalesforceService,
+        private readonly namespaceService: NamespaceService,
         private readonly logger: Logger) {
         super();
         this.options = { ...datapackDeploymentDefaultOptions, ...(options || {}) };
@@ -106,7 +129,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             await this.deployRecords(deployableRecords, cancelToken);
         }
 
-        this.logger.log(`Deployed ${this.deployedRecordCount}/${this.totalRecordCount} records [${timer.stop()}]`);
+        const skippedRecords = this.skippedRecordCount;
+        if (this.totalRecordCount == skippedRecords) {
+            this.logger.log(`No records deployed; ${this.totalRecordCount} records already in-sync with local source [${timer.stop()}]`);
+        } else {
+            this.logger.log(`Deployed ${this.deployedRecordCount} records, failed ${this.failedRecordCount} records (skipped ${skippedRecords} in-sync records) [${timer.stop()}]`);
+        }
     }
 
     public getMessages() : Array<DatapackDeploymentRecordMessage> {
@@ -270,18 +298,35 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         // prepare batch
         const batch = new RecordBatch(this.schemaService, this.options);
-        const [skippedRecords, recordsForLookup] = segregate([...datapacks.values()], rec => rec.skipLookup);
+        const recordsForLookup = [...Iterable.filter(datapacks.values(), rec => !rec.skipLookup)];
 
         this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
         const ids = await this.lookupService.lookupIds(recordsForLookup, cancelToken);
-
-        for (const [i, datapack] of [...recordsForLookup, ...skippedRecords].entries()) {
+        for (const [i, datapack] of recordsForLookup.entries()) {
             const existingId = ids[i];
             if (existingId) {
                 datapack.setAction(DeploymentAction.Update, existingId);
-                batch.addUpdate(datapack.sobjectType, datapack.values, existingId, datapack.sourceKey);
             } else {
                 datapack.setAction(DeploymentAction.Insert);
+            }
+        }
+
+        let recordStatuses: Map<string, OrgRecordStatus> | undefined = undefined;
+        if (this.options.deltaCheck) {
+            recordStatuses = await this.lookupService.compareRecordsToOrgData(recordsForLookup, cancelToken);
+        }
+
+        for (const datapack of datapacks.values()) {
+            if (datapack.recordId) {
+                const status = recordStatuses?.get(datapack.recordId);
+                if (status?.inSync) {
+                    datapack.setAction(DeploymentAction.Skip);
+                    continue;
+                } else if(status) {
+                    this.logger.verbose(`Record out of sync ${datapack.recordId} (${datapack.sobjectType})`, status.mismatchedFields)
+                }
+                batch.addUpdate(datapack.sobjectType, datapack.values, datapack.recordId, datapack.sourceKey);
+            } else {
                 batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);
             }
         }
@@ -341,7 +386,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             // After dependency resolution no datapacks left to deploy; move on to next chunk
             // but it's likely already over from here on..
             return;
-        }        
+        }
         const batch = await this.createDeploymentBatch(datapackRecords, cancelToken);
 
         if (cancelToken?.isCancellationRequested) {
@@ -355,7 +400,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         await this.emit('beforeDeployGroup', Iterable.map(recordGroupsStarted, key => recordGroups.get(key)!), { hideExceptions: true });
 
         try {
-            this.logger.log(`Deploying ${datapackRecords.size} records...`);
+            this.logger.log(`Deploying ${batch.size()} records...`);
 
             for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
                 const datapackRecord = datapackRecords.get(result.ref);
@@ -380,7 +425,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
             if (this.options.purgeMatchingDependencies) {
-                await this.purgeMatchingDependencies(datapackRecords.values());
+                await this.purgeMatchingDependentRecords(datapackRecords.values());
+            } else {
+                // When purgeMatchingDependencies is disabled only delete records that cannot be updated
+                // because they don't have a configured matching fields -or- because lookup is skipped
+                await this.purgeDependentRecords(datapackRecords.values(), ({ dependency, record }) => 
+                    dependency?.VlocityMatchingRecordSourceKey && 
+                    record.skipLookup || !record.upsertFields?.length);
             }
 
         } finally {
@@ -407,14 +458,22 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Purge matching key dependencies from Salesforce for the specified list of records.
-     * @param records 
+     * Purge all records that depend on any of the records just deployed through their matching record key. Records that depend 
+     * on other records from within the same Datapack have a relation to the parent datapack through Matching source key. 
+     * This function will delete all child records that have a relationship parent record through a Matching source key
+     * 
+     * _**Note** this function will only delete records for parents that have been update and are deployed successfully_
+     * @param records Records
      */
-    private async purgeMatchingDependencies(records: Iterable<DatapackDeploymentRecord>) {
+    private async purgeMatchingDependentRecords(records: Iterable<DatapackDeploymentRecord>) {
+        return this.purgeDependentRecords(records, ({ dependency }) => dependency?.VlocityMatchingRecordSourceKey);
+    }
+
+    private async purgeDependentRecords(records: Iterable<DatapackDeploymentRecord>, predicate: RecordPurgePredicate) {
         const deleteFilters = new Map<string, Set<string>>();
         const recordsById = new Map(Iterable.transform(records, {
             map: rec => [rec.recordId!, rec],
-            filter: rec => rec.isDeployed && rec.isUpdate
+            filter: rec => (rec.isDeployed && rec.isUpdate) || (rec.recordId && rec.isSkipped)
         }));
 
         const deleteRecords = async (record?: DatapackDeploymentRecord) => {
@@ -433,11 +492,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         };
 
         for (const [recordId, record] of recordsById.entries()) {
-            for (const undeployRecord of Iterable.filter(this.records.values(), r => !r.isDeployed)) {
-                const dependency = undeployRecord.getDependency(record);
-                if (dependency?.dependency.VlocityMatchingRecordSourceKey) {
+            for (const undeployRecord of Iterable.filter(this.records.values(), r => !r.isDeployed && !r.isSkipped)) {
+                const dependency = undeployRecord.isDependentOn(record);
+                if (dependency && predicate({ ...dependency, record: undeployRecord, dependencyRecord: record })) {
                     setMapAdd(deleteFilters, undeployRecord.sobjectType, `${dependency.field} = '${recordId}'`);
-                } 
+                }
             }
 
             if (!this.options.purgeLookupOptimization) {

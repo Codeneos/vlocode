@@ -84,6 +84,10 @@ export class RecordBatch {
             throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
         }
 
+        if (!this.size()) {
+            return;
+        }
+
         // Periodically report progress back on the progress callback
         const timer = new Timer();
         this.isExecuting = true;
@@ -160,14 +164,14 @@ export class RecordBatch {
                 }
 
                 const describedObjectType = await this.schemaService.describeSObject(sobjectType);
-                const recordData = Promise.all(resultRecords.map(record => this.validateRecordData(sobjectType, record.data, operation as any)));
+                const recordData = await Promise.all(resultRecords.map(record => this.validateRecordData(sobjectType, record.data, operation as any)));
                 const refs = resultRecords.map(record => record.ref);
 
                 return {
                     operation,
                     refs,
                     sobjectType: describedObjectType.name,
-                    records: await recordData
+                    records: recordData
                 };
             }
         };

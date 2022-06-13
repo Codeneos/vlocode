@@ -1,12 +1,13 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
-import { existsSync } from 'fs';
+import { existsSync, fstat } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join, relative } from 'path';
 import * as chalk from 'chalk';
-import { groupBy, segregate } from '@vlocode/util';
+import { countDistinct, forEachAsyncParallel, groupBy, mapAsyncParallel, segregate, Timer, unique } from '@vlocode/util';
+import { writeJson, writeJsonSync } from 'fs-extra';
 
 export default class extends Command {
 
@@ -28,7 +29,13 @@ export default class extends Command {
         new Option('--lookup-failed', 'lookup the Ids of records that failed to deploy but are dependencies for other parts of the deployment').default(false),        
         new Option('--retry-count <count>', 'the number of times a record deployment is retried before failing it').default(1),
         new Option('--bulk-api', 'use the Salesforce bulk API to update and insert records').default(false),
+        new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
     ];
+
+    private prefixFormat = {
+        error: chalk.bgRedBright.white.bold(`ERROR`),
+        warn: chalk.bgYellowBright.black.bold(`WARN`)
+    };
 
     constructor(private logger: Logger = LogManager.get('vlocity-deploy')) {
         super();
@@ -53,6 +60,28 @@ export default class extends Command {
         if (existsSync(packedSassCompiler)) {
             container.register(container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
         }
+        
+        // debugger;
+        // const conn = await container.get(JsForceConnectionProvider).getJsForceConnection();
+
+        // const timer = new Timer();
+
+        // let count = 0;
+        // const objects = await conn.metadata.list({ type: 'CustomObject' });
+        
+        // const chunkSize = 10;
+        // const chunks = Array<Array<string>>();
+
+        // while (objects.length) {
+        //     chunks.push(objects.splice(0, chunkSize).map(o => o.fullName));            
+        // }
+
+        // await forEachAsyncParallel(chunks, async (chunk, i) => {
+        //     console.debug(`Reading ${chunk.join(', ')} ${count += chunk.length}/${objects.length}`);
+        //     const objs = await conn.metadata.read('CustomObject', chunk);        
+        //     //void writeJson(obj.fullName + '.json', objs, { 'spaces': 4 });
+        // }, 25);
+        // console.debug(`Reading custom object md done in ${timer.elapsed}`);
 
         // Load datapacks
         const datapacks = await container.create(DatapackLoader).loadDatapacksFromFolder(folder);
@@ -66,7 +95,8 @@ export default class extends Command {
             useBulkApi: !!options.bulkApi,
             purgeMatchingDependencies: !!options.purgeDependencies,
             lookupFailedDependencies: !!options.lookupFailed,
-            maxRetries: options.retryCount
+            maxRetries: options.retryCount,
+            deltaCheck: options.delta
         };
 
         // Create deployment
@@ -75,29 +105,21 @@ export default class extends Command {
 
         // done!!
         const deploymentMessages = deployment.getMessages().filter(({ type }) => type === 'error' || type === 'warn');
-        const [ errors, warnings ] = segregate(deploymentMessages, ({type}) => type === 'error');        
+        const recordCount = countDistinct(deploymentMessages, ({ record }) => record?.sourceKey);
+        const groupedSortedMessages = Object.entries(groupBy(deploymentMessages, 
+            ({type, message}) => `${this.prefixFormat[type]} ${message}`))
+            .sort((a,b) => a[0].localeCompare(b[0])); 
 
-        if (errors.length ) {
-            this.logger.warn(`${logSymbols.error} Deployment completed with ${errors.length} error(s) and ${warnings.length} warning(s)`);
-        } else if (warnings.length) {
-            this.logger.warn(`${logSymbols.warning} Deployment completed ${warnings.length} warning(s)`);
+        if (groupedSortedMessages.length) {
+            this.logger.warn(`${logSymbols.warning} Deployment completed with ${groupedSortedMessages.length} distinct message(s) on ${recordCount} record(s)`);
         } else {
             this.logger.info(`${logSymbols.success} Deployment completed without errors or warnings!`);          
-        }
-        
-        const prefixFormat = {
-            error: chalk.bgRedBright.white.bold(`ERROR`),
-            warn: chalk.bgYellowBright.black.bold(`WARN`)
-        };
+        }        
 
-        const groupedSortedMessages = Object.entries(groupBy(deploymentMessages, 
-            ({type, message}) => `${prefixFormat[type]} ${message}`))
-            .sort((a,b) => a[0].localeCompare(b[0]));
-
-        for (const [message, recordMessages] of groupedSortedMessages) {
-            const sourceKeys = recordMessages.map(({ record }) => record.sourceKey.replaceAll(/%[^%]+%__/ig,''));
+        for (const [message, records] of groupedSortedMessages) {
+            const sourceKeys = records.map(({ record }) => record.sourceKey.replaceAll(/%[^%]+%__/ig,''));
             const affected = sourceKeys.splice(0, 10).join(', ') + (sourceKeys.length > 0 ? `... (and ${sourceKeys.length} more)` : '');
-            this.logger.info(`${message} for ${recordMessages.length} records: ${affected}`);
+            this.logger.warn(`${message} for ${records.length} records: ${affected}`);
         }
     }
 }

@@ -1,17 +1,32 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
-import { LogManager , injectable, LifecyclePolicy } from '@vlocode/core';
-import { Timer , arrayMapPush, last , isSalesforceId, CancellationToken, filterKeys, groupBy, DeferredPromise, unique, remove, removeAll, normalizeSalesforceName, Iterable, mapAsync } from '@vlocode/util';
+import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
+import { Timer , arrayMapPush, last , isSalesforceId, CancellationToken, filterKeys, groupBy, DeferredPromise, unique, remove, removeAll, normalizeSalesforceName, Iterable, mapAsync, count } from '@vlocode/util';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
+import * as moment from 'moment';
+
+/**
+ * Describes a records status in the target org.
+ */
+export interface OrgRecordStatus {
+    recordId: string,
+    inSync: boolean,
+    mismatchedFields?: Array<{
+        field: string,
+        actual: any,
+        expected: any
+    }>
+};
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackLookupService implements DependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();
     private readonly lastRefresh: Date = new Date(0);
+    private readonly distinctLogger: Logger;
 
     constructor(
         private readonly namespaceService: VlocityNamespaceService,
@@ -19,6 +34,7 @@ export class DatapackLookupService implements DependencyResolver {
         private readonly lookupService: SalesforceLookupService,
         private readonly schema: SalesforceSchemaService,
         private readonly logger = LogManager.get(DatapackLookupService)) {
+        this.distinctLogger = new DistinctLogger(this.logger);
     }
 
     /**
@@ -86,8 +102,8 @@ export class DatapackLookupService implements DependencyResolver {
                 lookupKey: this.buildLookupKey(record.sobjectType, recordMatchingFields.get(record.sobjectType) ?? [], record.values)!,                
                 filter: this.buildFilter(record.values, recordMatchingFields.get(record.sobjectType) ?? []), 
                 reportWarning: (message: string) => { 
-                    record.addWarning(`Datapack ${record.sourceKey} -- ${message}`);
-                    this.logger.warn(message);  
+                    record.addWarning(message);
+                    this.distinctLogger.warn(`Datapack ${record.sourceKey} -- ${message}`);  
                 }
             }))
             .filter(({ sobjectType, record, lookupKey, index }) => {
@@ -95,7 +111,11 @@ export class DatapackLookupService implements DependencyResolver {
             })
             .filter(({ record, lookupKey, reportWarning }) => {
                 if (!lookupKey) {
-                    reportWarning(`Skip record lookup; unable to build a lookup key -- validate matching key configuration for ${record.sobjectType}`);
+                    if (!record.upsertFields?.length) {
+                        this.distinctLogger.warn(`No matching key configuration found for ${record.sobjectType}`);
+                    } else {
+                        reportWarning(`None of the matching key fields is set, make sure at least one the matching key field has a value: ${record.upsertFields.join(',')}`);
+                    }
                     return false;
                 }
                 return true;
@@ -169,7 +189,10 @@ export class DatapackLookupService implements DependencyResolver {
 
                 if (!matchedLookups.length) {
                     debugger;
-                    throw new Error('BUG: records returned that do not match any filter criteria');
+                    console.error('You found a BUG in the lookup resolution, share below information to help find a solution:')
+                    console.error(`Record not matched: `, JSON.stringify(record));
+                    console.error(`Lookups requested: `, JSON.stringify(entries.map(([,{ filter }]) => filter)));
+                    process.exit();
                 }
 
                 for (const [ index ] of matchedLookups) {
@@ -185,6 +208,90 @@ export class DatapackLookupService implements DependencyResolver {
         return lookupResults;
     }
 
+    /**
+     * Compare datapack records with ID @see DatapackDeploymentRecord.recordId to org data and return per record details 
+     * if the record is up to date with the org
+     * @param datapacks Datapack records to lookup
+     * @param cancelToken 
+     * @returns Record org status returned as map keyed by both record ID and source key
+     */
+    public async compareRecordsToOrgData(datapacks: DatapackDeploymentRecord[], cancelToken?: CancellationToken) {
+        const recordsWithId = datapacks.filter(rec => rec.recordId);
+        const bySobjectType = groupBy(recordsWithId, dp => dp.sobjectType);
+        const results = new Map<string, OrgRecordStatus>();
+        
+        for (const [type, records] of Object.entries(bySobjectType)) {
+            this.logger.info(`Comparing record data to target org for ${records.length} ${type} records...`);
+
+            const recordFields = [...records.reduce((acc, rec) => Object.keys(rec.values).reduce((acc, field) => acc.add(field), acc), new Set<string>())];
+            const targetOrgRecords = await this.lookupService.lookupById(records.map(rec => rec.recordId!), recordFields, false, cancelToken);
+            const objectFields = await this.schema.getSObjectFields(type);
+
+            if (cancelToken?.isCancellationRequested) {
+                break;
+            }
+
+            for (const record of records) {
+                const orgData = targetOrgRecords.get(record.recordId!)!;
+                const mismatchedFields = Object.entries(record.values).map(([field, value]) => ({ 
+                    field, 
+                    expected: value, 
+                    actual: orgData[field], 
+                    isEqual: this.fieldEquals(orgData, field, value)
+                })).filter(({ field, isEqual }) => !isEqual && this.isUpdateableField(objectFields.get(field)!));
+               
+                const status: OrgRecordStatus = {
+                    recordId: record.recordId!,
+                    inSync: !mismatchedFields.length,
+                    mismatchedFields
+                }
+
+                results.set(record.sourceKey, status);
+                results.set(record.recordId!, status);
+            }
+
+            this.logger.info(`Found ${count(results.values(), item => !item.inSync) / 2} out of sync ${type} records`);
+        }
+
+        return results;
+    }
+
+    private isUpdateableField(field: Field) {
+        if (field.autoNumber || field.formula || !field.updateable) {
+            return false;
+        }
+        return true;
+    }
+
+    private fieldEquals(record: object, field: string, filterValue: any): boolean {
+        const recordValue = field.split('.').reduce((o, p) => o?.[p], record);
+        if (recordValue == filterValue) {
+            return true;
+        }
+
+        if (recordValue === null) {
+            return typeof filterValue === 'string' ? filterValue.trim() === '' : false;
+        } else if(filterValue === null && typeof recordValue === 'string' && recordValue === '') {
+            return true; 
+        }
+
+        if (typeof filterValue === 'string' && typeof recordValue === 'string') {
+            if (isSalesforceId(recordValue) && recordValue.length != filterValue.length) {
+                // compare 15 to 18 char IDs -- simple compare covering 99% of the cases
+                return recordValue.substring(0, 15) == filterValue.substring(0, 15);
+            }
+            // Attempt a date conversion of 2 strings
+            const filterTs = moment(new Date(filterValue));
+            if (filterTs.isValid() && filterTs.isSame(moment(recordValue), 'second')) {
+                return true;
+            }
+            // Salesforce does not allow trailing spaces on strings in the DB
+            return this.namespaceService.updateNamespace(filterValue).toLowerCase().trim() == recordValue.toLowerCase();
+        }
+
+        return false;
+    }
+
     // private generateLookupKeyFromFilter(sobjectType: string, filter: object) {
     //     const key = [normalizeSalesforceName(sobjectType)];
     //     for (const [field, value] of Object.entries(filter)) {
@@ -194,23 +301,6 @@ export class DatapackLookupService implements DependencyResolver {
     //     return key.join('/');
     // }
 
-    private fieldEquals(record: object, field: string, filterValue: any): boolean {
-        const recordValue = field.split('.').reduce((o, p) => o?.[p], record);
-        if (recordValue == filterValue) {
-            return true;
-        }
-
-        if (typeof filterValue === 'string' && typeof recordValue === 'string') {
-            if (isSalesforceId(recordValue) && recordValue.length != filterValue.length) {
-                // compare 15 to 18 char IDs -- simple compare covering 99% of the cases
-                return recordValue.substring(0, 15) == filterValue.substring(0, 15);
-            }
-            return this.namespaceService.updateNamespace(filterValue).toLowerCase() == recordValue.toLowerCase();
-        }
-
-        return false;
-    }
-
     private buildFilter<K extends string>(data: any, fields?: K[]): { [P in K]?: any } {
         const filter: { [P in K]?: any } = {};
     
@@ -218,8 +308,6 @@ export class DatapackLookupService implements DependencyResolver {
             const value = data[field];
             if (value !== undefined) {
                 filter[field] = value;                
-            } else {
-                this.logger.verbose(`One of the matching key fields (${field}) does not have a value`);
             }
         }
     
@@ -238,13 +326,15 @@ export class DatapackLookupService implements DependencyResolver {
     }
 
     private buildLookupKey(sobjectType: string, fields: Array<string>, data: object): string | undefined {
+        const emptyLookupKey = fields.map(field => data[field]).every(value => value === null || value === undefined);
+        if (emptyLookupKey) {
+            return undefined;
+        }
+
         const values = fields.map(field => data[field]).map(value => value === null || value === undefined ? '' : value);
-        // if (!values.length) {
-        //     debugger;
-        // }
         // As opposed to querying lookup keys should not contain a VLocity package namespace as they 
         // are org independent, as such we replace the namespace; if present back with the place holder
-        return values.length ? this.namespaceService.replaceNamespace(`${sobjectType}/${values.join('/')}`) : undefined;
+        return this.namespaceService.replaceNamespace(`${sobjectType}/${values.join('/')}`);
     }
 
     private async getMatchingFields(sobjectType: string): Promise<string[]> {

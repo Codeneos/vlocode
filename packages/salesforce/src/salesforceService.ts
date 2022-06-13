@@ -91,7 +91,7 @@ export class SalesforceService implements JsForceConnectionProvider {
         return url;
     }
 
-    @cache(-1)
+    @cache()
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
         const installedPackage = await this.getInstalledPackageDetails(packageName);
         if (!installedPackage) {
@@ -100,20 +100,20 @@ export class SalesforceService implements JsForceConnectionProvider {
         return installedPackage.namespacePrefix;
     }
 
-    @cache(-1)
+    @cache()
     public async getInstalledPackageDetails(packageName: string | RegExp) : Promise<InstalledPackageRecord | undefined> {
         const results = await this.getInstalledPackages();
         return results.find(packageInfo => typeof packageName === 'string' ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
     }
 
-    @cache(-1)
+    @cache()
     public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {
         const con = await this.getJsForceConnection();
         const metadata = await con.metadata.list( { type: 'InstalledPackage' }) as InstalledPackageRecord[];
         return metadata ?? [];
     }
 
-    @cache(-1)
+    @cache()
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
         const results = await this.query<OrganizationDetails>('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
         return results[0];

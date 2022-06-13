@@ -7,7 +7,7 @@ import { cache } from './cache';
  */
 class Compiler {
 
-    @cache(-1)
+    @cache({ unwrapPromise: true })
     public compile(code: string, options?: { mode: 'vm' | 'sandbox' }) : (context?: any, contextMutable?: boolean) => any {
         let compiledFn : (context: any) => any;
         if (options?.mode === 'sandbox') {
