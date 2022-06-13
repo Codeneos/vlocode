@@ -2,11 +2,12 @@
 import { SalesforceSchemaService, Field, NamespaceService } from '@vlocode/salesforce';
 import { Logger, injectable } from '@vlocode/core';
 import * as moment from 'moment';
-import { isSalesforceId } from '@vlocode/util';
+import { isSalesforceId, removeNamespacePrefix } from '@vlocode/util';
 import * as uuid from 'uuid';
 import { DATAPACK_RESERVED_FIELDS } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { VlocityDatapack } from './datapack';
+import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 
 @injectable()
 export class DatapackRecordFactory {
@@ -16,6 +17,7 @@ export class DatapackRecordFactory {
     constructor(
         private readonly namespaceService: NamespaceService,
         private readonly schemaService: SalesforceSchemaService,
+        private readonly matchingKeyService: VlocityMatchingKeyService,
         private readonly logger: Logger) {
     }
 
@@ -32,8 +34,9 @@ export class DatapackRecordFactory {
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
         }
 
+        const matchingKey = await this.getMatchingKeyDefinition(datapack);
         const sourceKey = this.getDatapackSourceKey(datapack); 
-        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key);
+        const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key, matchingKey?.fields);
         const records : Array<typeof record> = [ record ];
         const reportWarning = (message: string) => {
             if (!this.uniqueWarnings.has(message)) {
@@ -52,9 +55,13 @@ export class DatapackRecordFactory {
                 continue;
             }
 
+            if (field?.autoNumber) {
+                // Do not include auto number fields in the record
+                continue;
+            }
+
             // Objects are dependencies
             if (typeof value === 'object' && value !== null) {
-
                 // handle lookups and embedded datapacks
                 for (const item of Array.isArray(value) ? value : [ value ]) {
                     if (item.VlocityDataPackType === 'SObject') {
@@ -64,12 +71,12 @@ export class DatapackRecordFactory {
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
                         if (!field) {
-                            reportWarning(`Skipped property ${key}; no such field on ${sobject.name}`);
+                            reportWarning(`Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                             continue;
                         }
                         // Lookups and matching keys are treated the same
                         if (field.type !== 'reference' && field.type !== 'string') {
-                            reportWarning(`Skipped property ${key}; cannot use lookup on non-string/reference fields`);
+                            reportWarning(`Skipping datapack property "${key}" -- cannot use lookup on non-string/reference fields`);
                             continue;
                         }
                         record.addLookup(field.name, item);
@@ -77,17 +84,16 @@ export class DatapackRecordFactory {
                         reportWarning(`Unsupported datapack type ${item.VlocityDataPackType}`);
                     } else {
                         if (!field) {
-                            reportWarning(`Skipped property ${key}; no such field on ${sobject.name}`);
+                            reportWarning(`Skipping datapack property "${key}" -- no such field on ${sobject.name} (check )`);
                             continue;
                         }
                         record.values[field.name] = this.convertValue(value, field);
                     }
                 }
-
             } else {
                 // make sure the field exists
                 if (!field) {
-                    reportWarning(`Skipping ${key}; no such field on ${sobject.name}`);
+                    reportWarning(`Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                     continue;
                 }
                 record.values[field.name] = this.convertValue(value, field);
@@ -104,6 +110,16 @@ export class DatapackRecordFactory {
         // some objects do not have a source key - generate a unique key so we can deploy them
         const primaryKey = datapack.globalKey || `Generated/${uuid.v4()}`;
         return `${datapack.sobjectType}/${primaryKey}`;
+    }
+
+    private async getMatchingKeyDefinition(datapack: { datapackType?: string, sobjectType: string }) {
+        if (datapack.datapackType) {
+            const datapackMatchingKey = await this.matchingKeyService.getMatchingKeyDefinition(datapack.datapackType);
+            if (datapackMatchingKey.sobjectType === datapack.sobjectType) {
+                return datapackMatchingKey
+            }
+        }
+        return this.matchingKeyService.getMatchingKeyDefinition(datapack.sobjectType);
     }
 
     // eslint-disable-next-line complexity
@@ -129,11 +145,14 @@ export class DatapackRecordFactory {
                 }
                 const dateFormat = {
                     'date': 'YYYY-MM-DD',
-                    'datetime': 'YYYY-MM-DDTHH:mm:ssZ'
+                    'datetime': 'YYYY-MM-DDTHH:mm:ss.sssZZ'
                 };
                 const date = moment(value);
                 if (!date.isValid()) {
                     throw new Error(`Value is not a valid date: ${value}`);
+                }
+                if (field.type == 'datetime') {
+                    date.utc();
                 }
                 return date.format(dateFormat[field.type]);
             }

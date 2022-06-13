@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import * as moment from 'moment';
 import { Logger, injectable } from '@vlocode/core';
-import { PropertyTransformHandler, normalizeSalesforceName, Timer, isSalesforceId } from '@vlocode/util';
+import { PropertyTransformHandler, normalizeSalesforceName, Timer, isSalesforceId, CancellationToken } from '@vlocode/util';
 
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
@@ -53,7 +53,7 @@ export class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public query<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean) : Promise<QueryResult<T, K>[]> {
+    public query<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
         const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
         const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
         const cachedResult = enableCache && this.queryCache.get(nsNormalizedQuery);
@@ -68,6 +68,9 @@ export class QueryService {
             let queryResult = await connection.query<T>(nsNormalizedQuery);
             const records = queryResult.records;
             while (queryResult.nextRecordsUrl) {
+                if (cancelToken?.isCancellationRequested) {
+                    break;
+                }
                 queryResult = await connection.queryMore(queryResult.nextRecordsUrl);
                 records.push(...queryResult.records);
             }

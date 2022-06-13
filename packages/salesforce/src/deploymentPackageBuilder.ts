@@ -537,7 +537,7 @@ export class SalesforcePackageBuilder {
         return path.posix.join(packageFolder, baseName);
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     private async findContentFile(metaFile: string) {
         const metaFileSuggestedContentFile = metaFile.slice(0, -9);
         if (await this.fs.pathExists(metaFileSuggestedContentFile)) {
@@ -552,7 +552,7 @@ export class SalesforcePackageBuilder {
         }
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     private async findMetaFile(contentFile: string) {
         const metaFile = `${contentFile}-meta.xml`;
         if (await this.fs.isFile(metaFile)) {

@@ -1,5 +1,7 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
 import { JsForceConnectionProvider } from '@vlocode/salesforce';
+import * as moment from 'moment';
+import { VlocityDatapack } from '../datapack';
 import { DatapackDeploymentSpec } from '../datapackDeployer';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 
@@ -9,6 +11,76 @@ export class Product2 implements DatapackDeploymentSpec {
     public constructor(
         private readonly salesforceService: JsForceConnectionProvider,
         private readonly logger: Logger) {
+    }
+
+    public preprocess(datapack: VlocityDatapack) {
+        this.patchStartDates(datapack);
+        this.patchFulfillmentDate(datapack);
+        this.patchEndDates(datapack);
+    }
+
+    /**
+     * This method patches the SellingStartDate__c,  EffectiveDate__c and FulfilmentStartDate__c fields
+     * so that they are valid. Invalid values will be automatically changed by a trigger from Vlocity which updates
+     * the record post deployment and will cause issues.
+     * @param atapack 
+     */
+    private patchStartDates(datapack: VlocityDatapack) {
+        if (!datapack.EffectiveDate__c && !datapack.SellingStartDate__c) {
+            return;
+        }
+
+        const sellingStartDate = moment(datapack.SellingStartDate__c);
+        const effectiveDate = moment(datapack.EffectiveDate__c);
+
+        if (sellingStartDate.isValid()) {
+            if (!sellingStartDate.isSame(effectiveDate, "day")) {
+                datapack.EffectiveDate__c = sellingStartDate.format('YYYY-MM-DD');
+            }
+        } else if (effectiveDate.isValid()) {
+            datapack.SellingStartDate__c = effectiveDate.toISOString();
+        } else {
+            datapack.SellingStartDate__c = null;
+            datapack.EffectiveDate__c = null;
+        }
+    }
+
+    private patchFulfillmentDate(datapack: VlocityDatapack) {
+        if (datapack.FulfilmentStartDate__c === undefined) {
+            return;
+        }
+
+        if (!datapack.SellingStartDate__c) {
+            datapack.FulfilmentStartDate__c = null
+            return;
+        }
+
+        const sellingStartDate = moment(datapack.SellingStartDate__c);
+        const fulfillmentDate = moment(datapack.FulfilmentStartDate__c);
+
+        if (!fulfillmentDate.isValid() || !fulfillmentDate.isSameOrAfter(sellingStartDate)) {
+            datapack.FulfilmentStartDate__c = sellingStartDate.toISOString();
+        }
+    }
+
+    private patchEndDates(datapack: VlocityDatapack) {
+        if (!datapack.EndDate__c && !datapack.SellingEndDate__c) {
+            return;
+        }
+
+        const sellingEndDate = moment(datapack.SellingEndDate__c);
+        const endDate = moment(datapack.EndDate__c);
+
+        if (sellingEndDate.isValid()) {
+            if (!sellingEndDate.isSame(endDate, "day")) {
+                datapack.EndDate__c = sellingEndDate.format('YYYY-MM-DD');
+            }
+        } else if (endDate.isValid()) {
+            datapack.SellingEndDate__c = endDate.toISOString();
+        } else {
+            datapack.SellingEndDate__c = null;
+            datapack.EndDate__c = null;
+        }
     }
 
     public async afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {

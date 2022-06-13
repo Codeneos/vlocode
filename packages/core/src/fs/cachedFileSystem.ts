@@ -20,22 +20,22 @@ export class CachedFileSystemAdapter extends FileSystem {
         clearCache(this);
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public readFile(fileName: string): Promise<Buffer> {
         return this.innerFs.readFile(fileName);
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public stat(path: string, options?: StatsOptions): Promise<fs.Stats | undefined> {
         return this.innerFs.stat(path, options);
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public readDirectory(path: string): Promise<FileInfo[]> {
         return this.innerFs.readDirectory(path);
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public findFiles(patterns: string | string[]): Promise<string[]> {
         return this.innerFs.findFiles(patterns);
     }

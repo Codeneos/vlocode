@@ -42,6 +42,37 @@ export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T)
 }
 
 /**
+ * Count the number of objects in the iterable matching the predicate.
+ * @param itr iterable object or array
+ * @param predicate predicate fn
+ */
+ export function count<T>(itr: Iterable<T>, predicate: (item: T) => any) : number {
+    let count = 0;
+    for (const item of itr) {
+        if (predicate(item)) {
+            count += 1;
+        }
+    }
+    return count;
+}
+
+/**
+ * Count the number of distinct entries i the specified array, optionally provide a map function that returns the value making an object unique.
+ * @param itr iterable object or array
+ * @param map unique key fn
+ */
+ export function countDistinct<T>(itr: Iterable<T>, map?: (item: T) => any) : number {
+    const distinctItems = new Set<any>();
+    for (const item of itr) {
+        const key = map ? map(item) : item;
+        if (!distinctItems.has(key)) {
+            distinctItems.add(key);
+        }
+    }
+    return distinctItems.size;
+}
+
+/**
  * Groups an array into key accessible groups of objects
  * @param iterable iterable items to group
  * @param keySelector function to get the group by key

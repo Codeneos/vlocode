@@ -42,7 +42,7 @@ export class ApexExecutor {
         return code;
     }
 
-    @cache(-1)
+    @cache()
     private async resolveApexFile(name: string, relativeFolder = '.') {
         const resolutionOrder = [
             path.join(relativeFolder, name),

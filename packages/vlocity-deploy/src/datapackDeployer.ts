@@ -76,6 +76,11 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * @default true
      */
     purgeLookupOptimization?: boolean;
+    /**
+     * When enabled teh deployment wil check for changes between the datapack source and the source org and only deploy
+     * @default false;
+     */
+    deltaCheck?: boolean;
 }
 
 export interface DatapackDeploymentSpec {
@@ -158,44 +163,53 @@ export class DatapackDeployer {
     }
 
     /**
-     * Verifies the Global keys of the records match the datapack values, when records are deployed their global key can change due to Vlocity triggers assigning a new global key to records. 
-     * This method checks the Global key values from the records against the values in the data pack and updates them when required.
-     * @param records 
+     * Verifies the data deployed to the org matched the local data for the specified list of fields. This is especially useful for GlobalKey fields that are 
+     * updated by a Vlocity before update/insert trigger making it impossible to update the global key when Vlocity triggers are enabled.
+     * @param records records
+     * @param fieldNames Array of field names to compare 
      */
-    private async verifyGlobalKeys(records: Iterable<DatapackDeploymentRecord>) {
+    private async verifyDeployedFieldData(records: Iterable<DatapackDeploymentRecord>, fieldNames: string[]) {
         const deployedRecordsByType = groupBy(Iterable.filter(records, r => r.isDeployed), r => r.sobjectType);
         const recordBatch = new RecordBatch(this.schemaService, { useBulkApi: false, chunkSize: 100 });
 
         for (const [sobjectType, records] of Object.entries(deployedRecordsByType)) {
-            const field = await this.schemaService.describeSObjectField(sobjectType, 'GlobalKey__c', false);
-            if (!field) {
+            const fields = (await Promise.all(
+                fieldNames.map(name => this.schemaService.describeSObjectField(sobjectType, name, false))
+            )).filter(f => !!f) as Array<Field>;
+
+            if (!fields.length) {
                 continue;
             }
 
-            this.logger.verbose(`Verifying global keys of ${records.length} deployed ${sobjectType} record(s)`);
-            const recordsById = new Map(records.map(r => [r.recordId as string, r]));
-            const results = await this.objectLookupService.lookupById(sobjectType, recordsById.keys(), [ 'GlobalKey__c' ], false);
+            this.logger.verbose(`Verifying org-data after deployment on ${sobjectType} fields [${fields.map(f => f.name).join(', ')}] for ${records.length} record(s)`);
+            const deployedData = new Map(records.map(r => [r.recordId as string, r]));
+            const orgData = await this.objectLookupService.lookupById(deployedData.keys(), fields.map(f => f.name), false);
 
-            for (const result of results) {
-                const datapackGlobalKey = recordsById.get(result.Id)?.values[field.name];
-                if (result.GlobalKey__c !== datapackGlobalKey) {
-                    recordBatch.add(sobjectType, {
-                        Id: result.Id,
-                        [field.name]: datapackGlobalKey
-                    });
+            for (const result of orgData.values()) {
+                const mismatchedFieldData = fields.map(field => ({ 
+                    field: field.name,
+                    actual: result[field.name],
+                    expected: deployedData.get(result.Id)?.values[field.name]
+                })).filter(comp => comp.actual == comp.expected);
+
+                if (mismatchedFieldData.length) {
+                    const update = mismatchedFieldData.reduce((acc, mismatch) => Object.assign(acc, {
+                        [mismatch.field]: mismatch.expected
+                    }), { Id: result.Id });
+                    recordBatch.add(sobjectType, update);
                 }
             }
         }
 
         if (recordBatch.size() > 0) {
-            this.logger.info(`Updating ${recordBatch.size()} records with mismatching global keys`);
+            this.logger.info(`Updating ${recordBatch.size()} records with mismatching values on: ${fieldNames.join(', ')}`);
 
             // For global key updates to always succeed ensure that the triggers are off
             await this.setVlocityTriggerState(false);
             try {
                 for await (const result of recordBatch.execute(await this.connectionProvider.getJsForceConnection())) {
                     if (result.error) {
-                        this.logger.error(`Global key update failed for ${result.recordId} -- ${result.error}`);
+                        this.logger.error(`Field update failed for ${result.recordId} -- ${result.error}`);
                     }
                 }
             } finally {
@@ -214,7 +228,7 @@ export class DatapackDeployer {
         if (options?.disableTriggers) {
             await this.setVlocityTriggerState(true);
         }
-        await this.verifyGlobalKeys(datapackRecords);
+        await this.verifyDeployedFieldData(datapackRecords, [ 'GlobalKey__c', 'GlobalKey2__c', 'GlobalGroupKey__c' ]);
     }
 
     /**

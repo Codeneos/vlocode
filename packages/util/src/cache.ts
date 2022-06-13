@@ -9,6 +9,20 @@ export interface CacheOptions {
      * Scope of the cache, defaults to instance for non-static members and global for static methods
      */
     scope?: 'global' | 'instance';
+    /**
+     * The result returned by the original function is considered mutable and will *not* be sealed 
+     * other callers will get a deep clone of the cached entry avoiding cache corruption when the result is changed
+     */
+    mutable?: boolean;
+    /**
+     * When true the original result of a function is a promise the on subsequent calls the cache decorator can instead or returning
+     * a promise return the resolved value directly. This offers a benefit to ES6 async-await code but is incompatible with classic Promises.
+     */
+    unwrapPromise?: boolean;
+    /**
+     * Also store reject promises and exceptions instead of deleting any promise that is rejected from the cache.
+     */
+    cacheExceptions?: boolean;
 }
 
 /**
@@ -26,7 +40,7 @@ class CacheEntry {
     private isResolved: boolean;
     private isRejected: boolean;
 
-    constructor(private innerValue: any) {
+    constructor(private innerValue: any, private options: CacheOptions) {
         this.date = Date.now();
         this.isPromise = isThenable(innerValue);
         if (this.isPromise) {
@@ -49,10 +63,10 @@ class CacheEntry {
      */
     private getInnerValueSafe() {
         if (typeof this.innerValue === 'object' && this.innerValue !== null) {
+            if (this.options.mutable) {
+                return JSON.parse(JSON.stringify(this.innerValue));
+            }
             return Object.seal(this.innerValue);
-            // if (!types.isProxy(this.innerValue)) {
-            //     return deserialize(serialize(this.innerValue));
-            // }
         }
         return this.innerValue;
     }
@@ -68,9 +82,15 @@ class CacheEntry {
         }
 
         // When the promise is resolved or when not-a-promise get a safe version of the cache and
-        // when required return it as a resoleved promise.
+        // when required return it as a resolved promise.
         const safeValue = this.getInnerValueSafe();
         if (this.isPromise) {
+            if (this.options.unwrapPromise) {
+                if (this.isRejected) {
+                    throw safeValue;
+                }
+                return safeValue;
+            }
             return this.isRejected ? Promise.reject(safeValue) : Promise.resolve(safeValue);
         }
         return safeValue;
@@ -131,19 +151,9 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
     const options = typeof ttlOrOptions === 'number' || !ttlOrOptions ? { ttl: ttlOrOptions ?? -1 } : ttlOrOptions;
     const boundMethodSymbol = Symbol(`[${name}-bound]`);
 
-    function invokeTarget(thisArg: any, args: any[]): unknown {
-        if (!thisArg) {
-            return target(...args);
-        }
-        if (!thisArg[boundMethodSymbol]) {
-            thisArg[boundMethodSymbol] = target.bind(this);
-        }
-        return thisArg[boundMethodSymbol](...args);
-    };
-
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(options.scope == 'global' ? target : (this ?? target));
-        const key = args.reduce((checksum, arg) => checksum + (arg?.toString() ?? 'undef'), `${name}:`);
+        const key = args.reduce((checksum, arg) => checksum + (String(arg) ?? 'undef'), `${name}:`);
         const cacheEntry = cache.get(key);
         if (cacheEntry) {
             return cacheEntry.value;
@@ -157,7 +167,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
         }
 
         // When the result is a promise ensure it gets deleted when it causes an exception
-        if (isPromise(newValue)) {
+        if (isPromise(newValue) && !options.cacheExceptions) {
             newValue = newValue.catch(err => {
                 cache.delete(key);
                 throw err;
@@ -165,7 +175,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
         }
 
         // Store and return
-        const entry = new CacheEntry(newValue);
+        const entry = new CacheEntry(newValue, options);
         cache.set(key, entry);
         return entry.value;
     };

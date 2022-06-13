@@ -64,7 +64,11 @@ export class AsyncEventEmitter<T extends EventMap = any> {
                         throw err;
                     } else {
                         // for Debugging: log errors to the console but don't fail
-                        console.error(err.message ?? err);
+                        if (err instanceof Error) {
+                            console.error(`Event "${event}" failed with error:`, err.message, '\n', err.stack);
+                        } else {
+                            console.error(`Event "${event}" failed with error:`, err);
+                        }
                     }
                 }
             }

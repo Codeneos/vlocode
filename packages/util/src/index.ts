@@ -6,6 +6,7 @@ export * from './collection';
 export * from './compiler';
 export * from './defaults';
 export * from './deferred';
+export * from './decorator';
 export * from './events';
 export * from './fs';
 export * from './guards';

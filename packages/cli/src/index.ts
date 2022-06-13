@@ -3,6 +3,7 @@ import { Command as Commander, Option } from 'commander';
 import { readdirSync } from 'fs';
 import * as path from 'path';
 import { FancyConsoleWriter, Container, container, Logger, LogLevel, LogManager } from '@vlocode/core';
+import { decorate } from '@vlocode/util';
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
@@ -107,6 +108,27 @@ class CLI {
         }        
     }    
 }
+
+class Foo {
+    constructor(public readonly name: string) {
+    }
+
+   /**
+    * getName
+    */
+   public getName() {
+       return 'My Name: ' + this.name;
+   }
+}
+
+class Bar extends decorate(Foo) {
+    public getName() {
+        return 'La! Name: ' + this.inner.getName();
+    }
+}
+
+const test = new Bar(new Foo('test'));
+const myName = test.getName();
 
 // Run
 new CLI('./commands').loadCommands().run();
