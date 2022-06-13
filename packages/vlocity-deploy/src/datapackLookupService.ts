@@ -282,7 +282,7 @@ export class DatapackLookupService implements DependencyResolver {
             }
             // Attempt a date conversion of 2 strings
             const filterTs = moment(new Date(filterValue));
-            if (filterTs.isValid() && filterTs.isSame(moment(recordValue), 'second')) {
+            if (filterTs.isValid() && filterTs.isSame(moment(new Date(recordValue)), 'second')) {
                 return true;
             }
             // Salesforce does not allow trailing spaces on strings in the DB
