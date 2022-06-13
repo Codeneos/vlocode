@@ -6,7 +6,8 @@ export enum DeploymentStatus {
     InProgress,
     Deployed,
     Retry,
-    Failed
+    Failed,
+    Skipped
 }
 
 export enum DeploymentAction {
@@ -108,6 +109,7 @@ export class DatapackDeploymentRecord {
         public readonly sobjectType: string,
         public readonly sourceKey: string,
         public readonly datapackKey: string,
+        public readonly upsertFields: string[] | undefined = undefined,
         public readonly values: Object = {}) {
         this.normalizedSObjectType = removeNamespacePrefix(this.sobjectType);
     }
@@ -161,11 +163,15 @@ export class DatapackDeploymentRecord {
 
     public setAction(action: DeploymentAction): void;
     public setAction(action: DeploymentAction.Update, updateId: string): void;
+    public setAction(action: DeploymentAction.Skip, updateId?: string): void;
     public setAction(action: DeploymentAction, updateId?: string) {
         if (action == DeploymentAction.Update && !updateId) {
             throw new Error(`Cannot set action to update without specifying an existing ID`);
         } else if (action == DeploymentAction.Insert) {
             this._existingId = undefined;
+        } else if (action == DeploymentAction.Skip) {
+            this._existingId = updateId;
+            this._status = DeploymentStatus.Skipped;
         }
         this._datapackAction = action;
         this._existingId = updateId;
@@ -212,7 +218,12 @@ export class DatapackDeploymentRecord {
         this._unresolvedDependencies.add(dependencyGuid);
     }
 
-    public getDependency(record: DatapackDeploymentRecord): { field: string, dependency: DatapackRecordDependency } | undefined {
+    /**
+     * Checks if the specified record is a dependency for this record and returns the dependency data and lookup field on this record
+     * @param record Record to check
+     * @returns The dependency info and lookup field as defined for this record
+     */
+    public isDependentOn(record: DatapackDeploymentRecord): { field: string, dependency: DatapackRecordDependency } | undefined {
         for (const [field, dependency] of this._dependencies) {
             const depSourceKey = dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey;
             if (depSourceKey === record.sourceKey) {

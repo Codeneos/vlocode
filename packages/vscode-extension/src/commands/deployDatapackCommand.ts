@@ -111,7 +111,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
         }
 
         if (deployment.hasErrors) {
-            for (const [datapackKey, messages] of deployment.getMessagesByDatapack()) {
+            for (const [datapackKey, messages] of Object.entries(deployment.getMessagesByDatapack())) {
                 this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${deployment.getFailedRecords(datapackKey).length} failed records (${messages.length} messages)`);
                 for (let i = 0; i < messages.length; i++) {
                     this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatDirectDeployError(messages[i].message)} (${messages[i].type.toUpperCase()})`);

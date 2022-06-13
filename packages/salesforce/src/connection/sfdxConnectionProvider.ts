@@ -81,7 +81,7 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
         return LogManager.get(SfdxConnectionProvider);
     }
 
-    @cache(-1)
+    @cache({ unwrapPromise: true })
     public async isProductionOrg() : Promise<boolean> {
         const connection = await this.getJsForceConnection();
         const results = await connection.query<{IsSandbox: boolean}>('SELECT IsSandbox FROM Organization');

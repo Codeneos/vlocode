@@ -16,14 +16,14 @@ export class SalesforceSchemaService {
     constructor(private readonly connectionProvider: JsForceConnectionProvider) {
     }
 
-    @cache(-1)
+    @cache({ unwrapPromise: true })
     public async describeSObjects() : Promise<Array<DescribeGlobalSObjectResult>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const { sobjects } = await con.describeGlobal();
         return sobjects;
     }
 
-    @cache(-1)
+    @cache({ unwrapPromise: true })
     public async describeCustomMetadataObjects() : Promise<Array<string>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const components = await con.metadata.list({ type: 'CustomMetadata' });
@@ -34,7 +34,7 @@ export class SalesforceSchemaService {
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<DescribeSObjectResult | undefined> {
         try {
-            return await this.describeSObjectCached(type);
+            return await this.describeSObjectCached(this.nsService?.updateNamespace(type));
         } catch(err) {
             if (throwWhenNotFound) {
                 throw Error(`No such object with name ${type} exists in this Salesforce instance`);
@@ -61,12 +61,12 @@ export class SalesforceSchemaService {
         throw Error(`No object found matching the key prefix specified: ${prefix}`);
     }
 
-    @cache(-1)
+    @cache({ cacheExceptions: true, unwrapPromise: true })
     private async describeSObjectCached(type: string) : Promise<DescribeSObjectResult> {
         const con = await this.connectionProvider.getJsForceConnection();
         const timer = new Timer();
         try {
-            return await con.describe(this.nsService?.updateNamespace(type) ?? type);
+            return await con.describe(type);
         } finally {
             this.logger.verbose(`Described ${type} [${timer.stop()}]`);
         }
@@ -74,7 +74,7 @@ export class SalesforceSchemaService {
 
     public async describeSObjectField(type: string, fieldName: string) : Promise<Field>
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<Field | undefined>
-    @cache(-1)
+    @cache({ cacheExceptions: true, unwrapPromise: true })
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<Field | undefined> {
         return (await this.describeSObjectFieldPath(type, fieldName, throwWhenNotFound))?.slice(-1).pop();
     }
@@ -87,7 +87,7 @@ export class SalesforceSchemaService {
      * @param fieldPath Full field path
      * @param throwWhenNotFound trye to throw an exception when the type is not found otherwise return null;
      */
-    @cache(-1)
+    @cache({ cacheExceptions: true, unwrapPromise: true })
     public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<Field[] | undefined> {
         const resolved = new Array<Field>();
 
@@ -100,7 +100,7 @@ export class SalesforceSchemaService {
             const field = result?.fields.find(field => [field.name, field.relationshipName].some(name => name && removeNamespacePrefix(name.toLowerCase()) == normalizedFieldName));
             if (!field) {
                 if (throwWhenNotFound) {
-                    throw new Error(`No such field with name ${fieldName} on SObject ${type}`);
+                    throw new Error(`No such field with name "${fieldName}" on SObject ${type}`);
                 }
                 return undefined;
             }
@@ -115,8 +115,16 @@ export class SalesforceSchemaService {
         return resolved;
     }
 
-    public async getSObjectFields(type: string) : Promise<Field[]> {
-        return (await this.describeSObject(type)).fields;
+    /**
+     * Get list of immutable fields for an SObject
+     * @param type SObject Type
+     * @returns 
+     */
+    @cache({ unwrapPromise: true })
+    public async getSObjectFields(type: string) : Promise<ReadonlyMap<string, Field>> {
+        return new Map((await this.describeSObject(type)).fields.map<[string, Field][]>(field => [
+            [field.name, field]
+        ]).flat(1));
     }
 
     /**
@@ -145,13 +153,14 @@ export class SalesforceSchemaService {
      * @param type SOBject type
      * @param path Full path of properties
      */
+    @cache({ unwrapPromise: true })
     public async toSalesforceField(type: string, path: string) : Promise<string> {
         const salesforcePath : any[] = [];
         const pathSplit = path.split('.');
         for (let i = 0; i < pathSplit.length; i++) {
             const propertyName = pathSplit[i];
             const normalizedPropertyName = normalizeSalesforceName(propertyName);
-            const fields = await this.getSObjectFields(type);
+            const fields = (await this.describeSObject(type)).fields;
             const field = fields.find(field => normalizeSalesforceName(field.name) === normalizedPropertyName || field.relationshipName && normalizeSalesforceName(field.relationshipName) == normalizedPropertyName);
             if (!field) {
                 throw new Error(`Unable to resolve salesforce field path; no such salesforce field: ${type}.${propertyName}`);
