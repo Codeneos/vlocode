@@ -8,3 +8,4 @@ export * from './inject';
 export * from './fs';
 export * from './logging';
 export * from './logging/writers';
+export * from './deferredWorkQueue';

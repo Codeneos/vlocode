@@ -1,0 +1,148 @@
+import { Logger, injectable } from '@vlocode/core';
+import { asArray, cache, clearCache, fileExists, forEachAsyncParallel, OptionalPromise, Timer } from '@vlocode/util';
+import { JsForceConnectionProvider } from '../connection/jsForceConnectionProvider';
+import { DescribeSObjectResult, Field } from '../types';
+import { CustomObjectMetadata, CustomFieldMetadata } from '../metadata';
+import { SalesforceSchemaAccess } from './schemaAccess';
+import { SchemaDataStore } from './schemaDataStore';
+
+const unsupportedStandardObjects = [
+    'Activity',
+    'MacroAction',
+    'AssistantProgress',
+    'ManagedContentVersion',
+    'ExchangeUserMapping',
+    'NetworkMemberChunk',
+    'RecordMergeHistory',
+    'StreamActivityAccess',
+    'SocialPersona'
+];
+
+@injectable({ provides: SalesforceSchemaAccess })
+/**
+ * Cached access to Salesforce table schema data in as SObject- and Field Describe and Metadata information.
+ */
+export class CachedSchemaAccess implements SalesforceSchemaAccess {
+
+    private readonly metadataCacheFile = `metadata-cache.json`
+    private readonly store = new SchemaDataStore();
+    private readonly metadataReadChunkSize = 10;
+    private readonly metadataReadParallelism = 25;
+
+    private initDone = false;
+    private initPromise: Promise<this> | undefined;
+
+    public get initialized() {
+        return this.initDone;
+    };
+
+    constructor(
+        private readonly connectionProvider: JsForceConnectionProvider, 
+        private readonly logger: Logger) {
+    }
+
+    /**
+     * Initializes the schema access cache by preloading both Schema and Metadata changes form the 
+     * connected org.
+     * @returns 
+     */
+    public initialize() {    
+        return this.initPromise ?? (this.initPromise = this.loadOrgSchema().finally(() => this.initPromise = undefined));
+    }
+
+    /**
+     * Loads the schema from a cached JSON file or initializes the schema access by calling @see initialize
+     * @returns 
+     */
+    public restoreCacheOrInitialize() {    
+        return this.initPromise ?? (this.initPromise = this.restoreFromCache().catch(() => this.loadOrgSchema()).finally(() => this.initPromise = undefined));
+    }
+
+    private async loadOrgSchema() {      
+        this.logger.info(`Initializing Salesforce-org object and field metadata...`);
+        
+        clearCache(this);
+        const timer = new Timer(); 
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const objects = (await connection.metadata.list({ type: 'CustomObject' })).filter(o => !unsupportedStandardObjects.includes(o.fullName));
+
+        const objectNameChunks = Array<Array<string>>();
+        for (let index = 0; index < objects.length; index += this.metadataReadChunkSize) {
+            objectNameChunks.push(objects.slice(index, index + this.metadataReadChunkSize).map(o => o.fullName));
+        }
+
+        let readCount = 0, progress = 0;        
+        await forEachAsyncParallel(objectNameChunks, async (chunk, i) => {
+            this.logger.verbose(`Describing ${chunk.join(', ')} ${readCount += chunk.length}/${objects.length}`);  
+
+            const [metadataInfos, describeResults]= await Promise.all([
+                connection.metadata.read('CustomObject', chunk).then(asArray) as Promise<CustomObjectMetadata[]>,
+                connection.batchDescribe({ types: chunk }).then(asArray)
+            ]);
+
+            chunk.forEach((type) => this.store.add(
+                metadataInfos.find(m => m.fullName === type)!, 
+                describeResults.find(d => d.name === type)
+            ));
+
+            if((progress += chunk.length) % 100 === 0) {                
+                this.logger.info(`Reading org object and field metadata ${progress}/${objects.length}...`);
+            }
+        }, this.metadataReadParallelism);
+
+        this.initDone = true;
+        this.logger.info(`Initialized object and field metadata in ${timer.stop()}`);
+        return this;
+    }
+        
+    @cache()
+    public listObjectTypes(): OptionalPromise<string[]> {
+        if (!this.initDone) {
+            return this.initialize().then(self => self.listObjectTypes());
+        }
+        return [...this.store.getSObjectTypes()]
+    }
+
+    public describe(arg: { type: string }):  DescribeSObjectResult | undefined;
+    public describe(arg: { type: string, field: string; }):  Field | undefined;
+    public describe(arg: { type: string, field?: string; }): OptionalPromise<DescribeSObjectResult | Field | undefined> {        
+        return this.get(arg, 'describe');
+    }
+
+    public getMetadata(arg: { type: string; }): CustomObjectMetadata | undefined;
+    public getMetadata(arg: { type: string; field: string; }): CustomFieldMetadata | undefined;
+    public getMetadata(arg: { type: string, field?: string; }): OptionalPromise<CustomObjectMetadata | CustomFieldMetadata  | undefined> {
+        return this.get(arg, 'metadata');
+    }     
+    
+    private get(arg: { type: string, field?: string; }, prop: 'metadata' | 'describe') {
+        if (!this.initDone) {
+            return this.initialize().then(self => self.get(arg, prop));
+        }
+        return this.store.get(arg)?.[prop];
+    } 
+    
+    /**
+     * Persist the currently loaded Meta and describe data about the Salesforce table schema to the the disk.
+     * @param file FileName to which to persist the schema data
+     */
+    public persistCache(file = this.metadataCacheFile) {
+        if (!this.initDone) {
+            throw new Error('Cannot persist cache before initialization');
+        }
+        return this.store.persist(file);
+    }
+
+    /**
+     * Restore Salesforce table schema data from a perviously persisted cached (@see persistCache)
+     * @param cacheFile FileName from which load the schema data
+     */
+    public async restoreFromCache(cacheFile = this.metadataCacheFile) {
+        //if (!fileExists(cacheFile)) {
+            throw new Error(`Unable to restore cache, no such file ${cacheFile}`);
+        //}
+        await this.store.restore(cacheFile);
+        this.initDone = true;
+        return this;        
+    }
+}

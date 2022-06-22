@@ -116,17 +116,20 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
  * @param delimiter 
  * @param limit 
  */
-export function joinLimit(parts: any[], limit: number, delimiter?: string) : string[] {
-    const result = new Array<any>();
-    let len = 0;
+export function joinLimit(parts: any[], limit: number, delimiter: string = ',') : string[] {
+    const result = new Array<string>();
+
+    if (!delimiter) {
+        delimiter = '';
+    }
 
     for (const item of parts) {
-        const element = String(item);        
-        const resultIndex = (len += element?.length ?? 0) / limit >> 0;
-        if (!result[resultIndex]) {
-            result[resultIndex] = element;
+        const element = String(item);   
+        const lastIndex = result.length ? result.length - 1 : 0;
+        if (!result[lastIndex] || result[lastIndex].length + delimiter.length + element.length > limit) {
+            result[result.length] = element;
         } else {
-            result[resultIndex] += (delimiter ?? ',') + element;
+            result[lastIndex] += delimiter + element;
         }
     }
 

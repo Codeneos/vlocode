@@ -396,8 +396,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
-        await this.emit('beforeDeployRecord', datapackRecords.values(), { hideExceptions: true });
-        await this.emit('beforeDeployGroup', Iterable.map(recordGroupsStarted, key => recordGroups.get(key)!), { hideExceptions: true });
+        await this.emit('beforeDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
+        await this.emit('beforeDeployGroup', [...Iterable.map(recordGroupsStarted, key => recordGroups.get(key)!)], { hideExceptions: true });
 
         try {
             this.logger.log(`Deploying ${batch.size()} records...`);
@@ -425,18 +425,18 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
             if (this.options.purgeMatchingDependencies) {
-                await this.purgeMatchingDependentRecords(datapackRecords.values());
+                await this.purgeMatchingDependentRecords([...datapackRecords.values()]);
             } else {
                 // When purgeMatchingDependencies is disabled only delete records that cannot be updated
                 // because they don't have a configured matching fields -or- because lookup is skipped
-                await this.purgeDependentRecords(datapackRecords.values(), ({ dependency, record }) => 
+                await this.purgeDependentRecords([...datapackRecords.values()], ({ dependency, record }) => 
                     dependency?.VlocityMatchingRecordSourceKey && 
                     record.skipLookup || !record.upsertFields?.length);
             }
 
         } finally {
             const completedGroups = Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords());
-            await this.emit('afterDeployRecord', datapackRecords.values(), { hideExceptions: true });
+            await this.emit('afterDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
             await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: false });
         }
     }
@@ -471,6 +471,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     private async purgeDependentRecords(records: Iterable<DatapackDeploymentRecord>, predicate: RecordPurgePredicate) {
         const deleteFilters = new Map<string, Set<string>>();
+        //const r2 = [...records];
         const recordsById = new Map(Iterable.transform(records, {
             map: rec => [rec.recordId!, rec],
             filter: rec => (rec.isDeployed && rec.isUpdate) || (rec.recordId && rec.isSkipped)

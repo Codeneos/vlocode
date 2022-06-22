@@ -1,14 +1,14 @@
 import 'reflect-metadata';
 import { asArray, lazy, getCtorParameterTypes } from '@vlocode/util';
-import { container, ServiceType, LifecyclePolicy } from './container';
+import { container, ServiceType, LifecyclePolicy, ServiceOptions } from './container';
 
-export interface DependencyOptions {
+export interface DependencyOptions extends Partial<ServiceOptions> {
     /** List of components that is provided by this class  */
     provides?: Array<ServiceType> | ServiceType;
-    /** Determines how a service is created and maintained in the system  */
-    lifecycle?: LifecyclePolicy;
 }
+
 export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
+export const InjectableDecorated = Symbol('[[Injectable]]');
 
 /**
  * Register a component/service into as injectable component into the main appliction container; services can have a LifecyclePolicy which 
@@ -16,12 +16,12 @@ export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
  * @param options Constructions options for the service
  */
 export const injectable = Object.assign(function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) : (ctor: T) => any {
-    const lifecycle = options?.lifecycle || LifecyclePolicy.singleton;
     const services = asArray(options?.provides ?? []);
 
     return function(ctor: T) {
         // @ts-ignore ctor extension is valid here if when there is no intersection
         const classProto = class extends ctor {
+            static [InjectableDecorated] = true;
             constructor(...args: any[]) {
                 container.resolveParameters(ctor, args);
                 super(...args);
@@ -30,18 +30,17 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         };
 
         for (const serviceType of services) {
-            container.registerType(serviceType, ctor as any, lifecycle);
+            container.registerType(serviceType, ctor as any, options);
         }
 
         // Register this dependency in the main container
         // only when the dependency has a name; otherwise it cannot be registered
         if (ctor.name) {
-            container.registerType(ctor, ctor, lifecycle);
+            container.registerType(ctor, ctor, options);
         }
 
         // Register dependency metadata on new class ctor
         Reflect.defineMetadata('service:provides', services, ctor);
-        Reflect.defineMetadata('service:lifecycle', lifecycle, ctor);
 
         // Ensure our newly created dependency shares the same class name as the parent,
         return Object.defineProperty(classProto, 'name', { value: ctor.name, configurable: false, writable: false });
@@ -52,16 +51,16 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
      * @param options Constructions options for the service
      * @returns 
      */
-    transient: function(options?: DependencyOptions & { lifecycle: undefined }) {
-        return this({ ...options, lifecycle: LifecyclePolicy.transient } );
+    transient: function(options?: DependencyOptions) {
+        return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.transient } );
     },
     /**
      * Define as injectable with Single instance lifecycle
      * @param options Constructions options for the service
      * @returns 
      */
-    singleton: function(options?: DependencyOptions & { lifecycle: undefined }) {
-        return this({ ...options, lifecycle: LifecyclePolicy.singleton } );
+    singleton: function(options?: DependencyOptions) {
+        return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.singleton } );
     },
     /**
      * Defines the property as injectable that is resolved during instantiation of the class
@@ -73,7 +72,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         Reflect.defineMetadata('service:properties', properties, target);
     },
     /**
-     * Resolve paramter to a specific service type
+     * Resolve parameter to a specific service type
      * @param serviceType 
      * @returns 
      */

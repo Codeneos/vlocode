@@ -2,7 +2,7 @@
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger , injectable , container, LifecyclePolicy } from '@vlocode/core';
 import * as moment from 'moment';
-import { Timer , isSalesforceId , asArray, groupBy , Iterable, CancellationToken, } from '@vlocode/util';
+import { Timer , isSalesforceId , asArray, groupBy , Iterable, CancellationToken, mapAsyncParallel, forEachAsyncParallel, } from '@vlocode/util';
 import * as uuid from 'uuid';
 import { DATAPACK_RESERVED_FIELDS, NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
@@ -120,9 +120,9 @@ export class DatapackDeployer {
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
-        for (const datapack of datapacks) {
+        await forEachAsyncParallel(datapacks, async (datapack) => {
             if (options?.cancellationToken?.isCancellationRequested) {
-                break;
+                return;
             }
             try {
                 await this.runSpecFunction(datapack.datapackType, 'preprocess', datapack);
@@ -132,7 +132,7 @@ export class DatapackDeployer {
             } catch(err) {
                 this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
             }
-        }
+        }, 8);
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
 
         return deployment;
@@ -190,7 +190,7 @@ export class DatapackDeployer {
                     field: field.name,
                     actual: result[field.name],
                     expected: deployedData.get(result.Id)?.values[field.name]
-                })).filter(comp => comp.actual == comp.expected);
+                })).filter(comp => comp.actual !== comp.expected);
 
                 if (mismatchedFieldData.length) {
                     const update = mismatchedFieldData.reduce((acc, mismatch) => Object.assign(acc, {
@@ -288,7 +288,7 @@ export class DatapackDeployer {
     private *getDeployedRecords(type: string, groups: Iterable<DatapackDeploymentRecordGroup>) : Generator<DatapackDeploymentRecord & { recordId: string }> {
         for (const group of groups) {
             // @ts-expect-error `record?.recordId` is not undefined as per the if condition earlier; TS does not yet detect this properly
-            yield *group.getRecordsOfType(type).filter(rec => rec.isDeployed && rec.recordId);            
+            yield *group.getRecordsOfType(type).filter(rec => (rec.isDeployed || rec.isSkipped) && rec.recordId);            
         }
     }
 }
