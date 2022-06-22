@@ -160,7 +160,7 @@ export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Promise
  * @param array Array to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, array?: T[]) => Promise<any>) : Promise<T[]> {
+export function forEachAsync<T>(array: T[], callback: (item: T, index: number, array: T[]) => Promise<any>) : Promise<T[]> {
     let foreachPromise = Promise.resolve();
     for (let i = 0; i < array.length; i++) {
         foreachPromise = foreachPromise.then(() => callback(array[i], i, array));
@@ -173,9 +173,9 @@ export function forEachAsync<T>(array: T[], callback: (item: T, index?: number, 
  * @param iterable An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: T, index?: number, array?: T[]) => PromiseLike<any>, parallelism = 2) : Promise<T[]> {
-    return mapAsyncParallel(iterable, async item => {
-        await callback(item);
+export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: T, index: number) => PromiseLike<any>, parallelism = 2) : Promise<T[]> {
+    return mapAsyncParallel(iterable, async (item, index)=> {
+        await callback(item, index);
         return item;
     }, parallelism);
 }
@@ -185,10 +185,15 @@ export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: 
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T) => PromiseLike<R>, parallelism = 2) : Promise<R[]> {
+export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T, index: number) => PromiseLike<R>, parallelism = 2) : Promise<R[]> {
     const tasks : Promise<R[]>[] = new Array(parallelism).fill(Promise.resolve(new Array<R>()));
     for (const [index, value] of enumerateWithIndex(iterable)) {
-        tasks[index % parallelism] = tasks[index % parallelism].then(async result => result.concat(await callback(value)));
+        tasks[index % parallelism] = tasks[index % parallelism].then(async result => {
+            // do not use Array.concat as it can cause issues when R is an array causing the items in the array to be added
+            // to the result instead of the array itsef
+            result.push(await callback(value, index)); 
+            return result; 
+        });
     }
     return Promise.all(tasks).then(flatten);
 }

@@ -10,6 +10,9 @@ const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpac
 // @ts-ignore
 const buildInfo = typeof __webpack_build_info__ === 'object' ? __webpack_build_info__ : {};
 
+/**
+ * CLI base class responsible for loading and executing commands
+ */
 class CLI {
     private static programName = 'vlocode-cli';
     private static description = buildInfo.description ?? 'N/A';
@@ -108,27 +111,6 @@ class CLI {
         }        
     }    
 }
-
-class Foo {
-    constructor(public readonly name: string) {
-    }
-
-   /**
-    * getName
-    */
-   public getName() {
-       return 'My Name: ' + this.name;
-   }
-}
-
-class Bar extends decorate(Foo) {
-    public getName() {
-        return 'La! Name: ' + this.inner.getName();
-    }
-}
-
-const test = new Bar(new Foo('test'));
-const myName = test.getName();
 
 // Run
 new CLI('./commands').loadCommands().run();
