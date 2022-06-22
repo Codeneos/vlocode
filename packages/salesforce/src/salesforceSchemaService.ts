@@ -1,8 +1,9 @@
 import { Logger, injectable } from '@vlocode/core';
-import { cache , isSalesforceId, normalizeSalesforceName, removeNamespacePrefix , Timer } from '@vlocode/util';
 import { NamespaceService } from './namespaceService';
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
+import { SalesforceSchemaAccess } from './schema';
+import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer } from '@vlocode/util';
 
 /**
  * Provides access to Database Schema methods like describe.
@@ -13,7 +14,9 @@ export class SalesforceSchemaService {
     @injectable.property private readonly logger: Logger;
     @injectable.property private readonly nsService: NamespaceService;
 
-    constructor(private readonly connectionProvider: JsForceConnectionProvider) {
+    constructor(
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly schemaAccess: SalesforceSchemaAccess) {
     }
 
     @cache({ unwrapPromise: true })
@@ -34,7 +37,7 @@ export class SalesforceSchemaService {
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<DescribeSObjectResult | undefined> {
         try {
-            return await this.describeSObjectCached(this.nsService?.updateNamespace(type));
+            return await this.schemaAccess.describe({ type: this.nsService?.updateNamespace(type) });
         } catch(err) {
             if (throwWhenNotFound) {
                 throw Error(`No such object with name ${type} exists in this Salesforce instance`);
@@ -161,7 +164,8 @@ export class SalesforceSchemaService {
             const propertyName = pathSplit[i];
             const normalizedPropertyName = normalizeSalesforceName(propertyName);
             const fields = (await this.describeSObject(type)).fields;
-            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizedPropertyName || field.relationshipName && normalizeSalesforceName(field.relationshipName) == normalizedPropertyName);
+            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizedPropertyName || 
+                field.relationshipName && normalizeSalesforceName(field.relationshipName) == normalizedPropertyName);
             if (!field) {
                 throw new Error(`Unable to resolve salesforce field path; no such salesforce field: ${type}.${propertyName}`);
             }
@@ -180,5 +184,9 @@ export class SalesforceSchemaService {
             }
         }
         return salesforcePath.join('.');
+    }
+
+    private async findSObjectField(type: string, field: string) {
+        return findField((await this.describeSObject(type)).fields, this.nsService.updateNamespace(field), f => f.name);
     }
 }

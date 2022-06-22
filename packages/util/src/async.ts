@@ -36,3 +36,8 @@ export async function poll<T>(callback: () => T, ms: number, pollInterval: numbe
         }, pollInterval);
     });
 }
+
+/**
+ * Optional promise type
+ */
+export type OptionalPromise<T> = T | Promise<T>;

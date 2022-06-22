@@ -1,3 +1,5 @@
+export * from './calculationMatrix';
+export * from './calculationProcedure';
 export * from './contentVersion';
 export * from './dataRaptor';
 export * from './integrationProcedure';

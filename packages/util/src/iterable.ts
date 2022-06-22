@@ -96,6 +96,19 @@ export namespace Iterable {
     }
 
     /**
+     * Find the first values in an iterator that matches the predicate function or undefined when not found
+     * @param itr Iterable object
+     * @param predicate predicate function
+     */
+     export function find<T>(itr: Iterable<T>, predicate: (item: T) => any) : T | undefined {
+        for (const item of itr) {
+            if (predicate(item)) {
+                return item;
+            }
+        }
+    }
+
+    /**
      * Segregate an iterable list into a true-ish and false-ish iterable. The first element of the result will contain the all elements where the filter returns a 
      * true-ish value the second element of the result of the result will contain all items for which the filter returned a false-ish value
      * @param itr Iterator

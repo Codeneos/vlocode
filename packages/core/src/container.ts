@@ -3,6 +3,7 @@ import { EventEmitter } from 'stream';
 import { singleton, Iterable, arrayMapPush, asArray, getCtorParameterTypes, getPropertyType } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
+import { InjectableDecorated } from './inject';
 
 export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
 export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
@@ -28,10 +29,27 @@ export enum LifecyclePolicy {
     transient = 2
 }
 
+export interface ServiceOptions {
+    /** Determines how a service is created and maintained in the system  */
+    lifecycle: LifecyclePolicy;
+    /** 
+     * Optional priority that determines the preferred implementation when multiple implementations are available; 
+     * a higher number is preferred over a lower number. Services are registered with a priority of 0 by default. 
+     * 
+     * _Note: Negative numbers are allowed and supported_
+     */
+    priority: number;
+}
+
 const lazyMarker = Symbol('[[Container:Lazy]]');
 const lazyTarget = Symbol('[[Container:LazyTarget]]');
 const lazyIsResolved = Symbol('[[Container:LazyIsResolved]]');
 const serviceGuidSymbol = Symbol('[[Container:ServiceGuid]]');
+
+const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({ 
+    lifecycle: LifecyclePolicy.singleton, 
+    priority: 0 
+});
 
 interface LazyProxy<T extends object = object> {
     [lazyMarker]: boolean;
@@ -56,14 +74,13 @@ export class Container {
     private readonly serviceDependencies = new Map<string, Array<string>>();
     private readonly servicesProvided = Symbol('[[Container:ServicesProvided]]');
     private readonly containerGuid = uniqueNamesGenerator(uniqueNameConfig);
-    private readonly serviceShapes = new Map<string, Array<string>>();
 
     // Factories are lazy instances, when there is no instance it will be created
     // through a factory
     private readonly factories = new Map<string, { new: ServiceFactory; lifecycle?: LifecyclePolicy}>();
 
     // service to concrete type mapping
-    private readonly serviceTypes = new Map<string, { ctor: ServiceCtor; lifecycle?: LifecyclePolicy } >();
+    private readonly serviceTypes = new Map<string, { ctor: ServiceCtor; options?: ServiceOptions }[] >();
 
     // Provide provide a new instance on each resolution
     private readonly providers = new Map<string, (receiver: any) => any>();
@@ -98,7 +115,7 @@ export class Container {
     }
 
     /**
-     * Resolve requested service to an actual service implementation.
+     * Resolve requested service to an implementation.
      * @param service Service type for which to resolve a concrete class
      * @param overrideLifecycle Use an alternate lifecycle policy
      * @param receiver Class ctor for which we are resolving this
@@ -134,7 +151,7 @@ export class Container {
         }
 
         // resolve from types
-        const type = this.serviceTypes.get(serviceName);
+        const type = this.serviceTypes.get(serviceName)?.[0];
         if (type) {
             // Circular reference check
             const circularReference = this.resolveStack.includes(type.ctor.name);
@@ -148,7 +165,7 @@ export class Container {
             instance[lazyTarget].setInstance(resolver.createInstance(type.ctor) as T);
             this.resolveStack.pop();
 
-            const effectiveLifecycle = overrideLifecycle ?? type.lifecycle;
+            const effectiveLifecycle = overrideLifecycle ?? type.options?.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
                 return resolver.registerAs(resolver.register(instance), service);
             }
@@ -165,16 +182,6 @@ export class Container {
     }
 
     /**
-     * Create a new instance of a type resolving constructor parameters as dependencies using the container
-     * @param ctor Constructor/Type to instantiate
-     * @param params Constructor params provided
-     * @returns New instance of an object who's dependencies are resolved by the container
-     */
-    public create<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>) : InstanceType<T> {
-        return this.createInstance(ctor, params);
-    }
-
-    /**
      * Safe version of @see Container.resolve that does not return undefined and throws an exception for services that cannot be resolved.
      * @param service Service type for which to resolve the concrete class
      */
@@ -187,39 +194,31 @@ export class Container {
     }
 
     /**
-     * Register an instance into the container and the services it provides
-     * @param instance 
+     * Create a new instance of a type resolving constructor parameters as dependencies using the container
+     * @param ctor Constructor/Type to instantiate
+     * @param params Constructor params provided
+     * @returns New instance of an object who's dependencies are resolved by the container
      */
-    public register<T extends Object | Object[]>(instances: T) {
-        for (const instance of asArray(instances)) {
-            const provides = Reflect.getMetadata('service:provides', Object.getPrototypeOf(instance).constructor) as Array<ServiceType>;
-
-            if (provides?.length) {
-                for (const serviceType of provides) {
-                    this.registerAs(instance, serviceType);
-                }
-            } else if (instance.constructor.name !== 'Object') {
-                this.registerAs(instance, instance.constructor);
-            }
-        }
-        return instances;
+    public create<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>) : InstanceType<T> {
+        return this.createInstance(ctor, params);
     }
 
     /**
-     * Creates a new instance of the specified type resolving dependencies using the current container context
+     * Creates a new instance of the specified type resolving dependencies using the current container context. The returned class is not registered
+     * in the container as dependency.
      * @param ctor Constructor type/prototype class definition
      */
-    private createInstance<T extends { new(...args: any[]): I }, I>(ctor: T, args: Array<any> = []): I {
+    private createInstance<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, args: Array<any> = []): InstanceType<T> {
         // Get argument types
         const instanceGuid = this.generateServiceGuid(ctor);
 
-        const instanceFactory = () => {
-            const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);
-            const instance = this.decorateWithServiceGuid(new ctor(...resolvedArgs), instanceGuid);
-            return this.resolveProperties(instance);
-        };
-
-        return instanceFactory();
+        if (ctor[InjectableDecorated]) {
+            return this.decorateWithServiceGuid(new ctor(...args), instanceGuid);
+        } 
+        
+        const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);
+        const instance = this.decorateWithServiceGuid(new ctor(...resolvedArgs), instanceGuid);
+        return this.resolveProperties(instance);
     }
 
     /**
@@ -255,7 +254,7 @@ export class Container {
             if (serviceType) {
                 args[i] = this.resolve(serviceType, undefined, ctor);
                 if (instanceGuid && args[i] !== undefined) {
-                    this.registerDependentService(instanceGuid, args[i]);
+                    this.trackServiceDependencies(instanceGuid, args[i]);
                 }
             }
         }
@@ -284,7 +283,7 @@ export class Container {
             const resolvedPropertyValue = this.resolve(typeInfo, undefined, prototype.constructor);
             if (resolvedPropertyValue) {
                 instance[property] = resolvedPropertyValue;
-                this.registerDependentService(instance[serviceGuidSymbol], resolvedPropertyValue);
+                this.trackServiceDependencies(instance[serviceGuidSymbol], resolvedPropertyValue);
             }
         }
         return instance;
@@ -307,15 +306,64 @@ export class Container {
      * @param serviceGuid the instance guid of the object that owns the dependency
      * @param dependsOn instance of the dependency
      */
-    private registerDependentService(serviceGuid: string, dependsOn: Object) {
+    private trackServiceDependencies(serviceGuid: string, dependsOn: Object) {
         const dependencyGuid = dependsOn[serviceGuidSymbol];
         if (this.isLazyProxy(dependsOn) && !dependsOn[lazyIsResolved]) {
-            dependsOn[lazyTarget].once('resolved', instance => this.registerDependentService(serviceGuid, instance));
+            dependsOn[lazyTarget].once('resolved', instance => this.trackServiceDependencies(serviceGuid, instance));
         } else if (dependencyGuid) {
             arrayMapPush(this.serviceDependencies, dependencyGuid, serviceGuid);
         }
     }
 
+    /**
+     * Register an already instantiated service/class in the container, if the instance provides one or more services which are registered
+     * using the injectable decorator then those services will be made available in the container.
+     * @param instance 
+     */
+     public register<T extends Object | Object[]>(instances: T) {
+        for (const instance of asArray(instances)) {
+            const provides = Reflect.getMetadata('service:provides', Object.getPrototypeOf(instance).constructor) as Array<ServiceType>;
+
+            if (provides?.length) {
+                for (const serviceType of provides) {
+                    this.registerAs(instance, serviceType);
+                }
+            } else if (instance.constructor.name !== 'Object') {
+                this.registerAs(instance, instance.constructor);
+            }
+        }
+        return instances;
+    }
+
+    /**
+     * Register an instance in the container as the specified service service shape
+     * @param instance Instance providing the service
+     * @param services Service or array of service shapes provided
+     * @returns the instance
+     */
+    public registerAs<T extends Object, I extends T = T>(instance: I, services: ServiceType<T> | Array<ServiceType<T>>) {
+        this.decorateWithServiceGuid(instance);
+        
+        for (const service of Iterable.asIterable(services)) {
+            const providedService = this.getServiceName(service);
+            const providedServices: Set<string> = instance[this.servicesProvided] || (instance[this.servicesProvided] = new Set());
+
+            // Do not register duplicates;
+            if (providedServices.has(providedService)) {
+                continue;
+            }
+
+            if (this.instances.has(providedService)) {
+                this.logger.warn(`Overriding existing service from ${this.instances.get(providedService.constructor.name)}->${instance.constructor.name}`);
+            }
+
+            this.logger.debug(`Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
+            this.instances.set(providedService, instance);
+            providedServices.add(providedService);
+        }
+        return instance;
+    }
+        
     /**
      * Unregister an instance in the container; removes all the services
      * @param instance the instance to unregister
@@ -353,35 +401,7 @@ export class Container {
             // eslint-disable-next-line @typescript-eslint/dot-notation 
             instance['dispose']();
         }
-    }
-
-    /**
-     * Register a service proving instance in the container;
-     * @param service list of services to register 
-     * @param instance the instance to unregister
-     */
-    public registerAs<T extends Object, I extends T = T>(instance: I, services: ServiceType<T> | Array<ServiceType<T>>) {
-        this.decorateWithServiceGuid(instance, this.generateServiceGuid(instance));
-
-        for (const service of Iterable.asIterable(services)) {
-            const providedService = this.getServiceName(service);
-            const providedServices: Set<string> = instance[this.servicesProvided] || (instance[this.servicesProvided] = new Set());
-
-            // Do not register duplicates;
-            if (providedServices.has(providedService)) {
-                continue;
-            }
-
-            if (this.instances.has(providedService)) {
-                this.logger.warn(`Overriding existing service from ${this.instances.get(providedService.constructor.name)}->${instance.constructor.name}`);
-            }
-
-            this.logger.debug(`Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
-            this.instances.set(providedService, instance);
-            providedServices.add(providedService);
-        }
-        return instance;
-    }
+    }    
 
     /**
      * Register a factory that can provide an instance of the specified factory
@@ -401,10 +421,12 @@ export class Container {
      * @param type Type to register
      * @param lifecycle lifecycle style of the component once create
      */
-    public registerType<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, type: ServiceCtor<I>, lifecycle: LifecyclePolicy) {
+    public registerType<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, type: ServiceCtor<I>, serviceOptions?: Partial<ServiceOptions>) {
+        const options = Object.assign({}, defaultServiceOptions, serviceOptions) as ServiceOptions;
         for (const service of Iterable.asIterable(services)) {
             this.logger.debug(`Register service type for: ${this.getServiceName(service)}`);
-            this.serviceTypes.set(this.getServiceName(service), { ctor: type, lifecycle });
+            arrayMapPush(this.serviceTypes, this.getServiceName(service), { ctor: type, options });
+            this.serviceTypes.get(this.getServiceName(service))?.sort((a, b) => (a.options?.priority ?? 0) - (b.options?.priority ?? 0));
         }
     }
 

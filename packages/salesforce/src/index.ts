@@ -18,5 +18,6 @@ export * from './salesforceDeployment';
 export * from './salesforceLookupService';
 export * from './salesforceProfile';
 export * from './salesforceSchemaService';
+export * from './schema';
 export * from './salesforceService';
 export * from './soapClient';

@@ -99,7 +99,7 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
 export const normalizeSalesforceName = cacheFunction((name: string) : string => {
     let strippedName = name.replace(/(^.*?__)?(.*?)(__(c|r)$)/gi, '$2');
     strippedName = strippedName.substring(0,1).toLowerCase() + strippedName.substring(1);
-    // Some salesforce names as already in lower camel case; only convert the ones that use underscores
+    // Some salesforce names are already in lower camel case; only convert the ones that use underscores
     if (/[\W_]+/.test(strippedName)) {
         strippedName = normalizeName(strippedName);
     }
@@ -135,4 +135,36 @@ export function normalizeName(name: string) : string {
         }
     }
     return normalized;
+}
+
+/**
+ * Find the best matching Salesforce field name for the @param fieldName parameter in an array of fields
+ * @param fieldName None-normalized field name.
+ * @param fields Array of fields to search in
+ * @returns field name as found in the array or undefined when no matching field name is found
+ */
+export function findField<T>(fields: T[], fieldName: string, fieldNameAccessor: (field: T) => string) : T | undefined {  
+    const caseNormalizedField = fieldName.toLowerCase();
+    
+    // Exact match 
+    const exactMatch = fields.find(f => fieldNameAccessor(f).toLowerCase() == caseNormalizedField);
+    if (exactMatch) {
+        return exactMatch;
+    }
+
+    const nsNormalizedField = removeNamespacePrefix(caseNormalizedField);
+    if (nsNormalizedField !== caseNormalizedField) {
+        // try matching without namespace when target field doesn't have a namespace
+        const namespaceLessMatch = fields.find(f => removeNamespacePrefix(fieldNameAccessor(f)).toLowerCase() == nsNormalizedField);
+        if (namespaceLessMatch) {
+            return namespaceLessMatch;
+        }
+    }
+
+    if (caseNormalizedField.endsWith('__c') || caseNormalizedField.endsWith('__r')) {
+        // custom fields or rel matching
+        return findField(fields, fieldName.slice(0, -3), fieldNameAccessor);
+    }
+
+    return undefined;
 }

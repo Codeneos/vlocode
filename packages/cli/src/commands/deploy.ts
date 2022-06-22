@@ -6,7 +6,7 @@ import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join, relative } from 'path';
 import * as chalk from 'chalk';
-import { countDistinct, forEachAsyncParallel, groupBy, mapAsyncParallel, segregate, Timer, unique } from '@vlocode/util';
+import { asArray, countDistinct, forEachAsyncParallel, groupBy, mapAsyncParallel, segregate, Timer, unique } from '@vlocode/util';
 import { writeJson, writeJsonSync } from 'fs-extra';
 
 export default class extends Command {
@@ -61,28 +61,12 @@ export default class extends Command {
             container.register(container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
         }
         
-        // debugger;
-        // const conn = await container.get(JsForceConnectionProvider).getJsForceConnection();
-
-        // const timer = new Timer();
-
-        // let count = 0;
-        // const objects = await conn.metadata.list({ type: 'CustomObject' });
-        
-        // const chunkSize = 10;
-        // const chunks = Array<Array<string>>();
-
-        // while (objects.length) {
-        //     chunks.push(objects.splice(0, chunkSize).map(o => o.fullName));            
+        // // Use schema cache?
+        // container.register(container.create(options.schemaCache ? CachedSchemaAccess : LazySchemaAccess));
+        // if (options.schemaCache) {
+        //     container.get(CachedSchemaAccess).restoreCacheOrInitialize().then(s => s.persistCache());
         // }
-
-        // await forEachAsyncParallel(chunks, async (chunk, i) => {
-        //     console.debug(`Reading ${chunk.join(', ')} ${count += chunk.length}/${objects.length}`);
-        //     const objs = await conn.metadata.read('CustomObject', chunk);        
-        //     //void writeJson(obj.fullName + '.json', objs, { 'spaces': 4 });
-        // }, 25);
-        // console.debug(`Reading custom object md done in ${timer.elapsed}`);
-
+                
         // Load datapacks
         const datapacks = await container.create(DatapackLoader).loadDatapacksFromFolder(folder);
         if (datapacks.length == 0) {

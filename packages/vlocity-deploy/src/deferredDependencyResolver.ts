@@ -13,8 +13,8 @@ export class DeferredDependencyResolver implements DependencyResolver {
 
     constructor(
         private readonly resolver: DependencyResolver,
-        private readonly lookupWaitTime = 50, // time to wait until executing the queued lookups
-        private readonly logger = LogManager.get(DeferredDependencyResolver)) {
+        /** Time to wait until executing the queued lookups */ 
+        private readonly lookupWaitTime = 50) {
     }
 
     /**

@@ -169,12 +169,13 @@ export class DatapackDeploymentRecord {
             throw new Error(`Cannot set action to update without specifying an existing ID`);
         } else if (action == DeploymentAction.Insert) {
             this._existingId = undefined;
-        } else if (action == DeploymentAction.Skip) {
-            this._existingId = updateId;
+        } else if (action == DeploymentAction.Skip) {            
             this._status = DeploymentStatus.Skipped;
         }
-        this._datapackAction = action;
-        this._existingId = updateId;
+        if (arguments.length == 2) {
+            this._existingId = updateId;
+        }
+        this._datapackAction = action;        
     }
 
     public hasGlobalKey() {
