@@ -19,14 +19,14 @@ export class SalesforceSchemaService {
         private readonly schemaAccess: SalesforceSchemaAccess) {
     }
 
-    @cache({ unwrapPromise: true })
+    @cache({ unwrapPromise: true, immutable: true })
     public async describeSObjects() : Promise<Array<DescribeGlobalSObjectResult>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const { sobjects } = await con.describeGlobal();
         return sobjects;
     }
 
-    @cache({ unwrapPromise: true })
+    @cache({ unwrapPromise: true, immutable: true })
     public async describeCustomMetadataObjects() : Promise<Array<string>> {
         const con = await this.connectionProvider.getJsForceConnection();
         const components = await con.metadata.list({ type: 'CustomMetadata' });
@@ -64,7 +64,7 @@ export class SalesforceSchemaService {
         throw Error(`No object found matching the key prefix specified: ${prefix}`);
     }
 
-    @cache({ cacheExceptions: true, unwrapPromise: true })
+    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
     private async describeSObjectCached(type: string) : Promise<DescribeSObjectResult> {
         const con = await this.connectionProvider.getJsForceConnection();
         const timer = new Timer();
@@ -77,21 +77,21 @@ export class SalesforceSchemaService {
 
     public async describeSObjectField(type: string, fieldName: string) : Promise<Field>
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<Field | undefined>
-    @cache({ cacheExceptions: true, unwrapPromise: true })
+    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
     public async describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean = true) : Promise<Field | undefined> {
         return (await this.describeSObjectFieldPath(type, fieldName, throwWhenNotFound))?.slice(-1).pop();
     }
 
     public async describeSObjectFieldPath(type: string, fieldName: string) : Promise<Field[]>
-    public async describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<Field[] | undefined>
+    public async describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound: boolean | false) : Promise<ReadonlyArray<Field> | undefined>
     /**
      * Resolve an SObject field based on it's path; returns an array of Field's
      * @param type SObject type
      * @param fieldPath Full field path
      * @param throwWhenNotFound trye to throw an exception when the type is not found otherwise return null;
      */
-    @cache({ cacheExceptions: true, unwrapPromise: true })
-    public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<Field[] | undefined> {
+    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
+    public async describeSObjectFieldPath(type: string, fieldPath: string, throwWhenNotFound: boolean = true) : Promise<ReadonlyArray<Field> | undefined> {
         const resolved = new Array<Field>();
 
         // Resolve a full Field path
@@ -123,7 +123,7 @@ export class SalesforceSchemaService {
      * @param type SObject Type
      * @returns 
      */
-    @cache({ unwrapPromise: true })
+    @cache({ unwrapPromise: true, immutable: true })
     public async getSObjectFields(type: string) : Promise<ReadonlyMap<string, Field>> {
         return new Map((await this.describeSObject(type)).fields.map<[string, Field][]>(field => [
             [field.name, field]

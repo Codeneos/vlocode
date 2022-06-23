@@ -2,7 +2,7 @@ import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import { cache, removeNamespacePrefix } from '@vlocode/util';
 
-export interface VlocityDatapackInfo {
+export interface VlocityDatapackDefinition {
     /**
      * Type of Datapack
      */
@@ -50,10 +50,10 @@ export class DatapackInfoService {
 
     /**
      * Get the SObject Type and Datapack Type of all datapacks defined in Salesforce through a Datapack Configuration record.
-     * @returns {Promise<VlocityDatapackInfo[]>} Array of datapack info objects linking datapacks to SObjects 
+     * @returns {Promise<VlocityDatapackDefinition[]>} Array of datapack info objects linking datapacks to SObjects 
      */
     @cache()
-    public async getDatapacks() : Promise<VlocityDatapackInfo[]> {
+    public async getDatapackDefinitions() : Promise<VlocityDatapackDefinition[]> {
         this.logger.verbose('Querying DataPack configuration from Salesforce');
         const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('vlocity_namespace__VlocityDataPackConfiguration__mdt', undefined, 'all');
         if (configurationRecords.length == 0) {
@@ -68,7 +68,7 @@ export class DatapackInfoService {
         const datapackInfos = [...customConfiguration, ...standardConfiguration].map(record => [
             record.DeveloperName.toLowerCase(),
             { sobjectType: record.PrimarySObjectType, datapackType: record.DeveloperName }
-        ]) as Array<[string, VlocityDatapackInfo]>;
+        ]) as Array<[string, VlocityDatapackDefinition]>;
 
         return [...new Map(datapackInfos).values()];
     }
@@ -79,7 +79,7 @@ export class DatapackInfoService {
      */
     public async getDatapackType(sobjectType: string) : Promise<string | undefined> {
         const regex = new RegExp(`${removeNamespacePrefix(sobjectType)}`,'ig');
-        const datapackInfo = (await this.getDatapacks()).find(dataPack => dataPack.sobjectType && regex.test(removeNamespacePrefix(dataPack.sobjectType)));
+        const datapackInfo = (await this.getDatapackDefinitions()).find(dataPack => dataPack.sobjectType && regex.test(removeNamespacePrefix(dataPack.sobjectType)));
         if (!datapackInfo) {
             this.logger.verbose(`No Datapack with SObject '${sobjectType}' configured in Salesforce (see VlocityDataPackConfiguration object)`);
         }
@@ -92,7 +92,7 @@ export class DatapackInfoService {
      */
     public async getSObjectType(datapackType: string) : Promise<string> {
         const regex = new RegExp(`${datapackType}`,'i');
-        const datapackInfo = (await this.getDatapacks()).find(dataPack => regex.test(dataPack.datapackType));
+        const datapackInfo = (await this.getDatapackDefinitions()).find(dataPack => regex.test(dataPack.datapackType));
         if (!datapackInfo) {
             throw new Error(`No Datapack with name '${datapackType}' is not configured in Salesforce (see VlocityDataPackConfiguration object)`);
         }

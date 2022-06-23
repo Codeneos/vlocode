@@ -10,10 +10,15 @@ export interface CacheOptions {
      */
     scope?: 'global' | 'instance';
     /**
-     * The result returned by the original function is considered mutable and will *not* be sealed 
-     * other callers will get a deep clone of the cached entry avoiding cache corruption when the result is changed
+     * The result return by the original function will be immutable. This calls object.freeze which 
+     * will prevent the returned value from being altered in anyway; this also prevents the object from modifying itself.
+     * Only use this when the both the current method nor the callers can change the object.
      */
-    mutable?: boolean;
+    immutable?: boolean;
+    /**
+     * Deep clone the object returned by this method using JSON stringify/parse. If the object is a class all prototyped context is lost.
+     */
+    deepClone?: boolean;
     /**
      * When true the original result of a function is a promise the on subsequent calls the cache decorator can instead or returning
      * a promise return the resolved value directly. This offers a benefit to ES6 async-await code but is incompatible with classic Promises.
@@ -63,10 +68,13 @@ class CacheEntry {
      */
     private getInnerValueSafe() {
         if (typeof this.innerValue === 'object' && this.innerValue !== null) {
-            if (this.options.mutable) {
+            if (this.options.deepClone) {
                 return JSON.parse(JSON.stringify(this.innerValue));
+            } else if (this.options.immutable) {
+                return Object.freeze(this.innerValue);
+            } else if (Array.isArray(this.innerValue)) {
+                return this.innerValue.slice();
             }
-            return Object.seal(this.innerValue);
         }
         return this.innerValue;
     }
