@@ -25,17 +25,17 @@ export class CachedFileSystemAdapter extends FileSystem {
         return this.innerFs.readFile(fileName);
     }
 
-    @cache({ unwrapPromise: true })
+    @cache({ unwrapPromise: true, immutable: true })
     public stat(path: string, options?: StatsOptions): Promise<fs.Stats | undefined> {
         return this.innerFs.stat(path, options);
     }
 
-    @cache({ unwrapPromise: true })
+    @cache({ unwrapPromise: true, immutable: true })
     public readDirectory(path: string): Promise<FileInfo[]> {
         return this.innerFs.readDirectory(path);
     }
 
-    @cache({ unwrapPromise: true })
+    @cache({ unwrapPromise: true, immutable: true })
     public findFiles(patterns: string | string[]): Promise<string[]> {
         return this.innerFs.findFiles(patterns);
     }
