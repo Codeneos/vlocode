@@ -37,6 +37,7 @@ export class DatapackRecordFactory {
         const matchingKey = await this.getMatchingKeyDefinition(datapack);
         const sourceKey = this.getDatapackSourceKey(datapack); 
         const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key, matchingKey?.fields);
+
         const records : Array<typeof record> = [ record ];
         const reportWarning = (message: string) => {
             if (!this.uniqueWarnings.has(message)) {
@@ -66,7 +67,7 @@ export class DatapackRecordFactory {
                 for (const item of Array.isArray(value) ? value : [ value ]) {
                     if (item.VlocityDataPackType === 'SObject') {
                         // Embedded datapack
-                        const embeddedDatapack = new VlocityDatapack('', datapack.datapackType, datapack.key, '', item);
+                        const embeddedDatapack = new VlocityDatapack(datapack.headerFile, datapack.datapackType, datapack.key, '', item);
                         const embeddedRecords = await this.createRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {

@@ -3,7 +3,7 @@ import { EventEmitter } from 'stream';
 import { singleton, Iterable, arrayMapPush, asArray, getCtorParameterTypes, getPropertyType } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
-import { InjectableDecorated } from './inject';
+import { InjectableDecorated, InjectableOriginalCtor } from './inject';
 
 export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
 export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
@@ -112,6 +112,8 @@ export class Container {
                 instance['dispose']();
             }
         }
+
+        this.instances.clear();
     }
 
     /**
@@ -213,7 +215,9 @@ export class Container {
         const instanceGuid = this.generateServiceGuid(ctor);
 
         if (ctor[InjectableDecorated]) {
-            return this.decorateWithServiceGuid(new ctor(...args), instanceGuid);
+            // When decorated make sure to instantiate using the original Ctor
+            // the decorated ctor will use the standard container instead of the local container
+            ctor = ctor[InjectableOriginalCtor];
         } 
         
         const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);
@@ -417,11 +421,11 @@ export class Container {
 
     /**
      * Registers a type in the container as provider of services; type specified is dynamically created when required injecting any resolving any dependency required
+     * @param type Type to register     
      * @param services list of services to register 
-     * @param type Type to register
-     * @param lifecycle lifecycle style of the component once create
+     * @param serviceOptions options including lifecycle policy of the service
      */
-    public registerType<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, type: ServiceCtor<I>, serviceOptions?: Partial<ServiceOptions>) {
+    public registerType<T extends Object, I extends T = T>(type: ServiceCtor<I>, services: ServiceType<T> | Array<ServiceType<T>>, serviceOptions?: Partial<ServiceOptions>) {
         const options = Object.assign({}, defaultServiceOptions, serviceOptions) as ServiceOptions;
         for (const service of Iterable.asIterable(services)) {
             this.logger.debug(`Register service type for: ${this.getServiceName(service)}`);

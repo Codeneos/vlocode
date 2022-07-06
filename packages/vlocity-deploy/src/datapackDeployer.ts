@@ -1,14 +1,11 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger , injectable , container, LifecyclePolicy } from '@vlocode/core';
-import * as moment from 'moment';
-import { Timer , isSalesforceId , asArray, groupBy , Iterable, CancellationToken, mapAsyncParallel, forEachAsyncParallel, } from '@vlocode/util';
-import * as uuid from 'uuid';
-import { DATAPACK_RESERVED_FIELDS, NAMESPACE_PLACEHOLDER } from './constants';
+import { Timer , asArray, groupBy , Iterable, CancellationToken, mapAsyncParallel, forEachAsyncParallel, } from '@vlocode/util';
+import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import * as deploymentSpecs from './deploymentSpecs';
-import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';
@@ -271,8 +268,9 @@ export class DatapackDeployer {
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(datapackType: string, eventType: T, ...args: Parameters<E>) {
         const spec = this.getDeploySpec(datapackType);
         if (typeof spec?.[eventType] === 'function') {
+            this.logger.verbose(`Running ${datapackType} ${eventType} spec from type ${(spec as any).name}`)
             await spec[eventType]?.apply(spec, args) as ReturnType<E>;
-        }
+        } 
     }
 
     private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {

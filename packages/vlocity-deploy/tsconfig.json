@@ -5,10 +5,7 @@
         "baseUrl": "src",
         "rootDir": "src",
         "declaration": true,
-        "declarationMap": true,
-        "types": [
-            "node"
-        ]
+        "declarationMap": true
     },
     "include": [ "src/**/*" ],
 }
