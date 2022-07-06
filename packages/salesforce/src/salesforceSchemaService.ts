@@ -3,20 +3,21 @@ import { NamespaceService } from './namespaceService';
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { SalesforceSchemaAccess } from './schema';
-import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer } from '@vlocode/util';
+import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer, validate } from '@vlocode/util';
 
 /**
  * Provides access to Database Schema methods like describe.
  */
 @injectable.singleton()
+@validate.ctor
 export class SalesforceSchemaService {
 
     @injectable.property private readonly logger: Logger;
     @injectable.property private readonly nsService: NamespaceService;
 
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
-        private readonly schemaAccess: SalesforceSchemaAccess) {
+        @validate.required private readonly connectionProvider: JsForceConnectionProvider,
+        @validate.required private readonly schemaAccess: SalesforceSchemaAccess) {
     }
 
     @cache({ unwrapPromise: true, immutable: true })

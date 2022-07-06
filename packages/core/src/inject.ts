@@ -9,9 +9,10 @@ export interface DependencyOptions extends Partial<ServiceOptions> {
 
 export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
 export const InjectableDecorated = Symbol('[[Injectable]]');
+export const InjectableOriginalCtor = Symbol('[[InjectableOriginalCtor]]');
 
 /**
- * Register a component/service into as injectable component into the main appliction container; services can have a LifecyclePolicy which 
+ * Register a component/service into as injectable component into the main application container; services can have a LifecyclePolicy which 
  * determines how and when the service is created. 
  * @param options Constructions options for the service
  */
@@ -22,6 +23,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         // @ts-ignore ctor extension is valid here if when there is no intersection
         const classProto = class extends ctor {
             static [InjectableDecorated] = true;
+            static [InjectableOriginalCtor] = ctor;
             constructor(...args: any[]) {
                 container.resolveParameters(ctor, args);
                 super(...args);
@@ -30,7 +32,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         };
 
         for (const serviceType of services) {
-            container.registerType(serviceType, ctor as any, options);
+            container.registerType(ctor as any, serviceType, options);
         }
 
         // Register this dependency in the main container

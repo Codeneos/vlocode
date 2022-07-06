@@ -102,7 +102,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly salesforceService: SalesforceService,
-        private readonly namespaceService: NamespaceService,
         private readonly logger: Logger) {
         super();
         this.options = { ...datapackDeploymentDefaultOptions, ...(options || {}) };
@@ -111,6 +110,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
         for (const record of Array.isArray(records) ? records : [ records ]) {
+            if (this.records.has(record.sourceKey)) {
+                throw new Error(`Datapack record with the same key '${record.sourceKey}' has already been added to the deployment. Remove the duplicate datapack and retry the deployment.`);
+            }
             this.records.set(record.sourceKey, record);
             mapGetOrCreate(this.recordGroups, record.datapackKey, () => new DatapackDeploymentRecordGroup(record.datapackKey)).push(record);
         }
@@ -435,9 +437,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
         } finally {
-            const completedGroups = Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords());
+            const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
             await this.emit('afterDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
-            await this.emit('afterDeployGroup', [...completedGroups], { hideExceptions: true, async: false });
+            await this.emit('afterDeployGroup', completedGroups, { hideExceptions: true, async: false });
         }
     }
 

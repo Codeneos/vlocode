@@ -1,5 +1,5 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SchemaAccess, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { existsSync, fstat } from 'fs';
 import { Command, Argument, Option } from '../command';
@@ -61,12 +61,6 @@ export default class extends Command {
             container.register(container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
         }
         
-        // // Use schema cache?
-        // container.register(container.create(options.schemaCache ? CachedSchemaAccess : LazySchemaAccess));
-        // if (options.schemaCache) {
-        //     container.get(CachedSchemaAccess).restoreCacheOrInitialize().then(s => s.persistCache());
-        // }
-                
         // Load datapacks
         const datapacks = await container.create(DatapackLoader).loadDatapacksFromFolder(folder);
         if (datapacks.length == 0) {
