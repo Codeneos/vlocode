@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/vlocity-deploy",
-    "version": "0.16.27",
+    "version": "0.16.28",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
     "keywords": [
         "Vlocity",

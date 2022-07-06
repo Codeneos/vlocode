@@ -3211,22 +3211,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"browserslist@npm:^4.14.5":
-  version: 4.20.3
-  resolution: "browserslist@npm:4.20.3"
-  dependencies:
-    caniuse-lite: ^1.0.30001332
-    electron-to-chromium: ^1.4.118
-    escalade: ^3.1.1
-    node-releases: ^2.0.3
-    picocolors: ^1.0.0
-  bin:
-    browserslist: cli.js
-  checksum: 1e4b719ac2ca0fe235218a606e8b8ef16b8809e0973b924158c39fbc435a0b0fe43437ea52dd6ef5ad2efcb83fcb07431244e472270177814217f7c563651f7d
-  languageName: node
-  linkType: hard
-
-"browserslist@npm:^4.20.2":
+"browserslist@npm:^4.14.5, browserslist@npm:^4.20.2":
   version: 4.21.0
   resolution: "browserslist@npm:4.21.0"
   dependencies:
@@ -3461,13 +3446,6 @@ __metadata:
   version: 6.3.0
   resolution: "camelcase@npm:6.3.0"
   checksum: 8c96818a9076434998511251dcb2761a94817ea17dbdc37f47ac080bd088fc62c7369429a19e2178b993497132c8cbcf5cc1f44ba963e76782ba469c0474938d
-  languageName: node
-  linkType: hard
-
-"caniuse-lite@npm:^1.0.30001332":
-  version: 1.0.30001340
-  resolution: "caniuse-lite@npm:1.0.30001340"
-  checksum: 5b419c93cb5a67568ffe8c84520d149146e5b84056ce41ee509c89d2bd036e4ce6d87485e25dfee2bb8a818d46e0734e93cacbef6b9b911c20166b943b36b78c
   languageName: node
   linkType: hard
 
@@ -4840,13 +4818,6 @@ __metadata:
   version: 2.5.9
   resolution: "ejs@npm:2.5.9"
   checksum: fe848d1177458442d203ed81613bfec654b948f00116d594685a34b8e0909a5f572134ca66e755e4c3cd347e962287ffe231640572512ceb04c0413c7984d3f0
-  languageName: node
-  linkType: hard
-
-"electron-to-chromium@npm:^1.4.118":
-  version: 1.4.137
-  resolution: "electron-to-chromium@npm:1.4.137"
-  checksum: 639d7b94906efafcf363519c3698eecc44be46755a6a5cdc9088954329978866cc93fbd57e08b97290599b68d5226243d21de9fa50be416b8a5d3fa8fd42c3a0
   languageName: node
   linkType: hard
 
@@ -9941,13 +9912,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-releases@npm:^2.0.3":
-  version: 2.0.4
-  resolution: "node-releases@npm:2.0.4"
-  checksum: b32d6c2032c7b169ae3938b416fc50f123f5bd577d54a79b2ae201febf27b22846b01c803dd35ac8689afe840f8ba4e5f7154723db629b80f359836b6707b92f
-  languageName: node
-  linkType: hard
-
 "node-releases@npm:^2.0.5":
   version: 2.0.5
   resolution: "node-releases@npm:2.0.5"
@@ -14640,22 +14604,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.3.0":
-  version: 17.5.0
-  resolution: "yargs@npm:17.5.0"
-  dependencies:
-    cliui: ^7.0.2
-    escalade: ^3.1.1
-    get-caller-file: ^2.0.5
-    require-directory: ^2.1.1
-    string-width: ^4.2.3
-    y18n: ^5.0.5
-    yargs-parser: ^21.0.0
-  checksum: e2c662a7a63aa125a162cc0d77e38bdfe2a0dd5121a0d485a464499cd7782c5198b57103aed4608df96a017d01cb6a834bc22d4a1f20b92649fa82983d53522b
-  languageName: node
-  linkType: hard
-
-"yargs@npm:^17.3.1":
+"yargs@npm:^17.3.0, yargs@npm:^17.3.1":
   version: 17.5.1
   resolution: "yargs@npm:17.5.1"
   dependencies:

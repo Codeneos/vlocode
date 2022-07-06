@@ -186,14 +186,17 @@ export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: 
  * @param callback The callback to execute for each item
  */
 export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T, index: number) => PromiseLike<R>, parallelism = 2) : Promise<R[]> {
-    const tasks : Promise<R[]>[] = new Array(parallelism).fill(Promise.resolve(new Array<R>()));
+    parallelism = parallelism < 1 ? 1 : parallelism;
+    const tasks = new Array<Promise<R[]>>();
     for (const [index, value] of enumerateWithIndex(iterable)) {
-        tasks[index % parallelism] = tasks[index % parallelism].then(async result => {
+        const bucket = index % parallelism;
+        const task = async (result: R[]) => {
             // do not use Array.concat as it can cause issues when R is an array causing the items in the array to be added
-            // to the result instead of the array itsef
             result.push(await callback(value, index)); 
             return result; 
-        });
+        };
+        // @ts-expect-error the task bucket can be undefined when in bucket is OOB 
+        tasks[bucket] = tasks[bucket] ? tasks[bucket].then(task) : task([]);
     }
     return Promise.all(tasks).then(flatten);
 }

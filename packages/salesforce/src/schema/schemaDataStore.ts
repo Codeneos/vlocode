@@ -2,14 +2,16 @@ import { fileExists, Iterable} from '@vlocode/util';
 import { DescribeSObjectResult, Field } from '../types';
 import { CustomObjectMetadata, CustomFieldMetadata } from '../metadata';
 
-import { ensureDir, readJson, writeJson } from 'fs-extra';
+import { ensureDir, readFile, writeJson } from 'fs-extra';
 import { dirname } from 'path';
+import { injectable } from '@vlocode/core';
 
 interface SchemaData<M, D> {
     metadata?: M;
     describe?: D;
 }
 
+@injectable()
 export class SchemaDataStore {
 
     private readonly storeVersion = 1;
@@ -61,7 +63,7 @@ export class SchemaDataStore {
 
         // Add fields from metadata
         for (const field of new Set([...metadataFields, ...describeFields])) {
-            const fullFieldName = `${fullName}.${field}`;
+            const fullFieldName = `${fullName}.${field}`.toLowerCase();
 
             const describeField = describe?.fields?.find(f => f.name === field);
             const metadataField = info?.fields?.find(f => f && f.fullName === field)!;
@@ -137,30 +139,45 @@ export class SchemaDataStore {
         return this.sobjectTypes;
     }
 
+    public has(type: string) {
+        return this.objectInfo.has(type.toLowerCase());
+    }
+
     /**
      * Persist the currently loaded Meta and describe data about the Salesforce table schema to the the disk.
      * @param file FileName to which to persist the schema data
      */
-    public async persist(file: string) {
+    public async saveToFile(file: string) {
         await ensureDir(dirname(file));
         await writeJson(file, { version: this.storeVersion, values: [...this.objectInfo.values()] }); 
     }
 
     /**
-     * Restore Salesforce table schema data from a perviously persisted cached (@see persistCache)
-     * @param cacheFile FFileName from which load the schema data
+     * Load store contents from a file stored on disk
+     * @param file file name to load
      */
-    public async restore(cacheFile: string) {
-        if (fileExists(cacheFile)) {
-            const cacheStoreData = await readJson(cacheFile); 
-            const loader = this[`loadCacheVersion${cacheStoreData?.version}`];
+     public async loadFromFile(file: string) {
+        return this.load(await readFile(file));
+    }
 
-            if (typeof loader !== 'function') {
-                throw new Error(`Unsupported cache store version: ${cacheStoreData.version}`);
-            }
-
-            await loader.call(this, cacheStoreData);
+    /**
+     * Restore Salesforce table schema data from a perviously persisted cached (@see persistCache)
+     * @param data data string
+     */
+    public async load(data: string | Buffer | object) {
+        if (Buffer.isBuffer(data)) {
+            data = data.toString();
         }
+
+        const cacheStoreData = typeof data !== 'object' ? JSON.parse(data) : data; 
+        const loader = this[`loadCacheVersion${cacheStoreData?.version}`];
+
+        if (typeof loader !== 'function') {
+            throw new Error(`Unsupported cache store version: ${cacheStoreData.version}`);
+        }
+
+        await loader.call(this, cacheStoreData);
+        return this;
     }
 
     private loadCacheVersion1(data: any) {

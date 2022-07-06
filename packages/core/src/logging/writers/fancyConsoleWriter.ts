@@ -49,9 +49,9 @@ export class FancyConsoleWriter implements LogWriter {
         const category = this.chalk.white(`[${entry.category}]`);
 
         let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, this.options.terminalEol);
-        if (entry.level == LogLevel.warn) {
+        if (entry.level >= LogLevel.warn) {
             messageBody = levelColor(messageBody);
-        } else if (entry.level >= LogLevel.error) {
+        } else if (entry.level == LogLevel.verbose) {
             messageBody = levelColor(messageBody);
         }
         

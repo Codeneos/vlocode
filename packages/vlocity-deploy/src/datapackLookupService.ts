@@ -114,7 +114,7 @@ export class DatapackLookupService implements DependencyResolver {
                     if (!record.upsertFields?.length) {
                         this.distinctLogger.warn(`No matching key configuration found for ${record.sobjectType}`);
                     } else {
-                        reportWarning(`None of the matching key fields is set, make sure at least one the matching key field has a value: ${record.upsertFields.join(',')}`);
+                        reportWarning(`None of the matching key fields is set, make sure at least one of the matching key field has a value: ${record.upsertFields.join(',')}`);
                     }
                     return false;
                 }

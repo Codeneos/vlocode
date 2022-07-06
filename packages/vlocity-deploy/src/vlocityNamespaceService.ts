@@ -7,9 +7,9 @@ import * as constants from './constants';
 @injectable({ provides: NamespaceService })
 export class VlocityNamespaceService implements NamespaceService {
 
-    constructor(
-        private vlocityNamespace: string | null,
-        private readonly logger: Logger) {
+    @injectable.property private readonly logger: Logger
+
+    constructor(private vlocityNamespace: string | null = null) {
     }
 
     /**

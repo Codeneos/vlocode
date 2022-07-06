@@ -30,4 +30,38 @@ describe('collection', () => {
             expect(result['3']).toEqual([list[4]]);
         });
     });
+
+    describe('#mapAsyncParallel', () => {
+        it('should execute the async map-function for each item once', async () => {
+            const result = await collection.mapAsyncParallel([
+                { processing: 0 },
+                { processing: 0 },
+            ], async i => { i.processing += 1; return i; }, 2);
+
+            expect(result).toStrictEqual([
+                { processing: 1 },
+                { processing: 1 },
+            ]);
+        });
+        it('should work for inputs smaller then the parallelism parameter', async () => {
+            const result = await collection.mapAsyncParallel([
+                { processing: 0 },
+                { processing: 0 },
+            ], async i => { i.processing += 1; return i; }, 10);
+
+            expect(result).toStrictEqual([
+                { processing: 1 },
+                { processing: 1 },
+            ]);
+        });
+        it('should execute sequential when parallelism is set to 1', async () => {
+            expect(await collection.mapAsyncParallel([1,2], async i => i+1, 1)).toStrictEqual([2,3]);
+        });
+        it('should not throw an exception when parallelism is 0', async () => {
+            expect(await collection.mapAsyncParallel([1,2], async i => i+1, 0)).toStrictEqual([2,3]);
+        });
+        it('should not throw an exception when parallelism is a negative number', async () => {
+            expect(await collection.mapAsyncParallel([1,2], async i => i+1, -1)).toStrictEqual([2,3]);
+        });
+    });
 });
