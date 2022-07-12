@@ -5,7 +5,7 @@
     "tasks": [
         {
             "type": "shell",
-            "command": "yarn workspace vlocode run watch",
+            "command": "pnpm --filter vlocode watch",
             "isBackground": true,
             "label": "build-extension",
             "presentation": {
@@ -34,64 +34,40 @@
                     "severity": "error",
                     "source": "ts",
                     "background": {
-                        "activeOnStart": true,
                         "beginsPattern": {
-                            "regexp": "^Webpack: build starting"
+                            "regexp": "Build starting"
                         },
                         "endsPattern": {
-                            "regexp": " compiled with "
-                        }
-                    }
-                },
-                {
-                    "fileLocation": "relative",
-                    "owner": "typescript",
-                    "pattern": [
-                        {
-                            "regexp": "WARNING in (.*)",
-                            "file": 1
-                        },
-                        {
-                            "regexp": "Module Warning (.*)"
-                        },
-                        {
-                            "regexp": "\\[(\\d+), (\\d+)\\]: (.*)",
-                            "line": 1,
-                            "column": 2,
-                            "message": 3
-                        }
-                    ],
-                    "severity": "warning",
-                    "source": "tslint",
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": {
-                            "regexp": "^Webpack: build starting"
-                        },
-                        "endsPattern": {
-                            "regexp": " compiled with "
+                            "regexp": "Build completed"
                         }
                     }
                 }
+            ],
+            "dependsOn": [
+                "watch-vlocity-deploy"
             ]
-        },
-        {            
-            "label": "watch-cli-webpack",
-            "type": "shell",
-            "command": "yarn watch-cli-webpack",
-            "isBackground": false,
-            "presentation": {
-                "reveal": "always"
-            },
-            "group": {
-                "kind": "build"
-            }
         },
         {            
             "label": "watch-cli",
             "type": "shell",
             "problemMatcher":"$tsc-watch",
-            "command": "yarn workspace @vlocode/cli tsc -w",
+            "command": "pnpm --filter @vlocode/cli watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": [
+                "watch-vlocity-deploy"
+            ]
+        },
+        {            
+            "label": "watch-vscode-extension",
+            "type": "shell",
+            "problemMatcher":"$tsc-watch",
+            "command": "pnpm --filter vlocode watch",
             "isBackground": true,
             "presentation": {
                 "reveal": "always"
@@ -107,7 +83,7 @@
             "label": "watch-vlocity-deploy",
             "type": "shell",
             "problemMatcher":"$tsc-watch",
-            "command": "yarn workspace @vlocode/vlocity-deploy tsc -w",
+            "command": "pnpm --filter @vlocode/vlocity-deploy watch",
             "isBackground": true,
             "presentation": {
                 "reveal": "always"
@@ -123,7 +99,7 @@
             "label": "watch-salesforce",
             "type": "shell",
             "problemMatcher":"$tsc-watch",
-            "command": "yarn workspace @vlocode/salesforce tsc -w",
+            "command": "pnpm --filter @vlocode/salesforce watch",
             "isBackground": true,
             "presentation": {
                 "reveal": "always"
@@ -139,7 +115,7 @@
             "label": "watch-core",
             "type": "shell",
             "problemMatcher":"$tsc-watch",
-            "command": "yarn workspace @vlocode/core tsc -w",
+            "command": "pnpm --filter @vlocode/core watch",
             "isBackground": true,
             "presentation": {
                 "reveal": "always"
@@ -155,7 +131,7 @@
             "label": "watch-util",
             "type": "shell",
             "problemMatcher":"$tsc-watch",
-            "command": "yarn workspace @vlocode/util tsc -w",
+            "command": "pnpm --filter @vlocode/util watch",
             "isBackground": true,
             "presentation": {
                 "reveal": "always"
