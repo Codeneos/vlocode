@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/vlocity-deploy",
-    "version": "0.16.28",
+    "version": "0.16.29",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
     "keywords": [
         "Vlocity",
@@ -22,11 +22,10 @@
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "watch": "yarn pre-build && tsc -w",
-        "build": "yarn pre-build && tsc",
-        "pack": "yarn build && yarn pack --out %s-%v.tgz",
-        "pre-build": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass",
-        "postinstall": "patch-package"
+        "watch": "pnpm run pre-build && tsc -w",
+        "build": "pnpm run pre-build && tsc",
+        "pack": "pnpm run build && pnpm run pack --out %s-%v.tgz",
+        "pre-build": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass"
     },
     "repository": {
         "type": "git",
@@ -58,7 +57,6 @@
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
-        "@milahu/patch-package": "^6.4.11",
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

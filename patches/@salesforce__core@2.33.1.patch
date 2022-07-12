@@ -1,7 +1,7 @@
-diff --git a/node_modules/@salesforce/core/lib/messages.js b/node_modules/@salesforce/core/lib/messages.js
+diff --git a/lib/messages.js b/lib/messages.js
 index 4316bc8..87f1ef6 100644
---- a/node_modules/@salesforce/core/lib/messages.js
-+++ b/node_modules/@salesforce/core/lib/messages.js
+--- a/lib/messages.js
++++ b/lib/messages.js
 @@ -168,6 +168,7 @@ class Messages {
       * @param packageName The npm package name. Figured out from the root directory's package.json.
       */

@@ -8,3 +8,5 @@ retire-cache
 testReports
 tslint-report.json
 packages/*/lib
+/coverage
+/packages/cli/dist
