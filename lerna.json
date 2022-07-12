@@ -1,0 +1,32 @@
+{
+  "useNx": false,
+  "version": "0.16.29",
+  "npmClient": "pnpm",
+  "packages": [
+    "packages/*"
+  ],
+  "command": {
+    "publish": {
+      "conventionalCommits": true
+    },
+    "version": {
+      "gitRemote": "origin",
+      "conventionalCommits": true,
+      "gitDryRun": false,
+      "syncWorkspaceLock": true,
+      "message": "Publish version %v",
+      "changelogHeaderMessage": "### Automate your Workspace Versions, Changelogs & Publish with [Lerna-Lite](https://github.com/ghiscoding/lerna-lite) 🚀"
+    },
+    "run": {
+      "cmdDryRun": false
+    }
+  },
+  "ignoreChanges": [
+    "**/__fixtures__/**",
+    "**/__tests__/**",
+    "**/helpers/**",
+    "**/*.md",
+    ".vscode",
+    ".github"
+  ]
+}
