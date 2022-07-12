@@ -1,11 +1,11 @@
 import * as path from 'path';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined, CancellationToken } from '@vlocode/util';
+import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from './datapackUtil';
 import { join } from 'path/posix';
 
-type DatapackLoaderFunc = (fileName: string) => (Promise<string | Object> | string | Object);
+type DatapackLoaderFunc = (fileName: string) => OptionalPromise<string | object>;
 
 @injectable()
 export default class DatapackLoader {

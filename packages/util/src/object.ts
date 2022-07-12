@@ -6,7 +6,7 @@ const proxyTargetSymbol = Symbol('[[proxyTarget]]');
 
 export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol | undefined;
 
-export class PropertyTransformHandler<T extends Object> implements ProxyHandler<T> {
+export class PropertyTransformHandler<T extends object> implements ProxyHandler<T> {
 
     constructor(
         private readonly transformProperty: PropertyTransformer<T>,
@@ -104,7 +104,7 @@ export class PropertyTransformHandler<T extends Object> implements ProxyHandler<
  * @param target target object
  * @param transformer Key/Property transformer
  */
-export function transformPropertyProxy<T extends Object>(target: T, transformer: PropertyTransformer<T>) : T {
+export function transformPropertyProxy<T extends object>(target: T, transformer: PropertyTransformer<T>) : T {
     return new Proxy(target, new PropertyTransformHandler(transformer));
 }
 

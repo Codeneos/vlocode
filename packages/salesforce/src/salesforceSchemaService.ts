@@ -36,7 +36,7 @@ export class SalesforceSchemaService {
 
     public async describeSObject(type: string) : Promise<DescribeSObjectResult>
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
-    public async describeSObject(type: string, throwWhenNotFound: boolean = true) : Promise<DescribeSObjectResult | undefined> {
+    public async describeSObject(type: string, throwWhenNotFound = true) : Promise<DescribeSObjectResult | undefined> {
         try {
             return await this.schemaAccess.describe({ type: this.nsService?.updateNamespace(type) });
         } catch(err) {

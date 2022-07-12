@@ -1,6 +1,7 @@
 export * from './connection';
 export * from './deploy';
 export * from './metadata';
+export * from './schema';
 export * from './types';
 export * from './debugLogViewer';
 export * from './deploymentPackage';
@@ -18,6 +19,5 @@ export * from './salesforceDeployment';
 export * from './salesforceLookupService';
 export * from './salesforceProfile';
 export * from './salesforceSchemaService';
-export * from './schema';
 export * from './salesforceService';
 export * from './soapClient';

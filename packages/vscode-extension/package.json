@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.27",
+    "version": "0.16.28",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -1236,19 +1236,18 @@
         ]
     },
     "scripts": {
-        "build": "yarn pre-build && webpack --config webpack/webpack.prod.ts --env extension",
-        "build:debug": "yarn pre-build && webpack --config webpack/webpack.dev.ts --env extension",
-        "build:tests": "yarn pre-build && webpack --config webpack/webpack.dev.ts --env tests",
+        "build": "pnpm run pre-build && webpack --config webpack/webpack.prod.ts --env extension",
+        "build:debug": "pnpm run pre-build && webpack --config webpack/webpack.dev.ts --env extension",
+        "build:tests": "pnpm run pre-build && webpack --config webpack/webpack.dev.ts --env tests",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension --env tests",
         "watch:prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
-        "pack": "yarn build && vsce package",
+        "pack": "pnpm run build && vsce package",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "rimraf ./out",
-        "test": "yarn build:tests && node ./out/test/runTest.js",
+        "test": "pnpm run build:tests && node ./out/test/runTest.js",
         "docs": "typedoc",
         "publish": "vsce publish",
-        "vscode:prepublish": "yarn clean && yarn build",
-        "postinstall": "patch-package"
+        "vscode:prepublish": "pnpm run clean && pnpm run build"
     },
     "devDependencies": {
         "@types/chai": "^4.2.21",
@@ -1302,7 +1301,6 @@
         "webpack-node-externals": "^3.0.0"
     },
     "dependencies": {
-        "@milahu/patch-package": "^6.4.11",
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

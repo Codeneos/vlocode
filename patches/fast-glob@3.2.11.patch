@@ -1,7 +1,7 @@
-diff --git a/node_modules/fast-glob/out/settings.js b/node_modules/fast-glob/out/settings.js
+diff --git a/out/settings.js b/out/settings.js
 index 3752806..3badec0 100644
---- a/node_modules/fast-glob/out/settings.js
-+++ b/node_modules/fast-glob/out/settings.js
+--- a/out/settings.js
++++ b/out/settings.js
 @@ -51,7 +51,14 @@ class Settings {
          return option === undefined ? value : option;
      }
