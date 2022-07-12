@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { asArray } from '@vlocode/util';
 import MetadataCommand from './metadataCommand';
-import { CustomFieldMetadataType, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
+import { CustomFieldMetadata, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
 
 export default class UpdateRelatedProfileCommand extends MetadataCommand {
 
@@ -32,7 +32,7 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
             const data = await mdPackage.getPackageMetadata('CustomField', field);
             return {
                 field,
-                metadata: asArray(data.fields).find(f => f.fullName == field.split('.').pop()) as CustomFieldMetadataType
+                metadata: asArray(data.fields).find(f => f.fullName == field.split('.').pop()) as CustomFieldMetadata
             };
         }));
         const addableFields = fields.filter(( { metadata } ) => this.isProfileCompatibleField(metadata));
@@ -77,8 +77,8 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
         }
     }
 
-    private isProfileCompatibleField(metadata: CustomFieldMetadataType) {
-        return metadata.type !== 'CheckBox' && !metadata.required;
+    private isProfileCompatibleField(metadata: CustomFieldMetadata) {
+        return metadata.type !== 'Checkbox' && !metadata.required;
     }
 
     private async applyProfileChanges(profiles: { file: string; profile: SalesforceProfile }[]) {

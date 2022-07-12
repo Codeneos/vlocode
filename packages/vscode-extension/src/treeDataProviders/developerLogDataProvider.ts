@@ -4,9 +4,9 @@ import { DeveloperLog } from '@vlocode/salesforce';
 import * as moment from 'moment';
 import { ConfigurationManager } from '@lib/config';
 import { VlocodeCommand } from '@constants';
-import { DebugLogViewer } from '@vlocode/salesforce';
 import { Logger , injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
+import { DebugLogViewer } from '@lib/salesforce/debugLogViewer';
 
 /**
  * Provides a list of recently executed or executing activities 

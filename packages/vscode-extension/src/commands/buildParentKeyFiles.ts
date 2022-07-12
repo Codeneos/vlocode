@@ -36,7 +36,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 return [];
             }
 
-            loadedDatapacks.push(await datapackLoader.loadFrom(header.fsPath));
+            loadedDatapacks.push(await datapackLoader.loadDatapack(header.fsPath));
 
             const newProgress = Math.floor((++progress / datapackHeaders.length) * 100);
             if (newProgress > lastReportedProgress + 1) {
