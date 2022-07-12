@@ -1,7 +1,6 @@
 import { dirname } from 'path';
 import { PropertyTransformHandler, removeNamespacePrefix } from '@vlocode/util';
 import { v4 as generateGuid } from 'uuid';
-import { LogManager } from '@vlocode/core';
 import { ManifestEntry, ObjectEntry } from './types';
 
 export type VlocityDatapackReference = {
@@ -111,7 +110,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }
     }
 
-    private updateGlobalKey(object: Object, newGlobalKey: string) {
+    private updateGlobalKey(object: object, newGlobalKey: string) {
         const oldGlobalKey = object['%vlocity_namespace%__GlobalKey__c'];
         object['%vlocity_namespace%__GlobalKey__c'] = newGlobalKey;
 
@@ -175,10 +174,10 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
 
     /**
      * Recursively iterate over the properties of this datapack and it's child objects
-     * @param object Object to iterate over
+     * @param target object to iterate over
      */
-    private* getProperties(object: object = this.data) : Generator<[ string, string, any ]> {
-        for (const [key, value] of Object.entries(object)) {
+    private* getProperties(target: object = this.data) : Generator<[ string, string, any ]> {
+        for (const [key, value] of Object.entries(target)) {
             if (Array.isArray(value)) {
                 for (const arrayValue of value) {
                     if (typeof arrayValue === 'object') {
@@ -190,17 +189,17 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             } else if (typeof value === 'object') {
                 yield* this.getProperties(value);
             } else {
-                yield [ key, value, object ];
+                yield [ key, value, target ];
             }
         }
     }
 
     /**
      * Recursively iterate over this datapack and child objects
-     * @param object Object
+     * @param object object
      */
     private* getChildObjects(object = this.data) : Generator<any, void> {
-        for (const value of Object.values(object)) {
+        for (const value of object.values(object)) {
             if (typeof value !== 'object' || value === null || value === undefined) {
                 continue;
             }
@@ -212,7 +211,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     }
 
     private forEachChildObject(object: any, executer: (object: any) => any) {
-        return Object.keys(object || {}).forEach(key => {
+        return object.keys(object || {}).forEach(key => {
             if (Array.isArray(object[key])) {
                 this.forEachChildObject(object[key], executer);
             } else if (typeof object[key] === 'object') {
@@ -242,12 +241,12 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     }
 }
 
-class VlocityDatapackDataProxy<T> extends PropertyTransformHandler<T> {
+class VlocityDatapackDataProxy<T extends object> extends PropertyTransformHandler<T> {
     constructor() {
         super(VlocityDatapackDataProxy.propertyTransformer);
     }
 
-    public static create<T extends Object>(data: T) {
+    public static create<T extends object>(data: T) {
         return new Proxy(data, new VlocityDatapackDataProxy<T>());
     }
 
@@ -255,7 +254,7 @@ class VlocityDatapackDataProxy<T> extends PropertyTransformHandler<T> {
         return removeNamespacePrefix(name).replace('_', '').toLowerCase();
     }
             
-    private static propertyTransformer(target: Object, name: string | number | symbol) {
+    private static propertyTransformer(target: object, name: string | number | symbol) {
         if (typeof name !== 'string' && target.hasOwnProperty(name)) {
             return name;
         }

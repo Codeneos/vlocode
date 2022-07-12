@@ -1,7 +1,7 @@
-diff --git a/node_modules/vlocity/lib/datapacks.js b/node_modules/vlocity/lib/datapacks.js
+diff --git a/lib/datapacks.js b/lib/datapacks.js
 index ec2d9e0..5cddd5b 100644
---- a/node_modules/vlocity/lib/datapacks.js
-+++ b/node_modules/vlocity/lib/datapacks.js
+--- a/lib/datapacks.js
++++ b/lib/datapacks.js
 @@ -217,6 +217,11 @@ DataPacks.prototype.getStorageLimitExceededError = function() {
  DataPacks.prototype.runDataPackProcess = async function(dataPackData, options) {
      var self = this;
@@ -68,10 +68,10 @@ index ec2d9e0..5cddd5b 100644
  
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
-diff --git a/node_modules/vlocity/lib/datapacksbuilder.js b/node_modules/vlocity/lib/datapacksbuilder.js
+diff --git a/lib/datapacksbuilder.js b/lib/datapacksbuilder.js
 index 1e72fcb..e595cab 100644
---- a/node_modules/vlocity/lib/datapacksbuilder.js
-+++ b/node_modules/vlocity/lib/datapacksbuilder.js
+--- a/lib/datapacksbuilder.js
++++ b/lib/datapacksbuilder.js
 @@ -1,7 +1,6 @@
 -var yaml = require('js-yaml');
  var path = require('path');
@@ -183,10 +183,10 @@ index 1e72fcb..e595cab 100644
              // intercept file loading requests from libsass
              sass.importer((request, done) => {
                  // (object) request
-diff --git a/node_modules/vlocity/lib/datapackserrorhandling.js b/node_modules/vlocity/lib/datapackserrorhandling.js
+diff --git a/lib/datapackserrorhandling.js b/lib/datapackserrorhandling.js
 index 26cb86f..cae7464 100644
---- a/node_modules/vlocity/lib/datapackserrorhandling.js
-+++ b/node_modules/vlocity/lib/datapackserrorhandling.js
+--- a/lib/datapackserrorhandling.js
++++ b/lib/datapackserrorhandling.js
 @@ -1,10 +1,6 @@
 -var fs = require("fs-extra");
 -var path = require('path');
@@ -199,10 +199,10 @@ index 26cb86f..cae7464 100644
  };
  
  DataPacksErrorHandling.prototype.getSanitizedErrorMessage = async function(jobInfo, dataPack) {
-diff --git a/node_modules/vlocity/lib/datapacksjob.js b/node_modules/vlocity/lib/datapacksjob.js
+diff --git a/lib/datapacksjob.js b/lib/datapacksjob.js
 index ec780e1..2243e94 100644
---- a/node_modules/vlocity/lib/datapacksjob.js
-+++ b/node_modules/vlocity/lib/datapacksjob.js
+--- a/lib/datapacksjob.js
++++ b/lib/datapacksjob.js
 @@ -9,8 +9,8 @@ const open = require("opn");
  var DataPacksJob = module.exports = function(vlocity) {
      this.vlocity = vlocity || {};
@@ -247,10 +247,10 @@ index ec780e1..2243e94 100644
      }
  }
  
-diff --git a/node_modules/vlocity/lib/datapacksutils.js b/node_modules/vlocity/lib/datapacksutils.js
+diff --git a/lib/datapacksutils.js b/lib/datapacksutils.js
 index a96735c..f4fc60a 100644
---- a/node_modules/vlocity/lib/datapacksutils.js
-+++ b/node_modules/vlocity/lib/datapacksutils.js
+--- a/lib/datapacksutils.js
++++ b/lib/datapacksutils.js
 @@ -26,7 +26,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
  
      CURRENT_INFO_FILE = path.join(vlocity.tempFolder, 'currentJobInfo.json');
@@ -287,10 +287,10 @@ index a96735c..f4fc60a 100644
      } else {
          return;
      }
-diff --git a/node_modules/vlocity/lib/utilityservice.js b/node_modules/vlocity/lib/utilityservice.js
+diff --git a/lib/utilityservice.js b/lib/utilityservice.js
 index 7b545d3..6be0020 100644
---- a/node_modules/vlocity/lib/utilityservice.js
-+++ b/node_modules/vlocity/lib/utilityservice.js
+--- a/lib/utilityservice.js
++++ b/lib/utilityservice.js
 @@ -1,5 +1,4 @@
  var jsforce = require('jsforce');
 -var yaml = require('js-yaml');
@@ -306,10 +306,10 @@ index 7b545d3..6be0020 100644
  
          this.vlocity.BuildToolSettingLatestVersion = this.vlocity.buildToolsVersionSettings.latest;
  
-diff --git a/node_modules/vlocity/lib/validationtest.js b/node_modules/vlocity/lib/validationtest.js
+diff --git a/lib/validationtest.js b/lib/validationtest.js
 index d85f750..6d7ed7e 100644
---- a/node_modules/vlocity/lib/validationtest.js
-+++ b/node_modules/vlocity/lib/validationtest.js
+--- a/lib/validationtest.js
++++ b/lib/validationtest.js
 @@ -17,7 +17,7 @@ ValidationTest.prototype.validate = async function(jobInfo, currentContextData)
      };
  
@@ -319,10 +319,10 @@ index d85f750..6d7ed7e 100644
      self.vlocityMatchingKeys = await self.vlocity.utilityservice.getDRMatchingKeyFields();
      var allTests = self.loadAllTests();
      var runTestData = await self.groupRunTestData(currentContextData, allTests);
-diff --git a/node_modules/vlocity/lib/vlocityutils.js b/node_modules/vlocity/lib/vlocityutils.js
+diff --git a/lib/vlocityutils.js b/lib/vlocityutils.js
 index 9b76a81..2434806 100644
---- a/node_modules/vlocity/lib/vlocityutils.js
-+++ b/node_modules/vlocity/lib/vlocityutils.js
+--- a/lib/vlocityutils.js
++++ b/lib/vlocityutils.js
 @@ -60,7 +60,7 @@ VlocityUtils.getIPCRenderer = function() {
  
      if (ipcRendererSingleton === undefined) {

@@ -267,9 +267,10 @@ export class DatapackDeployer {
      */
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(datapackType: string, eventType: T, ...args: Parameters<E>) {
         const spec = this.getDeploySpec(datapackType);
-        if (typeof spec?.[eventType] === 'function') {
+        const specFunction = spec?.[eventType];
+        if (typeof specFunction === 'function') {
             this.logger.verbose(`Running ${datapackType} ${eventType} spec from type ${(spec as any).name}`)
-            await spec[eventType]?.apply(spec, args) as ReturnType<E>;
+            await specFunction.apply(spec, args) as ReturnType<E>;
         } 
     }
 

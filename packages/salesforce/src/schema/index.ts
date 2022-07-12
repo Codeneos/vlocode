@@ -1,3 +1,3 @@
+export * from './salesforceSchemaAccess';
 export * from './schemaAccess';
 export * from './schemaDataStore';
-export * from './salesforceSchemaAccess';

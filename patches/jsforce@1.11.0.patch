@@ -1,8 +1,8 @@
-diff --git a/node_modules/jsforce/lib/api/metadata.js b/node_modules/jsforce/lib/api/metadata.js
-index ccf3c79..d2d75bc 100644
---- a/node_modules/jsforce/lib/api/metadata.js
-+++ b/node_modules/jsforce/lib/api/metadata.js
-@@ -561,6 +561,18 @@ Metadata.prototype.checkDeployStatus = function(id, includeDetails, callback) {
+diff --git a/lib/api/metadata.js b/lib/api/metadata.js
+index ccf3c79ee557030b38e66aa64882129ce4c92b72..6ee61b4232b56e2200d385d02ca5a2a8580e3e69 100644
+--- a/lib/api/metadata.js
++++ b/lib/api/metadata.js
+@@ -561,6 +561,17 @@ Metadata.prototype.checkDeployStatus = function(id, includeDetails, callback) {
    }).thenCall(callback);
  };
  
@@ -17,14 +17,13 @@ index ccf3c79..d2d75bc 100644
 +  var res = this._invoke("cancelDeploy", { asyncProcessId: id });
 +  return new AsyncResultLocator(this, res).thenCall(callback);
 +};
-+
  
  /*--------------------------------------------*/
  
-diff --git a/node_modules/jsforce/lib/connection.js b/node_modules/jsforce/lib/connection.js
-index e833b5a..584640b 100644
---- a/node_modules/jsforce/lib/connection.js
-+++ b/node_modules/jsforce/lib/connection.js
+diff --git a/lib/connection.js b/lib/connection.js
+index e833b5a7c3ae7a534000141e3b986e40426dd4c5..84a2ef1f04da296b80dc17abe2a67233812f4382 100644
+--- a/lib/connection.js
++++ b/lib/connection.js
 @@ -797,7 +797,7 @@ Connection.prototype._createParallel = function(type, records, options) {
          if (options.allOrNone || !err.errorCode) {
            throw err;
@@ -52,10 +51,30 @@ index e833b5a..584640b 100644
        });
      })
    );
-diff --git a/node_modules/jsforce/lib/http-api.js b/node_modules/jsforce/lib/http-api.js
-index 607923b..df44faf 100644
---- a/node_modules/jsforce/lib/http-api.js
-+++ b/node_modules/jsforce/lib/http-api.js
+@@ -1313,6 +1313,7 @@ Connection.prototype.doBatchDescribeRequest = function(types) {
+   var url = [self._baseUrl(), "composite/batch"].join("/");
+   var version = "v" + self.version;
+   var batchRequests = [];
++  var logger = this._logger;
+   types.forEach(function (type) {
+     batchRequests.push({
+       method: "GET",
+@@ -1333,9 +1334,9 @@ Connection.prototype.doBatchDescribeRequest = function(types) {
+         var subResp = response.results[i];
+         if (Array.isArray(subResp.result)) {
+           if (subResp.result[0].errorCode && subResp.result[0].message) {
+-            this._logger.error(
++            logger.error(
+               'Error: ' + subResp.result[0].errorCode + ' ' +  
+-              subResp.result[0].message + ' - ' + typesToFetch[i]
++              subResp.result[0].message + ' - ' + types[i]
+             );
+           }
+         } else {
+diff --git a/lib/http-api.js b/lib/http-api.js
+index 607923b4fb1769fdee58207a4509d65f3692a4f6..df44faf09e807562c984d086dc8b67e88505828d 100644
+--- a/lib/http-api.js
++++ b/lib/http-api.js
 @@ -128,6 +128,7 @@ HttpApi.prototype.beforeSend = function(request) {
      }
      request.headers["Sforce-Call-Options"] = callOptions.join(', ');

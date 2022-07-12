@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/cli",
-    "version": "0.16.28",
+    "version": "0.16.29",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment CLI",
     "keywords": [
         "Vlocity",
@@ -25,13 +25,12 @@
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "watch": "yarn pre-build && tsc -w",
-        "watch-webpack": "yarn pre-build && webpack --watch --config webpack/webpack.ts",
-        "build": "yarn pre-build && tsc -b",
-        "build-webpack": "yarn pre-build && webpack --config webpack/webpack.ts",
-        "pre-build": "yarn workspace @vlocode/vlocity-deploy run pre-build",
-        "pack": "yarn clean && yarn build-webpack && tsc && yarn pack-only",
-        "pack-only": "yarn pack --out %s-%v.tgz",
+        "watch": "tsc -w",
+        "watch-webpack": "webpack --watch --config webpack/webpack.ts",
+        "build": "tsc -b",
+        "build-webpack": "webpack --config webpack/webpack.ts",
+        "pack": "pnpm run clean && pnpm run build-webpack && tsc && pnpm run pack-only",
+        "pack-only": "pnpm pack",
         "clean": "rimraf ./dist ./lib ./.ts-temp"
     },
     "repository": {

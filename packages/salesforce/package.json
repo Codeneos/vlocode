@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/salesforce",
-    "version": "0.16.27",
+    "version": "0.16.28",
     "description": "Salesforce utility library for Vlocode",
     "keywords": [
         "Salesforce"
@@ -14,11 +14,10 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "watch": "yarn pre-build && tsc -w & tsc-alias -w",
-        "build": "yarn pre-build && tsc && tsc-alias",
-        "pack": "yarn build && yarn pack --out %s-%v.tgz",
-        "pre-build": "cti -w -b ./src -i constants",
-        "postinstall": "patch-package"
+        "watch": "pnpm run pre-build && tsc -w & tsc-alias -w",
+        "build": "pnpm run pre-build && tsc && tsc-alias",
+        "pack": "pnpm run build && pnpm pack --out %s-%v.tgz",
+        "pre-build": "cti -w -b ./src -i constants"
     },
     "repository": {
         "type": "git",
@@ -52,7 +51,6 @@
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
-        "@milahu/patch-package": "^6.4.11",
         "@salesforce/source-deploy-retrieve": "^5.12.11",
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
@@ -61,12 +59,15 @@
         "fs-extra": "^9.0",
         "glob": "^7.1.7",
         "js-yaml": "^4.1.0",
-        "jsforce": "^1.11.0",
+        "jsforce": "1.11.0",
         "jszip": "^3.7.0",
         "log-symbols": "^4.0.0",
         "moment": "^2.29.1",
         "salesforce-alm": "^52.1.9",
         "xml2js": "^0.4.23"
     },
+    "bundledDependencies": [
+        "jsforce"
+    ],
     "publisher": "curlybracket"
 }
