@@ -2,7 +2,7 @@
     "name": "vlocode",
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.16.28",
+    "version": "0.16.30",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -1237,15 +1237,11 @@
     },
     "scripts": {
         "build": "pnpm run pre-build && webpack --config webpack/webpack.prod.ts --env extension",
-        "build:debug": "pnpm run pre-build && webpack --config webpack/webpack.dev.ts --env extension",
-        "build:tests": "pnpm run pre-build && webpack --config webpack/webpack.dev.ts --env tests",
-        "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension --env tests",
+        "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
         "watch:prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
         "pack": "pnpm run build && vsce package",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "rimraf ./out",
-        "test": "pnpm run build:tests && node ./out/test/runTest.js",
-        "docs": "typedoc",
         "publish": "vsce publish",
         "vscode:prepublish": "pnpm run clean && pnpm run build"
     },

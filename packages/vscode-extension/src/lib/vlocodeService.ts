@@ -13,7 +13,7 @@ import { JsForceConnectionProvider, SalesforceService, SfdxConnectionProvider } 
 import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
-export default class VlocodeService implements vscode.Disposable {
+export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
 
     // Privates
     private disposables: { dispose() : any }[] = [];
@@ -268,6 +268,18 @@ export default class VlocodeService implements vscode.Disposable {
     }
 
     public async getJsForceConnection() : Promise<jsforce.Connection> {
+        return this.getConnector().getJsForceConnection();
+    }
+
+    public isProductionOrg() {
+        return this.getConnector().isProductionOrg();
+    }
+
+    public getApiVersion() {
+        return this.config.salesforce.apiVersion;
+    }
+
+    private getConnector() {
         if (!this.connector) {
             if (!this.config.sfdxUsername) {
                 throw new Error('Cannot connect to Salesforce; no username specified in configuration');
@@ -283,7 +295,7 @@ export default class VlocodeService implements vscode.Disposable {
             });
             this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, this.config.salesforce.apiVersion));
         }
-        return this.connector.getJsForceConnection();
+        return this.connector!;
     }
 
     private async handleGetConnectionError(connector: JsForceConnectionProvider, err: Error | undefined) {

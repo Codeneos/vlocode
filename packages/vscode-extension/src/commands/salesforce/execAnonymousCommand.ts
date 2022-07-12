@@ -1,4 +1,5 @@
-import { DebugLogViewer, SoapDebuggingHeader } from '@vlocode/salesforce';
+import { DebugLogViewer } from '../../lib/salesforce/debugLogViewer';
+import { SoapDebuggingHeader } from '@vlocode/salesforce';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
 
