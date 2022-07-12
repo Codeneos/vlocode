@@ -27,12 +27,59 @@
                 "async_hooks.js",
                 "inspector_async_hook.js"
             ],
+            "preLaunchTask": "build-extension",
             "smartStep": true,
             "stopOnEntry": false,
             "sourceMaps": true
         },
         {
-            "name": "Run Tests",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/packages/cli/dist/cli.js",
+            "name": "Debug CLI (webpacked)",
+            "args": [
+                "deploy",
+                "c:/repos/kpn_esmee/vlocity/src/VlocityUITemplate",
+                "-u", "dev10pro",
+                "-v"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/cli/dist/**/*.js"
+            ], 
+            "preLaunchTask": "watch-cli-webpack",
+            "smartStep": true,
+            "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "showAsyncStacks": true,
+            "stopOnEntry": true,
+            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "name": "Debug CLI (node)",
+            "args": [
+                "deploy",
+                "-u", "dev10pro",
+                "--debug",
+                "-v"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/cli/lib/**/*.js"
+            ], 
+            "preLaunchTask": "watch-cli",
+            "smartStep": true,
+            "sourceMaps": true
+        },
+        {
+            "name": "Run Tests (vscode)",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -49,7 +96,7 @@
                 "async_hooks.js",
                 "inspector_async_hook.js"
             ],
-            "preLaunchTask": "build",
+            "preLaunchTask": "build-cli",
             "stopOnEntry": false,
             "sourceMaps": true
         },
@@ -67,25 +114,13 @@
             }
         },
         {
-            "name": "Debug: Sync packages",
-            "type": "node",
-            "request": "launch",
-            "args": ["${workspaceRoot}/build/syncPackages.ts"],
-            "runtimeArgs": ["-r", "ts-node/register"],
-            "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
-            "internalConsoleOptions": "openOnSessionStart",
-            "env": {
-                "TS_NODE_IGNORE": "false"
-            }
-        },
-        {
             "name": "Debug: Webpack Build",
             "request": "launch",
             "runtimeArgs": [
                 "run-script",
                 "build:debug"
             ],
+            "cwd": "${workspaceRoot}/packages/vscode-extension",
             "runtimeExecutable": "npm",
             "skipFiles": [
                 "<node_internals>/**"
