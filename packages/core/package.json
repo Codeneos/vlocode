@@ -15,6 +15,7 @@
         "watch": "pnpm run pre-build && tsc -w",
         "build": "pnpm run pre-build && tsc",
         "pack": "pnpm run build && pnpm pack",
+        "prepublish": "pnpm run build",
         "pre-build": "cti -w -b ./src/fs ./src/logging/writers"
     },
     "repository": {
@@ -55,5 +56,5 @@
         "unique-names-generator": "^4.6.0"
     },
     "publisher": "curlybracket",
-    "gitHead": "37a83afd0ab69851d89ff397446b6125cb1a2b14"
+    "gitHead": "53b3159d6ea2c9112996a8b7bd2dd67bfb0efe62"
 }

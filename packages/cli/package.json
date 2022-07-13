@@ -29,7 +29,8 @@
         "watch-webpack": "webpack --watch --config webpack/webpack.ts",
         "build": "tsc -b",
         "build-webpack": "webpack --config webpack/webpack.ts",
-        "pack": "pnpm run clean && pnpm run build-webpack && tsc && pnpm run pack-only",
+        "pack": "pnpm run prepublish && pnpm run pack-only",
+        "prepublish": "pnpm run clean && pnpm run build-webpack && tsc",
         "pack-only": "pnpm pack",
         "clean": "rimraf ./dist ./lib ./.ts-temp"
     },
@@ -83,5 +84,5 @@
         "webpack-node-externals": "^3.0.0"
     },
     "publisher": "curlybracket",
-    "gitHead": "37a83afd0ab69851d89ff397446b6125cb1a2b14"
+    "gitHead": "53b3159d6ea2c9112996a8b7bd2dd67bfb0efe62"
 }
