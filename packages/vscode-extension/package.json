@@ -1,5 +1,6 @@
 {
     "name": "vlocode",
+    "private": true,
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
     "version": "0.16.30",
