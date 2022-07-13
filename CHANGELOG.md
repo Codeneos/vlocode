@@ -1,3 +1,13 @@
+# Change Log
+### Automate your Workspace Versions, Changelogs & Publish with [Lerna-Lite](https://github.com/ghiscoding/lerna-lite) 🚀
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## [0.16.31](https://github.com/codeneos/vlocode/compare/v0.16.21...v0.16.31) (2022-07-13)
+
+**Note:** Version bump only for package vlocode-project
+
 # Changelog Vlocity/Salesforce Integration for VSCode
 
 ## Version 0.16.20 - 2022-02-21
@@ -284,7 +294,6 @@
 ### Fixed
  - Open in Salesforce opened all pages in classic 
  - Open in Salesforce would not always work properly using the frontdoor session ID; for now avoid using the frontdoor.jsp
-
 
 ## Version 0.10.1 - 2019-05-09
 ### Fixed
