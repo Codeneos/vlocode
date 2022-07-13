@@ -14,7 +14,7 @@
     "scripts": {
         "watch": "pnpm run pre-build && tsc -w",
         "build": "pnpm run pre-build && tsc",
-        "pack": "pnpm run build && pnpm run pack --out %s-%v.tgz",
+        "pack": "pnpm run build && pnpm pack",
         "pre-build": "cti -w -b ./src/fs ./src/logging/writers"
     },
     "repository": {
@@ -46,7 +46,7 @@
         "typescript": "4.6.4"
     },
     "dependencies": {
-        "@vlocode/util": "workspace:*",
+        "@vlocode/util": "0.16.30",
         "chalk": "^4.1.1",
         "globby": "^11.0.4",
         "memfs": "^3.2.2",
@@ -54,5 +54,6 @@
         "reflect-metadata": "^0.1.13",
         "unique-names-generator": "^4.6.0"
     },
-    "publisher": "curlybracket"
+    "publisher": "curlybracket",
+    "gitHead": "3f7046195d7a19acfa0c8be0ebbeee36391621fd"
 }

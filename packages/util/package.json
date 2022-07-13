@@ -13,7 +13,7 @@
     "scripts": {
         "watch": "pnpm run pre-build && tsc -w & tsc-alias -w",
         "build": "pnpm run pre-build && tsc && tsc-alias",
-        "pack": "pnpm run build && pnpm run pack --out %s-%v.tgz",
+        "pack": "pnpm run build && pnpm pack",
         "pre-build": "cti -w -b ./src -i constants",
         "test": "jest"
     },
@@ -60,5 +60,6 @@
     "bundledDependencies": [
         "@salesforce/core"
     ],
-    "publisher": "curlybracket"
+    "publisher": "curlybracket",
+    "gitHead": "3f7046195d7a19acfa0c8be0ebbeee36391621fd"
 }

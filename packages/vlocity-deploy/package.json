@@ -24,7 +24,7 @@
     "scripts": {
         "watch": "pnpm run pre-build && tsc -w",
         "build": "pnpm run pre-build && tsc",
-        "pack": "pnpm run build && pnpm run pack --out %s-%v.tgz",
+        "pack": "pnpm run build && pnpm pack",
         "pre-build": "cti -w -b ./src/deploymentSpecs ./src/types -i constants -e sass"
     },
     "repository": {
@@ -57,9 +57,9 @@
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
-        "@vlocode/core": "workspace:*",
-        "@vlocode/salesforce": "workspace:*",
-        "@vlocode/util": "workspace:*",
+        "@vlocode/core": "0.16.30",
+        "@vlocode/salesforce": "0.16.30",
+        "@vlocode/util": "0.16.30",
         "chalk": "^4.1.1",
         "commander": "^9.2.0",
         "fs-extra": "^9.0",
@@ -70,5 +70,6 @@
         "sass.js": "^0.11.1",
         "uuid": "^8.3.2"
     },
-    "publisher": "curlybracket"
+    "publisher": "curlybracket",
+    "gitHead": "3f7046195d7a19acfa0c8be0ebbeee36391621fd"
 }
