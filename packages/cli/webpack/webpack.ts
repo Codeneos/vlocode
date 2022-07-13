@@ -17,7 +17,7 @@ const workspaceFolder = path.resolve(contextFolder, '..');
 const common : webpack.Configuration = {
     name: 'vlocode-cli',
     context: contextFolder,
-    devtool: 'source-map',
+    devtool: undefined,
     target: 'node',
     entry:
         glob.sync('./src/commands/**/*.ts').reduce((map, file) => Object.assign(map, {
@@ -40,7 +40,7 @@ const common : webpack.Configuration = {
                     options: {
                         onlyCompileBundledFiles: true,
                         compilerOptions: {
-                            sourceMap: true,
+                            sourceMap: false,
                             rootDir: undefined,
                             outDir: path.resolve(contextFolder, '.ts-temp')
                         },
