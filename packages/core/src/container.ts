@@ -326,17 +326,26 @@ export class Container {
      */
      public register<T extends Object | Object[]>(instances: T) {
         for (const instance of asArray(instances)) {
-            const provides = Reflect.getMetadata('service:provides', Object.getPrototypeOf(instance).constructor) as Array<ServiceType>;
-
-            if (provides?.length) {
-                for (const serviceType of provides) {
-                    this.registerAs(instance, serviceType);
+            for (const prototype of this.getPrototypes(instance)) {
+                const provides = Reflect.getMetadata('service:provides', prototype.constructor) as Array<ServiceType>;
+                if (provides?.length) {
+                    for (const serviceType of provides) {
+                        this.registerAs(instance, serviceType);
+                    }
+                } else if (prototype.constructor.name !== 'Object') {
+                    this.registerAs(instance, prototype.constructor);
                 }
-            } else if (instance.constructor.name !== 'Object') {
-                this.registerAs(instance, instance.constructor);
             }
         }
         return instances;
+    }
+
+    private getPrototypes(instance: any) {
+        const prototypes = new Array<{ constructor: new(...args: any[]) => any }>(); 
+        while (Object.getPrototypeOf(instance) && Object.getPrototypeOf(instance) !== Object.prototype) {
+            prototypes.push(instance = Object.getPrototypeOf(instance));
+        }
+        return prototypes;
     }
 
     /**

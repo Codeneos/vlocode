@@ -1,11 +1,13 @@
 import 'jest';
-import * as path from 'path';
-import { Logger, container, injectable, Container } from '../';
+import { Logger, container, Container } from '../';
 
 describe('container', () => {
 
-    abstract class ServiceShape {
+    abstract class BaseShape {
         public abstract foo(): string;
+    }
+
+    abstract class ServiceShape extends BaseShape {
         public abstract bar(): Promise<string>;
     }
 
@@ -16,7 +18,7 @@ describe('container', () => {
     
     beforeAll(() =>  container.registerAs(Logger.null, Logger));
 
-    describe('registerType', () => {
+    describe('register', () => {
         it('class instance without metadata should register as itself', async () => {
             // Arrange
             const testContainer = new Container(Logger.null);
@@ -25,9 +27,27 @@ describe('container', () => {
             testContainer.register(new ServiceImpl());
 
             // Assert
-            expect(testContainer['serviceTypes'].size).toBe(0);
-            expect(testContainer['instances'].size).toBe(1);
-            expect(testContainer['instances'].get('ServiceImpl')).not.toBeNull();
+            expect(testContainer['instances'].get('ServiceImpl')).not.toBeUndefined();
+        });
+        it('class instance should register it\'s prototype as well', async () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+
+            // Act
+            testContainer.register(new ServiceImpl());
+
+            // Assert
+            expect(testContainer['instances'].get('ServiceShape')).not.toBeUndefined();
+        });
+        it('class instance should register it\'s prototype->prototype as well', async () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+
+            // Act
+            testContainer.register(new ServiceImpl());
+
+            // Assert
+            expect(testContainer['instances'].get('BaseShape')).not.toBeUndefined();
         });
     });
 });
