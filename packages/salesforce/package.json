@@ -31,6 +31,7 @@
     "files": [
         "lib/**/*.d.ts",
         "lib/**/*.js",
+        "lib/**/*.json",
         "patches/*.patch",
         "../SITE.md"
     ],
@@ -71,5 +72,5 @@
         "jsforce"
     ],
     "publisher": "curlybracket",
-    "gitHead": "53b3159d6ea2c9112996a8b7bd2dd67bfb0efe62"
+    "gitHead": "01b0a62ad2ed9d5e357b5a5a21c8043d8f1ddc98"
 }
