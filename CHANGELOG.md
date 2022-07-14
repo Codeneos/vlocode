@@ -1,8 +1,15 @@
 # Change Log
-### Automate your Workspace Versions, Changelogs & Publish with [Lerna-Lite](https://github.com/ghiscoding/lerna-lite) 🚀
+## Vlocity/Salesforce Integration for VSCode
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## [0.16.33](https://github.com/codeneos/vlocode/compare/v0.16.32...v0.16.33) (2022-07-14)
+
+### Features
+
+* core IoC container should also consider shapes inherited from it's parent ([b182665](https://github.com/codeneos/vlocode/commit/b1826656f240a8be31ce1d780fb7c51f6a439aaa))
+* support creating connection provider from an existing jsforce connection whilst keeping all fixes and patches to jsforce active ([7280d18](https://github.com/codeneos/vlocode/commit/7280d184f6538e0331ed053c5fc57cab03b5162b))
 
 ## [0.16.32](https://github.com/codeneos/vlocode/compare/v0.16.31...v0.16.32) (2022-07-13)
 
