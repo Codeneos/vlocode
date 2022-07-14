@@ -19,8 +19,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 **Note:** Version bump only for package vlocode-project
 
-# Changelog Vlocity/Salesforce Integration for VSCode
-
 ## Version 0.16.22 - 2022-05-10
  - Fix isSalesforceId bug
  - Fix NodeJS breaking change in VSCode causing issues with grouping of Datapacks such as OmniScripts
