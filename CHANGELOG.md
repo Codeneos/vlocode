@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.34](https://github.com/codeneos/vlocode/compare/v0.16.33...v0.16.34) (2022-07-14)
+
+### Bug Fixes
+
+* json files are not included NPM packages ([a1cc196](https://github.com/codeneos/vlocode/commit/a1cc1968abc49568f25eaa4fc34d719e7c5e84c9))
+
 ## [0.16.33](https://github.com/codeneos/vlocode/compare/v0.16.32...v0.16.33) (2022-07-14)
 
 ### Features
