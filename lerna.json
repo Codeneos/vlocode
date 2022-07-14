@@ -15,7 +15,7 @@
       "gitDryRun": false,
       "syncWorkspaceLock": true,
       "message": "Publish version %v",
-      "changelogHeaderMessage": "### Automate your Workspace Versions, Changelogs & Publish with [Lerna-Lite](https://github.com/ghiscoding/lerna-lite) 🚀"
+      "changelogHeaderMessage": "## Vlocity/Salesforce Integration for VSCode"
     },
     "run": {
       "cmdDryRun": false
