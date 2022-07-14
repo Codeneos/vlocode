@@ -19,8 +19,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 **Note:** Version bump only for package vlocode-project
 
-# Changelog Vlocity/Salesforce Integration for VSCode
-
 ## Version 0.16.20 - 2022-02-21
  - Fix deployment packages get saved before deployment
  - Fix context actions not visible for related files of datapacks and metadata
