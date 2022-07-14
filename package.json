@@ -58,12 +58,12 @@
         "build-cli": "pnpm run --filter @vlocode/cli... build",
         "pack-cli": "pnpm run --filter @vlocode/cli^... build && pnpm run --filter @vlocode/cli pack",
         "pack-extension": "pnpm run --filter vlocode^... build && pnpm run --filter vlocode pack",
-        "prepublish": "pnpm run --filter @vlocode/* build && pnpm run --filter @vlocode/cli pack",
-        "publish": "lerna publish from-package --no-git-reset",
+        "publish-extension": "pnpm run --filter vlocode^... build && pnpm run --filter vlocode publish",
+        "publish-patch": "lerna publish patch --no-git-reset",
+        "publish-minor": "lerna publish minor --no-git-reset",
         "test": "jest",
         "lint": "eslint ./packages/*/src --ext .ts",
-        "docs": "typedoc",
-        "bump": "ts-node ./build/bumpVersion.ts patch"
+        "docs": "typedoc"
     },
     "resolutions": {
         "@types/fs-extra": "^9",
