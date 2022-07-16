@@ -11,26 +11,24 @@ commands:
       - checkout
       - restore_cache:
           keys: 
-            - npm
-      - run: npm install
+          - npm-store-{{ checksum "pnpm-lock.yaml" }}
+      - run: corepack enable && corepack prepare pnpm@7.5.1 --activate
+      - run: pnpm config set store-dir ~/.pnpm-store
+      - run: pnpm install --frozen-lockfile
       - save_cache:
-          key: npm
+          key: npm-store-{{ checksum "pnpm-lock.yaml" }}
           paths:
-            - "node_modules"
-            - "~/.npm"
-  vsce_test:
+            - ~/.pnpm-store
+  test:
     steps:
-      - restore_cache:
-          keys: 
-            - vscode
-      - run: npm test
-      - save_cache:
-          key: vscode
-          paths:
-            - ".vscode"
-            - ".vscode-test"    
-      - store_test_results:
-          path: test-results
+      - run: pnpm run test --coverage
+  codequality:
+    steps:
+      - run: pnpm lint -o eslint-report.json --format json
+      - sonarcloud/scan
+  build:
+    steps:
+      - run: pnpm build
 
 jobs:
   build-and-test:
@@ -38,22 +36,18 @@ jobs:
       - image: cimg/node:lts-browsers
     steps:
       - checkout_install
-      - vsce_test
-      - run: npm run lint -- -o eslint-report.json --format json
-      - sonarcloud/scan
+      - build
+      - test
+      - codequality
   package:
     docker:
       - image: cimg/node:lts-browsers
     steps:
       - checkout_install
-      - run:
-          name: "Build VSIX package"
-          command: |
-            npm run package
-            echo $(node -p "require('./package.json').version") > .version
+      - run: pnpm pack-extension
       - persist_to_workspace:
           root: .
-          paths: [ "*.vsix", ".version" ]
+          paths: [ "*.vsix" ]
   publish-vsc-extension:
     docker:
       - image: cimg/node:lts-browsers
@@ -64,16 +58,15 @@ jobs:
       - run:
           name: "Publish extension on VSCode Marketplace"
           command: |
-            VERSION=$(cat ./artifacts/.version)
-            npm run publish -- -p "$VSCE_TOKEN" --packagePath "./artifacts/vlocode-${VERSION}.vsix"
+            VERSION=$(node -p "require('./lerna.json').version")
+            pnpx vsce publish -p "$VSCE_TOKEN" --packagePath "./artifacts/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
       - image: circleci/node:16
     steps:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-      - run: npm run build --workspaces
-      - run: npm publish --workspaces || true
+      - run: pnpm publish -r --no-git-checks
   github-release:
     docker:
       - image: cibuilds/github:0.13
