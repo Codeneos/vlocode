@@ -38,6 +38,9 @@ const workspaceFolder = path.resolve(contextFolder, '..');
 const common : webpack.Configuration = {
     context: contextFolder,
     devtool: 'source-map',
+    devServer: {
+        stats: 'errors-only'
+    },
     target: 'node',
     module: {
         rules: [

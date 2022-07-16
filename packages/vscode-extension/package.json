@@ -1237,14 +1237,15 @@
         ]
     },
     "scripts": {
-        "build": "pnpm run pre-build && webpack --config webpack/webpack.prod.ts --env extension",
+        "build": "pnpm pre-build && tsc -b",
+        "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.ts --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
-        "watch:prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
-        "pack": "pnpm run build && vsce package",
+        "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
+        "pack": "pnpm vscode:prepublish && vsce package",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "rimraf ./out",
         "publish": "vsce publish",
-        "vscode:prepublish": "pnpm run clean && pnpm run build"
+        "vscode:prepublish": "pnpm clean && pnpm build-webpack"
     },
     "devDependencies": {
         "@types/chai": "^4.2.21",
