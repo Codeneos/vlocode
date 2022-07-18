@@ -24,7 +24,7 @@ commands:
       - run: pnpm run test --coverage
   codequality:
     steps:
-      - run: pnpm lint -o eslint-report.json --format json || 0
+      - run: pnpm lint -o eslint-report.json --format json || true
       - sonarcloud/scan
   build:
     steps:
