@@ -54,6 +54,7 @@ importers:
       eslint-plugin-prettier: ^4.0.0
       fs-extra: '9'
       jest: ^28.1.1
+      jest-junit: ^14.0.0
       jest-sonar: ^0.2.12
       js-yaml: ^4.1.0
       log-symbols: ^4.1.0
@@ -76,6 +77,7 @@ importers:
       eslint-plugin-prettier: 4.0.0_ikfaztf6dt4x6fbtystd5gzdua
       fs-extra: 9.1.0
       jest: 28.1.2_@types+node@16.11.34
+      jest-junit: 14.0.0
       jest-sonar: 0.2.12
       js-yaml: 4.1.0
       log-symbols: 4.1.0
@@ -7407,6 +7409,16 @@ packages:
       fsevents: 2.3.2
     dev: true
 
+  /jest-junit/14.0.0:
+    resolution: {integrity: sha512-kALvBDegstTROfDGXH71UGD7k5g7593Y1wuX1wpWT+QTYcBbmtuGOA8UlAt56zo/B2eMIOcaOVEON3j0VXVa4g==}
+    engines: {node: '>=10.12.0'}
+    dependencies:
+      mkdirp: 1.0.4
+      strip-ansi: 6.0.1
+      uuid: 8.3.2
+      xml: 1.0.1
+    dev: true
+
   /jest-leak-detector/28.1.1:
     resolution: {integrity: sha512-4jvs8V8kLbAaotE+wFR7vfUGf603cwYtFf1/PYEsyX2BAjSzj8hQSVTP6OWzseTl0xL6dyHuKs2JAks7Pfubmw==}
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
@@ -11674,7 +11686,7 @@ packages:
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 28.1.2_24esr3464d2gifgmzdt2yhkw2m
+      jest: 28.1.2_@types+node@16.11.34
       jest-util: 28.1.1
       json5: 2.2.1
       lodash.memoize: 4.1.2
@@ -12750,7 +12762,7 @@ packages:
     dev: true
 
   /xml/1.0.1:
-    resolution: {integrity: sha1-eLpyAgApxbyHuKgaPPzXS0ovweU=}
+    resolution: {integrity: sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==}
     dev: true
 
   /xml2js/0.4.19:
