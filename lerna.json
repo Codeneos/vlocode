@@ -13,7 +13,7 @@
       "gitRemote": "origin",
       "conventionalCommits": true,
       "syncWorkspaceLock": true,
-      "message": "[skip ci] publish version %v",
+      "message": "chore: publish version %v",
       "changelogHeaderMessage": "## Vlocity/Salesforce Integration for VSCode"
     },
     "run": {
