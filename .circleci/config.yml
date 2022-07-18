@@ -24,7 +24,7 @@ commands:
       - run: pnpm run test --coverage
   codequality:
     steps:
-      - run: pnpm lint -o eslint-report.json --format json
+      - run: pnpm lint -o eslint-report.json --format json || 0
       - sonarcloud/scan
   build:
     steps:
@@ -44,7 +44,9 @@ jobs:
       - image: cimg/node:lts-browsers
     steps:
       - checkout_install
+      - run: pnpm lerna version patch --yes --no-push
       - run: pnpm pack-extension
+      - run: git push
       - persist_to_workspace:
           root: .
           paths: [ "*.vsix" ]
@@ -66,7 +68,7 @@ jobs:
     steps:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-      - run: pnpm publish -r --no-git-checks
+      - run: pnpm publish-minor
   github-release:
     docker:
       - image: cibuilds/github:0.13

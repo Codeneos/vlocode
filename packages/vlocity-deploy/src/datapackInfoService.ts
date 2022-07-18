@@ -55,7 +55,7 @@ export class DatapackInfoService {
     @cache()
     public async getDatapackDefinitions() : Promise<VlocityDatapackDefinition[]> {
         this.logger.verbose('Querying DataPack configuration from Salesforce');
-        const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('vlocity_namespace__VlocityDataPackConfiguration__mdt', undefined, 'all');
+        const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('%vlocity_namespace%__VlocityDataPackConfiguration__mdt', undefined, 'all');
         if (configurationRecords.length == 0) {
             throw new Error('No DataPack configuration found in Salesforce');
         }
