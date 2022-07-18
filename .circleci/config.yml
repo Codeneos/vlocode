@@ -44,12 +44,11 @@ jobs:
       - image: cimg/node:lts-browsers
     steps:
       - checkout_install
-      - run: pnpm lerna version patch --yes --no-push
       - run: pnpm pack-extension
-      - run: git push
+      - run: echo $(node -p "require('./lerna.json').version") > .version
       - persist_to_workspace:
           root: .
-          paths: [ "*.vsix" ]
+          paths: [ ".version", "*.vsix" ]
   publish-vsc-extension:
     docker:
       - image: cimg/node:lts-browsers
@@ -60,15 +59,15 @@ jobs:
       - run:
           name: "Publish extension on VSCode Marketplace"
           command: |
-            VERSION=$(node -p "require('./lerna.json').version")
+            VERSION=$(cat ./artifacts/.version)
             pnpx vsce publish -p "$VSCE_TOKEN" --packagePath "./artifacts/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
-      - image: circleci/node:16
+      - image: cimg/node:lts-browsers
     steps:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-      - run: pnpm publish-minor
+      - run: pnpm lerna publish from-package --force-publish --no-push --yes
   github-release:
     docker:
       - image: cibuilds/github:0.13
