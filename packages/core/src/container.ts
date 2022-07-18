@@ -125,7 +125,7 @@ export class Container {
     public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: new () => object, resolver: Container = this) : T | undefined {
         const serviceName = this.getServiceName(service);
 
-        if (serviceName == 'Object') {
+        if (serviceName === 'Object') {
             return undefined;
         }
 
@@ -233,7 +233,7 @@ export class Container {
      * @returns 
      */
     public resolveParameters<T extends new(...args: any[]) => any>(ctor: T, args: any[] = [], instanceGuid?: string) {
-        if (ctor.length == 0) {
+        if (ctor.length === 0) {
             // No params on CTOR; double check we aren't dealing with an extended type 
             // the inject decorator extends the original causing resolveParameters to fail as the new ctor will be parameter less
             const paramTypes = getCtorParameterTypes(ctor);
@@ -294,13 +294,13 @@ export class Container {
     }
 
     private generateServiceGuid(ctor: any) {
-        const serviceName = typeof ctor == 'function' ? ctor.name : Object.getPrototypeOf(ctor).constructor.name;
+        const serviceName = typeof ctor === 'function' ? ctor.name : Object.getPrototypeOf(ctor).constructor.name;
         return `${serviceName}-${uniqueNamesGenerator(uniqueNameConfig)}`;
     }
 
     private decorateWithServiceGuid<T>(instance: T, guid?: string): T {
         if (!instance[serviceGuidSymbol]) {
-            instance[serviceGuidSymbol] = guid ?? (guid = this.generateServiceGuid(instance));
+            instance[serviceGuidSymbol] = guid ?? this.generateServiceGuid(instance);
         }
         return instance;
     }
@@ -421,7 +421,7 @@ export class Container {
      * @param services list of services to register 
      * @param factory factory that produces the an instance
      */
-    public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy) {
+    public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
         for (const service of Iterable.asIterable(services)) {
             this.logger.debug(`Register factory for: ${this.getServiceName(service)}`);
             this.factories.set(this.getServiceName(service), { new: factory, lifecycle });
@@ -456,7 +456,7 @@ export class Container {
     }
 
     private isLazyProxy(obj: any) : obj is LazyProxy {
-        return obj[lazyMarker] == true;
+        return obj[lazyMarker] === true;
     }
 
     private createLazyProxy<T extends Object>(factory: () => T, prototype: any) : LazyProxy & T {
