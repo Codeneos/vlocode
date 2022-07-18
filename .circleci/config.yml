@@ -24,6 +24,8 @@ commands:
       - run: pnpm run test --coverage
       - store_test_results:
           path: coverage
+      - store_artifacts:
+          path: coverage
   codequality:
     steps:
       - run: pnpm lint -o eslint-report.json --format json || true
