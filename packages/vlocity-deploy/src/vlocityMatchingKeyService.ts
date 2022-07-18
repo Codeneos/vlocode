@@ -162,7 +162,7 @@ export class VlocityMatchingKeyService {
     private async queryMatchingKeys(): Promise<Array<VlocityMatchingKey>> {
         this.logger.verbose('Querying matching keys from Salesforce');
 
-        const matchingKeyResults = await this.lookup.lookup('vlocity_namespace__DRMatchingKey__mdt', undefined, 'all');
+        const matchingKeyResults = await this.lookup.lookup('%vlocity_namespace%__DRMatchingKey__mdt', undefined, 'all');
         const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
             const fields = record.matchingKeyFields.split(',').map(s => s.trim());
             const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
