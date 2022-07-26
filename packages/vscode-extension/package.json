@@ -1241,10 +1241,10 @@
         "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.ts --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
-        "pack": "pnpm vscode:prepublish && vsce package",
+        "pack": "pnpm vscode:prepublish && vsce package --no-dependencies",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "rimraf ./out",
-        "publish": "vsce publish",
+        "publish": "vsce publish --no-dependencies",
         "vscode:prepublish": "pnpm clean && pnpm build-webpack"
     },
     "devDependencies": {
@@ -1266,6 +1266,7 @@
         "@types/webpack-merge": "^4.1.5",
         "chai": "^4.3.4",
         "copy-webpack-plugin": "^9.0.1",
+        "esbuild": "^0.14.49",
         "escape-string-regexp": "^4.0.0",
         "jest": "^28.1.1",
         "json-loader": "^0.5.7",
@@ -1296,9 +1297,7 @@
         "webpack-cli": "^4.9.2",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^5.8.0",
-        "webpack-node-externals": "^3.0.0"
-    },
-    "dependencies": {
+        "webpack-node-externals": "^3.0.0",
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

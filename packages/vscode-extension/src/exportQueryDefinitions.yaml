@@ -1,5 +1,5 @@
 # include files -- processed by custom loader
-include: [ ../../node_modules/vlocity/lib/querydefinition.yaml ]
+include: [ ../node_modules/vlocity/lib/querydefinition.yaml ]
 
 # Extend default configuration from querydefinition
 VlocityUILayout:
