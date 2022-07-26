@@ -8,7 +8,7 @@ import * as vlocityPackageManifest from 'vlocity/package.json';
 import * as constants from '@constants';
 import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container } from '@vlocode/core';
 import * as vlocityUtil from '@lib/vlocity/vlocityLogging';
-import { initializeContext } from '@lib/vlocodeContext';
+import { getContext, initializeContext } from '@lib/vlocodeContext';
 import { ConfigurationManager } from '@lib/config';
 import VlocodeService from '@lib/vlocodeService';
 import VlocodeConfiguration from '@lib/vlocodeConfiguration';
@@ -76,7 +76,13 @@ class Vlocode {
 
     private startLogger() {
         // Simple switch that decides how to log
-        const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode')));
+        const terminalOptions = { 
+            iconPath: {
+                light: vscode.Uri.file(getContext().asAbsolutePath('resources/ligth/log-terminal.svg')),
+                dark: vscode.Uri.file(getContext().asAbsolutePath('resources/dark/log-terminal.svg'))
+            }
+        };
+        const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode', terminalOptions)));        
         const outputChannelWriter = lazy(() => this.service.registerDisposable(new OutputChannelWriter('Vlocode')));
         let logInTerminal = this.service.config.logInTerminal;
 

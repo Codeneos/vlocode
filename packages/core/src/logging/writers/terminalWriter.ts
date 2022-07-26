@@ -6,6 +6,10 @@ import { LogLevel, LogWriter, LogEntry } from '../../logging';
 const TERMINAL_EOL = '\r\n';
 const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
 
+export interface TerminalWriterOptions {
+    iconPath?: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon;
+}
+
 export class TerminalWriter implements LogWriter {
 
     private writeEmitter : vscode.EventEmitter<string>;
@@ -33,7 +37,7 @@ export class TerminalWriter implements LogWriter {
         return this.vscode.window.activeTerminal?.name == this.currentTerminal?.name;
     }
 
-    constructor(private readonly name: string) {
+    constructor(private readonly name: string, private readonly options?: TerminalWriterOptions) {
     }
 
     public dispose() {
@@ -52,6 +56,9 @@ export class TerminalWriter implements LogWriter {
             this.terminalWatchdog = undefined;
         }
 
+        // Dispose old terminals
+        this.vscode.window.terminals.filter(term => term.name == this.name).forEach(term => term.dispose());
+
         [this.writeEmitter, this.closeEmitter].forEach(d => d?.dispose());
         this.writeEmitter = new this.vscode.EventEmitter<string>();
         this.closeEmitter = new this.vscode.EventEmitter<void>();
@@ -59,12 +66,13 @@ export class TerminalWriter implements LogWriter {
         this.isOpened = false;
         this.currentTerminal = this.vscode.window.createTerminal({
             name: this.name,
+            iconPath: this.options?.iconPath,
             pty: {
                 onDidWrite: this.writeEmitter.event,
                 onDidClose: this.closeEmitter.event,
                 close: this.close.bind(this),
                 open: this.open.bind(this),
-                handleInput: () => { }
+                handleInput: () => { /* do not handle input */ }
             }
         });
 
@@ -99,8 +107,8 @@ export class TerminalWriter implements LogWriter {
     public close() {
         this.isOpened = false;
         if (this.currentTerminal) {
-            this.currentTerminal.dispose();
             this.closeEmitter.fire();
+            this.currentTerminal.dispose();
             this.currentTerminal = undefined;
         }
         if (this.terminalWatchdog) {
