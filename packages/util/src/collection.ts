@@ -1,6 +1,5 @@
 // File contains several functions for manipulating or accessing collectiong like objects such as: Set, Map and Array
 import { isPromise } from './async';
-import { TestMessage } from 'vscode';
 import { Iterable } from './iterable';
 
 /**

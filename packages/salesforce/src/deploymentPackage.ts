@@ -166,7 +166,7 @@ export class SalesforcePackage {
      * Uses annotation and testmethod detection on APEX class bodies.
      */
     public getTestClasses() {
-        const testClasses = new Array<String>();
+        const testClasses = new Array<string>();
         for (const [packagePath, data] of this.packageData.entries()) {
             if (!packagePath.endsWith('.cls')) {
                 continue;

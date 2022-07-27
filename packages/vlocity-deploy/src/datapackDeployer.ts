@@ -1,7 +1,7 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
-import { Logger , injectable , container, LifecyclePolicy } from '@vlocode/core';
-import { Timer , asArray, groupBy , Iterable, CancellationToken, mapAsyncParallel, forEachAsyncParallel, } from '@vlocode/util';
+import { Logger, injectable , container, LifecyclePolicy } from '@vlocode/core';
+import { Timer, asArray, groupBy , Iterable, CancellationToken, forEachAsyncParallel, } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -78,6 +78,12 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * @default false;
      */
     deltaCheck?: boolean;
+    /**
+     * Continue the deployment when a fatal error occurs, note that continueing the deployment on fatal errors will result in an incomplete deployment. This setting 
+     * affects fatal errors such as unable to convert a datapack to valid Salesforce records and should not be enabled on production deploymenyts.
+     * @default false;
+     */
+    continueOnError?: boolean;
 }
 
 export interface DatapackDeploymentSpec {
@@ -125,7 +131,7 @@ export class DatapackDeployer {
                 await this.runSpecFunction(datapack.datapackType, 'preprocess', datapack);
                 const records = await recordFactory.createRecords(datapack);
                 await this.runSpecFunction(datapack.datapackType, 'afterRecordConversion', records);
-                deployment.add(records);
+                deployment.add(...records);
             } catch(err) {
                 this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
             }

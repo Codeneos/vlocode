@@ -1,14 +1,14 @@
-import { Argument, Option, Command as Program } from 'commander';
+import { Argument, Option } from 'commander';
 export { Argument, Option } from 'commander';
 
 export abstract class Command {    
     public static args: Argument[] = [];
     public static options: Option[] = []
-    public static description: String;
-    public static command: String;
+    public static description: string;
+    public static command: string;
 
-    protected options!: {};
-    protected args!: [];
+    protected options!: any;
+    protected args!: any;
 
     abstract run(...args: any[]) : void | Promise<void>;
 }

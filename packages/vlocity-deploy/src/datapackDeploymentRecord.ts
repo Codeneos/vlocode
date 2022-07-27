@@ -1,5 +1,5 @@
-import { Timer , Iterable, stringEquals, removeNamespacePrefix } from '@vlocode/util';
-import { DatapackRecordDependency, DependencyResolver, VlocityDataPackDependencyType } from './datapackDeployer';
+import { Timer , Iterable, removeNamespacePrefix } from '@vlocode/util';
+import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer';
 
 export enum DeploymentStatus {
     Pending,

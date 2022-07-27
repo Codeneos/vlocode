@@ -23,7 +23,7 @@ class CommandExecutor implements Command {
     public async execute(... args: any[]) : Promise<void> {
         this.logger.verbose(`Invoke command ${this.name}`);
         try {
-            await Promise.resolve(this.validate(...args));
+            await Promise.resolve(this.validate?.(...args));
             await Promise.resolve(this.command.execute.apply(this.command, args));
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch(err) {

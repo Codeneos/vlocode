@@ -33,12 +33,12 @@ export class Logger {
     /**
      * Null logger, logs straight to /dev/null
      */
-    static null: Logger = new (class extends Logger {
+    static readonly null: Logger = new (class extends Logger {
         constructor() {
             super(undefined, '/dev/null');
         }
-        public write() { }
-        public writeEntry() { }
+        public write() { /* no-op */ }
+        public writeEntry() { /* no-op */ }
     })();
 
     constructor(
@@ -69,10 +69,6 @@ export class Logger {
                 return;
             }
         }
-
-        // if (level == LogLevel.error) {
-        //     console.error(...args.filter(arg => typeof arg === 'string' || arg instanceof Error));
-        // }
 
         this.writeEntry({
             category: this.name,
@@ -113,12 +109,4 @@ export class Logger {
         }
         return arg;
     }
-}
-
-class NullLogger extends Logger {
-    constructor() {
-        super(undefined, '/dev/null');
-    }
-    public write() { }
-    public writeEntry() { }
 }

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { asArray, lazy, getCtorParameterTypes } from '@vlocode/util';
+import { asArray } from '@vlocode/util';
 import { container, ServiceType, LifecyclePolicy, ServiceOptions } from './container';
 
 export interface DependencyOptions extends Partial<ServiceOptions> {

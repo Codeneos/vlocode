@@ -3,7 +3,6 @@ import { Command as Commander, Option } from 'commander';
 import { readdirSync } from 'fs';
 import * as path from 'path';
 import { FancyConsoleWriter, Container, container, Logger, LogLevel, LogManager } from '@vlocode/core';
-import { decorate } from '@vlocode/util';
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
@@ -51,7 +50,7 @@ class CLI {
         const fullFolderPath = path.join(__dirname, this.commandsFolder, folder);
         for (const file of readdirSync(fullFolderPath, { withFileTypes: true } )) {
             if (file.isFile() && file.name.endsWith('.js')) {
-                const cmd = this.registerCommand(this.program, path.join(fullFolderPath, file.name));
+                this.registerCommand(this.program, path.join(fullFolderPath, file.name));
             }
         }
         return this;
