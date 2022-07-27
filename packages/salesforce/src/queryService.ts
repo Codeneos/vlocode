@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import * as moment from 'moment';
 import { Logger, injectable } from '@vlocode/core';
-import { PropertyTransformHandler, normalizeSalesforceName, Timer, isSalesforceId, CancellationToken } from '@vlocode/util';
+import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
 
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { PropertyAccessor, SObjectRecord, Field } from './types';

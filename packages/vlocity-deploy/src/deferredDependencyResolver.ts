@@ -1,4 +1,3 @@
-import { LogManager } from '@vlocode/core';
 import { DeferredPromise } from '@vlocode/util';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 

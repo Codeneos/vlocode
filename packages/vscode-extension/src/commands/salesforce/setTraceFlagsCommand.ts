@@ -1,4 +1,4 @@
-import { DeveloperLogs, SalesforceDebugLevel } from '@vlocode/salesforce';
+import { SalesforceDebugLevel } from '@vlocode/salesforce';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadataCommand';
 

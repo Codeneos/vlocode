@@ -138,6 +138,7 @@ export namespace sfdx {
         }
     }
 
+    // eslint-disable-next-line no-inner-declarations
     async function resolveAlias(alias?: string) : Promise<string | undefined> {
         return alias ? salesforce.Aliases.fetch(alias) : undefined;
     }

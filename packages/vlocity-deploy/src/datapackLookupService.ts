@@ -1,6 +1,6 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
-import { Timer , arrayMapPush, last , isSalesforceId, CancellationToken, filterKeys, groupBy, DeferredPromise, unique, remove, removeAll, normalizeSalesforceName, Iterable, mapAsync, count } from '@vlocode/util';
+import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count } from '@vlocode/util';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
@@ -19,7 +19,7 @@ export interface OrgRecordStatus {
         actual: any,
         expected: any
     }>
-};
+}
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackLookupService implements DependencyResolver {
@@ -61,7 +61,7 @@ export class DatapackLookupService implements DependencyResolver {
             })
             .filter(({ filter, lookupKey }) => {
                 if (!Object.keys(filter).length) {
-                    this.logger.warn(`None of the dependency\'s lookup fields have values (${lookupKey})`);
+                    this.logger.warn(`None of the dependency's lookup fields have values (${lookupKey})`);
                     return false;
                 }
                 return true;
@@ -188,7 +188,6 @@ export class DatapackLookupService implements DependencyResolver {
                 });
 
                 if (!matchedLookups.length) {
-                    debugger;
                     console.error('You found a BUG in the lookup resolution, share below information to help find a solution:')
                     console.error(`Record not matched: `, JSON.stringify(record));
                     console.error(`Lookups requested: `, JSON.stringify(entries.map(([,{ filter }]) => filter)));
@@ -375,7 +374,7 @@ export class DatapackLookupService implements DependencyResolver {
     private async getMatchingFieldsByValues(sobjectType: string, record: object) : Promise<string[]> {
         const fields = new Array<string>();
 
-        for (let name of Object.keys(record)) {
+        for (const name of Object.keys(record)) {
             const field = await this.resolveFieldDescribe(sobjectType, name);
             if (!field) {
                 // Exclude fields that do not exists on the target 

@@ -1,5 +1,5 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { asArray, last, transform, joinLimit, isSalesforceId, CancellationToken, groupBy, unique, Iterable } from '@vlocode/util';
+import { asArray, transform, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable } from '@vlocode/util';
 import { PropertyAccessor } from './types';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -31,9 +31,9 @@ export class SalesforceLookupService {
      * @param cancelToken Optional cancellation token to signal the method that it should quite as soon as possible.
      * @returns Records in a Map keyed by their record ID
      */
-    public async lookupById<K extends PropertyAccessor>(ids: Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<Map<String, QueryResult<{ Id: string }, K>>> {
+    public async lookupById<K extends PropertyAccessor>(ids: Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<Map<string, QueryResult<{ Id: string }, K>>> {
         const idsByType = await groupBy(ids, async id => (await this.schemaService.describeSObjectById(id)).name);
-        const resultsById = new Map<String, QueryResult<{ Id: string }, K>>();
+        const resultsById = new Map<string, QueryResult<{ Id: string }, K>>();
         for (const [type, ids] of Object.entries(idsByType)) {
             if (cancelToken?.isCancellationRequested) {
                 break;
@@ -105,7 +105,7 @@ export class SalesforceLookupService {
                 for (const field of selectFields) {
                     const fieldPath = await this.schemaService.toSalesforceField(type, field.toString());
                     if (fieldPath == null) {
-                        throw new Error(`Unable to resolve lookup field ${field} on type ${type}`);
+                        throw new Error(`Unable to resolve lookup field ${String(field)} on type ${type}`);
                     }
                     fields.add(fieldPath);
                 }
@@ -122,6 +122,7 @@ export class SalesforceLookupService {
     private async createWhereClause<T>(type: string, values: { [P in keyof T]?: T[P] | Array<T[P]> | string } | undefined | null, relationshipName: string = '') : Promise<string> {
         const lookupFilters: any[] = [];
 
+        // eslint-disable-next-line prefer-const
         for (let [fieldPath, value] of Object.entries(values || {})) {
             const salesforceFields = [...await this.schemaService.describeSObjectFieldPath(type, fieldPath)];
             const salesforceField = salesforceFields.pop()!;

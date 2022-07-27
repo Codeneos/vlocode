@@ -65,7 +65,7 @@
         "publish-patch": "lerna publish patch --no-git-reset",
         "publish-minor": "lerna publish minor --no-git-reset",
         "test": "jest",
-        "lint": "eslint ./packages/*/src --ext .ts",
+        "lint": "eslint ./packages/*/src/**/*.ts --ext .ts",
         "docs": "typedoc"
     },
     "resolutions": {

@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { JsForceConnectionProvider, NamespaceService, SalesforceSchemaAccess, SalesforceSchemaService, SchemaAccess, SchemaDataStore } from '@vlocode/salesforce';
+import { JsForceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { VlocityDatapack } from '../datapack';

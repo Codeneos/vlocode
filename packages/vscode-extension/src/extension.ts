@@ -212,7 +212,7 @@ class Vlocode {
     static deactivate() {
         return Vlocode.instance.deactivate();
     }
-};
+}
 
 export function activate(context: vscode.ExtensionContext) {
     return Vlocode.activate(context);

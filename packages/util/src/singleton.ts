@@ -35,13 +35,12 @@ export function getInstance<T extends new(...args: any) => InstanceType<T>>(type
 export function destroyAllSingletons() {
     if (global[singletonSymbol]) {
         for (const key of global[singletonSymbol]) {
-            // eslint-disable-next-line @typescript-eslint/tslint/config
             delete global[singletonSymbol][key];
         }
     }
 }
 
-export function singletonMixin<T extends { new (...args: any[]): {} }>(constructor: T) {
+export function singletonMixin<T extends { new (...args: any[]): any }>(constructor: T) {
     const ident = constructor.name;
     const store = global[singletonSymbol] || (global[singletonSymbol] = {});
 

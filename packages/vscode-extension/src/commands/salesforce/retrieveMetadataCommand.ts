@@ -41,7 +41,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
 
     protected async getExportableObjectLikeTypes(nameFilter: RegExp) : Promise<{ fullName: string }[]>
     protected async getExportableObjectLikeTypes(nameFilter: (result: DescribeGlobalSObjectResult) => boolean) : Promise<{ fullName: string }[]>
-    protected async getExportableObjectLikeTypes(nameFilter: RegExp | Function) : Promise<{ fullName: string }[]> {
+    protected async getExportableObjectLikeTypes(nameFilter: RegExp | ((result: DescribeGlobalSObjectResult) => boolean)) : Promise<{ fullName: string }[]> {
         const connection = await this.salesforce.getJsForceConnection();
         const allObjects = await connection.describeGlobal();
         const metadataTypes = allObjects.sobjects.filter(obj => typeof nameFilter === 'function' ? nameFilter(obj) : nameFilter.test(obj.name));

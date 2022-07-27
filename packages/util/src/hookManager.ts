@@ -20,9 +20,6 @@ export class HookManager<T extends object> {
     private readonly identity = uuid.v4();
     private readonly cacheSymbol = Symbol();
 
-    public HookManager() {
-    }
-
     /**
      * Enables or disables running of hooks
      */

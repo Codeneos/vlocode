@@ -3,7 +3,7 @@ type Constructor = new (...args: any[]) => any;
 
 export abstract class Decorator<T extends Constructor>{ 
     protected inner: InstanceType<T>;
-};
+}
 
 /**
  * Extend a class with a decorate(ClassName) to create a decorator class that accepts any original target of T and returns
@@ -60,13 +60,13 @@ export function decorate<T extends Constructor>(classProto: T): new (inner: Inst
     };
 }
 
-class Foo { 
-  constructor(public name: string) { }
-  getName() { return `Foo's name: ${this.name}` }
-}
+// class Foo { 
+//   constructor(public name: string) { }
+//   getName() { return `Foo's name: ${this.name}` }
+// }
 
-class FooDecorator extends decorate(Foo) {
-  getName() { return `Foo's Decorated name: ${this.name?.toUpperCase()}` }
-}
+// class FooDecorator extends decorate(Foo) {
+//   getName() { return `Foo's Decorated name: ${this.name?.toUpperCase()}` }
+// }
 
-const foo = new FooDecorator(new Foo('bar'));
+// const foo = new FooDecorator(new Foo('bar'));

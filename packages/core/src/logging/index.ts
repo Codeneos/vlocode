@@ -17,7 +17,7 @@ export * from './logger';
 export * from './distinctLogger';
 export * from './logManager';
 
-export function withLogger<T extends { new (...args: any[]): {} }>(constructor: T) {
+export function withLogger<T extends { new (...args: any[]): any }>(constructor: T) {
     return class extends constructor {
         readonly logger = LogManager.get(constructor);
     };

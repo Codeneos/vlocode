@@ -123,6 +123,7 @@ export namespace Iterable {
 
     export function transform<T, K = T>(itr: Iterable<T>, transformer: { map?(item: T): K; filter?(item: T): any }): Iterable<K> {
         const iteratorNextTransformer = function() {
+            // eslint-disable-next-line no-constant-condition
             while(true) {
                 const value = this.next();
                 if (value.done) {

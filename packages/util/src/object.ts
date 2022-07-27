@@ -21,6 +21,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
         }
         if (typeof target[name] === 'function') {
             return (...args: any[]) => {
+                // eslint-disable-next-line prefer-spread
                 return this.wrapValue(target[name].apply(target, args));
             };
         }
@@ -88,6 +89,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
                 }
                 if (typeof target[name] === 'function') {
                     return (...args: any[]) => {
+                        // eslint-disable-next-line prefer-spread
                         return this.wrapValue(target[name].apply(target, args.map(arg => {
                             return arg && arg[proxyIdentitySymbol] ? arg[proxyTargetSymbol] : arg;
                         })));

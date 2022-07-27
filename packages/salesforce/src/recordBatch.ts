@@ -296,6 +296,7 @@ export class RecordBatch {
      */
     private async validateRecordData(sobjectType: string, values: object, mode: 'update' | 'insert') {
         const recordData = {};
+        // eslint-disable-next-line prefer-const
         for (let [field, value] of Object.entries(values)) {
             const fieldInfo = await this.schemaService.describeSObjectField(sobjectType, field);
             if (mode == 'update' && fieldInfo.type !== 'id' && !fieldInfo.updateable) {
