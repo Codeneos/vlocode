@@ -1,13 +1,12 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SchemaAccess, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
-import { existsSync, fstat } from 'fs';
+import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
-import { join, relative } from 'path';
+import { join } from 'path';
 import * as chalk from 'chalk';
-import { asArray, countDistinct, forEachAsyncParallel, groupBy, mapAsyncParallel, segregate, Timer, unique } from '@vlocode/util';
-import { writeJson, writeJsonSync } from 'fs-extra';
+import { countDistinct, groupBy } from '@vlocode/util';
 
 export default class extends Command {
 

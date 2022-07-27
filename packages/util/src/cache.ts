@@ -125,7 +125,6 @@ function getCacheStore(target: any) : Map<string, CacheEntry> {
 export function clearCache<T>(target: T) : T {
     const cacheStore = target[cacheStoreProperty];
     if (cacheStore) {
-        // eslint-disable-next-line @typescript-eslint/tslint/config
         cacheStore.clear();
     }
     return target;
@@ -157,7 +156,6 @@ export function cache(ttlOrOptions?: number | CacheOptions) {
  */
 export function cacheFunction<T extends (...args: any[]) => any>(target: T, name: string, ttlOrOptions?: number | CacheOptions | undefined) : T {
     const options = typeof ttlOrOptions === 'number' || !ttlOrOptions ? { ttl: ttlOrOptions ?? -1 } : ttlOrOptions;
-    const boundMethodSymbol = Symbol(`[${name}-bound]`);
 
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(options.scope == 'global' ? target : (this ?? target));

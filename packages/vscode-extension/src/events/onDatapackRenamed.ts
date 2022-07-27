@@ -1,7 +1,6 @@
 import { EventHandlerBase } from '@events/eventHandlerBase';
 import * as vscode from 'vscode';
 import * as escapeRegExp from 'escape-string-regexp';
-import { fileName, directoryName } from '@vlocode/util';
 import VlocodeService from '@root/lib/vlocodeService';
 
 export default class extends EventHandlerBase<vscode.FileRenameEvent> {
@@ -39,6 +38,7 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
     }
 
     private async handleRenamedDatapackFolder(folder: vscode.FileRenameEvent['files'][0], trx: WorkspaceChangeSet) {
+        // TODO: implement me
     }
 
     private async handleRenamedDatapackHeader(file: vscode.FileRenameEvent['files'][0], trx: WorkspaceChangeSet) {
@@ -72,8 +72,8 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
                 } else {
                     await trx.replace(oldFileUri, oldName, newName, { label: 'Update Datapack references', needsConfirmation: true });
                 }
-            } catch(e) {
-
+            } catch(err) {
+                this.logger.warn(`Datapack header rename refactor error ${err instanceof Error ? err.message : err}`);
             }
 
             if (newFileUri != oldFileUri) {
@@ -119,7 +119,7 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
         }
     }
 
-    private async isDatapackHeader(file: vscode.FileRenameEvent['files'][0]) {
+    private isDatapackHeader(file: vscode.FileRenameEvent['files'][0]) {
         return /_DataPack.json$/i.test(file.newUri.fsPath) && /_DataPack.json$/i.test(file.oldUri.fsPath);
     }
 

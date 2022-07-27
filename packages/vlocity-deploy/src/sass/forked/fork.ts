@@ -64,7 +64,7 @@ function getImportHandler(includePaths: string[]) {
  * @param options SASS options
  */
 export async function compile(data: string, options?: SassCompilerOptions) : Promise<string> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         try {
             // Use custom import handler
             sass.importer(getImportHandler(options?.importer?.includePaths || [ process.cwd() ]));
@@ -80,7 +80,7 @@ export async function compile(data: string, options?: SassCompilerOptions) : Pro
  */
 async function * getMessageLoop() : AsyncGenerator<Message> {
     const messageQueue = new Array<any>();
-    const signal = new DeferredPromise<Boolean>();
+    const signal = new DeferredPromise<boolean>();
 
     process.on('message', msg => {
         messageQueue.push(msg);
@@ -119,6 +119,7 @@ async function handleMessage(type: string, data: any) {
         case 'exit': {
             process.exit();
         }
+        // eslint-disable-next-line no-fallthrough -- `process.exit` never returns therefore a fallthrough is impossible
         default: {
             throw new Error(`Received unknown message type ${type} from host`);
         }

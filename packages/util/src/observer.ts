@@ -66,45 +66,41 @@ export function observeObject<T extends Object>(obj: T) : Observable<T> {
  */
 export function observeArray<T>(obj: T[]) : ObservableArray<T> {
     const eventEmitter = new vscode.EventEmitter<ArrayChangedEventArgs<T>>();
+
+    const decoratedArrayFunctions = {
+        push: function(...args: T[]) {
+            const currentLength = obj.length;
+            const result = Array.prototype['push'].apply(obj, args);
+            eventEmitter.fire({ type: 'add',  index: currentLength, newValues: args });
+            return result;
+        },
+        unshift: function(...args: T[]) {
+            const result = Array.prototype['unshift'].apply(obj, args);
+            eventEmitter.fire({ type: 'add',  index: 0, newValues: args });
+            return result;
+        },
+        pop: function() {
+            const result = Array.prototype['pop'].apply(obj);
+            eventEmitter.fire({ type: 'remove', index: obj.length, oldValues: [ result ] });
+            return result;
+        },
+        shift: function() {
+            const result = Array.prototype['shift'].apply(obj);
+            eventEmitter.fire({ type: 'remove', index: 0, oldValues: [ result ] });
+            return result;
+        }   
+    }  
+
     return new Proxy(obj, {
         get(target, property) {
             if (property === 'onArrayChanged') {
                 return eventEmitter.event;
             } else if (property === 'dispose') {
                 return eventEmitter.dispose.bind(eventEmitter);
+            } else if (typeof decoratedArrayFunctions[property] === 'function' ) {
+                return decoratedArrayFunctions[property];
             }
-            const value = target[property];
-
-            if (typeof value === 'function') {
-                if (property == 'push') {
-                    return function () {
-                        const currentLength = target.length;
-                        const result = Array.prototype[property].apply(target, arguments);
-                        eventEmitter.fire({ type: 'add',  index: currentLength, newValues: Array.from(arguments) });
-                        return result;
-                    };
-                } else if (property == 'unshift') {
-                    return function () {
-                        const result = Array.prototype[property].apply(target, arguments);
-                        eventEmitter.fire({ type: 'add',  index: 0, newValues: Array.from(arguments) });
-                        return result;
-                    };
-                } else if (property == 'pop') {
-                    return function () {
-                        const result = Array.prototype[property].apply(target, arguments);
-                        eventEmitter.fire({ type: 'remove', index: target.length, oldValues: [ result ] });
-                        return result;
-                    };
-                } else if (property == 'shift') {
-                    return function () {
-                        const result = Array.prototype[property].apply(target, arguments);
-                        eventEmitter.fire({ type: 'remove', index: 0, oldValues: [ result ] });
-                        return result;
-                    };
-                }
-            }
-
-            return value;
+            return target[property];
         },
         set(target, property, newValue) {
             if (property === 'onPropertyChanged') {

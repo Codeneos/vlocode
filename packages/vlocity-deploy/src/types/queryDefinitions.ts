@@ -1,6 +1,6 @@
 export interface QueryDefinitions {
     [datapackType: string] : QueryDefinition;
-};
+}
 
 export interface QueryDefinition {
     VlocityDataPackType: string;

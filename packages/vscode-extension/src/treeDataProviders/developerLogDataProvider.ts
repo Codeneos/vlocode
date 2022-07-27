@@ -113,15 +113,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             description: this.getStatusLabel(log),
             contextValue: 'salesforce:developerLog',
             tooltip: this.getTooltip(log),
-            iconPath: this.getItemIconPath(this.getIcon(log)),
+            iconPath: this.getItemIconPath({
+                light: 'resources/light/log.svg',
+                dark: 'resources/dark/log.svg'
+            }),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
-        };
-    }
-
-    public getIcon(node: DeveloperLog): { light: string; dark: string } | undefined {
-        return {
-            light: 'resources/light/log.svg',
-            dark: 'resources/dark/log.svg'
         };
     }
 

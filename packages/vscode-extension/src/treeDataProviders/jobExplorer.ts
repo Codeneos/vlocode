@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import VlocityDatapackService, { ObjectEntry } from '@lib/vlocity/vlocityDatapackService';
+import VlocityDatapackService from '@lib/vlocity/vlocityDatapackService';
 import { LogManager, Logger } from '@vlocode/core';
 import * as yaml from 'js-yaml';
 
@@ -87,7 +87,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
         return false;
     }
 
-    public async getChildren(node?: JobNode): Promise<JobNode[]> {
+    public async getChildren(): Promise<JobNode[]> {
         const yamlFiles = await vscode.workspace.findFiles('**/*.yaml');
         const yamlFilesWithBody = await Promise.all(yamlFiles.map(async file => {
             try {

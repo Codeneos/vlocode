@@ -6,10 +6,11 @@ export class OutputChannelWriter implements LogWriter {
 
     public static LOG_DATE_FORMAT = "HH:mm:ss.SS";
 
-    private _outputChannel: OutputChannel;
+    private _outputChannel?: OutputChannel;
 
     public get outputChannel(): OutputChannel {
-        return this._outputChannel || (this._outputChannel = require('vscode').window.createOutputChannel(this.channelName));
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        return this._outputChannel ?? (this._outputChannel = require('vscode').window.createOutputChannel(this.channelName));
     }
 
     constructor(private readonly channelName: string) {

@@ -1,4 +1,3 @@
-import { fileExists, Iterable} from '@vlocode/util';
 import { DescribeSObjectResult, Field } from '../types';
 import { CustomObjectMetadata, CustomFieldMetadata } from '../metadata';
 
@@ -17,8 +16,8 @@ export class SchemaDataStore {
     private readonly storeVersion = 1;
 
     private readonly sobjectTypes = new Array<string>();    
-    private readonly objectInfo = new Map<String, SchemaData<CustomObjectMetadata, DescribeSObjectResult>>();    
-    private readonly fieldInfo = new Map<String, SchemaData<CustomFieldMetadata, Field>>();
+    private readonly objectInfo = new Map<string, SchemaData<CustomObjectMetadata, DescribeSObjectResult>>();    
+    private readonly fieldInfo = new Map<string, SchemaData<CustomFieldMetadata, Field>>();
 
     /**
      * Metadata API response fields that should be normalized to always vbe returned as Array
@@ -48,7 +47,7 @@ export class SchemaDataStore {
             throw new Error('Describe and metadata info type mismatch');
         }
 
-        const fullName = (info?.fullName ?? describe?.name)?.toLowerCase()!;
+        const fullName = (info?.fullName ?? describe!.name)?.toLowerCase();
         this.normalizeData(info);
         this.normalizeData(describe);
 
@@ -66,7 +65,7 @@ export class SchemaDataStore {
             const fullFieldName = `${fullName}.${field}`.toLowerCase();
 
             const describeField = describe?.fields?.find(f => f.name === field);
-            const metadataField = info?.fields?.find(f => f && f.fullName === field)!;
+            const metadataField = info?.fields?.find(f => f && f.fullName === field);
 
             this.fieldInfo.set(fullFieldName, {
                 metadata: metadataField,
@@ -81,7 +80,7 @@ export class SchemaDataStore {
         return this;
     }    
 
-    private normalizeData<T>(obj: undefined): undefined;
+    private normalizeData(obj: undefined): undefined;
     private normalizeData<T>(obj: T): T;
     private normalizeData<T>(obj: T | undefined): T | undefined {
         if (!obj) {

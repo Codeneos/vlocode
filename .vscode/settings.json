@@ -11,5 +11,7 @@
     "cSpell.words": [
         "vlocode"
     ],
-    "cSpell.enabled": true
+    "cSpell.enabled": true,
+    "eslint.lintTask.options": "./packages/*/src/**/*.ts --ext .ts",
+    "eslint.packageManager": "pnpm"
 }

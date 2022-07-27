@@ -338,6 +338,7 @@ export class SalesforcePackageBuilder {
     }
 
     private mergeMetadata(targetMetadata: object, sourceMetadata: object) {
+        // eslint-disable-next-line prefer-const
         for (let [key, value] of Object.entries(sourceMetadata)) {
             if (value === undefined) {
                 continue; // skip undefined

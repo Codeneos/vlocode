@@ -2,7 +2,7 @@
 import { SalesforceSchemaService, Field, NamespaceService } from '@vlocode/salesforce';
 import { Logger, injectable } from '@vlocode/core';
 import * as moment from 'moment';
-import { isSalesforceId, removeNamespacePrefix } from '@vlocode/util';
+import { isSalesforceId } from '@vlocode/util';
 import * as uuid from 'uuid';
 import { DATAPACK_RESERVED_FIELDS } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';

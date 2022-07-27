@@ -255,7 +255,7 @@ class VlocityDatapackDataProxy<T extends object> extends PropertyTransformHandle
     }
             
     private static propertyTransformer(target: object, name: string | number | symbol) {
-        if (typeof name !== 'string' && target.hasOwnProperty(name)) {
+        if (typeof name !== 'string' && Object.prototype.hasOwnProperty.call(target, name)) {
             return name;
         }
         const normalizedName = VlocityDatapackDataProxy.nameTransformer(name.toString());

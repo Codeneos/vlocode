@@ -31,7 +31,7 @@ export interface OrganizationDetails {
     namespacePrefix: string;
 }
 
-interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string };
+interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string }
 
 @injectable()
 export class SalesforceService implements JsForceConnectionProvider {

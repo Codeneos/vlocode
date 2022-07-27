@@ -22,10 +22,13 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
         if (this.onClick) {
             this.vlocode.commands.register(this.clickHandlerGuid, this.onClick.bind(this));
         }
-        this.initialize();
+        this.initialize?.();
     }
 
-    protected initialize() : any { }
+    /**
+     * Optional initiializer of the data-tree
+     */
+    protected initialize?(): any;
 
     protected getAbsolutePath(path: string) {
         return getContext().asAbsolutePath(path);

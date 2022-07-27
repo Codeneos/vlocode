@@ -1,11 +1,12 @@
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
-import { JsForceConnectionProvider, NamespaceService, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
+import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count } from '@vlocode/util';
 import { DatapackLookupService, OrgRecordStatus } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
+
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -108,8 +109,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.dependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
     }
 
-    public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
-        for (const record of Array.isArray(records) ? records : [ records ]) {
+    public add(...records: DatapackDeploymentRecord[]): this {
+        for (const record of records) {
             if (this.records.has(record.sourceKey)) {
                 throw new Error(`Datapack record with the same key '${record.sourceKey}' has already been added to the deployment. Remove the duplicate datapack and retry the deployment.`);
             }
@@ -252,7 +253,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             });
 
             if (results.length) {
-                debugger;
                 throw new Error('BUG: unresolved lookup results should not be possible');
             }
         }
