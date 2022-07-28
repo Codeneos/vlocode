@@ -10,3 +10,4 @@ tslint-report.json
 packages/*/lib
 /coverage
 /packages/cli/dist
+*.tgz
