@@ -185,14 +185,23 @@ export class DatapackRecordFactory {
             }
             case 'string':
             default: {
-                let stringValue = typeof value === 'object' ? JSON.stringify(value) : `${value}`;
-                stringValue = this.namespaceService.updateNamespace(stringValue);
+                const stringValue = this.namespaceService.updateNamespace(this.convertValueToString(value));
                 if (stringValue.length > field.length) {
                     throw new Error(`Value length (${stringValue.length}) surpassed max length of field ${field.name} (max: ${field.length})`);
                 }
                 return stringValue;
             }
         }
+    }
+
+    private convertValueToString(value: unknown) {
+        if (value === 'object') {
+            if (Buffer.isBuffer(value)) {
+                return value.toString();
+            }
+            return JSON.stringify(value);
+        }
+        return `${value}`;
     }
 }
 

@@ -12,9 +12,9 @@ export default class DatapackLoader {
 
     private readonly loaders : { test?: RegExp; load: DatapackLoaderFunc }[] = [
         { test: /\.json$/i, load: file => this.loadJson(file) },
-        { test: /\.png|jpeg|jpg|doc|docx|xls|xlsx|zip$/i, load: file => this.loadBinary(file) },
-        { test: /\.js|html|csv|txt|css|scss|sass\S+$/i, load: file => this.loadText(file) },
-        { test: /\.\S+$/i, load: file => this.loadText(file) }
+        { test: /\.(png|jpeg|jpg|doc|docx|xls|xlsx|zip|pdf)$/i, load: file => this.loadBinary(file) },
+        { test: /\.(js|html|csv|txt|css|scss|sass)$/i, load: file => this.loadText(file) },
+        { test: /\.(\S+)$/i, load: file => this.loadText(file) }
     ];
 
     constructor(
@@ -39,6 +39,10 @@ export default class DatapackLoader {
             const manifestEntry = getDatapackManifestKey(datapackHeader);
             this.logger.info(`Loading datapack: ${manifestEntry.key}`);
             const datapackJson = await this.loadJson(datapackHeader);
+            if (!datapackJson) {
+                throw new Error(`No such file exists: ${datapackHeader}`);
+            }
+            
             return new VlocityDatapack(datapackHeader,
                 manifestEntry.datapackType,
                 manifestEntry.key,
