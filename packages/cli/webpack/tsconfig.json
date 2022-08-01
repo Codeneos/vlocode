@@ -6,8 +6,7 @@
         "baseUrl": ".",
         "forceConsistentCasingInFileNames": true,
         "types": [
-            "node",
-            "webpack-env"
+            "node"
         ]
     }
 }

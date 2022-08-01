@@ -46,6 +46,49 @@
             "dependsOn": [
                 "watch-vlocity-deploy"
             ]
+        },        
+        {
+            "type": "shell",
+            "command": "pnpm --filter @vlocode/cli watch-webpack",
+            "isBackground": true,
+            "label": "watch-cli-webpack",
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "problemMatcher": [
+                {
+                    "fileLocation": "absolute",
+                    "owner": "typescript",
+                    "pattern": [
+                        {
+                            "regexp": "\\[tsl\\] ERROR in (.*)?\\((\\d+),(\\d+)\\)",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3
+                        },
+                        {
+                            "regexp": "\\s*TS\\d+:\\s*(.*)",
+                            "message": 1
+                        }
+                    ],
+                    "severity": "error",
+                    "source": "ts",
+                    "background": {
+                        "beginsPattern": {
+                            "regexp": "Build starting..."
+                        },
+                        "endsPattern": {
+                            "regexp": "Build completed"
+                        }
+                    }
+                }
+            ],
+            "dependsOn": [
+                "watch-vlocity-deploy"
+            ]
         },
         {
             "label": "watch-cli",
