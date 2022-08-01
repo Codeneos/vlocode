@@ -52,7 +52,7 @@ const common : webpack.Configuration = {
                     options: {
                         onlyCompileBundledFiles: true,
                         transpileOnly: false,
-                        configFile: 'tsconfig.json'
+                        configFile: '../tsconfig.json'
                     } as Options
                 }],
             },
@@ -79,12 +79,12 @@ const common : webpack.Configuration = {
         //     '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
         //     '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
         // },
-        alias: {
-            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
-            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
-            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
-        },
+        // alias: {
+        //     '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
+        //     '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
+        //     '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
+        //     '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
+        // },
         plugins: [ 
             new TsconfigPathsPlugin()
         ]
@@ -119,7 +119,7 @@ const common : webpack.Configuration = {
                 default: false,
                 defaultVendors: false,
                 sass: {
-                    priority: 10,
+                    priority: 20,
                     test: /[\\/]sass\.js[\\/]/,
                     name: 'lib-sass',
                     reuseExistingChunk: false,
@@ -127,27 +127,27 @@ const common : webpack.Configuration = {
                 'vlocity-deploy': {
                     priority: 10,
                     test: /[\\/]packages[\\/]vlocity-deploy[\\/]/,
-                    name: 'vlocity-deploy'
+                    name: 'vlocode-vlocity-deploy'
                 },
                 salesforce: {
                     priority: 10,
                     test: /[\\/]packages[\\/]salesforce[\\/]/,
-                    name: 'salesforce'
+                    name: 'vlocode-salesforce'
                 },
                 core: {
                     priority: 10,
                     test: /[\\/]packages[\\/]core[\\/]/,
-                    name: 'core'
+                    name: 'vlocode-core'
                 },
                 util: {
                     priority: 10,
                     test: /[\\/]packages[\\/]util[\\/]/,
-                    name: 'util'
+                    name: 'vlocode-util'
                 },
                 shared: {
                     priority: 5,
                     test: /[\\/]node_modules[\\/]/,
-                    name: 'shared',
+                    name: 'vendor',
                     reuseExistingChunk: false
                 }
             },
