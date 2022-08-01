@@ -132,11 +132,17 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             await this.deployRecords(deployableRecords, cancelToken);
         }
 
-        const skippedRecords = this.skippedRecordCount;
-        if (this.totalRecordCount == skippedRecords) {
-            this.logger.log(`No records deployed; ${this.totalRecordCount} records already in-sync with local source [${timer.stop()}]`);
+        const deployMessage = `Deployed ${this.deployedRecordCount} records ${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
+
+        if (this.options.deltaCheck) {
+            const skippedRecords = this.skippedRecordCount;
+            if (this.totalRecordCount == skippedRecords) {
+                this.logger.log(`No records deployed; ${this.totalRecordCount} records already in-sync with local source [${timer.stop()}]`);
+            } else {
+                this.logger.log(`${deployMessage} (skipped ${skippedRecords} in-sync records) [${timer.stop()}]`);
+            }
         } else {
-            this.logger.log(`Deployed ${this.deployedRecordCount} records, failed ${this.failedRecordCount} records (skipped ${skippedRecords} in-sync records) [${timer.stop()}]`);
+            this.logger.log(deployMessage);
         }
     }
 

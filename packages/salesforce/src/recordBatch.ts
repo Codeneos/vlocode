@@ -195,12 +195,13 @@ export class RecordBatch {
             allOrNone: false,
             allowRecursive: false
         }) as RecordResult[];
-        this.logger.info(`Complete ${chunk.operation} of ${chunk.records.length} ${chunk.sobjectType} records (Collections API) [${timer.stop()}]`);
 
         // Process results
         const failedCount = results.reduce((sum, i) => sum + (i.success ? 0 : 1), 0);
         this.failedCount += failedCount;
         this.processedCount += results.length - failedCount;
+
+        this.logger.info(`Complete ${chunk.operation} of ${chunk.records.length} ${chunk.sobjectType} records ${failedCount ? `${failedCount}` : 'no'} errors (Collections API) [${timer.stop()}]`);
 
         return results;
     }
@@ -241,14 +242,16 @@ export class RecordBatch {
                 this.logger.warn(`${chunk.sobjectType} bulk cancelled at ${processedCount}/${chunk.records.length} [${timer.stop()}]`);
                 return [];
             }
-            this.logger.info(`Complete ${chunk.operation} of ${chunk.records.length} ${chunk.sobjectType} records (Bulk API) [${timer.stop()}]`);
 
             // const results = await promisify(batchJob.execute)(chunk.records) as RecordResult[];
             // increment counters yield sp that parallel jobs can run
             const batchFailedCount = results.reduce((sum, i) => sum + (i.success ? 0 : 1), 0);
             this.failedCount += -failedCount - (batchFailedCount);
             this.processedCount += -processedCount + (results.length - failedCount);
+
+            this.logger.info(`Complete ${chunk.operation} of ${chunk.records.length} ${chunk.sobjectType} records ${failedCount ? `${failedCount}` : 'no'} errors (Bulk API) [${timer.stop()}]`);
             return results;
+
         }
         finally {
             this.logger.verbose('Closing bulk job');
