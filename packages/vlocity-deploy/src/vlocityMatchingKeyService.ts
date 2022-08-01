@@ -30,9 +30,10 @@ export class VlocityMatchingKeyService {
         return this.loadAllMatchingKeys();
     }
 
-    // private get queryDefinitions() {
-    //     return ExportQueryDefinitions;
-    // }
+    public async initialize() {
+        // Init matching keys
+        await this.matchingKeys;
+    }
 
     /**
      * Build a specific select query for 

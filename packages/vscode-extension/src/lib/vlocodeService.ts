@@ -10,7 +10,7 @@ import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 import { JsForceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
+import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
 @injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
@@ -81,8 +81,10 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
             if (this.config.sfdxUsername) {
                 this._salesforceService = container.get(SalesforceService);
+                this.showStatus('$(sync) Initializing datapack services...');
                 await this.nsService.initialize(this._salesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
+                await container.get(VlocityMatchingKeyService).initialize();
             }
             this.updateExtensionStatus(this.config);
         } catch (err) {
