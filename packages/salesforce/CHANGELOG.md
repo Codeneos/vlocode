@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.17.0](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.0) (2022-08-01)
+
+### Bug Fixes
+
+* js sandbox compiler class mutation of context fails due to proxy not trapping `getOwnPropertyDescriptor` and `getkeys` properly ([ac52330](https://github.com/Codeneos/vlocode/commit/ac52330b8b9d4d5efbb590d2f4bc589c23cf685b))
+
+### Features
+
+* add query parser to manipulate and analyze SOQL queries ([5a371bd](https://github.com/Codeneos/vlocode/commit/5a371bdda56e79ad565bed6f36495b3aaf1a0833))
+
 ## [0.16.36](https://github.com/Codeneos/vlocode/compare/v0.16.35...v0.16.36) (2022-07-18)
 
 **Note:** Version bump only for package @vlocode/salesforce

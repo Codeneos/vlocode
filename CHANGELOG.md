@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.17.0](https://github.com/codeneos/vlocode/compare/v0.16.36...v0.17.0) (2022-08-01)
+
+### Bug Fixes
+
+* improve code coverage of IoC container class. ([b46f2e9](https://github.com/codeneos/vlocode/commit/b46f2e96afe006cd29159b2202a9eb677b0cfa6d))
+* js sandbox compiler class mutation of context fails due to proxy not trapping `getOwnPropertyDescriptor` and `getkeys` properly ([ac52330](https://github.com/codeneos/vlocode/commit/ac52330b8b9d4d5efbb590d2f4bc589c23cf685b))
+
+### Features
+
+* add icon to terminal window ([ec46aa3](https://github.com/codeneos/vlocode/commit/ec46aa339fc021c98b3b38f23fe751be3cf3d9ce))
+* add query parser to manipulate and analyze SOQL queries ([5a371bd](https://github.com/codeneos/vlocode/commit/5a371bdda56e79ad565bed6f36495b3aaf1a0833))
+
 ## [0.16.36](https://github.com/codeneos/vlocode/compare/v0.16.35...v0.16.36) (2022-07-18)
 
 **Note:** Version bump only for package vlocode-project
