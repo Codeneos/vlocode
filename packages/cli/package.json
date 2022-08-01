@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/cli",
-    "version": "0.16.36",
+    "version": "0.17.0",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment CLI",
     "keywords": [
         "Vlocity",
@@ -56,10 +56,10 @@
         "@types/fs-extra": "^9",
         "@types/jest": "^28.1.3",
         "@types/node": "^16",
-        "@vlocode/core": "^0.16.36",
-        "@vlocode/salesforce": "^0.16.36",
-        "@vlocode/util": "^0.16.36",
-        "@vlocode/vlocity-deploy": "^0.16.36",
+        "@vlocode/core": "^0.17.0",
+        "@vlocode/salesforce": "^0.17.0",
+        "@vlocode/util": "^0.17.0",
+        "@vlocode/vlocity-deploy": "^0.17.0",
         "chalk": "^4.1.1",
         "commander": "^9.2.0",
         "create-ts-index": "^1.14.0",
