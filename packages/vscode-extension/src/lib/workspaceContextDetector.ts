@@ -62,7 +62,6 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
     public async initialize() {
         this.workspaceFolderWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async e => {
-            clearCache(this);
             for (const removeWorkspace of e.removed) {
                 this.remove(removeWorkspace.uri.fsPath);
             }
@@ -73,27 +72,32 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         });
 
         this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, true, false);
-        this.workspaceFileWatcher.onDidCreate(async newFile => {
-            clearCache(this);
-            let entry = await this.fs.stat(newFile.fsPath);
-            if (!entry?.isDirectory()) {
-                entry = await this.fs.stat(path.dirname(newFile.fsPath));
-            }
-            if (entry?.isDirectory()) {
-                const folderFiles = await this.getApplicableFiles(newFile.fsPath);
-                if (folderFiles.length) {
-                    this.add(newFile.fsPath.split(/\\|\//).map((v,i,p) => [...p.slice(0, i), v].join(path.sep)));
-                    this.add(folderFiles);
-                    this.scheduleContextUpdate();
-                }
-            }
-        });
+        this.workspaceFileWatcher.onDidCreate(async newFile => this.onDidCreateHandler(newFile.fsPath));
 
         this.add(await this.getApplicableFilesInWorkspace());
         this.scheduleContextUpdate();
         clearCache(this);
 
         return this;
+    }
+
+    private async onDidCreateHandler(filePath: string) {        
+        const entry = await this.fs.stat(filePath);
+
+        if (!entry) {
+            return;
+        }
+
+        if (!entry?.isDirectory()) {
+            return this.onDidCreateHandler(path.dirname(filePath));
+        }
+
+        const folderFiles = await this.getApplicableFiles(filePath);
+        if (folderFiles.length) {
+            this.add(filePath.split(/\\|\//).map((v,i,p) => [...p.slice(0, i), v].join(path.sep)));
+            this.add(folderFiles);
+            this.scheduleContextUpdate();
+        }
     }
 
     private add(filePath: string | string[]) {

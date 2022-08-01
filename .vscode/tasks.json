@@ -47,10 +47,10 @@
                 "watch-vlocity-deploy"
             ]
         },
-        {            
+        {
             "label": "watch-cli",
             "type": "shell",
-            "problemMatcher":"$tsc-watch",
+            "problemMatcher": "$tsc-watch",
             "command": "pnpm --filter @vlocode/cli watch",
             "isBackground": true,
             "presentation": {
@@ -63,26 +63,10 @@
                 "watch-vlocity-deploy"
             ]
         },
-        {            
-            "label": "watch-vscode-extension",
-            "type": "shell",
-            "problemMatcher":"$tsc-watch",
-            "command": "pnpm --filter vlocode watch",
-            "isBackground": true,
-            "presentation": {
-                "reveal": "always"
-            },
-            "group": {
-                "kind": "build"
-            },
-            "dependsOn": [
-                "watch-vlocity-deploy"
-            ]
-        },
-        {            
+        {
             "label": "watch-vlocity-deploy",
             "type": "shell",
-            "problemMatcher":"$tsc-watch",
+            "problemMatcher": "$tsc-watch",
             "command": "pnpm --filter @vlocode/vlocity-deploy watch",
             "isBackground": true,
             "presentation": {
@@ -95,10 +79,10 @@
                 "watch-salesforce"
             ]
         },
-        {            
+        {
             "label": "watch-salesforce",
             "type": "shell",
-            "problemMatcher":"$tsc-watch",
+            "problemMatcher": "$tsc-watch",
             "command": "pnpm --filter @vlocode/salesforce watch",
             "isBackground": true,
             "presentation": {
@@ -111,10 +95,10 @@
                 "watch-core"
             ]
         },
-        {            
+        {
             "label": "watch-core",
             "type": "shell",
-            "problemMatcher":"$tsc-watch",
+            "problemMatcher": "$tsc-watch",
             "command": "pnpm --filter @vlocode/core watch",
             "isBackground": true,
             "presentation": {
@@ -127,10 +111,10 @@
                 "watch-util"
             ]
         },
-        {            
+        {
             "label": "watch-util",
             "type": "shell",
-            "problemMatcher":"$tsc-watch",
+            "problemMatcher": "$tsc-watch",
             "command": "pnpm --filter @vlocode/util watch",
             "isBackground": true,
             "presentation": {

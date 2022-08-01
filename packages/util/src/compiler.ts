@@ -1,6 +1,7 @@
 import * as vm from 'vm';
 import { singleton } from './singleton';
 import { cache } from './cache';
+import { unique } from './collection';
 
 /**
  * Helper to allow cache decorator to be used for compiled code
@@ -18,14 +19,23 @@ class Compiler {
         }
 
         return function (context?: any, contextMutable?: boolean) {
-            const sandboxValues = contextMutable ? context : {};
-            const sandboxContext = new Proxy(context ?? {}, {
-                get(target, prop) {
-                    return sandboxValues[prop] ?? target[prop];
+            const sandboxValues = {};
+            const sandboxContext = new Proxy(sandboxValues, {
+                get(_target, prop) {
+                    return sandboxValues[prop] ?? context[prop];
                 },
-                set(target, prop, value) {
-                    sandboxValues[prop] = value;
+                set(_target, prop, value) {
+                    (contextMutable ? context : sandboxValues)[prop] = value;
                     return true;
+                },
+                getOwnPropertyDescriptor(_target, prop) {
+                    return sandboxValues[prop] !== undefined 
+                        ? Reflect.getOwnPropertyDescriptor(sandboxValues, prop) 
+                        : Reflect.getOwnPropertyDescriptor(context, prop) 
+                },
+                ownKeys(_target) {
+                    return contextMutable ? Reflect.ownKeys(context) 
+                        : [...unique([...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)])];
                 }
             });
             compiledFn(sandboxContext);
