@@ -74,7 +74,7 @@ export class QueryFormatter {
     }
 }
 
-export class QueryParser2 implements SalesforceQuery {
+export class QueryParser implements SalesforceQuery {
 
     public readonly parser: Parser;
 
@@ -91,7 +91,7 @@ export class QueryParser2 implements SalesforceQuery {
     }
 
     public static parse(queryString: string) {
-        return new QueryParser2(queryString).parse();
+        return new QueryParser(queryString).parse();
     }
 
     private parse(): SalesforceQuery {
@@ -119,7 +119,7 @@ export class QueryParser2 implements SalesforceQuery {
     }
 
     public static parseFieldsList(query: string) {
-        return new QueryParser2('').parseFieldsList(new Parser(query));
+        return new QueryParser('').parseFieldsList(new Parser(query));
     }   
 
     private parseFieldsList(parser: Parser): string[] {
@@ -151,7 +151,7 @@ export class QueryParser2 implements SalesforceQuery {
     }
 
     public static parseQueryCondition(query: string) {
-        return new QueryParser2('').parseQueryCondition(new Parser(query));
+        return new QueryParser('').parseQueryCondition(new Parser(query));
     }    
 
     private parseQueryCondition(parser: Parser) {
