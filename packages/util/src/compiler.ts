@@ -1,6 +1,7 @@
 import * as vm from 'vm';
 import { singleton } from './singleton';
 import { cache } from './cache';
+import { unique } from './collection';
 
 /**
  * Helper to allow cache decorator to be used for compiled code
@@ -18,22 +19,23 @@ class Compiler {
         }
 
         return function (context?: any, contextMutable?: boolean) {
-            const sandboxValues = contextMutable ? (context ?? {}) : {};
-            const sandboxContext = new Proxy({}, {
-                get(target, prop) {
+            const sandboxValues = {};
+            const sandboxContext = new Proxy(sandboxValues, {
+                get(_target, prop) {
                     return sandboxValues[prop] ?? context[prop];
                 },
-                set(target, prop, value) {
-                    sandboxValues[prop] = value;
+                set(_target, prop, value) {
+                    (contextMutable ? context : sandboxValues)[prop] = value;
                     return true;
                 },
-                getOwnPropertyDescriptor(target, prop) {
-                    const contextProperty = Object.getOwnPropertyDescriptor(context, prop);
-                    const sandboxProperty = Object.getOwnPropertyDescriptor(sandboxValues, prop);
-                    return sandboxProperty ?? contextProperty;
+                getOwnPropertyDescriptor(_target, prop) {
+                    return sandboxValues[prop] !== undefined 
+                        ? Reflect.getOwnPropertyDescriptor(sandboxValues, prop) 
+                        : Reflect.getOwnPropertyDescriptor(context, prop) 
                 },
-                ownKeys() {
-                    return contextMutable ? Reflect.ownKeys(context) : [...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)];
+                ownKeys(_target) {
+                    return contextMutable ? Reflect.ownKeys(context) 
+                        : [...unique([...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)])];
                 }
             });
             compiledFn(sandboxContext);

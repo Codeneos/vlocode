@@ -1,4 +1,4 @@
-import { container, Logger } from '@vlocode/core';
+import { container, injectable, Logger } from '@vlocode/core';
 import { cache, CancellationToken } from '@vlocode/util';
 import type { SuccessResult } from 'jsforce';
 
@@ -7,12 +7,13 @@ import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import { QueryService } from './queryService';
 import { SalesforceDebugLevel } from './salesforceDebugLevel';
 
+@injectable()
 export class DeveloperLogs {
 
     public constructor(
-        private readonly connectionProvider: JsForceConnectionProvider = container.get(JsForceConnectionProvider),
-        private readonly queryService: QueryService = container.get(QueryService),
-        private readonly logger: Logger = container.get(Logger)) {
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly queryService: QueryService,
+        private readonly logger: Logger) {
     }
 
     /**
