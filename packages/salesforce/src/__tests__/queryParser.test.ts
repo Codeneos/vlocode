@@ -1,7 +1,6 @@
 import 'jest';
 
-import { QueryFormatter, QueryParser2 as QueryParser } from '../queryParser2';
-import { Logger, container } from '@vlocode/core';
+import { QueryFormatter, QueryParser } from '../queryParser';
 
 describe('QueryParser2', () => {
 

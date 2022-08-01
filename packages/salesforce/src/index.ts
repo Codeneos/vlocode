@@ -10,7 +10,7 @@ export * from './developerLogs';
 export * from './metadataRegistry';
 export * from './namespaceService';
 export * from './queryBuilder';
-export * from './queryParser2';
+export * from './queryParser';
 export * from './queryService';
 export * from './recordBatch';
 export * from './salesforceDebugLevel';
