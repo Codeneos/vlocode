@@ -85,7 +85,7 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
     public async isProductionOrg() : Promise<boolean> {
         const connection = await this.getJsForceConnection();
         const results = await connection.query<{IsSandbox: boolean}>('SELECT IsSandbox FROM Organization');
-        return results.records[0].IsSandbox as boolean;
+        return results.records[0].IsSandbox === false;
     }
 
     public getApiVersion() : string {
