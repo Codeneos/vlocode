@@ -112,11 +112,7 @@ export default class LogManager {
                 }
             },
             focus: () => {
-                for (const writer of this.getWriters(logName)) {
-                    if (writer.focus) {
-                        return writer.focus();
-                    }
-                }
+                return Promise.all(this.getWriters(logName).filter(({ focus }) => focus).map(writer => writer.focus?.())).then(() => {});
             }
         });
     }
