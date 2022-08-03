@@ -24,10 +24,21 @@ export default class extends Command {
     static options = [
         new Option('-u, --user <username>', 'Salesforce username or alias of the org to deploy the datapacks to').makeOptionMandatory(false),        
         new Option('-i, --instance <url>', 'the URL instance').default('test.salesforce.com'),
-        new Option('--purge-dependencies', 'purges records embedded in the datapack from the target org to ensure a clean deployment. Purging dependencies is slower').default(false),
+        new Option('--purge-dependencies', 
+            `delete embedded dependencies with matching keys after the primary datapack record is deployed. ` + 
+            `By default Vlocode will only delete child records that do not have a matching key configuration, ` + 
+            `with this flag Vlocode will delete all child records that have a lookup relationships to the primary datapack record. ` + 
+            `For example; when deploying a Product2 datapack this flag will delete all child item records found in the targer org with a lookup to the Product2 datapack that is deployed.`).default(false),
         new Option('--lookup-failed', 'lookup the Ids of records that failed to deploy but are dependencies for other parts of the deployment').default(false),        
         new Option('--retry-count <count>', 'the number of times a record deployment is retried before failing it').default(1),
         new Option('--bulk-api', 'use the Salesforce bulk API to update and insert records').default(false),
+        new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
+        new Option('--strict-dependencies', 
+            `enforce datapacks with dependencies on records inside other datapacks are fully deployed. ` +
+            `By default Vlocode determines deployment order based on record level dependencies, ` + 
+            `this allows for more optimal chunking improving the overall speed of the deployment. ` +
+            `If you are running into deployment errors and think that Vlocode does not follow the correct deployment order try enabling this setting.`
+        ).default(false),
         new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
     ];
 

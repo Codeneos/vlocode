@@ -103,7 +103,7 @@ export default class DeployDatapackCommand extends DatapackCommand {
 
     private async directDeploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
-        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks, { cancellationToken });
+        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks, undefined, cancellationToken);
         await deployment.start(cancellationToken);
 
         if (cancellationToken.isCancellationRequested) {
