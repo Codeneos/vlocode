@@ -5,14 +5,13 @@ import * as path from 'path';
 import * as datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { JsForceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
+import { CustomFieldMetadata, CustomObjectMetadata, DescribeSObjectResult, JsForceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { VlocityDatapack } from '../datapack';
 import { VlocityMatchingKeyService, VlocityMatchingKey } from '../vlocityMatchingKeyService';
 
 describe('datapackRecordFactory', () => {
-
     function mockConnectionProvider(results: any[]) {
         return ({
             getJsForceConnection: () => ({
@@ -162,6 +161,84 @@ describe('datapackRecordFactory', () => {
             "UnitPrice": 426,
             "UseStandardPrice": false,
             "VAT_Rate__c": 21
+        });
+    });
+
+    it('should stringify convert JSON object', async () => {
+        // Arrange
+        const schemaDataFile = path.join(__dirname, './data/schema.json');
+        const testContainer = container.new();
+
+        const datapackData = {
+            "StringField__c": {
+                "Test": "JSON"
+            },
+            "VlocityDataPackType": "SObject",
+            "VlocityRecordSObjectType": "TestObject",
+            "VlocityRecordSourceKey": "TestObject/956f1cd4-61c3-4986-2dbd-33bef2fd4bdf"
+        };
+
+        const schemaData = {
+            "version": 1,
+            "values": [ {
+                "metadata": {
+                    "fullName": "TestObject",
+                    "fields": [ {
+                        "fullName": "StringField__c",
+                        "externalId": false,
+                        "label": "String Field",
+                        "length": 255,
+                        "required": false,
+                        "trackHistory": false,
+                        "type": "Text",
+                        "unique": false
+                    } ]
+                }, 
+                "describe": {
+                    "keyPrefix": "000",
+                    "name": "TestObject",
+                    "fields": [ {
+                        "aggregatable": true,
+                        "byteLength": 765,
+                        "createable": true,
+                        "custom": true,
+                        "digits": 0,
+                        "filterable": true,
+                        "groupable": true,
+                        "label": "String Field",
+                        "length": 255,
+                        "name": "StringField__c",
+                        "nillable": true,
+                        "permissionable": true,
+                        "picklistValues": [],
+                        "precision": 0,
+                        "referenceTo": [],
+                        "scale": 0,
+                        "soapType": "xsd:string",
+                        "sortable": true,
+                        "type": "string",
+                        "updateable": true
+                    }]
+                }
+            } ]
+        };
+
+        testContainer.registerAs(mockConnectionProvider([]), JsForceConnectionProvider);
+        testContainer.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
+        testContainer.register(await new SchemaDataStore().load(schemaData));
+        testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);
+
+        const datapack = new VlocityDatapack('', datapackData.VlocityDataPackType, datapackData.VlocityRecordSourceKey, '', datapackData);
+        const sut = testContainer.create(DatapackRecordFactory);
+
+        // Act
+        const records = await sut.createRecords(datapack);
+
+        // Assert
+        expect(records.length).toBe(1);
+        expect(records[0].sobjectType).toBe('TestObject');
+        expect(records[0].values).toStrictEqual({
+            "StringField__c": "{\"Test\":\"JSON\"}"
         });
     });
 });

@@ -195,7 +195,7 @@ export class DatapackRecordFactory {
     }
 
     private convertValueToString(value: unknown) {
-        if (value === 'object') {
+        if (typeof value === 'object') {
             if (Buffer.isBuffer(value)) {
                 return value.toString();
             }
