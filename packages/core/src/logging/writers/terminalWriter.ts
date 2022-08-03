@@ -33,10 +33,6 @@ export class TerminalWriter implements LogWriter {
         return !this.isOpened || !this.currentTerminal;
     }
 
-    public get isFocused() {
-        return this.vscode.window.activeTerminal?.name == this.currentTerminal?.name;
-    }
-
     constructor(private readonly name: string, private readonly options?: TerminalWriterOptions) {
     }
 
@@ -118,9 +114,7 @@ export class TerminalWriter implements LogWriter {
     }
 
     public focus() {
-        if (!this.isFocused) {
-            this.currentTerminal?.show(true);
-        }
+        this.currentTerminal?.show(true);
     }
 
     public write(entry: LogEntry) {
