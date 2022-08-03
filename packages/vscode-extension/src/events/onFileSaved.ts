@@ -61,7 +61,7 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
 
     private deployAsDatapack(document: vscode.TextDocument) : Promise<any> {
         this.logger.verbose(`Requesting datapack deploy for: ${document.uri.fsPath}`);
-        return this.vloService.commands.execute(VlocodeCommand.deployDatapack, document.uri, null, false);
+        return this.vloService.commands.execute(VlocodeCommand.deployDatapack, [ document.uri, null, false ]);
     }
 
     private async deployAsMetadata(document: vscode.TextDocument) : Promise<void> {
@@ -73,6 +73,6 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
             return;
         }
         this.logger.verbose(`Requesting metadata deploy for: ${document.uri.fsPath}`);
-        return this.vloService.commands.execute(VlocodeCommand.deployMetadata, document.uri, null, false);
+        return this.vloService.commands.execute(VlocodeCommand.deployMetadata, [ document.uri, null, false ]);
     }
 }

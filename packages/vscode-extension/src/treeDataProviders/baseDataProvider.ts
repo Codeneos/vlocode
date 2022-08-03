@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import VlocodeService from '@lib/vlocodeService';
-import { CommandCtor } from '@lib/commandRouter';
+import { CommandFn } from '@lib/commandRouter';
 import { getContext } from '@lib/vlocodeContext';
 import * as uuid from 'uuid';
 import { VlocodeCommand } from '@constants';
@@ -44,9 +44,7 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
         this.dataChangedEmitter.fire(node);
     }
 
-    protected getCommands() : {
-        [name: string]: ((...args: any[]) => void) | CommandCtor;
-    } {
+    protected getCommands(): { [name: string]: CommandFn } {
         return {};
     }
 

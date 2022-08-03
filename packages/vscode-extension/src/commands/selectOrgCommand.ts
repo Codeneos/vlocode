@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { SalesforceOrgInfo, sfdx } from '@vlocode/util';
-import { CommandBase } from './commandBase';
+import { CommandBase } from '../lib/commandBase';
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
 
