@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
-import { CommandBase } from './commandBase';
+import { CommandBase } from '../lib/commandBase';
 import { JsForceConnectionProvider } from '@vlocode/salesforce';
 
 class VlocityAdminCommand extends CommandBase {

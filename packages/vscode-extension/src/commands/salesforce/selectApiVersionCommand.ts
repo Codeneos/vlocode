@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CommandBase } from '../commandBase';
+import { CommandBase } from '../../lib/commandBase';
 
 export default class SelectApiVersionCommand extends CommandBase {
 

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
 import VlocityDatapackService, { ManifestEntry } from '@lib/vlocity/vlocityDatapackService';
-import { CommandBase } from '@commands/commandBase';
+import { CommandBase } from '@root/lib/commandBase';
 import { mapAsyncParallel } from '@vlocode/util';
 import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack } from '@vlocode/vlocity-deploy';
 import { SalesforceService } from '@vlocode/salesforce';
