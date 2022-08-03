@@ -1,6 +1,6 @@
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
 import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
 import { DatapackLookupService, OrgRecordStatus } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
@@ -105,7 +105,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly salesforceService: SalesforceService,
         private readonly logger: Logger) {
         super();
-        this.options = { ...datapackDeploymentDefaultOptions, ...(options || {}) };
+        this.options = { ...withDefaults(options, datapackDeploymentDefaultOptions) };
         this.dependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
     }
 
@@ -126,14 +126,19 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      */
     public async start(cancelToken?: CancellationToken) {
         const timer = new Timer();
-        let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
 
+        let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
         while (deployableRecords = this.getDeployableRecords()) {
             await this.deployRecords(deployableRecords, cancelToken);
         }
 
-        const deployMessage = `Deployed ${this.deployedRecordCount} records ${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
+        this.writeDeploymentSummaryToLog(timer);
+    }
 
+    private writeDeploymentSummaryToLog(timer: Timer) {
+        // Generare a reasonable log message that summerizes the deployment
+        const deployMessage = `Deployed ${this.deployedRecordCount} records${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
+        
         if (this.options.deltaCheck) {
             const skippedRecords = this.skippedRecordCount;
             if (this.totalRecordCount == skippedRecords) {
@@ -195,6 +200,24 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
+     * Gets the deployment status of a record by source key
+     * @param sourcekey 
+     */
+     public getDatapackStatus(datapackKey: string) : DeploymentStatus {
+        const records = groupBy(this.getRecords(datapackKey), record => `${record.status}`);
+        if (records[DeploymentStatus.InProgress]?.length) {
+            return DeploymentStatus.InProgress;
+        } else if (records[DeploymentStatus.Pending]?.length || records[DeploymentStatus.Retry]?.length) {
+            return DeploymentStatus.Pending;
+        } else if (records[DeploymentStatus.Deployed]?.length) {
+            return DeploymentStatus.Deployed;
+        } else if (records[DeploymentStatus.Skipped]?.length) {
+            return DeploymentStatus.Skipped;
+        } 
+        return DeploymentStatus.Failed;
+    }
+
+    /**
      * Get all records that can be deployed; i.e records that do not have any pending dependencies.
      */
     private getDeployableRecords() {
@@ -222,9 +245,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      */
     private hasPendingDependencies(record: DatapackDeploymentRecord) : boolean {
         for(const key of record.getDependencySourceKeys()) {
-            const dependency = this.records.get(key);
-            if (dependency && dependency.isPending) {
+            const dependendRecord = this.records.get(key);
+            if (!dependendRecord) {
+                continue;
+            }
+
+            if (dependendRecord.isPending) {
                 return true;
+            }
+
+            if (this.options.strictDependencies) {
+                const isExternalDependency = dependendRecord?.datapackKey !== record.datapackKey;
+                if (isExternalDependency) {
+                    const datapackStatus = this.getDatapackStatus(record.datapackKey);
+                    return datapackStatus < DeploymentStatus.Deployed;
+                }
             }
         }
         return false;

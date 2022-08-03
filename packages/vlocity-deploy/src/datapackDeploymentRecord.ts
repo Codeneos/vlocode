@@ -4,8 +4,8 @@ import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer
 export enum DeploymentStatus {
     Pending,
     InProgress,
-    Deployed,
     Retry,
+    Deployed,
     Failed,
     Skipped
 }

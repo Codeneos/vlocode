@@ -42,7 +42,6 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * @default false
      */
     disableTriggers?: boolean;
-    cancellationToken?: CancellationToken;
     /**
      * Number of times to retry the update or insert operation when it fails; defaults to 1 when not set
      * @default 1
@@ -79,11 +78,19 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     deltaCheck?: boolean;
     /**
-     * Continue the deployment when a fatal error occurs, note that continueing the deployment on fatal errors will result in an incomplete deployment. This setting 
-     * affects fatal errors such as unable to convert a datapack to valid Salesforce records and should not be enabled on production deploymenyts.
+     * Continue the deployment when a fatal error occurs, note that continuing the deployment on fatal errors will result in an incomplete deployment. This setting 
+     * affects fatal errors such as unable to convert a datapack to valid Salesforce records and should not be enabled on production deployments.
      * @default false;
      */
     continueOnError?: boolean;
+    /**
+     * When strict dependencies are enabled the deployment will wait for a records in a datapack to complete before proceeding with deploying 
+     * the dependent record. This ensures that a datapack and all it's records an dependencies are deployed before deploying the dependent datapack.
+     * 
+     * Enabling this reduces deployment performance as the deployment will be split in smaller chunks increasing the number of API calls to Salesforce.
+     * @default false;
+     */
+    strictDependencies?: boolean;
 }
 
 export interface DatapackDeploymentSpec {
@@ -111,7 +118,7 @@ export class DatapackDeployer {
      * @param datapacks Datapacks to deploy
      * @returns Datapack deployment object
      */
-    public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions) {
+    public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
         this.container.register(new QueryService(this.connectionProvider).setCacheDefault(true));
         const deployment = this.container.create(DatapackDeployment, options);
         const recordFactory = this.container.create(DatapackRecordFactory);
@@ -124,7 +131,7 @@ export class DatapackDeployer {
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
         await forEachAsyncParallel(datapacks, async (datapack) => {
-            if (options?.cancellationToken?.isCancellationRequested) {
+            if (cancellationToken?.isCancellationRequested) {
                 return;
             }
             try {
@@ -133,7 +140,11 @@ export class DatapackDeployer {
                 await this.runSpecFunction(datapack.datapackType, 'afterRecordConversion', records);
                 deployment.add(...records);
             } catch(err) {
-                this.logger.error(`Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`);
+                const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`;
+                if (!options?.continueOnError) {
+                    throw new Error(errorMessage); 
+                }
+                this.logger.error(errorMessage);
             }
         }, 8);
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
@@ -142,8 +153,8 @@ export class DatapackDeployer {
     }
 
     /**
-     * Disable or enable all Vlocity triggers.
-     * @param enable sets all triggers
+     * Disable or enable all Vlocity triggers
+     * @param newTriggerState true to enable all Vlocity Triggers; false to disabled all Vlocity triggers
      */
     private async setVlocityTriggerState(newTriggerState: boolean) {
         const timer = new Timer();
