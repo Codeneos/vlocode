@@ -407,7 +407,7 @@ export class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
-     * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX regsitery
+     * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
     public getMetadataTypes() : MetadataType[] {
         return this.metadataRegistry.getMetadataTypes();
