@@ -1,17 +1,11 @@
 {
     "extends": "../../tsconfig",
     "compilerOptions": {
-        "lib": ["ES2019"],
-        "module": "commonjs",
-        "target": "ES2019",
         "outDir": "lib",
-        "baseUrl": "./src",
+        "baseUrl": "src",
         "rootDir": "src",
         "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true,
-        "plugins": [],
-        "forceConsistentCasingInFileNames": true,
+        "declarationMap": true
     },
     "include": [ "src/**/*" ]
 }
