@@ -36,9 +36,6 @@ const workspaceFolder = path.resolve(contextFolder, '..');
 const common : webpack.Configuration = {
     context: contextFolder,
     devtool: 'source-map',
-    devServer: {
-        stats: 'errors-only'
-    },
     target: 'node',
     module: {
         rules: [
@@ -77,10 +74,10 @@ const common : webpack.Configuration = {
         //     '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
         // },
         alias: {
-            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
-            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
-            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
+            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src'),
+            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src'),
+            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src'),
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src')
         },
         plugins: [ 
             new TsconfigPathsPlugin()
