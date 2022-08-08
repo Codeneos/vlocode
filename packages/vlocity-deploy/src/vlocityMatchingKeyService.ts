@@ -35,63 +35,63 @@ export class VlocityMatchingKeyService {
         await this.matchingKeys;
     }
 
-    /**
-     * Build a specific select query for 
-     * @param type Type of object for which to build a select query
-     * @param entry Datapack or SObjectRecord like map of fields to substitute in the query conditions
-     */
-    public async getQuery(type: string, entry: { [key: string] : any }) : Promise<string> {
-        // TODO: rewrite me to a lookup
-        const sobjectType = this.vlocityNamespace.updateNamespace(entry.VlocityRecordSObjectType);
-        const matchingKey = await this.getMatchingKeyDefinition(sobjectType);
-        if (!matchingKey) {
-            throw new Error(`Object type ${type} does not have a matching key specified in Salesforce.`);
-        }
+    // /**
+    //  * Build a specific select query for 
+    //  * @param type Type of object for which to build a select query
+    //  * @param entry Datapack or SObjectRecord like map of fields to substitute in the query conditions
+    //  */
+    // public async getQuery(type: string, entry: { [key: string] : any }) : Promise<string> {
+    //     // TODO: rewrite me to a lookup
+    //     const sobjectType = this.vlocityNamespace.updateNamespace(entry.VlocityRecordSObjectType);
+    //     const matchingKey = await this.getMatchingKeyDefinition(sobjectType);
+    //     if (!matchingKey) {
+    //         throw new Error(`Object type ${type} does not have a matching key specified in Salesforce.`);
+    //     }
 
-        let baseQuery = this.getExportQuery(type);
-        if (!baseQuery) {
-            this.logger.warn(`No base query found for type ${type}; using generic select`);
-            baseQuery = `SELECT ${matchingKey.returnField} FROM ${sobjectType}`;
-        }
+    //     let baseQuery = this.getExportQuery(type);
+    //     if (!baseQuery) {
+    //         this.logger.warn(`No base query found for type ${type}; using generic select`);
+    //         baseQuery = `SELECT ${matchingKey.returnField} FROM ${sobjectType}`;
+    //     }
 
-        // Describe object
-        const sobject = await this.schema.describeSObject(sobjectType);
-        const getFieldType = (fieldName: string) =>
-            sobject.fields.find(field => stringEquals(field.name, this.vlocityNamespace.updateNamespace(fieldName), true))?.type;
+    //     // Describe object
+    //     const sobject = await this.schema.describeSObject(sobjectType);
+    //     const getFieldType = (fieldName: string) =>
+    //         sobject.fields.find(field => stringEquals(field.name, this.vlocityNamespace.updateNamespace(fieldName), true))?.type;
 
-        // Append matching key fields
-        if (matchingKey.fields.length) {
-            baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
-            baseQuery += matchingKey.fields.filter(field => entry[field])
-                .map(field => `${field} = ${this.formatValue(entry[field], getFieldType(field))}`).join(' and ');
-        }
-        baseQuery += ' ORDER BY LastModifiedDate DESC LIMIT 1';
+    //     // Append matching key fields
+    //     if (matchingKey.fields.length) {
+    //         baseQuery += / where /gi.test(baseQuery) ? ' AND ' : ' WHERE ';
+    //         baseQuery += matchingKey.fields.filter(field => entry[field])
+    //             .map(field => `${field} = ${this.formatValue(entry[field], getFieldType(field))}`).join(' and ');
+    //     }
+    //     baseQuery += ' ORDER BY LastModifiedDate DESC LIMIT 1';
 
-        if (!/ where /gi.test(baseQuery)) {
-            throw new Error(`The specified ${type} does not have a matching key`);
-        }
+    //     if (!/ where /gi.test(baseQuery)) {
+    //         throw new Error(`Object type ${type} does not have a matching key`);
+    //     }
 
-        return baseQuery;
-    }
+    //     return baseQuery;
+    // }
 
-    private formatValue(value: any, type: FieldType | undefined) : string {
-        switch (type) {
-            case 'int': return `${parseInt(value, 10)}`;
-            case 'boolean': return `${value === null || value === undefined ? null : !!value}`;
-            case 'datetime':
-            case 'double':
-            case 'currency':
-            case 'date': return value ? `${value}` : 'null';
-        }
-        return value ? `'${value}'` : 'null';
-    }
+    // private formatValue(value: any, type: FieldType | undefined) : string {
+    //     switch (type) {
+    //         case 'int': return `${parseInt(value, 10)}`;
+    //         case 'boolean': return `${value === null || value === undefined ? null : !!value}`;
+    //         case 'datetime':
+    //         case 'double':
+    //         case 'currency':
+    //         case 'date': return value ? `${value}` : 'null';
+    //     }
+    //     return value ? `'${value}'` : 'null';
+    // }
 
-    private getExportQuery(datapackType: string) : string | undefined {
-        // if (this.queryDefinitions[datapackType]) {
-        //     return this.queryDefinitions[datapackType].query;
-        // }
-        return undefined;
-    }
+    // private getExportQuery(datapackType: string) : string | undefined {
+    //     // if (this.queryDefinitions[datapackType]) {
+    //     //     return this.queryDefinitions[datapackType].query;
+    //     // }
+    //     return undefined;
+    // }
 
     // /**
     //  * Gets the VlocityMatchingKey object for the specified datapack or SObject type

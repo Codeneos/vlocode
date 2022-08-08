@@ -7,11 +7,11 @@ import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName, clearCa
 import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
-import OpenSalesforceCommand from '../commands/openSalesforceCommand';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '@lib/config';
 import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
+import OpenSalesforceCommand from '@root/commands/datapacks/openSalesforceCommand';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {

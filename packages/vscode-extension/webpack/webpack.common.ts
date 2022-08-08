@@ -2,12 +2,10 @@ import * as path from 'path';
 import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import * as glob from 'glob';
-import * as CopyPlugin from 'copy-webpack-plugin';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 //import * as ts from 'typescript';
 import WatchMarkersPlugin from './plugins/watchMarkers';
 import type { Options } from 'ts-loader';
-import { readdirSync } from 'fs';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -51,19 +49,18 @@ const common : webpack.Configuration = {
                     loader: 'ts-loader',
                     options: {
                         onlyCompileBundledFiles: true,
-                        transpileOnly: false,
-                        configFile: '../tsconfig.json'
+                        transpileOnly: false
                     } as Options
                 }],
             },
             {
                 test: /\.yaml$/,
-                use: ['./build/loaders/yaml']
+                use: [ path.join(__dirname, './loaders/yaml') ]
             },
             {
                 test: /\.js$/,
                 include: path.resolve(contextFolder, 'node_modules'),
-                use: ['./build/loaders/prefixTransform']
+                use: [ path.join(__dirname, './loaders/prefixTransform') ]
             }
         ]
     },
@@ -79,12 +76,12 @@ const common : webpack.Configuration = {
         //     '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
         //     '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
         // },
-        // alias: {
-        //     '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
-        //     '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
-        //     '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
-        //     '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
-        // },
+        alias: {
+            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
+            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
+            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
+        },
         plugins: [ 
             new TsconfigPathsPlugin()
         ]

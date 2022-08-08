@@ -7,10 +7,12 @@ import { ActivityProgress, VlocodeActivityStatus } from '@lib/vlocodeActivity';
 import { VlocodeCommand } from '@constants';
 import MetadataCommand from './metadataCommand';
 import { SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { vscodeCommand } from '@root/lib/commandRouter';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
+@vscodeCommand(VlocodeCommand.deployMetadata)
 export default class DeployMetadataCommand extends MetadataCommand {
 
     /** 

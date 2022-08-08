@@ -2,7 +2,9 @@ import { VlocodeCommand } from '@constants';
 import * as vscode from 'vscode';
 import DeployMetadataCommand from './deployMetadataCommand';
 import MetadataCommand from './metadataCommand';
+import { vscodeCommand } from '@root/lib/commandRouter';
 
+@vscodeCommand(VlocodeCommand.pauseDeploymentQueue)
 export default class PauseMetadataDeploymentsCommand extends MetadataCommand {
     public async execute() {
         const cmd = this.vlocode.commands.get(DeployMetadataCommand);

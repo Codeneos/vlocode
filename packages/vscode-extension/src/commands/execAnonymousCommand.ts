@@ -1,13 +1,16 @@
-import { DebugLogViewer } from '../../lib/salesforce/debugLogViewer';
+import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
 import { SoapDebuggingHeader } from '@vlocode/salesforce';
 import * as vscode from 'vscode';
-import MetadataCommand from './metadataCommand';
+import MetadataCommand from './metadata/metadataCommand';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
 
 type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader; name?: string };
 
 /**
  * Command for running Anonymous APEX on Salesforce
  */
+@vscodeCommand(VlocodeCommand.execAnonymousCommand)
 export default class ExecAnonymousCommand extends MetadataCommand {
 
     private readonly debugLogLevels : LogLevelQuickPickItem[] = [

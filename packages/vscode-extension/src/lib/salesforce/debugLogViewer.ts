@@ -15,7 +15,7 @@ export class DebugLogViewer {
 
     public get developerLogsPath() : string | undefined {
         const storagePath = this.options.storagePath ?? './';
-        return storagePath ? path.join(storagePath, 'developerLogs') : undefined;
+        return storagePath ? path.resolve(storagePath, '.developerLogs') : undefined;
     }
 
     public async showDeveloperLog(log: DeveloperLog) {
@@ -40,8 +40,9 @@ export class DebugLogViewer {
                 void vscode.window.showTextDocument(debugLog);
             }
         } else {
-            const debugLog = await vscode.workspace.openTextDocument({ language: 'apexlog', content: logBody });
+            const debugLog = await vscode.workspace.openTextDocument({ content: logBody });
             if (debugLog) {
+                void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
                 void vscode.window.showTextDocument(debugLog);
             }
         }

@@ -3,12 +3,14 @@ import * as constants from '@constants';
 
 import { groupBy , createRecordProxy , evalExpr } from '@vlocode/util';
 
-import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';
-import { DatapackResultCollection, ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
+import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { DatapackCommand } from './datapackCommand';
 import { SObjectRecord } from '@vlocode/salesforce';
-import { DatapackUtil } from '@vlocode/vlocity-deploy';
+import { DatapackUtil, ObjectEntry } from '@vlocode/vlocity-deploy';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { DatapackResultCollection } from '@root/lib/vlocity/vlocityDatapackService';
 
+@vscodeCommand(constants.VlocodeCommand.exportDatapack)
 export default class ExportDatapackCommand extends DatapackCommand {
 
     constructor() {

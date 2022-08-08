@@ -3,12 +3,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
 import { DatapackResultCollection } from '@lib/vlocity/vlocityDatapackService';
-import { DatapackCommand } from '@commands/datapackCommand';
 import { forEachAsyncParallel } from '@vlocode/util';
 import { container } from '@vlocode/core';
 import chalk = require('chalk');
 import { DatapackUtil, DatapackDeployer } from '@vlocode/vlocity-deploy';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
+import { DatapackCommand } from './datapackCommand';
 
+@vscodeCommand(VlocodeCommand.deployDatapack)
 export default class DeployDatapackCommand extends DatapackCommand {
 
     /** 
