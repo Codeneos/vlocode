@@ -20,7 +20,6 @@ import DeveloperLogDataProvider from './treeDataProviders/developerLogDataProvid
 import ActivityDataProvider from './treeDataProviders/activityDataProvider';
 import JobDataProvider from './treeDataProviders/jobExplorer';
 import DatapackProvider from './treeDataProviders/datapackDataProvider';
-import Commands from './commands';
 import HandleClassCreated from './events/onClassCreated';
 import HandleTriggerCreated from './events/onTriggerCreated';
 import HandleSalesforceFileDeleted from './events/onFileDeleted';
@@ -29,6 +28,8 @@ import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
 import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
 import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
+
+import './commands';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -147,7 +148,7 @@ class Vlocode {
         }
 
         // register commands and windows
-        this.service.commands.registerAll(Commands);
+        //this.service.commands.registerAll(Commands);
         this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', {
             treeDataProvider: new DatapackProvider(this.service),
             showCollapseAll: true

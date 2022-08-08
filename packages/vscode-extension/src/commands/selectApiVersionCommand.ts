@@ -1,6 +1,9 @@
+import { VlocodeCommand } from '@root/constants';
+import { CommandBase } from '@root/lib/commandBase';
+import { vscodeCommand } from '@root/lib/commandRouter';
 import * as vscode from 'vscode';
-import { CommandBase } from '../../lib/commandBase';
 
+@vscodeCommand(VlocodeCommand.selectApiVersion)
 export default class SelectApiVersionCommand extends CommandBase {
 
     public async validate() : Promise<void> {

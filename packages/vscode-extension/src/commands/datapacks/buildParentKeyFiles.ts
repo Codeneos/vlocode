@@ -7,7 +7,10 @@ import { VlocityDatapack, VlocityDatapackReference, DatapackLoader } from '@vloc
 import { container } from '@vlocode/core';
 import { DatapackCommand } from './datapackCommand';
 import { getDatapackHeadersInWorkspace } from '@root/lib/vlocity/datapackUtil';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
 
+@vscodeCommand(VlocodeCommand.buildParentKeyFiles)
 export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
     private get diagnostics() : vscode.DiagnosticCollection {

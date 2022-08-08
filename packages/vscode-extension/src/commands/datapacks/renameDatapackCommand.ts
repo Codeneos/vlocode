@@ -1,7 +1,10 @@
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
 
+@vscodeCommand(VlocodeCommand.renameDatapack)
 export default class RenameDatapackCommand extends DatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {

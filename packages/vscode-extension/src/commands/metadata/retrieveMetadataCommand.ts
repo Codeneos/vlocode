@@ -4,10 +4,13 @@ import { unique} from '@vlocode/util';
 import { DescribeGlobalSObjectResult, MetadataType, PackageManifest } from '@vlocode/salesforce';
 import { FileProperties } from 'jsforce';
 import MetadataCommand from './metadataCommand';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
  */
+@vscodeCommand(VlocodeCommand.retrieveMetadata)
 export default class RetrieveMetadataCommand extends MetadataCommand {
 
     public async execute() : Promise<void>  {

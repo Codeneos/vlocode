@@ -1,3 +1,5 @@
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -6,6 +8,7 @@ import MetadataCommand from './metadataCommand';
 /**
  * Command for handling deletion of Metadata components in Salesforce
  */
+@vscodeCommand(VlocodeCommand.destroyMetadata)
 export default class DeleteMetadataCommand extends MetadataCommand {
 
     public execute(...args: any[]): void | Promise<void> {

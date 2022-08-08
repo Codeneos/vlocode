@@ -16,10 +16,6 @@
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/core/lib/**/*.js",
-                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
-                "${workspaceFolder}/packages/util/lib/**/*.js",
-                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
                 "${workspaceFolder}/packages/vscode-extension/out/**/*.js"
             ], 
             "skipFiles": [
@@ -39,16 +35,12 @@
             "name": "Debug CLI (webpacked)",
             "args": [
                 "deploy",
-                "c:/repos/kpn_esmee/vlocity/src/VlocityUITemplate",
+                "c:/repos/kpn_esmee/vlocity/src/OmniScript",
                 "-u", "dev10pro",
                 "-v"
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
-                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
-                "${workspaceFolder}/packages/core/lib/**/*.js",
-                "${workspaceFolder}/packages/util/lib/**/*.js",
-                "${workspaceFolder}/packages/cli/dist/**/*.js"
+                "${workspaceRoot}/packages/cli/dist/**/*.js"
             ], 
             "preLaunchTask": "watch-cli-webpack",
             "smartStep": true,
@@ -58,13 +50,14 @@
             "type": "node",
             "request": "launch",
             "showAsyncStacks": true,
-            "stopOnEntry": true,
             "program": "${workspaceRoot}/packages/cli/lib/index.js",
             "name": "Debug CLI (node)",
             "args": [
                 "deploy",
+                "c:/repos/kpn_esmee/vlocity/src/OmniScript",
                 "-u", "dev10pro",
                 "--debug",
+                "--strict-dependencies",
                 "-v"
             ],
             "outFiles": [

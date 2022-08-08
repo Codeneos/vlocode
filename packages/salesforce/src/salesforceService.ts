@@ -339,6 +339,32 @@ export class SalesforceService implements JsForceConnectionProvider {
 
         return { name };
     }
+    
+    /**
+     * Get all static resources matching the specified name, the body of the resource is retrieved when required. The body of the static resource is cached
+     * @param resourceName Name of the static resource
+     * @returns 
+     */
+    public async getStaticResource(resourceName: string) {
+        const connection = await this.getJsForceConnection();
+        const { records: staticResources } = await connection.tooling.query<any>(`SELECT Id, Body, Name, NamespacePrefix FROM StaticResource WHERE Name = '${resourceName}'`);
+        
+        if (staticResources.length == 0) {
+            return [];
+        }
+
+        return staticResources.map(r => ({
+            id: r.Id,
+            namespace: r.NamespacePrefix,
+            name: r.name,
+            getBody: async function() {
+                if (!this._body) {
+                    this._body = await connection.request(r.Body);
+                }
+                return this._body as Buffer;
+            }
+        }));
+    }
 
     /**
      * Load all known Salesforce profiles in the current workspace with the *.profile-meta.xml and the *.profile extension from the file system
