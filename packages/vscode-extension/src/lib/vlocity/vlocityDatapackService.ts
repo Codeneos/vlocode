@@ -212,12 +212,12 @@ export default class VlocityDatapackService implements vscode.Disposable {
         };
         const buildTools = new vlocity({...this.config, ...vlocityInstanceParams});
         buildTools.jsForceConnection = connection;
-        buildTools.utilityservice.login = async () => {};
-        buildTools.utilityservice.sfdxLogin = async () => {};
-        buildTools.datapacksutils.printJobStatus = () => {};
-        buildTools.datapacksutils.saveCurrentJobInfo = () => {};
-        buildTools.datapacksexportbuildfile.saveFile = () => {};
-        buildTools.datapacksutils.updateStatusIPC  = () => {};
+        buildTools.utilityservice.login = async () => { /* replace with no-op */ };
+        buildTools.utilityservice.sfdxLogin = async () => { /* replace with no-op */ };
+        buildTools.datapacksutils.printJobStatus = () => { /* replace with no-op */ };
+        buildTools.datapacksutils.saveCurrentJobInfo = () => { /* replace with no-op */ };
+        buildTools.datapacksexportbuildfile.saveFile = () => { /* replace with no-op */ };
+        buildTools.datapacksutils.updateStatusIPC  = () => { /* replace with no-op */ };
         await buildTools.utilityservice.checkLogin();
 
         // patch SASS compiler
@@ -274,10 +274,9 @@ export default class VlocityDatapackService implements vscode.Disposable {
         }
         if (definition && Array.isArray(definition)) {
             const resolveValue = (field: string) => {
-
                 // Statics; remove the prefix and returns string as is
                 if (field.startsWith('_')) {
-                    return field.substr(0);
+                    return field.slice(1);
                 }
 
                 // References; use the reference value 

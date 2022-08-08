@@ -1,7 +1,10 @@
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 import { Timer } from '@vlocode/util';
 import * as vscode from 'vscode';
-import MetadataCommand from './metadataCommand';
+import MetadataCommand from './metadata/metadataCommand';
 
+@vscodeCommand(VlocodeCommand.execRestApi)
 export default class ExecuteRestApiCommand extends MetadataCommand {
     public async execute() {
         let url = await vscode.window.showInputBox({ placeHolder: 'Enter the Salesforce API endpoint', ignoreFocusOut: true });

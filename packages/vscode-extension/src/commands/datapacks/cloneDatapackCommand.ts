@@ -1,6 +1,9 @@
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
 
+@vscodeCommand(VlocodeCommand.cloneDatapack)
 export default class CloneDatapackCommand extends DatapackCommand {
 
     constructor() {

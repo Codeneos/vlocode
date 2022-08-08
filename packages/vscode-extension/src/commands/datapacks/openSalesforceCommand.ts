@@ -4,7 +4,10 @@ import * as open from 'open';
 import { evalExpr } from '@vlocode/util';
 import { ObjectEntry } from '@lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 
+@vscodeCommand(VlocodeCommand.openInSalesforce)
 export default class OpenSalesforceCommand extends DatapackCommand {
 
     private readonly namespaceResolver = {

@@ -3,10 +3,13 @@ import * as fs from 'fs-extra';
 import { except } from '@vlocode/util';
 import MetadataCommand from './metadataCommand';
 import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
  */
+@vscodeCommand(VlocodeCommand.refreshMetadata)
 export default class RefreshMetadataCommand extends MetadataCommand {
 
     public execute(...args: any[]): Promise<void> {

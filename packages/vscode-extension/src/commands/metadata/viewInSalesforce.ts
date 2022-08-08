@@ -3,7 +3,10 @@ import * as vscode from 'vscode';
 import * as open from 'open';
 import MetadataCommand from './metadataCommand';
 import { MetadataType } from '@vlocode/salesforce';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
 
+@vscodeCommand(VlocodeCommand.viewInSalesforce)
 export default class ViewInSalesforceCommand extends MetadataCommand {
 
     public async execute(args) {

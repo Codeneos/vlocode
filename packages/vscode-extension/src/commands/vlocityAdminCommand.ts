@@ -3,8 +3,14 @@ import * as vscode from 'vscode';
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
 import { CommandBase } from '../lib/commandBase';
 import { JsForceConnectionProvider } from '@vlocode/salesforce';
+import { vscodeCommand } from '@root/lib/commandRouter';
 
-class VlocityAdminCommand extends CommandBase {
+@vscodeCommand(VlocodeCommand.adminCommands)
+@vscodeCommand(VlocodeCommand.refreshPriceBook, { executeParams: [ VlocodeCommand.refreshPriceBook ] })
+@vscodeCommand(VlocodeCommand.refreshProductHierarchy, { executeParams: [ VlocodeCommand.refreshProductHierarchy ] })
+@vscodeCommand(VlocodeCommand.clearPlatformCache, { executeParams: [ VlocodeCommand.clearPlatformCache ] })
+@vscodeCommand(VlocodeCommand.updateAllProdAttribCommand, { executeParams: [ VlocodeCommand.updateAllProdAttribCommand ] })
+export class VlocityAdminCommand extends CommandBase {
 
     private readonly adminCommands = [
         {
@@ -91,16 +97,16 @@ class VlocityAdminCommand extends CommandBase {
     }
 }
 
-export default {
-    [VlocodeCommand.adminCommands]: VlocityAdminCommand,
-    [VlocodeCommand.refreshPriceBookAndProductHierarchy]: async () => {
-        await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshPriceBook);
-        await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshProductHierarchy);
-    },
-    ...[VlocodeCommand.refreshPriceBook,
-        VlocodeCommand.refreshProductHierarchy,
-        VlocodeCommand.clearPlatformCache,
-        VlocodeCommand.clearPlatformCache].reduce(
-        (map, command) => Object.assign(map, { [command]: () => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
-    )
-};
+// export default {
+//     [VlocodeCommand.adminCommands]: VlocityAdminCommand,
+//     [VlocodeCommand.refreshPriceBookAndProductHierarchy]: async () => {
+//         await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshPriceBook);
+//         await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshProductHierarchy);
+//     },
+//     ...[VlocodeCommand.refreshPriceBook,
+//         VlocodeCommand.refreshProductHierarchy,
+//         VlocodeCommand.clearPlatformCache,
+//         VlocodeCommand.clearPlatformCache].reduce(
+//         (map, command) => Object.assign(map, { [command]: () => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
+//     )
+// };

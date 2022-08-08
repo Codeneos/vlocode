@@ -1,9 +1,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { asArray } from '@vlocode/util';
-import MetadataCommand from './metadataCommand';
+import MetadataCommand from '../metadata/metadataCommand';
 import { CustomFieldMetadata, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
+import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '@root/constants';
 
+@vscodeCommand(VlocodeCommand.addToProfile, { params: [ 'add' ] })
+@vscodeCommand(VlocodeCommand.removeFromProfile, { params: [ 'remove' ] })
 export default class UpdateRelatedProfileCommand extends MetadataCommand {
 
     constructor(private readonly action:  'add' | 'remove') {

@@ -19,13 +19,14 @@ enum QueryKeywords {
  */
 const queryKeywords = Object.freeze(Object.values(QueryKeywords));
 
-interface SalesforceQuery {
+export interface SalesforceQuery {
     sobjectType: string;
     fieldList: string[];
     whereCondition?: QueryBinary | string;
     limit?: number;
     offset?: number;
     orderBy?: string[];
+    orderByDirection?: 'asc' | 'desc';
     groupBy?: string[];
 }
 
@@ -49,6 +50,9 @@ export class QueryFormatter {
 
         if (query.orderBy) {
             queryParts.push(`${QueryKeywords.ORDER_BY} ${this.formatFieldList(query.orderBy)}`);
+            if (query.orderByDirection) {                
+                queryParts.push(query.orderByDirection);
+            }
         }
 
         if (query.limit) {

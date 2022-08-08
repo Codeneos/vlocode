@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 import type { VlocodeSalesforceConfiguration } from '@lib/vlocodeConfiguration';
-import MetadataCommand from './metadataCommand';
+import MetadataCommand from '../metadata/metadataCommand';
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 
 /**
  * Set the developer log visibility
  */
+@vscodeCommand(VlocodeCommand.setLogVisibility)
 export default class SetDeveloperLogVisibilityCommand extends MetadataCommand {
 
     /**

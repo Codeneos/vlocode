@@ -3,7 +3,10 @@ import * as vscode from 'vscode';
 import { groupBy, mapAsync } from '@vlocode/util';
 import ExportDatapackCommand from './exportDatapackCommand';
 import { DatapackUtil } from '@vlocode/vlocity-deploy';
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 
+@vscodeCommand(VlocodeCommand.refreshDatapack)
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {

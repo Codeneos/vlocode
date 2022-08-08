@@ -9,6 +9,10 @@
     "typescript.tsc.autoDetect": "off",
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "cSpell.words": [
+        "Frontdoor",
+        "jsforce",
+        "SOQL",
+        "Visualforce",
         "vlocode"
     ],
     "cSpell.enabled": true,

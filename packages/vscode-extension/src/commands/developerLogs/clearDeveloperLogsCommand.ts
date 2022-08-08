@@ -1,9 +1,12 @@
+import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '@root/lib/commandRouter';
 import * as vscode from 'vscode';
-import MetadataCommand from './metadataCommand';
+import MetadataCommand from '../metadata/metadataCommand';
 
 /**
  * Clears all developer logs from the connected org
  */
+@vscodeCommand(VlocodeCommand.clearDeveloperLogs)
 export default class ClearDeveloperLogsCommand extends MetadataCommand {
 
     /**
