@@ -143,15 +143,13 @@ function* enumerateWithIndex<T>(iterable: Iterable<T>) : IterableIterator<[numbe
  * @param array An Iterable to execute the callback on
  * @param callback The callback to execute for each item
  */
-export function mapAsync<T,R>(array: Iterable<T>, callback: (item: T) => Promise<R>) : Promise<R[]> {
-    let mapPromise = Promise.resolve(new Array<R>());
+export async function mapAsync<T,R>(array: Iterable<T>, callback: (item: T, index: number) => Promise<R>) : Promise<R[]> {
+    let results = new Array<R>();
+    let index = 0;
     for (const value of array) {
-        mapPromise = mapPromise.then(async result => {
-            result.push(await callback(value));
-            return result;
-        });
+        results.push(await callback(value, index++));
     }
-    return mapPromise;
+    return results;
 }
 
 /**
