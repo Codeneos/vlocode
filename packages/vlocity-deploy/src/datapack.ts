@@ -68,18 +68,42 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         return Object.entries(this.data);
     }
 
-    public rename(name : string) {
+    public rename(newName : string) {
         const currentName = this.name;
+        this.updateField('Name', newName);
 
-        if (this.sourceKey.endsWith(currentName)) {
-            this.updateSourceKey(this.sourceKey.replace(currentName, name));
+        if (!currentName) {
+            return;
         }
 
         for (const [property, value, owner] of this.getProperties()) {
-            if (typeof value === 'string') {
-                if (value.endsWith(currentName) || value.startsWith(currentName)) {
-                    owner[property] = value.replace(currentName, name);
-                }
+            if (typeof value === 'string' && value.includes(currentName)) {
+                owner[property] = value.replaceAll(currentName, newName);
+            }
+        }
+    }
+
+    public updateField(fieldName: string, newValue: string) {
+        const currentValue = this[fieldName];
+        this[fieldName] = newValue;
+
+        if (typeof currentValue === 'string') {
+            const newSourceKey = this.sourceKey.replace(new RegExp(`(\/|^)${currentValue}(\/|$)`), `$1${newValue}$2`);
+            if (newSourceKey !== this.sourceKey) {
+                this.updateSourceKey(newSourceKey);
+            }
+        }        
+
+        for (const [property, value, owner] of this.getProperties()) {                        
+            const isMatchingKey = owner['VlocityDataPackType'] == 'VlocityMatchingKeyObject';
+            const isParentReference = isMatchingKey && owner['VlocityRecordSObjectType'] == this.sobjectType;
+            
+            if (!isParentReference) {
+                continue;
+            }
+
+            if (property == fieldName && value == currentValue) {
+                owner[property] = newValue;
             }
         }
     }
@@ -87,13 +111,11 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
     public updateSourceKey(newKey: string): any {
         const currentSourceKey = this.sourceKey;
         for (const [property, value, owner] of this.getProperties()) {
-            if (typeof value !== 'string') {
-                return;
+            if (typeof value !== 'string' || !/^Vlocity(Matching|)RecordSourceKey$/i.test(property)) {
+                continue;
             }
-            if (/^Vlocity(Matching|)RecordSourceKey$/i.test(property)) {
-                if (value.endsWith(currentSourceKey)) {
-                    owner[property] = newKey;
-                }
+            if (value.startsWith(currentSourceKey) || value.endsWith(currentSourceKey)) {
+                owner[property] = value.replace(currentSourceKey, newKey);
             }
         }
     }
@@ -186,7 +208,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
                         yield [ key, arrayValue, value ];
                     }
                 }
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && value !== null) {
                 yield* this.getProperties(value);
             } else {
                 yield [ key, value, target ];
@@ -199,7 +221,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
      * @param object object
      */
     private* getChildObjects(object = this.data) : Generator<any, void> {
-        for (const value of object.values(object)) {
+        for (const value of Object.values(object)) {
             if (typeof value !== 'object' || value === null || value === undefined) {
                 continue;
             }
