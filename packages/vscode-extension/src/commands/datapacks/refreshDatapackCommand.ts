@@ -17,20 +17,27 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
         // Depth
         const dependencyExportDepth = await this.showDependencySelection();
         if (dependencyExportDepth === undefined) {
-            this.logger.error('Export cancelled; no dependency depth selected.');
             return; // selection cancelled;
         }
 
         const datapacksByProject = await this.vlocode.withStatusBarProgress('Loading datapacks...',
             async () => groupBy(await this.loadDatapacks(selectedFiles), pack => pack.projectFolder));
 
-        // call
-        const flatDatapackList = Object.values(datapacksByProject).flat();
+        // determine what to refresh, get IDs for all relevant datapacks and select the best matching record Id
+        const flatDatapackList = Object.values(datapacksByProject).flat();     
+        const showRecordSelection = flatDatapackList.length == 1;
         const progressTitle = flatDatapackList.length > 1 ? `Refreshing ${flatDatapackList.length} datapacks...` :  `Refreshing ${DatapackUtil.getLabel(flatDatapackList[0])}...`;
 
+        if (!flatDatapackList.length) {
+            return; // do datapacks found
+        }
+
         await this.vlocode.withCancelableProgress(progressTitle, async (progress, cancelToken) => {
-            const results = await mapAsync(Object.keys(datapacksByProject),
-                projectFolder => this.datapackService.export(datapacksByProject[projectFolder], projectFolder, dependencyExportDepth, cancelToken)
+            const results = await mapAsync(Object.entries(datapacksByProject),
+                async ([projectFolder, datapacks]) => {
+                    const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection });
+                    return this.datapackService.export(exportEntries.filter(e => e.id), projectFolder, dependencyExportDepth, cancelToken);
+                }
             );
             // report UI progress back
             this.showResultMessage(results.reduce((aggregate, result) => aggregate.join(result)));
