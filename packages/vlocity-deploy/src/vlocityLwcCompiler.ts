@@ -1,7 +1,7 @@
 
 import { JSDOM } from 'jsdom';
 import { Script } from 'vm';
-import { QueryFormatter, QueryService, SalesforceService, SalesforceQuery } from '@vlocode/salesforce';
+import { QueryFormatter, QueryService, SalesforceService, SalesforceQueryData } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from 'vlocityNamespaceService';
 
 export interface CompiledResource {
@@ -150,14 +150,14 @@ export class VlocityLwcCompiler{
     public async getCompiledScriptDefinition(id: string) : Promise<OmniScriptDefinition>;
     public async getCompiledScriptDefinition(script: OmniScriptDetail) : Promise<OmniScriptDefinition>
     public async getCompiledScriptDefinition(input: OmniScriptDetail | string) : Promise<OmniScriptDefinition> {        
-        const query: SalesforceQuery = {
+        const query: SalesforceQueryData = {
             sobjectType: `%vlocity_namespace%__OmniScriptDefinition__c`,
             fieldList: [`%vlocity_namespace%__Sequence__c`, `%vlocity_namespace%__Content__c`],
             orderBy: [`%Sequence__c%`],
             orderByDirection: 'asc'
         };
 
-        if (typeof input === 'string') {            
+        if (typeof input === 'string') {
             query.whereCondition = `vlocity_namespace__OmniScriptId__c = '${input}'`;
         } else {
             query.whereCondition = {
