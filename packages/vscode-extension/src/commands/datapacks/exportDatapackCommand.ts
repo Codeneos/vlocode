@@ -149,48 +149,6 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return withDependencies.maxDepth;
     }
 
-    protected async showRecordSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord | undefined> {
-        // get the query def for the object type
-        const queryDef = exportQueryDefinitions[datapackType];
-
-        // Select object
-        const objectOptions =  records.map(r => {
-            return {
-                label: queryDef.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
-                description: r.attributes.url,
-                record: r
-            };
-        }).sort((a, b) => a.record.version__c ? b.record.version__c - a.record.version__c : a.label.localeCompare(b.label));
-
-        if (queryDef.groupKey) {
-            // add latest version option
-            const latestVersion = objectOptions[0].record;
-            objectOptions.unshift({
-                label: 'Latest',
-                description: queryDef.name ? evalExpr(queryDef.name, latestVersion) : DatapackUtil.getLabel(latestVersion),
-                record: latestVersion
-            });
-
-            // add active version option
-            const activeVersion = records.find(r => r.isActive__c || r.active);
-            if (activeVersion) {
-                objectOptions.unshift({
-                    label: 'Active',
-                    description: queryDef.name ? evalExpr(queryDef.name, activeVersion) : DatapackUtil.getLabel(activeVersion),
-                    record: activeVersion
-                });
-            }
-        }
-
-        const objectSelection = await vscode.window.showQuickPick(objectOptions, {
-            placeHolder: queryDef.groupKey ? 'Select version to export' : 'Select datapack object to export'
-        });
-        if (!objectSelection) {
-            return; // selection cancelled;
-        }
-        return objectSelection.record;
-    }
-
     protected async showExportPathSelection() : Promise<string | undefined> {
         const projectFolderSelection = await vscode.window.showQuickPick([
             { value: 2, label: 'Configure project folder for export', description: 'set the default Vlocity project folder and continue' },

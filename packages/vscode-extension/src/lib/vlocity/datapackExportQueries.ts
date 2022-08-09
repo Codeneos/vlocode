@@ -1,12 +1,31 @@
 import { injectable, Logger } from "@vlocode/core";
-import { QueryBinary, QueryFormatter, QueryParser, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
+import { QueryBinary, QueryBuilder, QueryFormatter, QueryParser, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
 import { VlocityMatchingKeyService } from "@vlocode/vlocity-deploy";
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
+import { ObjectEntry } from "./vlocityDatapackService";
 
 @injectable()
 export class DatapackExportQueries {
 
-    constructor(private matchingKeys: VlocityMatchingKeyService, private schema: SalesforceSchemaService, private logger: Logger) {        
+    constructor(
+        private readonly matchingKeys: VlocityMatchingKeyService, 
+        private readonly schema: SalesforceSchemaService) {        
+    }
+
+    /**
+     * Get list of fields used for matching datapacks against Salesforce records. 
+     * @param datapackType Datapack type
+     * @returns List of fields as string array
+     */
+    public async getMatchingFields(datapackType: string) {
+        const macthingKeys = exportQueryDefinitions[datapackType]?.matchingKey ?? 
+            await this.matchingKeys.getMatchingKeyDefinition(datapackType);
+        return macthingKeys.fields ?? [ 'Name' ];
+    }
+
+    public getDatapackQuery(datapackType: string) {
+        const datapackDef = exportQueryDefinitions[datapackType];
+        return datapackDef?.query ? QueryBuilder.parse(datapackDef.query) : undefined;
     }
 
     /**
@@ -14,40 +33,28 @@ export class DatapackExportQueries {
      * @param datapack Datapack like objects that has a datapack type and datapack data fields
      * @returns Export query
      */
-    public async getQuery(datapack: { datapackType: string, [key: string | symbol | number]: unknown }) {
+    public async getQuery(datapack: ObjectEntry) {
         const datapackDef = exportQueryDefinitions[datapack.datapackType];
-        if (!datapackDef?.query) {
-            return;
-        }
-
-        const query = QueryParser.parse(datapackDef.query);
-        const macthingKeys = datapackDef.matchingKey ?? 
-            await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
+        const query = this.getDatapackQuery(datapack.datapackType) ?? new QueryBuilder(datapack.sobjectType, [ 'Id' ]);
+        const macthingKeys = datapackDef?.matchingKey ?? await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
 
         if (macthingKeys) {
-            query.fieldList.push(...macthingKeys.fields);
+            query.select(...macthingKeys.fields);
             if (macthingKeys.returnField) {
-                query.fieldList.push(macthingKeys.returnField);
+                query.select(macthingKeys.returnField);
             }
-            query.fieldList = [...new Set(query.fieldList)];
         }
 
-        let whereCondition: QueryBinary | string | undefined;
-
-        for (const field of query.fieldList) {
+        for (const field of query.fields) {
             const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field);
             const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack);
 
             if (value !== undefined) {
                 const fullName = fieldDescribe.map(f => f.name).join('.');
-                const extraCondition = `${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`;
-                whereCondition = whereCondition ? { left: whereCondition, operator: 'AND', right: extraCondition  } : extraCondition;
+                query.where.and.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
             }
         }
 
-        return QueryFormatter.format({
-            ...query,
-            whereCondition
-        });
+        return query.toString();
     }
 }

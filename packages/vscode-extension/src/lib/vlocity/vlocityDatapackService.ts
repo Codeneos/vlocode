@@ -13,6 +13,7 @@ import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { JsForceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
+import { DatapackExportQueries } from './datapackExportQueries';
 
 export interface ManifestEntry {
     datapackType: string;
@@ -188,7 +189,8 @@ export default class VlocityDatapackService implements vscode.Disposable {
         private readonly config: VlocodeConfiguration,
         private readonly salesforceService: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,
-        private readonly loader: DatapackLoader
+        private readonly loader: DatapackLoader,
+        private readonly exportQueries: DatapackExportQueries
     ) {
     }
 
@@ -363,16 +365,18 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return results.reduce((results, result) => results.join(result));
     }
 
+    public async getDatapackRecords(entry: ObjectEntry): Promise<SObjectRecord[]>;    
+    public async getDatapackRecords(entries: ObjectEntry[]): Promise<SObjectRecord[][]>;
     /**
      * Gets the first matching Salesforce ID for the specified Vlocity object.
      * @param entries Objects to query for Salesforce IDs
      */
-    public async getSalesforceIds(entries: ObjectEntry[]) : Promise<string[]>  {
-        const exportQueries = await this.createExportQueries(entries);
+    public async getDatapackRecords(entries: ObjectEntry | ObjectEntry[]): Promise<SObjectRecord[][] | SObjectRecord[]> {
+        const exportQueries = await this.createExportQueries(Array.isArray(entries) ? entries : [ entries ]);
         // Query all objects even if they have an Id already; it is up to the caller to filter out objects with an Id if they
         // do not want to query them
-        const results = await Promise.all(exportQueries.map(query => this.salesforceService.query<SObjectRecord>(query.query)));
-        return results.map(result => result[0]?.Id);
+        const results = await Promise.all(exportQueries.map(({ query }) => this.salesforceService.query<SObjectRecord>(query)));
+        return Array.isArray(entries) ? results : results[0];
     }
 
     public async export(entries: ObjectEntry[], exportFolder: string, maxDepth: number = 0, cancellationToken?: vscode.CancellationToken) : Promise<DatapackResultCollection>  {
@@ -408,10 +412,11 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     private async createExportQueries(objects: ObjectEntry[]) : Promise<Array<ExportQuery>> {
         return Promise.all(objects.map(async entry => {
-            return {
-                VlocityDataPackType: entry.datapackType,
-                query: await this.matchingKeyService.getQuery(entry.datapackType, entry)
-            };
+            const query = await this.exportQueries.getQuery(entry);
+            if (!query) {
+                throw new Error(`Unable to create export query for ${entry.sobjectType} of datapack ${entry.datapackType}`);
+            }
+            return { VlocityDataPackType: entry.datapackType, query };
         }));
     }
 
