@@ -12,7 +12,7 @@ import { vscodeCommand } from '@root/lib/commandRouter';
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
-@vscodeCommand(VlocodeCommand.deployMetadata)
+@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true  })
 export default class DeployMetadataCommand extends MetadataCommand {
 
     /** 

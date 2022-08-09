@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 
 import VlocodeService from '@lib/vlocodeService';
-import { LogManager } from '@vlocode/core';
+import { container, LogManager } from '@vlocode/core';
 import { Command } from '@lib/command';
 import { getContext } from '@lib/vlocodeContext';
+import { lazy } from '@vlocode/util';
 
 export class ProgressToken {
     private resolved = false;
@@ -42,6 +43,7 @@ export class ProgressToken {
 export abstract class CommandBase implements Command {
 
     protected readonly logger = LogManager.get(this.getName());
+    protected readonly vlocode = lazy(() => container.get(VlocodeService));
 
     public abstract execute(...args: any[]): any | Promise<any>;
 
@@ -89,10 +91,6 @@ export abstract class CommandBase implements Command {
         }
 
         return true;
-    }
-
-    protected get vlocode() : VlocodeService {
-        return getContext().service;
     }
 
     private getName() : string {

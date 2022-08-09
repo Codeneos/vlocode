@@ -6,10 +6,10 @@ import { JsForceConnectionProvider } from '@vlocode/salesforce';
 import { vscodeCommand } from '@root/lib/commandRouter';
 
 @vscodeCommand(VlocodeCommand.adminCommands)
-@vscodeCommand(VlocodeCommand.refreshPriceBook, { executeParams: [ VlocodeCommand.refreshPriceBook ] })
-@vscodeCommand(VlocodeCommand.refreshProductHierarchy, { executeParams: [ VlocodeCommand.refreshProductHierarchy ] })
-@vscodeCommand(VlocodeCommand.clearPlatformCache, { executeParams: [ VlocodeCommand.clearPlatformCache ] })
-@vscodeCommand(VlocodeCommand.updateAllProdAttribCommand, { executeParams: [ VlocodeCommand.updateAllProdAttribCommand ] })
+@vscodeCommand(VlocodeCommand.refreshPriceBook, { focusLog: true, executeParams: [ VlocodeCommand.refreshPriceBook ] })
+@vscodeCommand(VlocodeCommand.refreshProductHierarchy, { focusLog: true, executeParams: [ VlocodeCommand.refreshProductHierarchy ] })
+@vscodeCommand(VlocodeCommand.clearPlatformCache, { focusLog: true, executeParams: [ VlocodeCommand.clearPlatformCache ] })
+@vscodeCommand(VlocodeCommand.updateAllProdAttribCommand, { focusLog: true,  executeParams: [ VlocodeCommand.updateAllProdAttribCommand ] })
 export class VlocityAdminCommand extends CommandBase {
 
     private readonly adminCommands = [
