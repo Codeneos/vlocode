@@ -37,6 +37,12 @@ const common : webpack.Configuration = {
     context: contextFolder,
     devtool: 'source-map',
     target: 'node',
+    stats: {
+        children: false,
+        moduleTrace: false,
+        modules: false,
+        warnings: false
+    },
     module: {
         rules: [
             {
