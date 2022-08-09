@@ -129,7 +129,7 @@ export class TerminalWriter implements LogWriter {
             const logPrefix = `[${this.chalk.green(moment(entry.time).format(LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}]`;
             const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
 
-            let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, TERMINAL_EOL);
+            let messageBody = this.applyAutoColors(entry.message.replace(/\r/g,'').replace(/\n/g, TERMINAL_EOL));
             if (entry.level == LogLevel.warn) {
                 messageBody = levelColor(messageBody);
             } else if (entry.level >= LogLevel.error) {
@@ -139,5 +139,11 @@ export class TerminalWriter implements LogWriter {
             const formattedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;
             this.writeEmitter.fire(formattedMessage + TERMINAL_EOL);
         }
+    }
+
+    private applyAutoColors(messageBody: string) {
+        return messageBody
+            .replaceAll(/'([^']+)'/gs, `'${this.chalk.bold('$1')}'`)
+            .replaceAll(/\[(\d+\s*ms)\]/gs, `[${this.chalk.green('$1')}]`);
     }
 }

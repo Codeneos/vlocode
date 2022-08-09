@@ -10,7 +10,7 @@ import { VlocodeCommand } from '@root/constants';
 /**
  * Command for handling deletion of Metadata components in Salesforce
  */
-@vscodeCommand(VlocodeCommand.retrieveMetadata)
+@vscodeCommand(VlocodeCommand.retrieveMetadata, { focusLog: true  })
 export default class RetrieveMetadataCommand extends MetadataCommand {
 
     public async execute() : Promise<void>  {

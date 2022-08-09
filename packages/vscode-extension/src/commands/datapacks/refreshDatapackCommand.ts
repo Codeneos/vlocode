@@ -6,7 +6,7 @@ import { DatapackUtil } from '@vlocode/vlocity-deploy';
 import { VlocodeCommand } from '@root/constants';
 import { vscodeCommand } from '@root/lib/commandRouter';
 
-@vscodeCommand(VlocodeCommand.refreshDatapack)
+@vscodeCommand(VlocodeCommand.refreshDatapack, { focusLog: true  })
 export default class RefreshDatapackCommand extends ExportDatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {

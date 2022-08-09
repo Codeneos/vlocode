@@ -20,6 +20,9 @@ export class CommandExecutor implements Command {
             if (this.options?.executeParams) {
                 args = [...this.options?.executeParams, ...args];
             }
+            if (this.options?.focusLog) {
+                this.logger.focus();
+            }
             if (typeof this.command.validate === 'function') {
                 await this.command.validate(...args);
             }
