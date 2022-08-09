@@ -1,99 +1,128 @@
-import { LogManager } from '@vlocode/core';
+import { container, LogManager } from '@vlocode/core';
+import { lazy } from '@vlocode/util';
+import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
+import { SalesforceSchemaService } from './salesforceSchemaService';
 
-export interface QueryCondition {
-    readonly field: string;
-    readonly comparisonOperator: string;
-    readonly value: string;
-}
+class QueryBuilderData {
+    constructor(protected readonly query: SalesforceQueryData) {
+    }
 
-export interface SortCondition {
-    readonly field: string;
-    readonly order: SortOrder;
-}
+    public getQuery(): SalesforceQueryData {
+        return { ...this.query, fieldList: [...new Set(this.query.fieldList)] };
+    }
 
-export enum SortOrder {
-    ASC = 'ASC',
-    DESC = 'DESC'
+    public toString() {
+        return QueryFormatter.format(this.getQuery());
+    }
+
+    public get fields(): Iterable<string> {
+        return new Set(this.query.fieldList);
+    }
+
+    public get sobjectType() {
+        return this.query.sobjectType;
+    }
 }
 
 /**
  * Simple salesforce SOQL builder
  */
-export class QueryBuilder {
+export class QueryBuilder extends QueryBuilderData {
 
-    private readonly fields: string[] = [];
-    private readonly conditions: QueryCondition[] = [];
-    private readonly sorting: SortCondition[] = [];
-    private readonly limit: number;
+    private schema = lazy(() => container.get(SalesforceSchemaService));
+    private logger = lazy(() => LogManager.get(QueryBuilder));
 
-    constructor(
-        private readonly objectType: string,
-        private readonly logger = LogManager.get(QueryBuilder)) {
+    constructor(query: SalesforceQueryData);
+    constructor(sobjectType: string, fieldList?: string[]);
+    constructor(...args: any[]) {
+        super(typeof args[0] === 'object' ? args[0] : { sobjectType: args[0], fieldList: args[1] ?? [ 'Id' ] });
+    }
+
+    public static parse(query: string) {
+        return new QueryBuilder(QueryParser.parse(query));
+    }
+    
+    public get where() : QueryConditionBuilder {
+        return new QueryConditionBuilder(this.query);
     }
 
     public select(...fields: (string | { name: string })[]) {
-        this.fields.push(...fields.map(f => typeof f === 'string' ? f : f.name));
+        this.query.fieldList.push(...fields.map(f => typeof f === 'string' ? f : f.name));
         return this;
     }
 
-    public sortBy(...sortFields: [string | { name: string }, SortOrder?][] | (string | { name: string })[]) : QueryBuilder {
-        sortFields.forEach(sortField => {
-            if(Array.isArray(sortField)) {
-                this.sorting.push({
-                    field: sortField[0].name ?? sortField[0],
-                    order: sortField[1] || SortOrder.ASC
-                });
-            } else {
-                this.sorting.push({
-                    field: sortField.name ?? sortField,
-                    order: SortOrder.ASC
-                });
+    public sortBy(...sortFields: (string | { name: string })[]) : QueryBuilder {
+        this.query.orderBy = sortFields.map(f => typeof f === 'string' ? f : f.name);
+        return this;
+    }
+
+    public sortDirection(direction: 'asc' | 'desc') : QueryBuilder {
+        this.query.orderByDirection = direction;
+        return this;
+    }
+}
+
+export class QueryConditionBuilder extends QueryBuilderData {
+
+    private nextConditionOp?: 'and' | 'or';
+
+    public get or() : this {
+        this.nextConditionOp = 'or';
+        return this;
+    }
+
+    public get and() : this {
+        this.nextConditionOp = 'and';
+        return this;
+    }
+
+    public condition(condition: string) : this {
+        if (!this.query.whereCondition) {
+            this.query.whereCondition = condition;
+        } else {
+            if (!this.nextConditionOp) {
+                throw new Error(`No condition operator set; use 'or' or 'and' to join the next part of a where condition`);
             }
-        });
+            this.query.whereCondition = {
+                left: this.query.whereCondition,
+                operator: this.nextConditionOp,
+                right: condition
+            }
+            this.nextConditionOp = undefined;
+        }
         return this;
     }
 
-    public whereEq(field: (string | { name: string }), value: any) : QueryBuilder {
-        return this.where([field, '=', value]);
+    public equals(field: (string | { name: string }), value: any) : this {
+        return this.condition(`${field} = ${this.formatValue(value)}`);
     }
 
-    public whereNotEq(field: (string | { name: string }), value: any) : QueryBuilder {
-        return this.where([field, '!=', value]);
+    public notEquals(field: (string | { name: string }), value: any) : this {
+        return this.condition(`${field} != ${this.formatValue(value)}`);
     }
 
-    public where(...conditions: [string | { name: string }, string, any][]) : QueryBuilder {
-        conditions.forEach(condition => {
-            this.conditions.push({
-                field: typeof condition[0] === 'string' ? condition[0] : condition[0].name,
-                comparisonOperator: condition[1],
-                value: condition[2]
-            });
-        });
-        return this;
+    public greaterThan(field: (string | { name: string }), value: any) : this {
+        return this.condition(`${field} > ${this.formatValue(value)}`);
     }
 
-    public getQueryString() : string {
-        let query = `select ${this.fields.join(',')} `
-                  + `from ${this.objectType}`;
-        if (this.conditions.length > 0) {
-            query += ` where ${this.conditions.map(c => this.formatCondition(c)).join(' and ')}`;
-        }
-        if (this.sorting.length > 0) {
-            query += ` order by ${this.sorting.map(s => this.formatSortCondition(s)).join(',')}`;
-        }
-        if (this.limit) {
-            query += ` limit ${this.limit}`;
-        }
-        this.logger.verbose(`Build query: ${query}`);
-        return query;
+    public greaterThanOrEquals(field: (string | { name: string }), value: any) : this {
+        return this.condition(`${field} >= ${this.formatValue(value)}`);
     }
 
-    private formatSortCondition(s: SortCondition) {
-        return `${s.field} ${s.order}}`;
+    public lesserThan(field: (string | { name: string }), value: any) : this {
+        return this.condition(`${field} < ${this.formatValue(value)}`);
     }
 
-    private formatCondition(c: QueryCondition) {
-        return `${c.field} ${c.comparisonOperator} ${this.formatValue(c.value)}`;
+    public lesserThanOrEquals(field: (string | { name: string }), value: any) : this {
+        return this.condition(`${field} <= ${this.formatValue(value)}`);
+    }
+
+    public in(field: (string | { name: string }), values: any[]) : this {
+        return this.condition(`${field} in (${values.map(v => this.formatValue(v)).join(',')}`);
+    }
+
+    public notIn(field: (string | { name: string }), values: any[]) : this {
+        return this.condition(`${field} not in (${values.map(v => this.formatValue(v)).join(',')}`);
     }
 
     private formatValue(value: any) {
@@ -104,5 +133,9 @@ export class QueryBuilder {
             return `${value}`;
         }
         return `'${value}'`;
+    }
+
+    public getCondition() {
+        return this.query.whereCondition;
     }
 }
