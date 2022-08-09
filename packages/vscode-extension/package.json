@@ -10,11 +10,12 @@
         "name": "Peter van Gulik",
         "email": "peter@curlybracket.nl"
     },
+    "readme": "README.md",
     "publisher": "curlybracket",
     "engines": {
         "vscode": "^1.70.0"
     },
-    "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "homepage": "https://github.com/Codeneos/vlocode/tree/master/packages/vscode-extension",
     "categories": [
         "Other"
     ],
@@ -1241,10 +1242,10 @@
         "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.ts --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
-        "pack": "pnpm vscode:prepublish && vsce package --no-dependencies",
+        "pack": "pnpm vsce package --no-dependencies --allow-star-activation",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "rimraf ./out",
-        "publish": "vsce publish --no-dependencies",
+        "publish": "vsce publish --no-dependencies --allow-star-activation",
         "vscode:prepublish": "pnpm clean && pnpm build-webpack"
     },
     "devDependencies": {
@@ -1272,8 +1273,8 @@
         "chai": "^4.3.4",
         "chalk": "^4.1.1",
         "cli-ux": "^5.6.3",
-        "create-ts-index": "^1.14.0",
         "copy-webpack-plugin": "^9.0.1",
+        "create-ts-index": "^1.14.0",
         "esbuild": "^0.14.49",
         "escape-string-regexp": "^4.0.0",
         "fs-extra": "^9.0",
@@ -1316,7 +1317,7 @@
         "unique-names-generator": "^4.6.0",
         "uuid": "^8.3.2",
         "vlocity": "1.14.18",
-        "vsce": "^2.6.3",
+        "vsce": "^2.10.0",
         "vscode-languageclient": "^7.0.0",
         "vscode-test": "^1.6.1",
         "webpack": "^5.72.1",

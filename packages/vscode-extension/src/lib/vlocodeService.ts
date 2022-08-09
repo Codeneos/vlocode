@@ -33,6 +33,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private _datapackService?: VlocityDatapackService;
     public get datapackService(): VlocityDatapackService {
         if (!this._datapackService) {
+            console.debug(`Accessing VlocityDatapackService before it Vlocode is initialized from:\n`, new Error().stack);
             throw new Error('Vlocode is not initialized; VlocityDatapackService is null');
         }
         return this._datapackService;
@@ -41,6 +42,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private _salesforceService?: SalesforceService;
     public get salesforceService(): SalesforceService {
         if (!this._salesforceService) {
+            console.debug(`Accessing SalesforceService before it Vlocode is initialized from:\n`, new Error().stack);
             throw new Error('Vlocode is not initialized; SalesforceService is null');
         }
         return this._salesforceService;
