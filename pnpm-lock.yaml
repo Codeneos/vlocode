@@ -106,7 +106,7 @@ importers:
       rimraf: ^3.0.2
       source-map-support: ^0.5.21
       ts-jest: ^28.0.5
-      ts-loader: ^9.2.6
+      ts-loader: ^9.3.1
       ts-node: ^10.4.0
       tsc-alias: ^1.6.7
       tsconfig-paths-webpack-plugin: ^3.5.2
@@ -137,7 +137,7 @@ importers:
       rimraf: 3.0.2
       source-map-support: 0.5.21
       ts-jest: 28.0.5_bmx2iisgsiqhot7rn2hyxwpi5e
-      ts-loader: 9.3.0_gp3atwgq76mgimstdygasg64n4
+      ts-loader: 9.3.1_gp3atwgq76mgimstdygasg64n4
       ts-node: 10.7.0_jufkpc4gvojranilfpdhgxxyui
       tsc-alias: 1.6.7
       tsconfig-paths-webpack-plugin: 3.5.2
@@ -337,7 +337,7 @@ importers:
       '@types/sinon': ^10.0.2
       '@types/terser-webpack-plugin': ^5.2.0
       '@types/uuid': ^8.3.4
-      '@types/vscode': ^1.61.0
+      '@types/vscode': ^1.70.0
       '@types/webpack': ^5.28.0
       '@types/webpack-env': ^1.16.2
       '@types/webpack-merge': ^4.1.5
@@ -384,7 +384,7 @@ importers:
       terser-webpack-plugin: ^5.3.0
       transform-loader: ^0.2.4
       ts-jest: ^28.0.5
-      ts-loader: ^9.2.6
+      ts-loader: ^9.3.1
       ts-node: ^10.4.0
       tsconfig-paths-webpack-plugin: ^3.5.2
       type-fest: ^2.12.2
@@ -414,7 +414,7 @@ importers:
       '@types/sinon': 10.0.11
       '@types/terser-webpack-plugin': 5.2.0_y74ypt7f43qpna74n4uc543itu
       '@types/uuid': 8.3.4
-      '@types/vscode': 1.67.0
+      '@types/vscode': 1.70.0
       '@types/webpack': 5.28.0_uwqmmsiqajr2oqppikqwvlbxoi
       '@types/webpack-env': 1.16.4
       '@types/webpack-merge': 4.1.5_uwqmmsiqajr2oqppikqwvlbxoi
@@ -461,7 +461,7 @@ importers:
       terser-webpack-plugin: 5.3.1_y74ypt7f43qpna74n4uc543itu
       transform-loader: 0.2.4
       ts-jest: 28.0.5_ny4zn7wvldubdq2x6egiukuuxy
-      ts-loader: 9.3.0_gp3atwgq76mgimstdygasg64n4
+      ts-loader: 9.3.1_gp3atwgq76mgimstdygasg64n4
       ts-node: 10.7.0_jufkpc4gvojranilfpdhgxxyui
       tsconfig-paths-webpack-plugin: 3.5.2
       type-fest: 2.12.2
@@ -2284,6 +2284,10 @@ packages:
 
   /@types/vscode/1.67.0:
     resolution: {integrity: sha512-GH8BDf8cw9AC9080uneJfulhSa7KHSMI2s/CyKePXoGNos9J486w2V4YKoeNUqIEkW4hKoEAWp6/cXTwyGj47g==}
+    dev: true
+
+  /@types/vscode/1.70.0:
+    resolution: {integrity: sha512-3/9Fz0F2eBgwciazc94Ien+9u1elnjFg9YAhvAb3qDy/WeFWD9VrOPU7CIytryOVUdbxus8uzL4VZYONA0gDtA==}
     dev: true
 
   /@types/webpack-env/1.16.4:
@@ -4834,7 +4838,7 @@ packages:
       once: 1.4.0
 
   /enhanced-resolve/0.9.1:
-    resolution: {integrity: sha1-TW5omzcl+GCQknzMhs2fFjW4ni4=}
+    resolution: {integrity: sha512-kxpoMgrdtkXZ5h0SeraBS1iRntpTpQ3R8ussdb38+UAFnMGX5DDyJXePm+OCHOcoXvHDw7mc2erbJBpDnl7TPw==}
     engines: {node: '>=0.6'}
     dependencies:
       graceful-fs: 4.2.10
@@ -5394,7 +5398,7 @@ packages:
       optionator: 0.8.3
       progress: 2.0.3
       regexpp: 2.0.1
-      semver: 6.2.0
+      semver: 6.3.0
       strip-ansi: 5.2.0
       strip-json-comments: 3.1.1
       table: 5.4.6
@@ -11937,8 +11941,8 @@ packages:
       yargs-parser: 21.0.1
     dev: true
 
-  /ts-loader/9.3.0_gp3atwgq76mgimstdygasg64n4:
-    resolution: {integrity: sha512-2kLLAdAD+FCKijvGKi9sS0OzoqxLCF3CxHpok7rVgCZ5UldRzH0TkbwG9XECKjBzHsAewntC5oDaI/FwKzEUog==}
+  /ts-loader/9.3.1_gp3atwgq76mgimstdygasg64n4:
+    resolution: {integrity: sha512-OkyShkcZTsTwyS3Kt7a4rsT/t2qvEVQuKCTg4LJmpj9fhFR7ukGdZwV6Qq3tRUkqcXtfGpPR7+hFKHCG/0d3Lw==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
       typescript: '*'
