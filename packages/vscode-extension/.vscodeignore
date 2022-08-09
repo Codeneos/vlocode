@@ -1,0 +1,11 @@
+*
+*.*
+**/*
+!CHANGELOG.md
+!LICENSE
+!out
+!syntax/**/*.json
+!resources/**/*.png
+!resources/**/*.gif
+!resources/**/*.svg
+!package.json
