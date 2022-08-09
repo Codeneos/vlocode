@@ -45,6 +45,9 @@ const common : webpack.Configuration = {
                 use: [{
                     loader: 'ts-loader',
                     options: {
+                        compilerOptions: {
+                            outDir: path.join(__dirname, '../.ts-temp')
+                        },
                         onlyCompileBundledFiles: true,
                         transpileOnly: false
                     } as Options
@@ -63,16 +66,6 @@ const common : webpack.Configuration = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
-        // alias: {
-        //     'salesforce-alm': path.resolve(__dirname, 'node_modules', 'salesforce-alm'),
-        //     '@salesforce/core': path.resolve(__dirname, 'node_modules', '@salesforce', 'core'),
-        //     'jsforce': path.resolve(__dirname, 'node_modules', 'jsforce'),
-        //     'sass.js': path.resolve(__dirname, 'node_modules', 'sass.js'),
-        //     'js-yaml': path.resolve(__dirname, 'node_modules', 'js-yaml'),
-        //     'cli-ux': path.resolve(__dirname, 'node_modules', 'cli-ux'),
-        //     '@vlocode/core': path.resolve(__dirname, 'packages', 'core', 'src', 'index.ts'),
-        //     '@vlocode/util': path.resolve(__dirname, 'packages', 'util', 'src', 'index.ts')
-        // },
         alias: {
             '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src'),
             '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src'),
