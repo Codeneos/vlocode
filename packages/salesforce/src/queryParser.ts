@@ -1,3 +1,7 @@
+import { container } from "@vlocode/core";
+import { lazy } from "@vlocode/util";
+import { NamespaceService } from "./namespaceService";
+
 export type QueryBinary = { left: QueryBinary | string, operator: string, right: QueryBinary | string };
 
 /**
@@ -19,7 +23,7 @@ enum QueryKeywords {
  */
 const queryKeywords = Object.freeze(Object.values(QueryKeywords));
 
-export interface SalesforceQuery {
+export interface SalesforceQueryData {
     sobjectType: string;
     fieldList: string[];
     whereCondition?: QueryBinary | string;
@@ -31,13 +35,18 @@ export interface SalesforceQuery {
 }
 
 export class QueryFormatter {
-    public static format(query: SalesforceQuery) {
+
+    constructor(private readonly namespace: NamespaceService = lazy(() => container.get(NamespaceService))) {
+    }
+
+    public static format(query: SalesforceQueryData) {
         return new QueryFormatter().format(query);
     }
 
-    private format(query: SalesforceQuery) {
+    private format(query: SalesforceQueryData) {
         const queryParts = [
-            `${QueryKeywords.SELECT} ${this.formatFieldList(query.fieldList)} ${QueryKeywords.FROM} ${query.sobjectType}`
+            `${QueryKeywords.SELECT} ${this.formatFieldList(query.fieldList)}`,
+            `${QueryKeywords.FROM} ${this.updateNamespace(query.sobjectType)}`
         ];
 
         if (query.whereCondition) {
@@ -68,17 +77,26 @@ export class QueryFormatter {
 
     private formatCondition(condition: QueryBinary | string) {
         if (typeof condition === 'string') {
-            return condition;
+            return this.updateNamespace(condition);
         }        
         return `${this.formatCondition(condition.left)} ${condition.operator} ${this.formatCondition(condition.right)}`
     }
 
     private formatFieldList(fields: string[]) {
-        return fields.join(', ');
+        const uniqueFields = new Map(fields.map(field => ([ 
+            this.updateNamespace(field).toLowerCase(),
+            this.updateNamespace(field),
+        ])));
+        
+        return [...uniqueFields.values()].join(', ');
+    }
+
+    private updateNamespace(value: string) {
+        return value && this.namespace ? this.namespace.updateNamespace(value) : value;
     }
 }
 
-export class QueryParser implements SalesforceQuery {
+export class QueryParser implements SalesforceQueryData {
 
     public readonly parser: Parser;
 
@@ -98,14 +116,14 @@ export class QueryParser implements SalesforceQuery {
         return new QueryParser(queryString).parse();
     }
 
-    private parse(): SalesforceQuery {
+    private parse(): SalesforceQueryData {
         while(this.parser.hasMore()) {
             if (this.parser.acceptKeyword(QueryKeywords.SELECT)) {
                 this.fieldList = this.parseFieldsList(this.parser.createParser());
             } else if (this.parser.acceptKeyword(QueryKeywords.WHERE)) {
                 this.whereCondition = this.parseQueryCondition(this.parser.createParser())
             } else if (this.parser.acceptKeyword(QueryKeywords.FROM)) {
-                this.sobjectType = this.parser.expectMatch(/\s*(\w+)\s*/).trim();
+                this.sobjectType = this.parser.expectMatch(/\s*([^ ]+)\s*/).trim();
             } else if (this.parser.acceptKeyword(QueryKeywords.GROUP_BY)) {
                 this.groupBy = this.parseFieldsList(this.parser.createParser());
             } else if (this.parser.acceptKeyword(QueryKeywords.ORDER_BY)) {
@@ -167,7 +185,7 @@ export class QueryParser implements SalesforceQuery {
                 const left = this.parseQueryCondition(new Parser(backBuffer));
                 const right = this.parseQueryCondition(parser);
                 if (!right || !left) {
-                    throw new Error(`Inconsisten query condition at: ${parser.input}`);
+                    throw new Error(`Inconsistent query condition at: ${parser.input}`);
                 }
                 return { left, operator, right };
             } else if(parser.matchKeyword(...queryKeywords)) {                
@@ -245,7 +263,7 @@ class Parser {
     }
 
     /**
-     * Skip input until the especified expr. doesn't match anymore
+     * Skip input until the specified expr. doesn't match anymore
      * @param expr 
      */
     public skipMatch(expr: RegExp) {
@@ -261,7 +279,7 @@ class Parser {
     }
 
     /**
-     * Accept all currently read characters and move the cosumed index to the read index
+     * Accept all currently read characters and move the consumed index to the read index
      * @param trimCount Number of characters to trim from the end
      * @returns 
      */
