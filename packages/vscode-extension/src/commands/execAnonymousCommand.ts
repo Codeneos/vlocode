@@ -10,7 +10,7 @@ type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebugging
 /**
  * Command for running Anonymous APEX on Salesforce
  */
-@vscodeCommand(VlocodeCommand.execAnonymousCommand)
+@vscodeCommand(VlocodeCommand.execAnonymousCommand, { focusLog: true })
 export default class ExecAnonymousCommand extends MetadataCommand {
 
     private readonly debugLogLevels : LogLevelQuickPickItem[] = [

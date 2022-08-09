@@ -17,7 +17,7 @@ export abstract class EventHandlerBase<T> implements vscode.Disposable {
     }
 
     protected get logger() : Logger {
-        return LogManager.get(this.constructor.name);
+        return LogManager.get('EventHandler');
     }
 
     private async handleEventAsync(eventObject: T) : Promise<void> {
