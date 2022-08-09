@@ -1,167 +1,179 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
 
-import { DatapackResultCollection } from '@lib/vlocity/vlocityDatapackService';
 import { forEachAsyncParallel } from '@vlocode/util';
-import { container } from '@vlocode/core';
-import chalk = require('chalk');
-import { DatapackUtil, DatapackDeployer } from '@vlocode/vlocity-deploy';
+import { DatapackUtil } from '@vlocode/vlocity-deploy';
+import { DatapackCommand } from './datapackCommand';
+import { v4 } from 'uuid';
 import { vscodeCommand } from '@root/lib/commandRouter';
 import { VlocodeCommand } from '@root/constants';
-import { DatapackCommand } from './datapackCommand';
+import { container } from '@vlocode/core';
+import { VlocityToolsDeployment } from '@root/lib/vlocity/vlocodeDirectDeploy';
+import { VlocodeDirectDeployment } from '@root/lib/vlocity/vlocityToolsDeploy';
+import { VlocityDeploy } from '@root/lib/vlocity/vlocityDeploy';
+import { getContext } from '@root/lib/vlocodeContext';
 
-@vscodeCommand(VlocodeCommand.deployDatapack)
-export default class DeployDatapackCommand extends DatapackCommand {
+const deployModeSuggestionKey: string = 'deploymodeSuggestion-0.17.0';
+const suggestionInterval: number = 9 * 24 * 3600 * 1000;
+
+@vscodeCommand(VlocodeCommand.deployDatapack, { focusLog: true })
+export class DeployDatapackCommand extends DatapackCommand {
 
     /** 
      * In order to prevent double deployment keep a list of files recently saved by this command
      */
-    private readonly savingDocumentsList = new Set<string>();
+    private static readonly savingDocuments = new Map<string, Set<string>>();
+
+    private get strategy(): VlocityDeploy {
+        if (this.vlocode.config.deploymentMode === 'direct') {
+            return container.get(VlocodeDirectDeployment);
+        } 
+        return container.get(VlocityToolsDeployment);        
+    }
 
     public execute(...args: any[]): void | Promise<void> {
-        return this.deployDatapacks.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
+        const selectedFiles = args[1] ?? [ args[0] ?? this.currentOpenDocument ];
+        const filesForDeployment = this.filterAutoSavedFiles(selectedFiles);
+        
+        if (!filesForDeployment.length) {
+            return;
+        }
+
+        return this.run(filesForDeployment);
+    }
+
+    protected async run(selectedFiles: vscode.Uri[]) {
+        // prepare input
+        const datapackHeaders = await this.getDatapackHeaders(selectedFiles);
+        if (!datapackHeaders.length) {
+            // no datapack files found, lets pretend this didn't happen
+            return;
+        }
+
+        // Prevent prod deployment if not intended
+        if (await this.vlocode.salesforceService.isProductionOrg()) {
+            if (!await this.showProductionWarning(false)) {
+                return;
+            }
+        }
+
+        // Suggest vlocode?
+        if (datapackHeaders.length > 2) {
+            await this.suggestDeploymentModeChange();
+        }
+
+        const progressText = await this.getProgressText(datapackHeaders);
+        await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
+            await this.saveUnsavedChangesInDatapacks(datapackHeaders);
+            //await this.strategy.deploy(datapackHeaders, token);
+            if (token.isCancellationRequested) {
+                void vscode.window.showWarningMessage('Datapack deployment cancelled');
+            }
+        });
+    }
+
+    /**
+     * Create a progress text for the deployment activity
+     * @param datapackHeaders headers in the current deployment
+     * @returns Message as string to be used for the deployment acivity
+     */
+    private async getProgressText(datapackHeaders: vscode.Uri[]) {
+        if (datapackHeaders.length < 4) {
+            // Reading datapack takes a long time, only read datapacks if it is a reasonable count
+            const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
+            const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
+            return `Deploying: ${datapackNames.join(', ')} ...`;
+        }        
+        return `Deploying: ${datapackHeaders.length} datapacks ...`;
     }
 
     /**
      * Saved all unsaved changes in the files related to each of the selected datapack files.
      * @param datapackHeaders The datapack header files.
      */
-    protected async saveUnsavedChangesInDatapacks(datapackHeaders: vscode.Uri[]) : Promise<vscode.TextDocument[]> {
+    private async saveUnsavedChangesInDatapacks(datapackHeaders: vscode.Uri[]) {
         const datapackFolders = datapackHeaders.map(header => path.dirname(header.fsPath));
-        const datapackFiles = new Set(
-            (await Promise.all(datapackFolders.map(folder => fs.readdir(folder))))
-            // prepend folder names so we have fully qualified paths
-                .map((files, i) => files.map(file => path.join(datapackFolders[i], file)))
-            // Could have used .flat() but that wasn't available yet
-                .reduce((arr, readdirResults) => arr.concat(...readdirResults), [])
-        );
-        const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && datapackFiles.has(d.uri.fsPath));
+        const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && datapackFolders.includes(path.dirname(d.fileName)));
 
-        // keep track of all documents that we intend to save in a set to prevent
-        // a second deployment from being triggered by the onDidSaveHandler.
-        const openDocumentPaths = openDocuments.map(doc => doc.uri.fsPath);
-        openDocumentPaths.forEach(fsPath => this.savingDocumentsList.add(fsPath));
-
-        // Ensure that the documents put in the savingDocumentsList are cleaned up after 5 seconds to 
-        // avoid bugs that could be caused by deployDatapacks never being called
-        setTimeout(() => openDocumentPaths.forEach(fsPath => this.savingDocumentsList.delete(fsPath)), 5000);
-
-        return forEachAsyncParallel(openDocuments, doc => doc.save());
-    }
-
-    protected async deployDatapacks(selectedFiles: vscode.Uri[]) {
-        try {
-            const filesForDeployment = selectedFiles.filter(file => {
-                if (this.savingDocumentsList.has(file.fsPath)) {
-                    // Deployment was triggered through on save handler; skipping it
-                    this.logger.verbose(`Deployment loop detected; skipping deployment requested for: ${file.fsPath}`);
-                    this.savingDocumentsList.delete(file.fsPath);
-                    return false;
-                }
-                return true;
-            });
-
-            // prepare input
-            const datapackHeaders = await this.getDatapackHeaders(filesForDeployment);
-            if (datapackHeaders.length == 0) {
-                // no datapack files found, lets pretend this didn't happen
-                return;
-            }
-
-            // Prevent prod deployment if not intended
-            if (await this.vlocode.salesforceService.isProductionOrg()) {
-                if (!await this.showProductionWarning(false)) {
-                    return;
-                }
-            }
-
-            // Reading datapack takes a long time, only read datapacks if it is a reasonable count
-            let progressText = `Deploying: ${datapackHeaders.length} datapacks ...`;
-            if (datapackHeaders.length < 4) {
-                const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
-                const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
-                progressText = `Deploying: ${datapackNames.join(', ')} ...`;
-            }
-
-            await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
-                const savedFiles = await this.saveUnsavedChangesInDatapacks(datapackHeaders);
-                this.logger.verbose(`Saved ${savedFiles.length} datapacks before deploying:`, savedFiles.map(s => path.basename(s.uri.fsPath)));
-
-                if (this.vlocode.config.deploymentMode == 'compatibility') {
-                    await this.deployUsingBuildTools(datapackHeaders, token);
-                } else {
-                    await this.directDeploy(datapackHeaders, token);
-                }
-
-                if (token.isCancellationRequested) {
-                    void vscode.window.showWarningMessage('Datapack deployment cancelled');
-                }
-            });
-        } catch (err) {
-            this.logger.error(err);
-            throw new Error('Vlocode encountered an error while deploying the selected datapacks, see the log for details.');
-        }
-    }
-
-    private async directDeploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
-        const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
-        const deployment = await container.get(DatapackDeployer).createDeployment(datapacks, undefined, cancellationToken);
-        await deployment.start(cancellationToken);
-
-        if (cancellationToken.isCancellationRequested) {
+        if (!openDocuments.length) {
             return;
         }
 
-        if (deployment.hasErrors) {
-            for (const [datapackKey, messages] of Object.entries(deployment.getMessagesByDatapack())) {
-                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${deployment.getFailedRecords(datapackKey).length} failed records (${messages.length} messages)`);
-                for (let i = 0; i < messages.length; i++) {
-                    this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatDirectDeployError(messages[i].message)} (${messages[i].type.toUpperCase()})`);
+        // keep track of all documents that we intend to save in a set to prevent
+        // a second deployment from being triggered by the onDidSaveHandler.
+        const currentOperationId = v4();
+        const openDocumentPaths = new Set(openDocuments.map(d => d.fileName));
+        DeployDatapackCommand.savingDocuments.set(currentOperationId, openDocumentPaths);
+
+        // backup to delete saving documents list
+        setTimeout(() => DeployDatapackCommand.savingDocuments.delete(currentOperationId), 1000);
+
+        // Save each document and delete if tom the pending save list
+        await forEachAsyncParallel(openDocuments, async doc => {
+            this.logger.verbose(`Saving ${doc.fileName} before deployment`);
+            await doc.save();
+        });        
+        this.logger.info(`Saved ${openDocuments.length} datapack files before deployment`);
+    }
+
+    private filterAutoSavedFiles(selectedFiles: vscode.Uri[]) {
+        return selectedFiles.filter(file => {
+            if (this.removeDocumentBeingSaved(file)) {
+                // Deployment was triggered through on save handler; skipping it
+                this.logger.verbose(`Deployment loop detected; skipping deployment requested for: ${file.fsPath}`);
+                return false;
+            }
+            return true;
+        });
+    }
+
+    private removeDocumentBeingSaved(selectedFile: vscode.Uri) {
+        for (const documents of DeployDatapackCommand.savingDocuments.values()) {
+            for (const document of [...documents]) {
+                if (selectedFile.fsPath === document) {
+                    documents.delete(document);
+                    return true;
                 }
             }
-            void vscode.window.showWarningMessage(`Datapack deployment completed with errors: unable to update/insert ${deployment.failedRecordCount} records`);
-        } else {
-            void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
         }
+        return false;
     }
 
-    private formatDirectDeployError(message?: string) {
-        if (!message) {
-            return 'Salesforce provided no error message';
-        }
+    /**
+     * Suggest a deployment mode change from compatibility to Direct deployment mode. This suggestion is only shown
+     * if it wasn't shown recently and the user choice is remebered in the global state with the last suggested time stamp.
+     * 
+     * If the users closes the question without anwsering it it will re-popup on the next deployment.
+     */
+    private async suggestDeploymentModeChange() {
+        const suggestionState = getContext().globalState;
+        const usingDirectMode = this.vlocode.config.deploymentMode === 'direct';
+        const currentSuggestionState = suggestionState.get<number>(deployModeSuggestionKey);
+        const allowSuggest = !currentSuggestionState || (currentSuggestionState + suggestionInterval < Date.now());
+        
+        if (allowSuggest && !usingDirectMode) {
+            const result = await vscode.window.showInformationMessage(
+                `Do you want faster DataPack deployments? Try the updated Direct deployment mode`, ...[
+                { mode: 'direct',  title: 'Yes, make it so'}, 
+                { mode: 'compatibility',  title: 'No, I prefer the wait'}
+            ]);
 
-        if (message.includes('Script-thrown exception')) {
-            const triggerTypeMatch = message.match(/execution of ([\w\d_-]+)/);
-            const causedByMatch = message.match(/caused by: ([\w\d_.-]+)/);
-            if (triggerTypeMatch) {
-                const triggerType = triggerTypeMatch[1];
-                return `APEX ${triggerType} trigger caused exception; try inserting this datapack with triggers disabled`;
-            } else if (causedByMatch) {
-                return `APEX exception caused by (${causedByMatch[1]}); try inserting this datapack with triggers disabled`;
-            }
-        }
-
-        return message.split(/\n|\r/g).filter(line => line.trim().length > 0).join('\n');
-    }
-
-    private async deployUsingBuildTools(datapackHeaders: vscode.Uri[], token: vscode.CancellationToken) {
-        const results = await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), token);
-        if (!token.isCancellationRequested) {
-            this.printDatapackDeployResults(results);
-        }
-    }
-
-    protected printDatapackDeployResults(results : DatapackResultCollection) {
-        [...results].forEach((rec, i) => this.logger.verbose(`${i}: ${rec.key}: ${rec.success || rec.errorMessage || 'No error message'}`));
-        const resultSummary = results.length == 1 ? [...results][0].label || [...results][0].key : `${results.length} datapacks`;
-        if (results.hasErrors) {
-            const errors = results.getErrors();
-            const errorMessage = errors.find(e => e.errorMessage)?.errorMessage || 'Unknown error';
-            errors.forEach(rec => this.logger.error(`${rec.key}: ${rec.errorMessage || 'No error message'}`));
-            throw `Failed to deploy ${errors.length} out of ${results.length} datapack${results.length != 1 ? 's' : ''}: ${errorMessage}`;
-        } else {
-            void vscode.window.showInformationMessage(`Successfully deployed ${resultSummary}`);
+            if (result) {
+                if (result?.mode === 'direct') {
+                    await vscode.window.showInformationMessage(
+                        `Good call! Deployment mode is updated to "direct". ` + 
+                        `In case of issues you can always switch back to "compatibility" mode from extension settings.`, 
+                        'Ok'
+                    );
+                    this.vlocode.config.deploymentMode = result?.mode;
+                } else if (result?.mode === 'compatibility') {
+                    void vscode.window.showWarningMessage(
+                        `If you do change your mind you can always switch to "direct" deployment mode from extension settings.`,
+                        'Ok'
+                    );
+                }
+                void suggestionState.update(deployModeSuggestionKey, Date.now());
+            }           
         }
     }
 }

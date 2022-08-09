@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { ExtensionContext } from 'vscode';
+import type { ExtensionContext, Memento } from 'vscode';
 import { singleton, getInstance } from '@vlocode/util';
 import type VlocodeService from './vlocodeService';
 
@@ -22,6 +22,16 @@ class VlocodeContext {
 		 * [`globalState`](#ExtensionContext.globalState) to store key value data.
 		 */
         readonly storagePath: string | undefined,
+        /**
+         * A memento object that stores state in the context
+         * of the currently opened {@link workspace.workspaceFolders workspace}.
+         */
+        readonly workspaceState: Memento,
+        /**
+         * A memento object that stores state independent
+         * of the current opened {@link workspace.workspaceFolders workspace}.
+         */
+        readonly globalState: Memento,
         /**
          * Primary service class
          */
@@ -52,5 +62,5 @@ export function getContext() {
  * @param context VS Codes extension context
  */
 export function initializeContext(context: ExtensionContext, service: VlocodeService) {
-    return singleton(VlocodeContext, context.extensionPath, context.storagePath, service);
+    return singleton(VlocodeContext, context.extensionPath, context.storagePath, context.workspaceState, context.globalState, service);
 }
