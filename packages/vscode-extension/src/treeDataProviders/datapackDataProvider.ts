@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as constants from '@constants';
 import { LogManager, Logger , injectable , container } from '@vlocode/core';
 import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity-deploy';
-import { evalExpr , groupBy , addFieldsToQuery, normalizeSalesforceName, clearCache } from '@vlocode/util';
+import { evalExpr, groupBy, normalizeSalesforceName, clearCache, lazy } from '@vlocode/util';
 
 import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';
 import { DescribeGlobalSObjectResult } from 'jsforce';
@@ -10,14 +10,25 @@ import { TreeItemCollapsibleState } from 'vscode';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '@lib/config';
-import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
+import { QueryBuilder, QueryParser, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import OpenSalesforceCommand from '@root/commands/datapacks/openSalesforceCommand';
+import { v4 as uuid } from 'uuid';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
 
-    protected get logger() : Logger {
-        return LogManager.get(DatapackDataProvider);
+    private logger = lazy(() => LogManager.get(DatapackDataProvider));
+
+    private get datapackInfoService(): DatapackInfoService {
+        return container.get(DatapackInfoService);
+    }
+
+    private get datapackService() : VlocityDatapackService {
+        return this.vlocode.datapackService;
+    }
+
+    private get salesforceService() : SalesforceService {
+        return this.vlocode.salesforceService;
     }
 
     protected initialize() {
@@ -51,7 +62,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
     private onRefresh(): void {
-        clearCache(container.get(DatapackInfoService));
+        clearCache(this.datapackInfoService);
         clearCache(this.vlocode.salesforceService.schema);
         super.refresh();
     }
@@ -62,14 +73,6 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
             'vlocode.datapackExplorer.openSalesforce': OpenSalesforceCommand,
             'vlocode.datapackExplorer.refresh': () => this.onRefresh()
         };
-    }
-
-    private get datapackService() : VlocityDatapackService {
-        return this.vlocode.datapackService;
-    }
-
-    private get salesforceService() : SalesforceService {
-        return this.vlocode.salesforceService;
     }
 
     public toTreeItem(node: DatapackNode & TreeNode): vscode.TreeItem {
@@ -107,7 +110,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
         if (node instanceof DatapackRootNode) {
             if (node.label === 'Datapacks') {
-                const datapacks = await container.get(DatapackInfoService).getDatapackDefinitions();
+                const datapacks = await this.datapackInfoService.getDatapackDefinitions();
                 return datapacks.map(info => new DatapackCategoryNode(info.datapackType));
             } else if (node.label === 'SObjects') {
                 return this.getExportableSObjectTypes();
@@ -148,17 +151,17 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
     private async getQuery(datapackType: string) {
         const queryDefinition = await this.datapackService.getQueryDefinition(datapackType);
-        if (queryDefinition && queryDefinition.query) {
-            return addFieldsToQuery(queryDefinition.query, 'Name');
+        if (queryDefinition?.query) {
+            return QueryBuilder.parse(queryDefinition?.query).select('Name').toString();
         }
 
-        const sobjectType = await container.get(DatapackInfoService).getSObjectType(datapackType);
-        return `Select Id, Name from ${sobjectType}`;
+        const sobjectType = await this.datapackInfoService.getSObjectType(datapackType);
+        return new QueryBuilder(sobjectType, [ 'Id', 'Name' ]).toString();
     }
 
     private async getExportableSObjectTypes() {
         const customObjects = await this.vlocode.salesforceService.schema.describeSObjects();
-        const datapacks = (await container.get(DatapackInfoService).getDatapackDefinitions()).filter(dp => !!dp.sobjectType);
+        const datapacks = (await this.datapackInfoService.getDatapackDefinitions()).filter(dp => !!dp.sobjectType);
         const hasDatapack = (sobject: string) => datapacks.some(dp => normalizeSalesforceName(dp.sobjectType) === normalizeSalesforceName(sobject));
         const isExportable = (sobject: DescribeGlobalSObjectResult) => sobject.retrieveable && sobject.updateable && sobject.createable && !sobject.deprecatedAndHidden;
         const nonDatapackObjects = customObjects.filter(record => isExportable(record) && !hasDatapack(record.name));
@@ -216,12 +219,14 @@ abstract class DatapackNode implements TreeNode {
 }
 
 class DatapackTextNode extends DatapackNode {
+    private readonly uniqueId = uuid()
+
     constructor(public readonly text: string, public icon: { light: string; dark: string } | string | undefined = undefined) {
         super(DatapackNodeType.Text, false, icon);
     }
 
     public getId() {
-        return this.getItemLabel();
+        return this.uniqueId;
     }
 
     public getItemLabel() {
@@ -257,7 +262,7 @@ class DatapackCategoryNode extends DatapackNode {
         super(DatapackNodeType.Category, true);
     }
 
-    public getId = () => `${this.nodeType}:${this.getItemLabel()}`;
+    public getId = () => `${this.nodeType}:${this.datapackType}`;
     public getItemLabel = () => this.datapackType;
     public getItemTooltip = () => `View datapacks of type ${this.datapackType}`;
 }
@@ -270,7 +275,7 @@ class DatapackObjectGroupNode extends DatapackNode {
         });
     }
 
-    public getId = () => `${this.datapackType}-${this.getItemLabel()}`;
+    public getId = () => `${this.nodeType}:${this.datapackType}-${this.getItemLabel()}`;
 
     public getItemLabel = () => evalExpr(this.getLabelFormat(), this.records[0]);
 
