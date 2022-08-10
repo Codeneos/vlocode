@@ -56,7 +56,7 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
 
     public getTreeItem(node: T): vscode.TreeItem {
         const item = this.toTreeItem(node);
-        if (!item.command) {
+        if (!item.command && this.onClick) {
             item.command = {
                 title: 'Open',
                 command: this.clickHandlerGuid,
