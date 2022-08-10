@@ -3,7 +3,7 @@ import { clearTimeout, setTimeout } from 'timers';
 import * as constants from '@constants';
 import * as vscode from 'vscode';
 import { Logger, FileSystem, injectable, LifecyclePolicy, FileInfo } from '@vlocode/core';
-import { clearCache, Timer } from '@vlocode/util';
+import { clearCache, Timer, wait } from '@vlocode/util';
 
 /**
  * Works in conjunction with the workspace context detector 
@@ -36,6 +36,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private workspaceFolderWatcher: vscode.Disposable;
     private workspaceFileWatcher: vscode.FileSystemWatcher;
     private scheduledContextUpdate?: NodeJS.Timeout;
+    private detectionCounter: number = 0;
 
     /**
      * Create a new WorkspaceContextDetector with the specified configuration.
@@ -146,6 +147,10 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         for (const entry of fileInfos) {
             if (entry.name.startsWith('.') || entry.name == 'node_modules') {
                 continue;
+            }
+            if (this.detectionCounter++ % 100 === 0) {
+                // Yield event loop to other processes to avoid blocking extension host process
+                await wait(10);
             }
             if (entry.isDirectory()) {
                 files.push(...await this.getApplicableFiles(entry.fullName));
