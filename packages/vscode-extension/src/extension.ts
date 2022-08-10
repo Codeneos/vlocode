@@ -15,6 +15,7 @@ import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 import { lazy } from '@vlocode/util';
 import { WorkspaceContextDetector } from '@lib/workspaceContextDetector';
 import { MetadataDetector } from '@lib/salesforce/metadataDetector';
+import { DatapackDetector } from '@lib/vlocity/datapackDetector';
 
 import DeveloperLogDataProvider from './treeDataProviders/developerLogDataProvider';
 import ActivityDataProvider from './treeDataProviders/activityDataProvider';
@@ -188,9 +189,7 @@ class Vlocode {
             config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
 
         // watch for changes 
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', file => {
-            return file.name.toLowerCase().endsWith('_datapack.json') || file.siblings.some(file => file.name.toLowerCase().endsWith('_datapack.json'));
-        }).initialize());
+        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
 
         // track activation time
