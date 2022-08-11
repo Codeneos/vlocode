@@ -4,6 +4,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.1](https://github.com/codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
+
+### Bug Fixes
+
+* build issue due to tsconfig mis configuration for core package ([58b60ea](https://github.com/codeneos/vlocode/commit/58b60ea499ead676fa489948a675d3e2a5c4eaf4))
+* datapack explorer throws an error when expanding an empty node twice ([9114a58](https://github.com/codeneos/vlocode/commit/9114a5803e95d8141a07fa258bbb7c94b22706e5))
+* datapacks with binary data are always loaded properly due to an error in the regex detection the external file types ([5486ed1](https://github.com/codeneos/vlocode/commit/5486ed140436b1c8b2ead506b3b145ebb4802c6a))
+* do not register command on tree-view-item when there is no click handler ([e7fb4eb](https://github.com/codeneos/vlocode/commit/e7fb4ebf0842d900f57ba1ee6bbde5c2e1105862))
+* duplicate fields in query generation and not replacing namespaces for query formater ([c1c89a6](https://github.com/codeneos/vlocode/commit/c1c89a6b6089d037670574dcc51d93b9115cd546))
+* focus all writers when calling log.focus instead of only the first writer that has a focus method. ([e0d0b67](https://github.com/codeneos/vlocode/commit/e0d0b6775dbd9b60f213a6ae9fdc389a68cb6326))
+* improve code coverage of IoC container class. ([b46f2e9](https://github.com/codeneos/vlocode/commit/b46f2e96afe006cd29159b2202a9eb677b0cfa6d))
+* incorrectly detect sandbox orgs as production instance (v0.17.x issue) ([1ef44c5](https://github.com/codeneos/vlocode/commit/1ef44c5942331d7c7107c8d82ff949b1646b210a))
+* issue datapack record factory fails to convert JSON objects into strings ([9781fd4](https://github.com/codeneos/vlocode/commit/9781fd4e19c3f83fd0e693e8b6ec398d69abeec6))
+* js sandbox compiler class mutation of context fails due to proxy not trapping `getOwnPropertyDescriptor` and `getkeys` properly ([ac52330](https://github.com/codeneos/vlocode/commit/ac52330b8b9d4d5efbb590d2f4bc589c23cf685b))
+* performance of datapack detection using cache and yielding the event loop to avoid creating an unresponsive extension host ([ca548c4](https://github.com/codeneos/vlocode/commit/ca548c420ca999a28c10cc1aaa14a30bb4a4edb5))
+* properly report failed records in the log when using the record batch for deployment ([759196b](https://github.com/codeneos/vlocode/commit/759196b3fc6d8daa34aba86eaff7488b5ea7fcd1))
+
+### Features
+
+* +refresh+ and +open+ datapack now asks you which version to pull from the target org if the datapack has multiple versions such as OmniScripts ([3e61c02](https://github.com/codeneos/vlocode/commit/3e61c02ab41c30bc5bf32a3b3db54cc48b766d7c))
+* add icon to terminal window ([ec46aa3](https://github.com/codeneos/vlocode/commit/ec46aa339fc021c98b3b38f23fe751be3cf3d9ce))
+* add query parser to manipulate and analyze SOQL queries ([5a371bd](https://github.com/codeneos/vlocode/commit/5a371bdda56e79ad565bed6f36495b3aaf1a0833))
+* add strictDependencies option when deploying datapacks ([211d776](https://github.com/codeneos/vlocode/commit/211d7764e4351560f3addfbee1c4c6ed8a3597e7))
+* focus terminal log on certain commands ([ff25518](https://github.com/codeneos/vlocode/commit/ff25518c3dc539caa5acc7dee4a6582651015c0f))
+* improve datapack rename and clone commands to look at matching keys ([c895408](https://github.com/codeneos/vlocode/commit/c895408748348c94c1dba2cb996c70d9722ddf66))
+* initialize datapack services when switching org to speed up any Vlocode datapack commands ([210627d](https://github.com/codeneos/vlocode/commit/210627d0f5eb78316921fdb4242bd7beeff8c479))
+
 # [0.17.0](https://github.com/codeneos/vlocode/compare/v0.16.36...v0.17.0) (2022-08-01)
 
 ### Bug Fixes
