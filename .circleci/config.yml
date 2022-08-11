@@ -21,7 +21,7 @@ commands:
             - ~/.pnpm-store
   test:
     steps:
-      - run: pnpm test --ci
+      - run: pnpm jest --ci
       - store_test_results:
           path: coverage
       - store_artifacts:
