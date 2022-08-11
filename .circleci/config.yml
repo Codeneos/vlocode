@@ -12,7 +12,7 @@ commands:
       - restore_cache:
           keys: 
           - npm-store-{{ checksum "pnpm-lock.yaml" }}
-      - run: corepack enable && corepack prepare pnpm@7.5.1 --activate
+      - run: corepack enable && corepack prepare $(node -p "require('./package.json').packageManager") --activate
       - run: pnpm config set store-dir ~/.pnpm-store
       - run: pnpm install --frozen-lockfile
       - save_cache:
@@ -21,7 +21,7 @@ commands:
             - ~/.pnpm-store
   test:
     steps:
-      - run: pnpm run test --coverage
+      - run: pnpm test --ci
       - store_test_results:
           path: coverage
       - store_artifacts:
