@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
+
+### Bug Fixes
+
+* build issue due to tsconfig mis configuration for core package ([58b60ea](https://github.com/Codeneos/vlocode/commit/58b60ea499ead676fa489948a675d3e2a5c4eaf4))
+* focus all writers when calling log.focus instead of only the first writer that has a focus method. ([e0d0b67](https://github.com/Codeneos/vlocode/commit/e0d0b6775dbd9b60f213a6ae9fdc389a68cb6326))
+* improve code coverage of IoC container class. ([b46f2e9](https://github.com/Codeneos/vlocode/commit/b46f2e96afe006cd29159b2202a9eb677b0cfa6d))
+
+### Features
+
+* add icon to terminal window ([ec46aa3](https://github.com/Codeneos/vlocode/commit/ec46aa339fc021c98b3b38f23fe751be3cf3d9ce))
+* focus terminal log on certain commands ([ff25518](https://github.com/Codeneos/vlocode/commit/ff25518c3dc539caa5acc7dee4a6582651015c0f))
+
 # [0.17.0](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.0) (2022-08-01)
 
 ### Bug Fixes

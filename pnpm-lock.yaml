@@ -90,10 +90,10 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.3
       '@types/node': ^16
-      '@vlocode/core': ^0.17.0
-      '@vlocode/salesforce': ^0.17.0
-      '@vlocode/util': ^0.17.0
-      '@vlocode/vlocity-deploy': ^0.17.0
+      '@vlocode/core': ^0.17.1
+      '@vlocode/salesforce': ^0.17.1
+      '@vlocode/util': ^0.17.1
+      '@vlocode/vlocity-deploy': ^0.17.1
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
@@ -154,7 +154,7 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.3
       '@types/node': ^16
-      '@vlocode/util': ^0.17.0
+      '@vlocode/util': ^0.17.1
       chalk: ^4.1.2
       create-ts-index: ^1.14.0
       globby: ^11.0.4
@@ -189,8 +189,8 @@ importers:
       '@types/jest': ^28.1.3
       '@types/jsforce': 1.9.42
       '@types/node': ^16
-      '@vlocode/core': ^0.17.0
-      '@vlocode/util': ^0.17.0
+      '@vlocode/core': ^0.17.1
+      '@vlocode/util': ^0.17.1
       axios: ^0.25.0
       chalk: ^4.1.2
       create-ts-index: ^1.14.0
@@ -279,9 +279,9 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.3
       '@types/node': ^16
-      '@vlocode/core': ^0.17.0
-      '@vlocode/salesforce': ^0.17.0
-      '@vlocode/util': ^0.17.0
+      '@vlocode/core': ^0.17.1
+      '@vlocode/salesforce': ^0.17.1
+      '@vlocode/util': ^0.17.1
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
@@ -2574,7 +2574,7 @@ packages:
       webpack: 4.x.x || 5.x.x
       webpack-cli: 4.x.x
     dependencies:
-      webpack: 5.72.1_uwqmmsiqajr2oqppikqwvlbxoi
+      webpack: 5.72.1_webpack-cli@4.9.2
       webpack-cli: 4.9.2_webpack@5.72.1
     dev: true
 
@@ -11938,7 +11938,7 @@ packages:
       micromatch: 4.0.5
       semver: 7.3.7
       typescript: 4.6.4_edgcaioecqy5l4hjo6q6haitie
-      webpack: 5.72.1_uwqmmsiqajr2oqppikqwvlbxoi
+      webpack: 5.72.1_webpack-cli@4.9.2
     dev: true
 
   /ts-node/10.7.0_jufkpc4gvojranilfpdhgxxyui:
@@ -12603,7 +12603,7 @@ packages:
       import-local: 3.1.0
       interpret: 2.2.0
       rechoir: 0.7.1
-      webpack: 5.72.1_uwqmmsiqajr2oqppikqwvlbxoi
+      webpack: 5.72.1_webpack-cli@4.9.2
       webpack-merge: 5.8.0
     dev: true
 
