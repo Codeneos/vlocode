@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/Codeneos/vlocode/compare/v0.16.22...v0.17.2) (2022-08-12)
+
+### Bug Fixes
+
+* build issue due to tsconfig mis configuration for core package ([7956281](https://github.com/Codeneos/vlocode/commit/79562814f341a5f8b8a79db0c13f1735131887e0))
+* json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
+
+### Features
+
+* add strictDependencies option when deploying datapacks ([d884b1d](https://github.com/Codeneos/vlocode/commit/d884b1d5b9793825c8e1279b08886c08b656c535))
+
 ## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
 
 ### Bug Fixes

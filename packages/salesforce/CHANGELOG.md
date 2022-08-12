@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/Codeneos/vlocode/compare/v0.16.22...v0.17.2) (2022-08-12)
+
+### Bug Fixes
+
+* duplicate fields in query generation and not replacing namespaces for query formater ([951a2eb](https://github.com/Codeneos/vlocode/commit/951a2eb960d95712781fa6912b4b037aa191aa78))
+* incorrectly detect sandbox orgs as production instance (v0.17.x issue) ([4e01648](https://github.com/Codeneos/vlocode/commit/4e0164880fc9455908a5c8ff310dd236ba5208ea))
+* issue datapack record factory fails to convert JSON objects into strings ([5570c39](https://github.com/Codeneos/vlocode/commit/5570c3974fca48ce2bc8def9ba9aea7b4dbf87bd))
+* js sandbox compiler class mutation of context fails due to proxy not trapping `getOwnPropertyDescriptor` and `getkeys` properly ([debeed8](https://github.com/Codeneos/vlocode/commit/debeed8db4df22764f228a07ffc4ca86b23d5a55))
+* json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
+* properly report failed records in the log when using the record batch for deployment ([29c1424](https://github.com/Codeneos/vlocode/commit/29c1424d622221cc36942408b6d6dd3c81da7f1f))
+
+### Features
+
+* add query parser to manipulate and analyze SOQL queries ([3f1a922](https://github.com/Codeneos/vlocode/commit/3f1a922d9394398a30cdd55595d2b6c2ab674ff9))
+* support creating connection provider from an existing jsforce connection whilst keeping all fixes and patches to jsforce active ([2da0dd6](https://github.com/Codeneos/vlocode/commit/2da0dd6437f7cea180dbdddc2b4d60cdd584caa9))
+
 ## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
 
 ### Bug Fixes

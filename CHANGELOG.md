@@ -4,6 +4,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/codeneos/vlocode/compare/v0.16.22...v0.17.2) (2022-08-12)
+
+### Bug Fixes
+
+* build issue due to tsconfig mis configuration for core package ([7956281](https://github.com/codeneos/vlocode/commit/79562814f341a5f8b8a79db0c13f1735131887e0))
+* datapack explorer throws an error when expanding an empty node twice ([8265f45](https://github.com/codeneos/vlocode/commit/8265f451015382db85bb4cb9a535df14318dcdba))
+* datapacks with binary data are always loaded properly due to an error in the regex detection the external file types ([8d3384f](https://github.com/codeneos/vlocode/commit/8d3384fc5f41ea9d6b5213409344c0c7003d8b9d))
+* do not register command on tree-view-item when there is no click handler ([b8b2083](https://github.com/codeneos/vlocode/commit/b8b2083935def2c270e9f04726493785a2096b4c))
+* duplicate fields in query generation and not replacing namespaces for query formater ([951a2eb](https://github.com/codeneos/vlocode/commit/951a2eb960d95712781fa6912b4b037aa191aa78))
+* focus all writers when calling log.focus instead of only the first writer that has a focus method. ([970f5fc](https://github.com/codeneos/vlocode/commit/970f5fc96228d8aaa815640907eee78130ea7e56))
+* improve code coverage of IoC container class. ([9a76f57](https://github.com/codeneos/vlocode/commit/9a76f5755e7326e51a70aaa1428d1514e8b3f0ba))
+* incorrectly detect sandbox orgs as production instance (v0.17.x issue) ([4e01648](https://github.com/codeneos/vlocode/commit/4e0164880fc9455908a5c8ff310dd236ba5208ea))
+* issue datapack record factory fails to convert JSON objects into strings ([5570c39](https://github.com/codeneos/vlocode/commit/5570c3974fca48ce2bc8def9ba9aea7b4dbf87bd))
+* js sandbox compiler class mutation of context fails due to proxy not trapping `getOwnPropertyDescriptor` and `getkeys` properly ([debeed8](https://github.com/codeneos/vlocode/commit/debeed8db4df22764f228a07ffc4ca86b23d5a55))
+* json files are not included NPM packages ([f67a75d](https://github.com/codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
+* performance of datapack detection using cache and yielding the event loop to avoid creating an unresponsive extension host ([ba6207a](https://github.com/codeneos/vlocode/commit/ba6207a165be3db372fccbce87c9fbc3ef0b72a6))
+* properly report failed records in the log when using the record batch for deployment ([29c1424](https://github.com/codeneos/vlocode/commit/29c1424d622221cc36942408b6d6dd3c81da7f1f))
+
+### Features
+
+* +refresh+ and +open+ datapack now asks you which version to pull from the target org if the datapack has multiple versions such as OmniScripts ([3fd32bf](https://github.com/codeneos/vlocode/commit/3fd32bfd23d0247d3ff60e8ff248fca594588069))
+* add icon to terminal window ([f4b9466](https://github.com/codeneos/vlocode/commit/f4b9466e70866eb2737f6d37898760052266fc76))
+* add query parser to manipulate and analyze SOQL queries ([3f1a922](https://github.com/codeneos/vlocode/commit/3f1a922d9394398a30cdd55595d2b6c2ab674ff9))
+* add strictDependencies option when deploying datapacks ([d884b1d](https://github.com/codeneos/vlocode/commit/d884b1d5b9793825c8e1279b08886c08b656c535))
+* core IoC container should also consider shapes inherited from it's parent ([f4f9109](https://github.com/codeneos/vlocode/commit/f4f9109c525d9dfa2f252234c6b52e578cef1dcb))
+* focus terminal log on certain commands ([63aeb61](https://github.com/codeneos/vlocode/commit/63aeb615a7e5282a90c4cdd768dd2756ee9096d3))
+* improve datapack rename and clone commands to look at matching keys ([2d025a1](https://github.com/codeneos/vlocode/commit/2d025a17ed93e177358de91ac648302e2a4f36d7))
+* initialize datapack services when switching org to speed up any Vlocode datapack commands ([107ea6b](https://github.com/codeneos/vlocode/commit/107ea6bb3df652e3f5bafd854885eb1ebc7e2a98))
+* support creating connection provider from an existing jsforce connection whilst keeping all fixes and patches to jsforce active ([2da0dd6](https://github.com/codeneos/vlocode/commit/2da0dd6437f7cea180dbdddc2b4d60cdd584caa9))
+
 ## [0.17.1](https://github.com/codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
 
 ### Bug Fixes

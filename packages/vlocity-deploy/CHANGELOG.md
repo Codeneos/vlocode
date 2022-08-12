@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/Codeneos/vlocode/compare/v0.16.22...v0.17.2) (2022-08-12)
+
+### Bug Fixes
+
+* datapacks with binary data are always loaded properly due to an error in the regex detection the external file types ([8d3384f](https://github.com/Codeneos/vlocode/commit/8d3384fc5f41ea9d6b5213409344c0c7003d8b9d))
+* issue datapack record factory fails to convert JSON objects into strings ([5570c39](https://github.com/Codeneos/vlocode/commit/5570c3974fca48ce2bc8def9ba9aea7b4dbf87bd))
+* json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
+* properly report failed records in the log when using the record batch for deployment ([29c1424](https://github.com/Codeneos/vlocode/commit/29c1424d622221cc36942408b6d6dd3c81da7f1f))
+
+### Features
+
+* add strictDependencies option when deploying datapacks ([d884b1d](https://github.com/Codeneos/vlocode/commit/d884b1d5b9793825c8e1279b08886c08b656c535))
+* improve datapack rename and clone commands to look at matching keys ([2d025a1](https://github.com/Codeneos/vlocode/commit/2d025a17ed93e177358de91ac648302e2a4f36d7))
+* initialize datapack services when switching org to speed up any Vlocode datapack commands ([107ea6b](https://github.com/Codeneos/vlocode/commit/107ea6bb3df652e3f5bafd854885eb1ebc7e2a98))
+
 ## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
 
 ### Bug Fixes
