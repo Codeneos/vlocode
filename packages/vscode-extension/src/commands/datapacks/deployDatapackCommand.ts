@@ -65,7 +65,7 @@ export class DeployDatapackCommand extends DatapackCommand {
         const progressText = await this.getProgressText(datapackHeaders);
         await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
             await this.saveUnsavedChangesInDatapacks(datapackHeaders);
-            //await this.strategy.deploy(datapackHeaders, token);
+            await this.strategy.deploy(datapackHeaders, token);
             if (token.isCancellationRequested) {
                 void vscode.window.showWarningMessage('Datapack deployment cancelled');
             }
