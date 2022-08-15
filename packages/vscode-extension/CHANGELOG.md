@@ -13,13 +13,16 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * performance of datapack detection using cache and yielding the event loop to avoid creating an unresponsive extension host ([ba6207a](https://github.com/codeneos/vlocode/commit/ba6207a165be3db372fccbce87c9fbc3ef0b72a6))
 
 ### Features
-
+* **[Datta Kale](https://github.com/dattakale86)** added step to capture alias while authorizing org ([cca5596](https://github.com/codeneos/vlocode/commit/cca55962984f34a5a4dc23d2da03908576bee125))
 * +refresh+ and +open+ datapack now asks you which version to pull from the target org if the datapack has multiple versions such as OmniScripts ([3fd32bf](https://github.com/codeneos/vlocode/commit/3fd32bfd23d0247d3ff60e8ff248fca594588069))
 * add icon to terminal window ([f4b9466](https://github.com/codeneos/vlocode/commit/f4b9466e70866eb2737f6d37898760052266fc76))
 * add strictDependencies option when deploying datapacks ([d884b1d](https://github.com/codeneos/vlocode/commit/d884b1d5b9793825c8e1279b08886c08b656c535))
 * focus terminal log on certain commands ([63aeb61](https://github.com/codeneos/vlocode/commit/63aeb615a7e5282a90c4cdd768dd2756ee9096d3))
 * improve datapack rename and clone commands to look at matching keys ([2d025a1](https://github.com/codeneos/vlocode/commit/2d025a17ed93e177358de91ac648302e2a4f36d7))
 * initialize datapack services when switching org to speed up any Vlocode datapack commands ([107ea6b](https://github.com/codeneos/vlocode/commit/107ea6bb3df652e3f5bafd854885eb1ebc7e2a98))
+
+### Contributors
+* **[Datta Kale](https://github.com/dattakale86)**
 
 ## [0.17.1](https://github.com/codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
 
