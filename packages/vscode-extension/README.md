@@ -35,7 +35,7 @@ All settings for Vlocode in the `.vscode` settings file making it easy to mainta
 
 ### Salesforce
 * **Export metadata** export all Salesforce metadata from the Command Pallet
-![Developer logs](resources/exportMetadata.gif)
+![Developer logs](packages/vscode-extension/resources/exportMetadata.gif)
 * **Auto create and update -meta.xml files** automatically rename and create _-meta.xml_ files when you create or rename APEX classes
 * **Advance metadata deployments**
   * Support deployment of both __SFDX__ and __Classic__ Metadata format
@@ -49,7 +49,7 @@ All settings for Vlocode in the `.vscode` settings file making it easy to mainta
 * **Execute Salesforce REST APIs** easy Salesforce RESP API testing directlly opening the response in VScode
 * **Delete metadata from org** delete Salesforce Metadata components from your org from within vscode
 * ** Salesforce Logs viewer** using the integrated Log viewer you can view and open Salesforce debug logs directly from VSCode
-![Developer logs](resources/developerLogs.png)
+![Developer logs](packages/vscode-extension/resources/developerLogs.png)
 
 
 ### Vlocity
@@ -57,7 +57,7 @@ All settings for Vlocode in the `.vscode` settings file making it easy to mainta
 * **Deploy** exported Vlocity datapacks with a single click from within Visual Studio Code
 * **Export** any datapack enabled object directly from within VSCode.
 * **Run Yaml Job** Run any YAML job file directly from VSCode.
-![Datapack export](resources/exportDatapack.gif)
+![Datapack export](packages/vscode-extension/resources/exportDatapack.gif)
 * **Open in Salesforce** directly open any Vlocity object in Salesforce.
 * **Clone Datapack** clone any Datapack object from your IDE, usefull for cloning products or templates directly from VSCode
 * **Rename Datapack** change the name of a Datapack and rebuild the file structure to match the new name
@@ -67,9 +67,9 @@ All settings for Vlocode in the `.vscode` settings file making it easy to mainta
   * **Refresh Pricebook** Refreshes pricebook entries on the currently connected Salesforce org
   * **Refresh Product Hierarchy** Refresh the product hierarchy cache for the Vlocity CPQ
   * **Update Product Attributes (JSON)** Refresh the product attribute JSON definitions based on the attribute assignments
-![Admin Commands](resources/adminCommands.gif)
+![Admin Commands](packages/vscode-extension/resources/adminCommands.gif)
 * **Datapack explorer** view all exportable objects available in the connected org and export them with a single click
-![Datapack explorer](resources/exploreDatapack.gif)
+![Datapack explorer](packages/vscode-extension/resources/exploreDatapack.gif)
 * **Easy setup** Simplified setup based on SFDX using session tokens instead; no need to acquire security tokens or copy-past passwords and usernames around.
 * **SFDX Support** username or alias to login to Salesforce
 
