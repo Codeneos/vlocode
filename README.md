@@ -26,8 +26,8 @@ pnpm install
 - open the folder in VSCode and start coding; the `launch.json` and `tasks.json` that are part of this repository should allow you to run both the Vlocode CLI as well as debug the Vlocode extension without requiring any configuration
 
 ## Tests
-Each vlocode package comes with unit tests. To run all tests simply run `pnpm test` from the root folder which will run all package tests. 
+Each vlocode package comes with unit tests. To run all tests simply run `pnpm test` from the root folder which will run all package tests. P
 
 Vlocode uses jest as test runner and is pre-configured to generate a test converge report.
 
-**Note** you should run either `pnpm build` if you are not running a watcher to ensure that inter-package dependencies are transpiled and linked under *node_modules*.
+**Note** you should run `pnpm build` if you are not running a watcher to ensure that all packages are transpiled and linked under *node_modules*.

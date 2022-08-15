@@ -1,9 +1,19 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        "module": "commonjs"
+        "module": "commonjs",
+        "baseUrl": "./",
+        "paths": {
+            "@vlocode/core": ["packages/core/src"],
+            "@vlocode/salesforce": ["packages/salesforce/src"],
+            "@vlocode/util": ["packages/util/src"],
+            "@vlocode/vlocity-deploy": ["packages/vlocity-deploy/src"]
+        }
     },
     "include": [
-        "packages"
+        "packages/core/src",
+        "packages/util/src",
+        "packages/salesforce/src",
+        "packages/vlocity-deploy/src"
     ]
 }

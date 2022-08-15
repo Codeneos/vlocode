@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/logo1.png" height="160">
+<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/packages/vscode-extension/resources/logo1.png" height="160">
 
 # Vlocode API Libraries
 

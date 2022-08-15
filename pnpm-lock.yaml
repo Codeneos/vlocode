@@ -60,6 +60,8 @@ importers:
       log-symbols: ^4.1.0
       prettier: '>=2.0.0'
       ts-jest: ^28.0.5
+      typedoc: ^0.22.11
+      typedoc-plugin-rename-defaults: ^0.6.4
       typescript: 4.6.4
     devDependencies:
       '@lerna-lite/cli': 1.6.0
@@ -83,6 +85,8 @@ importers:
       log-symbols: 4.1.0
       prettier: 2.6.2
       ts-jest: 28.0.5_5ohzrmm2xby2kpbdtr5cjigoti
+      typedoc: 0.22.15_typescript@4.6.4
+      typedoc-plugin-rename-defaults: 0.6.4_typedoc@0.22.15
       typescript: 4.6.4_edgcaioecqy5l4hjo6q6haitie
 
   packages/cli:
@@ -8819,13 +8823,6 @@ packages:
       brace-expansion: 1.1.11
     dev: true
 
-  /minimatch/5.0.1:
-    resolution: {integrity: sha512-nLDxIFRyhDblz3qMuq+SoRZED4+miJ/G+tdDrjkkkRnjAsBexeGpgjLEQ0blJy7rHhR2b93rhQY4SvyWu9v03g==}
-    engines: {node: '>=10'}
-    dependencies:
-      brace-expansion: 2.0.1
-    dev: true
-
   /minimatch/5.1.0:
     resolution: {integrity: sha512-9TPBGGak4nHfGZsPBohm9AWg6NoT7QTCehS3BIJABslyZbzxfV78QM2Y6+i741OPZIafFAaiiEMh5OyIrJPgtg==}
     engines: {node: '>=10'}
@@ -9241,7 +9238,7 @@ packages:
     hasBin: true
     dependencies:
       env-paths: 2.2.1
-      glob: 7.2.0
+      glob: 7.2.3
       graceful-fs: 4.2.10
       make-fetch-happen: 10.1.8
       nopt: 5.0.0
@@ -10797,7 +10794,7 @@ packages:
     resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
     hasBin: true
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
     dev: true
 
   /ripemd160/0.2.0:
@@ -12224,6 +12221,14 @@ packages:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
     dev: true
 
+  /typedoc-plugin-rename-defaults/0.6.4_typedoc@0.22.15:
+    resolution: {integrity: sha512-0rAeNttAfu6ixbi1yu6d+DqNZN8SfRivj2QbnZ4zVa+5HcCPcmQrlR6WHjNzdDfpkGytiiqPTtRD6pAfW/yACg==}
+    peerDependencies:
+      typedoc: 0.22.x || 0.23.x
+    dependencies:
+      typedoc: 0.22.15_typescript@4.6.4
+    dev: true
+
   /typedoc/0.22.15_typescript@4.6.4:
     resolution: {integrity: sha512-CMd1lrqQbFvbx6S9G6fL4HKp3GoIuhujJReWqlIvSb2T26vGai+8Os3Mde7Pn832pXYemd9BMuuYWhFpL5st0Q==}
     engines: {node: '>= 12.10.0'}
@@ -12231,10 +12236,10 @@ packages:
     peerDependencies:
       typescript: 4.0.x || 4.1.x || 4.2.x || 4.3.x || 4.4.x || 4.5.x || 4.6.x
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
       lunr: 2.3.9
       marked: 4.0.15
-      minimatch: 5.0.1
+      minimatch: 5.1.0
       shiki: 0.10.1
       typescript: 4.6.4_edgcaioecqy5l4hjo6q6haitie
     dev: true

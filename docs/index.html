@@ -1,147 +1,43 @@
-<!doctype html>
-<html class="default no-js">
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>vlocode</title>
-	<meta name="description" content="Documentation for vlocode">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="assets/css/main.css">
-	<script async src="assets/js/search.js" id="search-script"></script>
-</head>
-<body>
-<header>
-	<div class="tsd-page-toolbar">
-		<div class="container">
-			<div class="table-wrap">
-				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
-					<div class="field">
-						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
-						<input id="tsd-search-field" type="text" />
-					</div>
-					<ul class="results">
-						<li class="state loading">Preparing search index...</li>
-						<li class="state failure">The search index is not available</li>
-					</ul>
-					<a href="index.html" class="title">vlocode</a>
-				</div>
-				<div class="table-cell" id="tsd-widgets">
-					<div id="tsd-filter">
-						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
-						<div class="tsd-filter-group">
-							<div class="tsd-select" id="tsd-filter-visibility">
-								<span class="tsd-select-label">All</span>
-								<ul class="tsd-select-list">
-									<li data-value="public">Public</li>
-									<li data-value="protected">Public/Protected</li>
-									<li data-value="private" class="selected">All</li>
-								</ul>
-							</div>
-							<input type="checkbox" id="tsd-filter-inherited" checked />
-							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
-						</div>
-					</div>
-					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="tsd-page-title">
-		<div class="container">
-			<h1>vlocode</h1>
-		</div>
-	</div>
-</header>
-<div class="container container-main">
-	<div class="row">
-		<div class="col-8 col-content">
-			<div class="tsd-panel tsd-typography">
-				<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/logo1.png" height="160">
-				<a href="#vlocode-api-libraries" id="vlocode-api-libraries" style="color: inherit; text-decoration: none;">
-					<h1>Vlocode API Libraries</h1>
-				</a>
-				<p>Vlocode uses a set of API libraries that provide common reusable components and can be used with ot without VSCode. The libraries are fully written in typescript and exposed as CommonJS modules for compatibility reasons. The NPM packaged versions come with source code maps for easy debugging.</p>
-				<p>All libraries are available on NPMJS and can be installed using either npm or yarn. There is no dependency on the vlocode VSCode extension or on vscode itself.</p>
-				<a href="#install-with-npm" id="install-with-npm" style="color: inherit; text-decoration: none;">
-					<h3>Install with NPM</h3>
-				</a>
-				<pre><code class="language-shell"><span style="color: #000000">npm install @vlocode/core @vlocode/util --save </span>
+<!DOCTYPE html><html class="default"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>vlocode-project</title><meta name="description" content="Documentation for vlocode-project"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script async src="assets/search.js" id="search-script"></script></head><body><script>document.body.classList.add(localStorage.getItem("tsd-theme") || "os")</script><header><div class="tsd-page-toolbar"><div class="container"><div class="table-wrap"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget search no-caption">Search</label><input type="text" id="tsd-search-field"/></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">vlocode-project</a></div><div class="table-cell" id="tsd-widgets"><div id="tsd-filter"><a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a><div class="tsd-filter-group"><div class="tsd-select" id="tsd-filter-visibility"><span class="tsd-select-label">All</span><ul class="tsd-select-list"><li data-value="public">Public</li><li data-value="protected">Public/Protected</li><li data-value="private" class="selected">All</li></ul></div> <input type="checkbox" id="tsd-filter-inherited" checked/><label class="tsd-widget" for="tsd-filter-inherited">Inherited</label></div></div><a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a></div></div></div></div><div class="tsd-page-title"><div class="container"><h1> vlocode-project </h1></div></div></header><div class="container container-main"><div class="row"><div class="col-8 col-content"><div class="tsd-panel tsd-typography"><img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/packages/vscode-extension/resources/logo1.png" height="160">
+
+
+<a href="#vlocode-api-libraries" id="vlocode-api-libraries" style="color: inherit; text-decoration: none;">
+  <h1>Vlocode API Libraries</h1>
+</a>
+<p>Vlocode uses a set of API libraries that provide common reusable components and can be used with ot without VSCode. The libraries are fully written in typescript and exposed as CommonJS modules for compatibility reasons. The NPM packaged versions come with source code maps for easy debugging.</p>
+<p>All libraries are available on NPMJS and can be installed using either npm or yarn. There is no dependency on the vlocode VSCode extension or on vscode itself.</p>
+
+<a href="#install-with-npm" id="install-with-npm" style="color: inherit; text-decoration: none;">
+  <h3>Install with NPM</h3>
+</a>
+<pre><code class="language-shell"><span class="hl-0">npm install @vlocode/core @vlocode/util --save </span>
 </code></pre>
-				<a href="#install-with-yarn" id="install-with-yarn" style="color: inherit; text-decoration: none;">
-					<h3>Install with yarn</h3>
-				</a>
-				<pre><code class="language-shell"><span style="color: #000000">yarn add @vlocode/core @vlocode/util</span>
+
+<a href="#install-with-yarn" id="install-with-yarn" style="color: inherit; text-decoration: none;">
+  <h3>Install with yarn</h3>
+</a>
+<pre><code class="language-shell"><span class="hl-0">yarn add @vlocode/core @vlocode/util</span>
 </code></pre>
-				<a href="#vlocodecore" id="vlocodecore" style="color: inherit; text-decoration: none;">
-					<h2><strong>@vlocode/core</strong></h2>
-				</a>
-				<ul>
-					<li><code>IoC Container FW</code> flexible IoC container framework</li>
-					<li><code>Logging</code> highly configurable logging framework with VSCode Terminal and output channel writers.</li>
-					<li><code>Minimal FS</code> minimal FS abstraction layer with VSCode and Native implementations</li>
-				</ul>
-				<p><em>Note</em> <strong>@vlocode/core</strong> depends on the same version of <strong>@vlocode/util</strong></p>
-				<a href="#vlocodeutil" id="vlocodeutil" style="color: inherit; text-decoration: none;">
-					<h2><strong>@vlocode/util</strong></h2>
-				</a>
-				<ul>
-					<li><code>Iterable</code> utility methods exposing common iterable operations</li>
-					<li><code>Salesforce Utilities</code> several Utility methods to make working with Salesforce data easier</li>
-					<li><code>SFDX Utility</code> expose common SFDX methods to easily build a connection using existing SFDX credentials</li>
-					<li><code>Cache</code> cache decorator to cache function/method responses</li>
-					<li><code>Singleton</code> singleton utility pattern</li>
-					<li><code>Async Event Emitter</code> generic Typescript compatible Async Event emitter</li>
-				</ul>
-			</div>
-		</div>
-		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
-			<nav class="tsd-navigation primary">
-				<ul>
-					<li class=" ">
-						<a href="modules.html">Modules</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="modules/core.html">core</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="modules/util.html">util</a>
-					</li>
-				</ul>
-			</nav>
-			<nav class="tsd-navigation secondary menu-sticky">
-				<ul class="before-current">
-				</ul>
-			</nav>
-		</div>
-	</div>
-</div>
-<footer>
-	<div class="container">
-		<h2>Legend</h2>
-		<div class="tsd-legend-group">
-			<ul class="tsd-legend">
-				<li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li>
-				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
-				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
-				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
-				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
-				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
-				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
-				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
-			</ul>
-		</div>
-	</div>
-</footer>
-<div class="overlay"></div>
-<script src="assets/js/main.js"></script>
-</body>
-</html>
+
+<a href="#vlocodecore" id="vlocodecore" style="color: inherit; text-decoration: none;">
+  <h2><strong>@vlocode/core</strong></h2>
+</a>
+<ul>
+<li><code>IoC Container FW</code> flexible IoC container framework</li>
+<li><code>Logging</code> highly configurable logging framework with VSCode Terminal and output channel writers.</li>
+<li><code>Minimal FS</code> minimal FS abstraction layer with VSCode and Native implementations</li>
+</ul>
+<p><em>Note</em> <strong>@vlocode/core</strong> depends on the same version of <strong>@vlocode/util</strong></p>
+
+<a href="#vlocodeutil" id="vlocodeutil" style="color: inherit; text-decoration: none;">
+  <h2><strong>@vlocode/util</strong></h2>
+</a>
+<ul>
+<li><code>Iterable</code> utility methods exposing common iterable operations</li>
+<li><code>Salesforce Utilities</code> several Utility methods to make working with Salesforce data easier</li>
+<li><code>SFDX Utility</code> expose common SFDX methods to easily build a connection using existing SFDX credentials</li>
+<li><code>Cache</code> cache decorator to cache function/method responses</li>
+<li><code>Singleton</code> singleton utility pattern</li>
+<li><code>Async Event Emitter</code> generic Typescript compatible Async Event emitter</li>
+</ul>
+</div></div><div class="col-4 col-menu menu-sticky-wrap menu-highlight"><nav class="tsd-navigation primary"><ul><li class="current"><a href="modules.html">Modules</a></li><li class=" tsd-kind-module"><a href="modules/_vlocode_core.html">@vlocode/core</a></li><li class=" tsd-kind-module"><a href="modules/_vlocode_salesforce.html">@vlocode/salesforce</a></li><li class=" tsd-kind-module"><a href="modules/_vlocode_util.html">@vlocode/util</a></li><li class=" tsd-kind-module"><a href="modules/_vlocode_vlocity_deploy.html">@vlocode/vlocity-<wbr/>deploy</a></li></ul></nav></div></div></div><footer class=""><div class="container"><h2>Legend</h2><div class="tsd-legend-group"><ul class="tsd-legend"><li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li><li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li><li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li><li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li><li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li><li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li><li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li><li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li></ul></div><h2>Settings</h2><p>Theme <select id="theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></p></div></footer><div class="overlay"></div><script src="assets/main.js"></script></body></html>

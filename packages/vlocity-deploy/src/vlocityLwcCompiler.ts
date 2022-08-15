@@ -2,7 +2,7 @@
 import { JSDOM } from 'jsdom';
 import { Script } from 'vm';
 import { QueryFormatter, QueryService, SalesforceService, SalesforceQueryData } from '@vlocode/salesforce';
-import { VlocityNamespaceService } from 'vlocityNamespaceService';
+import { VlocityNamespaceService } from './vlocityNamespaceService';
 
 export interface CompiledResource {
     name: string,

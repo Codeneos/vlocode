@@ -1,13 +1,22 @@
 
 {
     "entryPoints": [
-        "./packages/core/src/index.ts",        
-        "./packages/util/src/index.ts"
+        "packages/core/src/index.ts",
+        "packages/util/src/index.ts",        
+        "packages/salesforce/src/index.ts",
+        "packages/vlocity-deploy/src/index.ts"
     ],
+    "externalPattern": [
+        "packages/vscode-extension/**/*",
+        "packages/cli/**/*"
+    ],
+    "cname": "vlocode.curlybracket.nl",
+    "exclude": "*.spec.ts",
     "readme": "SITE.md",
     "out": "docs",
     "hideGenerator": true,
-    "excludePrivate": true,
+    "excludePrivate": false,
     "excludeExternals": true,
+    "cleanOutputDir": true,
     "tsconfig": "./tsconfig.typedoc.json"
 }
