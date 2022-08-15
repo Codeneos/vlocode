@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.3](https://github.com/codeneos/vlocode/compare/v0.17.2...v0.17.3) (2022-08-15)
+
+### Bug Fixes
+
+* datapacks are not deployed due to commented out line ([0c59fea](https://github.com/codeneos/vlocode/commit/0c59feafc12fcf9a68f435952f1b22ea1d2aec40))
+
 ## [0.17.2](https://github.com/codeneos/vlocode/compare/v0.16.22...v0.17.2) (2022-08-12)
 
 ### Bug Fixes
