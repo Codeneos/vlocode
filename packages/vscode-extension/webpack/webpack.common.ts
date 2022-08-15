@@ -55,7 +55,7 @@ const common : webpack.Configuration = {
                             outDir: path.join(__dirname, '../.ts-temp')
                         },
                         onlyCompileBundledFiles: true,
-                        transpileOnly: true
+                        transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     } as Options
                 }],
             },

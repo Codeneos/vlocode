@@ -7,7 +7,7 @@ const production: webpack.Configuration = {
     devtool: false,
     optimization: {
         mergeDuplicateChunks: true,
-        minimize: true,
+        minimize: false,
         minimizer: [
             // @ts-ignore
             new TerserPlugin({
