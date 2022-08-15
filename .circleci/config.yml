@@ -52,7 +52,7 @@ jobs:
       - run: echo $(node -p "require('./lerna.json').version") > .version
       - persist_to_workspace:
           root: .
-          paths: [ ".version", "*.vsix" ]
+          paths: [ ".version", "packages/vscode-extension/*.vsix" ]
   publish-vsc-extension:
     docker:
       - image: cimg/node:lts-browsers
@@ -64,7 +64,7 @@ jobs:
           name: "Publish extension on VSCode Marketplace"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            pnpx vsce publish -p "$VSCE_TOKEN" --packagePath "./artifacts/vlocode-${VERSION}.vsix"
+            pnpx vsce publish -p "$VSCE_TOKEN" --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
       - image: cimg/node:lts-browsers
@@ -82,7 +82,7 @@ jobs:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            ghr -t ${GITHUB_TOKEN} -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/vlocode-${VERSION}.vsix
+            ghr -t ${GITHUB_TOKEN} -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
 
 workflows:
   validate:
