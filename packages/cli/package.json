@@ -32,7 +32,7 @@
         "pack": "pnpm run prepublish && pnpm run pack-only",
         "prepublish": "pnpm run clean && pnpm run build-webpack && tsc",
         "pack-only": "pnpm pack",
-        "clean": "rimraf ./dist ./lib ./.ts-temp"
+        "clean": "shx rm -rf ./dist ./lib ./.ts-temp"
     },
     "repository": {
         "type": "git",
@@ -69,7 +69,7 @@
         "json-loader": "^0.5.7",
         "log-symbols": "^4.0.0",
         "moment": "^2.29.1",
-        "rimraf": "^3.0.2",
+        "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
         "ts-jest": "^28.0.5",
         "ts-loader": "^9.3.1",

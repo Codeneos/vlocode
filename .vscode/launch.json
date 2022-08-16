@@ -35,7 +35,6 @@
             "name": "Debug CLI (webpacked)",
             "args": [
                 "deploy",
-                "c:/repos/kpn_esmee/vlocity/src/OmniScript",
                 "-u", "dev10pro",
                 "-v"
             ],
@@ -54,7 +53,6 @@
             "name": "Debug CLI (node)",
             "args": [
                 "deploy",
-                "c:/repos/kpn_esmee/vlocity/src/OmniScript",
                 "-u", "dev10pro",
                 "--debug",
                 "--strict-dependencies",

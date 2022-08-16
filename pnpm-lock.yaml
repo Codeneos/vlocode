@@ -107,7 +107,7 @@ importers:
       json-loader: ^0.5.7
       log-symbols: ^4.0.0
       moment: ^2.29.1
-      rimraf: ^3.0.2
+      shx: ^0.3.4
       source-map-support: ^0.5.21
       ts-jest: ^28.0.5
       ts-loader: ^9.3.1
@@ -138,7 +138,7 @@ importers:
       json-loader: 0.5.7
       log-symbols: 4.1.0
       moment: 2.29.3
-      rimraf: 3.0.2
+      shx: 0.3.4
       source-map-support: 0.5.21
       ts-jest: 28.0.5_5ohzrmm2xby2kpbdtr5cjigoti
       ts-loader: 9.3.1_gp3atwgq76mgimstdygasg64n4
@@ -379,9 +379,9 @@ importers:
       open: ^8.2.1
       prettier: '>=2.0.0'
       reflect-metadata: ^0.1.13
-      rimraf: ^3.0.2
       salesforce-alm: ^52.1.9
       sass.js: ^0.11.1
+      shx: ^0.3.4
       sinon: ^11.1.2
       source-map-support: ^0.5.21
       terser: ^5.10.0
@@ -456,9 +456,9 @@ importers:
       open: 8.4.0
       prettier: 2.6.2
       reflect-metadata: 0.1.13
-      rimraf: 3.0.2
       salesforce-alm: 52.7.0
       sass.js: 0.11.1
+      shx: 0.3.4
       sinon: 11.1.2
       source-map-support: 0.5.21
       terser: 5.13.1
@@ -2856,7 +2856,7 @@ packages:
     resolution: {integrity: sha1-5QtMCccL89aA4y/xt5lOn52JUXQ=}
     engines: {node: '>= 0.10.0'}
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
       graceful-fs: 4.2.10
       lazystream: 1.0.1
       lodash: 4.17.21
@@ -2867,7 +2867,7 @@ packages:
     resolution: {integrity: sha512-bEL/yUb/fNNiNTuUz979Z0Yg5L+LzLxGJz8x79lYmR54fmTIb6ob/hNQgkQnIUDWIFjZVQwl9Xs356I6BAMHfw==}
     engines: {node: '>= 6'}
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
       graceful-fs: 4.2.10
       lazystream: 1.0.1
       lodash.defaults: 4.2.0
@@ -2885,7 +2885,7 @@ packages:
       archiver-utils: 1.3.0
       async: 2.6.4
       buffer-crc32: 0.2.13
-      glob: 7.2.0
+      glob: 7.2.3
       lodash: 4.17.21
       readable-stream: 2.3.7
       tar-stream: 1.6.2
@@ -2899,7 +2899,7 @@ packages:
       archiver-utils: 1.3.0
       async: 2.6.4
       buffer-crc32: 0.2.13
-      glob: 7.2.0
+      glob: 7.2.3
       lodash: 4.17.21
       readable-stream: 2.3.7
       tar-stream: 1.6.2
@@ -2913,7 +2913,7 @@ packages:
       archiver-utils: 1.3.0
       async: 2.6.4
       buffer-crc32: 0.2.13
-      glob: 7.2.0
+      glob: 7.2.3
       lodash: 4.17.21
       readable-stream: 2.3.7
       tar-stream: 1.6.2
@@ -6370,7 +6370,6 @@ packages:
       minimatch: 3.1.2
       once: 1.4.0
       path-is-absolute: 1.0.1
-    dev: true
 
   /glob/8.0.3:
     resolution: {integrity: sha512-ull455NHSHI/Y1FqGaaYFaLGkNMMJbavMrEGFXG/PGrg6y7sutWHUHrz6gy6WEBH6akM1M414dWKCNs+IhKdiQ==}
@@ -6923,7 +6922,7 @@ packages:
     dev: true
 
   /interpret/0.6.6:
-    resolution: {integrity: sha1-/s16GOfOXKar+5U+H4YhOknxYls=}
+    resolution: {integrity: sha512-Vg6X07U0AOZb4HF6CWHa+jnJU8j71buKQ9Pc0C75qBXgvCYbxWBkGo4jnTS3O0MIc9FZtt0mB7h+uclojqdw1Q==}
     dev: true
 
   /interpret/1.4.0:
@@ -7017,12 +7016,12 @@ packages:
     resolution: {integrity: sha512-Erxj2n/LDAZ7H8WNJXd9tw38GYM3dv8rk8Zcs+jJuxYTW7sozH+SS8NtrSjVL1/vpLvWi1hxy96IzjJ3EHTJJg==}
     dependencies:
       has: 1.0.3
-    dev: true
 
   /is-core-module/2.9.0:
     resolution: {integrity: sha512-+5FPy5PnwmO3lvfMb0AsoPaBG+5KHUI0wYFXOtYPnVVVspTFUuMZNfNaNVRt3FZadstu2c8x23vykRW/NBoU6A==}
     dependencies:
       has: 1.0.3
+    dev: true
 
   /is-data-descriptor/0.1.4:
     resolution: {integrity: sha1-C17mSDiOLIYCgueT8YVv7D8wG1Y=}
@@ -10173,7 +10172,7 @@ packages:
     resolution: {integrity: sha1-RRiYW59hn8hgJfu5f6VYCIsJaoc=}
     dependencies:
       bluebird: 3.7.2
-      resolve: 1.22.0
+      resolve: 1.22.1
       stack-trace: 0.0.9
     dev: true
 
@@ -10486,16 +10485,16 @@ packages:
     dev: true
 
   /rechoir/0.6.2:
-    resolution: {integrity: sha1-hSBLVNuoLVdC4oyWdW70OvUOM4Q=}
+    resolution: {integrity: sha512-HFM8rkZ+i3zrV+4LQjwQ0W+ez98pApMGM3HUrN04j3CqzPOzl9nmP15Y8YXNm8QHGv/eacOVEjqhmWpkRV0NAw==}
     engines: {node: '>= 0.10'}
     dependencies:
-      resolve: 1.22.0
+      resolve: 1.22.1
 
   /rechoir/0.7.1:
     resolution: {integrity: sha512-/njmZ8s1wVeR6pjTZ+0nCnv8SpZNRMT2D1RLOJQESlYFDBvwpTA4KWJpZ+sBJ4+vhjILRcK7JIFdGCdxEAAitg==}
     engines: {node: '>= 0.10'}
     dependencies:
-      resolve: 1.22.0
+      resolve: 1.22.1
     dev: true
 
   /redent/3.0.0:
@@ -10714,6 +10713,7 @@ packages:
       is-core-module: 2.9.0
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
+    dev: true
 
   /resolve/1.22.1:
     resolution: {integrity: sha512-nBpuuYuY5jFsli/JIs1oldw6fOQCBioohqWZg/2hiaOybXOft4lonv85uDOKXdf8rhyK159cxU5cDcK/NKk8zw==}
@@ -10722,7 +10722,6 @@ packages:
       is-core-module: 2.10.0
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
-    dev: true
 
   /responselike/1.0.2:
     resolution: {integrity: sha1-kYcg7ztjHFZCvgaPFa3lpG9Loec=}
@@ -10781,14 +10780,14 @@ packages:
     resolution: {integrity: sha512-mwqeW5XsA2qAejG46gYdENaxXjx9onRNCfn7L0duuP4hCuTIi/QO7PDK07KJfp1d+izWPrzEJDcSqBa0OZQriA==}
     hasBin: true
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
     dev: true
 
   /rimraf/2.7.1:
     resolution: {integrity: sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==}
     hasBin: true
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
 
   /rimraf/3.0.2:
     resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
@@ -10961,7 +10960,7 @@ packages:
       '@salesforce/command': 2.2.0
       eslint: 6.8.0
       eslint-friendly-formatter: 4.0.1
-      glob: 7.2.0
+      glob: 7.2.3
       globals: 11.12.0
       heroku-cli-util: 8.0.12
       object-assign: 4.1.1
@@ -11126,7 +11125,7 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
     dependencies:
-      glob: 7.2.0
+      glob: 7.2.3
       interpret: 1.4.0
       rechoir: 0.6.2
 

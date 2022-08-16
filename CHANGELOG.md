@@ -29,7 +29,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * properly report failed records in the log when using the record batch for deployment ([29c1424](https://github.com/codeneos/vlocode/commit/29c1424d622221cc36942408b6d6dd3c81da7f1f))
 
 ### Features
-
+* **[Datta Kale](https://github.com/dattakale86)** added step to capture alias while authorizing org ([cca5596](https://github.com/codeneos/vlocode/commit/cca55962984f34a5a4dc23d2da03908576bee125))
 * +refresh+ and +open+ datapack now asks you which version to pull from the target org if the datapack has multiple versions such as OmniScripts ([3fd32bf](https://github.com/codeneos/vlocode/commit/3fd32bfd23d0247d3ff60e8ff248fca594588069))
 * add icon to terminal window ([f4b9466](https://github.com/codeneos/vlocode/commit/f4b9466e70866eb2737f6d37898760052266fc76))
 * add query parser to manipulate and analyze SOQL queries ([3f1a922](https://github.com/codeneos/vlocode/commit/3f1a922d9394398a30cdd55595d2b6c2ab674ff9))
@@ -39,6 +39,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * improve datapack rename and clone commands to look at matching keys ([2d025a1](https://github.com/codeneos/vlocode/commit/2d025a17ed93e177358de91ac648302e2a4f36d7))
 * initialize datapack services when switching org to speed up any Vlocode datapack commands ([107ea6b](https://github.com/codeneos/vlocode/commit/107ea6bb3df652e3f5bafd854885eb1ebc7e2a98))
 * support creating connection provider from an existing jsforce connection whilst keeping all fixes and patches to jsforce active ([2da0dd6](https://github.com/codeneos/vlocode/commit/2da0dd6437f7cea180dbdddc2b4d60cdd584caa9))
+
+### Contributors
+* **[Datta Kale](https://github.com/dattakale86)**
 
 ## [0.17.1](https://github.com/codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
 

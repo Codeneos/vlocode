@@ -71,6 +71,7 @@ jobs:
     steps:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+      - run: pnpm run --filter @vlocode/* build
       - run: pnpm lerna publish from-package --force-publish --no-push --yes
   github-release:
     docker:

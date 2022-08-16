@@ -45,7 +45,7 @@ const common : webpack.Configuration = {
                             rootDir: undefined,
                             outDir: path.resolve(contextFolder, '.ts-temp')
                         },
-                        transpileOnly: false,
+                        transpileOnly: true,
                         configFile: 'tsconfig.json'
                     } as Options
                 }],
@@ -77,6 +77,7 @@ const common : webpack.Configuration = {
     },
     mode: 'development',
     optimization: {
+        minimize: false,
         runtimeChunk: false,
         removeEmptyChunks: true,
         removeAvailableModules: true,
@@ -86,9 +87,6 @@ const common : webpack.Configuration = {
         moduleIds: 'named',
         chunkIds: 'named',
         splitChunks: false,
-    },
-    cache: {
-        type: 'memory'
     },
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
