@@ -146,7 +146,7 @@ export class DatapackRecordFactory {
                 }
                 const dateFormat = {
                     'date': 'YYYY-MM-DD',
-                    'datetime': 'YYYY-MM-DDTHH:mm:ss.sssZZ'
+                    'datetime': 'YYYY-MM-DDTHH:mm:ss.SSSZZ'
                 };
                 const date = moment(value);
                 if (!date.isValid()) {
