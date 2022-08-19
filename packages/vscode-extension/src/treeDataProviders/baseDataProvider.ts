@@ -36,8 +36,8 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
 
     protected executeCommand(commandName: VlocodeCommand, ... args: any[]) : Thenable<any>;
     protected executeCommand(commandName: string, ... args: any[]) : Thenable<any>;
-    protected executeCommand(commandName: string, ... args: any[]) : Thenable<any> {
-        return this.vlocode.commands.execute(commandName, ...args);
+    protected executeCommand(commandName: string | VlocodeCommand, ... args: any[]) : Thenable<any> {
+        return this.vlocode.commands.execute(commandName, args);
     }
 
     public refresh(node?: T): void {

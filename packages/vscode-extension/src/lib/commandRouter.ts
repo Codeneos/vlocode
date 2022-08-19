@@ -59,7 +59,7 @@ export default class CommandRouter {
 
     public async execute(commandName: VlocodeCommand, args?: any[]): Promise<void>;
     public async execute(commandName: string, args?: any[]): Promise<void>;
-    public async execute(commandName: VlocodeCommand | string, args?: any[], options?: CommandOptions) : Promise<void> {
+    public async execute(commandName: VlocodeCommand | string, args?: any[]) : Promise<void> {
         const command = this.commands.get(commandName);
         if (command) {
             await command.execute(...(args ?? []));            
