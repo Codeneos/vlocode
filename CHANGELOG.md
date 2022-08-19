@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.5](https://github.com/codeneos/vlocode/compare/v0.17.6...v0.17.5) (2022-08-19)
+
+### Bug Fixes
+
+* lerna version scripts pass invalid parameter ([23894fb](https://github.com/codeneos/vlocode/commit/23894fb08320f6492b009194f897198a52db0dda))
+
 ## [0.17.4](https://github.com/codeneos/vlocode/compare/v0.17.3...v0.17.4) (2022-08-16)
 
 ### Bug Fixes

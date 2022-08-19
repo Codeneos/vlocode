@@ -97,7 +97,7 @@ importers:
       '@vlocode/core': ^0.17.3
       '@vlocode/salesforce': ^0.17.3
       '@vlocode/util': ^0.17.3
-      '@vlocode/vlocity-deploy': ^0.17.4
+      '@vlocode/vlocity-deploy': ^0.17.5
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0

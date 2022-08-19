@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.5](https://github.com/Codeneos/vlocode/compare/v0.17.6...v0.17.5) (2022-08-19)
+
+**Note:** Version bump only for package @vlocode/cli
+
 ## [0.17.4](https://github.com/Codeneos/vlocode/compare/v0.17.3...v0.17.4) (2022-08-16)
 
 **Note:** Version bump only for package @vlocode/cli
