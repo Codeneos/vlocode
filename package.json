@@ -64,8 +64,8 @@
         "pack-cli": "pnpm run --filter \"@vlocode/cli^...\" build && pnpm run --filter @vlocode/cli pack",
         "pack-extension": "pnpm run --filter \"vlocode^...\" build && pnpm run --filter vlocode pack",
         "publish-extension": "pnpm run --filter \"vlocode^...\" build && pnpm run --filter vlocode publish",
-        "version-patch": "lerna version patch --no-git-reset",
-        "version-minor": "lerna version minor --no-git-reset",
+        "version-patch": "lerna version patch",
+        "version-minor": "lerna version minor",
         "test": "jest",
         "lint": "eslint ./packages/*/src/**/*.ts --ext .ts",
         "docs": "typedoc"
