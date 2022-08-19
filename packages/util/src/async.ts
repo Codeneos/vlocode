@@ -19,9 +19,10 @@ export function isThenable(value: any): value is PromiseLike<any> {
  * @param callback Callback function
  * @param ms Maximum time to wait after which the call 
  * @param pollInterval The interval at which to execute the callback
+ * @param rejectionMessage Optional rejection message when the specified time in ms expired without the callback being resolved
  * @returns Promise
  */
-export async function poll<T>(callback: () => T, ms: number, pollInterval: number = 50): Promise<T> {
+export async function poll<T>(callback: () => T, ms: number, pollInterval: number = 50, options?: { rejectionMessage?: string, resolveOnTimeout?: boolean }): Promise<T> {
     const expiryTime = new Date().getTime() + ms;
     return new Promise<T>((resolve, reject) => {
         const timer = setInterval(() => {
@@ -31,7 +32,11 @@ export async function poll<T>(callback: () => T, ms: number, pollInterval: numbe
                 resolve(value);
             } else if (expiryTime < new Date().getTime()) {
                 clearInterval(timer);
-                reject(new Error(`Callback not resolved after waiting for ${ms}`));
+                if (options?.resolveOnTimeout) {
+                    resolve(value);
+                } else {
+                    reject(new Error(options?.rejectionMessage ?? `Callback not resolved after waiting ${ms}ms`));
+                }
             }
         }, pollInterval);
     });
