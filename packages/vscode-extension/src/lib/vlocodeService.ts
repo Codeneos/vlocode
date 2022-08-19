@@ -411,14 +411,19 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                 return message;
             }
         }
-        if (!this._salesforceService) {
-            // Await 
-            try {
-                await poll(() => this._salesforceService && this._datapackService, 30000, 100);
-            } catch {
-                return 'Vlocode failed to initialize within the given time';
-            }
+
+        if (!this._datapackService || !this._salesforceService) {
+            // Await service initialization
+            await vscode.window.withProgress({ 
+                title: 'Vlocode: initializing services...',  
+                location: vscode.ProgressLocation.Window  
+            }, () => poll(() => this._datapackService && this._salesforceService, 60000, 500, { resolveOnTimeout: true }));
         }
+
+        if (!this._salesforceService) {
+            return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
+        }
+
         if (!await this.datapackService.isVlocityPackageInstalled()) {
             return 'Vlocity not installed on this Salesforce instance; select a different Salesforce instance or install Vlocity';
         }
