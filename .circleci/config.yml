@@ -37,7 +37,7 @@ commands:
 jobs:
   build-and-test:
     docker:
-      - image: cimg/node:lts-browsers
+      - image: cimg/node:18.4-browsers
     steps:
       - checkout_install
       - build
@@ -45,7 +45,7 @@ jobs:
       - codequality
   package:
     docker:
-      - image: cimg/node:lts-browsers
+      - image: cimg/node:18.4-browsers
     steps:
       - checkout_install
       - run: pnpm pack-extension
@@ -55,7 +55,7 @@ jobs:
           paths: [ ".version", "packages/vscode-extension/*.vsix" ]
   publish-vsc-extension:
     docker:
-      - image: cimg/node:lts-browsers
+      - image: cimg/node:18.4-browsers
     steps:
       - checkout_install
       - attach_workspace:
@@ -67,7 +67,7 @@ jobs:
             pnpx vsce publish -p "$VSCE_TOKEN" --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
-      - image: cimg/node:lts-browsers
+      - image: cimg/node:18.4-browsers
     steps:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
