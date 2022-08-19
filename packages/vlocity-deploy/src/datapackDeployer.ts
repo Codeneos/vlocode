@@ -286,7 +286,6 @@ export class DatapackDeployer {
         const spec = this.getDeploySpec(datapackType);
         const specFunction = spec?.[eventType];
         if (typeof specFunction === 'function') {
-            this.logger.verbose(`Running ${datapackType} ${eventType} spec from type ${(spec as any).name}`)
             await specFunction.apply(spec, args) as ReturnType<E>;
         } 
     }
