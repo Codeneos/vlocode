@@ -2,8 +2,8 @@ import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
 import { JsForceConnectionProvider } from '@vlocode/salesforce';
 import * as moment from 'moment';
 import { VlocityDatapack } from '../datapack';
-import { DatapackDeploymentSpec } from '../datapackDeployer';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
+import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class Product2 implements DatapackDeploymentSpec {

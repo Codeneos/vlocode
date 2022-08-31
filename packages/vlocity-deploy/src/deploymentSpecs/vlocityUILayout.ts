@@ -1,5 +1,5 @@
 import { injectable, LifecyclePolicy } from '@vlocode/core';
-import type { DatapackDeploymentSpec } from '../datapackDeployer';
+import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })

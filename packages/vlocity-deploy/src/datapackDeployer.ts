@@ -1,7 +1,7 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger, injectable , container, LifecyclePolicy } from '@vlocode/core';
-import { Timer, asArray, groupBy , Iterable, CancellationToken, forEachAsyncParallel, } from '@vlocode/util';
+import { Timer, asArray, groupBy , Iterable, CancellationToken, forEachAsyncParallel, lazy, OptionalPromise, } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -9,6 +9,7 @@ import * as deploymentSpecs from './deploymentSpecs';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';
+import { DatapackDeploymentSpec, DatapackDeploymentSpecGroup } from './datapackDeploymentSpec';
 
 export type VlocityDataPackDependencyType = 'VlocityMatchingKeyObject' | 'VlocityLookupMatchingKeyObject';
 
@@ -93,18 +94,13 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
     strictDependencies?: boolean;
 }
 
-export interface DatapackDeploymentSpec {
-    preprocess?(datapack: VlocityDatapack): Promise<any> | any;
-    afterRecordConversion?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
-    beforeDependencyResolution?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
-    beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
-    afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
-}
-
 @injectable.transient()
 export class DatapackDeployer {
 
     private readonly container = container.new();
+    private readonly specs = new Map<string, Partial<DatapackDeploymentSpec>>( 
+        Object.keys(deploymentSpecs).map(name => [ name.toLowerCase(), lazy(() => this.container.get(deploymentSpecs[name])) ]) 
+    );
 
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider,
@@ -150,6 +146,18 @@ export class DatapackDeployer {
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
 
         return deployment;
+    }
+
+    /**
+     * Creates and starts a deployment returning the {@link DatapackDeployment} object which contains results of the deployment.
+     * @param datapacks Datapacks to deploy
+     * @param options options passed to the deployment
+     * @param cancellationToken optional cancellation token
+     * @returns 
+     */
+    public async deploy(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
+        const deployment = await this.createDeployment(datapacks, options, cancellationToken);
+        return deployment.start(cancellationToken).then(() => deployment);
     }
 
     /**
@@ -275,6 +283,33 @@ export class DatapackDeployer {
             } as any);
         }
     }
+    
+    /**
+     * Register an individual spec function to be executed in for the datapacks of the specified type in this deployment.
+     * @param datapackType type of the Datapack 
+     * @param fn name of the hook function
+     * @param executor function executed
+     */
+    public registerSpecFunction<T extends keyof DatapackDeploymentSpec>(datapackType: string, fn: T, executor: DatapackDeploymentSpec[T]) {
+        this.registerSpec(datapackType, { [fn]: executor });
+    }
+
+    /**
+     * Register a spec with 1 or more hooks to be executed in for the datapacks of the specified type in this deployment. 
+     * @param datapackType type of the Datapack 
+     * @param spec Object matching the {@link DatapackDeploymentSpec}-shape
+     */
+    public registerSpec(datapackType: string, spec: DatapackDeploymentSpec) {
+        const currentSpec = this.specs.get(datapackType.toLowerCase());
+        if (!currentSpec) {
+            this.specs.set(datapackType.toLowerCase(), spec);
+        } else if (currentSpec instanceof DatapackDeploymentSpecGroup) {
+            currentSpec.add(spec);
+        } else {
+            this.specs.set(datapackType.toLowerCase(), new DatapackDeploymentSpecGroup([ currentSpec, spec ]));
+        }
+    }
+
 
     /**
      * Run a datapack spec function and await the result
@@ -291,9 +326,7 @@ export class DatapackDeployer {
     }
 
     private getDeploySpec(datapackType: string): DatapackDeploymentSpec | undefined {
-        if (deploymentSpecs[datapackType]) {
-            return this.container.get(deploymentSpecs[datapackType], LifecyclePolicy.singleton);
-        }
+        return this.specs.get(datapackType.toLowerCase());
     }
 
     /**

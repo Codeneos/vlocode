@@ -3,7 +3,8 @@ import { SalesforceService } from '@vlocode/salesforce';
 import { forEachAsyncParallel } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
-import type { DatapackDeploymentEvent, DatapackDeploymentSpec } from '../datapackDeployer';
+import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 
 @injectable({ lifecycle: LifecyclePolicy.singleton })
 export class OmniScript implements DatapackDeploymentSpec {
