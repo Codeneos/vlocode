@@ -143,7 +143,7 @@ export class TerminalWriter implements LogWriter {
 
     private applyAutoColors(messageBody: string) {
         return messageBody
-            .replaceAll(/'([^']+)'/gs, `'${this.chalk.bold('$1')}'`)
-            .replaceAll(/\[(\d+\s*ms)\]/gs, `[${this.chalk.green('$1')}]`);
+            .replace(/'([^']+)'/gs, `'${this.chalk.bold('$1')}'`)
+            .replace(/\[(\d+\s*ms)\]/gs, `[${this.chalk.green('$1')}]`);
     }
 }

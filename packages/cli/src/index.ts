@@ -58,10 +58,10 @@ class CLI {
 
     private generateCommandName(commandFile: string) {
         return path.relative(path.join(__dirname, this.commandsFolder), commandFile)
-            .replaceAll(/^(.*)\.(.*)?$/g, '$1')
-            .replaceAll(/^\./g, '-')
-            .replaceAll(/^[/\\]/g, '-')
-            .replaceAll(/([a-z0-9])([A-Z][a-z0-9]+)/g, '$1-$2')
+            .replace(/^(.*)\.(.*)?$/g, '$1')
+            .replace(/^\./g, '-')
+            .replace(/^[/\\]/g, '-')
+            .replace(/([a-z0-9])([A-Z][a-z0-9]+)/g, '$1-$2')
             .toLowerCase();
     }
     
