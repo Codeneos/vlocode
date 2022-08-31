@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.6](https://github.com/Codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
+
+### Features
+
+* support custom deployment specs for datapack deployment ([fed3743](https://github.com/Codeneos/vlocode/commit/fed3743e70f7b7d251d441036b6b94b56425e9a3))
+
 ## [0.17.5](https://github.com/Codeneos/vlocode/compare/v0.17.6...v0.17.5) (2022-08-19)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

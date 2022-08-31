@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.6](https://github.com/Codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
+
+### Bug Fixes
+
+* multiple parallel connection tests executed on reconnect instead a single one ([572b7dd](https://github.com/Codeneos/vlocode/commit/572b7dd1f7b55fb53fa6a3cce590497d81497e36))
+
 ## [0.17.3](https://github.com/Codeneos/vlocode/compare/v0.17.2...v0.17.3) (2022-08-15)
 
 **Note:** Version bump only for package @vlocode/salesforce

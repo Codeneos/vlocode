@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.6](https://github.com/codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
+
+### Bug Fixes
+
+* await service initialization to avoid exceptions when running commands or accessing the datapack explorer before all core services have been created ([6179944](https://github.com/codeneos/vlocode/commit/6179944806afc52b522e06339dcc4f4e022fc00a))
+
 ## [0.17.5](https://github.com/codeneos/vlocode/compare/v0.17.6...v0.17.5) (2022-08-19)
 
 **Note:** Version bump only for package vlocode

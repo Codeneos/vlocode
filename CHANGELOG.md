@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.6](https://github.com/codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
+
+### Bug Fixes
+
+* await service initialization to avoid exceptions when running commands or accessing the datapack explorer before all core services have been created ([6179944](https://github.com/codeneos/vlocode/commit/6179944806afc52b522e06339dcc4f4e022fc00a))
+* don't use string.replaceAll with a RegExp as ms-python.python replaces replaceAll with a method not supporting a RegExp as sub-string ([e966bbf](https://github.com/codeneos/vlocode/commit/e966bbf637aa2c3613d574be71891ae1ed6ca377))
+* multiple parallel connection tests executed on reconnect instead a single one ([572b7dd](https://github.com/codeneos/vlocode/commit/572b7dd1f7b55fb53fa6a3cce590497d81497e36))
+
+### Features
+
+* change poll to not return an error when the callback time's out and allow throwing a custom error message on rejection ([242f5d0](https://github.com/codeneos/vlocode/commit/242f5d085e2dd8aa68b76b286776ab9eee2b82d1))
+* support custom deployment specs for datapack deployment ([fed3743](https://github.com/codeneos/vlocode/commit/fed3743e70f7b7d251d441036b6b94b56425e9a3))
+
 ## [0.17.5](https://github.com/codeneos/vlocode/compare/v0.17.6...v0.17.5) (2022-08-19)
 
 ### Bug Fixes
