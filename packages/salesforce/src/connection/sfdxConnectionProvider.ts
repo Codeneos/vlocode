@@ -15,6 +15,7 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
     private connection: PooledJsforceConnection;
     private version: string;
     private explicitVersion: boolean;
+    private isTesting?: Promise<boolean>;
     private readonly testInterval = 60 * 1000;
 
     constructor(private readonly username: string, version: string | undefined) {
@@ -29,7 +30,8 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
                 this.connection._lastTested = Date.now();
                 return this.connection;
             }
-            if (await this.testConnection(this.connection)) {
+            const testingResult = this.isTesting ?? (this.isTesting = this.testConnection(this.connection).finally(() => this.isTesting = undefined));
+            if (await testingResult) {
                 return this.connection;
             }
         }
