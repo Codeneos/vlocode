@@ -4,7 +4,7 @@ import { Timer } from '@vlocode/util';
 import * as chalk from 'chalk';
 import * as constants from './constants';
 
-@injectable({ provides: NamespaceService })
+@injectable({ provides: [NamespaceService, VlocityNamespaceService] })
 export class VlocityNamespaceService implements NamespaceService {
 
     @injectable.property private readonly logger: Logger

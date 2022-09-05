@@ -46,6 +46,11 @@ export class SfdxConnectionProvider implements JsForceConnectionProvider {
         connection._logger = this.createJsForceLogger(LogManager.get('Connection'));
         connection.tooling._logger = this.createJsForceLogger(LogManager.get('jsforce.Tooling'));
         connection._lastTested = Date.now();
+
+        if (connection['logger']) {
+            connection['logger'] = LogManager.get('sfdx');
+        }
+        
         if (this.explicitVersion) {
             connection.version = this.version;
         } else {

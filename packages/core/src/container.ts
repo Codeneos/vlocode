@@ -246,7 +246,7 @@ export class Container {
         // Get argument types
         const paramTypes = getCtorParameterTypes(ctor);
         if (!paramTypes) {
-            throw new Error('Cannot resolve parameters of an object without design time decoration');
+            throw new Error(`Cannot resolve parameters of an object without design time decoration: ${ctor.name}`);
         }
 
         for (let i = 0; i < paramTypes.length; i++) {
