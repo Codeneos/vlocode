@@ -130,20 +130,165 @@ export function getObjectValues(obj: any, depth = -1) : any[] {
 }
 
 /**
- * Transform the specified object into a different shape by transforming each key according to the transformation function
+ * Transform the specified object into a different shape by transforming each property with the key transformer function. 
+ * Does not change the orignal object but create a new object.
  * @param obj Object to transform
- * @param transformer Transformation function
+ * @param keyTransformer Transformation function
  */
-export function transform(obj: object, transformer: (key: string | number | symbol) => string | number | symbol): object {
-    return Object.entries(obj).reduce((map, [key, value]) => Object.assign(map, { [transformer(key)]: value }), {});
+export function mapKeys(obj: object, keyTransformer: (key: string | number | symbol) => string | number | symbol): object {
+    return Object.entries(obj).reduce((map, [key, value]) => Object.assign(map, { [keyTransformer(key)]: value }), {});
 }
 
 /**
- * Filter all keys matching the filter function and create a shallow clone ot the object without the filtered keys 
+ * Filter all keys matching the filter function and create a shallow clone of the object without the filtered keys 
  * @param obj object to filter the keys from
  * @param filterFn filter function
  * @returns 
  */
 export function filterKeys<TOut extends object = object, TIn extends object = object>(obj: TIn, filterFn: (key: string) => any): TOut  {
     return Object.keys(obj).filter(filterFn).reduce((acc, key) => Object.assign(acc, { [key]: obj[key] }), {} as TOut);
+}
+
+/**
+ * Deep clone an object; 
+ * @param {*} value object
+ * @returns Deep copy of the object trapped in the proxy
+ */
+ export function clone<T>(value: T): T {
+    if (value === undefined || value === null) {
+        return value;
+    }
+    if (isObject(value)) {
+        return merge(createMergeTarget(value), value);
+    }
+    return value;    
+}
+    
+/**
+ * Merge multiple objects recursively into the target object
+ * @param {object} object target into which sources are merged
+ * @param  {...object} sources source from which to merge
+ * @returns 
+ */
+export function merge(object: any, ...sources: any[]) {
+    for (const source of sources.filter(s => s)) {
+        for (const key of Object.keys(source)) {
+            if (isObject(object[key]) && isObject(source[key])) {
+                merge(object[key], source[key]);
+            } else if (isObject(source[key])) {
+                object[key] = merge(createMergeTarget(source[key]), source[key]);
+            } else {                
+                object[key] = source[key];
+            }
+        }
+    }    
+    return object;
+}
+
+function createMergeTarget<T>(source: T): T {
+    const target = (Array.isArray(source) ? [] : {}) as T;
+    const sourcePrototype = Object.getPrototypeOf(source);
+    if (sourcePrototype) {
+        Object.setPrototypeOf(target, sourcePrototype);
+    }
+    return target;
+}
+
+function isObject(obj: any) {
+    return obj !== null && typeof obj === 'object';
+}
+
+/**
+ * Flatten an object with nested objects to a flat structure in which nested objects can be accessed directly using a key separator. I.e:
+ * ```js
+ * flattenNestedObject({ foo: { bar: 'test' } }); // { 'foo.bar': 'test' }
+ * ```
+ * Creates a new object and does not alter the existing structure
+ * @param values Object to flatten
+ * @param flattenPredicate when this predicate returns false the object will not be flattened otherwise; if not set all objects will be flattened
+ * @param separator optional separator
+ * @param keyPrefix key which will prefixes the new keys
+ */
+export function flattenObject<T>(values: T, flattenPredicate?: (obj: any) => any, separator = '.', keyPrefix?: string): T {
+    return Object.entries(values).reduce((acc, [key, value]) => {
+        const objectKey = keyPrefix ? `${keyPrefix}${separator}${key}`: key;
+        if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+            if (!flattenPredicate?.(value)) {
+                return Object.assign(acc, flattenObject(value, flattenPredicate, separator, objectKey));
+            }
+        } 
+        return Object.assign(acc, { [objectKey]: value });
+    }, {});
+}
+
+/**
+ * Get a nested object property on the target object, property path is separated by a period-sign (.)
+ * @param obj target object
+ * @param prop property path separated by a period (.) to set
+ * @returns The value at the path or undefined when not set or part of the path doesn't exists
+ */
+export function getObjectProperty(obj: any, prop: string) {
+    return prop.split('.').reduce((o, p) => o && o[p], obj);
+}
+
+/**
+ * Set a property on the specified object at the specified path. Modifies the original object, when a part of the specified path is not set an empty object is created
+ * @param obj Object to set the property on
+ * @param prop Property path to set
+ * @param value Value to set at the specified path
+ * @param options.createWhenNotFound Create an object to be able to set the specified property, otherwise does not set the property specified
+ * @returns The original obj with the property path set to the specified value;
+ */
+export function setObjectProperty<T>(obj: T, prop: string, value: any, options?: { createWhenNotFound?: boolean }) : T {
+    if (options?.createWhenNotFound) {
+        obj = obj ?? {} as T; // init object with a default when not set
+    }
+    
+    const propPath = prop.split('.');
+    const lastProp = propPath.pop()!;
+
+    let target = obj;
+    for (const p of propPath) {
+        if (target[p] === undefined || target === null) {
+            if (!options?.createWhenNotFound) {
+                return obj;
+            }
+        }
+        target = target[p] ?? (target[p] = {});
+    }
+
+    if (target) {
+        target[lastProp] = value;
+    }
+    return obj;
+}
+
+/**
+ * Recursively visit each property of an object and any nested objects it has, for arrays visits all elements. Does not visit functions if they exist.
+ * @param obj Object for which on each property the property visitor is called
+ * @param propertyVisitor Visitor function called for each property
+ * @returns 
+ */
+export function visitObject<T>(obj: T, propertyVisitor: (prop: string | Symbol | number, value: any, owner: any) => void, thisArg?: any): T {
+    if (!obj) {
+        return obj;
+    }
+    
+    if (thisArg) {
+        propertyVisitor = propertyVisitor.bind(thisArg);
+    }
+
+    for (const [prop, value] of Object.entries(obj)) {
+        if (typeof value === 'function') {
+            continue;
+        }
+
+        if (typeof value === 'object') {
+            visitObject(value, propertyVisitor);
+        }  else { 
+            propertyVisitor(prop, value, obj);
+        }
+    }
+
+    return obj;
 }
