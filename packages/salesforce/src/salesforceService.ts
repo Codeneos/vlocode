@@ -15,6 +15,7 @@ import { MetadataRegistry, MetadataType } from './metadataRegistry';
 import { NamespaceService } from './namespaceService';
 import { SoapClient, SoapDebuggingHeader } from './soapClient';
 import { DeveloperLogs } from './developerLogs';
+import { QueryBuilder } from './queryBuilder';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -424,13 +425,18 @@ export class SalesforceService implements JsForceConnectionProvider {
     public async getConnectedUserInfo() {
         const connection = await this.getJsForceConnection();
         const identity = await connection.identity();
-        // Only return a subset of user details/ do not expose the rest as they might be more sensitive details there
+        const { records: [ userObject ] } = await connection.query<any>(
+            new QueryBuilder('User', [ 'ProfileId' ]).limit(1).where.equals('Id', identity.user_id).toString()
+        );
+        // Only return a subset of user details/do not expose the rest as they might be more sensitive details there
         return {
             id: identity.user_id,
             username: identity.username,
             type: identity.user_type,
+            profileId: userObject.ProfileId
         };
     }
+    
 
     /**
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
