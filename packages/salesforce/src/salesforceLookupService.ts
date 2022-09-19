@@ -1,5 +1,5 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { asArray, transform, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable } from '@vlocode/util';
+import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable, mapKeys } from '@vlocode/util';
 import { PropertyAccessor } from './types';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -132,7 +132,7 @@ export class SalesforceLookupService {
                 if (salesforceField.type != 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName) {
                     throw new Error(`Object type set for non-reference field ${fieldPath} on type ${type}`);
                 }
-                lookupFilters.push(await this.createWhereClause(type, transform(value!, key => `${fieldName}.${String(key)}`)));
+                lookupFilters.push(await this.createWhereClause(type, mapKeys(value!, key => `${fieldName}.${String(key)}`)));
             } else {
                 // Set intended comparison operator
                 let operator = '=';

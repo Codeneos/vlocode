@@ -1,11 +1,15 @@
 {
     "extends": "../../tsconfig",
     "compilerOptions": {
+        "composite": true,
         "outDir": "lib",
         "baseUrl": "src",
         "rootDir": "src",
         "declaration": true,
         "declarationMap": true
     },
-    "include": [ "src/**/*" ]
+    "include": [ "src/**/*" ],    
+    "references": [
+        { "path": "../util" }
+    ]
 }

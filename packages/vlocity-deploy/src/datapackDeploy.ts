@@ -7,7 +7,7 @@ import { Connection, JsForceConnectionProvider, NamespaceService, SfdxConnection
 import { DatapackDeployer, DatapackDeploymentOptions } from "./datapackDeployer";
 import { ForkedSassCompiler } from "./sass";
 import { VlocityNamespaceService } from "./vlocityNamespaceService";
-import DatapackLoader from "datapackLoader";
+import DatapackLoader from "./datapackLoader";
 
 interface DatapackDeployOptions extends DatapackDeploymentOptions {
     /**

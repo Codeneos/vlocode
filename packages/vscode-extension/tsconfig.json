@@ -3,8 +3,8 @@
     "compilerOptions": {
         "outDir": "lib",
         "sourceMap": true,
+        "declaration": false,
         "baseUrl": ".",
-        "forceConsistentCasingInFileNames": true,
         "paths": {
             "@root/*": ["src/*"],
             "@constants": ["src/constants"],
@@ -20,8 +20,14 @@
         ]
     },
     "include": [ 
-        "./src/**/*", 
-        "./weboack/**/*", 
-        "./types/**/*" 
+        "src/**/*", 
+        "weboack/**/*", 
+        "types/**/*" 
+    ],
+    "references": [
+        { "path": "../util" },
+        { "path": "../core" },
+        { "path": "../salesforce" },
+        { "path": "../vlocity-deploy" }
     ]
 }

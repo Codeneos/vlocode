@@ -60,6 +60,12 @@ export class QueryBuilder extends QueryBuilderData {
         this.query.orderByDirection = direction;
         return this;
     }
+
+    public limit(limit: number, offset?: number) : QueryBuilder {
+        this.query.limit = limit;
+        this.query.offset = offset ?? this.query.offset;
+        return this;
+    }
 }
 
 export class QueryConditionBuilder extends QueryBuilderData {

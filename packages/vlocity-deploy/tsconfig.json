@@ -1,11 +1,17 @@
 {
     "extends": "../../tsconfig",
     "compilerOptions": {
+        "composite": true,
         "outDir": "lib",
         "baseUrl": "src",
         "rootDir": "src",
         "declaration": true,
         "declarationMap": true
     },
-    "include": [ "src/**/*" ]
+    "include": [ "src/**/*.ts", "src/**/*.json" ],
+    "references": [
+        { "path": "../util" },
+        { "path": "../core" },
+        { "path": "../salesforce" }
+    ]
 }

@@ -7,5 +7,11 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": [ "src/**/*" ]
+    "include": [ "src/**/*" ],
+    "references": [
+        { "path": "../util" },
+        { "path": "../core" },
+        { "path": "../salesforce" },
+        { "path": "../vlocity-deploy" }
+    ]
 }

@@ -3,6 +3,7 @@ import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
+import * as CopyPlugin from 'copy-webpack-plugin';
 //import * as ts from 'typescript';
 import WatchMarkersPlugin from './plugins/watchMarkers';
 import type { Options } from 'ts-loader';
@@ -54,7 +55,7 @@ const common : webpack.Configuration = {
                         compilerOptions: {
                             outDir: path.join(__dirname, '../.ts-temp')
                         },
-                        onlyCompileBundledFiles: true,
+                        projectReferences: true,
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     } as Options
                 }],
@@ -72,12 +73,6 @@ const common : webpack.Configuration = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
-        alias: {
-            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src'),
-            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src'),
-            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src')
-        },
         plugins: [ 
             new TsconfigPathsPlugin()
         ]
@@ -174,11 +169,11 @@ const extension : webpack.Configuration = {
         path: path.resolve(contextFolder, 'out'),
     },
     plugins: [
-        // new CopyPlugin({
-        //     patterns: [
-        //         { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex' }
-        //     ]
-        // }),
+        new CopyPlugin({
+            patterns: [
+                { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex' }
+            ]
+        }),
     ]
 };
 
