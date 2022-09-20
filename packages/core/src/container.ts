@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { EventEmitter } from 'stream';
-import { singleton, Iterable, arrayMapPush, asArray, getCtorParameterTypes, getPropertyType } from '@vlocode/util';
+import { singleton, Iterable, arrayMapPush, asArray, getParameterTypes, getPropertyType } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
 import { InjectableDecorated, InjectableOriginalCtor } from './inject';
@@ -236,7 +236,7 @@ export class Container {
         if (ctor.length === 0) {
             // No params on CTOR; double check we aren't dealing with an extended type 
             // the inject decorator extends the original causing resolveParameters to fail as the new ctor will be parameter less
-            const paramTypes = getCtorParameterTypes(ctor);
+            const paramTypes = getParameterTypes(ctor);
             if (!paramTypes?.length) {
                 // Ignore parameter-less ctors
                 return args;
@@ -244,7 +244,7 @@ export class Container {
         }
 
         // Get argument types
-        const paramTypes = getCtorParameterTypes(ctor);
+        const paramTypes = getParameterTypes(ctor);
         if (!paramTypes) {
             throw new Error(`Cannot resolve parameters of an object without design time decoration: ${ctor.name}`);
         }
@@ -367,7 +367,7 @@ export class Container {
             }
 
             if (this.instances.has(providedService)) {
-                this.logger.warn(`Overriding existing service from ${this.instances.get(providedService.constructor.name)}->${instance.constructor.name}`);
+                this.logger.warn(`Overriding existing service [${providedService}] from ${this.instances.get(providedService)}->${instance.constructor.name}`);
             }
 
             this.logger.debug(`Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
