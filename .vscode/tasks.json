@@ -93,7 +93,10 @@
         {
             "label": "watch-cli",
             "type": "shell",
-            "problemMatcher": "$tsc-watch",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/cli"]
+            },
             "command": "pnpm --filter @vlocode/cli watch",
             "isBackground": true,
             "presentation": {
@@ -109,7 +112,10 @@
         {
             "label": "watch-vlocity-deploy",
             "type": "shell",
-            "problemMatcher": "$tsc-watch",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/vlocity-deploy"]
+            },
             "command": "pnpm --filter @vlocode/vlocity-deploy watch",
             "isBackground": true,
             "presentation": {
@@ -125,7 +131,10 @@
         {
             "label": "watch-salesforce",
             "type": "shell",
-            "problemMatcher": "$tsc-watch",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/salesforce"]
+            },
             "command": "pnpm --filter @vlocode/salesforce watch",
             "isBackground": true,
             "presentation": {
@@ -141,7 +150,10 @@
         {
             "label": "watch-core",
             "type": "shell",
-            "problemMatcher": "$tsc-watch",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/core"]
+            },
             "command": "pnpm --filter @vlocode/core watch",
             "isBackground": true,
             "presentation": {
@@ -157,7 +169,10 @@
         {
             "label": "watch-util",
             "type": "shell",
-            "problemMatcher": "$tsc-watch",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/vlocity-util"]
+            },
             "command": "pnpm --filter @vlocode/util watch",
             "isBackground": true,
             "presentation": {

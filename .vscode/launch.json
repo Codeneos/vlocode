@@ -16,8 +16,13 @@
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
             "outFiles": [
-                "${workspaceFolder}/packages/vscode-extension/out/**/*.js"
+                "packages/vscode-extension/out/**/*.js",
+                "packages/salesforce/lib/**/*.js",
+                "packages/core/lib/**/*.js",
+                "packages/util/lib/**/*.js",
+                "packages/vlocity-deploy/lib/**/*.js"
             ], 
+            "pauseForSourceMap": true,
             "skipFiles": [
                 "<node_internals>/**/*.js",
                 "async_hooks.js",

@@ -53,9 +53,17 @@ const common : webpack.Configuration = {
                     loader: 'ts-loader',
                     options: {
                         compilerOptions: {
-                            outDir: path.join(__dirname, '../.ts-temp')
+                            outDir: path.join(__dirname, '../.ts-temp'),
+                            declaration: false,
+                            rootDirs: [
+                                contextFolder,
+                                path.resolve(workspaceFolder, 'core', 'src'),
+                                path.resolve(workspaceFolder, 'util', 'src'),
+                                path.resolve(workspaceFolder, 'vlocity-deploy', 'src'),
+                                path.resolve(workspaceFolder, 'salesforce', 'src')
+                            ]
                         },
-                        projectReferences: true,
+                        projectReferences: false,
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     } as Options
                 }],
@@ -73,6 +81,12 @@ const common : webpack.Configuration = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
+        alias: {
+            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src'),
+            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src'),
+            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src'),
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src')
+        },
         plugins: [ 
             new TsconfigPathsPlugin()
         ]
