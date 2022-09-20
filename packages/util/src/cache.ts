@@ -159,7 +159,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
 
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(options.scope == 'global' ? target : (this ?? target));
-        const key = args.reduce((checksum, arg) => checksum + (String(arg) ?? 'undef'), `${name}:`);
+        const key = args.reduce((checksum, arg) => checksum + serializeArgument(arg), `${name}:`);
         const cacheEntry = cache.get(key);
         if (cacheEntry) {
             return cacheEntry.value;
@@ -187,4 +187,13 @@ export function cacheFunction<T extends (...args: any[]) => any>(target: T, name
     };
 
     return cachedFunction as T;
+}
+
+/**
+ * Serialize an argument into a string tat can be used as key for accessing a cached entry.
+ * @param arg the argument
+ * @returns a string version of the argument
+ */
+function serializeArgument(arg: any): string {
+    return (typeof arg !== 'object' ? String(arg) : JSON.stringify(arg)) ?? 'undefined';
 }
