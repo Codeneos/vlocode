@@ -58,6 +58,7 @@
             "name": "Debug CLI (node)",
             "args": [
                 "deploy",
+                "C:/repos/kpn_esmee/vlocity/src/OmniScript/KPN-Actions_Calculate-Penalty_Dutch",
                 "-u", "dev10pro",
                 "--debug",
                 "--strict-dependencies",

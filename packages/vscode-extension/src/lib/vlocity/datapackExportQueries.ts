@@ -55,6 +55,6 @@ export class DatapackExportQueries {
             }
         }
 
-        return query.toString();
+        return query.getQuery();
     }
 }

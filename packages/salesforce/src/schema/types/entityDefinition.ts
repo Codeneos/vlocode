@@ -1,0 +1,65 @@
+import { FieldDefinition } from "./fieldDefinition";
+
+export type SharingModel = 'None' | 'Read' | 'Edit' | 'ReadWrite' | 'ControlledByLeadOrContact' | 'ControlledByCampaign';
+
+/**
+ * Describes the EntityDefinition Tooling API Object in Salesforce retrieved with field(standard)
+ */
+export interface EntityDefinition {
+    id: string,
+    durableId: string,
+    lastModifiedDate?: string,
+    lastModifiedById?: string,
+    qualifiedApiName: string,
+    namespacePrefix?: string,
+    developerName: string,
+    masterLabel: string,
+    label: string,
+    pluralLabel: string,
+    defaultCompactLayoutId?: string,
+    isCustomizable: boolean,
+    isApexTriggerable: boolean,
+    isWorkflowEnabled: boolean,
+    isProcessEnabled: boolean,
+    isCompactLayoutable: boolean,
+    deploymentStatus?: 'Deployed',
+    keyPrefix: string,
+    isCustomSetting: boolean,
+    isDeprecatedAndHidden: boolean,
+    isReplicateable: boolean,
+    isRetrieveable: boolean,
+    isSearchLayoutable: boolean,
+    isSearchable: boolean,
+    isTriggerable: boolean,
+    isIdEnabled: boolean,
+    isEverCreatable: boolean,
+    isEverUpdatable: boolean,
+    isEverDeletable: boolean,
+    isFeedEnabled: boolean,
+    isQueryable: boolean,
+    isMruEnabled: boolean,
+    detailUrl: string,
+    editUrl: string,
+    newUrl: string,
+    editDefinitionUrl?: string,
+    helpSettingPageName?: string,
+    helpSettingPageUrl?: string,
+    runningUserEntityAccessId: string,
+    publisherId: string,
+    isLayoutable: boolean,
+    recordTypesSupported: {
+        recordTypeInfos: Array<string>
+    },
+    internalSharingModel: SharingModel,
+    externalSharingModel: SharingModel,
+    hasSubtypes: boolean,
+    isSubtype: boolean,
+    isAutoActivityCaptureEnabled: boolean,
+    isInterface: boolean,
+    implementsInterfaces?: string,
+    implementedBy?: string,
+    extendsInterfaces?: string,
+    extendedBy?: string,
+    defaultImplementation?: string,
+    fields: FieldDefinition[]
+}

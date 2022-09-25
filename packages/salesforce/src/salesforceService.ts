@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId } from '@vlocode/util';
 
 import { JsForceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -155,7 +155,7 @@ export class SalesforceService implements JsForceConnectionProvider {
     public async* insert(type: string, records: Array<{ values: any; ref: string }>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.schema);
         for (const record of records) {
-            batch.addInsert(type, record.values, record.ref);
+            batch.addInsert(this.namespaceService.updateNamespace(type), record.values, record.ref);
         }
         yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
     }
@@ -170,7 +170,7 @@ export class SalesforceService implements JsForceConnectionProvider {
     public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100 });
         for (const record of records) {
-            batch.addUpdate(type, record, record.id, record.id);
+            batch.addUpdate(this.namespaceService.updateNamespace(type), record, record.id, record.id);
         }
         yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
     }
@@ -368,6 +368,19 @@ export class SalesforceService implements JsForceConnectionProvider {
     }
 
     /**
+     * Get the content of the specified content version object based on the content version Id
+     * @param versionId Content Version object Id
+     */
+     public async getContentVersionData(versionId: string) {
+        if (!isSalesforceId(versionId)) {
+            throw new Error(`Specified ID is not a Salesforce id: ${versionId}`);
+        }
+        const connection = await this.getJsForceConnection();
+        const response = await connection.request<string>(`/services/data/v55.0/sobjects/ContentVersion/${versionId}/VersionData`);
+        return response;
+    }
+
+    /**
      * Load all known Salesforce profiles in the current workspace with the *.profile-meta.xml and the *.profile extension from the file system
      */
     public async loadProfilesFromDisk() {
@@ -426,7 +439,7 @@ export class SalesforceService implements JsForceConnectionProvider {
         const connection = await this.getJsForceConnection();
         const identity = await connection.identity();
         const { records: [ userObject ] } = await connection.query<any>(
-            new QueryBuilder('User', [ 'ProfileId' ]).limit(1).where.equals('Id', identity.user_id).toString()
+            new QueryBuilder('User', [ 'ProfileId' ]).limit(1).where.equals('Id', identity.user_id).getQuery()
         );
         // Only return a subset of user details/do not expose the rest as they might be more sensitive details there
         return {

@@ -50,7 +50,7 @@ export default abstract class MetadataCommand extends CommandBase {
 
         // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
         // these are not useful to display so we instead filter these out        
-        const filterFailures = result.details?.componentFailures?.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
+        const filterFailures = result.details.componentFailures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
 
         for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
             const info = sfPackage.getSourceFile(failure.fileName.replace(/^src\//i, ''));

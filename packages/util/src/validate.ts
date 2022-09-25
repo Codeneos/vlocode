@@ -1,3 +1,4 @@
+import { getParameterTypes } from './reflect';
 import 'reflect-metadata';
 
 export const RequiredMetadataKey = Symbol('[[ValidateRequiredParams]]');
@@ -27,7 +28,7 @@ export const validate = Object.assign(function (target: any, propertyKey: string
                 const requiredParameters: number[] = Reflect.getOwnMetadata(RequiredMetadataKey, ctor) ?? [];
                 for (const i of requiredParameters) {
                     if (args[i] == null) {
-                        throw new Error(`Argument null exception, ${ctor.name} requires a value for argument with index ${i}`);
+                        throw new Error(`Argument null exception, ${ctor.name} requires a value for argument with index ${i} of type ${getParameterTypes(ctor)?.[i]?.name}`);
                     }
                 }
                 super(...args);

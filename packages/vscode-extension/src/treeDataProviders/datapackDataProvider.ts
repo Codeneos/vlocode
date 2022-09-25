@@ -152,11 +152,11 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     private async getQuery(datapackType: string) {
         const queryDefinition = await this.datapackService.getQueryDefinition(datapackType);
         if (queryDefinition?.query) {
-            return QueryBuilder.parse(queryDefinition?.query).select('Name').toString();
+            return QueryBuilder.parse(queryDefinition?.query).select('Name').getQuery();
         }
 
         const sobjectType = await this.datapackInfoService.getSObjectType(datapackType);
-        return new QueryBuilder(sobjectType, [ 'Id', 'Name' ]).toString();
+        return new QueryBuilder(sobjectType, [ 'Id', 'Name' ]).getQuery();
     }
 
     private async getExportableSObjectTypes() {

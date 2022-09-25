@@ -19,3 +19,4 @@ export * from './datapackLookupService';
 export * from './datapackUtil';
 export * from './vlocityMatchingKeyService';
 export * from './vlocityNamespaceService';
+export * from './omniScript';

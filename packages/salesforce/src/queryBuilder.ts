@@ -1,5 +1,7 @@
 import { container, LogManager } from '@vlocode/core';
-import { lazy } from '@vlocode/util';
+import { clone, flattenObject, lazy } from '@vlocode/util';
+import { Connection, JsForceConnectionProvider } from './connection';
+import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 
@@ -7,12 +9,12 @@ class QueryBuilderData {
     constructor(protected readonly query: SalesforceQueryData) {
     }
 
-    public getQuery(): SalesforceQueryData {
+    public getSpec(): SalesforceQueryData {
         return { ...this.query, fieldList: [...new Set(this.query.fieldList)] };
     }
 
-    public toString() {
-        return QueryFormatter.format(this.getQuery());
+    public getQuery() {
+        return QueryFormatter.format(this.getSpec());
     }
 
     public get fields(): Iterable<string> {
@@ -22,6 +24,49 @@ class QueryBuilderData {
     public get sobjectType() {
         return this.query.sobjectType;
     }
+    
+    public execute<T = any>(executor?: JsForceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
+        if (!executor) {
+            return this.execute(container.get(QueryService));
+        }
+
+        if (typeof executor['query'] === 'function') {
+            return executor['query'](this.getQuery());
+        } 
+        
+        // @ts-ignore executor is JsForceConnectionProvider
+        return new QueryService(executor).query(this.getQuery());
+    }
+
+    public async executeTooling<T = any>(executor?: JsForceConnectionProvider | Connection, options?: { chunkSize?: number }) : Promise<T[]> {
+        if (!executor) {
+            return this.executeTooling(container.get(JsForceConnectionProvider));
+        }
+
+        const connection = executor instanceof Connection ? executor : await executor.getJsForceConnection();
+        const results = new Array<T>();
+        const chunkSize = options?.chunkSize ?? 2000;
+
+        for (let chunkNr = 0; true; chunkNr++) {
+            const chunkedQuery = new QueryBuilder(clone(this.query)).limit(chunkSize, chunkNr * chunkSize);  
+            console.debug(chunkedQuery.getQuery());
+            const result = await connection.tooling.query<T>(chunkedQuery.getQuery());
+
+            results.push(...result.records);
+
+            if (result.records.length < chunkSize) {
+                break;
+            }
+        }
+
+        return results;
+    }
+}
+
+type WhereOperatorType = '=' | '!=' | '>' | '<' | 'like' | 'in' | 'includes';
+
+interface FilterCondition {
+    [field: string]: any | { op: WhereOperatorType, value: any }
 }
 
 /**
@@ -38,17 +83,34 @@ export class QueryBuilder extends QueryBuilderData {
         super(typeof args[0] === 'object' ? args[0] : { sobjectType: args[0], fieldList: args[1] ?? [ 'Id' ] });
     }
 
+    public clone() {
+        return QueryBuilder.clone(this);
+    }
+
+    public static clone(query: QueryBuilder) {
+        return new QueryBuilder(clone(query.query));
+    }
+
     public static parse(query: string) {
         return new QueryBuilder(QueryParser.parse(query));
     }
     
-    public get where() : QueryConditionBuilder {
+    public get where(): QueryConditionBuilder {
         return new QueryConditionBuilder(this.query);
+    }
+
+    public filter(filter: FilterCondition): this {
+        new QueryConditionBuilder(this.query).fromObject(filter);
+        return this;
     }
 
     public select(...fields: (string | { name: string })[]) {
         this.query.fieldList.push(...fields.map(f => typeof f === 'string' ? f : f.name));
         return this;
+    }
+
+    public selectRelated(relationName: string, fields: (string | { name: string })[]) {
+        return this.select(...fields.map(f => `${relationName}.${typeof f === 'string' ? f : f.name}`));
     }
 
     public sortBy(...sortFields: (string | { name: string })[]) : QueryBuilder {
@@ -63,14 +125,21 @@ export class QueryBuilder extends QueryBuilderData {
 
     public limit(limit: number, offset?: number) : QueryBuilder {
         this.query.limit = limit;
-        this.query.offset = offset ?? this.query.offset;
+        if (offset) {
+            this.query.offset = offset;
+        }
         return this;
     }
+
+    public offset(offset: number) : QueryBuilder {
+        this.query.offset = offset;
+        return this;
+    }    
 }
 
 export class QueryConditionBuilder extends QueryBuilderData {
 
-    private nextConditionOp?: 'and' | 'or';
+    private nextConditionOp?: 'and' | 'or' = 'and';
 
     public get or() : this {
         this.nextConditionOp = 'or';
@@ -79,6 +148,15 @@ export class QueryConditionBuilder extends QueryBuilderData {
 
     public get and() : this {
         this.nextConditionOp = 'and';
+        return this;
+    }
+
+    public fromObject(values: FilterCondition) : QueryConditionBuilder {
+        for (const [field, value] of Object.entries(flattenObject(values, obj => typeof obj?.operator !== 'string'))) {
+            const operator = value?.op ?? (Array.isArray(value) ? 'in' : '=');
+            const cmpValue = value?.op ? value.value : value;
+            this.and.condition(`${field} ${operator} ${Array.isArray(cmpValue) ? `(${cmpValue.map(v => this.formatValue(v)).join(',')})` : this.formatValue(cmpValue)}`);
+        }
         return this;
     }
 
@@ -124,11 +202,11 @@ export class QueryConditionBuilder extends QueryBuilderData {
     }
 
     public in(field: (string | { name: string }), values: any[]) : this {
-        return this.condition(`${field} in (${values.map(v => this.formatValue(v)).join(',')}`);
+        return this.condition(`${field} in (${values.map(v => this.formatValue(v)).join(',')})`);
     }
 
     public notIn(field: (string | { name: string }), values: any[]) : this {
-        return this.condition(`${field} not in (${values.map(v => this.formatValue(v)).join(',')}`);
+        return this.condition(`${field} not in (${values.map(v => this.formatValue(v)).join(',')})`);
     }
 
     private formatValue(value: any) {

@@ -2,26 +2,26 @@ import { Logger, injectable } from '@vlocode/core';
 import { NamespaceService } from './namespaceService';
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
-import { SalesforceSchemaAccess } from './schema';
+import { CompositeSchemaAccess } from './schema';
 import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer, validate } from '@vlocode/util';
 
 /**
  * Provides access to Database Schema methods like describe.
  */
 @injectable.singleton()
-@validate.ctor
 export class SalesforceSchemaService {
 
     @injectable.property private readonly logger: Logger;
     @injectable.property private readonly nsService: NamespaceService;
 
     constructor(
-        @validate.required private readonly connectionProvider: JsForceConnectionProvider,
-        @validate.required private readonly schemaAccess: SalesforceSchemaAccess) {
+        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly schemaAccess: CompositeSchemaAccess) {
     }
 
     @cache({ unwrapPromise: true, immutable: true })
     public async describeSObjects() : Promise<Array<DescribeGlobalSObjectResult>> {
+        // TODO: move to CompositeSchemaAccess class
         const con = await this.connectionProvider.getJsForceConnection();
         const { sobjects } = await con.describeGlobal();
         return sobjects;
@@ -34,16 +34,36 @@ export class SalesforceSchemaService {
         return components.map(cmp => cmp.fullName);
     }
 
+    /**
+     * Checks if the SObject is defined; similar describeSObject but does an extra check on the SObject definition through the tooling API
+     * @param type Type of SObject
+     */
+    public async isSObjectDefined(type: string) {
+        return await this.schemaAccess.getEntityDefinition(this.nsService?.updateNamespace(type)) !== undefined;
+    }
+
+    /**
+     * Checks if the SObject Field is defined; similar describeSObjectField but does an extra check on the Field definition through the tooling API.
+     * @param type Type of SObject
+     * @param field Name of the field
+     */
+     public async isSObjectFieldDefined(type: string, field: string) {
+        return await this.schemaAccess.getFieldDefinition(this.nsService?.updateNamespace(type), this.nsService?.updateNamespace(field)) !== undefined;
+    }
+
+    /**
+     * Describes an SObject and all it's fields using the Describe-API; any object not accessible for the current user will be return undefined.
+     * @param type SObject type
+     * @param throwWhenNotFound throw an error when the Object is not found instead of returning undefined
+     */
     public async describeSObject(type: string) : Promise<DescribeSObjectResult>
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound = true) : Promise<DescribeSObjectResult | undefined> {
-        try {
-            return await this.schemaAccess.describe({ type: this.nsService?.updateNamespace(type) });
-        } catch(err) {
-            if (throwWhenNotFound) {
-                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
-            }
+        const describeResult = await this.schemaAccess.describe(this.nsService?.updateNamespace(type));
+        if (!describeResult && throwWhenNotFound) {
+            throw Error(`No such object with name ${type} exists in this Salesforce instance`);
         }
+        return describeResult;
     }
 
     public describeSObjectByPrefix(prefix: string) {
@@ -63,17 +83,6 @@ export class SalesforceSchemaService {
         }
 
         throw Error(`No object found matching the key prefix specified: ${prefix}`);
-    }
-
-    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
-    private async describeSObjectCached(type: string) : Promise<DescribeSObjectResult> {
-        const con = await this.connectionProvider.getJsForceConnection();
-        const timer = new Timer();
-        try {
-            return await con.describe(type);
-        } finally {
-            this.logger.verbose(`Described ${type} [${timer.stop()}]`);
-        }
     }
 
     public async describeSObjectField(type: string, fieldName: string) : Promise<Field>

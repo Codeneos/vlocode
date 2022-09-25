@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { asArray } from '@vlocode/util';
 import { container, ServiceType, LifecyclePolicy, ServiceOptions } from './container';
+import { randomUUID } from 'crypto';
 
 export interface DependencyOptions extends Partial<ServiceOptions> {
     /** List of components that is provided by this class  */
@@ -9,6 +10,7 @@ export interface DependencyOptions extends Partial<ServiceOptions> {
 
 export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
 export const InjectableDecorated = Symbol('[[Injectable]]');
+export const InjectableIdentity = Symbol('[[InjectableIdentity]]');
 export const InjectableOriginalCtor = Symbol('[[InjectableOriginalCtor]]');
 
 /**
@@ -22,6 +24,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
     return function(ctor: T) {
         // @ts-ignore ctor extension is valid here if when there is no intersection
         const classProto = class extends ctor {
+            static [InjectableIdentity] = randomUUID();
             static [InjectableDecorated] = true;
             static [InjectableOriginalCtor] = ctor;
             constructor(...args: any[]) {
@@ -30,6 +33,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
                 container.resolveProperties(this);
             }
         };
+        ctor[InjectableIdentity] = classProto[InjectableIdentity];
 
         for (const serviceType of services) {
             container.registerType(ctor as any, serviceType, options);

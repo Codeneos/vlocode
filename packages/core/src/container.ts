@@ -3,7 +3,7 @@ import { EventEmitter } from 'stream';
 import { singleton, Iterable, arrayMapPush, asArray, getParameterTypes, getPropertyType } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
-import { InjectableDecorated, InjectableOriginalCtor } from './inject';
+import { InjectableDecorated, InjectableIdentity, InjectableOriginalCtor } from './inject';
 
 export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
 export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
@@ -215,9 +215,14 @@ export class Container {
         const instanceGuid = this.generateServiceGuid(ctor);
 
         if (ctor[InjectableDecorated]) {
+            const originalCtor = ctor[InjectableOriginalCtor];
             // When decorated make sure to instantiate using the original Ctor
             // the decorated ctor will use the standard container instead of the local container
-            ctor = ctor[InjectableOriginalCtor];
+            if (ctor[InjectableIdentity] === originalCtor[InjectableIdentity]) {
+                // Only use the original ctor shares the same identity as the decorated ctor
+                // if the identities are different then the original ctor is a different class and we should not use it
+                ctor = ctor[InjectableOriginalCtor];
+            }            
         } 
         
         const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);

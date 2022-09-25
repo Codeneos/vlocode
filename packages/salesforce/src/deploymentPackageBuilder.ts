@@ -334,7 +334,7 @@ export class SalesforcePackageBuilder {
 
         // Merge child metadata into parent metadata
         const mergedMetadata = this.mergeMetadata(existingMetadata, { [decomposition.xmlFragmentName]: fragmentMetadata });
-        this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata) });
+        this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata), xmlName: metadataType.xmlName, componentName: path.basename(packagePath, `.${metadataType.suffix}`) });
     }
 
     private mergeMetadata(targetMetadata: object, sourceMetadata: object) {

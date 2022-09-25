@@ -191,5 +191,18 @@ export namespace Iterable {
             }
         };
     }
+
+    /**
+     * Convert an async iterable to an array by awaiting all values in the iterable.
+     * @param itr Iterable to unfold
+     * @returns 
+     */
+    export async function toArray<T>(itr: AsyncIterable<T>): Promise<T[]> {
+        const unfolded = new Array<T>();
+        for await (const item of itr) {
+            unfolded.push(item);
+        }
+        return unfolded;
+    }
 }
 

@@ -5,11 +5,12 @@ import * as chalk from 'chalk';
 import * as constants from './constants';
 
 @injectable({ provides: [NamespaceService, VlocityNamespaceService] })
-export class VlocityNamespaceService implements NamespaceService {
+export class VlocityNamespaceService extends NamespaceService {
 
     @injectable.property private readonly logger: Logger
 
     constructor(private vlocityNamespace: string | null = null) {
+        super();
     }
 
     /**

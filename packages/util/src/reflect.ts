@@ -4,7 +4,7 @@ import 'reflect-metadata';
  * Get the design:paramtypes using Reflect.getMetadata for the specified constructor prototype.
  * @param ctor type-constructor 
  */
-export function getCtorParameterTypes(ctor: any) : any[] | undefined {
+export function getParameterTypes(ctor: any) : any[] | undefined {
     const paramTypes = Reflect.getMetadata('design:paramtypes', ctor);
     if (paramTypes) {
         return paramTypes;

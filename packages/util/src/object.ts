@@ -269,7 +269,7 @@ export function setObjectProperty<T>(obj: T, prop: string, value: any, options?:
  * @param propertyVisitor Visitor function called for each property
  * @returns 
  */
-export function visitObject<T>(obj: T, propertyVisitor: (prop: string | Symbol | number, value: any, owner: any) => void, thisArg?: any): T {
+export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: any, owner: any) => void, thisArg?: any): T {
     if (!obj) {
         return obj;
     }

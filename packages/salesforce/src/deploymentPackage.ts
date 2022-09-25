@@ -7,7 +7,7 @@ import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
 
-interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer }
+interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer, xmlName: string; componentName: string }
 interface SalesforcePackageSourceMap { packagePath: string; componentType: string; name: string }
 
 export class SalesforcePackage {
@@ -37,21 +37,52 @@ export class SalesforcePackage {
      */
     private readonly packageComponents = new Map<string, string[]>();
 
+    /**
+     * Create a new metadata package
+     * @param apiVersion API version of the package
+     * @param packageDir the package directory, either package or an empty string
+     * @param fs The file system to use for loading files, can be undefined if you only add files already loaded
+     */
     constructor(
         public readonly apiVersion: string,
-        private readonly packageDir: string,
-        private readonly fs: FileSystem) {
+        private readonly packageDir: string = '',
+        private readonly fs?: FileSystem) {
         if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
             throw new Error(`Invalid API version: ${apiVersion}`);
         }
     }
 
+    /**
+     * Merge this
+     * @param other 
+     */
+    public merge(other: SalesforcePackage) {
+        for (const [path, entry] of other.packageData.entries()) {
+            this.add({...entry, packagePath: path});
+        }
+    }
+
+    /**
+     * Add a metadata file to the package an update the manifest.
+     * @param entry Package data entry to add
+     */
     public add(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
+        if (!entry.componentName) {
+            throw new Error(`Component name cannot be empty when adding metadata to a package`);
+        }
+
+        if (!entry.xmlName) {
+            throw new Error(`XML name cannot be empty when adding metadata to a package`);
+        }
+
         this.addManifestEntry(entry.xmlName, entry.componentName);
         this.setPackageData(entry.packagePath, {
+            xmlName: entry.xmlName,
+            componentName: entry.componentName,
             data: entry.data,
             fsPath: entry.fsPath
         });
+
         if (entry.fsPath) {
             this.addSourceMap(entry.fsPath, entry);
         }
@@ -66,10 +97,31 @@ export class SalesforcePackage {
         arrayMapPush(this.packageComponents, `${entry.xmlName}.${entry.componentName}`.toLowerCase(), fsPath);
     }
 
-    public setPackageData(packagePath: string, data: SalesforcePackageFileData) {
-        this.packageData.set(packagePath.replace(/\/|\\/g, '/'), data);
+    /**
+     * Merges or set the package data for the file at the specified package path.
+     * @param packagePath Package path to override
+     * @param data Data to set
+     */
+    public setPackageData(packagePath: string, data: Partial<SalesforcePackageFileData>) {
+        const entry = this.packageData.get(packagePath);
+        if (entry) {
+            Object.assign(entry, data);
+        } else {
+            if (!data.componentName) {
+                throw new Error(`Component name cannot be empty when adding metadata to a package`);
+            }
+            if (!data.xmlName) {
+                throw new Error(`XML name cannot be empty when adding metadata to a package`);
+            }
+            this.packageData.set(packagePath.replace(/\/|\\/g, '/'), data as SalesforcePackageFileData);
+        }
     }
 
+    /**
+     * Add a manifest entry without adding the actual file to the package. You should use {@link setPackageData} to add the actual file, or use {@link add} to add both the file and the manifest entry.
+     * @param xmlName XML name
+     * @param componentName Component name
+     */
     public addManifestEntry(xmlName: string, componentName: string) {
         this.manifest.add(xmlName, componentName);
     }
@@ -152,7 +204,10 @@ export class SalesforcePackage {
      * @param type Type of changes
      */
     public async mergeDestructiveChanges(sourceFile: string, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
-        const items = (await xml2js.parseStringPromise(await this.fs.readFileAsString(sourceFile))).Package;
+        if (!this.fs) {
+            throw new Error(`Cannot merge destructive changes without a file system`);
+        }
+        const items = (await xml2js.parseStringPromise((await this.readFile(sourceFile)).toString('utf-8'))).Package;
         for (const packageType of items.types) {
             const xmlName = packageType.name[0];
             for (const member of packageType.members) {
@@ -198,7 +253,7 @@ export class SalesforcePackage {
             return;
         }
         if (!data.data) {
-            data.data = await this.fs.readFile(data.fsPath!);
+            data.data = await this.readFile(data.fsPath!);
         }
         return data.data;
     }
@@ -252,7 +307,7 @@ export class SalesforcePackage {
         }
 
         for (const [packagePath, { data, fsPath }] of this.packageData.entries()) {
-            let fileData = data ?? await this.fs.readFile(fsPath!);
+            let fileData = data ?? await this.readFile(fsPath!);
             if (XML.isXml(fileData)) {
                 // Normalize all XML data to avoid SF deployment errors due to excess spaces
                 fileData = XML.normalize(fileData);
@@ -267,16 +322,22 @@ export class SalesforcePackage {
      * Generates missing -meta.xml files for APEX classes using the package specified API version.
      */
     public generateMissingMetaFiles() {
-        for (const [packagePath] of this.packageData.entries()) {
+        for (const [packagePath, entry] of this.packageData.entries()) {
             if (packagePath.endsWith('.cls')) {
-                // APEX classes
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
-                    this.packageData.set(`${packagePath}-meta.xml`, { data: this.buildClassMetadata(this.apiVersion) });
+                    this.packageData.set(`${packagePath}-meta.xml`, { 
+                        data: this.buildClassMetadata(this.apiVersion), 
+                        xmlName: entry.xmlName, 
+                        componentName: entry.componentName 
+                    });
                 }
             } else if (packagePath.endsWith('.trigger')) {
-                // APEX classes
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
-                    this.packageData.set(`${packagePath}-meta.xml`, { data: this.buildTriggerMetadata(this.apiVersion) });
+                    this.packageData.set(`${packagePath}-meta.xml`, { 
+                        data: this.buildTriggerMetadata(this.apiVersion), 
+                        xmlName: entry.xmlName, 
+                        componentName: entry.componentName 
+                    });
                 }
             }
         }
@@ -324,6 +385,13 @@ export class SalesforcePackage {
                 ...(data || {})
             }
         });
+    }
+
+    private readFile(fsPath: string) {
+        if (!this.fs) {
+            throw new Error(`Cannot read files whiteout a file system reference; create the SalesforcePackage with a file system reference to add files from disk`);
+        }
+        return this.fs.readFile(fsPath);
     }
 
     /**

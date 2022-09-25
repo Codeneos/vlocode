@@ -374,3 +374,16 @@ export async function spreadAsync<T>(gen: AsyncGenerator<T>): Promise<T[]>{
     }
     return items;
 }
+
+/**
+ * Convert an map with a key as number of string to a JS object
+ * @param data Map object to convert
+ * @returns A map Object with each key of the data as property
+ */
+export function mapToObject<K extends (string | number), V>(data: Map<K, V>): { [key in K]: V } {
+    const obj = {} as any;
+    for (const [key, value] of data.entries()) {
+        obj[key] = value;
+    }
+    return obj;
+}
