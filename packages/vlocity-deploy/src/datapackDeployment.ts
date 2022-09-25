@@ -109,6 +109,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.dependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
     }
 
+    public getOptions() : Readonly<DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions> {
+        return this.options;
+    }
+
     public add(...records: DatapackDeploymentRecord[]): this {
         for (const record of records) {
             if (this.records.has(record.sourceKey)) {
@@ -136,7 +140,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private writeDeploymentSummaryToLog(timer: Timer) {
-        // Generare a reasonable log message that summerizes the deployment
+        // Generate a reasonable log message that summerizes the deployment
         const deployMessage = `Deployed ${this.deployedRecordCount} records${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
         
         if (this.options.deltaCheck) {
@@ -151,6 +155,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
     }
 
+    /**
+     * Get all messages from all records in this deployment as a flat array
+     * @returns Array of deployment messages
+     */
     public getMessages() : Array<DatapackDeploymentRecordMessage> {
         const messages = new Array<DatapackDeploymentRecordMessage>();
         for (const record of this.records.values()) {

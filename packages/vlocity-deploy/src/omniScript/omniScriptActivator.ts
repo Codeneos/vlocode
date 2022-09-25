@@ -41,7 +41,11 @@ export class OmniScriptActivator {
         }
 
         // (Re-)Activate script
-        await this.salesforceService.executeAnonymous(`vlocity_cmt.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
+        const result = await this.salesforceService.executeAnonymous(`vlocity_cmt.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
+
+        if (!result.success) {
+            throw new Error(`Failed to activate OmniScript: ${result.compileProblem ?? result.exceptionMessage}`);
+        }
 
         // Deploy LWC when required
         if (options?.skipLwcDeployment !== true && script.isLwcEnabled) {

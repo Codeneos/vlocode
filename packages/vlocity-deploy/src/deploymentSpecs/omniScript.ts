@@ -1,9 +1,9 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
 import { SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
-import { forEachAsyncParallel } from '@vlocode/util';
+import { forEachAsyncParallel, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
-import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import type { DatapackDeploymentEvent, DatapackDeploymentOptions } from '../datapackDeployer';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { OmniScriptActivator } from '../omniScript/omniScriptActivator';
 
@@ -14,15 +14,17 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: OmniScriptActivator,
+        private readonly salesforceService: SalesforceService,
+        @injectable.param('DatapackDeploymentOptions') private readonly options: DatapackDeploymentOptions,
         private readonly logger: Logger) {
     }
 
     public async preprocess(datapack: VlocityDatapack) {
-        //if (datapack.IsLwcEnabled__c) {
+        if (datapack.IsLwcEnabled__c && this.options.deployLwcOmniscripts) {
             this.lwcEnabledDatapacks.add(datapack.key);
-        //}
+        }
 
-        // Update to inactive to allow insert; later in the process these are activated
+        // Insert as inactive and update later in the process these are activated
         datapack.IsActive__c = false;
         delete datapack.Version__c;
     }
@@ -38,15 +40,20 @@ export class OmniScript implements DatapackDeploymentSpec {
         const packages = new Array<SalesforcePackage>();
         await forEachAsyncParallel(event.getDeployedRecords('OmniScript__c'), async record => {
             try {
-                this.logger.info(`Activating ${record.datapackKey}...`);
+                const timer = new Timer();
                 await this.activator.activate(record.recordId, { skipLwcDeployment: true });
                 if (this.lwcEnabledDatapacks.has(record.datapackKey)) {
                     packages.push(await this.activator.getLwcComponentBundle(record.recordId));
                 }
+                this.logger.info(`Activated ${record.datapackKey} [${timer.stop()}]`);
             } catch(err) {
-                this.logger.error(`Failed to activate OmniScript ${record.datapackKey} due to activation error: ${err}`);
+                this.logger.error(`Failed to activate ${record.datapackKey} -- ${err}`);
                 record.updateStatus(DeploymentStatus.Failed, err.message || err);
             }
         }, 4);
+
+        if (packages.length) {
+            await this.salesforceService.deploy.deployPackage(packages.reduce((p, c) => p.merge(c)));
+        }
     }
 }

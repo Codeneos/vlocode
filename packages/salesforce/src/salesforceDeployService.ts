@@ -63,11 +63,8 @@ export class SalesforceDeployService {
             };
 
             if (await this.salesforce.isProductionOrg()) {
-                this.logger.warn('Production deployment detected; running as validate/checkOnly');
-                // Always check only for production
                 deployOptions.rollbackOnError = true;
                 deployOptions.purgeOnDelete = false;
-                deployOptions.checkOnly = true;
             }
 
             // Start deploy            
@@ -121,8 +118,8 @@ export class SalesforceDeployService {
             }
         };
 
-        // @ts-expect-error TS does not correctly detect the return param for the while loop `await wait` loop
-        return deploymentTask(progress, token);
+        // @ts-expect-error TS can't infer the return type of the deploymentTask
+        return deploymentTask(progress, token)!;
     }
 
     /**

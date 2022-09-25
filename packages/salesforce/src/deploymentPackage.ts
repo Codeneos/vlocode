@@ -53,13 +53,14 @@ export class SalesforcePackage {
     }
 
     /**
-     * Merge this
-     * @param other 
+     * Merge this package with another package and returns this 
+     * @param otherPackage Package to merge
      */
-    public merge(other: SalesforcePackage) {
-        for (const [path, entry] of other.packageData.entries()) {
+    public merge(otherPackage: SalesforcePackage) {
+        for (const [path, entry] of otherPackage.packageData.entries()) {
             this.add({...entry, packagePath: path});
         }
+        return this;
     }
 
     /**

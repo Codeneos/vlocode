@@ -1,7 +1,7 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
-import { Logger, injectable , container, LifecyclePolicy } from '@vlocode/core';
-import { Timer, asArray, groupBy , Iterable, CancellationToken, forEachAsyncParallel, lazy, OptionalPromise, } from '@vlocode/util';
+import { Logger, injectable, container, LifecyclePolicy } from '@vlocode/core';
+import { Timer, asArray, groupBy, Iterable, CancellationToken, forEachAsyncParallel, lazy, } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -92,6 +92,11 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * @default false;
      */
     strictDependencies?: boolean;
+    /**
+     * When enabled LWC enabled OmniScripts will get compiled into native LWC components and be deployed to the target org during deployment.
+     * @default true;
+     */
+    deployLwcOmniscripts?: boolean;
 }
 
 @injectable.transient()
@@ -116,6 +121,7 @@ export class DatapackDeployer {
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
         this.container.register(new QueryService(this.connectionProvider).setCacheDefault(true));
+        this.container.registerFactory('DatapackDeploymentOptions', () => options ?? {});
         const deployment = this.container.create(DatapackDeployment, options);
         const recordFactory = this.container.create(DatapackRecordFactory);
 
@@ -309,7 +315,6 @@ export class DatapackDeployer {
             this.specs.set(datapackType.toLowerCase(), new DatapackDeploymentSpecGroup([ currentSpec, spec ]));
         }
     }
-
 
     /**
      * Run a datapack spec function and await the result

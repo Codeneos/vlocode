@@ -427,7 +427,7 @@ export class Container {
      * @param factory factory that produces the an instance
      */
     public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
-        for (const service of Iterable.asIterable(services)) {
+        for (const service of Array.isArray(services) ? services : [ services ]) {
             this.logger.debug(`Register factory for: ${this.getServiceName(service)}`);
             this.factories.set(this.getServiceName(service), { new: factory, lifecycle });
         }
