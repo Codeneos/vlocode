@@ -243,6 +243,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 }
             }
         }
+
+        if (records.size == 0 && Iterable.some(this.records, ([,record]) => record.isPending)) {
+            throw new Error('Unable to deploy records; circular dependency detected');
+        }
         
         return records.size > 0 ? records : undefined;
     }
@@ -253,20 +257,20 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      */
     private hasPendingDependencies(record: DatapackDeploymentRecord) : boolean {
         for(const key of record.getDependencySourceKeys()) {
-            const dependendRecord = this.records.get(key);
-            if (!dependendRecord) {
+            const dependentRecord = this.records.get(key);
+            if (!dependentRecord) {
                 continue;
             }
 
-            if (dependendRecord.isPending) {
+            if (dependentRecord.isPending) {
                 return true;
             }
 
             if (this.options.strictDependencies) {
-                const isExternalDependency = dependendRecord?.datapackKey !== record.datapackKey;
+                const isExternalDependency = dependentRecord.datapackKey !== record.datapackKey;
                 if (isExternalDependency) {
-                    const datapackStatus = this.getDatapackStatus(record.datapackKey);
-                    return datapackStatus < DeploymentStatus.Deployed;
+                    const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
+                    return dependencyStatus < DeploymentStatus.Deployed;
                 }
             }
         }
