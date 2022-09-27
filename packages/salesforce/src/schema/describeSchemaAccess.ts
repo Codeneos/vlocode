@@ -114,6 +114,7 @@ export class DescribeSchemaAccess {
         const connection = await this.connectionProvider.getJsForceConnection();
         const response = await connection.request<{ results: Array<T> }>({ 
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             url: `${connection._baseUrl()}/composite/batch`, 
             body: JSON.stringify({ batchRequests })
         });
