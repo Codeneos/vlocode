@@ -28,7 +28,9 @@ export class DescribeSchemaAccess {
         'lookupFilter.filterItems'
     ];
     
-    constructor(private readonly connectionProvider: JsForceConnectionProvider, private readonly schemaStore: SchemaDataStore, private readonly toolingAccess: ToolingApiSchemaAccess) {
+    constructor(
+        private readonly connectionProvider: JsForceConnectionProvider, 
+        private readonly schemaStore: SchemaDataStore) {
     }
 
     @cache({ unwrapPromise: true })
@@ -49,10 +51,7 @@ export class DescribeSchemaAccess {
 
     @cache({ unwrapPromise: true, cacheExceptions: true })
     private enqueue(sobjectType: string) {
-        return Promise.all([ 
-            this.deferredProcessor.enqueue(sobjectType), 
-            this.toolingAccess.getEntityDefinition(sobjectType)
-        ]);
+        return this.deferredProcessor.enqueue(sobjectType);
     }
 
     private async describeBulk(sobjectTypes: string[], chunkSize = this.metadataReadChunkSize) {   
@@ -99,7 +98,7 @@ export class DescribeSchemaAccess {
         for (const [i, { result }] of results.entries()) {
             if (Array.isArray(result)) {
                 if (result[0].errorCode === 'NOT_FOUND') {
-                    this.logger.warn(`SObject ${sobjectTypes[i]} -- does not exists or is not accessible`);
+                    this.logger.warn(`SObject ${sobjectTypes[i]} -- not found (describe-API)`);
                 } else {
                     this.logger.error(`Describe ${sobjectTypes[i]} error -- ${result[0].message}`);
                 }

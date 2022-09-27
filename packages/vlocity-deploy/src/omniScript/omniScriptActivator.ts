@@ -1,4 +1,4 @@
-import { QueryService, SalesforceService, NamespaceService, QueryBuilder } from '@vlocode/salesforce';
+import { QueryService, SalesforceService, NamespaceService, QueryBuilder, SalesforceDeployService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
 import { Iterable } from '@vlocode/util';
@@ -27,7 +27,8 @@ export class OmniScriptActivator {
         private readonly lwcCompiler: OmniScriptLwcCompiler,
         @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: DefinitionProvider,
         private readonly logger: Logger
-    ) { }
+    ) { 
+    }
 
     /**
      * Activates the specified OmniScript, creates the OmniScriptDefinition__c records in Salesforce and sets the OmniScript to active. 
@@ -44,7 +45,10 @@ export class OmniScriptActivator {
         const result = await this.salesforceService.executeAnonymous(`vlocity_cmt.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
 
         if (!result.success) {
-            throw new Error(`Failed to activate OmniScript: ${result.compileProblem ?? result.exceptionMessage}`);
+            if (result.compileProblem) {
+                throw new Error(`Activation error: ${result.compileProblem}`);
+            }
+            throw new Error(`Activation error: ${result.exceptionMessage}`);
         }
 
         // Deploy LWC when required
@@ -76,7 +80,8 @@ export class OmniScriptActivator {
 
     private async deployLwcComponent(definition: OmniScriptDefinition) {
         const sfPackage = await this.lwcCompiler.compileToPackage(definition);  
-        const result = await this.salesforceService.deploy.deployPackage(sfPackage);        
+        const deployService = new SalesforceDeployService(this.salesforceService, Logger.null);
+        const result = await deployService.deployPackage(sfPackage);        
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${result.details?.componentFailures.map(failure => failure.problem)}`);
         }

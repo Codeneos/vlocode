@@ -20,7 +20,7 @@ export class OmniScript implements DatapackDeploymentSpec {
     }
 
     public async preprocess(datapack: VlocityDatapack) {
-        if (datapack.IsLwcEnabled__c && this.options.skipLwcActivation) {
+        if (datapack.IsLwcEnabled__c && this.options.skipLwcActivation !== true) {
             this.lwcEnabledDatapacks.add(datapack.key);
         }
 
@@ -53,6 +53,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         }, 4);
 
         if (packages.length) {
+            this.logger.info(`Deploying ${packages.length} LWC components`);
             await this.salesforceService.deploy.deployPackage(packages.reduce((p, c) => p.merge(c)));
         }
     }
