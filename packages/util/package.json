@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/util",
-    "version": "0.17.7",
+    "version": "0.17.8",
     "description": "Vlocode utility library",
     "main": "lib/index.js",
     "readme": "../SITE.md",

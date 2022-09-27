@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.8](https://github.com/Codeneos/vlocode/compare/v0.17.7...v0.17.8) (2022-09-27)
+
+### Bug Fixes
+
+* stand alone vlocode does not correctly assume the API version of the connection ([eb757f8](https://github.com/Codeneos/vlocode/commit/eb757f834c2438389ea27392f0a0191aec0b21ad))
+* when not using an SFDX connection the content headers are not set by JSON by default ([8e95c14](https://github.com/Codeneos/vlocode/commit/8e95c149d0023a649514f5e6ba2bd8bb24bce36a))
+
 ## [0.17.7](https://github.com/Codeneos/vlocode/compare/v0.17.6...v0.17.7) (2022-09-27)
 
 ### Bug Fixes
