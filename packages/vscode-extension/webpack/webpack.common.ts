@@ -17,7 +17,8 @@ const packageExternals = [
     // VSCode is an external that we do not want to package
     'vscode',
     'vscode-languageclient',
-    'electron'
+    'electron',
+    'canvas'
 ];
 
 const contextFolder = path.resolve(__dirname, '..');

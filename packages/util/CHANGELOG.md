@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.7](https://github.com/Codeneos/vlocode/compare/v0.17.6...v0.17.7) (2022-09-27)
+
+### Bug Fixes
+
+* [@cache](https://github.com/cache) does not handle arrays and object-like parameters properly causing incorrect cached entries to be returned ([a2fcaea](https://github.com/Codeneos/vlocode/commit/a2fcaea57e8f1ce7e98c89752026060cc43b4a11))
+
+### Features
+
+* add object walk and set properties methods ([69dd5f8](https://github.com/Codeneos/vlocode/commit/69dd5f86ca3df0095c539f07b80994bfec3e26a7))
+* integrate omniscript LWC compiler and activation ([8c5bfaf](https://github.com/Codeneos/vlocode/commit/8c5bfaf6755358275997376c9d83ee169be10986))
+
 ## [0.17.6](https://github.com/Codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
 
 ### Features

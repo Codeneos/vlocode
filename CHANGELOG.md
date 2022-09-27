@@ -4,6 +4,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.7](https://github.com/codeneos/vlocode/compare/v0.17.6...v0.17.7) (2022-09-27)
+
+### Bug Fixes
+
+* [@cache](https://github.com/cache) does not handle arrays and object-like parameters properly causing incorrect cached entries to be returned ([a2fcaea](https://github.com/codeneos/vlocode/commit/a2fcaea57e8f1ce7e98c89752026060cc43b4a11))
+* `transfrom` was renamed to `mapKeys` in core package but not updated in salesforce package ([8098fe0](https://github.com/codeneos/vlocode/commit/8098fe06d953c332c4e8f154f7e4797e69774d50))
+* double tooling desicribes ([9434936](https://github.com/codeneos/vlocode/commit/9434936dc25c0d0692b3b4b1bcb0d18b72e2bf37))
+* service overrides not logged properly ([cec6a55](https://github.com/codeneos/vlocode/commit/cec6a552c5dd0943a7cb8258f4cd1cb522b238f6))
+
+### Features
+
+* add object walk and set properties methods ([69dd5f8](https://github.com/codeneos/vlocode/commit/69dd5f86ca3df0095c539f07b80994bfec3e26a7))
+* add options to skip OmniScript LWC deployment ([a86d227](https://github.com/codeneos/vlocode/commit/a86d2279324e82912b7ab2b259c8b61f6c2feff7))
+* expose `deploy` as separate function making it easier to invoke from external libraries ([37312d8](https://github.com/codeneos/vlocode/commit/37312d8216c301007e17ca6800338e97987e2158))
+* integrate omniscript LWC compiler and activation ([8c5bfaf](https://github.com/codeneos/vlocode/commit/8c5bfaf6755358275997376c9d83ee169be10986))
+
 ## [0.17.6](https://github.com/codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
 
 ### Bug Fixes
