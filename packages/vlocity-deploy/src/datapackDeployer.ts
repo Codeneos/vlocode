@@ -96,7 +96,7 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * When enabled LWC enabled OmniScripts will get compiled into native LWC components and be deployed to the target org during deployment.
      * @default true;
      */
-    deployLwcOmniscripts?: boolean;
+    skipLwcActivation?: boolean;
 }
 
 @injectable.transient()

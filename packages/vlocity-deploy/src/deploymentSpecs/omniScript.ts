@@ -20,7 +20,7 @@ export class OmniScript implements DatapackDeploymentSpec {
     }
 
     public async preprocess(datapack: VlocityDatapack) {
-        if (datapack.IsLwcEnabled__c && this.options.deployLwcOmniscripts) {
+        if (datapack.IsLwcEnabled__c && this.options.skipLwcActivation) {
             this.lwcEnabledDatapacks.add(datapack.key);
         }
 
