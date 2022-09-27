@@ -12,6 +12,7 @@ export interface JsforceConnectionProperties {
     signedRequest?: any,
     userInfo?: any,
     oauth2?: any,
+    version?: any,
 }
 
 /**
@@ -57,6 +58,7 @@ class JsForceConnectionProviderImpl extends JsForceConnectionProvider {
                 signedRequest: jsConnection.signedRequest,
                 userInfo: jsConnection.userInfo,
                 oauth2: jsConnection.oauth2,
+                version: jsConnection.version
             }), {
                 _sessionType: (jsConnection as any)._sessionType
             });
