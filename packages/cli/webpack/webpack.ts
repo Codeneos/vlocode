@@ -9,7 +9,8 @@ import * as packageJson from '../package.json';
 const packageExternals = [
     'vscode',
     'vscode-languageclient',
-    'electron'
+    'electron',
+    'canvas'
 ];
 
 const contextFolder = path.resolve(__dirname, '..');
