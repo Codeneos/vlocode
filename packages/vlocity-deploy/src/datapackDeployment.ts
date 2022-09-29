@@ -50,7 +50,9 @@ const datapackDeploymentDefaultOptions = {
     purgeMatchingDependencies: false,
     purgeLookupOptimization: true,
     bulkDependencyResolution: true,
-    deltaCheck: false
+    deltaCheck: false,
+    skipLwcActivation: false,
+    useToolingApi: true
 };
 
 /**
@@ -140,7 +142,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private writeDeploymentSummaryToLog(timer: Timer) {
-        // Generate a reasonable log message that summerizes the deployment
+        // Generate a reasonable log message that summarizes the deployment
         const deployMessage = `Deployed ${this.deployedRecordCount} records${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
         
         if (this.options.deltaCheck) {
@@ -244,8 +246,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
         }
 
-        if (records.size == 0 && Iterable.some(this.records, ([,record]) => record.isPending)) {
-            throw new Error('Unable to deploy records; circular dependency detected');
+        if (records.size == 0) {
+            for (const record of Iterable.filter(this.records.values(), record => record.isPending)) {
+                const unsatisfiedDependencies = record.getUnresolvedDependencies().map(d => d.dependency.VlocityLookupRecordSourceKey ?? d.dependency.VlocityMatchingRecordSourceKey).join(', ');
+                this.logger.error(`Unable to deploy ${record.sourceKey} due to unsatisfied dependencies: ${unsatisfiedDependencies}`);
+                record.updateStatus(DeploymentStatus.Failed, `Missing dependencies: ${unsatisfiedDependencies}`);
+            }
         }
         
         return records.size > 0 ? records : undefined;

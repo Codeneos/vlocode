@@ -6,6 +6,7 @@ import { injectable } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
+import { Timer, XML } from '@vlocode/util';
 
 export interface CompiledResource {
     name: string,
@@ -52,6 +53,7 @@ export class OmniScriptLwcCompiler{
             throw new Error('Unable to find OmniScript LWC compiler; is the Vlocity managed package installed?');
         }
 
+
         // create JSDOM to init compiler
         const connection = await this.salesforceService.getJsForceConnection();
         if (!this.compilerApiVersion) {
@@ -93,6 +95,45 @@ export class OmniScriptLwcCompiler{
         const compiler = await this.getCompiler();
         const resources = await compiler.compileActivated(componentName, scriptDefinition, false, true, this.namespaceService.getNamespace());
         return { name: componentName, resources }
+    }
+
+    public async compileToolingRecord(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }) {
+        // Get the name of the component or generate it and compile the OS
+        const componentName = options?.lwcName ?? this.getLwcName({ type: scriptDefinition.bpType, subType: scriptDefinition.bpSubType, language: scriptDefinition.bpLang });
+        const compiler = await this.getCompiler();
+        const resources = await compiler.compileActivated(componentName, scriptDefinition, false, true, this.namespaceService.getNamespace());
+        
+        const componentMetaDefinition = resources.find(r => r.name.endsWith('.js-meta.xml'));
+        if (!componentMetaDefinition) {
+            throw new Error(`LWC compiler did not generate a .js-meta.xml file for ${componentName}`);
+        }
+
+        const { LightningComponentBundle: componentDef } = XML.parse(componentMetaDefinition.source);
+        const targetConfigs = XML.stringify(componentDef.targetConfigs, undefined, { headless: true });
+
+        const toolingMetadata = {
+            apiVersion: componentDef.apiVersion,            
+            lwcResources: {
+                lwcResource: resources.filter(f => !f.name.endsWith('.js-meta.xml')).map(res =>({ 
+                    filePath: res.name, 
+                    source: Buffer.from(res.source, 'utf-8').toString('base64') 
+                }))
+            },
+            capabilities: {
+                capability: []
+            },
+            isExposed: componentDef.isExposed,
+            description: componentDef.description,
+            masterLabel: componentDef.masterLabel,
+            runtimeNamespace: componentDef.runtimeNamespace,
+            targets: componentDef.targets,
+            targetConfigs: Buffer.from(targetConfigs, 'utf-8').toString('base64')
+        }
+
+        return {
+            FullName: componentName,
+            Metadata: toolingMetadata
+        };
     }
 
     /**

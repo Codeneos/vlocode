@@ -93,10 +93,19 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     strictDependencies?: boolean;
     /**
-     * When enabled LWC enabled OmniScripts will get compiled into native LWC components and be deployed to the target org during deployment.
-     * @default true;
+     * When enabled LWC enabled OmniScripts will not get compiled into native LWC components and be deployed to the target org during deployment.
+     * 
+     * Use this if you want to manually compile OmniScripts into LWC or have a batch process ot activate OmniScript LWCs in bulk.
+     * @default false;
      */
     skipLwcActivation?: boolean;
+    /**
+     * When true LWC components are deployed using the tooling API instead of the metadata API. The tooling API is usually faster and thus the proffered way to compiled deploy LWC components.
+     * 
+     * Disable this if you need to use the metadata API to deploy LWC components.
+     * @default true;
+     */
+    useToolingApi?: boolean;
 }
 
 @injectable.transient()

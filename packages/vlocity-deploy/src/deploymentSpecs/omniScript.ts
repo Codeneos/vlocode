@@ -1,6 +1,6 @@
 import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import { SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
-import { forEachAsyncParallel, Timer } from '@vlocode/util';
+import { SalesforceDeployService, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
+import { forEachAsyncParallel, Iterable, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
 import type { DatapackDeploymentEvent, DatapackDeploymentOptions } from '../datapackDeployer';
@@ -14,14 +14,15 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: OmniScriptActivator,
-        private readonly salesforceService: SalesforceService,
         @injectable.param('DatapackDeploymentOptions') private readonly options: DatapackDeploymentOptions,
         private readonly logger: Logger) {
     }
 
     public async preprocess(datapack: VlocityDatapack) {
-        if (datapack.IsLwcEnabled__c && this.options.skipLwcActivation !== true) {
+        if (datapack.IsLwcEnabled__c && !this.options.skipLwcActivation) {
             this.lwcEnabledDatapacks.add(datapack.key);
+        } else {
+            this.logger.verbose(`Skipping LWC component compilation for ${datapack.key} due to "skipLwcActivation" being set as "true"`);
         }
 
         // Insert as inactive and update later in the process these are activated
@@ -37,14 +38,11 @@ export class OmniScript implements DatapackDeploymentSpec {
     }
 
     public async afterDeploy(event: DatapackDeploymentEvent) {
-        const packages = new Array<SalesforcePackage>();
+        // First activate the OmniScripts which generates the OmniScriptDefinition__c records
         await forEachAsyncParallel(event.getDeployedRecords('OmniScript__c'), async record => {
             try {
                 const timer = new Timer();
                 await this.activator.activate(record.recordId, { skipLwcDeployment: true });
-                if (this.lwcEnabledDatapacks.has(record.datapackKey)) {
-                    packages.push(await this.activator.getLwcComponentBundle(record.recordId));
-                }
                 this.logger.info(`Activated ${record.datapackKey} [${timer.stop()}]`);
             } catch(err) {
                 this.logger.error(`Failed to activate ${record.datapackKey} -- ${err}`);
@@ -52,9 +50,33 @@ export class OmniScript implements DatapackDeploymentSpec {
             }
         }, 4);
 
+        // Then compile the LWC components; this is not done in a parallel loop to avoid LOCK errors from the tooling API
+        if (!this.options.skipLwcActivation) {
+            await this.deployLwcComponents(event);
+        }
+    }
+
+    public async deployLwcComponents(event: DatapackDeploymentEvent) {
+        const packages = new Array<SalesforcePackage>();
+
+        for (const record of Iterable.filter(event.getDeployedRecords('OmniScript__c'), r => this.lwcEnabledDatapacks.has(r.datapackKey))) {
+            try {
+                if (this.options.useToolingApi) {
+                    await this.activator.activateLwc(record.recordId, { toolingApi: true });
+                } else {
+                    packages.push(await this.activator.getLwcComponentBundle(record.recordId));
+                }
+            } catch(err) {
+                this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${err}`);
+                record.updateStatus(DeploymentStatus.Failed, err.message || err);
+            }
+        }
+
         if (packages.length) {
-            this.logger.info(`Deploying ${packages.length} LWC components`);
-            await this.salesforceService.deploy.deployPackage(packages.reduce((p, c) => p.merge(c)));
+            const timer = new Timer();
+            this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
+            await new SalesforceDeployService(undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
+            this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }
 }

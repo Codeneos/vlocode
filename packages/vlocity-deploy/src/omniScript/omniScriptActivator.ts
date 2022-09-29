@@ -1,7 +1,7 @@
 import { QueryService, SalesforceService, NamespaceService, QueryBuilder, SalesforceDeployService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
-import { Iterable } from '@vlocode/util';
+import { Iterable, Timer } from '@vlocode/util';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 
@@ -63,9 +63,9 @@ export class OmniScriptActivator {
      * Activate the LWC component for the specified OmniScript regardless of the script is LWC enabled or not.
      * @param id Id of the OmniScript for which to activate the LWC component
      */
-    public async activateLwc(id: string) {
+    public async activateLwc(id: string, options?: { toolingApi?: boolean }) {
         const definition = await this.definitionProvider.getScriptDefinition(id);
-        await this.deployLwcComponent(definition);
+        await this.deployLwcComponent(definition, options);
     }
 
     /**
@@ -78,13 +78,50 @@ export class OmniScriptActivator {
         return this.lwcCompiler.compileToPackage(definition);
     }
 
-    private async deployLwcComponent(definition: OmniScriptDefinition) {
+    private async deployLwcComponent(definition: OmniScriptDefinition, options?: { toolingApi?: boolean }) {
+        const timer = new Timer();
+        const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
+        this.logger.info(`Deploying OmniScript ${definition.bpType}/${definition.bpSubType} LWC component with ${apiLabel} api...`);
+
+        if (options?.toolingApi) { 
+            await this.deployLwcWithToolingApi(definition);
+        } else {
+            await this.deployLwcWithMetadataApi(definition);
+        }
+
+        this.logger.info(`Deployed OmniScript ${definition.bpType}/${definition.bpSubType} LWC component with ${apiLabel} api [${timer.stop()}]`);
+    }
+
+    private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {
         const sfPackage = await this.lwcCompiler.compileToPackage(definition);  
         const deployService = new SalesforceDeployService(this.salesforceService, Logger.null);
-        const result = await deployService.deployPackage(sfPackage);        
+        const result = await deployService.deployPackage(sfPackage);
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${result.details?.componentFailures.map(failure => failure.problem)}`);
+        } 
+    }
+
+    private async deployLwcWithToolingApi(definition: OmniScriptDefinition) {
+        const tollingRecord = await this.lwcCompiler.compileToolingRecord(definition)
+        const result = await this.upsertToolingRecord(`LightningComponentBundle`, tollingRecord);
+        if (!result.success) {
+            throw new Error(`OmniScript LWC Component deployment failed: ${JSON.stringify(result.errors)}`);
+        } 
+    }
+
+    private async upsertToolingRecord(type: string, toolingRecord: { Id?: string, FullName: string, Metadata: any }): Promise<{ success: boolean, errors: string[] }> {
+        const connection = await this.salesforceService.getJsForceConnection();
+        if (!toolingRecord.Id) {
+            const existingRecord = await connection.tooling.query<{ Id: string }>(`SELECT Id FROM ${type} WHERE DeveloperName = '${toolingRecord.FullName}'`);
+            if (existingRecord.totalSize > 0) { 
+                toolingRecord.Id = existingRecord.records[0].Id;
+            }
         }
+
+        if (toolingRecord.Id) { 
+            return connection.tooling.update(type, toolingRecord) as any;
+        } 
+        return connection.tooling.create(type, toolingRecord) as any;
     }
 
     private async getScript(input: OmniScriptDetail | string) {
