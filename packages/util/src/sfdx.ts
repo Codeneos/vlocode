@@ -157,7 +157,10 @@ export namespace sfdx {
 
     export async function getJsForceConnection(username?: string) : Promise<salesforce.Connection> {
         const org = await getOrg(username);
-        const connection = org.getConnection() as unknown;
+        const connection = org.getConnection() as any;
+        if (typeof connection.useLatestApiVersion === 'function') {
+            await connection.useLatestApiVersion();
+        }
         return connection as salesforce.Connection;
     }
 }
