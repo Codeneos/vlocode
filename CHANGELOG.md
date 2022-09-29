@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.9](https://github.com/codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
+
+### Bug Fixes
+
+* not using latest API version for SFDX ([42f703a](https://github.com/codeneos/vlocode/commit/42f703a6200ff35ffc6924b7b1a3a75748f13ffe))
+* vscode extension fails to start due to canvas dependency being incorrectly required by jsdom ([4b8d281](https://github.com/codeneos/vlocode/commit/4b8d28103d5845016f5fcc031101e20eb1aab843))
+
+### Features
+
+* support tooling API for deployment of LWC components ([8c6a031](https://github.com/codeneos/vlocode/commit/8c6a031bd4930f76e7fe0076389e11b3dfd7c573))
+
 ## [0.17.8](https://github.com/codeneos/vlocode/compare/v0.17.7...v0.17.8) (2022-09-27)
 
 ### Bug Fixes

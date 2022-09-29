@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
+
+### Bug Fixes
+
+* not using latest API version for SFDX ([42f703a](https://github.com/Codeneos/vlocode/commit/42f703a6200ff35ffc6924b7b1a3a75748f13ffe))
+
 ## [0.17.8](https://github.com/Codeneos/vlocode/compare/v0.17.7...v0.17.8) (2022-09-27)
 
 **Note:** Version bump only for package @vlocode/util

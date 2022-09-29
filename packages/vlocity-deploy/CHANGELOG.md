@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
+
+### Features
+
+* support tooling API for deployment of LWC components ([8c6a031](https://github.com/Codeneos/vlocode/commit/8c6a031bd4930f76e7fe0076389e11b3dfd7c573))
+
 ## [0.17.8](https://github.com/Codeneos/vlocode/compare/v0.17.7...v0.17.8) (2022-09-27)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.9](https://github.com/codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
+
+### Bug Fixes
+
+* vscode extension fails to start due to canvas dependency being incorrectly required by jsdom ([4b8d281](https://github.com/codeneos/vlocode/commit/4b8d28103d5845016f5fcc031101e20eb1aab843))
+
 ## [0.17.8](https://github.com/codeneos/vlocode/compare/v0.17.7...v0.17.8) (2022-09-27)
 
 **Note:** Version bump only for package vlocode
