@@ -9,8 +9,7 @@ import * as packageJson from '../package.json';
 const packageExternals = [
     'vscode',
     'vscode-languageclient',
-    'electron',
-    'canvas'
+    'electron'
 ];
 
 const contextFolder = path.resolve(__dirname, '..');
@@ -102,6 +101,10 @@ const common : webpack.Configuration = {
     },
     plugins: [
         new WatchMarkersPlugin(),
+        new webpack.IgnorePlugin({
+            resourceRegExp: /^canvas$/,
+            contextRegExp: /jsdom$/,
+        }),
         new webpack.DefinePlugin({
             __webpack_build_info__: JSON.stringify({ 
                 version: packageJson.version, 

@@ -17,8 +17,7 @@ const packageExternals = [
     // VSCode is an external that we do not want to package
     'vscode',
     'vscode-languageclient',
-    'electron',
-    'canvas'
+    'electron'
 ];
 
 const contextFolder = path.resolve(__dirname, '..');
@@ -98,7 +97,11 @@ const common : webpack.Configuration = {
         devtoolModuleFilenameTemplate: '[absolute-resource-path]'
     },
     plugins: [
-        new WatchMarkersPlugin()
+        new WatchMarkersPlugin(),
+        new webpack.IgnorePlugin({
+            resourceRegExp: /^canvas$/,
+            contextRegExp: /jsdom$/,
+        })
     ],
     node: {
         __dirname: false,
@@ -162,7 +165,7 @@ const common : webpack.Configuration = {
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
             moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
-        );
+        )        
         if (isExternal){
             // @ts-ignore
             return callback(undefined, `commonjs ${request}`);
