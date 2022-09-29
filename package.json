@@ -1,7 +1,7 @@
 {
     "private": true,
     "name": "vlocode-project",
-    "packageManager": "pnpm@7.9.0",
+    "packageManager": "pnpm@7.12.2",
     "description": "Vlocode project packages",
     "version": "0.16.30",
     "license": "MIT",
@@ -54,7 +54,8 @@
             "typescript@4.6.4": "patches/typescript@4.6.4.patch",
             "vlocity@1.14.18": "patches/vlocity@1.14.18.patch",
             "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch"
-        }
+        },
+        "allowNonAppliedPatches": true
     },
     "scripts": {
         "build": "pnpm run -r build",
