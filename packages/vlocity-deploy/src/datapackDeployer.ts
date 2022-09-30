@@ -100,12 +100,12 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     skipLwcActivation?: boolean;
     /**
-     * When true LWC components are deployed using the tooling API instead of the metadata API. The tooling API is usually faster and thus the proffered way to compiled deploy LWC components.
+     * When true LWC components are deployed using the metadata API instead of the tooling API. The tooling API is usually faster and thus the preferred way to compiled deploy LWC components.
      * 
      * Disable this if you need to use the metadata API to deploy LWC components.
      * @default true;
      */
-    useToolingApi?: boolean;
+    useMetadataApi?: boolean;
 }
 
 @injectable.transient()

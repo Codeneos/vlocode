@@ -52,7 +52,7 @@ const datapackDeploymentDefaultOptions = {
     bulkDependencyResolution: true,
     deltaCheck: false,
     skipLwcActivation: false,
-    useToolingApi: true
+    useMetadataApi: false
 };
 
 /**
