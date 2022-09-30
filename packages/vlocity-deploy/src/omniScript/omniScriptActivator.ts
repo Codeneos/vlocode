@@ -35,7 +35,7 @@ export class OmniScriptActivator {
      * Any existing active OmniScriptDefinition__c records will be deleted.
      * @param input OmniScript to activate
      */
-    public async activate(input: OmniScriptDetail | string, options?: { skipLwcDeployment?: boolean }) {
+    public async activate(input: OmniScriptDetail | string, options?: { skipLwcDeployment?: boolean, toolingApi?: boolean }) {
         const script = await this.getScript(input);
         if (!script) {
             throw new Error(`No such script found matching: ${JSON.stringify(input)}`);
@@ -45,7 +45,7 @@ export class OmniScriptActivator {
         const result = await this.salesforceService.executeAnonymous(`vlocity_cmt.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
 
         if (!result.success) {
-            if (result.compileProblem) {
+            if (!result.compiled) {
                 throw new Error(`Activation error: ${result.compileProblem}`);
             }
             throw new Error(`Activation error: ${result.exceptionMessage}`);
@@ -54,8 +54,7 @@ export class OmniScriptActivator {
         // Deploy LWC when required
         if (options?.skipLwcDeployment !== true && script.isLwcEnabled) {
             const definition = await this.definitionProvider.getScriptDefinition(script.id);
-            this.logger.verbose(`Deploying ${script.type}/${script.subType} LWC component...`);
-            await this.deployLwcComponent(definition);
+            await this.deployLwcComponent(definition, options);
         }
     }
 
@@ -81,7 +80,7 @@ export class OmniScriptActivator {
     private async deployLwcComponent(definition: OmniScriptDefinition, options?: { toolingApi?: boolean }) {
         const timer = new Timer();
         const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
-        this.logger.info(`Deploying OmniScript ${definition.bpType}/${definition.bpSubType} LWC component with ${apiLabel} api...`);
+        this.logger.info(`Deploying ${definition.bpType}/${definition.bpSubType} LWC (${apiLabel} api)...`);
 
         if (options?.toolingApi) { 
             await this.deployLwcWithToolingApi(definition);
@@ -89,7 +88,7 @@ export class OmniScriptActivator {
             await this.deployLwcWithMetadataApi(definition);
         }
 
-        this.logger.info(`Deployed OmniScript ${definition.bpType}/${definition.bpSubType} LWC component with ${apiLabel} api [${timer.stop()}]`);
+        this.logger.info(`Deployed ${definition.bpType}/${definition.bpSubType} in [${timer.stop()}]`);
     }
 
     private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {
