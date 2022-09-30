@@ -1,8 +1,3 @@
-/**
- * @packageDocumentation
- * @module @vlocode/salesforce
- * @description Salesforce connectivity and utility library exposing classes and methods to manage and deploy Salesforce metadata
- */
 export * from './connection';
 export * from './deploy';
 export * from './metadata';
