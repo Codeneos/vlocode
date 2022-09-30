@@ -39,7 +39,7 @@ export default class extends Command {
             `this allows for more optimal chunking improving the overall speed of the deployment. ` +
             `If you are running into deployment errors and think that Vlocode does not follow the correct deployment order try enabling this setting.`
         ).default(false),
-        new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
+        new Option('--skip-lwc', 'skip LWC activation for LWC enabled Omniscripts').default(false),
     ];
 
     private prefixFormat = {
@@ -84,7 +84,8 @@ export default class extends Command {
             purgeMatchingDependencies: !!options.purgeDependencies,
             lookupFailedDependencies: !!options.lookupFailed,
             maxRetries: options.retryCount,
-            deltaCheck: options.delta
+            deltaCheck: options.delta,
+            skipLwcActivation: options.skipLwc
         };
 
         // Create deployment
