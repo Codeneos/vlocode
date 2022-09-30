@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.10](https://github.com/Codeneos/vlocode/compare/v0.17.9...v0.17.10) (2022-09-30)
+
+### Features
+
+* add --skipLwc as CLI command line option; to skip LWC activation and deployment ([8f0cbfb](https://github.com/Codeneos/vlocode/commit/8f0cbfb0c3d15211d2c2d6eb3a3ae521081b733c))
+
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
 
 ### Bug Fixes

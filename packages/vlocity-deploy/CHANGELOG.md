@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.10](https://github.com/Codeneos/vlocode/compare/v0.17.9...v0.17.10) (2022-09-30)
+
+### Bug Fixes
+
+* OmniScript activation errors are logged as `[object object]` error ([451ae6f](https://github.com/Codeneos/vlocode/commit/451ae6f7b8649e251174899f47246142a7e12995))
+
+### Features
+
+* dynamically add OmniScript template and script dependencies to ensure a correct deployment order ([cb8df9f](https://github.com/Codeneos/vlocode/commit/cb8df9fbbcdab8c64ce45d50512817aacb066b09))
+* use tooling API instead of metadata API for LWC omniscript deployment by default ([c7ba72c](https://github.com/Codeneos/vlocode/commit/c7ba72c2c69e6d16d3894400a155dd1603b61320))
+
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
 
 ### Features
