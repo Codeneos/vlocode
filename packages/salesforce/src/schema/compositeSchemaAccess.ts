@@ -9,11 +9,17 @@ import { FieldDefinition } from './types/fieldDefinition';
 
 @injectable()
 export class CompositeSchemaAccess {
+
+    private pendingWork = new Map<string, Promise<void>>();
     
     constructor(
         private readonly schemaStore: SchemaDataStore, 
         private readonly toolingAccess: ToolingApiSchemaAccess, 
         private readonly describeAccess: DescribeSchemaAccess) {
+    }
+
+    public clearCache(type: string) {
+        this.schemaStore.delete(type);
     }
 
     public listObjectTypes() {
@@ -43,8 +49,16 @@ export class CompositeSchemaAccess {
         return this.schemaStore.get(type, field)?.tooling;
     }
 
-    @cache({ unwrapPromise: true, cacheExceptions: true })
-    private async enqueue(sobjectType: string) {
+    private enqueue(sobjectType: string) {
+        let refreshTask = this.pendingWork.get(sobjectType);
+        if (!refreshTask) {
+            refreshTask = this.refreshSObject(sobjectType).finally(() => this.pendingWork.delete(sobjectType))
+            this.pendingWork.set(sobjectType, refreshTask);
+        }
+        return refreshTask;
+    }
+
+    private async refreshSObject(sobjectType: string) {
         const [ describe, entity ] = await Promise.allSettled([ 
             this.describeAccess.describe(sobjectType), 
             this.toolingAccess.getEntityDefinition(sobjectType)

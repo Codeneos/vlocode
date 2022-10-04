@@ -1,5 +1,5 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, RecordTypeService, SalesforceSchemaService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
@@ -87,6 +87,17 @@ export default class extends Command {
             deltaCheck: options.delta,
             skipLwcActivation: options.skipLwc
         };
+
+        const ss = container.get(SalesforceSchemaService);
+        
+        const recType = container.get(RecordTypeService);
+        const recTypeId = await recType.getRecordTypeId('Product2', 'vlocity_cmt__Product');
+        await recType.enablePicklistValues(recTypeId, 'Offer__c', [ 'FFR000080' ]);
+        await recType.enableDefaultRecordTypePicklistValues('Product2', 'Offer__c', [ 'FFR000080' ]);
+
+        //await ss.addPicklistValues(`Product2`, 'Offer__c', [{ fullName: 'FR1', label: `FR1` }]);
+        //await ss.addPicklistValues(`Product2`, 'Family', [{ fullName: 'FF1', label: `FF1` }]);
+        //await ss.addPicklistValues(`Product2`, 'Offer__c', [{ fullName: 'FF1', label: `FF1` }]);
 
         // Create deployment
         const deployment = await container.create(DatapackDeployer).createDeployment(datapacks, deployOptions);

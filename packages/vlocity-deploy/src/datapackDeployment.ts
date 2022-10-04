@@ -115,8 +115,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return this.options;
     }
 
-    public add(...records: DatapackDeploymentRecord[]): this {
-        for (const record of records) {
+    public add(records: DatapackDeploymentRecord[] | DatapackDeploymentRecord): this {
+        for (const record of Array.isArray(records) ? records : [ records ]) {
             if (this.records.has(record.sourceKey)) {
                 throw new Error(`Datapack record with the same key '${record.sourceKey}' has already been added to the deployment. Remove the duplicate datapack and retry the deployment.`);
             }
@@ -352,8 +352,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * Get all records related a specific datapack, includes main record and any child records originating from the same datapack.
      * @param datapackKey Key of the datapack
      */
-    public getRecords(datapackKey: string) : Array<DatapackDeploymentRecord> {
-        return [...(this.recordGroups.get(datapackKey) ?? [])];
+    public getRecords(datapackKey?: string) : Array<DatapackDeploymentRecord> {
+        return datapackKey ? [...(this.recordGroups.get(datapackKey) ?? [])] : [ ...this.records.values() ];
     }
 
     private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {

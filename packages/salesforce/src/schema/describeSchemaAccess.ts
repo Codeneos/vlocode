@@ -1,5 +1,5 @@
 import { Logger, injectable, DeferredWorkQueue, WorkItemResult } from '@vlocode/core';
-import { cache, forEachAsyncParallel, getObjectProperty, setObjectProperty, Timer, visitObject } from '@vlocode/util';
+import { cache, forEachAsyncParallel, getObjectProperty, setObjectProperty, Timer, walkObject } from '@vlocode/util';
 import { JsForceConnectionProvider } from '../connection/jsForceConnectionProvider';
 import { DescribeSObjectResult, Field } from '../types';
 import { SchemaDataStore } from './schemaDataStore';
@@ -15,6 +15,7 @@ export class DescribeSchemaAccess {
     private readonly metadataReadChunkSize = 10;
     private readonly metadataReadParallelism = 25;
     private readonly deferredProcessor = new DeferredWorkQueue<string>((types) => this.describeBulk(types));
+    private readonly pendingWork = new Map<string, Promise<any>>();
     @injectable.property private readonly logger!: Logger;
 
     private arrayNormalizedFields = [
@@ -49,9 +50,8 @@ export class DescribeSchemaAccess {
         return this.schemaStore.get(type, field)?.describe;
     }
 
-    @cache({ unwrapPromise: true, cacheExceptions: true })
     private enqueue(sobjectType: string) {
-        return this.deferredProcessor.enqueue(sobjectType);
+        return this.deferredProcessor.getQueuedWork(item => item.toLowerCase() == sobjectType.toLowerCase()) ?? this.deferredProcessor.enqueue(sobjectType);
     }
 
     private async describeBulk(sobjectTypes: string[], chunkSize = this.metadataReadChunkSize) {   
@@ -103,7 +103,7 @@ export class DescribeSchemaAccess {
                     this.logger.error(`Describe ${sobjectTypes[i]} error -- ${result[0].message}`);
                 }
             } else {
-                describeResults.set(sobjectTypes[i], visitObject(result, this.describeNormalizer, this));
+                describeResults.set(sobjectTypes[i], walkObject(result, this.describeNormalizer, this));
             }
         }
 

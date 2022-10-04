@@ -1,5 +1,5 @@
 import { injectable } from "@vlocode/core";
-import { visitObject } from "@vlocode/util";
+import { walkObject } from "@vlocode/util";
 
 @injectable()
 export class NamespaceService {
@@ -30,7 +30,7 @@ export class NamespaceService {
     }
 
     private updateObject(obj: object, replacerFn: (value: string) => string) {
-        return visitObject(obj, (prop, value, target) => {
+        return walkObject(obj, (prop, value, target) => {
             if (typeof prop === 'string') {
                 const newProp = replacerFn(prop);
                 if (newProp !== prop) {

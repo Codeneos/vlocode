@@ -51,7 +51,7 @@ export class DatapackExportQueries {
 
             if (value !== undefined) {
                 const fullName = fieldDescribe.map(f => f.name).join('.');
-                query.where.and.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
+                query.where.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
             }
         }
 

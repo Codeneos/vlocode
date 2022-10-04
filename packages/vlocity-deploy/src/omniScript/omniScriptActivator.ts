@@ -155,7 +155,7 @@ export class OmniScriptActivator {
             query.where.equals('%vlocity_namespace%__Type__c', script.type).and
                 .equals('%vlocity_namespace%__SubType__c', script.subType);
             if (script.language) {
-                query.where.and.equals(`%vlocity_namespace%__Language__c`, script.language);
+                query.where.equals(`%vlocity_namespace%__Language__c`, script.language);
             }
         }
 

@@ -3,7 +3,12 @@ import { NamespaceService } from './namespaceService';
 import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema';
-import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer, validate } from '@vlocode/util';
+import { cache, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer } from '@vlocode/util';
+import { CustomFieldMetadata, CustomPicklistFieldMetadata, PicklistValue, StandardValueSet } from './metadata';
+import { QueryBuilder } from './queryBuilder';
+import { SaveResult } from 'jsforce';
+import { RecordTypeToolingMetadata, RecordTypeToolingRecord } from './tooling/recordType';
+import { MetadataContainer } from './metadataContainer';
 
 /**
  * Provides access to Database Schema methods like describe.
@@ -196,7 +201,217 @@ export class SalesforceSchemaService {
         return salesforcePath.join('.');
     }
 
-    private async findSObjectField(type: string, field: string) {
-        return findField((await this.describeSObject(type)).fields, this.nsService.updateNamespace(field), f => f.name);
+    public async addPicklistValues(objectApiName: string, fieldName: string, values: PicklistValue[]) : Promise<void> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const fieldDefinition = await this.schemaAccess.getFieldDefinition(objectApiName, fieldName);
+        const [ fieldMetadata ] = await new QueryBuilder({ sobjectType: 'FieldDefinition', fieldList: [ 'Id', 'Metadata', 'FullName' ] })
+            .where.equals('DurableId', fieldDefinition?.durableId).executeTooling<{ Metadata: CustomFieldMetadata, Id: string, FullName:string }>(connection);
+
+        if (fieldMetadata?.Metadata.type !== 'Picklist') {
+            throw new Error(`Cannot add picklist values to non-picklist field: ${objectApiName}.${fieldName}`);
+        }
+
+        if (!fieldMetadata.Metadata.valueSet) {
+            await this.addStandardValueSetValue(`${objectApiName}${fieldName}`, values);
+        } else if (fieldMetadata.Metadata.valueSet.valueSetName) {
+            await this.addGlobalValueSetValue(fieldMetadata.Metadata.valueSet.valueSetName, values);
+        } else {
+            await this.addLocalValueSetValue(objectApiName, fieldName, values);
+        }
+
+        const objectDescribe = await this.describeSObject(objectApiName);
+        const defaultRecordType = objectDescribe.recordTypeInfos.find(r => r.defaultRecordTypeMapping);
+        if (defaultRecordType) {
+            await this.enablePicklistValuesOnRecordType(defaultRecordType.recordTypeId, objectApiName, fieldName, values.map(v => v.fullName));
+        }
+
+        this.resetSObjectCache(objectApiName);
+    }
+
+    private async addGlobalValueSetValue(valueSetApiName: string, values: PicklistValue[]) : Promise<void> {
+        const nameAndNamespace = valueSetApiName.split('__');
+        const developerName = nameAndNamespace.pop();
+        const namespace = nameAndNamespace.pop();
+
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const [ valueSetMetadata ] = await new QueryBuilder({ sobjectType: 'GlobalValueSet', fieldList: [ 'Id', 'Metadata' ] })
+            .where.equals('DeveloperName', developerName).and.equals('NamespacePrefix', namespace)
+            .executeTooling<{ Metadata: any }>(connection);
+
+        if (!valueSetMetadata) {            
+            throw new Error(`Cannot find GlobalValueSet with name: ${valueSetApiName}`);
+        }
+
+        const currentValues = new Map(valueSetMetadata.Metadata.customValue.map(p => [ p.valueName.toLowerCase(), p ]));
+        const valuesAdded = new Array<string>();
+
+        for (const value of values) {
+            const currentValue = currentValues.get(value.fullName.toLowerCase());
+            if (!currentValue) {
+                this.logger.info(`Adding value to global picklist ${valueSetApiName}: ${value.fullName}`);
+                valueSetMetadata.Metadata.customValue.push({
+                    default: false,
+                    label: value.label,
+                    valueName: value.fullName
+                });
+                valuesAdded.push(value.fullName);
+            }
+        }
+
+        if (valuesAdded.length) {
+            const timer = new Timer();
+            await connection.tooling.update('GlobalValueSet', valueSetMetadata);
+            this.logger.info(`Updated global picklist ${valueSetApiName} added ${valuesAdded.length} values [${timer.stop()}]`);
+        }
+    }
+
+    private async addStandardValueSetValue(valueSetApiName: string, values: PicklistValue[]) : Promise<void> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const metadataContainer = new MetadataContainer(this.connectionProvider);
+        const valueSetInfo = await metadataContainer.read<StandardValueSet>('StandardValueSet', valueSetApiName);
+
+        const currentValues = new Map(valueSetInfo.standardValue.map(p => [ p.fullName.toLowerCase(), p ]));
+        const valuesAdded = new Array<string>();
+
+        for (const value of values) {
+            const currentValue = currentValues.get(value.fullName.toLowerCase());
+            if (!currentValue) {
+                valueSetInfo.standardValue.push(value);
+                valuesAdded.push(value.fullName);
+            }
+        }
+
+        if (valuesAdded.length) {
+            const timer = new Timer();
+            this.checkMetadataResult(await connection.metadata.update('StandardValueSet', valueSetInfo));
+            this.logger.info(`Updated standard picklist ${valueSetApiName} added ${valuesAdded.length} values [${timer.stop()}]`);
+        }        
+    }
+
+    private async addLocalValueSetValue(objectApiName: string, fieldName: string, values: PicklistValue[]) : Promise<void> {
+        const fieldDescribe = await this.describeSObjectField(objectApiName, fieldName);
+        const metadataContainer = new MetadataContainer(this.connectionProvider);
+        const fieldMetadata = await metadataContainer.read<CustomPicklistFieldMetadata>('CustomField', `${objectApiName}.${fieldDescribe.name}`);
+        
+        const currentValues = new Map(fieldMetadata.valueSet.valueSetDefinition.value.map(p => [ p.fullName.toLowerCase(), p ]));
+        const valuesAdded = new Array<string>();
+
+        for (const value of values) {
+            const currentValue = currentValues.get(value.fullName.toLowerCase());
+            if (!currentValue) {
+                fieldMetadata.valueSet.valueSetDefinition.value.push(value);
+                valuesAdded.push(value.fullName);
+            }
+        }
+
+        if (valuesAdded.length) {
+            const timer = new Timer();
+            await metadataContainer.update('CustomField', fieldMetadata).commit();
+            this.logger.info(`Updated ${objectApiName}.${fieldName} field metadata added ${valuesAdded.length} picklist values [${timer.stop()}]`);
+        }  
+    }
+
+    private async enablePicklistValuesOnRecordType(recordTypeId: string, objectApiName: string, fieldName: string, picklistValues: string[]) {      
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const [ recordTypeInfo ] = await new QueryBuilder('RecordType', [ 'DeveloperName', 'NamespacePrefix' ]).where.equals('Id', recordTypeId).execute(this.connectionProvider);
+        const metadataName = recordTypeInfo.NamespacePrefix ? `${recordTypeInfo.NamespacePrefix}__${recordTypeInfo.DeveloperName}` : recordTypeInfo.DeveloperName;
+        const recordTypeMetadata = await connection.metadata.read('RecordType', `${objectApiName}.${metadataName}`) as any;
+        
+        let picklist = recordTypeMetadata.picklistValues.find(({ picklist }) => picklist.toLowerCase() == fieldName.toLowerCase());
+        if (!picklist) {
+            picklist = {
+                picklist: fieldName,
+                values: new Array<any>()
+            }
+            recordTypeMetadata.picklistValues.push(picklist);
+        }
+
+        for (const fullName of picklistValues) {
+            if (!Array.isArray(picklist.values)) {
+                picklist.values = [ picklist.values ];
+            }
+            const hasValue = picklist.values.some(v => v.fullName.toLowerCase() === fullName.toLowerCase());
+            if (!hasValue) {
+                picklist.values.push({ fullName });
+            }
+        }
+
+        const timer = new Timer();
+        this.checkMetadataResult(await connection.metadata.update(`RecordType`, recordTypeMetadata));
+        this.logger.info(`Updated record-type ${objectApiName}.${metadataName} [${timer.stop()}]`);
+    }
+
+    private async getRecordTypeMetadata(recordTypeId: string) : Promise<RecordTypeToolingMetadata> {
+        const toolingRecord = await this.queryToolingRecord<RecordTypeToolingRecord>(
+            new QueryBuilder({ sobjectType: 'RecordType', fieldList: [ 'Id', 'FullName', 'Metadata' ] }).where.equals('Id', recordTypeId)
+        ); 
+        if (!toolingRecord) {
+            throw new Error(`No such record type with Id found: ${recordTypeId}`);
+        }
+        return toolingRecord.Metadata;
+    }
+
+    private async updateRecordTypeMetadata(recordTypeId: string, metadata: RecordTypeToolingMetadata) {
+        const toolingRecord = await this.queryToolingRecord<RecordTypeToolingRecord>(
+            new QueryBuilder({ sobjectType: 'RecordType', fieldList: [ 'Id', 'FullName', 'Metadata' ] }).where.equals('Id', recordTypeId)
+        ); 
+        toolingRecord.Metadata = metadata;
+        
+        const connection = await this.connectionProvider.getJsForceConnection();
+        await connection.tooling.update('RecordType', toolingRecord);
+    }
+
+    @cache({ unwrapPromise: true, cacheExceptions: true, immutable: false })
+    private async queryToolingRecord<T>(query: QueryBuilder) : Promise<T> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const [ toolingRecord ] = await query.executeTooling<T>(connection);  
+        return toolingRecord;
+    }
+
+    // private async enableAllPicklistValuesForAllRecordTypes(objectApiName: string) : Promise<void> {
+    //     const connection = await this.connectionProvider.getJsForceConnection();
+    //     const toolingRecordTypes = await new QueryBuilder({ sobjectType: 'RecordType', fieldList: [ 'Id', 'Name', 'NamespacePrefix' ] })
+    //         .where.equals('EntityDefinition.DeveloperName', objectApiName).executeTooling(connection);
+    //     const picklists = await this.describeSObject(objectApiName).
+
+    //     for (const recordType of toolingRecordTypes) {
+    //         const [ toolingRecord ] = await new QueryBuilder({ sobjectType: 'RecordType', fieldList: [ 'Id', 'Metadata' ] })
+    //             .where.equals('Id', recordType.Id).executeTooling(connection);
+
+    //         for (const { picklist, values } of toolingRecord.picklistValues) {
+    //             if (picklist.toLowerCase() === fieldName.toLowerCase()) {
+    //                 const isAvailable = 
+    //                 values.push({
+    //                     label: value.label,
+    //                     valueName: value.fullName
+    //                 })
+    //             }
+    //         }
+    //         const values = toolingRecord;
+    //         values.
+    //     }
+    // }
+
+    /**
+     * Reset the schema cache for the specified SObject; on the next describe call the metadata will be refreshed from the target org
+     * @param objectApiName 
+     */
+    public resetSObjectCache(objectApiName: string) {
+        this.schemaAccess.clearCache(objectApiName);
+    }
+
+    /**
+     * Checks if the Metadata save result contains an error and throws it as Javascript error.
+     * @param results Metadata command save result
+     */
+    protected checkMetadataResult<T extends SaveResult>(results: T | T[]) : never | T | T[] {
+        const resultsArray = Array.isArray(results) ? results : [ results ];
+        for (const result of resultsArray) {
+            if (result.success === false && result.errors) {
+                const error = Array.isArray(result.errors) ? result.errors[0] : result.errors;
+                throw new Error(`${error.statusCode}: ${error.message}`)
+            }
+        }
+        return results;
     }
 }

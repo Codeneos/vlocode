@@ -5,10 +5,25 @@ import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 
-class QueryBuilderData {
-    constructor(protected readonly query: SalesforceQueryData) {
-    }
+type WhereOperatorType = '=' | '!=' | '>' | '<' | 'like' | 'in' | 'includes';
 
+interface FilterCondition {
+    [field: string]: any | { op: WhereOperatorType, value: any }
+}
+
+/**
+ * Simple salesforce SOQL builder
+ */
+export class QueryBuilder  {
+
+    protected readonly query: SalesforceQueryData
+
+    constructor(query: SalesforceQueryData);
+    constructor(sobjectType: string, fieldList?: string[]);
+    constructor(...args: any[]) {
+        this.query = typeof args[0] === 'object' ? args[0] : { sobjectType: args[0], fieldList: args[1] ?? [ 'Id' ] };
+    }
+    
     public getSpec(): SalesforceQueryData {
         return { ...this.query, fieldList: [...new Set(this.query.fieldList)] };
     }
@@ -23,64 +38,6 @@ class QueryBuilderData {
 
     public get sobjectType() {
         return this.query.sobjectType;
-    }
-    
-    public execute<T = any>(executor?: JsForceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
-        if (!executor) {
-            return this.execute(container.get(QueryService));
-        }
-
-        if (typeof executor['query'] === 'function') {
-            return executor['query'](this.getQuery());
-        } 
-        
-        // @ts-ignore executor is JsForceConnectionProvider
-        return new QueryService(executor).query(this.getQuery());
-    }
-
-    public async executeTooling<T = any>(executor?: JsForceConnectionProvider | Connection, options?: { chunkSize?: number }) : Promise<T[]> {
-        if (!executor) {
-            return this.executeTooling(container.get(JsForceConnectionProvider));
-        }
-
-        const connection = executor instanceof Connection ? executor : await executor.getJsForceConnection();
-        const results = new Array<T>();
-        const chunkSize = options?.chunkSize ?? 2000;
-
-        for (let chunkNr = 0; true; chunkNr++) {
-            const chunkedQuery = new QueryBuilder(clone(this.query)).limit(chunkSize, chunkNr * chunkSize);  
-            console.debug(chunkedQuery.getQuery());
-            const result = await connection.tooling.query<T>(chunkedQuery.getQuery());
-
-            results.push(...result.records);
-
-            if (result.records.length < chunkSize) {
-                break;
-            }
-        }
-
-        return results;
-    }
-}
-
-type WhereOperatorType = '=' | '!=' | '>' | '<' | 'like' | 'in' | 'includes';
-
-interface FilterCondition {
-    [field: string]: any | { op: WhereOperatorType, value: any }
-}
-
-/**
- * Simple salesforce SOQL builder
- */
-export class QueryBuilder extends QueryBuilderData {
-
-    private schema = lazy(() => container.get(SalesforceSchemaService));
-    private logger = lazy(() => LogManager.get(QueryBuilder));
-
-    constructor(query: SalesforceQueryData);
-    constructor(sobjectType: string, fieldList?: string[]);
-    constructor(...args: any[]) {
-        super(typeof args[0] === 'object' ? args[0] : { sobjectType: args[0], fieldList: args[1] ?? [ 'Id' ] });
     }
 
     public clone() {
@@ -113,17 +70,17 @@ export class QueryBuilder extends QueryBuilderData {
         return this.select(...fields.map(f => `${relationName}.${typeof f === 'string' ? f : f.name}`));
     }
 
-    public sortBy(...sortFields: (string | { name: string })[]) : QueryBuilder {
+    public sortBy(...sortFields: (string | { name: string })[]) : this {
         this.query.orderBy = sortFields.map(f => typeof f === 'string' ? f : f.name);
         return this;
     }
 
-    public sortDirection(direction: 'asc' | 'desc') : QueryBuilder {
+    public sortDirection(direction: 'asc' | 'desc') : this {
         this.query.orderByDirection = direction;
         return this;
     }
 
-    public limit(limit: number, offset?: number) : QueryBuilder {
+    public limit(limit: number, offset?: number) : this {
         this.query.limit = limit;
         if (offset) {
             this.query.offset = offset;
@@ -131,36 +88,77 @@ export class QueryBuilder extends QueryBuilderData {
         return this;
     }
 
-    public offset(offset: number) : QueryBuilder {
+    public offset(offset: number) : this {
         this.query.offset = offset;
         return this;
     }    
-}
 
-export class QueryConditionBuilder extends QueryBuilderData {
+    public execute<T = any>(executor?: JsForceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
+        if (!executor) {
+            return this.execute(container.get(QueryService));
+        }
 
-    private nextConditionOp?: 'and' | 'or' = 'and';
-
-    public get or() : this {
-        this.nextConditionOp = 'or';
-        return this;
+        if (typeof executor['query'] === 'function') {
+            return executor['query'](this.getQuery());
+        } 
+        
+        // @ts-ignore executor is JsForceConnectionProvider
+        return new QueryService(executor).query(this.getQuery());
     }
 
-    public get and() : this {
-        this.nextConditionOp = 'and';
-        return this;
+    public async executeTooling<T = any>(executor?: JsForceConnectionProvider | Connection, options?: { chunkSize?: number }) : Promise<T[]> {
+        if (!executor) {
+            return this.executeTooling(container.get(JsForceConnectionProvider));
+        }
+
+        const connection = executor instanceof Connection ? executor : await executor.getJsForceConnection();
+        const results = new Array<T>();
+        const chunkSize = options?.chunkSize ?? 2000;
+
+        for (let chunkNr = 0; true; chunkNr++) {
+            const chunkedQuery = new QueryBuilder(clone(this.query)).limit(chunkSize, chunkNr * chunkSize);  
+            const result = await connection.tooling.query<T>(chunkedQuery.getQuery());
+
+            results.push(...result.records);
+
+            if (result.records.length < chunkSize) {
+                break;
+            }
+        }
+
+        return results;
+    }
+}
+
+class ChainableConditionQueryBuilder extends QueryBuilder {
+    constructor(query: SalesforceQueryData){
+        super(query);
+    }
+
+    public get or() {
+        return new QueryConditionBuilder(this.query, 'or');
+    }
+
+    public get and() {
+        return new QueryConditionBuilder(this.query, 'and');
+    }
+}
+
+export class QueryConditionBuilder {
+
+    public constructor(private readonly query: SalesforceQueryData, private nextConditionOp: 'and' | 'or' = 'and') {
     }
 
     public fromObject(values: FilterCondition) : QueryConditionBuilder {
         for (const [field, value] of Object.entries(flattenObject(values, obj => typeof obj?.operator !== 'string'))) {
             const operator = value?.op ?? (Array.isArray(value) ? 'in' : '=');
             const cmpValue = value?.op ? value.value : value;
-            this.and.condition(`${field} ${operator} ${Array.isArray(cmpValue) ? `(${cmpValue.map(v => this.formatValue(v)).join(',')})` : this.formatValue(cmpValue)}`);
+            this.condition(`${field} ${operator} ${Array.isArray(cmpValue) ? `(${cmpValue.map(v => this.formatValue(v)).join(',')})` : this.formatValue(cmpValue)}`);
         }
         return this;
     }
 
-    public condition(condition: string) : this {
+    public condition(condition: string): { readonly or: QueryConditionBuilder, readonly and: QueryConditionBuilder } & QueryBuilder {
         if (!this.query.whereCondition) {
             this.query.whereCondition = condition;
         } else {
@@ -172,40 +170,39 @@ export class QueryConditionBuilder extends QueryBuilderData {
                 operator: this.nextConditionOp,
                 right: condition
             }
-            this.nextConditionOp = undefined;
         }
-        return this;
+        return new ChainableConditionQueryBuilder(this.query);
     }
 
-    public equals(field: (string | { name: string }), value: any) : this {
+    public equals(field: (string | { name: string }), value: any) {
         return this.condition(`${field} = ${this.formatValue(value)}`);
     }
 
-    public notEquals(field: (string | { name: string }), value: any) : this {
+    public notEquals(field: (string | { name: string }), value: any)  {
         return this.condition(`${field} != ${this.formatValue(value)}`);
     }
 
-    public greaterThan(field: (string | { name: string }), value: any) : this {
+    public greaterThan(field: (string | { name: string }), value: any) {
         return this.condition(`${field} > ${this.formatValue(value)}`);
     }
 
-    public greaterThanOrEquals(field: (string | { name: string }), value: any) : this {
+    public greaterThanOrEquals(field: (string | { name: string }), value: any) {
         return this.condition(`${field} >= ${this.formatValue(value)}`);
     }
 
-    public lesserThan(field: (string | { name: string }), value: any) : this {
+    public lesserThan(field: (string | { name: string }), value: any) {
         return this.condition(`${field} < ${this.formatValue(value)}`);
     }
 
-    public lesserThanOrEquals(field: (string | { name: string }), value: any) : this {
+    public lesserThanOrEquals(field: (string | { name: string }), value: any) {
         return this.condition(`${field} <= ${this.formatValue(value)}`);
     }
 
-    public in(field: (string | { name: string }), values: any[]) : this {
+    public in(field: (string | { name: string }), values: any[]) {
         return this.condition(`${field} in (${values.map(v => this.formatValue(v)).join(',')})`);
     }
 
-    public notIn(field: (string | { name: string }), values: any[]) : this {
+    public notIn(field: (string | { name: string }), values: any[]) {
         return this.condition(`${field} not in (${values.map(v => this.formatValue(v)).join(',')})`);
     }
 

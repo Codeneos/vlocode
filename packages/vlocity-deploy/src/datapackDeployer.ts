@@ -1,7 +1,7 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger, injectable, container, LifecyclePolicy } from '@vlocode/core';
-import { Timer, asArray, groupBy, Iterable, CancellationToken, forEachAsyncParallel, lazy, } from '@vlocode/util';
+import { Timer, asArray, groupBy, Iterable, CancellationToken, forEachAsyncParallel, lazy, arrayMapPush, setMapAdd, } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -149,7 +149,7 @@ export class DatapackDeployer {
                 await this.runSpecFunction(datapack.datapackType, 'preprocess', datapack);
                 const records = await recordFactory.createRecords(datapack);
                 await this.runSpecFunction(datapack.datapackType, 'afterRecordConversion', records);
-                deployment.add(...records);
+                deployment.add(records);
             } catch(err) {
                 const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`;
                 if (!options?.continueOnError) {
@@ -160,7 +160,31 @@ export class DatapackDeployer {
         }, 8);
         this.logger.info(`Converted ${datapacks.length} datapacks to ${deployment.totalRecordCount} records [${timerStart.stop()}]`);
 
+        // validate
+        await this.updatePickLists(deployment.getRecords())
+
         return deployment;
+    }
+
+    private async updatePickLists(records: DatapackDeploymentRecord[]) {
+        const newPicklistValues = new Map<string, Set<string>>();
+        
+        for (const record of records) {
+            for (const [key, value] of Object.entries(record.values)) {
+                const field = await this.schemaService.describeSObjectField(record.sobjectType, key);
+                if (field.type === 'picklist' && value) {
+                    const picklistValue = field.picklistValues?.find(v => v.value.toLowerCase() === value.toLowerCase());
+                    if (!picklistValue) {
+                        setMapAdd(newPicklistValues, `${record.sobjectType}.${field.name}`, value);
+                    }
+                }
+            }
+        }
+
+        for (const [field, values] of newPicklistValues.entries()) {
+            const [sobject, fieldName] = field.split('.');
+            await this.schemaService.addPicklistValues(sobject, fieldName, [...values].map(v => ({ fullName: v, label: v })));
+        }
     }
 
     /**

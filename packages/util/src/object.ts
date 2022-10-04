@@ -266,27 +266,32 @@ export function setObjectProperty<T>(obj: T, prop: string, value: any, options?:
 /**
  * Recursively visit each property of an object and any nested objects it has, for arrays visits all elements. Does not visit functions if they exist.
  * @param obj Object for which on each property the property visitor is called
- * @param propertyVisitor Visitor function called for each property
+ * @param propertyWalker Visitor function called for each property
  * @returns 
  */
-export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: any, owner: any) => void, thisArg?: any): T {
+export function walkObject<T>(obj: T, propertyWalker: (prop: string, value: any, owner: any, path: string) => void, thisArg?: any): T {
+    return objectWalker(obj, propertyWalker, thisArg);
+}
+
+function objectWalker<T>(obj: T, propertyWalker: (prop: string, value: any, owner: any, path: string) => void, thisArg?: any, path: string = ''): T {
     if (!obj) {
         return obj;
     }
     
     if (thisArg) {
-        propertyVisitor = propertyVisitor.bind(thisArg);
+        propertyWalker = propertyWalker.bind(thisArg);
     }
 
     for (const [prop, value] of Object.entries(obj)) {
         if (typeof value === 'function') {
             continue;
         }
-
+        
+        const propPath = path ? `${path}.${prop}` : prop;
         if (typeof value === 'object') {
-            visitObject(value, propertyVisitor);
+            objectWalker(value, propertyWalker, undefined, propPath);
         }  else { 
-            propertyVisitor(prop, value, obj);
+            propertyWalker(prop, value, obj, propPath);            
         }
     }
 

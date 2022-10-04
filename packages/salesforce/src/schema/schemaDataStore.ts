@@ -38,7 +38,7 @@ export class SchemaDataStore {
     public addEntityDefinition(entity: EntityDefinition) {
         this.mergeStoreData(this.objectInfo, entity.qualifiedApiName, { tooling: entity });
         for (const field of entity.fields) {            
-            this.mergeStoreData(this.fieldInfo, field.qualifiedApiName, { tooling: field });
+            this.mergeStoreData(this.fieldInfo, `${entity.qualifiedApiName}.${field.qualifiedApiName}`, { tooling: field });
         }
         return this;
     }
@@ -62,11 +62,20 @@ export class SchemaDataStore {
     public get(type: string, field: string): SchemaData<CustomFieldMetadata, Field, FieldDefinition> | undefined;
     public get(type: string, field?: string): SchemaData<CustomFieldMetadata, Field, FieldDefinition> | SchemaData<CustomObjectMetadata, DescribeSObjectResult, EntityDefinition> | undefined;
     public get(type: string, field?: string | undefined) {
-        return field ? this.fieldInfo.get(`${type}.${field}`.toLowerCase()) : this.objectInfo.get(`${type}`.toLowerCase());
+        return field ? this.fieldInfo.get(`${type}.${field}`.toLowerCase()) : this.objectInfo.get(type.toLowerCase());
     }
 
     public has(type: string) {
         return this.objectInfo.has(type.toLowerCase());
+    }
+
+    public delete(type: string) {
+        for (const key of [...this.fieldInfo.keys()]) {
+            if (key.startsWith(type.toLowerCase())) {
+                this.fieldInfo.delete(key);
+            }
+        }
+        this.objectInfo.delete(type.toLowerCase());
     }
 
     /**

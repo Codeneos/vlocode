@@ -76,9 +76,8 @@ export class ToolingApiSchemaAccess {
         return this.schemaStore.get(type)?.tooling;
     }
 
-    @cache({ unwrapPromise: true, cacheExceptions: true })
     private enqueue(sobjectType: string) {
-        return this.deferredProcessor.enqueue(sobjectType);
+        return this.deferredProcessor.getQueuedWork(item => item.toLowerCase() == sobjectType.toLowerCase()) ?? this.deferredProcessor.enqueue(sobjectType);
     }
 
     private async getEntityDefinitions(sobjectTypes: string[], chunkSize = this.chunkSize) { 

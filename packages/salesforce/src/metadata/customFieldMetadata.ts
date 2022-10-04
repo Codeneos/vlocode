@@ -17,20 +17,29 @@ export enum FieldMetadataType {
     Url = 'Url',
 }
 
+export interface PicklistValue {
+    fullName: string;
+    default?: boolean;
+    isActive?: boolean;
+    label: string;
+};
+
+export interface  StandardValueSet {
+    fullName: string,
+    sorted: boolean;
+    standardValue: PicklistValue[];
+};
+
 export interface ValueSet {
     controllingField?: string;
+    valueSetName?: string;
     /**
      * Default = false; undefined = false
      */
     restricted?: boolean;
     valueSetDefinition: {
         sorted: boolean;
-        value: {
-            fullName: string,
-            default?: boolean,
-            isActive?: boolean;
-            label: string
-        }[]
+        value: PicklistValue[]
     };
 }
 
@@ -121,7 +130,6 @@ export interface CustomSummaryFieldMetadata extends CustomBaseFieldMetadata {
 }
 
 export type CustomFieldMetadata = 
-    CustomBaseFieldMetadata |
     CustomTextFieldMetadata | 
     CustomPicklistFieldMetadata |
     CustomLongTextAreaFieldMetadata |
