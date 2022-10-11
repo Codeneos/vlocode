@@ -39,7 +39,11 @@ export class SalesforceSchemaService {
      * @param type Type of SObject
      */
     public async isSObjectDefined(type: string) {
-        return await this.schemaAccess.getEntityDefinition(this.nsService?.updateNamespace(type)) !== undefined;
+        try {
+            return await this.schemaAccess.getEntityDefinition(this.nsService?.updateNamespace(type)) !== undefined
+        } catch {
+            return false;
+        }
     }
 
     /**
@@ -48,7 +52,11 @@ export class SalesforceSchemaService {
      * @param field Name of the field
      */
      public async isSObjectFieldDefined(type: string, field: string) {
-        return await this.schemaAccess.getFieldDefinition(this.nsService?.updateNamespace(type), this.nsService?.updateNamespace(field)) !== undefined;
+        try {
+            return await this.schemaAccess.getFieldDefinition(this.nsService?.updateNamespace(type), this.nsService?.updateNamespace(field)) !== undefined
+        } catch {
+            return false;
+        }
     }
 
     /**
@@ -59,11 +67,18 @@ export class SalesforceSchemaService {
     public async describeSObject(type: string) : Promise<DescribeSObjectResult>
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound = true) : Promise<DescribeSObjectResult | undefined> {
-        const describeResult = await this.schemaAccess.describe(this.nsService?.updateNamespace(type));
-        if (!describeResult && throwWhenNotFound) {
-            throw Error(`No such object with name ${type} exists in this Salesforce instance`);
+        try {
+            const result = await this.schemaAccess.describe(this.nsService?.updateNamespace(type));
+            if (result === undefined) {
+                throw Error();
+            }
+            return result;
+        } catch {
+            if (throwWhenNotFound) {
+                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
+            }
         }
-        return describeResult;
+        return undefined;
     }
 
     public describeSObjectByPrefix(prefix: string) {
