@@ -17,7 +17,14 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
    
     async deploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
-        const deployment = await this.datapackDeployer.createDeployment(datapacks, undefined, cancellationToken);
+        const deployment = await this.datapackDeployer.createDeployment(datapacks, {
+            // TODO: allow user to override these from options
+            strictDependencies: true,
+            purgeMatchingDependencies: true,
+            lookupFailedDependencies: true,
+            continueOnError: true,
+            maxRetries: 1,
+        }, cancellationToken);
         await deployment?.start(cancellationToken);
 
         if (cancellationToken.isCancellationRequested) {
