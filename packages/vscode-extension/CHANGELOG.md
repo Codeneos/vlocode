@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.11](https://github.com/codeneos/vlocode/compare/v0.17.10...v0.17.11) (2022-10-11)
+
+### Bug Fixes
+
+* metadata files for APEX classes and triggers are formatted without line-breaks or spaces ([3bba919](https://github.com/codeneos/vlocode/commit/3bba919ced9e0630b6efa8c5a8763702b642fb20))
+* set options for Vlocode deploy to purge child items which helps deleting stale PCIs ([710b992](https://github.com/codeneos/vlocode/commit/710b99202b187c0cc6c7f22508187de9766c1790))
+* suggestion for Vlocode deploy mode doesn't show ([abbe65f](https://github.com/codeneos/vlocode/commit/abbe65f082c55d3e9306e111ee4d7179efbc5efe))
+
 ## [0.17.10](https://github.com/codeneos/vlocode/compare/v0.17.9...v0.17.10) (2022-09-30)
 
 **Note:** Version bump only for package vlocode
