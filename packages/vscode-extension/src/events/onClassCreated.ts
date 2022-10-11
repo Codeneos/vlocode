@@ -50,7 +50,7 @@ export default class extends EventHandlerBase<vscode.Uri> {
                 status: 'Active',
                 apiVersion: this.vloService.config.salesforce?.apiVersion
             }
-        });
+        }, 4);
 
         try {
             await fs.writeFile(`${document.fsPath}-meta.xml`, metaXml, { flag: 'wx' });
