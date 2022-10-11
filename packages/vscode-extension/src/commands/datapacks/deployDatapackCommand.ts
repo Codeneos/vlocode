@@ -58,7 +58,7 @@ export class DeployDatapackCommand extends DatapackCommand {
         }
 
         // Suggest vlocode?
-        if (datapackHeaders.length > 2) {
+        if (datapackHeaders.length > 1) {
             await this.suggestDeploymentModeChange();
         }
 
