@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import * as moment from 'moment';
 import { LogLevel, LogWriter, LogEntry } from '../../logging';
 

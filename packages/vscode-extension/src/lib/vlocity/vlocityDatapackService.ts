@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
 import * as jsforce from 'jsforce';
-import * as vlocity from 'vlocity';
+import vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
@@ -11,7 +11,7 @@ import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
-import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
+import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { JsForceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
 

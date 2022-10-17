@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join } from 'path';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { countDistinct, groupBy } from '@vlocode/util';
 
 export default class extends Command {

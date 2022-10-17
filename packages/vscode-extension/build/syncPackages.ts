@@ -1,7 +1,7 @@
 // Parse commands YAML into a package JSON command structure
 import { join, resolve } from 'path';
 import { relative } from 'path/posix';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import * as fs from 'fs-extra';
 import * as logSymbols from 'log-symbols';
 import type * as PackageJsonType from '../package.json';

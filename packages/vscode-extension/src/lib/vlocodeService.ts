@@ -3,7 +3,7 @@ import * as jsforce from 'jsforce';
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '@constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '@lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options, poll } from '@vlocode/util';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
@@ -469,4 +469,3 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.config.salesforce.apiVersion = `${apiVersion}.0`;
     }
 }
-

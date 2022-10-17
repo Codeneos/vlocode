@@ -1,7 +1,7 @@
 import { Logger , injectable } from '@vlocode/core';
 import { Connection, JsForceConnectionProvider, NamespaceService } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import * as constants from './constants';
 
 @injectable({ provides: [NamespaceService, VlocityNamespaceService] })

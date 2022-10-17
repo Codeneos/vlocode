@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 
 import {  injectable, Logger } from '@vlocode/core';
 import { DatapackDeployer } from '@vlocode/vlocity-deploy';

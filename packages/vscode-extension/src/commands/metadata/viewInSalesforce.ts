@@ -1,6 +1,6 @@
 
 import * as vscode from 'vscode';
-import * as open from 'open';
+import open from 'open';
 import MetadataCommand from './metadataCommand';
 import { MetadataType } from '@vlocode/salesforce';
 import { vscodeCommand } from '@root/lib/commandRouter';

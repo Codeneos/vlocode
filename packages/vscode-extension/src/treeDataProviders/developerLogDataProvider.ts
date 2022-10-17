@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import VlocodeService from '@lib/vlocodeService';
 import { DeveloperLog } from '@vlocode/salesforce';
-import * as moment from 'moment';
+import moment from 'moment';
 import { ConfigurationManager } from '@lib/config';
 import { VlocodeCommand } from '@constants';
 import { Logger , injectable } from '@vlocode/core';

@@ -28,7 +28,6 @@
                 "async_hooks.js",
                 "inspector_async_hook.js"
             ],
-            "preLaunchTask": "build-extension",
             "smartStep": true,
             "stopOnEntry": false,
             "sourceMaps": true
@@ -116,6 +115,20 @@
             "runtimeArgs": [
                 "run-script",
                 "build:debug"
+            ],
+            "cwd": "${workspaceRoot}/packages/vscode-extension",
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "pwa-node"
+        },
+        {
+            "name": "Debug: esbuild",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "esbuild"
             ],
             "cwd": "${workspaceRoot}/packages/vscode-extension",
             "runtimeExecutable": "npm",

@@ -1,0 +1,13 @@
+diff --git a/lib/jsdom/living/xhr/XMLHttpRequest-impl.js b/lib/jsdom/living/xhr/XMLHttpRequest-impl.js
+index bf8871d768c5c8d16f10b194ed7969c0cf89844b..7c0f1fc323468371559d5fc63f8fd250570ae029 100644
+--- a/lib/jsdom/living/xhr/XMLHttpRequest-impl.js
++++ b/lib/jsdom/living/xhr/XMLHttpRequest-impl.js
+@@ -28,7 +28,7 @@ const { copyToArrayBufferInNewRealm } = require("../helpers/binary-data");
+ 
+ const { READY_STATES } = xhrUtils;
+ 
+-const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;
++const syncWorkerFile = null;
+ 
+ const tokenRegexp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+ const fieldValueRegexp = /^[ \t]*(?:[\x21-\x7E\x80-\xFF](?:[ \t][\x21-\x7E\x80-\xFF])?)*[ \t]*$/;

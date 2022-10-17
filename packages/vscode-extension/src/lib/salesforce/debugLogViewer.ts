@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import * as moment from 'moment';
+import moment from 'moment';
 import { DeveloperLog } from '@vlocode/salesforce';
 
 export class DebugLogViewer {

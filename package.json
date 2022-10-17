@@ -54,7 +54,9 @@
             "@oclif/command@1.8.16": "patches/@oclif__command@1.8.16.patch",
             "typescript@4.6.4": "patches/typescript@4.6.4.patch",
             "vlocity@1.14.18": "patches/vlocity@1.14.18.patch",
-            "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch"
+            "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch",
+            "shelljs@0.8.5": "patches/shelljs@0.8.5.patch",
+            "jsdom@20.0.1": "patches/jsdom@20.0.1.patch"
         },
         "allowNonAppliedPatches": true
     },
@@ -83,6 +85,8 @@
         "@types/jsforce": "1.9.42",
         "chalk": "^4.1.2",
         "js-yaml": "^4.1.0",
-        "typescript": "4.6.4"
+        "typescript": "4.6.4",
+        "shelljs": "0.8.5",
+        "jsdom": "20.0.1"
     }
 }

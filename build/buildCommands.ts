@@ -1,5 +1,5 @@
 // Parse commands YAML into a package JSON command structure
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
 import * as logSymbols from 'log-symbols';

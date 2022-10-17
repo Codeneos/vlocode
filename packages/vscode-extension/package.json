@@ -120,7 +120,7 @@
         "onCommand:vlocode.removeFromProfile",
         "onCommand:vlocode.createOmniscriptLwc"
     ],
-    "main": "./out/vlocode",
+    "main": "./out/extension",
     "contributes": {
         "viewsContainers": {
             "activitybar": [
@@ -1239,6 +1239,7 @@
     },
     "scripts": {
         "build": "pnpm pre-build && tsc -b",
+        "esbuild": "pnpm node ./esbuild.js",
         "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.ts --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
@@ -1277,6 +1278,7 @@
         "copy-webpack-plugin": "^9.1.0",
         "create-ts-index": "^1.14.0",
         "esbuild": "^0.14.49",
+        "esbuild-plugin-tsc": "^0.3.1",
         "escape-string-regexp": "^4.0.0",
         "fs-extra": "^9.0",
         "gelex": "0.0.7",

@@ -1,6 +1,6 @@
 import { EventHandlerBase } from '@events/eventHandlerBase';
 import * as vscode from 'vscode';
-import * as escapeRegExp from 'escape-string-regexp';
+import escapeRegExp from 'escape-string-regexp';
 
 export default class extends EventHandlerBase<vscode.FileRenameEvent> {
 
