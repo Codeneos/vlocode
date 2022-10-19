@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.12](https://github.com/codeneos/vlocode/compare/v0.17.11...v0.17.12) (2022-10-19)
+
+### Bug Fixes
+
+* invalid tree item (issue [#389](https://github.com/codeneos/vlocode/issues/389)) which occurs for some datapacks in the datapack explorer in-combination with the latest release of vscode ([51c673f](https://github.com/codeneos/vlocode/commit/51c673f265e1a027d2beea74ee6802759230c07b))
+
 ## [0.17.11](https://github.com/codeneos/vlocode/compare/v0.17.10...v0.17.11) (2022-10-11)
 
 ### Bug Fixes
