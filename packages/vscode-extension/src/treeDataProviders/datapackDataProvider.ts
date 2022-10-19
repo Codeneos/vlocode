@@ -76,12 +76,16 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
     public toTreeItem(node: DatapackNode & TreeNode): vscode.TreeItem {
+        const description = node.getItemDescription?.();
+        const tooltip = node.getItemTooltip?.();
+        const label = node.getItemLabel?.();
+        
         return {
             id: node.getId(),
-            label: node.getItemLabel(),
-            tooltip: node.getItemTooltip?.(),
+            label: typeof label === 'string' ? label : '<LABEL MISSING>',
+            tooltip: typeof description === 'string' ? tooltip : undefined,
             iconPath: this.getItemIconPath(node.icon),
-            description: node.getItemDescription?.(),
+            description: typeof description === 'string' ? description : undefined,
             contextValue: `vlocode:datapack:${node.nodeType}`,
             collapsibleState: typeof node.collapsibleState === 'boolean'
                 ? (node.collapsibleState ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.None)
