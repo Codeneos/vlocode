@@ -1,0 +1,14 @@
+{    
+    "extends": "../../../tsconfig",
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2020",
+        "sourceMap": false,
+        "esModuleInterop": true,
+        "declaration": false,
+        "typeRoots": [ 
+            "./node_modules/@types", 
+            "./types"
+        ]
+    }
+}

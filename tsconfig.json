@@ -10,6 +10,7 @@
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "noUnusedLocals": false, 
+        "esModuleInterop": true,
         "suppressExcessPropertyErrors": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,

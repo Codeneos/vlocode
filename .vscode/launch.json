@@ -15,13 +15,6 @@
                 "--trace-deprecation",
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
-            "outFiles": [
-                "packages/vscode-extension/out/**/*.js",
-                "packages/salesforce/lib/**/*.js",
-                "packages/core/lib/**/*.js",
-                "packages/util/lib/**/*.js",
-                "packages/vlocity-deploy/lib/**/*.js"
-            ], 
             "pauseForSourceMap": true,
             "skipFiles": [
                 "<node_internals>/**/*.js",

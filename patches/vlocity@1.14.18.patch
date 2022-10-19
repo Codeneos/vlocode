@@ -1,5 +1,5 @@
 diff --git a/lib/datapacks.js b/lib/datapacks.js
-index ec2d9e0..5cddd5b 100644
+index ec2d9e0d4e8681bb06bb52a6ac30780f3aeef1fd..5cddd5bc1c78069f61c96e440699db96d7fefc97 100644
 --- a/lib/datapacks.js
 +++ b/lib/datapacks.js
 @@ -217,6 +217,11 @@ DataPacks.prototype.getStorageLimitExceededError = function() {
@@ -69,7 +69,7 @@ index ec2d9e0..5cddd5b 100644
              if (result.Total > 0 && result.Async && result.Total == result.Finished) {
                  result.Finished--;
 diff --git a/lib/datapacksbuilder.js b/lib/datapacksbuilder.js
-index 1e72fcb..e595cab 100644
+index 1e72fcbdb82fdec4fd5d8c35a5aac32c0330696b..e595cabbe84bcd252f66f73ec6206cc335067e2b 100644
 --- a/lib/datapacksbuilder.js
 +++ b/lib/datapacksbuilder.js
 @@ -1,7 +1,6 @@
@@ -184,7 +184,7 @@ index 1e72fcb..e595cab 100644
              sass.importer((request, done) => {
                  // (object) request
 diff --git a/lib/datapackserrorhandling.js b/lib/datapackserrorhandling.js
-index 26cb86f..cae7464 100644
+index 26cb86f197545328a8a2a4eeb718c15c6f14d696..cae74648d3a4cb3a798d03cfac7163a687f09d2d 100644
 --- a/lib/datapackserrorhandling.js
 +++ b/lib/datapackserrorhandling.js
 @@ -1,10 +1,6 @@
@@ -200,7 +200,7 @@ index 26cb86f..cae7464 100644
  
  DataPacksErrorHandling.prototype.getSanitizedErrorMessage = async function(jobInfo, dataPack) {
 diff --git a/lib/datapacksjob.js b/lib/datapacksjob.js
-index ec780e1..2243e94 100644
+index ec780e11be53057ae9e4f77e705f15a510cbe415..2243e948adce10378994a03ca50d7f40553ce1b5 100644
 --- a/lib/datapacksjob.js
 +++ b/lib/datapacksjob.js
 @@ -9,8 +9,8 @@ const open = require("opn");
@@ -248,10 +248,18 @@ index ec780e1..2243e94 100644
  }
  
 diff --git a/lib/datapacksutils.js b/lib/datapacksutils.js
-index a96735c..f4fc60a 100644
+index a96735c772a2e1dc790d295b0766aabfad95bb9e..da6781a7ddff213b400542c7845d71ee7880acfe 100644
 --- a/lib/datapacksutils.js
 +++ b/lib/datapacksutils.js
-@@ -26,7 +26,7 @@ var DataPacksUtils = module.exports = function(vlocity) {
+@@ -19,14 +19,14 @@ const namespaceFieldPrefix = '%' + namespacePrefix + '%__';
+ 
+ var CURRENT_INFO_FILE;
+ 
+-VLOCITY_BUILD_SALESFORCE_API_VERSION = '50.0';
++global.VLOCITY_BUILD_SALESFORCE_API_VERSION = '50.0';
+ 
+ var DataPacksUtils = module.exports = function(vlocity) {
+     this.vlocity = vlocity || {};
  
      CURRENT_INFO_FILE = path.join(vlocity.tempFolder, 'currentJobInfo.json');
  
@@ -288,7 +296,7 @@ index a96735c..f4fc60a 100644
          return;
      }
 diff --git a/lib/utilityservice.js b/lib/utilityservice.js
-index 7b545d3..6be0020 100644
+index 7b545d3b10f9da08d58654d7de09b0cb162af0f3..6be0020a90ec84368f7d2a3066654c8de6f52578 100644
 --- a/lib/utilityservice.js
 +++ b/lib/utilityservice.js
 @@ -1,5 +1,4 @@
@@ -307,7 +315,7 @@ index 7b545d3..6be0020 100644
          this.vlocity.BuildToolSettingLatestVersion = this.vlocity.buildToolsVersionSettings.latest;
  
 diff --git a/lib/validationtest.js b/lib/validationtest.js
-index d85f750..6d7ed7e 100644
+index d85f750a81447c3a9a49df4d5729171571f82dc9..6d7ed7e1e1018ca7a92f857f15c293b207956fd6 100644
 --- a/lib/validationtest.js
 +++ b/lib/validationtest.js
 @@ -17,7 +17,7 @@ ValidationTest.prototype.validate = async function(jobInfo, currentContextData)
@@ -319,10 +327,42 @@ index d85f750..6d7ed7e 100644
      self.vlocityMatchingKeys = await self.vlocity.utilityservice.getDRMatchingKeyFields();
      var allTests = self.loadAllTests();
      var runTestData = await self.groupRunTestData(currentContextData, allTests);
+diff --git a/lib/vlocity.js b/lib/vlocity.js
+index f1bd071714b3eeff8c4c3f8372429f63f6053f18..7935687315d3f8845db2e33a96210c62f93df2c3 100644
+--- a/lib/vlocity.js
++++ b/lib/vlocity.js
+@@ -19,7 +19,7 @@ var deltacheck = require('./deltacheck');
+ var utilityservice = require('./utilityservice.js');
+ var testframework = require('./testframework.js');
+ 
+-VLOCITY_BUILD_VERSION = require('../package.json').version;
++global.VLOCITY_BUILD_VERSION = require('../package.json').version;
+ 
+ var SOURCE_FILE_CURRENT = 'sourceFileCurrent.json';
+ var TARGET_FILE_CURRENT = 'targetFileCurrent.json';
+diff --git a/lib/vlocitycli.js b/lib/vlocitycli.js
+index 93a5aadf0755debdb1fd5fc67dd6f9327daa825d..7bd3b3f91b0e6a82e662f23a1c3f60b9b2796773 100644
+--- a/lib/vlocitycli.js
++++ b/lib/vlocitycli.js
+@@ -126,7 +126,7 @@ var VLOCITY_COMMANDLINE_OPTIONS_DEFAULTS = {
+     target: 'local'
+ };
+ 
+-VLOCITY_COMMANDLINE_COMMANDS = {
++global.VLOCITY_COMMANDLINE_COMMANDS = {
+     packExport: {
+         name: 'Export',
+         description: 'Export all DataPacks'
 diff --git a/lib/vlocityutils.js b/lib/vlocityutils.js
-index 9b76a81..2434806 100644
+index 9b76a8188c93821d4166d35d227b8e714b5cd7c1..d190721be4c034a65a08bffa6f5750771f4271c6 100644
 --- a/lib/vlocityutils.js
 +++ b/lib/vlocityutils.js
+@@ -1,4 +1,4 @@
+-VlocityUtils = {
++global.VlocityUtils = {
+     showLoggingStatements: true,
+     fullLog: [],
+     namespace: '',
 @@ -60,7 +60,7 @@ VlocityUtils.getIPCRenderer = function() {
  
      if (ipcRendererSingleton === undefined) {

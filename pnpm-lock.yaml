@@ -5,6 +5,7 @@ overrides:
   '@oclif/command': ^1.8
   '@types/node': ^16
   '@salesforce/core': 2.33.1
+  vlocity: 1.14.18
   fs-extra: '9'
   js-force: 1.11.0
   '@types/jsforce': 1.9.42
@@ -31,7 +32,7 @@ patchedDependencies:
     hash: edgcaioecqy5l4hjo6q6haitie
     path: patches/typescript@4.6.4.patch
   vlocity@1.14.18:
-    hash: qwnk35chvrotw5mlgicrjke6q4
+    hash: bygunsvwjkgu7so64mpcq5tlfy
     path: patches/vlocity@1.14.18.patch
   '@types/jsforce@1.9.42':
     hash: 6yh4qlsazb5qjqmlnbys4ekmaq
@@ -485,7 +486,7 @@ importers:
       typescript: 4.6.4_edgcaioecqy5l4hjo6q6haitie
       unique-names-generator: 4.7.1
       uuid: 8.3.2
-      vlocity: 1.14.18_qwnk35chvrotw5mlgicrjke6q4
+      vlocity: 1.14.18_xkwfu3clea7mqgoezwr7mcbzku
       vsce: 2.10.0
       vscode-languageclient: 7.0.0
       vscode-test: 1.6.1
@@ -2596,7 +2597,7 @@ packages:
       webpack: 4.x.x || 5.x.x
       webpack-cli: 4.x.x
     dependencies:
-      webpack: 5.72.1_uwqmmsiqajr2oqppikqwvlbxoi
+      webpack: 5.72.1_webpack-cli@4.9.2
       webpack-cli: 4.9.2_webpack@5.72.1
     dev: true
 
@@ -12547,7 +12548,7 @@ packages:
       core-util-is: 1.0.2
       extsprintf: 1.3.0
 
-  /vlocity/1.14.18_qwnk35chvrotw5mlgicrjke6q4:
+  /vlocity/1.14.18_xkwfu3clea7mqgoezwr7mcbzku:
     resolution: {integrity: sha512-nWyngSjZSgjU76LujnKWEw6UEoIN5MYbvNIBjkZjdaZ/M1q9yWsWjOysh2NEpoS/6voTMRyrDREgeAjcT18MUw==}
     engines: {node: '>=10'}
     hasBin: true
@@ -12782,7 +12783,7 @@ packages:
       import-local: 3.1.0
       interpret: 2.2.0
       rechoir: 0.7.1
-      webpack: 5.72.1_uwqmmsiqajr2oqppikqwvlbxoi
+      webpack: 5.72.1_webpack-cli@4.9.2
       webpack-merge: 5.8.0
     dev: true
 

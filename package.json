@@ -80,6 +80,7 @@
         "@oclif/command": "^1.8",
         "@types/node": "^16",
         "@salesforce/core": "2.33.1",
+        "vlocity": "1.14.18",
         "fs-extra": "9",
         "js-force": "1.11.0",
         "@types/jsforce": "1.9.42",

@@ -1239,7 +1239,7 @@
     },
     "scripts": {
         "build": "pnpm pre-build && tsc -b",
-        "esbuild": "pnpm node ./esbuild.js",
+        "esbuild": "ts-node ./esbuild",
         "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.ts --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",

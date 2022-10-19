@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as open from 'open';
+import open from 'open';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
 

@@ -1,4 +1,3 @@
-import 'source-map-support/register';
 import { Command as Commander, Option } from 'commander';
 import { readdirSync } from 'fs';
 import * as path from 'path';
