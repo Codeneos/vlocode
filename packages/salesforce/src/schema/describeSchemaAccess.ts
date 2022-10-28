@@ -14,7 +14,7 @@ export class DescribeSchemaAccess {
 
     private readonly metadataReadChunkSize = 10;
     private readonly metadataReadParallelism = 25;
-    private readonly deferredProcessor = new DeferredWorkQueue<string>((types) => this.describeBulk(types));
+    private readonly deferredProcessor = new DeferredWorkQueue(this.describeBulk, this);
     @injectable.property private readonly logger!: Logger;
 
     private arrayNormalizedFields = [

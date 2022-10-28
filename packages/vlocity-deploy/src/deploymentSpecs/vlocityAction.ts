@@ -1,9 +1,10 @@
-import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
+import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import type { DatapackDeploymentEvent } from '../datapackDeployer';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@deploymentSpec({ datapackFilter: 'VlocityAction' })
 export class VlocityAction implements DatapackDeploymentSpec {
 
     public constructor(

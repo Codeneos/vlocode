@@ -42,7 +42,7 @@ export class ToolingApiSchemaAccess {
         'ChangeEvent', 'Share', 'Feed', 'History', '__hd', '__ViewStat', '__VoteStat', '__ka', '__kav', '__OwnerSharingRule'
     ];
 
-    private readonly deferredProcessor = new DeferredWorkQueue<string>((types) => this.getEntityDefinitions(types));
+    private readonly deferredProcessor = new DeferredWorkQueue(this.getEntityDefinitions, this);
     @injectable.property private readonly logger!: Logger;
 
     constructor(private readonly connectionProvider: JsForceConnectionProvider, private readonly schemaStore: SchemaDataStore) {

@@ -60,11 +60,13 @@ const datapackDeploymentDefaultOptions = {
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> implements DependencyResolver {
+
+    public readonly options: Readonly<DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions>;
+
     private readonly errors = new Array<DatapackDeploymentRecord>();
     private readonly deployed = new Array<DatapackDeploymentRecord>();
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
-    private readonly options: DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions;
     private readonly dependencyResolver: DependencyResolver;
 
     public get deployedRecordCount() {
@@ -109,10 +111,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         super();
         this.options = { ...withDefaults(options, datapackDeploymentDefaultOptions) };
         this.dependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
-    }
-
-    public getOptions() : Readonly<DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions> {
-        return this.options;
     }
 
     public add(...records: DatapackDeploymentRecord[]): this {
@@ -356,43 +354,56 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return [...(this.recordGroups.get(datapackKey) ?? [])];
     }
 
-    private async createDeploymentBatch(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        // prepare batch
-        const batch = new RecordBatch(this.schemaService, this.options);
-        const recordsForLookup = [...Iterable.filter(datapacks.values(), rec => !rec.skipLookup)];
-
+    private async resolveExistingIds(datapacks: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        // prepare batch        
+        const recordsForLookup = [...Iterable.filter(datapacks, rec => !rec.skipLookup)];
         this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
         const ids = await this.lookupService.lookupIds(recordsForLookup, cancelToken);
+
         for (const [i, datapack] of recordsForLookup.entries()) {
-            const existingId = ids[i];
+            const existingId = ids[i];            
             if (existingId) {
                 datapack.setAction(DeploymentAction.Update, existingId);
             } else {
                 datapack.setAction(DeploymentAction.Insert);
             }
         }
+    }    
 
-        let recordStatuses: Map<string, OrgRecordStatus> | undefined = undefined;
-        if (this.options.deltaCheck) {
-            recordStatuses = await this.lookupService.compareRecordsToOrgData(recordsForLookup, cancelToken);
-        }
+    /**
+     * Compared the to be deployed records to the records in the org
+     * @param records Records to deploy
+     * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
+     */
+    private async createDeploymentBatch(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        const batch = new RecordBatch(this.schemaService, this.options);
+        const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records, cancelToken) : undefined;
 
-        for (const datapack of datapacks.values()) {
-            if (datapack.recordId) {
-                const status = recordStatuses?.get(datapack.recordId);
+        for (const record of records) {
+            if (record.recordId) {
+                const status = recordStatuses?.get(record.recordId);
                 if (status?.inSync) {
-                    datapack.setAction(DeploymentAction.Skip);
+                    record.setAction(DeploymentAction.Skip);
                     continue;
                 } else if(status) {
-                    this.logger.verbose(`Record out of sync ${datapack.recordId} (${datapack.sobjectType})`, status.mismatchedFields)
+                    this.logger.verbose(`Record out of sync ${record.recordId} (${record.sobjectType})`, status.mismatchedFields)
                 }
-                batch.addUpdate(datapack.sobjectType, datapack.values, datapack.recordId, datapack.sourceKey);
+                batch.addUpdate(record.sobjectType, record.values, record.recordId, record.sourceKey);
             } else {
-                batch.addInsert(datapack.sobjectType, datapack.values, datapack.sourceKey);
+                batch.addInsert(record.sobjectType, record.values, record.sourceKey);
             }
         }
 
         return batch;
+    }
+
+    /**
+     * Compared the to be deployed records to the records in the org
+     * @param records Records 
+     * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
+     */
+    private async getRecordSyncStatus(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId)], cancelToken);
     }
 
     private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
@@ -447,18 +458,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             // After dependency resolution no datapacks left to deploy; move on to next chunk
             // but it's likely already over from here on..
             return;
-        }
-        const batch = await this.createDeploymentBatch(datapackRecords, cancelToken);
-
+        }    
+        
         if (cancelToken?.isCancellationRequested) {
             await this.emit('onCancel', this, { hideExceptions: true, async: true });
             return;
         }
 
-        // execute batch
-        const connection = await this.connectionProvider.getJsForceConnection();
+        // emit before deploy events; handlers can modify records before deployment is started
+        await this.resolveExistingIds(datapackRecords.values(), cancelToken)
         await this.emit('beforeDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
         await this.emit('beforeDeployGroup', [...Iterable.map(recordGroupsStarted, key => recordGroups.get(key)!)], { hideExceptions: true });
+
+        // execute batch
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const batch = await this.createDeploymentBatch(datapackRecords.values(), cancelToken);
 
         try {
             this.logger.log(`Deploying ${batch.size()} records...`);

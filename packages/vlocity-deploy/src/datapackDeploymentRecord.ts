@@ -17,6 +17,8 @@ export enum DeploymentAction {
     Skip
 }
 
+export type DeployedDatapackDeploymentRecord = DatapackDeploymentRecord & { recordId: string };
+
 export class DatapackDeploymentRecord {
 
     private readonly _warnings = new Array<string>();

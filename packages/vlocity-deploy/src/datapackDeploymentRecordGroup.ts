@@ -11,7 +11,7 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
      * @param key Key of this group
      * @param records Records
      */
-    public constructor(public readonly key: string, private readonly records = new Array<DatapackDeploymentRecord>()) {
+    public constructor(public readonly key: string, public readonly records = new Array<DatapackDeploymentRecord>()) {
     }
 
     public [Symbol.iterator]() {
@@ -62,5 +62,14 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
      */
     public getRecordsOfType(sobjectType: string) : DatapackDeploymentRecord[] {
         return this.records.filter(record => record.sobjectType == sobjectType || record.sobjectType.endsWith(`__${sobjectType}`));
+    }
+
+    /**
+     * Get a deployment record with the specified record id.
+     * @param id Salesforce record id
+     * @returns The deployment record matching the specified ID or undefined
+     */
+    public getRecordById(id: string) : DatapackDeploymentRecord | undefined {
+        return this.records.find(record => record.recordId === id);
     }
 }

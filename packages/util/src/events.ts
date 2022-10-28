@@ -22,7 +22,7 @@ interface EventToken {
 
 type EventMap = Record<string, any>;
 type EventKey<T extends EventMap> = string & keyof T;
-type EventReceiver<T> = (params: T) => any | Promise<any>;
+type EventReceiver<T> = ( params: T) => any | Promise<any>;
 
 export type AsyncEventHandler<T extends EventMap> = {
     [K in keyof T]?: EventReceiver<T[K]>

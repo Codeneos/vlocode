@@ -8,7 +8,9 @@ export enum DatapackDeploymentSpecFunctions {
     afterRecordConversion,
     beforeDependencyResolution,
     beforeDeploy,
-    afterDeploy
+    afterDeploy,
+    beforeDeployRecord,
+    afterDeployRecord
 }
 
 /**
@@ -19,6 +21,7 @@ export enum DatapackDeploymentSpecFunctions {
  * For many standard datapacks spec logic is implemented under the {@link ./deploymentSpecs} folder.
  */
 export interface DatapackDeploymentSpec {
+
     /**
      * This function executes before a datapack is converted into a set of {@link DatapackDeploymentRecord}'s and allow changing the datapack 
      * data, correct faulty field values that would otherwise cause errors during record conversion or remove certain fields that should not be deployed. 
@@ -68,6 +71,24 @@ export interface DatapackDeploymentSpec {
      * @param event event object
      */
     afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
+
+    /**
+     * Executed just before the records are being deployed; the event contains a readonly array of records. At this stage values for the records can still be manipulated. 
+     * This hook point should only be used to run logic that depends on all dependencies on individual record level are resolved.
+     * 
+     * Note: this runs on record level and use {@link beforeDeploy} to run datapack activation processes.
+     * @param event Array of records that is going to be deployed
+     */
+    beforeDeployRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
+
+    /**
+     * Executes after a group of records is deployed, at this stage it is not possible to change any field value anymore.
+     * The hook point can be used to run post-deployment validations or post-deployment activation processes.
+     * 
+     * Note: this runs on record level and use {@link afterDeploy} to run datapack activation processes.
+     * @param event  Array of records that got deployed; contains both the failed and success records.
+     */
+    afterDeployRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
 }
 
 /**
@@ -128,4 +149,6 @@ export class DatapackDeploymentSpecGroup implements DatapackDeploymentSpec {
     public beforeDependencyResolution?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
     public beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
     public afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
+    public beforeDeployRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
+    public afterDeployRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
 }

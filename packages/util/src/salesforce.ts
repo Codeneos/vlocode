@@ -96,7 +96,7 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
  * Normalizes a Salesforce field or class name by removing the namespace prefix, dropping the __c postfix and replacing
  * any underscores in the middle of the name.
  */
-export const normalizeSalesforceName = cacheFunction((name: string) : string => {
+export const normalizeSalesforceName = cacheFunction((name: string) => {
     let strippedName = name.replace(/(^.*?__)?(.*?)(__(c|r)$)/gi, '$2');
     strippedName = strippedName.substring(0,1).toLowerCase() + strippedName.substring(1);
     // Some salesforce names are already in lower camel case; only convert the ones that use underscores
@@ -111,7 +111,7 @@ export const normalizeSalesforceName = cacheFunction((name: string) : string => 
         strippedName += '__r';
     }
     return strippedName;
-}, 'normalizeSalesforceName', -1);
+});
 
 /**
  * Normalizes a name to a valid js property by replacing any special characters and changing the name to lower camel case:

@@ -1,13 +1,14 @@
-import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import { SalesforceDeployService, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
+import { Logger } from '@vlocode/core';
+import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
 import { forEachAsyncParallel, Iterable, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
-import type { DatapackDeploymentEvent, DatapackDeploymentOptions } from '../datapackDeployer';
+import type { DatapackDeploymentEvent } from '../datapackDeployer';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { OmniScriptActivator } from '../omniScript/omniScriptActivator';
+import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
-@injectable({ lifecycle: LifecyclePolicy.singleton })
+@deploymentSpec({ datapackFilter: /^OmniScript|IntegrationProcedure$/i })
 export class OmniScript implements DatapackDeploymentSpec {
 
     private readonly lwcEnabledDatapacks = new Set<string>();
@@ -15,7 +16,6 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: OmniScriptActivator,
-        @injectable.param('DatapackDeploymentOptions') private readonly options: DatapackDeploymentOptions,
         private readonly logger: Logger) {
     }
 
@@ -80,7 +80,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         await this.activateScripts(event);
 
         // Then compile the LWC components; this is not done in a parallel loop to avoid LOCK errors from the tooling API
-        if (!this.options.skipLwcActivation) {
+        if (!event.deployment.options.skipLwcActivation) {
             await this.deployLwcComponents(event);
         }
     }
@@ -111,7 +111,7 @@ export class OmniScript implements DatapackDeploymentSpec {
 
         await forEachAsyncParallel(Iterable.filter(event.getDeployedRecords('OmniScript__c'), r => this.lwcEnabledDatapacks.has(r.datapackKey)), async record => {
             try {
-                if (this.options.useMetadataApi) {
+                if (event.deployment.options.useMetadataApi) {
                     packages.push(await this.activator.getLwcComponentBundle(record.recordId));
                 } else {
                     await this.activator.activateLwc(record.recordId, { toolingApi: true });

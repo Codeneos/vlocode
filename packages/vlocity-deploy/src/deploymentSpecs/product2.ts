@@ -1,17 +1,13 @@
-import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
-import { JsForceConnectionProvider } from '@vlocode/salesforce';
+import { Logger } from '@vlocode/core';
+import { JsForceConnectionProvider, SalesforceLookupService } from '@vlocode/salesforce';
+import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import * as moment from 'moment';
 import { VlocityDatapack } from '../datapack';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@deploymentSpec({ datapackFilter: 'Product2' })
 export class Product2 implements DatapackDeploymentSpec {
-
-    public constructor(
-        private readonly salesforceService: JsForceConnectionProvider,
-        private readonly logger: Logger) {
-    }
 
     public preprocess(datapack: VlocityDatapack) {
         this.patchStartDates(datapack);

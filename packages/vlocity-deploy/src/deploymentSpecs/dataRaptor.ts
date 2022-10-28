@@ -2,8 +2,9 @@ import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
-@injectable({ lifecycle: LifecyclePolicy.singleton })
+@deploymentSpec({ datapackFilter: 'DataRaptor' })
 export class DataRaptor implements DatapackDeploymentSpec {
 
     public constructor(

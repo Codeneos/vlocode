@@ -1,13 +1,14 @@
 import * as path from 'path';
-import { injectable , LifecyclePolicy , Logger } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
 import type { DatapackDeploymentEvent } from '../datapackDeployer';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
 import { SassCompiler } from '../sass';
+import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@deploymentSpec({ datapackFilter: /^VlocityUITemplate$/i })
 export class VlocityUITemplate implements DatapackDeploymentSpec {
 
     public constructor(
