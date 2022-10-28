@@ -83,12 +83,14 @@ index 607923b4fb1769fdee58207a4509d65f3692a4f6..df44faf09e807562c984d086dc8b67e8
  };
  
  /**
-@@ -206,7 +207,7 @@ function parseText(str) { return str; }
+@@ -206,7 +207,10 @@ function parseText(str) { return str; }
   * @protected
   */
  HttpApi.prototype.isSessionExpired = function(response) {
--  return response.statusCode === 401;
-+  return (response.statusCode === 403 && response.body == 'Bad_OAuth_Token') || response.statusCode === 401;
++  if (response.statusCode === 403) {
++    return response.body == 'Bad_OAuth_Token' || response.body == 'Missing_OAuth_Token';
++  }
+   return response.statusCode === 401;
  };
  
  /**
