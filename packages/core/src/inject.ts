@@ -87,6 +87,14 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
             const serviceName = typeof serviceType === 'string' ? serviceType : (serviceType.prototype?.constructor?.name ?? serviceType.name);
             Reflect.defineMetadata(`dependency:inject:${parameterIndex}`, serviceName, target);
         };
+    },
+    /**
+     * Check if a class-type is decorated with the {@link injectable} decorator.
+     * @param serviceType class or constructor like object
+     * @returns `true` if the class is decorated otherwise `false`
+     */
+    isDecorated: function (serviceType: ServiceType) {
+        return serviceType[InjectableDecorated] !== null;
     }
 });
 
