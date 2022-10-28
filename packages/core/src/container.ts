@@ -129,6 +129,10 @@ export class Container {
             return undefined;
         }
 
+        if (typeof service !== 'string' && Object.getPrototypeOf(this) === service.prototype) {
+            return resolver as unknown as T;
+        }
+
         const provider = this.providers.get(serviceName);
         if (provider && receiver) {
             return provider(receiver);
@@ -221,7 +225,7 @@ export class Container {
             if (ctor[InjectableIdentity] === originalCtor[InjectableIdentity]) {
                 // Only use the original ctor shares the same identity as the decorated ctor
                 // if the identities are different then the original ctor is a different class and we should not use it
-                ctor = ctor[InjectableOriginalCtor];
+                ctor = originalCtor;
             }            
         } 
         
@@ -265,7 +269,7 @@ export class Container {
                 if (instanceGuid && args[i] !== undefined) {
                     this.trackServiceDependencies(instanceGuid, args[i]);
                 }
-            }
+            } 
         }
 
         return args;
