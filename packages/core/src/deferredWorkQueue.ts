@@ -11,7 +11,9 @@ export interface WorkItemResult<T = any> {
  * of otherwise singular work items. A processor function/delegate is passed which will process all queue items in bulk. Optionally a chunk size can be 
  * specified which determines the size of the chunks passed to the processor delegate.
  */
-export class DeferredWorkQueue<TRequest, TResolve = any> {
+export class DeferredWorkQueue<TRequest, TResolve> {
+    /** Processor fn */
+    private readonly processor: (requests: TRequest[]) => Promise<Array<WorkItemResult<TResolve | undefined>>>;
     /** Queue with items that are going to be worked upon */
     private readonly requestQueue = new Array<{ id: number, deferred: DeferredPromise<TResolve | undefined>; request: TRequest }>();
     /** Used to keep track of work items */
@@ -22,11 +24,17 @@ export class DeferredWorkQueue<TRequest, TResolve = any> {
     private processing = false;
 
     constructor(
-        private readonly processor: (requests: TRequest[]) => Promise<Array<WorkItemResult<TResolve | undefined>>>,
+        processor: (requests: TRequest[]) => Promise<Array<WorkItemResult<TResolve | undefined>>>,
+        thisArg?: any,
         /** Time to wait until executing the queued lookups */ 
         private readonly processWaitTime = 50,
         /** Size of the chunks */
-        private readonly chunkSize: number | undefined = undefined) {
+        private readonly chunkSize: number | undefined = undefined
+    ) {
+        if (thisArg) {
+            processor = processor.bind(thisArg);
+        }
+        this.processor = processor;
     }
 
     /**
