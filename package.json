@@ -1,7 +1,7 @@
 {
     "private": true,
     "name": "vlocode-project",
-    "packageManager": "pnpm@7.12.2",
+    "packageManager": "pnpm@7.14.0",
     "description": "Vlocode project packages",
     "version": "0.16.30",
     "license": "MIT",

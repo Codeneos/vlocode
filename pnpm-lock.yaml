@@ -14,7 +14,7 @@ overrides:
 
 patchedDependencies:
   jsforce@1.11.0:
-    hash: psrljsxm3rwhnhmagxtr6v2nui
+    hash: e7ayos5jozkcmldmo4pozdageu
     path: patches/jsforce@1.11.0.patch
   fast-glob@3.2.11:
     hash: les5rwnofyjhvbdlmiugb25agu
@@ -221,7 +221,7 @@ importers:
       fs-extra: 9.1.0
       glob: 7.2.0
       js-yaml: 4.1.0
-      jsforce: 1.11.0_psrljsxm3rwhnhmagxtr6v2nui
+      jsforce: 1.11.0_e7ayos5jozkcmldmo4pozdageu
       jszip: 3.9.1
       log-symbols: 4.1.0
       moment: 2.29.3
@@ -440,7 +440,7 @@ importers:
       globby: 11.1.0
       jest: 28.1.3_24esr3464d2gifgmzdt2yhkw2m
       js-yaml: 4.1.0
-      jsforce: 1.11.0_psrljsxm3rwhnhmagxtr6v2nui
+      jsforce: 1.11.0_e7ayos5jozkcmldmo4pozdageu
       json-loader: 0.5.7
       jszip: 3.9.1
       log-symbols: 4.1.0
@@ -1870,7 +1870,7 @@ packages:
       faye: 1.4.0
       graceful-fs: 4.2.10
       jsen: 0.6.6
-      jsforce: 1.11.0_psrljsxm3rwhnhmagxtr6v2nui
+      jsforce: 1.11.0_e7ayos5jozkcmldmo4pozdageu
       jsonwebtoken: 8.5.0
       mkdirp: 1.0.4
       semver: 7.3.7
@@ -8027,7 +8027,7 @@ packages:
     hasBin: true
     dev: true
 
-  /jsforce/1.11.0_psrljsxm3rwhnhmagxtr6v2nui:
+  /jsforce/1.11.0_e7ayos5jozkcmldmo4pozdageu:
     resolution: {integrity: sha512-vYNXJXXdz9ZQNdfRqq/MCJ/zU7JGA7iEduwafQDzChR9FeqXgTNfHTppLVbw9mIniKkQZemmxSOtl7N04lj/5Q==}
     engines: {node: '>=4.0'}
     hasBin: true
@@ -10936,7 +10936,7 @@ packages:
       heroku-cli-util: 8.0.12
       js2xmlparser: 3.0.0
       jsen: 0.6.6
-      jsforce: 1.11.0_psrljsxm3rwhnhmagxtr6v2nui
+      jsforce: 1.11.0_e7ayos5jozkcmldmo4pozdageu
       klaw: 2.1.1
       lodash: 4.17.21
       mime: 1.6.0
