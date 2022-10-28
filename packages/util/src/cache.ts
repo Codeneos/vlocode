@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { isPromise, isThenable } from './async';
 
 export interface CacheOptions {
@@ -34,6 +35,19 @@ export interface CacheOptions {
  * Private property on the target object used to store cached results;
  */
 const cacheStoreProperty = Symbol('[cacheStore]');
+const cacheStoreKeyProperty = Symbol('[globalCacheStoreKey]');
+
+/**
+ * Global cache store property that can be accessed through `global[cacheStoreGlobal]`
+ */
+const cacheStoreGlobal = Symbol('[globalCacheStore]');
+
+const cacheKeyPrefixProperty = Symbol('[cachePrefix]');
+const cacheOptionsProperty = Symbol('[cacheOptions]');
+
+if (!global[cacheStoreGlobal]) {
+    global[cacheStoreGlobal] = {};
+}
 
 /**
  * Describes a entry in the cache of an object; allows the cache to return promise wrapped values and determine the age of a cache entry upon retrieval
@@ -106,33 +120,51 @@ class CacheEntry {
 }
 
 /**
- * Get the cache map for an object
- * @param this Then entry on which to get the cache
+ * Get the cache store
+ * @param instance Class instance
+ * @param target The target function that is being cached
+ * @param options Cache options as passed to the caching function
+ * @returns Cache store as map
  */
-function getCacheStore(target: any) : Map<string, CacheEntry> {
-    let cacheStore = target[cacheStoreProperty];
-    if (!cacheStore) {
-        cacheStore = new Map<string, CacheEntry>();
-        target[cacheStoreProperty] = cacheStore;
+function getCacheStore(instance: any, target: any, options: CacheOptions) : Map<string, CacheEntry> {
+    if ((typeof target !== 'object' && typeof target !== 'function') || target === null) {
+        throw new Error('Unsupported clear target; target should either be an object or function and should not be null');
     }
-    return cacheStore;
+
+    if (instance && options.scope !== 'global') {
+        // only for class methods the cached response can be stored on the class instance
+        return instance[cacheStoreProperty] ?? (instance[cacheStoreProperty] = new Map<string, CacheEntry>());
+    }
+
+    // Property key of the cache in the global cache store
+    const storeKey = target[cacheStoreKeyProperty] ?? (target[cacheStoreKeyProperty] = randomUUID());
+
+    // Create new store or 
+    return global[cacheStoreGlobal][storeKey] ?? (global[cacheStoreGlobal][storeKey] = new Map<string, CacheEntry>());
 }
 
 /**
  * Clears the cache for an object
- * @param this The object instances for which to clear the cache.
+ * @param target The object to clear the cache on
  */
 export function clearCache<T>(target: T) : T {
-    const cacheStore = target[cacheStoreProperty];
-    if (cacheStore) {
-        cacheStore.clear();
+    if (typeof target === 'function') {
+        const storeKey = target[cacheStoreKeyProperty];
+        if (storeKey && global[cacheStoreGlobal][storeKey]) {
+            global[cacheStoreGlobal][storeKey].clear();
+        }
     }
+
+    if (typeof target === 'object' && target !== null && target[cacheStoreProperty]) {
+        target[cacheStoreProperty].clear();
+    }
+
     return target;
 }
 
 /**
  * Cache all results from this function in a local cache with a specified TTL in seconds
- * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
+ * @param ttlOrOptions Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
 export function cache(ttlOrOptions?: number | CacheOptions) {
     function replaceFunctionOrGetter(descriptor: PropertyDescriptor, newFn: any) {
@@ -144,29 +176,34 @@ export function cache(ttlOrOptions?: number | CacheOptions) {
         return descriptor;
     }
 
-    return function (_target: any, name: string, descriptor: PropertyDescriptor) {
+    return function (target: any, _name: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.get || descriptor.value;
-        return replaceFunctionOrGetter(descriptor, cacheFunction(originalMethod, name, ttlOrOptions));
+        return replaceFunctionOrGetter(descriptor, cacheFunction(originalMethod, ttlOrOptions));
     };
 }
 
 /**
  * Cache all results from this function in a local cache with a specified TTL in seconds
- * @param ttl Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
+ * @param ttlOrOptions Time a cached entry is valid in seconds; any value of 0 or lower indicates the cache never not expires
  */
-export function cacheFunction<T extends (...args: any[]) => any>(target: T, name: string, ttlOrOptions?: number | CacheOptions | undefined) : T {
+export function cacheFunction<T extends (...args: any[]) => any>(targetFn: T, ttlOrOptions?: number | CacheOptions | undefined) : T {
     const options = typeof ttlOrOptions === 'number' || !ttlOrOptions ? { ttl: ttlOrOptions ?? -1 } : ttlOrOptions;
+    const storePrefix = targetFn[cacheKeyPrefixProperty] ?? (targetFn[cacheKeyPrefixProperty] = randomUUID());
+
+    if (!targetFn[cacheOptionsProperty]) {
+        targetFn[cacheOptionsProperty] = ttlOrOptions;
+    }
 
     const cachedFunction = function(...args: any[]) {
-        const cache = getCacheStore(options.scope == 'global' ? target : (this ?? target));
-        const key = args.reduce((checksum, arg) => checksum + serializeArgument(arg), `${name}:`);
+        const cache = getCacheStore(this, targetFn, options);
+        const key = args.reduce((checksum, arg) => checksum + serializeArgument(arg), `${storePrefix}:`);
         const cacheEntry = cache.get(key);
         if (cacheEntry) {
             return cacheEntry.value;
         }
 
         // Reload value and put it in the cache
-        let newValue = target.apply(this, args);
+        let newValue = targetFn.apply(this, args);
         if (options.ttl && options.ttl > 0) {
             // Follow TTL
             setTimeout(() => cache.delete(key), options.ttl * 1000);
