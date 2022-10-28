@@ -59,6 +59,13 @@ export class RecordBatch {
     private readonly bulkPollTimeout = 30 * 60 * 1000; // 30-min for large jobs
     private readonly options = { ...recordBatchDefaultOptions };
 
+    /**
+     * Returns the number of records in this batch
+     */
+     public get size() {
+        return this.recordCount;
+    }
+
     constructor(
         private readonly schemaService: SalesforceSchemaService,
         options?: RecordBatchOptions,
@@ -72,19 +79,12 @@ export class RecordBatch {
         }
     }
 
-    /**
-     * Returns the number of records in this batch
-     */
-    public size() {
-        return this.recordCount;
-    }
-
     public async *execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
         if (this.isExecuting) {
             throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
         }
 
-        if (!this.size()) {
+        if (!this.size) {
             return;
         }
 

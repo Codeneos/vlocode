@@ -380,6 +380,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records, cancelToken) : undefined;
 
         for (const record of records) {
+            if (record.isSkipped) {
+                // Deployment specs can skip records; do not add them to the batch
+                continue;
+            }
+
             if (record.recordId) {
                 const status = recordStatuses?.get(record.recordId);
                 if (status?.inSync) {
@@ -403,7 +408,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
     private async getRecordSyncStatus(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId)], cancelToken);
+        return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)], cancelToken);
     }
 
     private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
@@ -474,9 +479,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         const connection = await this.connectionProvider.getJsForceConnection();
         const batch = await this.createDeploymentBatch(datapackRecords.values(), cancelToken);
 
-        try {
-            this.logger.log(`Deploying ${batch.size()} records...`);
+        if (batch.size > 0) {
+            this.logger.log(`Deploying ${batch.size} records...`);
+        }
 
+        try {
             for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
                 const datapackRecord = datapackRecords.get(result.ref);
 

@@ -3,10 +3,12 @@ import { SalesforceLookupService } from '@vlocode/salesforce';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentRecord, DeploymentAction } from '../datapackDeploymentRecord';
 import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
+import { createHash } from 'crypto';
 
 interface ContentVersionRecord {
-    ContentDocumentId: string,
-    VersionNumber: number
+    Checksum: string;
+    ContentDocumentId: string;
+    VersionNumber: number;
 }
 
 @deploymentSpec({ recordFilter: /^ContentVersion$/i })
@@ -25,7 +27,7 @@ export class ContentVersion implements DatapackDeploymentSpec {
 
     private async lookupProcessor(ids: string[]) {
         const lookupFilters = ids.map(id => ({ id }));
-        const results = await this.lookupService.lookup('ContentVersion', lookupFilters, ['id', 'ContentDocumentId', 'VersionNumber']);
+        const results = await this.lookupService.lookup('ContentVersion', lookupFilters, ['id', 'ContentDocumentId', 'VersionNumber', 'Checksum']);
 
         return ids.map<WorkItemResult<ContentVersionRecord>>(id => ({
             status: 'fulfilled',
@@ -43,7 +45,23 @@ export class ContentVersion implements DatapackDeploymentSpec {
             return;
         }
 
-        record.setAction(DeploymentAction.Insert);
-        record.value('ContentDocumentId', currentContentVersion.ContentDocumentId);
+        // Calculate the md5 hash from the records VersionData; if the same skip updating it
+        const recordChecksum = this.calculateVersionDataChecksum(record);
+        
+        if (recordChecksum === currentContentVersion.Checksum) {
+            this.logger.verbose(`Skip update of "${record.datapackKey}" -- content checksum matches: ${recordChecksum}`)
+            record.setAction(DeploymentAction.Skip);
+        } else {
+            record.setAction(DeploymentAction.Insert);
+            record.value('ContentDocumentId', currentContentVersion.ContentDocumentId);
+        }
+    }
+
+    private calculateVersionDataChecksum(record: DatapackDeploymentRecord) {
+        try {
+            return createHash('md5').update(Buffer.from(record.value('VersionData'), 'base64')).digest("hex");
+        } catch(err) {
+            record.addWarning(`Unable to digest md5 checksum due to crypto error: ${err.message}`);
+        }
     }
 }

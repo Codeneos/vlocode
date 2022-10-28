@@ -240,8 +240,8 @@ export class DatapackDeployer {
             }
         }
 
-        if (recordBatch.size() > 0) {
-            this.logger.info(`Updating ${recordBatch.size()} records with mismatching values on: ${fieldNames.join(', ')}`);
+        if (recordBatch.size > 0) {
+            this.logger.info(`Updating ${recordBatch.size} records with mismatching values on: ${fieldNames.join(', ')}`);
 
             // For global key updates to always succeed ensure that the triggers are off
             await this.setVlocityTriggerState(false);
