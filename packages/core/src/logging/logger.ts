@@ -59,15 +59,14 @@ export class Logger {
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
 
     public write(level: LogLevel, ...args: any[]) : void {
-        if (this.manager) {
-            const logLevel = this.manager.getLogLevel(this.name);
-            if (level < logLevel) {
-                return;
-            }
-            const filter = this.manager.getFilter(this.name);
-            if (filter && !filter({ logger: this, severity: level, args: args })) {
-                return;
-            }
+        const logLevel = this.manager?.getLogLevel(this.name);        
+        if (logLevel !== undefined && level < logLevel) {
+            return;
+        }
+
+        const filter = this.manager?.getFilter(this.name);
+        if (filter && !filter({ logger: this, severity: level, args: args })) {
+            return;
         }
 
         this.writeEntry({
