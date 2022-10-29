@@ -16,7 +16,7 @@ export class CalculationProcedure implements DatapackDeploymentSpec {
 
     public async afterDeploy(event: DatapackDeploymentEvent) {
         for (const [sobjectType, records] of Object.entries(groupBy(event.getDeployedRecords(), rec => rec.sobjectType))) {
-            this.activateRecords(sobjectType, records, { isEnabled__c: true });
+            await this.activateRecords(sobjectType, records, { isEnabled__c: true });
         }
     }
 

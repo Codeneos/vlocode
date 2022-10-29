@@ -161,7 +161,7 @@ export class SalesforceSchemaService {
      * @param fieldName Field Name
      */
     public async sObjectHasField(type: string, fieldName: string) : Promise<boolean> {
-        return !!this.describeSObjectField(type, fieldName, false);
+        return (await this.describeSObjectField(type, fieldName, false)) !== undefined;
     }
 
     /**

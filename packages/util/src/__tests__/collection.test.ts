@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import 'jest';
 import * as collection from '../collection';
 

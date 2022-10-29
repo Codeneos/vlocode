@@ -16,7 +16,7 @@ enum QueryKeywords {
     LIMIT = 'limit', 
     OFFSET = 'offset', 
     FOR = 'for' 
-};
+}
 
 /**
  * List of all query reserved keywords derrived from the QueryKeywords enum
@@ -75,7 +75,7 @@ export class QueryFormatter {
         return queryParts.join(' ');
     }
 
-    private formatCondition(condition: QueryBinary | string) {
+    private formatCondition(condition: QueryBinary | string): string {
         if (typeof condition === 'string') {
             return this.updateNamespace(condition);
         }        
@@ -102,7 +102,7 @@ export class QueryParser implements SalesforceQueryData {
 
     public sobjectType: string;
     public fieldList: string[];
-    public whereCondition?: QueryBinary;
+    public whereCondition?: QueryBinary | string;
     public limit?: number;
     public offset?: number;
     public orderBy?: string[];
@@ -176,7 +176,7 @@ export class QueryParser implements SalesforceQueryData {
         return new QueryParser('').parseQueryCondition(new Parser(query));
     }    
 
-    private parseQueryCondition(parser: Parser) {
+    private parseQueryCondition(parser: Parser): string | QueryBinary {
         let backBuffer = '';
 
         while(parser.hasMore()) {
@@ -327,7 +327,7 @@ class Parser {
         }     
 
         let blockLevel = 1;
-        let openingIndex = this.index - blockOpening.length;
+        const openingIndex = this.index - blockOpening.length;
 
         while(this.hasMore()) {
             if (this.acceptMatch(blockOpening)) {

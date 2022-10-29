@@ -120,7 +120,7 @@ class Vlocode {
         return developerLogsView;
     }
 
-    private async activate(context: vscode.ExtensionContext) {
+    private activate(context: vscode.ExtensionContext) {
         // All SFDX and Vlocity commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
         this.setWorkingDirectory();
@@ -200,7 +200,7 @@ class Vlocode {
         void this.service.initialize();
     }
 
-    private async deactivate() {
+    private deactivate() {
         // Log to debug as other output channels will be disposed
         this.service.dispose();
     }

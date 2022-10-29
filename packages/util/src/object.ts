@@ -1,4 +1,4 @@
-import * as uuid from 'uuid';
+import { randomUUID } from 'crypto';
 import { stringEquals } from './string';
 
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
@@ -10,7 +10,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
 
     constructor(
         private readonly transformProperty: PropertyTransformer<T>,
-        private readonly proxyIdentity = uuid.v4()) {
+        private readonly proxyIdentity = randomUUID()) {
     }
 
     public get(target: T, name: string | number | symbol) {
@@ -29,7 +29,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
         return this.wrapValue(target[key || name]);
     }
 
-    public set(target: T, name: string | number | symbol, value) {
+    public set(target: T, name: string | number | symbol, value: any) {
         if (value && value[proxyIdentitySymbol]) {
             value = value[proxyTargetSymbol];
         }
@@ -62,10 +62,10 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
     }
 
     private wrapValue(value: any) : any {
-        if (value && value[proxyIdentitySymbol] == this.proxyIdentity) {
-            return value;
-        }
         if (typeof value === 'object' && value !== null) {
+            if (value[proxyIdentitySymbol] == this.proxyIdentity) {
+                return value;
+            }
             if (Array.isArray(value)) {
                 return this.wrapArray(value);
             }
@@ -115,7 +115,7 @@ export function transformPropertyProxy<T extends object>(target: T, transformer:
  * @param obj Object from which to get the values
  * @param depth Max object depth to go down the tree
  */
-export function getObjectValues(obj: any, depth = -1) : any[] {
+export function getObjectValues(obj: object, depth = -1) : any[] {
     const properties: any[] = [];
     Object.keys(obj).forEach(key => {
         if (typeof obj[key] === 'object') {
@@ -291,4 +291,20 @@ export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: an
     }
 
     return obj;
+}
+
+/**
+ * Type-safe function to get the error message from an error thrown in a try-catch block
+ * @param err err as thrown 
+ * @param withStack optionally include the stack in the error message; defaults to false
+ * @returns String version of the err
+ */
+export function getErrorMessage(err: unknown | any, withStack?: boolean): string {
+    if (typeof err === 'string') {
+        return err;
+    }
+    if (err instanceof Error) {
+        return withStack && err.stack ? err.stack : err.message;
+    }
+    return String(err);
 }

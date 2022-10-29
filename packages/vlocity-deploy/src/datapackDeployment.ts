@@ -1,7 +1,7 @@
 import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
 import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
-import { DatapackLookupService, OrgRecordStatus } from './datapackLookupService';
+import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
@@ -415,9 +415,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         const resolutionQueue = Iterable.transform(datapacks.values(), {
             filter: datapack => datapack.hasUnresolvedDependencies,
-            map: datapack => datapack.resolveDependencies(this).catch(err => {
-                this.handleError(datapack, err);
+            map: datapack => datapack.resolveDependencies(this).catch(err => {                
                 datapacks.delete(datapack.sourceKey);
+                void this.handleError(datapack, err);
             })
         });
 
@@ -523,15 +523,16 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
     }
 
-    private async handleError(datapackRecord: DatapackDeploymentRecord, error: Error | string) {
+    private handleError(datapackRecord: DatapackDeploymentRecord, error: Error | string) {
         const errorMessage = typeof error === 'string' ? error : error.message;
         datapackRecord.updateStatus(DeploymentStatus.Failed, errorMessage);
         this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
-        await this.emit('onError', datapackRecord);
+        void this.emit('onError', datapackRecord, { async: true });
         this.errors.push(datapackRecord);
     }
 
     private isRetryable(error: Error | string) {
+        // TODO: check which errors we should retry
         return true;
     }
 

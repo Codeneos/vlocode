@@ -6,7 +6,7 @@ import MetadataCommand from './metadataCommand';
 
 @vscodeCommand(VlocodeCommand.clearDeploymentQueue)
 export default class ClearMetadataDeploymentQueueCommand extends MetadataCommand {
-    public async execute() {
+    public execute() {
         this.vlocode.commands.get(DeployMetadataCommand).clearQueue();
         void vscode.window.showInformationMessage('Cleared files pending deployment');
     }

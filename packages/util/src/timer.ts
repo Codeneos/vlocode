@@ -19,12 +19,12 @@ export class Timer {
         return `${this.elapsed}ms`;
     }
 
-    public stop(): this {
+    public stop(): string {
         if (!this.#stop) {
             this.#stop = Date.now();
             this.#elapsed += this.#stop - this.#start;
         }
-        return this;
+        return this.toString();
     }
 
     public reset(): this {

@@ -5,24 +5,24 @@ import { QueryFormatter, QueryParser } from '../queryParser';
 describe('QueryParser2', () => {
 
     describe('#parseQueryCondition', () => {
-        it('should parse single condition as string', async () => {
+        it('should parse single condition as string', () => {
             expect(QueryParser.parseQueryCondition(`Id = '12345'`)).toStrictEqual(`Id = '12345'`);
         });
-        it('should parse multiple conditions as binary', async () => {
+        it('should parse multiple conditions as binary', () => {
             expect(QueryParser.parseQueryCondition(`Id = '12345' and Name = '12345'`)).toStrictEqual({
                 left: `Id = '12345'`,
                 operator: 'and',
                 right: `Name = '12345'`
             });
         });
-        it('should parse conditions with keywords', async () => {
+        it('should parse conditions with keywords', () => {
             expect(QueryParser.parseQueryCondition(`select_where_or = '12345' and and_form = '12345'`)).toStrictEqual({
                 left: `select_where_or = '12345'`,
                 operator: 'and',
                 right: `and_form = '12345'`
             });
         });
-        it('should parse multiple conditions as nested binary', async () => {
+        it('should parse multiple conditions as nested binary', () => {
             expect(QueryParser.parseQueryCondition(`Id = '12345' and Name = '12345' and LastModifiedBy = '12345'`)).toStrictEqual({
                 left: `Id = '12345'`,
                 operator: 'and',
@@ -33,7 +33,7 @@ describe('QueryParser2', () => {
                 }
             });
         });
-        it('should parse nested conditions as binary', async () => {
+        it('should parse nested conditions as binary', () => {
             expect(QueryParser.parseQueryCondition(`( Id = '1' or Id = '2' )  and   (Name = 'a' or  Name = 'b'  )`)).toStrictEqual({
                 left: {
                     left: `Id = '1'`,
@@ -48,7 +48,7 @@ describe('QueryParser2', () => {
                 }
             });
         });
-        it('should not parse beyond reserved keyword', async () => {
+        it('should not parse beyond reserved keyword', () => {
             expect(QueryParser.parseQueryCondition(`(Id = '1' or Id = '2') and Name = 'a' limit 10`)).toStrictEqual({
                 left: {
                     left: `Id = '1'`,
@@ -59,7 +59,7 @@ describe('QueryParser2', () => {
                 right: `Name = 'a'`
             });
         });
-        it('should parse deeply nested conditions', async () => {
+        it('should parse deeply nested conditions', () => {
             expect(QueryParser.parseQueryCondition(`Id = '2' and  (Name = 'a' or Name = 'b' and (Id = '3' or (Name = 'a' or Name = 'b')))`)).toStrictEqual({
                 left: `Id = '2'`,
                 operator: 'and',
@@ -82,7 +82,7 @@ describe('QueryParser2', () => {
                 }
             });
         });
-        it('should parse wrapped conditions', async () => {
+        it('should parse wrapped conditions', () => {
             expect(QueryParser.parseQueryCondition(`Id = '2' and (Name = 'a' or Name = 'b') and Id = '4'`)).toStrictEqual({
                 left: `Id = '2'`,
                 operator: 'and',
@@ -99,45 +99,45 @@ describe('QueryParser2', () => {
         });
     });
     describe('#parseFieldsList', () => {
-        it('should parse well formated field list', async () => {
+        it('should parse well formated field list', () => {
             expect(QueryParser.parseFieldsList(`Id, Name, CustomField__c, CustomField__r.Name`))
                 .toStrictEqual([ 'Id', 'Name', 'CustomField__c', 'CustomField__r.Name' ]);
         });
-        it('should parse densly formated field list', async () => {
+        it('should parse densly formated field list', () => {
             expect(QueryParser.parseFieldsList(`Id,Name,CustomField__c,CustomField__r.Name`))
                 .toStrictEqual([ 'Id', 'Name', 'CustomField__c', 'CustomField__r.Name' ]);
         });
-        it('should parse field list with line breaks', async () => {
+        it('should parse field list with line breaks', () => {
             expect(QueryParser.parseFieldsList(`Id,\nName,\nCustomField__c,\nCustomField__r.Name`))
                 .toStrictEqual([ 'Id', 'Name', 'CustomField__c', 'CustomField__r.Name' ]);
         });
-        it('should parse field list with keywords in field names', async () => {
+        it('should parse field list with keywords in field names', () => {
             expect(QueryParser.parseFieldsList(`from_select_where, and_or_test`))
                 .toStrictEqual([ 'from_select_where', 'and_or_test' ]);
         });
-        it('should parse field list with single field', async () => {
+        it('should parse field list with single field', () => {
             expect(QueryParser.parseFieldsList(`from_select_where`))
                 .toStrictEqual([ 'from_select_where' ]);
         });
-        it('should break on field reserved keyword', async () => {
+        it('should break on field reserved keyword', () => {
             expect(QueryParser.parseFieldsList(`Id, Name from Account`))
                 .toStrictEqual([ 'Id', 'Name' ]);
         });
     });
     describe('#parse', () => {
-        it('should parse simple query', async () => {
+        it('should parse simple query', () => {
             const { sobjectType, fieldList } = QueryParser.parse(`select Id, Name from account`);
             expect(sobjectType).toBe('account');
             expect(fieldList).toStrictEqual([ 'Id', 'Name' ]);
         });
-        it('should parse query with condition', async () => {
+        it('should parse query with condition', () => {
             const { sobjectType, fieldList, whereCondition } = 
                 QueryParser.parse(`select Id, Name from account where Name = 'Test'`);
             expect(sobjectType).toBe('account');
             expect(fieldList).toStrictEqual([ 'Id', 'Name' ]);
             expect(whereCondition).toBe(`Name = 'Test'`);
         });
-        it('should parse query with condition and limit', async () => {
+        it('should parse query with condition and limit', () => {
             const { sobjectType, fieldList, whereCondition, limit } = 
                 QueryParser.parse(`select Id, Name from account where Name = 'Test' limit 10`);
             expect(sobjectType).toBe('account');
@@ -145,7 +145,7 @@ describe('QueryParser2', () => {
             expect(whereCondition).toBe(`Name = 'Test'`);
             expect(limit).toBe(10);
         });
-        it('should parse query with condition and limit and offset', async () => {
+        it('should parse query with condition and limit and offset', () => {
             const { sobjectType, fieldList, whereCondition, limit, offset } = 
                 QueryParser.parse(`select Id, Name from account where Name = 'Test' limit 10 offset 20`);
             expect(sobjectType).toBe('account');
@@ -154,7 +154,7 @@ describe('QueryParser2', () => {
             expect(limit).toBe(10);
             expect(offset).toBe(20);
         });
-        it('should parse query with sub-query', async () => {
+        it('should parse query with sub-query', () => {
             const { sobjectType, fieldList } = 
                 QueryParser.parse(`select Id, Name, (select Id from Orders) from account`);
             expect(sobjectType).toBe('account');
@@ -166,7 +166,7 @@ describe('QueryParser2', () => {
 describe('QueryFormatter', () => {
 
     describe('#format', () => {
-        it('should format simple query', async () => {
+        it('should format simple query', () => {
             expect(QueryFormatter.format({
                 sobjectType: 'account',                
                 fieldList: ['Id', 'Name']

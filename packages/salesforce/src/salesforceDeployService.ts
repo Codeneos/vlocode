@@ -138,7 +138,7 @@ export class SalesforceDeployService {
             // Start deploy            
             const connection = await this.salesforce.getJsForceConnection();
             const retrieveJob = await connection.metadata.retrieve({
-                singlePackage, unpackaged: manifest.toJson(apiVersion ?? await this.salesforce.getApiVersion())
+                singlePackage, unpackaged: manifest.toJson(apiVersion ?? this.salesforce.getApiVersion())
             }, undefined);
 
             // Wait for deploy

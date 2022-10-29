@@ -75,10 +75,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
         }
 
         // Queue files
-        selectedFiles.forEach(this.filesPendingDeployment.add, this.filesPendingDeployment);
+        selectedFiles.forEach(this.filesPendingDeployment.add.bind(this.filesPendingDeployment));
 
         // Start deployment
         if (this.deploymentTaskRef === undefined && this.enabled) {
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
             this.deploymentTaskRef = setImmediate(async () => {
                 try {
                     while (this.filesPendingDeployment.size > 0) {
@@ -93,14 +94,14 @@ export default class DeployMetadataCommand extends MetadataCommand {
             this.logger.info(`Deployment queued of ${fileNameText}`);
             void vscode.window.showInformationMessage(`Queued deployment of ${fileNameText} (queue: ${this.filesPendingDeployment.size})...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
                 if (cancel) {
-                    selectedFiles.forEach(this.filesPendingDeployment.delete, this.filesPendingDeployment);
+                    selectedFiles.forEach(this.filesPendingDeployment.delete.bind(this.filesPendingDeployment));
                 }
             });
         }
     }
 
     protected async doDeployMetadata(files: vscode.Uri[]) {
-        const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
+        const apiVersion = this.vlocode.config.salesforce?.apiVersion ?? this.salesforce.getApiVersion();
         const taskTitle = files.length == 1 ? `Deploy ${fileName(files[0].fsPath, true)}` : 'Deploy Metadata';
         await this.vlocode.withActivity({
             progressTitle: taskTitle,

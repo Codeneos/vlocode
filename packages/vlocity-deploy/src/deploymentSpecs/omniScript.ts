@@ -19,14 +19,14 @@ export class OmniScript implements DatapackDeploymentSpec {
         private readonly logger: Logger) {
     }
 
-    public async preprocess(datapack: VlocityDatapack) {
+    public preprocess(datapack: VlocityDatapack) {
         if (datapack.IsLwcEnabled__c) {
             this.lwcEnabledDatapacks.add(datapack.key);
         }
 
         // track local templates
         if (datapack.TestHTMLTemplates__c) {
-            const results = (<string>datapack.TestHTMLTemplates__c).matchAll(/<script[^>]+id=\"([^">]+)\"[^>]*>/igm);
+            const results = (<string>datapack.TestHTMLTemplates__c).matchAll(/<script[^>]+id="([^">]+)"[^>]*>/igm);
             this.embeddedTemplates.set(datapack.key, [...Iterable.map(results, match => match[1])]);
         }
 
@@ -35,7 +35,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         delete datapack.Version__c;
     }
 
-    public async afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
+    public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         for (const record of records) {
             // Always create a new script version. don't update the existing versions if any is found
             record.skipLookup = true;

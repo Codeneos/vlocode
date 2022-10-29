@@ -12,6 +12,7 @@ class Compiler {
     public compile(code: string, options?: { mode: 'vm' | 'sandbox' }) : (context?: any, contextMutable?: boolean) => any {
         let compiledFn : (context: any) => any;
         if (options?.mode === 'sandbox') {
+            // eslint-disable-next-line @typescript-eslint/no-implied-eval
             compiledFn = new Function('sandbox', `with (context) { ${code} }`) as typeof compiledFn;
         } else {
             const script = new vm.Script(code);

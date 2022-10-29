@@ -79,7 +79,7 @@ export class Product2 implements DatapackDeploymentSpec {
         }
     }
 
-    public async afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
+    public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         // Add standard pricebook entry as dependency
         const pricebookEntries = this.getPriceBookEntries(records);
         const priceListEntries = records.filter(r => r.sourceKey.startsWith('%vlocity_namespace%__PriceListEntry__c'));

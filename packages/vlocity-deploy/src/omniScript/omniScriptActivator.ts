@@ -27,7 +27,7 @@ export class OmniScriptActivator {
         private readonly lwcCompiler: OmniScriptLwcCompiler,
         @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: DefinitionProvider,
         private readonly logger: Logger
-    ) { 
+    ) {
     }
 
     /**

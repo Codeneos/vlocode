@@ -12,6 +12,6 @@ export class ChainWriter implements LogWriter {
     }
 
     public write(entry : LogEntry): void {
-        this.chain.forEach(writer => writer.write(entry));
+        this.chain.map(writer => writer.write(entry));
     }
 }

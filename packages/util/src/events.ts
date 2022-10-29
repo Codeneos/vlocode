@@ -44,7 +44,8 @@ export class AsyncEventEmitter<T extends EventMap = any> {
 
     /**
      * Emit an event and await the event completion
-     * @param args Event args
+     * @param event event type that is emptied
+     * @param params parameters matching the event type     * 
      */
     public async emit<K extends EventKey<T>>(event: K, params: T[K], options?: EventEmitOptions): Promise<boolean> {
         let triggered = 0;

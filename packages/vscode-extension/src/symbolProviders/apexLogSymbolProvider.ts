@@ -20,7 +20,7 @@ export class ApexLogSymbolProvider implements vscode.DocumentSymbolProvider {
     readonly functionPattern = /^(?<time>[\d+:.]+) \(\d+\)\|(?<type>CONSTRUCTOR|METHOD|SYSTEM_METHOD)_(?<mode>ENTRY|EXIT)\|\[\d+\]\|(?<name>.*)$/;
     readonly assignmentPattern = /^(?<time>[\d+:.]+) \(\d+\)\|VARIABLE_ASSIGNMENT\|\[\d+\]\|(?<name>.*)$/;
 
-    public async provideDocumentSymbols(document: vscode.TextDocument): Promise<vscode.DocumentSymbol[]> {
+    public provideDocumentSymbols(document: vscode.TextDocument): vscode.DocumentSymbol[] {
         const symbols = this.parseSymbols(this.getDocumentLineIterator(document));
         return symbols;
     }

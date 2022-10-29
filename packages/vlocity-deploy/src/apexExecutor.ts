@@ -14,14 +14,14 @@ export class ApexExecutor {
     }
 
     public async execute(name: string) {
-        const file = await this.resolveApexFile(name);
+        const file = this.resolveApexFile(name);
         const apex = await this.loadApex(file);
 
         const result = await this.salesforceService.executeAnonymous(apex);
         if (!result.compiled) {
             this.logger.error(`Unable to compile Anonymous APEX: ${result.compileProblem}`);
         } else if (!result.success) {
-            this.logger.error(`Error during Anonymous APEX exection: ${result.exceptionMessage}`);
+            this.logger.error(`Error during Anonymous APEX execution: ${result.exceptionMessage}`);
         }
 
         return !!result.success;
@@ -34,7 +34,7 @@ export class ApexExecutor {
         // Resolve includes
         const includes = code.matchAll(/(\/\/|#)[ \t]*include (.*)$/i);
         for (const [ match, include ] of includes) {
-            const includeFile = await this.resolveApexFile(include.trim(), basePath);
+            const includeFile = this.resolveApexFile(include.trim(), basePath);
             const includeApex = await this.loadApex(includeFile);
             code = code.replace(match, includeApex);
         }
@@ -43,7 +43,7 @@ export class ApexExecutor {
     }
 
     @cache()
-    private async resolveApexFile(name: string, relativeFolder = '.') {
+    private resolveApexFile(name: string, relativeFolder = '.') {
         const resolutionOrder = [
             path.join(relativeFolder, name),
             path.join(__dirname, name),

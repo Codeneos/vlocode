@@ -18,7 +18,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
 
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {
         // Build manifest
-        const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
+        const apiVersion = this.vlocode.config.salesforce?.apiVersion || this.salesforce.getApiVersion();
 
         // Build manifest
         const sfPackage = await vscode.window.withProgress({

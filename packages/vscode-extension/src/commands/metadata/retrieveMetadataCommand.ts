@@ -26,7 +26,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         // query available records
         const components = await this.vlocode.withProgress(`Query ${metadataType.nameForMsgsPlural}...`, this.getExportableComponents(metadataType));
         if (components.length == 0) {
-            void vscode.window.showWarningMessage(`No exportable records for ${metadataType}`);
+            void vscode.window.showWarningMessage(`No exportable records for ${metadataType.name}`);
             return;
         }
 
@@ -87,7 +87,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
 
     protected async retrieveMetadata(components: { fullname: string; componentType: string }[]) {
         // Build manifest
-        const apiVersion = this.vlocode.config.salesforce?.apiVersion || await this.salesforce.getApiVersion();
+        const apiVersion = this.vlocode.config.salesforce?.apiVersion || this.salesforce.getApiVersion();
 
         // Build manifest
         const manifest = new PackageManifest();

@@ -5,8 +5,7 @@ import { SalesforceService, SalesforcePackage } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
-import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
-import { Timer, XML } from '@vlocode/util';
+import { XML } from '@vlocode/util';
 
 export interface CompiledResource {
     name: string,
@@ -166,6 +165,6 @@ export class OmniScriptLwcCompiler{
         const cpType = script.type.charAt(0).toLowerCase() + script.type.slice(1);
         const cpSubType = script.subType.charAt(0).toUpperCase() + script.subType.slice(1);
         const cpLanguage = script.language ? (script.language.replace(/[\s()-]+/gi, '')) : script.language;
-        return cpType + cpSubType + cpLanguage;
+        return `${cpType}${cpSubType}${cpLanguage ?? ''}`;
     }
 }

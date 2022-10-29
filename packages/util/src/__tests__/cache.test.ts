@@ -46,7 +46,7 @@ class CacheTester {
 }
 
 describe('cache', () => {
-    it('should cache distinct identical invocations with primitive arguments', async () => {
+    it('should cache distinct identical invocations with primitive arguments', () => {
         const sut = new CacheTester();
         const v1 = sut.variArgs('test');
         const v2 = sut.variArgs('test');
@@ -56,7 +56,7 @@ describe('cache', () => {
         expect(v1).toEqual(v2);
         expect(v1).toEqual(v3);
     });
-    it('should cache across instance when scope is global', async () => {
+    it('should cache across instance when scope is global', () => {
         const sut1 = new CacheTester();
         const sut2 = new CacheTester();
         const v1 = sut1.globalCached('test');
@@ -93,7 +93,7 @@ describe('cache', () => {
         expect(result1Promise).toEqual('r1');
         expect(result2Promise).toEqual('r2');
     });
-    it('should cache getters when decorated', async () => {
+    it('should cache getters when decorated', () => {
         const sut = new CacheTester();
         const a = sut.cachedGetter;
         const b = sut.cachedGetter;
@@ -102,7 +102,7 @@ describe('cache', () => {
         expect(a).toEqual('cachedGetter');
         expect(b).toEqual('cachedGetter');
     });
-    it('should return immutable array', async () => {
+    it('should return immutable array', () => {
         const sut = new CacheTester();
         const result = sut.immutableArrayResponse();
     
@@ -112,7 +112,7 @@ describe('cache', () => {
         expect(() => result.push(10)).toThrow();
         expect(() => result.sort()).toThrow();
     });
-    it('should return shallow clone (array)', async () => {
+    it('should return shallow clone (array)', () => {
         const sut = new CacheTester();
         const result1 = sut.arrayResponse();
         const result2 = sut.arrayResponse();
@@ -123,7 +123,7 @@ describe('cache', () => {
 });
 
 describe('clearCache', () => {
-    it('should should clear previously cached responses', async () => {
+    it('should should clear previously cached responses', () => {
         const sut = new CacheTester();
         sut.variArgs('test');
         clearCache(sut);

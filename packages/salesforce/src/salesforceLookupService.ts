@@ -132,7 +132,7 @@ export class SalesforceLookupService {
                 if (salesforceField.type != 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName) {
                     throw new Error(`Object type set for non-reference field ${fieldPath} on type ${type}`);
                 }
-                lookupFilters.push(await this.createWhereClause(type, mapKeys(value!, key => `${fieldName}.${String(key)}`)));
+                lookupFilters.push(await this.createWhereClause(type, mapKeys(value, key => `${fieldName}.${String(key)}`)));
             } else {
                 // Set intended comparison operator
                 let operator = '=';

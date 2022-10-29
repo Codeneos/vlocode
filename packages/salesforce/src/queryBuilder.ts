@@ -47,6 +47,7 @@ class QueryBuilderData {
         const results = new Array<T>();
         const chunkSize = options?.chunkSize ?? 2000;
 
+        // eslint-disable-next-line no-constant-condition
         for (let chunkNr = 0; true; chunkNr++) {
             const chunkedQuery = new QueryBuilder(clone(this.query)).limit(chunkSize, chunkNr * chunkSize);  
             console.debug(chunkedQuery.getQuery());

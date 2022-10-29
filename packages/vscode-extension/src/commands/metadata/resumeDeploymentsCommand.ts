@@ -6,7 +6,7 @@ import { VlocodeCommand } from '@root/constants';
 
 @vscodeCommand(VlocodeCommand.resumeDeploymentQueue, { focusLog: true  })
 export default class ResumeMetadataDeploymentsCommand extends MetadataCommand {
-    public async execute() {
+    public execute() {
         this.vlocode.commands.get(DeployMetadataCommand)?.setEnabled(true);
         void vscode.window.showInformationMessage('Salesforce deployments resumed');
     }

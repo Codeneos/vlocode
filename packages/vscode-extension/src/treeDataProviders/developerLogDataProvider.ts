@@ -102,7 +102,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         }
     }
 
-    public async onClick(log: DeveloperLog) {
+    public onClick(log: DeveloperLog) {
         void new DebugLogViewer().showDeveloperLog(log);
     }
 

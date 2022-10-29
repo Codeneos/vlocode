@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { CustomFieldMetadata, CustomObjectMetadata, DescribeSObjectResult, JsForceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
+import { JsForceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { VlocityDatapack } from '../datapack';
@@ -15,6 +15,7 @@ describe('datapackRecordFactory', () => {
     function mockConnectionProvider(results: any[]) {
         return ({
             getJsForceConnection: () => ({
+                // eslint-disable-next-line @typescript-eslint/require-await
                 query: async () => ({
                     done: true,
                     totalSize: results.length,

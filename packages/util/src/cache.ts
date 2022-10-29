@@ -188,7 +188,7 @@ export function cache(ttlOrOptions?: number | CacheOptions) {
  */
 export function cacheFunction<T extends (...args: any[]) => any>(targetFn: T, ttlOrOptions?: number | CacheOptions | undefined) : T {
     const options = typeof ttlOrOptions === 'number' || !ttlOrOptions ? { ttl: ttlOrOptions ?? -1 } : ttlOrOptions;
-    const storePrefix = targetFn[cacheKeyPrefixProperty] ?? (targetFn[cacheKeyPrefixProperty] = randomUUID());
+    const storePrefix: string = targetFn[cacheKeyPrefixProperty] ?? (targetFn[cacheKeyPrefixProperty] = randomUUID());
 
     if (!targetFn[cacheOptionsProperty]) {
         targetFn[cacheOptionsProperty] = ttlOrOptions;
@@ -196,7 +196,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(targetFn: T, tt
 
     const cachedFunction = function(...args: any[]) {
         const cache = getCacheStore(this, targetFn, options);
-        const key = args.reduce((checksum, arg) => checksum + serializeArgument(arg), `${storePrefix}:`);
+        const key = args.reduce((checksum: string, arg: unknown) => checksum.concat(serializeArgument(arg)), `${storePrefix}:`);
         const cacheEntry = cache.get(key);
         if (cacheEntry) {
             return cacheEntry.value;

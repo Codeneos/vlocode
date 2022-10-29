@@ -9,6 +9,7 @@ describe('queryService', () => {
     function mockConnectionProvider(results: any[]) {
         return ({
             getJsForceConnection: () => ({
+                // eslint-disable-next-line @typescript-eslint/require-await
                 query: async () => ({
                     done: true,
                     totalSize: results.length,

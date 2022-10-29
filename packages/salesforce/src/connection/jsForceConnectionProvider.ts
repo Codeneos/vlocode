@@ -65,8 +65,8 @@ class JsForceConnectionProviderImpl extends JsForceConnectionProvider {
         }
     }
 
-    public async getJsForceConnection() : Promise<Connection> {
-        return this.#jsConnection;
+    public getJsForceConnection() : Promise<Connection> {
+        return Promise.resolve(this.#jsConnection);
     }
 
     @cache({ unwrapPromise: true })

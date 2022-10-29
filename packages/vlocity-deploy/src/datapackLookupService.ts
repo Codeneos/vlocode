@@ -197,9 +197,9 @@ export class DatapackLookupService implements DependencyResolver {
                 for (const [ index ] of matchedLookups) {
                     if (lookupResults[index]) {
                         // @ts-expect-error TS does not understand lookupResults[index] is not undefined
-                        lookupResults[index].push(record.Id!)
+                        lookupResults[index].push(record.Id)
                     }
-                    lookupResults[index] = [ record.Id! ];
+                    lookupResults[index] = [ record.Id ];
                 }
             }
         }

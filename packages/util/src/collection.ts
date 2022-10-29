@@ -144,7 +144,7 @@ function* enumerateWithIndex<T>(iterable: Iterable<T>) : IterableIterator<[numbe
  * @param callback The callback to execute for each item
  */
 export async function mapAsync<T,R>(array: Iterable<T>, callback: (item: T, index: number) => Promise<R>) : Promise<R[]> {
-    let results = new Array<R>();
+    const results = new Array<R>();
     let index = 0;
     for (const value of array) {
         results.push(await callback(value, index++));
@@ -192,8 +192,7 @@ export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T,
             result.push(await callback(value, index)); 
             return result; 
         };
-        // @ts-expect-error the task bucket can be undefined when in bucket is OOB 
-        tasks[bucket] = tasks[bucket] ? tasks[bucket].then(task) : task([]);
+        tasks[bucket] = tasks[bucket] !== undefined ? tasks[bucket].then(task) : task([]);
     }
     return Promise.all(tasks).then(flatten);
 }

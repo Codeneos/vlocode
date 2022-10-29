@@ -88,7 +88,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         this[fieldName] = newValue;
 
         if (typeof currentValue === 'string') {
-            const newSourceKey = this.sourceKey.replace(new RegExp(`(\/|^)${currentValue}(\/|$)`), `$1${newValue}$2`);
+            const newSourceKey = this.sourceKey.replace(new RegExp(`(/|^)${currentValue}(/|$)`), `$1${newValue}$2`);
             if (newSourceKey !== this.sourceKey) {
                 this.updateSourceKey(newSourceKey);
             }

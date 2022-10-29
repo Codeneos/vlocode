@@ -5,7 +5,7 @@ export class QueueWriter implements LogWriter {
     private queue = new Array<LogEntry>();
 
     public flush(writers: LogWriter[], clearQueue: boolean = true) {
-        this.queue.forEach(entry => writers.forEach(w => w.write(entry)));
+        this.queue.forEach(entry => writers.map(w => w.write(entry)));
         if (clearQueue) {
             this.queue = [];
         }

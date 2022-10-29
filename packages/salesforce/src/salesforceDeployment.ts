@@ -118,6 +118,8 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         const zipInput = await this.sfPackage.getBuffer(this.compressionLevel);
         const deployJob = await this.connection.metadata.deploy(zipInput, deployOptions);
         this.deploymentId = deployJob.id;
+        
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         setImmediate(() => this.checkDeployment());
 
         return this;
@@ -192,6 +194,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             }
             void this.emit('complete', status);
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
             this.nextProgressTimeoutId = setTimeout(() => this.checkDeployment(), this.checkInterval);
         }
 

@@ -45,7 +45,7 @@ export class ScriptDefinitionProvider {
         }
 
         try {
-            return JSON.parse(records.reduce((sum, record) => sum + record[`Content__c`], ''));
+            return JSON.parse(records.reduce((sum: string, record) => sum.concat(record[`Content__c`]), ''));
         } catch (err) {
             throw new Error(`OmniScript compiled definition is corrupted; re-activate the OmniScript to regenerate the compiled definitions`);
         }

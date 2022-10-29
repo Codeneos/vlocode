@@ -7,7 +7,7 @@ import * as yaml from 'js-yaml';
 
 import VlocityJobFile from '@lib/vlocity/vlocityJobFile';
 import * as vlocity from 'vlocity';
-import { filterUndefined } from '@vlocode/util';
+import { filterUndefined, getErrorMessage } from '@vlocode/util';
 import BaseDataProvider from './baseDataProvider';
 
 export default class JobDataProvider extends BaseDataProvider<JobNode> {
@@ -80,9 +80,9 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
         };
     }
 
-    private isValidJob(job: VlocityJobFile) {
-        if (job && Array.isArray(job.queries)) {
-            return job.queries.every(query => !!query.VlocityDataPackType);
+    private isVlocityJobFile(arg: unknown) : arg is VlocityJobFile {
+        if (arg && typeof arg === 'object' && Array.isArray(arg['queries'])) {
+            return arg['queries'].every(query => Object.prototype.hasOwnProperty.apply(query, 'VlocityDataPackType'));
         }
         return false;
     }
@@ -93,16 +93,16 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
             try {
                 return {
                     file,
-                    body: yaml.load((await fs.readFile(file.fsPath)).toString('utf8'), { filename: file.fsPath }) as any
+                    body: yaml.load((await fs.readFile(file.fsPath)).toString('utf8'), { filename: file.fsPath })
                 };
             } catch(err) {
-                this.logger.error(`Unable to load YAML file ${file} due to parsing error: ${err.message || err}`);
+                this.logger.error(`Unable to load YAML file ${file.fsPath} due to parsing error: ${getErrorMessage(err)}`);
             }
         }));
 
         // remote any non-job files
         this.logger.info(`Found ${yamlFilesWithBody.length} YAML files in workspace folders`);
-        const validJobFiles = filterUndefined(yamlFilesWithBody).filter(file => this.isValidJob(file.body));
+        const validJobFiles = filterUndefined(yamlFilesWithBody).filter(file => this.isVlocityJobFile(file.body));
         this.logger.info(`Displaying ${validJobFiles.length} valid Job files in Job explorer`);
 
         return validJobFiles.map(({ file }) => new JobNode( file ));

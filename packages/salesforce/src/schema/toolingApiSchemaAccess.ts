@@ -52,6 +52,7 @@ export class ToolingApiSchemaAccess {
     public async listObjectTypes(chunkSize = this.objectListChunkSize) {
         const entities = new Array<string>();
 
+        // eslint-disable-next-line no-constant-condition
         for (let chunkNr = 0; true; chunkNr++) {
             const chunk = await new QueryBuilder(this.entityDefinitionObjectName, [ 'QualifiedApiName', 'KeyPrefix' ])
                 .limit(chunkSize, chunkNr * chunkSize)

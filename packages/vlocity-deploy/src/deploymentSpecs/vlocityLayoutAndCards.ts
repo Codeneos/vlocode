@@ -4,7 +4,7 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
 @deploymentSpec({ datapackFilter: /^Vlocity(UILayout|Card)$/i })
 export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
-    public async preprocess(datapack: VlocityDatapack) {
+    public preprocess(datapack: VlocityDatapack) {
         datapack.Active__c = true;
     }
 }

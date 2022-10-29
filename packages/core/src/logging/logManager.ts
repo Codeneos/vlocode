@@ -111,8 +111,8 @@ export default class LogManager {
                     return Promise.all(promises) as Promise<any>;
                 }
             },
-            focus: () => {
-                return Promise.all(this.getWriters(logName).filter(({ focus }) => focus).map(writer => writer.focus?.())).then(() => {});
+            focus: async () => {
+                await Promise.all(this.getWriters(logName).filter(writer => writer.focus !== undefined).map(writer => writer.focus?.()));
             }
         });
     }

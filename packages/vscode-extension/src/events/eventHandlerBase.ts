@@ -6,7 +6,7 @@ export abstract class EventHandlerBase<T> implements vscode.Disposable {
     private eventListner: vscode.Disposable | null;
 
     constructor(event: vscode.Event<T>, protected vloService: VlocodeService) {
-        this.eventListner = event(this.handleEventAsync, this);
+        this.eventListner = event(this.handleEventAsync.bind(this));
     }
 
     public dispose() : void {
