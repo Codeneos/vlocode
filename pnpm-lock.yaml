@@ -9509,6 +9509,10 @@ packages:
     resolution: {integrity: sha512-Ho2z80bVIvJloH+YzRmpZVQe87+qASmBUKZDWgx9cu+KDrX2ZDH/3tMy+gXbZETVGs2M8YdxObOh7XAtim9Y0g==}
     dev: true
 
+  /object-inspect/1.12.2:
+    resolution: {integrity: sha512-z+cPxW0QGUp0mcqcsgQyLVRDoXFQbXOwBaqyF7VIgI4TWNQsDHrBpUQslRmIfAoYWdYzs6UlKJtB2XJpTaNSpQ==}
+    dev: true
+
   /object-keys/1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
@@ -11161,7 +11165,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       get-intrinsic: 1.1.1
-      object-inspect: 1.12.0
+      object-inspect: 1.12.2
     dev: true
 
   /signal-exit/3.0.7:
