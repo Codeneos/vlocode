@@ -1,4 +1,5 @@
 import { Timer , Iterable, removeNamespacePrefix } from '@vlocode/util';
+import { randomUUID } from 'crypto';
 import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer';
 
 export enum DeploymentStatus {
@@ -112,8 +113,26 @@ export class DatapackDeploymentRecord {
         public readonly sourceKey: string,
         public readonly datapackKey: string,
         public readonly upsertFields: string[] | undefined = undefined,
-        public readonly values: Object = {}) {
+        public readonly values: object = {}) {
         this.normalizedSObjectType = removeNamespacePrefix(this.sobjectType);
+    }
+
+    static fromValues(
+        sobjectType: string, 
+        values: object, 
+        options?: {
+            upsertFields?: string[],
+            recordKey?: string,
+        }
+    ) {
+        return new this(
+            sobjectType, 
+            sobjectType, 
+            options?.recordKey ?? `${sobjectType}/${randomUUID()}`, 
+            options?.recordKey ?? `${sobjectType}/${randomUUID()}`,  
+            options?.upsertFields, 
+            values
+        );
     }
 
     /**
@@ -197,7 +216,7 @@ export class DatapackDeploymentRecord {
     }
 
     public addLookup(field: string, dependency: DatapackRecordDependency) {
-        this._dependencies.set(field, dependency);
+        this._dependencies.set(field, this.validateRecordDependency(dependency));
         if (!this.values[field]) {
             this._unresolvedDependencies.add(field);
         }
@@ -216,9 +235,22 @@ export class DatapackDeploymentRecord {
                 VlocityLookupRecordSourceKey: dependency.sourceKey
             });
         }
+
+        this.validateRecordDependency(dependency);
         const dependencyGuid = `$${dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey}`;
         this._dependencies.set(dependencyGuid, dependency);
         this._unresolvedDependencies.add(dependencyGuid);
+    }
+    
+    /**
+     * Validate dependency integrity by checking if mandator fields are set
+     * @param dependency Dependency to check
+     */
+    private validateRecordDependency(dependency: DatapackRecordDependency) {
+        if (!dependency.VlocityRecordSObjectType) {
+            throw new Error(`Reference missed "VlocityRecordSObjectType" property for: ${JSON.stringify(dependency)}`);
+        }
+        return dependency;
     }
 
     /**
