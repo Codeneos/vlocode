@@ -50,7 +50,6 @@ class QueryBuilderData {
         // eslint-disable-next-line no-constant-condition
         for (let chunkNr = 0; true; chunkNr++) {
             const chunkedQuery = new QueryBuilder(clone(this.query)).limit(chunkSize, chunkNr * chunkSize);  
-            console.debug(chunkedQuery.getQuery());
             const result = await connection.tooling.query<T>(chunkedQuery.getQuery());
 
             results.push(...result.records);
