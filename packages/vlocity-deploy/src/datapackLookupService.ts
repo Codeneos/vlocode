@@ -99,8 +99,8 @@ export class DatapackLookupService implements DependencyResolver {
 
         const lookupRequests = datapackRecords.map((record, index) => ({
                 index, record, sobjectType: record.sobjectType,
-                lookupKey: this.buildLookupKey(record.sobjectType, recordMatchingFields.get(record.sobjectType) ?? [], record.values)!,                
-                filter: this.buildFilter(record.values, recordMatchingFields.get(record.sobjectType) ?? []), 
+                lookupKey: this.buildLookupKey(record.sobjectType, record.upsertFields ?? [], record.values)!,                
+                filter: this.buildFilter(record.values, record.upsertFields ?? []), 
                 reportWarning: (message: string) => { 
                     record.addWarning(message);
                     this.distinctLogger.warn(`Datapack ${record.sourceKey} -- ${message}`);  
@@ -313,7 +313,7 @@ export class DatapackLookupService implements DependencyResolver {
         return this.normalizeFilter(filter);
     }
 
-    private normalizeFilter<T>(data: T): T {
+    private normalizeFilter<T extends object>(data: T): T {
         for (const field of Object.keys(data)) {
             if (typeof data[field] === 'string') {
                 // Values can contain references to objects, if they do we need to make sure we replace it
