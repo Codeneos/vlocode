@@ -46,27 +46,44 @@ const common : webpack.Configuration = {
     },
     module: {
         rules: [
+            // {
+            //     test: /\.ts$/,
+            //     //include: path.resolve(__dirname, 'src'),
+            //     use: [{
+            //         loader: 'ts-loader',
+            //         options: {
+            //             compilerOptions: {
+            //                 outDir: path.join(__dirname, '../.ts-temp'),
+            //                 declaration: false,
+            //                 rootDirs: [
+            //                     contextFolder,
+            //                     path.resolve(workspaceFolder, 'core', 'src'),
+            //                     path.resolve(workspaceFolder, 'util', 'src'),
+            //                     path.resolve(workspaceFolder, 'vlocity-deploy', 'src'),
+            //                     path.resolve(workspaceFolder, 'salesforce', 'src')
+            //                 ]
+            //             },
+            //             projectReferences: false,
+            //             transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
+            //         } as Options
+            //     }],
+            // },
             {
                 test: /\.ts$/,
-                //include: path.resolve(__dirname, 'src'),
-                use: [{
-                    loader: 'ts-loader',
+                exclude: /node_modules/i,
+                use: {
+                    loader: 'babel-loader',
                     options: {
-                        compilerOptions: {
-                            outDir: path.join(__dirname, '../.ts-temp'),
-                            declaration: false,
-                            rootDirs: [
-                                contextFolder,
-                                path.resolve(workspaceFolder, 'core', 'src'),
-                                path.resolve(workspaceFolder, 'util', 'src'),
-                                path.resolve(workspaceFolder, 'vlocity-deploy', 'src'),
-                                path.resolve(workspaceFolder, 'salesforce', 'src')
-                            ]
-                        },
-                        projectReferences: false,
-                        transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
-                    } as Options
-                }],
+                        presets: [
+                            "@babel/preset-env", 
+                            "@babel/preset-typescript"
+                        ],
+                        plugins: [
+                            "babel-plugin-transform-typescript-metadata",
+                            ["@babel/plugin-proposal-decorators", { legacy: true }]
+                        ]
+                    }
+                }
             },
             {
                 test: /\.yaml$/,
@@ -142,7 +159,8 @@ const common : webpack.Configuration = {
         minimize: false
     },
     cache: {
-        type: 'memory'
+        type: 'filesystem',
+        allowCollectingMemory: true,
     },
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(

@@ -10,6 +10,8 @@ export function getParameterTypes(ctor: any) : any[] | undefined {
         return paramTypes;
     }
 
+    const keys = Reflect.getMetadataKeys(ctor);
+
     // Probe new style attributes
     const typeInfo = Reflect.getMetadata('design:typeinfo', ctor);
     if (typeInfo?.paramTypes) {

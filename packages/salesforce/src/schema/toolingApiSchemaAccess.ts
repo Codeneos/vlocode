@@ -43,9 +43,11 @@ export class ToolingApiSchemaAccess {
     ];
 
     private readonly deferredProcessor = new DeferredWorkQueue(this.getEntityDefinitions, this);
-    @injectable.property private readonly logger!: Logger;
 
-    constructor(private readonly connectionProvider: JsForceConnectionProvider, private readonly schemaStore: SchemaDataStore) {
+    constructor(
+        private readonly connectionProvider: JsForceConnectionProvider, 
+        private readonly schemaStore: SchemaDataStore,
+        private readonly logger: Logger) {
     }
 
     @cache({ unwrapPromise: true })

@@ -15,7 +15,6 @@ export class DescribeSchemaAccess {
     private readonly metadataReadChunkSize = 10;
     private readonly metadataReadParallelism = 25;
     private readonly deferredProcessor = new DeferredWorkQueue(this.describeBulk, this);
-    @injectable.property private readonly logger!: Logger;
 
     private arrayNormalizedFields = [
         'fields', 
@@ -30,7 +29,8 @@ export class DescribeSchemaAccess {
     
     constructor(
         private readonly connectionProvider: JsForceConnectionProvider, 
-        private readonly schemaStore: SchemaDataStore) {
+        private readonly schemaStore: SchemaDataStore,
+        private readonly logger: Logger) {
     }
 
     @cache({ unwrapPromise: true })

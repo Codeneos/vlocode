@@ -3,7 +3,6 @@ import { default as common } from './webpack.common';
 
 const development : webpack.Configuration = {
     mode: 'development',
-    devtool: 'source-map',
     optimization: {
         removeAvailableModules: true,
         removeEmptyChunks: false

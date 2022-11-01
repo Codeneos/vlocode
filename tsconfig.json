@@ -13,6 +13,7 @@
         "suppressExcessPropertyErrors": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "allowSyntheticDefaultImports": true
     }
 }

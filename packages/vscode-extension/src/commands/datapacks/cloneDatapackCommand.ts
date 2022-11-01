@@ -3,7 +3,7 @@ import { vscodeCommand } from '@root/lib/commandRouter';
 import { DatapackExportQueries } from '@root/lib/vlocity/datapackExportQueries';
 import { container } from '@vlocode/core';
 import { VlocityDatapack } from '@vlocode/vlocity-deploy';
-import path = require('path');
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
 

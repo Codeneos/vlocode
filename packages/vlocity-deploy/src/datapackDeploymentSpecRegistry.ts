@@ -1,4 +1,4 @@
-import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor } from "@vlocode/core";
+import { Container, container, injectable, LifecyclePolicy, ServiceCtor } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
 import { DatapackFilter } from "./datapackDeployer";
 import { DatapackDeploymentSpec } from "./datapackDeploymentSpec";
@@ -12,8 +12,6 @@ export class DatapackDeploymentSpecRegistry {
     public static readonly instance = lazy(() => container.get(DatapackDeploymentSpecRegistry));
     public static specCounter = 0;
 
-    @injectable.property 
-    private readonly logger: Logger;
     private readonly specs: Record<number, { 
         key: number,
         filter: DatapackFilter, 
@@ -22,6 +20,7 @@ export class DatapackDeploymentSpecRegistry {
     }> = {};
 
     constructor(private readonly container: Container) {
+        console.debug("Ola");
     }
 
     /**
@@ -46,7 +45,7 @@ export class DatapackDeploymentSpecRegistry {
         for (const spec of Object.values(this.specs)) {
             yield { 
                 filter: spec.filter, 
-                spec: spec.instance ?? lazy( () => this.container.create(spec.type) )
+                spec: spec.instance ?? lazy( () => this.container.create(spec.type!) )
             };
         }
     }
@@ -71,9 +70,6 @@ export class DatapackDeploymentSpecRegistry {
             filter = { datapackFilter: filter };
         }
 
-        const filterName = filter.datapackFilter ? `datapacks: '${filter.datapackFilter.toString()}'` : `records: '${filter.recordFilter?.toString()}'`;
-        this.logger.verbose(`Register datapack deployment spec for ${filterName}`)
-        
         this.specs[++DatapackDeploymentSpecRegistry.specCounter] = {
             key: DatapackDeploymentSpecRegistry.specCounter, 
             filter, 

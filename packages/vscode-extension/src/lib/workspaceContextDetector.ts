@@ -1,9 +1,11 @@
-import path = require('path');
 import { clearTimeout, setTimeout } from 'timers';
-import * as constants from '@constants';
 import * as vscode from 'vscode';
+import * as path from 'path';
+
+import * as constants from '@constants';
 import { Logger, FileSystem, injectable, LifecyclePolicy, FileInfo } from '@vlocode/core';
 import { clearCache, Timer, wait } from '@vlocode/util';
+
 
 /**
  * Works in conjunction with the workspace context detector 

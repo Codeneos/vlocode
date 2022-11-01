@@ -1250,6 +1250,10 @@
         "vscode:prepublish": "pnpm clean && pnpm cp-changelog && pnpm build-webpack"
     },
     "devDependencies": {
+        "@babel/core": "^7.19.6",
+        "@babel/plugin-proposal-decorators": "^7.20.0",
+        "@babel/preset-env": "^7.19.4",
+        "@babel/preset-typescript": "^7.18.6",
         "@types/chai": "^4.2.21",
         "@types/copy-webpack-plugin": "^8.0.1",
         "@types/fs-extra": "^9",
@@ -1271,6 +1275,8 @@
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "axios": "^0.25.0",
+        "babel-loader": "^9.0.1",
+        "babel-plugin-transform-typescript-metadata": "^0.3.2",
         "chai": "^4.3.4",
         "chalk": "^4.1.1",
         "cli-ux": "^5.6.3",
