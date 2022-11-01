@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import type { FileProperties, RetrieveResult } from 'jsforce';
-import * as ZipArchive from 'jszip';
+import ZipArchive = require('jszip');
 import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
 
 export interface RetrieveStatus extends RetrieveResult {

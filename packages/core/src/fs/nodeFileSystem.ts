@@ -1,6 +1,6 @@
 import * as fs from 'fs';
+import globby = require('globby');
 import * as path from 'path';
-import * as globby from 'globby';
 import { injectable, LifecyclePolicy } from '../index';
 import { FileInfo, FileSystem, StatsOptions } from './types';
 

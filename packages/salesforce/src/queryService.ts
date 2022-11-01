@@ -1,5 +1,5 @@
 import { Readable } from 'stream';
-import * as moment from 'moment';
+import moment = require('moment');
 import { Logger, injectable } from '@vlocode/core';
 import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
 

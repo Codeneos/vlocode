@@ -1,10 +1,10 @@
 import * as webpack from 'webpack';
-import * as TerserPlugin from 'terser-webpack-plugin';
+import TerserPlugin from 'terser-webpack-plugin';
 import { default as common } from './webpack.common';
 
 const production: webpack.Configuration = {
     mode: 'production',
-    devtool: false,
+    devtool: 'source-map',
     optimization: {
         mergeDuplicateChunks: true,
         minimize: false,

@@ -1,6 +1,6 @@
 import { LogWriter, LogEntry, LogLevel } from '..';
 import chalk from 'chalk';
-import * as moment from 'moment';
+import moment = require('moment');
 
 export class FancyConsoleWriterOptions { 
     formatMessage: boolean; 

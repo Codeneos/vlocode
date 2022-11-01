@@ -1,8 +1,7 @@
-import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor, ServiceType } from "@vlocode/core";
+import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
-import { randomUUID } from "crypto";
-import { DatapackFilter } from "datapackDeployer";
-import { DatapackDeploymentSpec } from "datapackDeploymentSpec";
+import { DatapackFilter } from "./datapackDeployer";
+import { DatapackDeploymentSpec } from "./datapackDeploymentSpec";
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeploymentSpecRegistry {
@@ -72,8 +71,8 @@ export class DatapackDeploymentSpecRegistry {
             filter = { datapackFilter: filter };
         }
 
-        const filterName = filter.datapackFilter ? `datapacks: '${filter.datapackFilter.toString()}'` : `records: '${filter.recordFilter?.toString()}'`;
-        this.logger.verbose(`Register datapack deployment spec for ${filterName}`)
+        //const filterName = filter.datapackFilter ? `datapacks: '${filter.datapackFilter.toString()}'` : `records: '${filter.recordFilter?.toString()}'`;
+        //this.logger.verbose(`Register datapack deployment spec for ${filterName}`)
         
         this.specs[++DatapackDeploymentSpecRegistry.specCounter] = {
             key: DatapackDeploymentSpecRegistry.specCounter, 

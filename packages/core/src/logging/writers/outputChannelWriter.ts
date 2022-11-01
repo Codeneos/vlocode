@@ -1,5 +1,5 @@
 import type { OutputChannel } from 'vscode';
-import * as moment from 'moment';
+import moment = require('moment');
 import { LogWriter, LogEntry, LogLevel } from '../../logging';
 
 export class OutputChannelWriter implements LogWriter {

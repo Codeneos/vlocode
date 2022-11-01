@@ -1,5 +1,5 @@
 import { Stream } from 'stream';
-import * as ZipArchive from 'jszip';
+import ZipArchive = require('jszip');
 
 import { Logger , injectable } from '@vlocode/core';
 import { CancellationToken, wait } from '@vlocode/util';

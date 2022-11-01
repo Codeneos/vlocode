@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import chalk from 'chalk';
-import * as ZipArchive from 'jszip';
+import ZipArchive = require('jszip');
 
 import { Logger , injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML } from '@vlocode/util';

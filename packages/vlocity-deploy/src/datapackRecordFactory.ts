@@ -1,7 +1,7 @@
 
 import { SalesforceSchemaService, Field, NamespaceService } from '@vlocode/salesforce';
 import { Logger, injectable } from '@vlocode/core';
-import * as moment from 'moment';
+import moment = require('moment');
 import { isSalesforceId } from '@vlocode/util';
 import * as uuid from 'uuid';
 import { DATAPACK_RESERVED_FIELDS } from './constants';

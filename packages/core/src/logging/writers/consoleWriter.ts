@@ -1,5 +1,5 @@
+import moment = require('moment');
 import { LogWriter, LogEntry, LogLevel } from '..';
-import * as moment from 'moment';
 
 export class ConsoleWriter implements LogWriter {
 

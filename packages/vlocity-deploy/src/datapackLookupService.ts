@@ -6,7 +6,7 @@ import * as constants from './constants';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
-import * as moment from 'moment';
+import moment = require('moment');
 
 /**
  * Describes a records status in the target org.

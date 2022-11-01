@@ -3,7 +3,7 @@ import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
-import * as CopyPlugin from 'copy-webpack-plugin';
+import CopyPlugin from 'copy-webpack-plugin';
 //import * as ts from 'typescript';
 import WatchMarkersPlugin from './plugins/watchMarkers';
 import type { Options } from 'ts-loader';
@@ -108,57 +108,7 @@ const common : webpack.Configuration = {
         __filename: false
     },
     mode: 'development',
-    optimization: {
-        runtimeChunk: false,
-        removeEmptyChunks: true,
-        removeAvailableModules: true,
-        providedExports: false,
-        usedExports: false,
-        portableRecords: true,
-        moduleIds: 'named',
-        chunkIds: 'named',
-        splitChunks: {
-            chunks: 'all',
-            maxInitialRequests: Infinity,
-            minSize: 0,
-            cacheGroups: {
-                default: false,
-                defaultVendors: false,
-                sass: {
-                    priority: 20,
-                    test: /[\\/]sass\.js[\\/]/,
-                    name: 'lib-sass',
-                    reuseExistingChunk: false,
-                },
-                'vlocity-deploy': {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]vlocity-deploy[\\/]/,
-                    name: 'vlocode-vlocity-deploy'
-                },
-                salesforce: {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]salesforce[\\/]/,
-                    name: 'vlocode-salesforce'
-                },
-                core: {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]core[\\/]/,
-                    name: 'vlocode-core'
-                },
-                util: {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]util[\\/]/,
-                    name: 'vlocode-util'
-                },
-                shared: {
-                    priority: 5,
-                    test: /[\\/]node_modules[\\/]/,
-                    name: 'vendor',
-                    reuseExistingChunk: false
-                }
-            },
-        },
-    },
+    optimization: undefined,
     cache: {
         type: 'memory'
     },

@@ -1,7 +1,7 @@
 
 import * as path from 'path';
 import * as xml2js from 'xml2js';
-import * as ZipArchive from 'jszip';
+import ZipArchive = require('jszip');
 import { Iterable, XML , directoryName, arrayMapPush } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';

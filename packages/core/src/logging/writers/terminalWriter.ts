@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 import chalk from 'chalk';
-import * as moment from 'moment';
+import moment = require('moment');
 import { LogLevel, LogWriter, LogEntry } from '../../logging';
 
 const TERMINAL_EOL = '\r\n';

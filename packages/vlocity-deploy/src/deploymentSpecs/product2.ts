@@ -1,7 +1,7 @@
 import { Logger } from '@vlocode/core';
 import { JsForceConnectionProvider, SalesforceLookupService } from '@vlocode/salesforce';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
-import * as moment from 'moment';
+import moment = require('moment');
 import { VlocityDatapack } from '../datapack';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
