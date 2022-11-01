@@ -4,7 +4,7 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentRecord, DeploymentAction } from '../datapackDeploymentRecord';
 import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { createHash } from 'crypto';
-import { DatapackDeploymentEvent } from 'datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeployer';
 
 interface ContentVersionRecord {
     Checksum: string;

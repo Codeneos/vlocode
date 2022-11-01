@@ -1,11 +1,10 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger, injectable, container } from '@vlocode/core';
-import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, lazy, unique, isReadonlyArray, cacheFunction, cache, } from '@vlocode/util';
+import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, cache } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord, DeployedDatapackDeploymentRecord } from './datapackDeploymentRecord';
-import * as deploymentSpecs from './deploymentSpecs';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';

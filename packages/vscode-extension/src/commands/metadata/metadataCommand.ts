@@ -62,6 +62,7 @@ export default abstract class MetadataCommand extends CommandBase {
 
         // Log all failures to the console even those that have no file info
         filterFailures.filter(failure => failure).forEach((failure, i) => {
+            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
             this.logger.warn(` ${i + 1}. ${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
         });
     }

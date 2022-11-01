@@ -38,7 +38,7 @@ export class SalesforcePackageBuilder {
         public readonly type: SalesforcePackageType,
         public readonly apiVersion?: string,
         fs?: FileSystem) {
-        this.fs = new CachedFileSystemAdapter(fs!);
+        this.fs = new CachedFileSystemAdapter(fs);
         this.mdPackage = new SalesforcePackage(apiVersion ?? '50.0', '', this.fs);
     }
 

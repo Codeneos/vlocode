@@ -1,8 +1,7 @@
-import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor, ServiceType } from "@vlocode/core";
+import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
-import { randomUUID } from "crypto";
-import { DatapackFilter } from "datapackDeployer";
-import { DatapackDeploymentSpec } from "datapackDeploymentSpec";
+import { DatapackFilter } from "./datapackDeployer";
+import { DatapackDeploymentSpec } from "./datapackDeploymentSpec";
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeploymentSpecRegistry {
@@ -47,7 +46,7 @@ export class DatapackDeploymentSpecRegistry {
         for (const spec of Object.values(this.specs)) {
             yield { 
                 filter: spec.filter, 
-                spec: spec.instance ?? lazy( () => this.container.create(spec.type!) )
+                spec: spec.instance ?? lazy( () => this.container.create(spec.type) )
             };
         }
     }

@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import VlocityDatapackService, { ManifestEntry } from '@lib/vlocity/vlocityDatapackService';
 import { CommandBase } from '@root/lib/commandBase';
-import { createRecordProxy, evalExpr, groupBy, mapAsync, mapAsyncParallel } from '@vlocode/util';
+import { evalExpr, mapAsync, mapAsyncParallel } from '@vlocode/util';
 import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackUtil } from '@vlocode/vlocity-deploy';
 import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 
@@ -61,7 +61,7 @@ export abstract class DatapackCommand extends CommandBase {
      * @returns List of datapacks and their associated salesforce records and record Ids
      */
     protected async getSalesforceRecords(datapacks: VlocityDatapack[], options?: { showRecordSelection?: boolean }) {
-        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) =>
+        const matchingRecords = (await this.datapackService.getDatapackRecords(datapacks)).map((matchedRecords, i) =>
             options?.showRecordSelection  
                 ? this.showRecordSelection(matchedRecords, datapacks[i].datapackType) 
                 : this.getBestRecord(matchedRecords, datapacks[i].datapackType)

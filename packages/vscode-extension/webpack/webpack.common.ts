@@ -4,8 +4,8 @@ import { merge } from 'webpack-merge';
 import * as glob from 'glob';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import * as CopyPlugin from 'copy-webpack-plugin';
-//import * as ts from 'typescript';
 import WatchMarkersPlugin from './plugins/watchMarkers';
+import * as TerserPlugin from 'terser-webpack-plugin';
 import type { Options } from 'ts-loader';
 
 const packageExternals = [
@@ -112,6 +112,7 @@ const common : webpack.Configuration = {
         runtimeChunk: false,
         removeEmptyChunks: true,
         removeAvailableModules: true,
+        mergeDuplicateChunks: true,
         providedExports: false,
         usedExports: false,
         portableRecords: true,
@@ -128,36 +129,17 @@ const common : webpack.Configuration = {
                     priority: 20,
                     test: /[\\/]sass\.js[\\/]/,
                     name: 'lib-sass',
-                    reuseExistingChunk: false,
-                },
-                'vlocity-deploy': {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]vlocity-deploy[\\/]/,
-                    name: 'vlocode-vlocity-deploy'
-                },
-                salesforce: {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]salesforce[\\/]/,
-                    name: 'vlocode-salesforce'
-                },
-                core: {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]core[\\/]/,
-                    name: 'vlocode-core'
-                },
-                util: {
-                    priority: 10,
-                    test: /[\\/]packages[\\/]util[\\/]/,
-                    name: 'vlocode-util'
+                    reuseExistingChunk: true,
                 },
                 shared: {
                     priority: 5,
                     test: /[\\/]node_modules[\\/]/,
                     name: 'vendor',
-                    reuseExistingChunk: false
+                    reuseExistingChunk: true
                 }
             },
         },
+        minimize: false
     },
     cache: {
         type: 'memory'

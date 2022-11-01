@@ -42,9 +42,6 @@
                         }
                     }
                 }
-            ],
-            "dependsOn": [
-                "watch-vlocity-deploy"
             ]
         },        
         {

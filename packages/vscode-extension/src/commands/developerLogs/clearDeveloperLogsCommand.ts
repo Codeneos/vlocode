@@ -12,7 +12,7 @@ export default class ClearDeveloperLogsCommand extends MetadataCommand {
     /**
      * Clears all developer logs.
      */
-    public async execute() {
+    public execute() {
         return this.vlocode.withActivity({
             cancellable: true,
             location: vscode.ProgressLocation.Notification,
