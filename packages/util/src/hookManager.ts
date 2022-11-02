@@ -1,3 +1,4 @@
+import { isPromise } from 'util/types';
 import * as uuid from 'uuid';
 
 interface CallHookOptions<T = any> {
@@ -71,8 +72,17 @@ export class HookManager<T extends object> {
             const options = this.executeHooks('pre', { args, name, target });
             // Run actual code
             options.returnValue = target[name](...options.args);
-            // run post Hooks
-            return this.executeHooks('post', options).returnValue;
+            // Patch in hook
+            if (isPromise(options.returnValue)) {
+                return options.returnValue.then(resolved => {
+                    options.returnValue = resolved;
+                    this.executeHooks('post', options);
+                    return options.returnValue;
+                });
+            }
+            
+            this.executeHooks('post', options);
+            return options.returnValue;
         };
     }
 
@@ -90,7 +100,11 @@ export class HookManager<T extends object> {
 
         if (this.enabled) {
             for (const hook of this.hooks) {
-                execute(hook);
+                try {
+                    execute(hook);
+                } catch {
+                    continue;
+                }
             }
         }
 

@@ -1,5 +1,5 @@
 import { LogLevel } from '../logging';
-import { isPromise } from '@vlocode/util';
+import { getErrorMessage, isPromise } from '@vlocode/util';
 import LogManager from './logManager';
 
 export interface LogEntry {
@@ -92,7 +92,7 @@ export class Logger {
 
     private formatArg(arg: any) : string | any {
         if (arg instanceof Error) {
-            return arg.message;
+            return getErrorMessage(arg);
         } else if (arg !== null && typeof arg === 'object') {
             try {
                 return JSON.stringify(arg, undefined, 2);
