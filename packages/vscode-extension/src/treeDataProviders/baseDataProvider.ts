@@ -70,11 +70,15 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
 
     public abstract getChildren(node?: T): Promise<T[] | undefined> | T[] | undefined;
 
-    protected getItemIconPath(icon: { light: string; dark: string } | string | undefined) : { light: string; dark: string } | string | undefined {
-        if(!icon) {
+    protected getItemIconPath(icon: { light: string; dark: string } | string | undefined) : { light: string; dark: string } | string | vscode.ThemeIcon | undefined {
+        if (!icon) {
             return undefined;
         }
         if (typeof icon === 'string') {
+            const themeIconMatches = icon.match(/^\$\(([^ ]+)\)$/i);
+            if (themeIconMatches) {
+                return new vscode.ThemeIcon(themeIconMatches[1]);
+            }
             return this.getAbsolutePath(icon);
         }
         if (typeof icon === 'object') {

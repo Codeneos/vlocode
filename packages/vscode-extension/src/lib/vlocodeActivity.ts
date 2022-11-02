@@ -29,7 +29,17 @@ export interface VlocodeActivity {
     /**
      * Wether or not the activity can be cancelled
      */
-    readonly cancelable?: boolean;
+    readonly cancellable: boolean;
+
+    /**
+     * True if the activity should not be shown to the user
+     */
+    readonly hidden: boolean;
+
+    /**
+     * Gets the current execution time in ms
+     */
+    readonly executionTime?: number;
 
     /**
      * Cancel the activity, only available `cancelable` is true
@@ -42,6 +52,7 @@ export interface ActivityOptions {
     activityTitle?: string;
     cancellable: boolean;
     location: vscode.ProgressLocation;
+    hidden?: boolean;
     /** Task runner throws exceptions back to so they can be caught by the called */
     propagateExceptions?: boolean;
 }

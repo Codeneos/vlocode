@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '@constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '@lib/vlocodeActivity';
-import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options, poll } from '@vlocode/util';
+import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options, poll, getErrorMessage } from '@vlocode/util';
 import * as chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';
 import VlocodeConfiguration from './vlocodeConfiguration';
@@ -72,7 +72,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     public async initialize() {
-        this.showStatus('$(sync) Connecting to Salesforce...');
+        this.showStatus('$(sync~spin) Connecting to Salesforce...');
         try {
             delete this.connector;
             if (this._salesforceService) {
@@ -83,7 +83,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
             if (this.config.sfdxUsername) {
                 this._salesforceService = container.get(SalesforceService);
-                this.showStatus('$(sync) Initializing datapack services...');
+                this.showStatus('$(sync~spin) Initializing datapack services...');
                 await this.nsService.initialize(this._salesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
                 await container.get(VlocityMatchingKeyService).initialize();
@@ -92,7 +92,13 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         } catch (err) {
             this.logger.error(err);
             if (err?.message == 'NamedOrgNotFound') {
-                this.showStatus(`$(error) Unknown Salesforce user: ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+                this.showStatus(`$(error) Unknown Salesforce user - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+            } else if (err?.message == 'The org cannot be found') {
+                this.showStatus(`$(error) Org not found - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+            } else if (err?.message == 'RefreshTokenAuthError') {
+                this.showStatus(`$(key) Authorization expired - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+            } else if (err?.code == 'ENOTFOUND') {
+                this.showStatus(`$(cloud-offline) Unable to reach Salesforce`, VlocodeCommand.selectOrg);
             } else {
                 this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
@@ -110,7 +116,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         this.createUpdateStatusBarItem(
             'connection', {
                 text, command,
-                tooltip: 'Click to select a different Salesforce org for Vlocode'
+                tooltip: command ? 'Click to select a different Salesforce org for Vlocode' : undefined
             }
         );
     }
@@ -118,11 +124,15 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     private showApiVersionStatusItem() : void {
         this.createUpdateStatusBarItem(
             'apiVersion', {
-                text: this.config.salesforce.apiVersion || 'Select Salesforce API Version',
+                text: this.config.salesforce.apiVersion ?? 'Select Salesforce API Version',
                 tooltip: `Currently using API version ${this.config.salesforce.apiVersion}, click to select a different API version`,
                 command: VlocodeCommand.selectApiVersion
             }
         );
+    }
+
+    public getStatusText() : string {
+        return this.statusItems['connection']?.text;
     }
 
     public hideAllStatusBarItems() : void {
@@ -152,6 +162,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.withActivity({
             progressTitle: title,
             cancellable: false,
+            hidden: true,
             location: vscode.ProgressLocation.Notification
         }, typeof task === 'function' ? task : () => task);
     }
@@ -165,6 +176,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.withActivity({
             progressTitle: title,
             cancellable: true,
+            hidden: true,
             location: vscode.ProgressLocation.Notification
         }, task);
     }
@@ -178,6 +190,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.withActivity({
             progressTitle: title,
             cancellable: false,
+            hidden: true,
             location: vscode.ProgressLocation.Window
         }, typeof task === 'function' ? task : () => task);
     }
@@ -209,7 +222,9 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         const activityRecord = observeObject({
             startTime: Date.now(),
             endTime: -1,
-            cancellable: options.cancellable,
+            executionTime: -1,
+            hidden: options.hidden === true,
+            cancellable: options.cancellable === true,
             title: options.activityTitle || options.progressTitle,
             status: VlocodeActivityStatus.Pending,
             onComplete: onCompleteEmitter.event,
@@ -257,6 +272,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
                     activityRecord.status = VlocodeActivityStatus.Cancelled;
                 }
                 activityRecord.endTime = Date.now();
+                activityRecord.executionTime = activityRecord.endTime - activityRecord.startTime;
                 onCompleteEmitter.fire(activityRecord);
             }
         };
@@ -271,7 +287,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         }, taskRunner) as Promise<T>;
     }
 
-    public async getJsForceConnection() : Promise<jsforce.Connection> {
+    public getJsForceConnection() : Promise<jsforce.Connection> {
         return this.getConnector().getJsForceConnection();
     }
 
@@ -364,9 +380,13 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
         this.setExtensionContext('orgSelected', true);
         this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
-        void sfdx.getSfdxAlias(config.sfdxUsername).then(userAliasOrName =>
+        void sfdx.getSfdxAlias(config.sfdxUsername).then(userAliasOrName => {
+            if (this.getStatusText() !== `$(cloud-upload) Vlocode ${config.sfdxUsername}`) {
+                // Avoid overwriting more up to date status bar text during extension start-up
+                return;
+            }
             this.showStatus(`$(cloud-upload) Vlocode ${userAliasOrName}`, VlocodeCommand.selectOrg)
-        );
+        });
     }
 
     private setExtensionContext(key: string, value: any) {
@@ -393,7 +413,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
     }
 
     private async processConfigurationChange() {
-        this.showStatus('$(sync) Processing config changes...', VlocodeCommand.selectOrg);
+        this.showStatus('$(sync~spin) Processing config changes...', VlocodeCommand.selectOrg);
         await this.initialize();
         this.showApiVersionStatusItem();
     }
