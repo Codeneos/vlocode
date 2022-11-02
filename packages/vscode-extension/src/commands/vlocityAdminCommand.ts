@@ -63,7 +63,7 @@ export class VlocityAdminCommand extends CommandBase {
             return;
         }
 
-        await this.vlocode.withProgress(`Running ${selectedCommand.title}...`, async () => {
+        await this.vlocode.withActivity(`Running ${selectedCommand.title}...`, async () => {
             if (selectedCommand.batchJob) {
                 await this.executeBatch(selectedCommand.batchJob);
             }

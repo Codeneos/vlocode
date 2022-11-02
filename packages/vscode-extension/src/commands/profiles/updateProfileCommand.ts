@@ -25,7 +25,7 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
      * @returns void
      */
     private async updateProfiles(selectedFiles: vscode.Uri[]) {
-        const mdPackage = await this.vlocode.withActivity('Parsing metadata...', async () =>
+        const mdPackage = await this.vlocode.withProgress('Parsing metadata...', async () =>
             (await new SalesforcePackageBuilder(SalesforcePackageType.deploy).addFiles(selectedFiles)).getPackage()
         );
         const manifest = mdPackage.manifest;

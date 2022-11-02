@@ -75,12 +75,9 @@ export default class ExportDatapackCommand extends DatapackCommand {
 
     protected async queryExportableRecords(datapackType : string) : Promise<SObjectRecord[]> {
         // query available records
-        const queryProgress = await this.startProgress('Querying salesforce for list of objects to export...');
-        try {
+        return this.vlocode.withProgress('Querying salesforce for list of objects to export...', async () => {
             return await this.salesforce.query<SObjectRecord>(this.getExportQuery(datapackType));
-        } finally {
-            queryProgress.complete();
-        }
+        });
     }
 
     protected async showDatapackTypeSelection() : Promise<string | undefined> {

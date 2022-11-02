@@ -60,6 +60,6 @@ export default class CloneDatapackCommand extends DatapackCommand {
         }
 
         // execute rename and expand into new folder structure
-        await this.vlocode.withProgress(`Expanding ${datapack.name}...`, () => this.vlocode.datapackService.expandDatapack(datapack, datapack.projectFolder));
+        await this.vlocode.withActivity(`Clone datapack ${datapack.name}...`, () => this.vlocode.datapackService.expandDatapack(datapack, datapack.projectFolder));
     }
 }

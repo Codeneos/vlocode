@@ -40,6 +40,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
         this.logger.info(`Refresh ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
 
         await this.vlocode.withActivity({
+            activityTitle: `Refresh ${progressTitle}`,
             progressTitle: `Refreshing ${progressTitle}...`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,

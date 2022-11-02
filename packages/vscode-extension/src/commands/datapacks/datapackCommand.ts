@@ -61,7 +61,7 @@ export abstract class DatapackCommand extends CommandBase {
      * @returns List of datapacks and their associated salesforce records and record Ids
      */
     protected async getSalesforceRecords(datapacks: VlocityDatapack[], options?: { showRecordSelection?: boolean }) {
-        const matchingRecords = (await this.datapackService.getDatapackRecords(datapacks)).map((matchedRecords, i) =>
+        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) =>
             options?.showRecordSelection  
                 ? this.showRecordSelection(matchedRecords, datapacks[i].datapackType) 
                 : this.getBestRecord(matchedRecords, datapacks[i].datapackType)

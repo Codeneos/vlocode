@@ -111,6 +111,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         }
 
         return this.vlocode.withActivity({
+            activityTitle: `Set log level ${traceFlagsSelection.label}`, 
             progressTitle: `Update log level: ${traceFlagsSelection.label}`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,

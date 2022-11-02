@@ -32,7 +32,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
             return; // do datapacks found
         }
 
-        await this.vlocode.withCancelableProgress(progressTitle, async (progress, cancelToken) => {
+        await this.vlocode.withActivity(progressTitle, async (progress, cancelToken) => {
             const results = await mapAsync(Object.entries(datapacksByProject),
                 async ([projectFolder, datapacks]) => {
                     const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection });
