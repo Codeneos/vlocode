@@ -12,8 +12,6 @@ export class DatapackDeploymentSpecRegistry {
     public static readonly instance = lazy(() => container.get(DatapackDeploymentSpecRegistry));
     public static specCounter = 0;
 
-    @injectable.property 
-    private readonly logger: Logger;
     private readonly specs: Record<number, { 
         key: number,
         filter: DatapackFilter, 
@@ -44,9 +42,9 @@ export class DatapackDeploymentSpecRegistry {
         }
 
         for (const spec of Object.values(this.specs)) {
-            yield { 
+            yield {
                 filter: spec.filter, 
-                spec: spec.instance ?? lazy( () => this.container.create(spec.type) )
+                spec: spec.instance ?? lazy( () => this.container.create(spec.type!) )
             };
         }
     }
@@ -71,9 +69,6 @@ export class DatapackDeploymentSpecRegistry {
             filter = { datapackFilter: filter };
         }
 
-        const filterName = filter.datapackFilter ? `datapacks: '${filter.datapackFilter.toString()}'` : `records: '${filter.recordFilter?.toString()}'`;
-        this.logger.verbose(`Register datapack deployment spec for ${filterName}`)
-        
         this.specs[++DatapackDeploymentSpecRegistry.specCounter] = {
             key: DatapackDeploymentSpecRegistry.specCounter, 
             filter, 

@@ -5,8 +5,6 @@ import * as glob from 'glob';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import * as CopyPlugin from 'copy-webpack-plugin';
 import WatchMarkersPlugin from './plugins/watchMarkers';
-import * as TerserPlugin from 'terser-webpack-plugin';
-import type { Options } from 'ts-loader';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -23,17 +21,6 @@ const packageExternals = [
 const contextFolder = path.resolve(__dirname, '..');
 const workspaceFolder = path.resolve(contextFolder, '..');
 
-// export function transformerFactory(context: ts.TransformationContext) : ts.Transformer<ts.SourceFile> {
-//     return (node: ts.SourceFile) => {
-//         node.forEachChild(child => {
-//             if (ts.isImportDeclaration(child)) {
-//                 console.debug(node.fileName + ' imports ' + child.importClause?.name?.text);
-//             }
-//         });
-//         return node;
-//     };
-// }
-
 const common : webpack.Configuration = {
     context: contextFolder,
     devtool: 'source-map',
@@ -48,24 +35,12 @@ const common : webpack.Configuration = {
         rules: [
             {
                 test: /\.ts$/,
-                //include: path.resolve(__dirname, 'src'),
+                exclude: /node_modules/,
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        compilerOptions: {
-                            outDir: path.join(__dirname, '../.ts-temp'),
-                            declaration: false,
-                            rootDirs: [
-                                contextFolder,
-                                path.resolve(workspaceFolder, 'core', 'src'),
-                                path.resolve(workspaceFolder, 'util', 'src'),
-                                path.resolve(workspaceFolder, 'vlocity-deploy', 'src'),
-                                path.resolve(workspaceFolder, 'salesforce', 'src')
-                            ]
-                        },
-                        projectReferences: false,
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
-                    } as Options
+                    }
                 }],
             },
             {
@@ -140,9 +115,6 @@ const common : webpack.Configuration = {
             },
         },
         minimize: false
-    },
-    cache: {
-        type: 'memory'
     },
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
