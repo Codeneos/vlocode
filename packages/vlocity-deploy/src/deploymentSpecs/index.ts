@@ -1,5 +1,5 @@
+export * from './documentTemplate';
 export * from './calculationMatrix';
-export * from './contentVersion';
 export * from './dataRaptor';
 export * from './omniScript';
 export * from './overrideDefinitionRecords';

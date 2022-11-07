@@ -1,25 +1,18 @@
-import { DeferredWorkQueue, Logger, WorkItemResult } from '@vlocode/core';
-import { SalesforceLookupService, SalesforceService } from '@vlocode/salesforce';
-import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
-import { DatapackDeploymentRecord, DeploymentAction } from '../datapackDeploymentRecord';
-import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { createHash } from 'crypto';
-import { DatapackDeploymentEvent } from '../datapackDeployer';
-
-interface ContentVersionRecord {
-    Checksum: string;
-    ContentDocumentId: string;
-    VersionNumber: number;
-}
+import { Logger } from '@vlocode/core';
+import { SalesforceService } from '@vlocode/salesforce';
+import { deploymentSpec } from '../../datapackDeploymentSpecRegistry';
+import { DatapackDeploymentRecord, DeploymentAction } from '../../datapackDeploymentRecord';
+import { DatapackDeploymentSpec } from '../../datapackDeploymentSpec';
+import { DatapackDeploymentEvent } from '../../datapackDeployer';
+import { ContentVersionLookup } from './contentVersionLookup';
 
 @deploymentSpec({ datapackFilter: /^ContentVersion$/i })
 export class ContentVersion implements DatapackDeploymentSpec {
 
-    private lookupQueue = new DeferredWorkQueue(this.lookupProcessor, this);
-
     public constructor(
         private readonly salesforceService: SalesforceService,
-        private readonly lookupService: SalesforceLookupService,
+        private readonly contentVersionLookup: ContentVersionLookup,
         private readonly logger: Logger) {
     }
 
@@ -29,16 +22,6 @@ export class ContentVersion implements DatapackDeploymentSpec {
 
     public beforeDeployRecord(records: ReadonlyArray<DatapackDeploymentRecord>) {
         return Promise.all(records.map(rec => this.updateContentDocumentId(rec)));
-    }
-
-    private async lookupProcessor(ids: string[]) {
-        const lookupFilters = ids.map(id => ({ id }));
-        const results = await this.lookupService.lookup('ContentVersion', lookupFilters, ['id', 'ContentDocumentId', 'VersionNumber', 'Checksum']);
-
-        return ids.map<WorkItemResult<ContentVersionRecord>>(id => ({
-            status: 'fulfilled',
-            value: results.find(record => record.id == id)!
-        }));
     }
 
     /**
@@ -68,11 +51,15 @@ export class ContentVersion implements DatapackDeploymentSpec {
 
     /**
      * Link the ContentVersion objects to existing content document objects. If the content version is not changed
-     * skip deployment of a mew ContentVersion to save space on the target org. 
+     * skip deployment of a mew ContentVersion to save spaxce on the target org. 
      * @param record ContentVersion record
      */
     private async updateContentDocumentId(record: DatapackDeploymentRecord) {
-        const currentContentVersion = await this.lookupContentVersion(record);
+        if (!record.recordId) {
+            return;
+        }
+
+        const currentContentVersion = await this.contentVersionLookup.lookup(record.recordId)
         if (!currentContentVersion) {
             return;
         }
@@ -87,13 +74,6 @@ export class ContentVersion implements DatapackDeploymentSpec {
             record.setAction(DeploymentAction.Insert);
             record.value('ContentDocumentId', currentContentVersion.ContentDocumentId);
         }
-    }
-
-    private async lookupContentVersion(record: DatapackDeploymentRecord) {
-        if (!record.recordId) {
-            return;
-        }
-        return (this.lookupQueue.getQueuedWork(item => item === record.recordId) ?? await this.lookupQueue.enqueue(record.recordId));
     }
 
     /**
@@ -111,11 +91,11 @@ export class ContentVersion implements DatapackDeploymentSpec {
     }
 
     private async getContentDocumentLinkValues(record: DatapackDeploymentRecord) {
-        if (!record.isSkipped) {
+        if (!record.isSkipped || !record.recordId) {
             return;
         }
 
-        const contentVersion = await this.lookupContentVersion(record);
+        const contentVersion = await this.contentVersionLookup.lookup(record.recordId);
         if (!contentVersion) {
             return;
         }
