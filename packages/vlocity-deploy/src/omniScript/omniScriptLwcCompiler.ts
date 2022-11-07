@@ -67,13 +67,17 @@ export class OmniScriptLwcCompiler{
 
         // Initialize the compiler and expose on the virtual DOM
         new Script(`
-            ${(await compilerSource.getBody()).toString('utf-8')}
-            this.OmniscriptLwcMetaBuilder = class extends this.OmniscriptLwcMetaBuilder {
-                constructor() {
-                    super();
-                    this.getApiVersion = function() { return '${this.compilerApiVersion}'; }
-                }
-            };
+            ${(await compilerSource.getBody())
+                .toString('utf-8')
+                .replace(
+                    /getApiVersion\s*=\s*function\s*\(\s*\)\s*{\s*return\s*['"`](.){4}['"`];?\s*}/gm,
+                    `getApiVersion = function() { return '${this.compilerApiVersion}'; }`,
+                )                
+                .replace(
+                    `module.exports = OmniscriptLwcCompiler;`, 
+                    `module.exports = window.OmniscriptLwcCompiler = OmniscriptLwcCompiler;`
+                )
+            }
             this.lwcCompiler = new OmniscriptLwcCompiler('${compilerSource.namespace}');
         `).runInContext(localDom.getInternalVMContext());        
         this.compiler = localDom.window.lwcCompiler;
@@ -96,7 +100,13 @@ export class OmniScriptLwcCompiler{
         return { name: componentName, resources }
     }
 
-    public async compileToolingRecord(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }) {
+    /**
+     * Compile an OmniScript into a deployable Salesforce Tooling record
+     * @param scriptDefinition Definition of the OmniScript to compile
+     * @param options Options to control the compilation
+     * @returns 
+     */
+    public async compileToToolingRecord(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }) {
         // Get the name of the component or generate it and compile the OS
         const componentName = options?.lwcName ?? this.getLwcName({ type: scriptDefinition.bpType, subType: scriptDefinition.bpSubType, language: scriptDefinition.bpLang });
         const compiler = await this.getCompiler();
@@ -161,7 +171,7 @@ export class OmniScriptLwcCompiler{
      * Generated the LWC component name from the OmniScript definition
      * @param scriptDefinition Definition of the OmniScript for which to generate the name
      */
-    public getLwcName(script: OmniScriptDetail) {
+    private getLwcName(script: OmniScriptDetail) {
         const cpType = script.type.charAt(0).toLowerCase() + script.type.slice(1);
         const cpSubType = script.subType.charAt(0).toUpperCase() + script.subType.slice(1);
         const cpLanguage = script.language ? (script.language.replace(/[\s()-]+/gi, '')) : script.language;

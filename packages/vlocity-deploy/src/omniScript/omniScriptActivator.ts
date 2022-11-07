@@ -101,7 +101,7 @@ export class OmniScriptActivator {
     }
 
     private async deployLwcWithToolingApi(definition: OmniScriptDefinition) {
-        const tollingRecord = await this.lwcCompiler.compileToolingRecord(definition)
+        const tollingRecord = await this.lwcCompiler.compileToToolingRecord(definition)
         const result = await this.upsertToolingRecord(`LightningComponentBundle`, tollingRecord);
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${JSON.stringify(result.errors)}`);
