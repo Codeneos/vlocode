@@ -47,6 +47,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             tooltip: state ? 'Pause Salesforce deployments' : 'Resume Salesforce deployments',
             command: state ? VlocodeCommand.pauseDeploymentQueue : VlocodeCommand.resumeDeploymentQueue
         });
+
         if (state && this.deploymentTaskRef === undefined && this.filesPendingDeployment.size > 0) {
             void this.deployMetadata([]);
         }
@@ -57,10 +58,10 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     /**
-     * Saved all unsaved changes in the files related to each of the selected datapack files.
-     * @param datapackHeaders The datapack header files.
+     * Saved all unsaved changes in the files related to each of the selected Salesforce metadata
+     * @param sfPackage Metadata Deployment package
      */
-    private saveUnsavedChanges(sfPackage: SalesforcePackage) : Promise<vscode.TextDocument[]> {
+    private saveOpenFiles(sfPackage: SalesforcePackage) : Promise<vscode.TextDocument[]> {
         const filesToSave = new Set(sfPackage.files());
         const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && filesToSave.has(d.uri.fsPath));
         return forEachAsyncParallel(openDocuments, doc => doc.save());
@@ -68,14 +69,14 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {
         // Prevent prod deployment if not intended
-        if (this.enabled && await this.salesforce.isProductionOrg()) {
+        if (await this.salesforce.isProductionOrg()) {
             if (!await this.showProductionWarning(false)) {
                 return;
             }
         }
 
         // Queue files
-        selectedFiles.forEach(this.filesPendingDeployment.add.bind(this.filesPendingDeployment));
+        selectedFiles.forEach(file => this.filesPendingDeployment.add(file));
 
         // Start deployment
         if (this.deploymentTaskRef === undefined && this.enabled) {
@@ -102,7 +103,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async doDeployMetadata(files: vscode.Uri[]) {
         const apiVersion = this.vlocode.config.salesforce?.apiVersion ?? this.salesforce.getApiVersion();
-        const taskTitle = files.length == 1 ? `Deploy ${fileName(files[0].fsPath, true)}` : 'Deploy Metadata';
+        const taskTitle = files.length == 1 ? `Deploying ${fileName(files[0].fsPath, true)}...` : 'Deploying Metadata...';
         await this.vlocode.withActivity({
             progressTitle: taskTitle,
             location: vscode.ProgressLocation.Notification,
@@ -136,7 +137,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             progress.report({ message: `deploying ${sfPackage.size()} components` });
 
             // Save manifest
-            await this.saveUnsavedChanges(sfPackage);
+            await this.saveOpenFiles(sfPackage);
 
             // Clear errors before starting the deployment
             this.clearPreviousErrors(sfPackage.files());

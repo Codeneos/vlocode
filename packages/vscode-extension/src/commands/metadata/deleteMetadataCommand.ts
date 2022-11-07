@@ -21,7 +21,6 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             : `${selectedFiles.length} files`;
 
         await this.vlocode.withActivity({
-            activityTitle: `Delete ${progressTitle}`,
             progressTitle: `Deleting ${progressTitle}...`,
             location: vscode.ProgressLocation.Window,
             cancellable: true
