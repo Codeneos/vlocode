@@ -41,7 +41,9 @@ class CLI {
 
     private init(options: any) { 
         this.logger.info(`${CLI.programName} v${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()}) - ${CLI.description}`);       
-        if (options.verbose === true) {
+        if (options.debug === true) {
+            LogManager.setGlobalLogLevel(LogLevel.debug);
+        } else if (options.verbose === true) {
             LogManager.setGlobalLogLevel(LogLevel.verbose);
         }
     }
