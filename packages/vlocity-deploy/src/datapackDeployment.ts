@@ -393,8 +393,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 } else if(status) {
                     this.logger.verbose(`Record out of sync ${record.recordId} (${record.sobjectType})`, status.mismatchedFields)
                 }
+                this.logger.debug('Update', record.sobjectType, ':', record.values);
                 batch.addUpdate(record.sobjectType, record.values, record.recordId, record.sourceKey);
             } else {
+                this.logger.debug('Insert', record.sobjectType, ':', record.values);
                 batch.addInsert(record.sobjectType, record.values, record.sourceKey);
             }
         }
