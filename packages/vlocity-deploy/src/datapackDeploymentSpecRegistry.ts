@@ -44,7 +44,7 @@ export class DatapackDeploymentSpecRegistry {
         for (const spec of Object.values(this.specs)) {
             yield {
                 filter: spec.filter, 
-                spec: spec.instance ?? lazy( () => this.container.create(spec.type!) )
+                spec: spec.instance ?? lazy( () => spec.instance = this.container.create(spec.type!) )
             };
         }
     }
