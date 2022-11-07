@@ -209,7 +209,7 @@ function isObject(obj: any) {
  * @param separator optional separator
  * @param keyPrefix key which will prefixes the new keys
  */
-export function flattenObject<T>(values: T, flattenPredicate?: (obj: any) => any, separator = '.', keyPrefix?: string): T {
+export function flattenObject<T extends object>(values: T, flattenPredicate?: (obj: any) => any, separator = '.', keyPrefix?: string): T {
     return Object.entries(values).reduce((acc, [key, value]) => {
         const objectKey = keyPrefix ? `${keyPrefix}${separator}${key}`: key;
         if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
@@ -239,7 +239,7 @@ export function getObjectProperty(obj: any, prop: string) {
  * @param options.createWhenNotFound Create an object to be able to set the specified property, otherwise does not set the property specified
  * @returns The original obj with the property path set to the specified value;
  */
-export function setObjectProperty<T>(obj: T, prop: string, value: any, options?: { createWhenNotFound?: boolean }) : T {
+export function setObjectProperty<T extends object>(obj: T, prop: string, value: any, options?: { createWhenNotFound?: boolean }) : T {
     if (options?.createWhenNotFound) {
         obj = obj ?? {} as T; // init object with a default when not set
     }
@@ -307,4 +307,37 @@ export function getErrorMessage(err: unknown | any, withStack?: boolean): string
         return withStack && err.stack ? err.stack : err.message;
     }
     return String(err);
+}
+
+/**
+ * Compare 2 objects for quality by comparing the values of the properties of the objects instead of only reference-equality.
+ * - For none-object (primitives such as string, integer, etc) equality a `===`-comparison is used.
+ * 
+ * @param a Object to which object `b` is compared
+ * @param b Object to which object `a` is compared
+ * @returns True if objects a and b are equal otherwise false.
+ */
+export function objectEquals(a?: unknown, b?: unknown) {
+    if (typeof a !== 'object' || typeof b !== 'object' || a === null || b == null) {
+        return a === b;
+    }
+
+    if (a === b) {
+        // reference equality check
+        return true;
+    }
+
+    if (Object.keys(a).length !== Object.keys(b).length) {
+        // If A does not have the same amount of keys of B they cannot be equal
+        return false;
+    }
+    
+    // Check if all keys of A are equal to the keys in B
+    for (const key of Object.keys(a)) {
+        if (!objectEquals(a[key], b[key])) {
+            return false;
+        }
+    }
+
+    return true;
 }
