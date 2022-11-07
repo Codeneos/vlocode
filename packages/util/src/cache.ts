@@ -4,29 +4,34 @@ import { isPromise, isThenable } from './async';
 export interface CacheOptions {
     /**
      * Cache lifetime in seconds. Undefined, 0 or -1 are considered infinite or until the instance is removed
+     * When not set the cached value will never expire.
      */
     ttl?: number;
     /**
      * Scope of the cache, defaults to instance for non-static members and global for static methods
+     * @default 'instance'
      */
     scope?: 'global' | 'instance';
     /**
      * The result return by the original function will be immutable. This calls object.freeze which 
      * will prevent the returned value from being altered in anyway; this also prevents the object from modifying itself.
      * Only use this when the both the current method nor the callers can change the object.
+     * @default false
      */
     immutable?: boolean;
     /**
      * Deep clone the object returned by this method using JSON stringify/parse. If the object is a class all prototyped context is lost.
+     * @default false
      */
     deepClone?: boolean;
     /**
-     * When true the original result of a function is a promise the on subsequent calls the cache decorator can instead or returning
-     * a promise return the resolved value directly. This offers a benefit to ES6 async-await code but is incompatible with classic Promises.
+     * When `true` and the result of a function is a `Promise<T>` cache hits will return the value (of type `T`) that the promise resolved to instead of the resolved promise.
+     * This benefits ES6 async-await code by avoiding yielding control back to the event loop but is incompatible with classic Promisees where `.then` or `.catch` is used as the unwrapped value will not implement these values.
+     * @default false
      */
     unwrapPromise?: boolean;
     /**
-     * Also store reject promises and exceptions instead of deleting any promise that is rejected from the cache.
+     * When true promise rejections and errors thrown by the cached function will also be cached instead of re-executing. 
      */
     cacheExceptions?: boolean;
 }
