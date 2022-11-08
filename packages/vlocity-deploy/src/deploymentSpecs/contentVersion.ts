@@ -1,10 +1,10 @@
 import { createHash } from 'crypto';
 import { Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
-import { deploymentSpec } from '../../datapackDeploymentSpecRegistry';
-import { DatapackDeploymentRecord, DeploymentAction } from '../../datapackDeploymentRecord';
-import { DatapackDeploymentSpec } from '../../datapackDeploymentSpec';
-import { DatapackDeploymentEvent } from '../../datapackDeployer';
+import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
+import { DatapackDeploymentRecord, DeploymentAction } from '../datapackDeploymentRecord';
+import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
+import { DatapackDeploymentEvent } from '../datapackDeployer';
 import { ContentVersionLookup } from './contentVersionLookup';
 
 @deploymentSpec({ datapackFilter: /^ContentVersion$/i })

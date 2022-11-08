@@ -1,25 +1,16 @@
-import { Logger } from '@vlocode/core';
-import { SalesforceService } from '@vlocode/salesforce';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import type { DatapackDeploymentEvent } from '../datapackDeployer';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
+import { RecordActivator } from './recordActivator';
 
 @deploymentSpec({ datapackFilter: 'VlocityAction' })
 export class VlocityAction implements DatapackDeploymentSpec {
 
     public constructor(
-        private readonly salesforceService: SalesforceService,
-        private readonly logger: Logger) {
+        private readonly activator: RecordActivator) {
     }
 
-    public async afterDeploy(event: DatapackDeploymentEvent) {
-        const templateRecords = [...event.getDeployedRecords('VlocityAction__c')].map(record => ({ id: record.recordId, isActive__c: true }));
-        for await(const record of this.salesforceService.update('%vlocity_namespace%__VlocityAction__c', templateRecords)) {
-            if (!record.success) {
-                this.logger.warn(`Failed activation of action ${record.ref}: ${record.error}`);
-            } else {
-                this.logger.verbose(`Activated Vlocity action ${record.ref}`);
-            }
-        }
+    public afterDeploy(event: DatapackDeploymentEvent) {
+        return this.activator.activateRecords(event.getDeployedRecords('VlocityAction__c'), () => ({ active__c: true }));
     }
 }

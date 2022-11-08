@@ -49,19 +49,21 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
     /**
      * Get the first record of the specified SObject type, checks for both NS prefixed and non-prefixed records if the sobjectType does not have a prefix.
      * Does not replace namespace placeholders. The matching is case-sensitive
-     * @param sobjectType Type of sobject to look for
+     * @see {@link DatapackDeploymentRecord.isMatch} for the matching logic
+     * @param sobjectType Type of sobject to look for as string or Regular expression
      */
-    public getRecordOfType(sobjectType: string) : DatapackDeploymentRecord | undefined {
-        return this.records.find(record => record.sobjectType == sobjectType || record.sobjectType.endsWith(`__${sobjectType}`));
+    public getRecordOfType(sobjectType: string | RegExp) : DatapackDeploymentRecord | undefined {
+        return this.records.find(record => record.isMatch(sobjectType));
     }
 
     /**
      * Get akk records of the specified SObject type, checks for both NS prefixed and non-prefixed records if the sobjectType does not have a prefix.
      * Does not replace namespace placeholders. The matching is case-sensitive
-     * @param sobjectType Type of sobject to look for
+     * @see {@link DatapackDeploymentRecord.isMatch} for the matching logic
+     * @param sobjectType Type of sobject to look for as string or Regular expression
      */
-    public getRecordsOfType(sobjectType: string) : DatapackDeploymentRecord[] {
-        return this.records.filter(record => record.sobjectType == sobjectType || record.sobjectType.endsWith(`__${sobjectType}`));
+    public getRecordsOfType(sobjectType: string | RegExp) : DatapackDeploymentRecord[] {
+        return this.records.filter(record => record.isMatch(sobjectType));
     }
 
     /**

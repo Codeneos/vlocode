@@ -1,18 +1,18 @@
 import * as path from 'path';
 import { Logger } from '@vlocode/core';
-import { SalesforceService } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
 import type { DatapackDeploymentEvent } from '../datapackDeployer';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
 import { SassCompiler } from '../sass';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
+import { RecordActivator } from './recordActivator';
 
 @deploymentSpec({ datapackFilter: /^VlocityUITemplate$/i })
 export class VlocityUITemplate implements DatapackDeploymentSpec {
 
     public constructor(
-        private readonly salesforceService: SalesforceService,
+        private readonly activator: RecordActivator,
         private readonly logger: Logger,
         private readonly sass: SassCompiler) {
     }
@@ -35,18 +35,11 @@ export class VlocityUITemplate implements DatapackDeploymentSpec {
             }
         }
 
-        // Update to inactive to allow insert; later in the process these are activated
-        datapack.data.active__c = false;
+        // Update to inactive to allow insert; later in the process these are activated        
+        datapack.data['%vlocity_namespace%__Active__c'] = false;
     }
 
-    public async afterDeploy(event: DatapackDeploymentEvent) {
-        const templateRecords = [...event.getDeployedRecords('VlocityUITemplate__c')].map(record => ({ id: record.recordId, active__c: true }));
-        for await(const record of this.salesforceService.update('%vlocity_namespace%__VlocityUITemplate__c', templateRecords)) {
-            if (!record.success) {
-                this.logger.warn(`Failed activation of template ${record.ref}: ${record.error}`);
-            } else {
-                this.logger.verbose(`Activated Vlocity UI template ${record.ref}`);
-            }
-        }
+    public afterDeploy(event: DatapackDeploymentEvent) {
+        return this.activator.activateRecords(event.getDeployedRecords('VlocityUITemplate__c'), () => ({ active__c: true }));
     }
 }

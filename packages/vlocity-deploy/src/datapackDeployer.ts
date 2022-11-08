@@ -376,7 +376,7 @@ export class DatapackDeploymentEvent {
      */    
     @cache()
     public get deployedRecords() {
-        return this.records.filter(rec =>  (rec.isDeployed || rec.isSkipped) && rec.recordId).flat()
+        return this.records.filter(rec => (rec.isDeployed || rec.isSkipped) && rec.recordId).flat() as DeployedDatapackDeploymentRecord[];
     }
 
     public constructor(
@@ -390,11 +390,19 @@ export class DatapackDeploymentEvent {
         public readonly recordGroups: DatapackDeploymentRecordGroup[]) { 
     }
 
-    public getRecords(type?: string): Iterable<DatapackDeploymentRecord> {
+    /**
+     * Get deployed records grouped by the record SObject type
+     * @returns an iterable array where index 0 is the SObjectType
+     */
+    public getDeployedRecordsBySObjectType() {
+        return Object.entries(groupBy(this.deployedRecords, record => record.sobjectType))
+    }
+
+    public getRecords(type?: string | RegExp): Iterable<DatapackDeploymentRecord> {
         return this.recordGroups.map(group => type ? group.getRecordsOfType(type) : group.records).flat()
     }
 
-    public *getDeployedRecords(type?: string): Iterable<DeployedDatapackDeploymentRecord> {
+    public *getDeployedRecords(type?: string | RegExp): Iterable<DeployedDatapackDeploymentRecord> {
         for (const group of this.recordGroups) {
             // @ts-expect-error `record?.recordId` is not undefined as per the if condition earlier; TS does not yet detect this properly
             yield *(type ? group.getRecordsOfType(type) : group.records).filter(rec => (rec.isDeployed || rec.isSkipped) && rec.recordId);            

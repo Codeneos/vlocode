@@ -329,4 +329,25 @@ export class DatapackDeploymentRecord {
             }))
         );
     }
+
+    /**
+     * Check if this record type matches the specified SObject type filter. Matches are always case 
+     * insensitive and will be matched against the full and normalized SObject (without namespace prefix) type. 
+     * Matching will first be done against the normal sobject type and only after that against the normalized sobject type.
+     * @param filter SObjectType as string or RegEx 
+     * @returns `true` if the record SObject type matches the filter otherwise `false`
+     */
+    public isMatch(filter: string | RegExp) {
+        if (typeof filter === 'string') {
+            return this.sobjectType.toLowerCase() === filter.toLowerCase() || 
+                this.normalizedSObjectType.toLowerCase() === removeNamespacePrefix(filter).toLowerCase();
+        }
+
+        if (!filter.ignoreCase) {
+            // convert to case insensitive regex
+            filter = new RegExp(filter.source, filter.flags + 'i');
+        }
+
+        return filter.test(this.sobjectType) || filter.test(this.normalizedSObjectType);
+    }
 }

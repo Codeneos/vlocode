@@ -1,5 +1,3 @@
-import { Logger } from '@vlocode/core';
-import { JsForceConnectionProvider, SalesforceLookupService } from '@vlocode/salesforce';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import * as moment from 'moment';
 import { VlocityDatapack } from '../datapack';
@@ -19,7 +17,7 @@ export class Product2 implements DatapackDeploymentSpec {
      * This method patches the SellingStartDate__c,  EffectiveDate__c and FulfilmentStartDate__c fields
      * so that they are valid. Invalid values will be automatically changed by a trigger from Vlocity which updates
      * the record post deployment and will cause issues.
-     * @param atapack 
+     * @param datapack 
      */
     private patchStartDates(datapack: VlocityDatapack) {
         if (!datapack.EffectiveDate__c && !datapack.SellingStartDate__c) {
