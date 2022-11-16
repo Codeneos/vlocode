@@ -74,6 +74,7 @@ export class Container {
     private readonly serviceDependencies = new Map<string, Array<string>>();
     private readonly servicesProvided = Symbol('[[Container:ServicesProvided]]');
     private readonly containerGuid = uniqueNamesGenerator(uniqueNameConfig);
+    private readonly isRoot;
 
     // Factories are lazy instances, when there is no instance it will be created
     // through a factory
@@ -87,6 +88,7 @@ export class Container {
 
     constructor(private readonly logger = LogManager.get(Container), private readonly parent?: Container) {
         logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? `CHILD from ${parent.containerGuid}` : 'MAIN'})`);
+        this.isRoot = !parent;
     }
 
     /**
@@ -163,7 +165,7 @@ export class Container {
             const circularReference = this.resolveStack.includes(type.ctor.name);
             const instance = this.createLazyProxy<T>(() => this.resolve<T>(service, overrideLifecycle, receiver, resolver) as any, type.ctor.prototype);
             if (circularReference) {
-                this.logger.verbose(`Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${type.ctor.name}`);
+                this.logger.verbose(`(${resolver.containerGuid}) Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${type.ctor.name}`);
                 return instance;
             }
 
@@ -184,7 +186,7 @@ export class Container {
         }
 
         // Cannot resolve this
-        this.logger.warn(`Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
+        this.logger.warn(`(${resolver.containerGuid}) Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
     }
 
     /**
@@ -376,10 +378,11 @@ export class Container {
             }
 
             if (this.instances.has(providedService)) {
-                this.logger.warn(`Overriding existing service [${providedService}] from ${this.instances.get(providedService)}->${instance.constructor.name}`);
+                const existingInstance = this.instances.get(providedService);
+                this.logger.warn(`(${this.containerGuid}) Overriding existing service with name "${providedService}" from ${existingInstance.constructor?.name}->${instance.constructor.name}`);
             }
 
-            this.logger.debug(`Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
+            this.logger.debug(`(${this.containerGuid}) Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
             this.instances.set(providedService, instance);
             providedServices.add(providedService);
         }
@@ -397,7 +400,7 @@ export class Container {
             return;
         }
 
-        this.logger.debug(`Unregister: ${instance.constructor.name} (${instance[serviceGuidSymbol]}) (${this.containerGuid})`);
+        this.logger.debug(`(${this.containerGuid}) Unregister: ${instance.constructor.name} (${instance[serviceGuidSymbol]}) (${this.containerGuid})`);
 
         instance[this.servicesProvided]?.clear();
         instance[serviceGuidSymbol] = undefined;
@@ -432,7 +435,7 @@ export class Container {
      */
     public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
         for (const service of Array.isArray(services) ? services : [ services ]) {
-            this.logger.debug(`Register factory for: ${this.getServiceName(service)}`);
+            this.logger.debug(`(${this.containerGuid}) Register factory for: ${this.getServiceName(service)}`);
             this.factories.set(this.getServiceName(service), { new: factory, lifecycle });
         }
     }
@@ -446,14 +449,14 @@ export class Container {
     public registerType<T extends Object, I extends T = T>(type: ServiceCtor<I>, services: ServiceType<T> | Array<ServiceType<T>>, serviceOptions?: Partial<ServiceOptions>) {
         const options = Object.assign({}, defaultServiceOptions, serviceOptions) as ServiceOptions;
         for (const service of Iterable.asIterable(services)) {
-            this.logger.debug(`Register service type for: ${this.getServiceName(service)}`);
+            this.logger.debug(`(${this.containerGuid}) Register service type for: ${this.getServiceName(service)}`);
             arrayMapPush(this.serviceTypes, this.getServiceName(service), { ctor: type, options });
             this.serviceTypes.get(this.getServiceName(service))?.sort((a, b) => (a.options?.priority ?? 0) - (b.options?.priority ?? 0));
         }
     }
 
     public registerProvider<T extends Object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I| Promise<I> | undefined) {
-        this.logger.debug(`Register provider for: ${this.getServiceName(service)}`);
+        this.logger.debug(`(${this.containerGuid}) Register provider for: ${this.getServiceName(service)}`);
         this.providers.set(this.getServiceName(service), provider);
     }
 
