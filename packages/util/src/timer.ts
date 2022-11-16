@@ -15,16 +15,21 @@ export class Timer {
         this.#start = Date.now();
     }
 
-    public toString() {
+    public toString(format?: 'ms' | 'seconds' | 'minutes') {
+        if (format === 'seconds') {
+            return `${(this.elapsed / 1000).toFixed(1)}s`;
+        } else if (format === 'minutes') {
+            return `${(this.elapsed / 60000).toFixed(0)}:${((this.elapsed % 1000) / 60).toFixed(0)} min`;
+        }
         return `${this.elapsed}ms`;
     }
 
-    public stop(): string {
+    public stop(): this {
         if (!this.#stop) {
             this.#stop = Date.now();
             this.#elapsed += this.#stop - this.#start;
         }
-        return this.toString();
+        return this;
     }
 
     public reset(): this {
