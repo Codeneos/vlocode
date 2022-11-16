@@ -12,3 +12,4 @@ packages/*/lib
 /packages/cli/dist
 *.tgz
 *.tsbuildinfo
+/packages/*/coverage
