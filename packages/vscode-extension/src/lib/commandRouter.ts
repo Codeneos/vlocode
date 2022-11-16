@@ -86,6 +86,7 @@ export default class CommandRouter {
         // register command in VScode
         this.logger.verbose(`Regsiter command: ${name}`);
         this.commandRegistrations.set(name, vscode.commands.registerCommand(name, command.execute, command));
+        this.initializeCommand(name, command);
         return command;
     }
 
@@ -117,13 +118,13 @@ export default class CommandRouter {
     private initializeCommand(id: string, cmd: Command) {
         const commandInitialize = cmd.initialize;
         if (commandInitialize) {
-            setImmediate(async () => {
+            setTimeout(async () => {
                 try {
                     await commandInitialize.call(cmd);
                 } catch(err) {
                     this.logger.error(`Failed to initialize command ${id} due to initialization error: ${err}`);
                 }
-            });
+            }, 1);
         }
     }
 }
