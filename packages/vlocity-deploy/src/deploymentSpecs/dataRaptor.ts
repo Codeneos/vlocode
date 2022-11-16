@@ -1,7 +1,7 @@
 import { Logger } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
-import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
 @deploymentSpec({ datapackFilter: 'DataRaptor' })

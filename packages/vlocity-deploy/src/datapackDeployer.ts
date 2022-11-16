@@ -1,15 +1,16 @@
 
-import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, JsForceConnectionProvider, Field } from '@vlocode/salesforce';
-import { Logger, injectable, container } from '@vlocode/core';
-import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, cache } from '@vlocode/util';
+import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
+import { Logger, injectable, container, LifecyclePolicy, Container } from '@vlocode/core';
+import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
-import { DatapackDeploymentRecord, DeployedDatapackDeploymentRecord } from './datapackDeploymentRecord';
+import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';
 import { DatapackDeploymentSpec } from './datapackDeploymentSpec';
 import { DatapackDeploymentSpecRegistry } from './datapackDeploymentSpecRegistry';
+import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
 
 /**
  * Import all default deployment specs and trigger the decorators to register each sepc
@@ -112,17 +113,18 @@ export type DatapackFilter =
     { recordFilter?: RegExp | string, datapackFilter: RegExp | string } | 
     { recordFilter: RegExp | string, datapackFilter?: RegExp | string };
 
-@injectable.transient()
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeployer {
 
-    private readonly container = container.new();
+    private readonly container = (this.creatingContainer ?? container).new();
     private readonly specRegistry = this.container.get(DatapackDeploymentSpecRegistry);
 
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly objectLookupService: SalesforceLookupService,
         private readonly schemaService: SalesforceSchemaService,
-        private readonly logger: Logger) {
+        private readonly logger: Logger,
+        private readonly creatingContainer?: Container) {
     }
 
     /**
@@ -358,58 +360,5 @@ export class DatapackDeployer {
         }
 
         throw new Error('EvalFilter does not understand comparison argument type; pass either a VlocityDatapack or DatapackDeploymentRecord');
-    }
-}
-
-export class DatapackDeploymentEvent {
-
-    /**
-     * Flat list of all records across all record groups for which this event triggered
-     */
-    @cache()
-    public get records() {
-        return this.recordGroups.map(group => group.records).flat();
-    }
-
-    /** 
-     * Flat list of all records that have been successfully deployed or skipped due to being up to date
-     */    
-    @cache()
-    public get deployedRecords() {
-        return this.records.filter(rec => (rec.isDeployed || rec.isSkipped) && rec.recordId).flat() as DeployedDatapackDeploymentRecord[];
-    }
-
-    public constructor(
-        /**
-         * Deployment that triggered the current event
-         */
-        public readonly deployment: DatapackDeployment, 
-        /**
-         * Record groups for which the event triggered
-         */
-        public readonly recordGroups: DatapackDeploymentRecordGroup[]) { 
-    }
-
-    /**
-     * Get deployed records grouped by the record SObject type
-     * @returns an iterable array where index 0 is the SObjectType
-     */
-    public getDeployedRecordsBySObjectType() {
-        return Object.entries(groupBy(this.deployedRecords, record => record.sobjectType))
-    }
-
-    public getRecords(type?: string | RegExp): Iterable<DatapackDeploymentRecord> {
-        return this.recordGroups.map(group => type ? group.getRecordsOfType(type) : group.records).flat()
-    }
-
-    public *getDeployedRecords(type?: string | RegExp): Iterable<DeployedDatapackDeploymentRecord> {
-        for (const group of this.recordGroups) {
-            // @ts-expect-error `record?.recordId` is not undefined as per the if condition earlier; TS does not yet detect this properly
-            yield *(type ? group.getRecordsOfType(type) : group.records).filter(rec => (rec.isDeployed || rec.isSkipped) && rec.recordId);            
-        }
-    }
-
-    public getRecordById(id: string): DatapackDeploymentRecord | undefined {
-        return  this.recordGroups.find(group => group.getRecordById(id))?.getRecordById(id)
     }
 }

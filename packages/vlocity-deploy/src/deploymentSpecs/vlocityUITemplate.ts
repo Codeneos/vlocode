@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { Logger } from '@vlocode/core';
 import { Timer } from '@vlocode/util';
-import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
 import { SassCompiler } from '../sass';

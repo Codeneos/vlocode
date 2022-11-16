@@ -37,7 +37,7 @@ export default class DatapackLoader {
     public async loadDatapack(datapackHeader: string, bubbleExceptions = true) : Promise<VlocityDatapack | undefined> {
         try {
             const manifestEntry = getDatapackManifestKey(datapackHeader);
-            this.logger.info(`Loading datapack: ${manifestEntry.key}`);
+            this.logger.verbose(`Loading datapack ${manifestEntry.key} from "${datapackHeader}"`);
             const datapackJson = await this.loadJson(datapackHeader);
             if (!datapackJson) {
                 throw new Error(`No such file exists: ${datapackHeader}`);
@@ -50,7 +50,7 @@ export default class DatapackLoader {
                 datapackJson
             );
         } catch(err) {
-            this.logger.error(`Error loading datapack: ${path.basename(datapackHeader)} -- ${err.message || err}`);
+            this.logger.error(`Error loading datapack ${path.basename(datapackHeader)} -- ${err.message || err}`);
             if (bubbleExceptions) {
                 throw err;
             }

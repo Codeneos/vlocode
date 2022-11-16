@@ -2,7 +2,7 @@ import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
-import { DatapackDeploymentEvent } from '../datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 
 @deploymentSpec({ datapackFilter: /^Vlocity(UILayout|Card)$/i })
 export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {

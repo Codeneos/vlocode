@@ -1,7 +1,7 @@
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { VlocityDatapack } from './datapack';
 import { isPromise } from 'util/types';
-import { DatapackDeploymentEvent } from './datapackDeployer';
+import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
 
 export enum DatapackDeploymentSpecFunctions {
     preprocess,

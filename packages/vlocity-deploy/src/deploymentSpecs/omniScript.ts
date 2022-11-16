@@ -3,7 +3,7 @@ import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce'
 import { forEachAsyncParallel, Iterable, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
-import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { OmniScriptActivator } from '../omniScript/omniScriptActivator';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';

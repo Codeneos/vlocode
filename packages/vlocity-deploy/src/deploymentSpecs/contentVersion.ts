@@ -4,7 +4,7 @@ import { SalesforceService } from '@vlocode/salesforce';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentRecord, DeploymentAction } from '../datapackDeploymentRecord';
 import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
-import { DatapackDeploymentEvent } from '../datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { ContentVersionLookup } from './contentVersionLookup';
 
 @deploymentSpec({ datapackFilter: /^ContentVersion$/i })

@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { JsForceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 import { VlocityDatapack } from '../datapack';
@@ -22,7 +22,7 @@ describe('datapackRecordFactory', () => {
                     records: results,
                 })
             })
-        } as any) as JsForceConnectionProvider;
+        } as any) as SalesforceConnectionProvider;
     }
 
     function mockMatchingKeyService() {
@@ -42,7 +42,7 @@ describe('datapackRecordFactory', () => {
         const schemaDataFile = path.join(__dirname, './data/schema.json');
         const testContainer = container.new();
 
-        testContainer.registerAs(mockConnectionProvider([]), JsForceConnectionProvider);
+        testContainer.registerAs(mockConnectionProvider([]), SalesforceConnectionProvider);
         testContainer.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
         testContainer.register(await new SchemaDataStore().loadFromFile(schemaDataFile));
         testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);
@@ -224,7 +224,7 @@ describe('datapackRecordFactory', () => {
             } ]
         };
 
-        testContainer.registerAs(mockConnectionProvider([]), JsForceConnectionProvider);
+        testContainer.registerAs(mockConnectionProvider([]), SalesforceConnectionProvider);
         testContainer.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
         testContainer.register(await new SchemaDataStore().load(schemaData));
         testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);

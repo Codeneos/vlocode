@@ -2,7 +2,7 @@ import { existsSync } from "fs";
 import { join } from "path";
 
 import { CachedFileSystemAdapter, container, Logger, LogWriter, NodeFileSystem, FileSystem } from "@vlocode/core";
-import { Connection, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from "@vlocode/salesforce";
+import { Connection, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
 
 import { DatapackDeployer, DatapackDeploymentOptions } from "./datapackDeployer";
 import { ForkedSassCompiler } from "./sass";
@@ -43,15 +43,15 @@ export async function deploy(input: string | string[], options: DatapackDeployOp
     }
 
     if (options.jsforceConnection) {
-        localContainer.registerAs(JsForceConnectionProvider.create(options.jsforceConnection), JsForceConnectionProvider);
+        localContainer.registerAs(new JsForceConnectionProvider(options.jsforceConnection), SalesforceConnectionProvider);
     } else if (options.sfdxUser) {
-        localContainer.registerAs(new SfdxConnectionProvider(options.sfdxUser, undefined), JsForceConnectionProvider);
+        localContainer.registerAs(new SfdxConnectionProvider(options.sfdxUser, undefined), SalesforceConnectionProvider);
     } else {
         throw new Error('Set either set options.sfdxUser -or- options.jsforceConnection otherwise');
     }
 
     // Setup dependencies
-    localContainer.register(await new VlocityNamespaceService().initialize(localContainer.get(JsForceConnectionProvider)));
+    localContainer.register(await new VlocityNamespaceService().initialize(localContainer.get(SalesforceConnectionProvider)));
     localContainer.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
 
     // Setup packed SASS compiler when available

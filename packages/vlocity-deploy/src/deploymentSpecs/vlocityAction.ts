@@ -1,5 +1,5 @@
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
-import type { DatapackDeploymentEvent } from '../datapackDeployer';
+import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { RecordActivator } from './recordActivator';
 

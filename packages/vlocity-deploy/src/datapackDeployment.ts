@@ -1,10 +1,10 @@
-import { Logger , LifecyclePolicy, injectable } from '@vlocode/core';
-import { JsForceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
+import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
+import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
-import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
+import { DatapackDeploymentRecordGroup, DeploymentGroupStatus } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
 
 export interface DatapackDeploymentEvents {
@@ -103,7 +103,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     constructor(
         options: DatapackDeploymentOptions | undefined,
-        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly salesforceService: SalesforceService,
@@ -146,12 +146,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         if (this.options.deltaCheck) {
             const skippedRecords = this.skippedRecordCount;
             if (this.totalRecordCount == skippedRecords) {
-                this.logger.log(`No records deployed; ${this.totalRecordCount} records already in-sync with local source [${timer.stop()}]`);
+                this.logger.log(`No records deployed; ${this.totalRecordCount} records already in-sync with local source [${timer.stop().toString('seconds')}]`);
             } else {
-                this.logger.log(`${deployMessage} (skipped ${skippedRecords} in-sync records) [${timer.stop()}]`);
+                this.logger.log(`${deployMessage} (skipped ${skippedRecords} in-sync records) [${timer.stop().toString('seconds')}]`);
             }
         } else {
-            this.logger.log(deployMessage);
+            this.logger.log(`${deployMessage} in ${timer.stop().toString('seconds')}`);
         }
     }
 
@@ -517,9 +517,19 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     dependency?.VlocityMatchingRecordSourceKey && 
                     record.skipLookup || !record.upsertFields?.length);
             }
-
         } finally {
-            const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
+            const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];            
+            
+            for (const group of completedGroups) {
+                if (group.status === DeploymentGroupStatus.Success) {
+                    this.logger.info(`Deployed ${group.datapackKey}`);
+                } else if (group.status === DeploymentGroupStatus.PartialSuccess) {                    
+                    this.logger.warn(`Partially deployed ${group.datapackKey} (${group.size -group.failedCount}/${group.size})`);
+                } else if (group.status === DeploymentGroupStatus.Error) {                    
+                    this.logger.error(`Failed ${group.datapackKey}; see errors`);
+                }                
+            }
+
             await this.emit('afterDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
             await this.emit('afterDeployGroup', completedGroups, { hideExceptions: true, async: false });
         }
