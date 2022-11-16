@@ -1,12 +1,12 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, JsForceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join } from 'path';
 import * as chalk from 'chalk';
-import { countDistinct, groupBy } from '@vlocode/util';
+import { countDistinct, groupBy, Timer } from '@vlocode/util';
 
 export default class extends Command {
 
@@ -47,36 +47,22 @@ export default class extends Command {
         warn: chalk.bgYellowBright.black.bold(`WARN`)
     };
 
+    private container = container.new();
+
     constructor(private logger: Logger = LogManager.get('vlocity-deploy')) {
         super();
     }
 
     public async run(folder: string, options: any) {
-        // Prep dependencies
-        if (options.user) {
-            container.registerAs(new SfdxConnectionProvider(options.user, undefined), JsForceConnectionProvider);
-        } else {
-            container.registerAs(new InteractiveConnectionProvider(`https://${options.instance}`), JsForceConnectionProvider);
-        }
-
-        // Setup Namespace replacer
-        container.registerAs(await container.get(VlocityNamespaceService).initialize(container.get(JsForceConnectionProvider)), NamespaceService);
-
-        // Setup a Cached file system for loading datapacks
-        container.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
-
-        // Setup SASS packed compiler when available (usually only when CLI is packed)
-        const packedSassCompiler = join(__dirname, '../sassCompiler.js');
-        if (existsSync(packedSassCompiler)) {
-            container.register(container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
-        }
-        
         // Load datapacks
-        const datapacks = await container.create(DatapackLoader).loadDatapacksFromFolder(folder);
+        this.logger.info(`Load datapacks from "${folder}"`);
+        const datapackLoadTimer = new Timer();
+        const datapacks = await this.container.create(DatapackLoader).loadDatapacksFromFolder(folder);
         if (datapacks.length == 0) {
             this.logger.error(`No datapacks found in specified folder: ${folder}`);
             return;
         }
+        this.logger.info(`Loaded ${datapacks.length} datapacks in [${datapackLoadTimer.stop()}]`);
 
         // get options from command line
         const deployOptions: DatapackDeploymentOptions = {
@@ -89,7 +75,7 @@ export default class extends Command {
         };
 
         // Create deployment
-        const deployment = await container.create(DatapackDeployer).createDeployment(datapacks, deployOptions);
+        const deployment = await this.container.create(DatapackDeployer).createDeployment(datapacks, deployOptions);
         await deployment.start();
 
         // done!!
@@ -109,6 +95,27 @@ export default class extends Command {
             const sourceKeys = records.map(({ record }) => record.sourceKey.replaceAll(/%[^%]+%__/ig,''));
             const affected = sourceKeys.splice(0, 10).join(', ') + (sourceKeys.length > 0 ? `... (and ${sourceKeys.length} more)` : '');
             this.logger.warn(`${message} for ${records.length} records: ${affected}`);
+        }
+    }
+
+    private async init(options: any) {
+        // Prep dependencies
+        if (options.user) {
+            this.container.registerAs(new SfdxConnectionProvider(options.user, undefined), SalesforceConnectionProvider);
+        } else {
+            this.container.registerAs(new InteractiveConnectionProvider(`https://${options.instance}`), SalesforceConnectionProvider);
+        }
+
+        // Setup Namespace replacer
+        this.container.registerAs(await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider)), NamespaceService);
+
+        // Setup a Cached file system for loading datapacks
+        this.container.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
+
+        // Setup SASS packed compiler when available (usually only when CLI is packed)
+        const packedSassCompiler = join(__dirname, '../sassCompiler.js');
+        if (existsSync(packedSassCompiler)) {
+            this.container.register(this.container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
         }
     }
 }
