@@ -8,6 +8,7 @@ import * as constants from './constants';
 export class VlocityNamespaceService extends NamespaceService {
 
     @injectable.property private readonly logger: Logger
+    private readonly vlocityNamespaceCache = new Map<string, Promise<string> | string>();
 
     constructor(private vlocityNamespace: string | null = null) {
         super();
@@ -46,9 +47,9 @@ export class VlocityNamespaceService extends NamespaceService {
      * Get the namespace of the current connection
      * @param connectionProvider Connection provider to use to initialize the namespace
      */
-    public async initialize(connectionProvider: JsForceConnectionProvider): Promise<this> {
+    public async initialize(connectionProvider: SalesforceConnectionProvider): Promise<this> {
         const connection = await connectionProvider.getJsForceConnection();
-        this.vlocityNamespace = await this.getConnectionNamespace(connection);
+        this.vlocityNamespace = await mapGetOrCreate(this.vlocityNamespaceCache, connection.instanceUrl, () => this.getConnectionNamespace(connection));
         return this;
     }
 
@@ -56,7 +57,7 @@ export class VlocityNamespaceService extends NamespaceService {
         // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
         const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
-        const namespace = results.records[0]?.NamespacePrefix || null;
+        const namespace = results.records[0]?.NamespacePrefix ?? null;
 
         if (results.totalSize == 0) {
             // This usually happens when there is no Vlocity package installed
