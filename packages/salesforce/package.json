@@ -53,7 +53,7 @@
         "webpack-env": "^0.8.0"
     },
     "dependencies": {
-        "@salesforce/source-deploy-retrieve": "^5.12.11",
+        "@salesforce/source-deploy-retrieve": "^5",
         "@vlocode/core": "^0.17.9",
         "@vlocode/util": "^0.17.9",
         "axios": "^0.25.0",

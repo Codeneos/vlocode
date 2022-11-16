@@ -3,7 +3,7 @@ import * as ZipArchive from 'jszip';
 
 import { Logger , injectable } from '@vlocode/core';
 import { CancellationToken, wait } from '@vlocode/util';
-import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
 import { DeploymentProgress, DetailedDeployResult, PackageManifest, RetrieveResultPackage, RetrieveStatus } from './deploy';
 import { DeployOptions } from './salesforceDeployment';
 import { SalesforcePackage } from './deploymentPackage';
@@ -13,7 +13,7 @@ export class SalesforceDeployService {
 
     constructor(...args: any[]);
     constructor(
-        private readonly salesforce: JsForceConnectionProvider,
+        private readonly salesforce: SalesforceConnectionProvider,
         private readonly logger: Logger) {
     }
 

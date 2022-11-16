@@ -1,6 +1,6 @@
 import { container, LogManager } from '@vlocode/core';
 import { clone, flattenObject, lazy } from '@vlocode/util';
-import { Connection, JsForceConnectionProvider } from './connection';
+import { Connection, SalesforceConnectionProvider } from './connection';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -25,7 +25,7 @@ class QueryBuilderData {
         return this.query.sobjectType;
     }
     
-    public execute<T = any>(executor?: JsForceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
+    public execute<T = any>(executor?: SalesforceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
         if (!executor) {
             return this.execute(container.get(QueryService));
         }
@@ -38,9 +38,9 @@ class QueryBuilderData {
         return new QueryService(executor).query(this.getQuery());
     }
 
-    public async executeTooling<T = any>(executor?: JsForceConnectionProvider | Connection, options?: { chunkSize?: number }) : Promise<T[]> {
+    public async executeTooling<T = any>(executor?: SalesforceConnectionProvider | Connection, options?: { chunkSize?: number }) : Promise<T[]> {
         if (!executor) {
-            return this.executeTooling(container.get(JsForceConnectionProvider));
+            return this.executeTooling(container.get(SalesforceConnectionProvider));
         }
 
         const connection = executor instanceof Connection ? executor : await executor.getJsForceConnection();

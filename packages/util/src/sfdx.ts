@@ -5,21 +5,13 @@ import { CancellationToken } from './cancellationToken';
 
 export interface SalesforceAuthResult {
     orgId: string;
-    accessToken?: string;
-    instanceUrl?: string;
-    loginUrl?: string;
+    accessToken: string;
+    instanceUrl: string;
+    loginUrl: string;
     username: string;
-    clientId?: string;
+    clientId: string;
     clientSecret?: string;
-    refreshToken?: string;
-}
-
-export interface FullSalesforceOrgDetails extends SalesforceAuthResult {
-    connectedStatus?: string;
-    lastUsed?: string;
-    alias?: string;
-    isDefaultDevHubUsername? : boolean;
-    isDefaultUsername?: boolean;
+    refreshToken: string;
 }
 
 export interface SalesforceOrgInfo extends SalesforceAuthResult {
@@ -32,6 +24,7 @@ export interface SalesforceOrgInfo extends SalesforceAuthResult {
 export namespace sfdx {
 
     export const logger: {
+        debug(...args: any[]): any;
         error(...args: any[]): any;
         warn(...args: any[]): any;
         info(...args: any[]): any;
@@ -89,15 +82,22 @@ export namespace sfdx {
         try {
             // Wrap in try catch as both AuthInfo and Aliases can throw exceptions when SFDX is not initialized
             // this avoid that and returns an yields an empty array instead
-            const authFiles = await salesforce.AuthInfo.listAllAuthFiles();
-            const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
-            for (const authFile of authFiles) {
-                try {
-                    const authInfo = await salesforce.AuthInfo.create( { username: path.parse(authFile).name });
-                    const authFields = authInfo.getFields();
+            const stateAggregator = await salesforce.StateAggregator.getInstance();
+            const authFiles = await stateAggregator.orgs.readAll(true);
 
+            for (const authFields of authFiles) {
+                try {
                     if (!authFields.orgId || !authFields.username) {
-                        logger.warn(`Skip authfile '${authFile}'; required fields missing`);
+                        continue;
+                    }
+
+                    if (!authFields.accessToken || !authFields.refreshToken) {
+                        logger.debug(`Skipping SFDX org ${authFields.username} due to missing accessToken or refreshToken token`);
+                        continue;
+                    }
+
+                    if (!authFields.instanceUrl) {
+                        logger.debug(`Skipping SFDX org ${authFields.username} due to missing instance url`);
                         continue;
                     }
 
@@ -105,11 +105,11 @@ export namespace sfdx {
                         orgId: authFields.orgId,
                         accessToken: authFields.accessToken,
                         instanceUrl: authFields.instanceUrl,
-                        loginUrl: authFields.loginUrl,
+                        loginUrl: authFields.loginUrl ?? authFields.instanceUrl,
                         username: authFields.username,
-                        clientId: authFields.clientId,
-                        refreshToken: authFields.refreshToken,
-                        alias: aliases?.getKeysByValue(authFields.username)[0]
+                        clientId: authFields.clientId!,
+                        refreshToken: authFields.refreshToken!,
+                        alias: stateAggregator.aliases.resolveAlias(authFields.username) ?? undefined
                     };
                 } catch(err) {
                     logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
@@ -120,14 +120,22 @@ export namespace sfdx {
         }
     }
 
-    export async function getOrg(usernameOrAlias?: string) : Promise<salesforce.Org> {
-        const username = await resolveAlias(usernameOrAlias) || usernameOrAlias;
+    export async function getOrgDetails(usernameOrAlias: string) : Promise<SalesforceOrgInfo | undefined> {
+        for await (const config of getAllValidatedConfigs()) {
+            if (config.username?.toLowerCase() === usernameOrAlias?.toLowerCase() || 
+                config.alias?.toLowerCase() === usernameOrAlias?.toLowerCase()) {
+                return config;
+            }
+        }
+    }
+
+    export async function getOrg(usernameOrAlias: string) : Promise<salesforce.Org> {
+        const username = await resolveUsername(usernameOrAlias) ?? usernameOrAlias;
+
         try {
-            const org = await salesforce.Org.create({
-                connection: await salesforce.Connection.create({
-                    authInfo: await salesforce.AuthInfo.create({ username })
-                })
-            });
+            const authInfo = await salesforce.AuthInfo.create({ username });
+            const connection = await salesforce.Connection.create({ authInfo });
+            const org = await salesforce.Org.create({ connection });
             await org.refreshAuth();
             return org;
         } catch (err) {
@@ -138,24 +146,25 @@ export namespace sfdx {
         }
     }
 
-    // eslint-disable-next-line no-inner-declarations
-    async function resolveAlias(alias?: string) : Promise<string | undefined> {
-        return alias ? salesforce.Aliases.fetch(alias) : undefined;
+    export async function resolveUsername(alias: string) : Promise<string | undefined> {
+        const stateAggregator = await salesforce.StateAggregator.getInstance();
+        return stateAggregator.aliases.resolveUsername(alias) || undefined;
     }
 
-    export async function getSfdxAlias(userName: string) : Promise<string | undefined> {
-        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
-        return aliases.getKeysByValue(userName).shift() ?? userName;
+    export async function resolveAlias(userName: string) : Promise<string | undefined> {
+        const stateAggregator = await salesforce.StateAggregator.getInstance();
+        userName = stateAggregator.aliases.resolveUsername(userName) || userName;
+        const aliases = stateAggregator.aliases.resolveAlias(userName);
+        return aliases || userName;
     }
 
-    export async function setSfdxAlias(alias: string, userName: string) : Promise<void> {
-        const aliases = await salesforce.Aliases.create(salesforce.Aliases.getDefaultOptions());
-        aliases.getKeysByValue(userName)?.forEach(key => aliases.unset(key));
-        aliases.set(alias, userName);
-        await aliases.write();
+    export async function updateAlias(alias: string, userName: string) : Promise<void> {
+        const stateAggregator = await salesforce.StateAggregator.getInstance();
+        stateAggregator.aliases.set(alias, userName);
+        await stateAggregator.aliases.write();
     }
 
-    export async function getJsForceConnection(username?: string) : Promise<salesforce.Connection> {
+    export async function getSfdxForceConnection(username: string) : Promise<salesforce.Connection> {
         const org = await getOrg(username);
         const connection = org.getConnection() as any;
         if (typeof connection.useLatestApiVersion === 'function') {

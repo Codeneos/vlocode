@@ -2,7 +2,7 @@ import { container, injectable, Logger } from '@vlocode/core';
 import { cache, CancellationToken } from '@vlocode/util';
 import type { SuccessResult } from 'jsforce';
 
-import { JsForceConnectionProvider } from './connection';
+import { SalesforceConnectionProvider } from './connection';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import { QueryService } from './queryService';
 import { SalesforceDebugLevel } from './salesforceDebugLevel';
@@ -11,7 +11,7 @@ import { SalesforceDebugLevel } from './salesforceDebugLevel';
 export class DeveloperLogs {
 
     public constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly queryService: QueryService,
         private readonly logger: Logger) {
     }

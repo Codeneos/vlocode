@@ -1,6 +1,6 @@
 import { Logger, injectable } from '@vlocode/core';
 import { NamespaceService } from './namespaceService';
-import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema';
 import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer, validate } from '@vlocode/util';
@@ -15,7 +15,7 @@ export class SalesforceSchemaService {
     @injectable.property private readonly nsService: NamespaceService;
 
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly schemaAccess: CompositeSchemaAccess) {
     }
 

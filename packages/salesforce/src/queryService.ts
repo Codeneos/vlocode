@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import { Logger, injectable } from '@vlocode/core';
 import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
 
-import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
 import { NamespaceService } from './namespaceService';
 
@@ -20,7 +20,7 @@ export class QueryService {
     @injectable.property private readonly logger: Logger;
     @injectable.property private readonly nsService: NamespaceService;
 
-    constructor(private readonly connectionProvider: JsForceConnectionProvider) {
+    constructor(private readonly connectionProvider: SalesforceConnectionProvider) {
     }
 
     /**
@@ -53,7 +53,7 @@ export class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public query<T = any, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
+    public query<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
         const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
         const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
         const cachedResult = enableCache && this.queryCache.get(nsNormalizedQuery);
@@ -92,7 +92,7 @@ export class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public bulkQuery<T = any, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
+    public bulkQuery<T extends object = object, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
         const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
         const sobjectType = nsNormalizedQuery.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
         if (!sobjectType) {
@@ -126,7 +126,7 @@ export class QueryService {
         return promisedResult;
     }
 
-    private wrapRecord<T extends Object>(record: T) {
+    private wrapRecord<T extends object>(record: T) {
         const getPropertyKey = (target: T, name: string | number | symbol) => {
             const fieldMap = this.getRecordFieldMap(target);
             const normalizedName = normalizeSalesforceName(name.toString());
@@ -135,7 +135,7 @@ export class QueryService {
         return new Proxy(record, new PropertyTransformHandler(getPropertyKey));
     }
 
-    private getRecordFieldMap<T>(record: T) {
+    private getRecordFieldMap<T extends object>(record: T) {
         let fieldMap = this.recordFieldNames.get(record);
         if (!fieldMap) {
             fieldMap = Object.keys(record).reduce((map, key) => map.set(normalizeSalesforceName(key.toString()), key), new Map());
@@ -166,7 +166,7 @@ export class QueryService {
             if (!value) {
                 return 'null';
             }
-            const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDThh:mm:ssZ';
+            const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm:ssZ';
             const date = moment(value);
             if (!date.isValid()) {
                 throw new Error(`Value is not a valid date: ${value}`);

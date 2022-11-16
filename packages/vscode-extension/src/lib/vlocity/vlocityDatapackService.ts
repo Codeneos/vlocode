@@ -12,7 +12,7 @@ import VlocodeConfiguration from '@lib/vlocodeConfiguration';
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
 import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
-import { JsForceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
 
 export interface ManifestEntry {
@@ -185,7 +185,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     constructor(
         private readonly logger: Logger,
-        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly config: VlocodeConfiguration,
         private readonly salesforceService: SalesforceService,
         private readonly matchingKeyService: VlocityMatchingKeyService,

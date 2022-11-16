@@ -1,5 +1,5 @@
 import { cache } from '@vlocode/util';
-import { JsForceConnectionProvider } from './connection/jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
 
 /**
  * Developer log data entry
@@ -37,7 +37,7 @@ export class DeveloperLog {
 
     constructor(
         private readonly entry: DeveloperLogRecord,
-        private readonly connectionProvider: JsForceConnectionProvider) {
+        private readonly connectionProvider: SalesforceConnectionProvider) {
     }
 
     /**

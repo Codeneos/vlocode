@@ -9,16 +9,16 @@ import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
-import { JsForceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
-@injectable({ provides: [JsForceConnectionProvider, VlocodeService] })
-export default class VlocodeService implements vscode.Disposable, JsForceConnectionProvider {
+@injectable({ provides: [SalesforceConnectionProvider, VlocodeService] })
+export default class VlocodeService implements vscode.Disposable, SalesforceConnectionProvider {
 
     // Privates
     private disposables: { dispose() : any }[] = [];
     private statusItems: { [id: string] : vscode.StatusBarItem } = {};
-    private connector?: JsForceConnectionProvider;
+    private connector?: SalesforceConnectionProvider;
 
     private readonly connectionHooks = new HookManager<jsforce.Connection>();
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
@@ -90,16 +90,21 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
             }
             this.updateExtensionStatus(this.config);
         } catch (err) {
-            this.logger.error(err);
+            this.logger.debug(err);
             if (err?.message == 'NamedOrgNotFound') {
+                this.logger.error(`Unknown username/alias ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
                 this.showStatus(`$(error) Unknown Salesforce user - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
             } else if (err?.message == 'The org cannot be found') {
+                this.logger.error(err?.message);
                 this.showStatus(`$(error) Org not found - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
-            } else if (err?.message == 'RefreshTokenAuthError') {
+            } else if (err?.name === 'invalid_grant' || err?.message == 'RefreshTokenAuthError') {                
+                this.logger.error(`Authorization token expired for ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
                 this.showStatus(`$(key) Authorization expired - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
             } else if (err?.code == 'ENOTFOUND') {
+                this.logger.error(`Unable to reach Salesforce; are you connected to the internet?`);
                 this.showStatus(`$(cloud-offline) Unable to reach Salesforce`, VlocodeCommand.selectOrg);
-            } else {
+            } else {                
+                this.logger.error(err);
                 this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
         }
@@ -318,7 +323,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
         return this.connector!;
     }
 
-    private async handleGetConnectionError(connector: JsForceConnectionProvider, err: Error | undefined) {
+    private async handleGetConnectionError(connector: SalesforceConnectionProvider, err: Error | undefined) {
         if (err?.message == 'RefreshTokenAuthError') {
             const action = await vscode.window.showWarningMessage(
                 `Your refresh token for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`,
@@ -380,7 +385,7 @@ export default class VlocodeService implements vscode.Disposable, JsForceConnect
 
         this.setExtensionContext('orgSelected', true);
         this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
-        void sfdx.getSfdxAlias(config.sfdxUsername).then(userAliasOrName => {
+        void sfdx.resolveAlias(config.sfdxUsername).then(userAliasOrName => {
             if (this.getStatusText() !== `$(cloud-upload) Vlocode ${config.sfdxUsername}`) {
                 // Avoid overwriting more up to date status bar text during extension start-up
                 return;

@@ -1,6 +1,6 @@
 import { Logger, injectable, DeferredWorkQueue, WorkItemResult } from '@vlocode/core';
 import { cache, forEachAsyncParallel, getObjectProperty, setObjectProperty, Timer, visitObject } from '@vlocode/util';
-import { JsForceConnectionProvider } from '../connection/jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from '../connection/salesforceConnectionProvider';
 import { DescribeSObjectResult, Field } from '../types';
 import { SchemaDataStore } from './schemaDataStore';
 import { ToolingApiSchemaAccess } from './toolingApiSchemaAccess';
@@ -29,7 +29,7 @@ export class DescribeSchemaAccess {
     ];
     
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider, 
+        private readonly connectionProvider: SalesforceConnectionProvider, 
         private readonly schemaStore: SchemaDataStore) {
     }
 

@@ -1,3 +1,4 @@
 export * from './interactiveConnectionProvider';
-export * from './jsForceConnectionProvider';
+export * from './jsFroceConnectionProvider';
+export * from './salesforceConnectionProvider';
 export * from './sfdxConnectionProvider';

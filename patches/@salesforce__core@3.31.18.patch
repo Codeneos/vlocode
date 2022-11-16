@@ -1,0 +1,39 @@
+diff --git a/lib/messages.js b/lib/messages.js
+index ee3934c08862c35c86e32f4bc2c6f10a097fae74..e04dc10ad24fb7b2ef2f1c15cfe9dadc8c68bb1d 100644
+--- a/lib/messages.js
++++ b/lib/messages.js
+@@ -254,6 +254,7 @@ class Messages {
+      * @param packageName The npm package name. Figured out from the root directory's package.json.
+      */
+     static importMessagesDirectory(moduleDirectoryPath, truncateToProjectPath = true, packageName) {
++        return;
+         let moduleMessagesDirPath = moduleDirectoryPath;
+         let projectRoot = moduleDirectoryPath;
+         if (!path.isAbsolute(moduleDirectoryPath)) {
+@@ -332,7 +333,7 @@ class Messages {
+             return messages;
+         }
+         // Don't use messages inside messages
+-        throw new kit_1.NamedError('MissingBundleError', `Missing bundle ${key.toString()} for locale ${Messages.getLocale()}.`);
++        return new Messages(bundleName, Messages.getLocale(), new Map());
+     }
+     /**
+      * Load messages for a given package and bundle. If the bundle is not already cached, use the loader function
+@@ -380,7 +381,7 @@ class Messages {
+             return messages;
+         }
+         // Don't use messages inside messages
+-        throw new kit_1.NamedError('MissingBundleError', `Missing bundle ${key.toString()} for locale ${Messages.getLocale()}.`);
++        return new Messages(bundleName, Messages.getLocale(), new Map());
+     }
+     /**
+      * Check if a bundle already been loaded.
+@@ -515,7 +516,7 @@ class Messages {
+         }
+         if (!map.has(key)) {
+             // Don't use messages inside messages
+-            throw new kit_1.NamedError('MissingMessageError', `Missing message ${this.bundleName}:${key} for locale ${Messages.getLocale()}.`);
++            return [ key, ...tokens ];
+         }
+         const msg = map.get(key);
+         const messages = ((0, ts_types_1.isArray)(msg) ? msg : [msg]);

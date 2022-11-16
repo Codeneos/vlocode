@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
 import { CommandBase } from '../lib/commandBase';
-import { JsForceConnectionProvider } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider } from '@vlocode/salesforce';
 import { vscodeCommand } from '@root/lib/commandRouter';
 
 @vscodeCommand(VlocodeCommand.adminCommands)
@@ -43,7 +43,7 @@ export class VlocityAdminCommand extends CommandBase {
         }
     ];
 
-    protected get connectionProvider(): JsForceConnectionProvider {
+    protected get connectionProvider(): SalesforceConnectionProvider {
         return this.vlocode.salesforceService;
     }
 

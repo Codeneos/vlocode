@@ -1,6 +1,6 @@
 import { LogManager , container } from '@vlocode/core';
 import { AsyncEventEmitter } from '@vlocode/util';
-import { Connection, JsForceConnectionProvider } from './connection';
+import { Connection, SalesforceConnectionProvider } from './connection';
 import { DetailedDeployResult } from './deploy';
 import { SalesforcePackage } from './deploymentPackage';
 
@@ -82,7 +82,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
 
     constructor(
         private readonly sfPackage: SalesforcePackage,
-        private readonly salesforce = container.get(JsForceConnectionProvider),
+        private readonly salesforce = container.get(SalesforceConnectionProvider),
         private readonly logger = LogManager.get(SalesforceDeployment)) {
         super();
     }

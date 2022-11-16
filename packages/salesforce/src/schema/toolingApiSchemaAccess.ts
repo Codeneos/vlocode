@@ -1,6 +1,6 @@
 import { Logger, injectable, DeferredWorkQueue, WorkItemResult } from '@vlocode/core';
 import { cache, forEachAsyncParallel, mapKeys, Timer } from '@vlocode/util';
-import { JsForceConnectionProvider } from '../connection/jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from '../connection/salesforceConnectionProvider';
 import { QueryBuilder } from '../queryBuilder';
 import { EntityDefinition } from './types/entityDefinition';
 import { FieldDefinition } from './types/fieldDefinition';
@@ -45,7 +45,7 @@ export class ToolingApiSchemaAccess {
     private readonly deferredProcessor = new DeferredWorkQueue(this.getEntityDefinitions, this);
     @injectable.property private readonly logger!: Logger;
 
-    constructor(private readonly connectionProvider: JsForceConnectionProvider, private readonly schemaStore: SchemaDataStore) {
+    constructor(private readonly connectionProvider: SalesforceConnectionProvider, private readonly schemaStore: SchemaDataStore) {
     }
 
     @cache({ unwrapPromise: true })

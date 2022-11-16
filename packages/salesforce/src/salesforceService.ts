@@ -2,7 +2,7 @@ import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
 import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId } from '@vlocode/util';
 
-import { JsForceConnectionProvider } from './connection';
+import { SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 import { QueryService, QueryResult } from './queryService';
 import { RecordBatch } from './recordBatch';
@@ -16,6 +16,7 @@ import { NamespaceService } from './namespaceService';
 import { SoapClient, SoapDebuggingHeader } from './soapClient';
 import { DeveloperLogs } from './developerLogs';
 import { QueryBuilder } from './queryBuilder';
+import { isArrayBuffer } from 'util/types';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -35,7 +36,7 @@ export interface OrganizationDetails {
 interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string }
 
 @injectable()
-export class SalesforceService implements JsForceConnectionProvider {
+export class SalesforceService implements SalesforceConnectionProvider {
 
     @injectable.property public readonly metadataRegistry: MetadataRegistry;
     @injectable.property public readonly schema: SalesforceSchemaService;
@@ -44,7 +45,7 @@ export class SalesforceService implements JsForceConnectionProvider {
     @injectable.property public readonly logs: DeveloperLogs;
 
     constructor(
-        private readonly connectionProvider: JsForceConnectionProvider,
+        private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly namespaceService: NamespaceService,
         private readonly queryService: QueryService,
         private readonly logger: Logger,
@@ -111,7 +112,7 @@ export class SalesforceService implements JsForceConnectionProvider {
     public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {
         const con = await this.getJsForceConnection();
         const metadata = await con.metadata.list( { type: 'InstalledPackage' }) as InstalledPackageRecord[];
-        return metadata ?? [];
+        return metadata ? (Array.isArray(metadata) ? metadata : [ metadata ]) : [];
     }
 
     @cache()

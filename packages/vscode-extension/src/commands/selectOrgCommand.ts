@@ -3,6 +3,7 @@ import { SalesforceOrgInfo, sfdx } from '@vlocode/util';
 import { CommandBase } from '../lib/commandBase';
 import { vscodeCommand } from '@root/lib/commandRouter';
 import { VlocodeCommand } from '@root/constants';
+import chalk = require('chalk');
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
 
@@ -64,9 +65,9 @@ export default class SelectOrgCommand extends CommandBase {
             await this.vlocode.refreshOAuthTokens();
         } else {
             const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();
-
+            chalk
             if (selectedOrgInfo) {
-                this.logger.log(`Set ${selectedOrgInfo.username} as target org for Vlocity deploy/refresh operations`);
+                this.logger.log(`Connecting to: ${selectedOrgInfo.username}...`);
                 if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
                     this.vlocode.config.sfdxUsername = selectedOrgInfo.username;
                 } else {
@@ -111,7 +112,7 @@ export default class SelectOrgCommand extends CommandBase {
 
         if (authInfo) {
             if (alias) {
-                await sfdx.setSfdxAlias(alias, authInfo.username);
+                await sfdx.updateAlias(alias, authInfo.username);
             }
             const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
             this.logger.log(successMessage);

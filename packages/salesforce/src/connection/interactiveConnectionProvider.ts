@@ -1,13 +1,13 @@
 import { Connection } from 'jsforce';
 import { sfdx } from '@vlocode/util';
-import { JsForceConnectionProvider } from './jsForceConnectionProvider';
+import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 import { SfdxConnectionProvider } from './sfdxConnectionProvider';
 import { injectable, Logger } from '@vlocode/core';
 
 @injectable()
-export class InteractiveConnectionProvider implements JsForceConnectionProvider {
+export class InteractiveConnectionProvider implements SalesforceConnectionProvider {
 
-    private sfdxProvider: JsForceConnectionProvider;
+    private sfdxProvider: SalesforceConnectionProvider;
     private userName: string;
     @injectable.property private logger!: Logger;
 

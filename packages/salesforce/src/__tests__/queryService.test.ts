@@ -2,7 +2,7 @@ import 'jest';
 
 import { QueryService } from '../queryService';
 import { Logger, container } from '@vlocode/core';
-import { JsForceConnectionProvider } from '../connection';
+import { SalesforceConnectionProvider } from '../connection';
 
 describe('queryService', () => {
 
@@ -16,7 +16,7 @@ describe('queryService', () => {
                     records: results,
                 })
             })
-        } as any) as JsForceConnectionProvider;
+        } as any) as SalesforceConnectionProvider;
     }
 
     beforeAll(() =>  container.registerAs(Logger.null, Logger));
