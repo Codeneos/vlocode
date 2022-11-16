@@ -76,33 +76,33 @@ export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T)
  * @param iterable iterable items to group
  * @param keySelector function to get the group by key
  */
-export function groupBy<T, I = T>(
+export function groupBy<T, I = T, K extends string | number = string>(
     iterable: Iterable<T>, 
-    keySelector: (item: T) => string | undefined,
-    itemSelector?: (item: T) => I) : { [objectKey: string]: I[] }
+    keySelector: (item: T) => K | undefined,
+    itemSelector?: (item: T) => I) : Record<K, I[]>
 
 /**
  * Groups an array into key accessible groups of objects
  * @param iterable iterable items to group
  * @param keySelector function to get the group by key
  */
-export function groupBy<T, I = T>(
+export function groupBy<T, K extends string | number, I = T>(
     iterable: Iterable<T>, 
-    keySelector: (item: T) => Promise<string | undefined>,
-    itemSelector?: (item: T) => I) : Promise<{ [objectKey: string]: I[] }>
+    keySelector: (item: T) => Promise<K | undefined>,
+    itemSelector?: (item: T) => I) : Promise<Record<K, I[]>>
 
 /**
  * Groups an array into key accessible groups of objects
  * @param iterable iterable items to group
  * @param keySelector function to get the group by key
  */
-export function groupBy<T, I = T>(iterable: Iterable<T>, 
-    keySelector: (item: T) => string | undefined | Promise<string | undefined>,
-    itemSelector?: (item: T) => I) : { [objectKey: string]: I[] } | Promise<{ [objectKey: string]: I[] }> {
-    const acc = {};
+export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<T>, 
+    keySelector: (item: T) => K | undefined | Promise<K | undefined>,
+    itemSelector?: (item: T) => I) : Record<K, I[]> | Promise<Record<K, I[]>> {
+    const acc = {} as Record<K, I[]>;
     const awaitables = new Array<Promise<any>>();
     
-    function accUpdate(acc: any, key: string | undefined, item: T) {
+    function accUpdate(acc: any, key: K | undefined, item: T) {
         if (key) {
             if (!acc[key]) {
                 acc[key] = [];
@@ -123,6 +123,7 @@ export function groupBy<T, I = T>(iterable: Iterable<T>,
     if (awaitables.length > 0) {
         return Promise.all(awaitables).then(() => acc);
     }
+
     return acc;
 }
 
@@ -247,9 +248,22 @@ export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> 
  * @param key Key of the value in the map
  * @param valueInitializer Value initializer call when the value is not set
  */
-export function mapGetOrCreate<V, K>(map: Map<K, V>, key: K, valueInitializer: () => V) : V {
-    // @ts-expect-error set followed by get for the same key will never return undefined
-    return map.get(key) || map.set(key, valueInitializer()).get(key);
+export function mapGetOrCreate<V, K, VI extends (Promise<V> | V)>(map: Map<K, VI>, key: K, valueInitializer: () => VI) : VI {
+    const currentValue = map.get(key);
+    if (currentValue !== undefined) {
+        return currentValue as VI;
+    }
+
+    const value = valueInitializer();
+    map.set(key, value);
+    if (isPromise(value)) {
+        // Replace promise
+        return value.then(v => {
+            map.set(key, v);
+            return v;
+        }) as VI;
+    }
+    return value;
 }
 
 /**
