@@ -88,7 +88,7 @@ class CLI {
                     commandInstance.args = args.slice(0, -2);
                     this.init(commandInstance.options);
                     if (commandInstance.init) {
-                        commandInstance.init(commandInstance.options);
+                        await commandInstance.init(commandInstance.options);
                     }
                     try { 
                         return await commandInstance.run(...args);

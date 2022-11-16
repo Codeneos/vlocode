@@ -74,7 +74,6 @@ export class Container {
     private readonly serviceDependencies = new Map<string, Array<string>>();
     private readonly servicesProvided = Symbol('[[Container:ServicesProvided]]');
     private readonly containerGuid = uniqueNamesGenerator(uniqueNameConfig);
-    private readonly isRoot;
 
     // Factories are lazy instances, when there is no instance it will be created
     // through a factory
@@ -88,7 +87,6 @@ export class Container {
 
     constructor(private readonly logger = LogManager.get(Container), private readonly parent?: Container) {
         logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? `CHILD from ${parent.containerGuid}` : 'MAIN'})`);
-        this.isRoot = !parent;
     }
 
     /**
