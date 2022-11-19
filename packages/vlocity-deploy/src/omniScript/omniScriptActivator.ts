@@ -42,7 +42,7 @@ export class OmniScriptActivator {
         }
 
         // (Re-)Activate script
-        const result = await this.salesforceService.executeAnonymous(`vlocity_cmt.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
+        const result = await this.salesforceService.executeAnonymous(`%vlocity_namespace%.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
 
         if (!result.success) {
             if (!result.compiled) {
