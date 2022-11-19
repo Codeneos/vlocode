@@ -8,7 +8,7 @@ import { SassCompiler } from '../sass';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
 
-@deploymentSpec({ datapackFilter: /^VlocityUITemplate$/i })
+@deploymentSpec({ recordFilter: /^VlocityUITemplate__c$/i })
 export class VlocityUITemplate implements DatapackDeploymentSpec {
 
     public constructor(

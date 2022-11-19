@@ -1,4 +1,4 @@
-import { Logger } from '@vlocode/core';
+import { Container, Logger } from '@vlocode/core';
 import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
 import { forEachAsyncParallel, Iterable, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
@@ -8,7 +8,10 @@ import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { OmniScriptActivator } from '../omniScript/omniScriptActivator';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
-@deploymentSpec({ datapackFilter: /^OmniScript|IntegrationProcedure$/i })
+@deploymentSpec({ 
+    datapackFilter: /^(OmniScript|IntegrationProcedure)$/i, 
+    recordFilter: /^(OmniScript__c|Element__c)$/i 
+})
 export class OmniScript implements DatapackDeploymentSpec {
 
     private readonly lwcEnabledDatapacks = new Set<string>();
@@ -16,6 +19,7 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: OmniScriptActivator,
+        private readonly container: Container,
         private readonly logger: Logger) {
     }
 
@@ -125,7 +129,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         if (packages.length) {
             const timer = new Timer();
             this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
-            await new SalesforceDeployService(undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
+            await this.container.create(SalesforceDeployService, undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
             this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }
