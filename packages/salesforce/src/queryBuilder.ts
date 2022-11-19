@@ -38,28 +38,17 @@ class QueryBuilderData {
         return new QueryService(executor).query(this.getQuery());
     }
 
-    public async executeTooling<T = any>(executor?: SalesforceConnectionProvider | Connection, options?: { chunkSize?: number }) : Promise<T[]> {
+    public async executeTooling<T = any>(executor?: SalesforceConnectionProvider | { queryTooling(q: string): Promise<T[]> }) : Promise<T[]> {
         if (!executor) {
-            return this.executeTooling(container.get(SalesforceConnectionProvider));
+            return this.execute(container.get(QueryService));
         }
 
-        const connection = executor instanceof Connection ? executor : await executor.getJsForceConnection();
-        const results = new Array<T>();
-        const chunkSize = options?.chunkSize ?? 2000;
-
-        // eslint-disable-next-line no-constant-condition
-        for (let chunkNr = 0; true; chunkNr++) {
-            const chunkedQuery = new QueryBuilder(clone(this.query)).limit(chunkSize, chunkNr * chunkSize);  
-            const result = await connection.tooling.query<T>(chunkedQuery.getQuery());
-
-            results.push(...result.records);
-
-            if (result.records.length < chunkSize) {
-                break;
-            }
-        }
-
-        return results;
+        if (typeof executor['queryTooling'] === 'function') {
+            return executor['queryTooling'](this.getQuery());
+        } 
+        
+        // @ts-ignore executor is JsForceConnectionProvider
+        return new QueryService(executor).queryTooling(this.getQuery());
     }
 }
 

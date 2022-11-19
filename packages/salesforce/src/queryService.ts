@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import * as moment from 'moment';
-import { Logger, injectable } from '@vlocode/core';
+import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
@@ -9,7 +9,26 @@ import { NamespaceService } from './namespaceService';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & SObjectRecord & { [P in TProps]: any; };
 
-@injectable.transient()
+export interface QueryOptions {
+    /**
+     * Execute the query on the tooling API instead of the regular data API. 
+     */
+    toolingApi?: boolean;
+    /**
+     * Cache the query results
+     */
+    cache?: boolean;
+    /**
+     * Default chunk size for the query
+     */
+    chunkSize?: number;
+    /**
+     * Cancellation token when triggered cancels the query
+     */
+    cancelToken?: CancellationToken;
+}
+
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export class QueryService {
 
     private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();
@@ -54,9 +73,23 @@ export class QueryService {
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
     public query<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
+        return this.execute(query, { cache: useCache, cancelToken });
+    }
+
+    /**
+     * Query salesforce for a record using the tooling API
+     * @param query Query string
+     * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
+     */
+    public queryTooling<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
+        return this.execute(query, { cache: useCache, cancelToken, toolingApi: true });
+    }
+
+    public execute<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, options?: QueryOptions) : Promise<QueryResult<T, K>[]> {
         const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
-        const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
+        const enableCache = this.queryCacheEnabled && (options?.cache ?? this.queryCacheDefault);
         const cachedResult = enableCache && this.queryCache.get(nsNormalizedQuery);
+        
         if (cachedResult) {
             this.logger.verbose(`Query: ${query} [cache hit]`);
             return cachedResult;
@@ -65,13 +98,14 @@ export class QueryService {
         const promisedResult = (async () => {
             const queryTimer = new Timer();
             const connection = await this.connectionProvider.getJsForceConnection();
-            let queryResult = await connection.query<T>(nsNormalizedQuery);
+            const queryBackend = options?.toolingApi ? connection.tooling : connection;
+            let queryResult = await queryBackend.query<T>(nsNormalizedQuery);
             const records = queryResult.records;
             while (queryResult.nextRecordsUrl) {
-                if (cancelToken?.isCancellationRequested) {
+                if (options?.cancelToken?.isCancellationRequested) {
                     break;
                 }
-                queryResult = await connection.queryMore(queryResult.nextRecordsUrl);
+                queryResult = await queryBackend.queryMore(queryResult.nextRecordsUrl);
                 records.push(...queryResult.records);
             }
             this.logger.verbose(`Query: ${query} [records ${records.length}] [${queryTimer.stop()}]`);
@@ -84,45 +118,6 @@ export class QueryService {
             this.queryCache.set(nsNormalizedQuery, promisedResult);
         }
 
-        return promisedResult;
-    }
-
-    /**
-     * Query salesforce for a record
-     * @param query Query string
-     * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
-     */
-    public bulkQuery<T extends object = object, K extends PropertyAccessor = keyof T>(query: string) : Promise<QueryResult<T, K>[]> {
-        const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
-        const sobjectType = nsNormalizedQuery.replace(/\([\s\S]+\)/g, '').match(/FROM\s+(\w+)/i)?.[0];
-        if (!sobjectType) {
-            throw new Error(`SObject type not detected in query: ${query}`);
-        }
-
-        this.logger.verbose(`Bulk Query: ${query}...`);
-        const promisedResult = (async () => {
-            const queryTimer = new Timer();
-            const connection = await this.connectionProvider.getJsForceConnection();
-            const records = await new Promise<any[]>((resolve, reject) => {
-                const recordStream = connection.bulk.query(nsNormalizedQuery) as Readable;
-                const data: any[] = [];
-                recordStream.once('error', reject);
-                recordStream.on('record',record => {
-                    const recordAttributes = {
-                        attributes: {
-                            type: sobjectType,
-                            url: `/${sobjectType}/${record.Id}`,
-                        }
-                    };
-                    data.push(Object.assign(record, recordAttributes));
-                });
-                recordStream.once('finish', () => resolve(data));
-            });
-            this.logger.verbose(`Bulk Query: ${query} records ${records.length}] [${queryTimer.stop()}]`);
-            return records.map(record => this.wrapRecord<T>(record) as QueryResult<T, K>);
-        })().catch(err => {
-            throw new Error(err.message || err);
-        });
         return promisedResult;
     }
 

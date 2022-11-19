@@ -85,8 +85,11 @@ export class Container {
     // Provide provide a new instance on each resolution
     private readonly providers = new Map<string, (receiver: any) => any>();
 
+    private readonly containerPath: string;
+
     constructor(private readonly logger = LogManager.get(Container), private readonly parent?: Container) {
         logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? `CHILD from ${parent.containerGuid}` : 'MAIN'})`);
+        this.containerPath = parent ? [ parent.containerPath, this.containerGuid ].join('->') : this.containerGuid;
     }
 
     /**
@@ -333,7 +336,7 @@ export class Container {
      * using the injectable decorator then those services will be made available in the container.
      * @param instance 
      */
-     public register<T extends Object | Object[]>(instances: T) {
+     public register<T extends object | object[]>(instances: T) {
         for (const instance of asArray(instances)) {
             for (const prototype of this.getPrototypes(instance)) {
                 const provides = Reflect.getMetadata('service:provides', prototype.constructor) as Array<ServiceType>;
