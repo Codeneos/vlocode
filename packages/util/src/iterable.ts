@@ -162,10 +162,14 @@ export namespace Iterable {
     }
 
     /**
-     * Checks if the specified obj is an iterable by checking if it has a callable Symbol.iterator 
+     * Checks if the specified obj is an iterable by checking if it has a callable Symbol.iterator. 
+     * Returns false for strings even when they are iterable to avoid iterating over the characters in a string.
      * @param obj Object to check
      */
     export function isIterable<T>(obj: any): obj is Iterable<T> {
+        if (typeof obj === 'string') {
+            return false;
+        }
         const propertyDescriptor = obj && Object.getOwnPropertyDescriptor(obj, Symbol.iterator);
         const isFunction = typeof propertyDescriptor?.value === 'function' ||  typeof propertyDescriptor?.get === 'function';
         if (isFunction) {
@@ -175,7 +179,8 @@ export namespace Iterable {
     }
 
     /**
-     * Make any value iterable
+     * Makes any value iterable; if a single element value is passed that value is returned. If inner elements are iterable as per the result of {@link isIterable} 
+     * @remarks does not iterate over characters of a strings
      * @param elements Elements
      */
     export function asIterable<T>(...elements: Array<T | Iterable<T>>) : Iterable<T> {
