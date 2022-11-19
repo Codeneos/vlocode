@@ -1,7 +1,7 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger, injectable, container, LifecyclePolicy, Container } from '@vlocode/core';
-import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray } from '@vlocode/util';
+import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -133,7 +133,7 @@ export class DatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        this.container.register(new QueryService(this.connectionProvider).setCacheDefault(true));
+        this.container.register(this.container.create(QueryService, this.connectionProvider).setCacheDefault(true));
         const deployment = this.container.create(DatapackDeployment, options);
         const recordFactory = this.container.create(DatapackRecordFactory);
 
@@ -343,20 +343,21 @@ export class DatapackDeployer {
         return arg.filter(record => this.evalFilter(filter, record));
     }
 
-    private evalFilter(filter: DatapackFilter, arg: string | VlocityDatapack | DatapackDeploymentRecord | DatapackDeploymentRecordGroup) {
+    private evalFilter(filter: DatapackFilter, arg: string | VlocityDatapack | DatapackDeploymentRecord | DatapackDeploymentRecordGroup) : boolean {
         const isMatch = (a: string | RegExp, b: string) => typeof a === 'string' ? a.toLowerCase() === b.toLowerCase() : a.test(b);
         
         if (typeof arg === 'string') {
-            return (filter.datapackFilter && isMatch(filter.datapackFilter, arg)) || 
-                (filter.recordFilter && isMatch(filter.recordFilter, arg));
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg)) || 
+                (!!filter.recordFilter && isMatch(filter.recordFilter, arg));
         } else if (arg instanceof DatapackDeploymentRecord) {
-            return (filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
-                (filter.recordFilter && isMatch(filter.recordFilter, arg.normalizedSObjectType));
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
+                (!!filter.recordFilter && isMatch(filter.recordFilter, arg.normalizedSObjectType));
         } else if (arg instanceof VlocityDatapack) {
-            return filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType);
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
+                (!!filter.recordFilter && isMatch(filter.recordFilter, removeNamespacePrefix(arg.sobjectType)));
         } else if (arg instanceof DatapackDeploymentRecordGroup) {
-            return (filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
-                (filter.recordFilter && arg.records.some(r => isMatch(filter.recordFilter!, r.normalizedSObjectType)));
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
+                (!!filter.recordFilter && arg.records.some(r => isMatch(filter.recordFilter!, r.normalizedSObjectType)));
         }
 
         throw new Error('EvalFilter does not understand comparison argument type; pass either a VlocityDatapack or DatapackDeploymentRecord');
