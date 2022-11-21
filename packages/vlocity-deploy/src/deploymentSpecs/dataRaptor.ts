@@ -4,7 +4,7 @@ import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
-@deploymentSpec({ datapackFilter: 'DataRaptor' })
+@deploymentSpec({ recordFilter: /^(DRMapItem__c|DRBundle__c)$/ })
 export class DataRaptor implements DatapackDeploymentSpec {
 
     public constructor(

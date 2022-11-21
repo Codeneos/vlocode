@@ -4,7 +4,7 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 
-@deploymentSpec({ recordFilter: /OverrideDefinition__c$/i })
+@deploymentSpec({ recordFilter: /^OverrideDefinition__c$/i })
 export class OverrideDefinitionRecords implements DatapackDeploymentSpec {
 
     private lookupQueue = new DeferredWorkQueue(this.lookupProcessor, this);

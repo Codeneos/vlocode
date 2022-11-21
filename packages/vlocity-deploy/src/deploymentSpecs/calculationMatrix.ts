@@ -3,7 +3,7 @@ import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
 
-@deploymentSpec({ recordFilter: /Calculation(Procedure|Matrix)Version__c$/i })
+@deploymentSpec({ recordFilter: /(Calculation(Procedure|Matrix)Version__c)$/i })
 export class CalculationProcedure implements DatapackDeploymentSpec {
 
     public constructor(

@@ -4,7 +4,7 @@ import { VlocityDatapack } from '../datapack';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 
-@deploymentSpec({ datapackFilter: 'Product2' })
+@deploymentSpec({ recordFilter: /^(Product2|(Price(ListEntry__c|bookEntry)))$/i })
 export class Product2 implements DatapackDeploymentSpec {
 
     public preprocess(datapack: VlocityDatapack) {

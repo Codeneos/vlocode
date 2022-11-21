@@ -4,7 +4,7 @@ import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
 import { ContentVersionLookup } from './contentVersionLookup';
 
-@deploymentSpec({ datapackFilter: /^DocumentTemplate$/i })
+@deploymentSpec({ recordFilter: /^DocumentTemplate__c$/i })
 export class DocumentTemplate implements DatapackDeploymentSpec {
 
     public constructor(private readonly lookupService: ContentVersionLookup) {

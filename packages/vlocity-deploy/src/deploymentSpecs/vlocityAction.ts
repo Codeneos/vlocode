@@ -3,7 +3,7 @@ import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { RecordActivator } from './recordActivator';
 
-@deploymentSpec({ datapackFilter: 'VlocityAction' })
+@deploymentSpec({ recordFilter: /^VlocityAction__c$/ })
 export class VlocityAction implements DatapackDeploymentSpec {
 
     public constructor(
@@ -11,6 +11,6 @@ export class VlocityAction implements DatapackDeploymentSpec {
     }
 
     public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.getDeployedRecords('VlocityAction__c'), () => ({ active__c: true }));
+        return this.activator.activateRecords(event.deployedRecords, () => ({ active__c: true }));
     }
 }

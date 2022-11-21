@@ -7,7 +7,7 @@ import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { ContentVersionLookup } from './contentVersionLookup';
 
-@deploymentSpec({ datapackFilter: /^ContentVersion$/i })
+@deploymentSpec({ recordFilter: /^ContentVersion$/i })
 export class ContentVersion implements DatapackDeploymentSpec {
 
     public constructor(

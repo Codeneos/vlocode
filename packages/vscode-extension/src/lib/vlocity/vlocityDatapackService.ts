@@ -341,7 +341,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     }
 
     public getDatapackReferenceKey(datapack : VlocityDatapack) {
-        return `${datapack.datapackType  }/${
+        return `${datapack.datapackType}/${
             this.vlocityBuildTools.datapacksexpand.getDataPackFolder(datapack.datapackType, datapack.sobjectType, datapack)}`;
     }
 

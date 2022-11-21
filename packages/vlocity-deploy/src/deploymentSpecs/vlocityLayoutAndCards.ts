@@ -4,7 +4,7 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 
-@deploymentSpec({ datapackFilter: /^Vlocity(UILayout|Card)$/i })
+@deploymentSpec({ recordFilter: /^Vlocity(UILayout|Card)__c$/i })
 export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
 
     public constructor(
@@ -21,6 +21,6 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
     }
 
     public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.getDeployedRecords(/Vlocity(UILayout|Card)__c$/i), () => ({ active__c: true }));
+        return this.activator.activateRecords(event.deployedRecords, () => ({ active__c: true }));
     }
 }
