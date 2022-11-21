@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.1](https://github.com/codeneos/vlocode/compare/v0.18.0...v0.18.1) (2022-11-21)
+
+### Bug Fixes
+
+* clear debug logs commands does not complete ([2ae7d6c](https://github.com/codeneos/vlocode/commit/2ae7d6c20fa70cf7e1816f359d9a04d6ee3d81ea))
+* debug log viewer file names do not use proper date format ([de76b2a](https://github.com/codeneos/vlocode/commit/de76b2a43e68acebf21ff34c7f8f1933cf183318))
+
+### Features
+
+* support reusing and storing custom debug levels defined through Vlocode ([58d89dc](https://github.com/codeneos/vlocode/commit/58d89dcbee273b5db0eaadea515e986dd1c33133))
+
 # [0.18.0](https://github.com/codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
 
 ### Bug Fixes
