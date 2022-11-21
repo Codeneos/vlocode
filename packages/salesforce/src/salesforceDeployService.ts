@@ -73,7 +73,6 @@ export class SalesforceDeployService {
 
             // Wait for deploy
             let lastConsoleLog = 0;
-            let lastProgress = 0;
             let pollCount = 0;
             while (await wait(checkInterval)) {
                 // Reduce polling frequency for long running deployments
@@ -98,10 +97,9 @@ export class SalesforceDeployService {
                     if (status.numberComponentsTotal) {
                         progress?.report({
                             message: `${status.numberComponentsDeployed}/${status.numberComponentsTotal}`,
-                            increment: status.numberComponentsDeployed - lastProgress,
+                            progress: status.numberComponentsDeployed,
                             total: status.numberComponentsTotal
                         });
-                        lastProgress = status.numberComponentsDeployed;
                     } else {
                         progress?.report({ message: status.status });
                     }

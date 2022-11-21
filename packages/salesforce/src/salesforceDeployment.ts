@@ -12,7 +12,6 @@ export interface SalesforceDeploymentEvents {
 
 export interface DeployProgress {
     status: string;
-    increment: number;
     deployed: number;
     total: number;
     errors: number;
@@ -177,7 +176,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                 void this.emit('progress', {
                     status: status.status,
                     deployed: status.numberComponentsDeployed ?? 0,
-                    increment: (status.numberComponentsDeployed ?? 0) - this.lastProgress,
+                    progress: (status.numberComponentsDeployed ?? 0),
                     total: status.numberComponentsTotal,
                     errors: status.numberComponentErrors ?? 0
                 });

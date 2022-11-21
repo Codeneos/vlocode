@@ -147,7 +147,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             deployment.on('progress', status => {
                 progress.report({
                     message: `${status.status} ${status.total ? `${status.deployed}/${status.total}` : ''}`,
-                    increment: status.increment,
+                    increment: status.deployed,
                     total: status.total
                 });
             });

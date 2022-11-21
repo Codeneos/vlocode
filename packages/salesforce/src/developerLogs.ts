@@ -4,6 +4,7 @@ import type { SuccessResult } from 'jsforce';
 
 import { SalesforceConnectionProvider } from './connection';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
+import { QueryBuilder } from './queryBuilder';
 import { QueryService } from './queryService';
 import { SalesforceDebugLevel } from './salesforceDebugLevel';
 
@@ -38,25 +39,42 @@ export class DeveloperLogs {
 
     /**
      * Deletes all Developers for All users from the server and returns te number of delete log entries as number.
+     * @param reportProgress Reports the progress of the delete operations
+     * @param token Cancellation token
+     * @returns 
      */
-    public async clearDeveloperLogs(token?: CancellationToken) {
-        const [ { logCount } ] = (await this.queryService.query<{ logCount: number }>('Select count(Id) logCount From ApexLog'));
-        if (logCount == 0) {
+    public async clearDeveloperLogs(reportProgress?: (progress: { progress: number, total: number }) => any, token?: CancellationToken) {
+        const [ { logCount } ] = (await new QueryBuilder('ApexLog', [ 'count(Id) logCount' ]).executeTooling(this.queryService));
+        if (!logCount) {
             return 0;
         }
+
         const connection = await this.getJsForceConnection();
-        let logsDeleted = 0;
+        let deletedCount = 0;
+
         while (token?.isCancellationRequested != true) {
             // Query and delete logs in chunks to avoid overloading the server
-            const ids = (await this.queryService.query<DeveloperLogRecord>('Select Id From ApexLog limit 100')).map(record => record.id);
-            if (ids.length == 0) {
+            const apexLogs = await new QueryBuilder('ApexLog', [ 'Id' ]).limit(100).executeTooling(this.queryService);
+            const ids = apexLogs.map(log => log.Id);
+            if (!ids) {
                 break;
             }
-            this.logger.info(`Deleting ${logsDeleted + ids.length}/${logCount} debug logs from the server...`);
-            await connection.tooling.delete('ApexLog', ids);
-            logsDeleted += ids.length;
+
+            deletedCount += ids.length;
+            this.logger.info(`Deleting ${deletedCount}/${logCount} debug logs from the server...`);
+            if (reportProgress) {
+                reportProgress({ progress: deletedCount, total: logCount });
+            }
+
+            try {
+                await connection.tooling.delete('ApexLog', ids, { allOrNone: false });
+            } catch {
+                // Ignore deletion errors
+                this.logger.warn(`Failed to delete some logs from the server; logs might already be cleared`);
+            }
         }
-        return logsDeleted;
+
+        return deletedCount;
     }
 
     /**
