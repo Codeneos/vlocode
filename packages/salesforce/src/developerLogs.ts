@@ -56,7 +56,7 @@ export class DeveloperLogs {
             // Query and delete logs in chunks to avoid overloading the server
             const apexLogs = await new QueryBuilder('ApexLog', [ 'Id' ]).limit(100).executeTooling(this.queryService);
             const ids = apexLogs.map(log => log.Id);
-            if (!ids) {
+            if (!ids.length) {
                 break;
             }
 
@@ -127,11 +127,11 @@ export class DeveloperLogs {
      * @param type Type of logging to set
      * @param trackedEntityId Optionally the tracked entity; required for class and use debugging
      * @param durationInSeconds Duration of the logging sessions; default is 1 hour or 3600 seconds
-     * @returns Trace flag instance which can be used to extend or clear
+     * @returns Trace flag instance id which can be used to extend or clear
      */
-    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'DEVELOPER_LOG' | 'USER_DEBUG', trackedEntityId?: undefined, durationInSeconds?: number)
-    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'CLASS_TRACING', trackedEntityId: string, durationInSeconds?: number)
-    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'DEVELOPER_LOG' | 'CLASS_TRACING', trackedEntityId?: string, durationInSeconds: number = 3600) {
+    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'DEVELOPER_LOG' | 'USER_DEBUG', trackedEntityId?: undefined, durationInSeconds?: number): Promise<string>;
+    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'CLASS_TRACING', trackedEntityId: string, durationInSeconds?: number): Promise<string>;
+    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'DEVELOPER_LOG' | 'CLASS_TRACING', trackedEntityId?: string, durationInSeconds: number = 3600): Promise<string> {
         // Create base trace flag object
         const traceFlag = {
             DebugLevelId: debugLevel.id,
