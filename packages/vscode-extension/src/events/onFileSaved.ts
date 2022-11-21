@@ -59,7 +59,10 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
         }
     }
 
-    private deployAsDatapack(document: vscode.TextDocument) : Promise<any> {
+    private async deployAsDatapack(document: vscode.TextDocument) : Promise<void> {
+        if (!this.vloService.config.deployOnSave) {
+            return;
+        }
         this.logger.verbose(`Requesting datapack deploy for: ${document.uri.fsPath}`);
         return this.vloService.commands.execute(VlocodeCommand.deployDatapack, [ document.uri, null, false ]);
     }
