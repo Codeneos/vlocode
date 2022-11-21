@@ -63,7 +63,7 @@ export default class SelectOrgCommand extends CommandBase {
         if (selectedOrg === this.refreshTokensOption) {
             await this.vlocode.refreshOAuthTokens();
         } else {
-            const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();
+            const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();    
             if (selectedOrgInfo) {
                 this.logger.log(`Connecting to: ${selectedOrgInfo.username}...`);
                 if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
