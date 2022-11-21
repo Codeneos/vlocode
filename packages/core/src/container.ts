@@ -125,7 +125,7 @@ export class Container {
      * @param overrideLifecycle Use an alternate lifecycle policy
      * @param receiver Class ctor for which we are resolving this
      */
-    public resolve<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: new () => object, resolver: Container = this) : T | undefined {
+    public resolve<T extends object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy, receiver?: new () => object, resolver: Container = this) : T | undefined {
         const serviceName = this.getServiceName(service);
 
         if (serviceName === 'Object') {
@@ -194,7 +194,7 @@ export class Container {
      * Safe version of @see Container.resolve that does not return undefined and throws an exception for services that cannot be resolved.
      * @param service Service type for which to resolve the concrete class
      */
-    public get<T extends Object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy) : T {
+    public get<T extends object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy) : T {
         const instance = this.resolve(service, overrideLifecycle);
         if (instance === undefined) {
             throw new Error(`Unable to resolve implementation for ${this.getServiceName(service)}`);

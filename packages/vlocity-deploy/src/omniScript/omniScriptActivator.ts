@@ -1,9 +1,10 @@
 import { QueryService, SalesforceService, NamespaceService, QueryBuilder, SalesforceDeployService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
-import { Iterable, Timer } from '@vlocode/util';
+import { isSalesforceId, Iterable, Timer } from '@vlocode/util';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
+import { VlocityNamespaceService } from '../vlocityNamespaceService';
 
 /**
  * Provides OmniScript definitions.
@@ -21,6 +22,12 @@ import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
  */
 @injectable()
 export class OmniScriptActivator {
+
+    /**
+     * Method that is called to activate a single the script
+     */
+    private readonly activationFunction = `%vlocity_namespace%.BusinessProcessController.bulkActivateBP(new List<Id> { '%script_id%' });`;
+
     constructor(
         private readonly salesforceService: SalesforceService,
         private readonly queryService: QueryService,
@@ -42,11 +49,11 @@ export class OmniScriptActivator {
         }
 
         // (Re-)Activate script
-        const result = await this.salesforceService.executeAnonymous(`%vlocity_namespace%.BusinessProcessController.bulkActivateBP(new List<Id> { '${script.id}' });`)
+        const result = await this.salesforceService.executeAnonymous(this.activationFunction.replace(/%script_id%/, script.id), { updateNamespace: true });
 
         if (!result.success) {
             if (!result.compiled) {
-                throw new Error(`Activation error: ${result.compileProblem}`);
+                throw new Error(`APEX Compilation error at script activation: ${result.compileProblem}`);
             }
             throw new Error(`Activation error: ${result.exceptionMessage}`);
         }
@@ -80,7 +87,7 @@ export class OmniScriptActivator {
     private async deployLwcComponent(definition: OmniScriptDefinition, options?: { toolingApi?: boolean }) {
         const timer = new Timer();
         const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
-        this.logger.info(`Deploying ${definition.bpType}/${definition.bpSubType} LWC (${apiLabel} api)...`);
+        this.logger.info(`Deploying LWC ${definition.bpType}/${definition.bpSubType} (${apiLabel} api)...`);
 
         if (options?.toolingApi) { 
             await this.deployLwcWithToolingApi(definition);
@@ -88,7 +95,7 @@ export class OmniScriptActivator {
             await this.deployLwcWithMetadataApi(definition);
         }
 
-        this.logger.info(`Deployed ${definition.bpType}/${definition.bpSubType} in [${timer.stop()}]`);
+        this.logger.info(`Deployed LWC ${definition.bpType}/${definition.bpSubType} in [${timer.stop()}]`);
     }
 
     private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {

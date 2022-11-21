@@ -6,40 +6,6 @@ import { Command } from '@lib/command';
 import { getContext } from '@lib/vlocodeContext';
 import { lazy } from '@vlocode/util';
 
-export class ProgressToken {
-    private resolved = false;
-
-    constructor(
-        private readonly progressResolve : () => void,
-        private readonly progressReject :  (reason?: any) => void,
-        private readonly progress : vscode.Progress<{ message?: string; increment?: number }>,
-        private readonly cancelToken? : vscode.CancellationToken) {
-    }
-
-    public get cancellationToken() : vscode.CancellationToken | undefined {
-        return this.cancelToken;
-    }
-
-    public complete() : void {
-        if (!this.resolved) {
-            this.progressResolve();
-            this.resolved = true;
-        }
-    }
-
-    public report(message: string, progress?: number ) : void {
-        if (!this.resolved) {
-            this.progress.report({ message: message, increment: progress });
-        }
-    }
-
-    public increment(amount: number) : void {
-        if (!this.resolved) {
-            this.progress.report({ increment: amount });
-        }
-    }
-}
-
 export abstract class CommandBase implements Command {
 
     protected readonly logger = LogManager.get(this.getName());
@@ -57,20 +23,6 @@ export abstract class CommandBase implements Command {
         return vscode.window.activeTextEditor && vscode.window.activeTextEditor.selection
             ? vscode.window.activeTextEditor.document.getText(vscode.window.activeTextEditor.selection)
             : undefined;
-    }
-
-    protected async startProgress(title: string, cancellable?: boolean) : Promise<ProgressToken> {
-        return new Promise<ProgressToken>(progressTokenResolve => {
-            void this.vlocode.withActivity({
-                location: vscode.ProgressLocation.Notification,
-                progressTitle: title,
-                cancellable: cancellable == true
-            }, (porgress, cancelToken) => {
-                return new Promise<void>((resolve, reject) => {
-                    progressTokenResolve(new ProgressToken(resolve, reject, porgress, cancelToken));
-                });
-            });
-        });
     }
 
     /**

@@ -232,6 +232,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             cancellable: options.cancellable === true,
             title: options.activityTitle || options.progressTitle,
             status: VlocodeActivityStatus.Pending,
+            progess: 0,
+            normalizedProgress: 0,
+            total: 100,
             onComplete: onCompleteEmitter.event,
             cancel() {
                 cancelTokenSource?.cancel();
@@ -242,10 +245,26 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             }
         });
 
-        const progressInterceptor = (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+        const progressInterceptor = (vscodeProgress: vscode.Progress<{ message?: string; increment?: number }>) => {            
             return {
-                report({message, increment, total, status}) {
-                    progress.report( { message, increment: total && increment ? (increment/total) * 100 : increment } );
+                report({message, progress, total, status}) {
+                    let relativeIncrement: number | undefined = undefined;
+                    if (progress !== undefined && total) {
+                        const lastRelativeProgress = activityRecord.progess / activityRecord.total;
+                        const currentRelativeProgress = progress / total;
+
+                        relativeIncrement = Math.floor((currentRelativeProgress - lastRelativeProgress) * 100);
+                        if (relativeIncrement < 0) {
+                            vscodeProgress.report( { increment: -activityRecord.normalizedProgress } );
+                            activityRecord.normalizedProgress = 0;
+                            relativeIncrement = Math.floor(currentRelativeProgress * 100);
+                        }
+
+                        activityRecord.progess = progress;
+                        activityRecord.total = total;
+                        activityRecord.normalizedProgress += relativeIncrement;
+                    }
+                    vscodeProgress.report( { message, increment: relativeIncrement ?? undefined } );
                     if (status !== undefined) {
                         activityRecord.status = status;
                     }
@@ -287,8 +306,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
         return vscode.window.withProgress({
             title: options.progressTitle || options.activityTitle,
-            cancellable: options.cancellable,
-            location: options.location
+            cancellable: options.cancellable === true,
+            location: options.location ?? vscode.ProgressLocation.Notification
         }, taskRunner) as Promise<T>;
     }
 

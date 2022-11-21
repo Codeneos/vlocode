@@ -58,7 +58,7 @@ export default class ExecAnonymousCommand extends MetadataCommand {
             cancellable: false
         }, async () => {
 
-            const result = await this.salesforce.executeAnonymous(codeToExecute, logLevel.debugHeader);
+            const result = await this.salesforce.executeAnonymous(codeToExecute, { logLevels: logLevel.debugHeader});
 
             if (!result.compiled) {
                 // Show the error

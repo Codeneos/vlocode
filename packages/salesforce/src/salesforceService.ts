@@ -17,6 +17,7 @@ import { SoapClient, SoapDebuggingHeader } from './soapClient';
 import { DeveloperLogs } from './developerLogs';
 import { QueryBuilder } from './queryBuilder';
 import { isArrayBuffer } from 'util/types';
+import { SalesforceBatchService } from './salesforceBatchService';
 
 export interface InstalledPackageRecord extends jsforce.FileProperties {
     manageableState: string;
@@ -43,6 +44,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
     @injectable.property public readonly lookupService: SalesforceLookupService;
     @injectable.property public readonly deploy: SalesforceDeployService;
     @injectable.property public readonly logs: DeveloperLogs;
+    @injectable.property public readonly batch: SalesforceBatchService;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
@@ -231,14 +233,17 @@ export class SalesforceService implements SalesforceConnectionProvider {
     /**
      * Executes the specified APEX using the SOAP API and returns the result.
      * @param apex APEX code to execute
-     * @param logLevels Optional debug log levels to use
+     * @param options.logLevels Optional debug log levels to use
+     * @param options.updateNamespace Replace namespace placeholders with the actual namespace
      */
-    public async executeAnonymous(apex: string, logLevels: SoapDebuggingHeader = {}) : Promise<jsforce.ExecuteAnonymousResult & { debugLog?: string }> {
+    public async executeAnonymous(apex: string, options?: { logLevels?: SoapDebuggingHeader, updateNamespace?: boolean }) : Promise<jsforce.ExecuteAnonymousResult & { debugLog?: string }> {
         // Add any missing debug headers at default level of None                
         const validDebugCategories = [
             'Db', 'Workflow', 'Validation', 'Callout', 'Apex_code',
             'Apex_profiling', 'Visualforce', 'System', 'NBA', 'Wave'
         ];
+
+        const logLevels = options?.logLevels ?? {};
         for (const category of validDebugCategories) {
             if(!logLevels[category]) {
                 logLevels[category] = 'None';
@@ -246,8 +251,9 @@ export class SalesforceService implements SalesforceConnectionProvider {
         }
 
         const response = await this.soapToolingRequest('executeAnonymous', {
-            String: apex
+            String: options?.updateNamespace ? this.namespaceService.updateNamespace(apex) : apex
         }, logLevels);
+
         return {
             ...response.body.executeAnonymousResponse.result,
             debugLog: response.debugLog

@@ -4,12 +4,15 @@ import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
 import { CommandBase } from '../lib/commandBase';
 import { SalesforceConnectionProvider } from '@vlocode/salesforce';
 import { vscodeCommand } from '@root/lib/commandRouter';
+import { CancellationToken } from '@vlocode/util';
+import { ActivityProgress } from '../lib/vlocodeActivity';
 
 @vscodeCommand(VlocodeCommand.adminCommands)
 @vscodeCommand(VlocodeCommand.refreshPriceBook, { focusLog: true, executeParams: [ VlocodeCommand.refreshPriceBook ] })
 @vscodeCommand(VlocodeCommand.refreshProductHierarchy, { focusLog: true, executeParams: [ VlocodeCommand.refreshProductHierarchy ] })
 @vscodeCommand(VlocodeCommand.clearPlatformCache, { focusLog: true, executeParams: [ VlocodeCommand.clearPlatformCache ] })
-@vscodeCommand(VlocodeCommand.updateAllProdAttribCommand, { focusLog: true,  executeParams: [ VlocodeCommand.updateAllProdAttribCommand ] })
+@vscodeCommand(VlocodeCommand.updateAllProdAttribCommand, { focusLog: true, executeParams: [ VlocodeCommand.updateAllProdAttribCommand ] })
+@vscodeCommand(VlocodeCommand.refreshPriceBookAndProductHierarchy, { focusLog: true, executeParams: [ VlocodeCommand.refreshPriceBook, VlocodeCommand.refreshProductHierarchy ] })
 export class VlocityAdminCommand extends CommandBase {
 
     private readonly adminCommands = [
@@ -54,7 +57,13 @@ export class VlocityAdminCommand extends CommandBase {
         }
     }
 
-    public async execute(commandName?: string) : Promise<void> {
+    public async execute(...commands: string[]) : Promise<void> {
+        for (const command of commands) {
+            await this.executeCommand(command);
+        }
+    }
+
+    private async executeCommand(commandName?: string) : Promise<void> {
         const selectedCommand = commandName
             ? this.adminCommands.find(command => command.name == commandName)
             : await vscode.window.showQuickPick(this.adminCommands.map(cmd => Object.assign(cmd, { label: `$(${cmd.icon}) ${cmd.title}` })));
@@ -63,50 +72,40 @@ export class VlocityAdminCommand extends CommandBase {
             return;
         }
 
-        await this.vlocode.withActivity(`Running ${selectedCommand.title}...`, async () => {
+        await this.vlocode.withActivity({ progressTitle: selectedCommand.title, cancellable: true }, async (progress, token) => {
             if (selectedCommand.batchJob) {
-                await this.executeBatch(selectedCommand.batchJob);
+                await this.executeBatch(selectedCommand.batchJob, progress, token);
             }
             if (selectedCommand.method) {
-                await this.executeAdminMethod(selectedCommand.method);
+                await this.executeAdminMethod([ selectedCommand.method ], progress, token);
             }
         });
     }
 
-    private executeBatch(batchClass: string) : Promise<void> {
+    private executeBatch(batchClass: string, progress: ActivityProgress, token?: CancellationToken) : Promise<void> {
         const apex = `Database.executeBatch(new ${batchClass}());`;
-        return this.executeAnonymous(apex);
+        return this.executeAnonymous(apex, progress, token);
     }
 
-    private executeAdminMethod(...methodNames: string[]) : Promise<void> {
+    private executeAdminMethod(methodNames: string[], progress: ActivityProgress, token?: CancellationToken) : Promise<void> {
         let apex = '%vlocity_namespace%.TelcoAdminConsoleController ctrl = new %vlocity_namespace%.TelcoAdminConsoleController();\n';
         apex += methodNames.map(method => `ctrl.setParameters('{"methodName":"${method}"}'); ctrl.invokeMethod();`).join('\n');
-        return this.executeAnonymous(apex);
+        return this.executeAnonymous(apex, progress, token);
     }
 
-    private async executeAnonymous(apex: string) : Promise<void> {
-        this.logger.verbose('Execute Anonymous:', apex);
-        const connection = await this.connectionProvider.getJsForceConnection();
-        const result = await connection.tooling.executeAnonymous(apex.replace(NAMESPACE_PLACEHOLDER_PATTERN, this.vlocode.datapackService.vlocityNamespace));
-        if (!result.compiled) {
-            throw new Error(`${result.compileProblem} at ${result.line}:${result.column}`);
-        }
-        if (!result.success) {
-            throw new Error(`${result.exceptionMessage}\n${result.exceptionStackTrace}`);
-        }
+    private async executeAnonymous(apex: string, progress: ActivityProgress, cancelToken?: CancellationToken) : Promise<void> {
+        const batchTracker = await this.vlocode.salesforceService.batch.createBatchTracker();
+        await this.vlocode.salesforceService.executeAnonymous(apex, { updateNamespace: true });
+        return batchTracker.awaitScheduledBatches({
+            cancelToken,
+            progressReport: status => {
+                progress.report({
+                    message: `${status.status} (${status.progress}/${status.total})`,
+                    progress: status.progress,
+                    total: status.total
+                });
+                this.logger.info(`Awaiting ${status}`);
+            }
+        });
     }
 }
-
-// export default {
-//     [VlocodeCommand.adminCommands]: VlocityAdminCommand,
-//     [VlocodeCommand.refreshPriceBookAndProductHierarchy]: async () => {
-//         await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshPriceBook);
-//         await vscode.commands.executeCommand(VlocodeCommand.adminCommands, VlocodeCommand.refreshProductHierarchy);
-//     },
-//     ...[VlocodeCommand.refreshPriceBook,
-//         VlocodeCommand.refreshProductHierarchy,
-//         VlocodeCommand.clearPlatformCache,
-//         VlocodeCommand.clearPlatformCache].reduce(
-//         (map, command) => Object.assign(map, { [command]: () => vscode.commands.executeCommand(VlocodeCommand.adminCommands, command) }), {}
-//     )
-// };

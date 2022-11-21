@@ -25,13 +25,12 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         return this.buildParentKeyFiles();
     }
 
-    protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; increment?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
+    protected async loadAllDatapacks(progressToken: vscode.Progress<{ message?: string; progress?: number, total?: number }>, cancelToken: vscode.CancellationToken) : Promise<VlocityDatapack[]> {
         const datapackLoader = container.get(DatapackLoader);
         const datapackHeaders = await getDatapackHeadersInWorkspace();
         const loadedDatapacks = new Array<VlocityDatapack>();
 
         let progress = 0;
-        let lastReportedProgress = 0;
 
         for (const header of datapackHeaders) {
             if (cancelToken.isCancellationRequested) {
@@ -41,14 +40,11 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
             loadedDatapacks.push(await datapackLoader.loadDatapack(header.fsPath));
 
-            const newProgress = Math.floor((++progress / datapackHeaders.length) * 100);
-            if (newProgress > lastReportedProgress + 1) {
-                progressToken.report({
-                    message: 'loading datapacks',
-                    increment: newProgress - lastReportedProgress
-                });
-                lastReportedProgress = newProgress;
-            }
+            progressToken.report({
+                message: 'loading datapacks',
+                progress: ++progress,
+                total: datapackHeaders.length
+            });
         }
 
         return loadedDatapacks;

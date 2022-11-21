@@ -153,7 +153,7 @@ export class DeployDatapackCommand extends DatapackCommand {
         
         if (allowSuggest && !usingDirectMode) {
             const result = await vscode.window.showInformationMessage(
-                `Do you want faster DataPack deployments? Try the updated Direct deployment mode`, ...[
+                `Deployments taking a long time? Try the Direct/Vlocode deployment mode`, ...[
                 { mode: 'direct',  title: 'Yes, make it so'}, 
                 { mode: 'compatibility',  title: 'No, I prefer the wait'}
             ]);

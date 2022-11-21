@@ -54,7 +54,7 @@ class QueryBuilderData {
 
 type WhereOperatorType = '=' | '!=' | '>' | '<' | 'like' | 'in' | 'includes';
 
-interface FilterCondition {
+export interface QueryFilterCondition {
     [field: string]: any | { op: WhereOperatorType, value: any }
 }
 
@@ -88,7 +88,7 @@ export class QueryBuilder extends QueryBuilderData {
         return new QueryConditionBuilder(this.query);
     }
 
-    public filter(filter: FilterCondition): this {
+    public filter(filter: QueryFilterCondition): this {
         new QueryConditionBuilder(this.query).fromObject(filter);
         return this;
     }
@@ -140,7 +140,7 @@ export class QueryConditionBuilder extends QueryBuilderData {
         return this;
     }
 
-    public fromObject(values: FilterCondition) : QueryConditionBuilder {
+    public fromObject(values: QueryFilterCondition) : QueryConditionBuilder {
         for (const [field, value] of Object.entries(flattenObject(values, obj => typeof obj?.operator !== 'string'))) {
             const operator = value?.op ?? (Array.isArray(value) ? 'in' : '=');
             const cmpValue = value?.op ? value.value : value;

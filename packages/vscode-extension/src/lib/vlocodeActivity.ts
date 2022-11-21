@@ -49,17 +49,35 @@ export interface VlocodeActivity {
 
 export interface ActivityOptions {
     progressTitle: string;
+    /**
+     * Title displayed in the activty expolrer; can be empty in which cas ethe title is picked up from progress title.
+     */
     activityTitle?: string;
-    cancellable: boolean;
-    location: vscode.ProgressLocation;
+    /**
+     * True if the progress can be cancelled by the user; if so a cancel button is displayed inthe progress nofifcation
+     * Activities of this type should accept a cancellation token
+     * @default false
+     */
+    cancellable?: boolean;
+    /**
+     * The location where the progress is displayed
+     * @Default {@link vscode.ProgressLocation.Notification}
+     */
+    location?: vscode.ProgressLocation;
+    /**
+     * True to hide the activity from the activity explorer
+     * @default false
+     */
     hidden?: boolean;
-    /** Task runner throws exceptions back to so they can be caught by the called */
+    /**
+     * Task runner throws exceptions back to so they can be caught by the called
+     */
     propagateExceptions?: boolean;
 }
 
 export type ActivityProgress = vscode.Progress<{
     message?: string;
-    increment?: number;
+    progress?: number;
     total?: number;
     status?: VlocodeActivityStatus;
 }>;
