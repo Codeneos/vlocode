@@ -5,6 +5,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Debug (vscode-extension)",
             "type": "extensionHost",
@@ -30,7 +31,6 @@
             ],
             "preLaunchTask": "build-extension",
             "smartStep": true,
-            "stopOnEntry": false,
             "sourceMaps": true
         },
         {
@@ -58,11 +58,11 @@
             "name": "Debug CLI (node)",
             "args": [
                 "deploy",
-                "C:/repos/kpn_esmee/vlocity/src/OmniScript/KPN-Actions_Calculate-Penalty_Dutch",
+                "${workspaceRoot}/test-deploy",
                 "-u", "dev10pro",
+                "-v",
                 "--debug",
-                "--strict-dependencies",
-                "-v"
+                "--strict-dependencies"
             ],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",

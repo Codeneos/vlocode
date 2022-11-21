@@ -1,7 +1,7 @@
 const startTime = Date.now(); // Track start up performance
 
 // Easier debugging with source maps
-import 'source-map-support/register';
+//import 'source-map-support/register';
 import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 
