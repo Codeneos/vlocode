@@ -11,12 +11,15 @@
         "packages/cli/**/*"
     ],
     "cname": "vlocode.curlybracket.nl",
-    "exclude": "*.spec.ts",
+    "exclude": "*.test.ts",
     "readme": "SITE.md",
     "out": "docs",
     "hideGenerator": true,
     "excludePrivate": false,
     "excludeExternals": true,
+    "includeVersion": true,
+    "githubPages": true,
+    "pretty": true,
     "cleanOutputDir": true,
     "tsconfig": "./tsconfig.typedoc.json"
 }
