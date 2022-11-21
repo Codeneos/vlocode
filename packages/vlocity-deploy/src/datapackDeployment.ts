@@ -1,6 +1,6 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, CancellationTokenSource } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
@@ -69,6 +69,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
     private readonly dependencyResolver: DependencyResolver;
 
+    private isStarted = false;
+    private timer: Timer;
+    private cancelToken?: CancellationToken;
+
     public get deployedRecordCount() {
         return this.deployed.length;
     }
@@ -101,6 +105,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return this.records.size;
     }
 
+    public get isCancelled() {
+        return this.cancelToken?.isCancellationRequested === true;
+    }
+
     constructor(
         options: DatapackDeploymentOptions | undefined,
         private readonly connectionProvider: SalesforceConnectionProvider,
@@ -129,14 +137,20 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param cancelToken An optional cancellation token to stop the deployment
      */
     public async start(cancelToken?: CancellationToken) {
-        const timer = new Timer();
+        if (this.isStarted !== false) {
+            throw new Error('Deploy is already started you cannot start a deployment twice. To run this deployment multiple times create a new deployment object instead.');
+        }
+
+        this.timer = new Timer();
+        this.cancelToken = cancelToken;
+        this.isStarted = true;
 
         let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
         while (deployableRecords = this.getDeployableRecords()) {
             await this.deployRecords(deployableRecords, cancelToken);
         }
 
-        this.writeDeploymentSummaryToLog(timer);
+        this.writeDeploymentSummaryToLog(this.timer);
     }
 
     private writeDeploymentSummaryToLog(timer: Timer) {

@@ -262,12 +262,18 @@ export class DatapackDeployer {
         if (deployment.options.disableTriggers) {
             await this.setVlocityTriggerState(false);
         }
+        if (deployment.isCancelled) {
+            return;
+        }
         await this.runSpecFunction('beforeDeployRecord', [...datapackRecords]);
     }
 
     private async afterDeployRecord(deployment: DatapackDeployment, datapackRecords: Iterable<DatapackDeploymentRecord>) {
         if (deployment.options.disableTriggers) {
             await this.setVlocityTriggerState(true);
+        }
+        if (deployment.isCancelled) {
+            return;
         }
         await this.verifyDeployedFieldData(datapackRecords, [ 'GlobalKey__c', 'GlobalKey2__c', 'GlobalGroupKey__c' ]);
         await this.runSpecFunction('afterDeployRecord', [...datapackRecords]);
@@ -278,6 +284,9 @@ export class DatapackDeployer {
      * @param datapackRecords Datapacks being deployed
      */
     private async beforeDeployRecordGroup(deployment: DatapackDeployment, datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
+        if (deployment.isCancelled) {
+            return;
+        }
         return this.runSpecFunction('beforeDeploy', new DatapackDeploymentEvent(deployment, [...datapackGroups]));
     }
 
@@ -286,6 +295,9 @@ export class DatapackDeployer {
      * @param datapackRecords Datapacks that have been deployed
      */
     private async afterDeployRecordGroup(deployment: DatapackDeployment, datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
+        if (deployment.isCancelled) {
+            return;
+        }
         return this.runSpecFunction('afterDeploy', new DatapackDeploymentEvent(deployment, [...datapackGroups]));
     }
 

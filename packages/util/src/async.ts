@@ -1,9 +1,26 @@
+import { CancellationToken } from "./cancellationToken";
+import { DeferredPromise } from "./deferred";
+
 /**
  * Wait for the specified number of seconds and the return.
  * @param ms Time in milliseconds to wait
+ * @param cancelToken Cancellation token that when triggered resolves the promise
  */
-export async function wait(ms: number): Promise<true> {
-    return new Promise<true>(resolve => { setTimeout(() => resolve(true), ms); });
+export async function wait(ms: number, cancelToken?: CancellationToken): Promise<true> {
+    const deferredPromise = new DeferredPromise<true>();
+    const onCancel = cancelToken?.onCancellationRequested(() => {
+        clearTimeout(timeout);
+        if (!deferredPromise.isResolved) {
+            deferredPromise.resolve(true);
+        }
+    });
+
+    const timeout = setTimeout(() => {
+        deferredPromise.resolve(true);
+        onCancel?.dispose();
+    }, ms);    
+
+    return deferredPromise;
 }
 
 export function isPromise(value: any): value is Promise<any> {
