@@ -3,7 +3,6 @@ import { SalesforceOrgInfo, sfdx } from '@vlocode/util';
 import { CommandBase } from '../lib/commandBase';
 import { vscodeCommand } from '@root/lib/commandRouter';
 import { VlocodeCommand } from '@root/constants';
-import chalk = require('chalk');
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
 
@@ -65,7 +64,6 @@ export default class SelectOrgCommand extends CommandBase {
             await this.vlocode.refreshOAuthTokens();
         } else {
             const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();
-            chalk
             if (selectedOrgInfo) {
                 this.logger.log(`Connecting to: ${selectedOrgInfo.username}...`);
                 if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
