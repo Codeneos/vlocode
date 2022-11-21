@@ -1,7 +1,9 @@
 import { VlocodeCommand } from '@root/constants';
 import { vscodeCommand } from '@root/lib/commandRouter';
 import { SalesforceDebugLevel } from '@vlocode/salesforce';
+import moment = require('moment');
 import * as vscode from 'vscode';
+import { getContext } from '../../lib/vlocodeContext';
 import MetadataCommand from '../metadata/metadataCommand';
 
 @vscodeCommand(VlocodeCommand.setTraceFlags)
@@ -49,9 +51,9 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         },
         workflow: {
             placeHolder: 'Workflow',
-            default: 'The log category level for workflow rules. Includes information for workflow rules, such as the rule name and the actions taken.',
+            default: 'None',
             options: ['None', 'Error', 'Warn', 'Info', 'Debug', 'Fine', 'Finer', 'Finest'],
-            description: 'Tets',
+            description: 'The log category level for workflow rules. Includes information for workflow rules, such as the rule name and the actions taken.',
         },
         system: {
             placeHolder: 'System',
@@ -61,12 +63,15 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         }
     };
 
+    private readonly customDebugLevelKey = 'customDebugLevel_v1';
+    private readonly customDebugLevelMax = 5;
+
     private readonly noneTraceFlags: SalesforceDebugLevel = {
         apexCode: 'None',
         apexProfiling: 'None',
         callout: 'None',
         database: 'None',
-        validation: 'Info',
+        validation: 'None',
         visualforce: 'None' ,
         workflow: 'None',
         system: 'None',
@@ -75,78 +80,98 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
     /**
      * Predefined log levels
      */
-    private readonly traceFlagOptions : Array<vscode.QuickPickItem & { traceFlags?: SalesforceDebugLevel | null }> = [
-        { label: 'User Debug', description: 'Only log user debug statements', traceFlags: { ...this.noneTraceFlags, apexCode: 'Debug' } },
-        { label: 'User Debug with Limits', description: 'User debug statements and details on consumed govern limits', traceFlags: { ...this.noneTraceFlags, apexCode: 'Debug', apexProfiling: 'Finest' } },
-        { label: 'User Debug with DML', description: 'User debug statements and executed DML', traceFlags: { ...this.noneTraceFlags, apexCode: 'Debug', database: 'Finest' } },
-        { label: 'Fine', description: 'All log levels set to FINE', traceFlags: { ...this.noneTraceFlags, apexCode: 'Fine', apexProfiling: 'Fine', system: 'Fine', workflow: 'Fine', callout: 'Info', validation: 'Info', visualforce: 'Fine' } },
-        { label: 'Finest', description: 'All log levels set to FINEST', traceFlags: { ...this.noneTraceFlags, apexCode: 'Finest', apexProfiling: 'Finest', system: 'Info', workflow: 'Finer', callout: 'Finest', validation: 'Info', visualforce: 'Finest' } },
-        { label: 'Custom', description: 'Set your own trace flags' },
-        { label: 'Clear/Disable', description: 'Clear trace flags and disable debug logging for the current user', traceFlags: null }
+    private readonly debugLevelOptions : Array<vscode.QuickPickItem & { debugLevel?: SalesforceDebugLevel }> = [
+        { label: 'User Debug', description: 'Only log user debug statements', debugLevel: { ...this.noneTraceFlags, apexCode: 'Debug' } },
+        { label: 'User Debug with Limits', description: 'User debug statements and details on consumed govern limits', debugLevel: { ...this.noneTraceFlags, apexCode: 'Debug', apexProfiling: 'Finest' } },
+        { label: 'User Debug with DML', description: 'User debug statements and executed DML', debugLevel: { ...this.noneTraceFlags, apexCode: 'Debug', database: 'Finest' } },
+        { label: 'Fine', description: 'All log levels set to FINE', debugLevel: { ...this.noneTraceFlags, apexCode: 'Fine', apexProfiling: 'Fine', system: 'Fine', workflow: 'Fine', callout: 'Info', validation: 'Info', visualforce: 'Fine' } },
+        { label: 'Finest', description: 'All log levels set to FINEST', debugLevel: { ...this.noneTraceFlags, apexCode: 'Finest', apexProfiling: 'Finest', system: 'Info', workflow: 'Finer', callout: 'Finest', validation: 'Info', visualforce: 'Finest' } },
+        { label: 'Custom', description: 'Set your own trace flags' }
     ];
+
+    private readonly clearDebugOptions : Array<vscode.QuickPickItem & { clear: string }> = [
+        { label: 'Clear current user trace flags', description: 'Clear trace flags and disable debug logging for the current user', clear: 'user' },
+        { label: 'Clear current users trace flags (org)', description: 'Delete **all** active and expired trace flags from the org', clear: 'all' },
+    ];
+
+    private readonly clearCustomFlagsOption : vscode.QuickPickItem & { clear: string } = { 
+        label: 'Clear custom debug configurations', description: 'Delete all custom debug flag configurations from VSCode', clear: 'customFlags' 
+    };
 
     private traceFlagsWatcherId: any;
     private currentTraceFlagsId: string;
+    private currentDebugLevel: SalesforceDebugLevel;
     private readonly traceFlagsDuration = 300;
 
     /**
      * Clears all developer logs.
      */
     public async execute() {
-        const traceFlagsSelection = await vscode.window.showQuickPick(this.traceFlagOptions, { placeHolder: 'Select Debug Level for logging...' });
-        if (!traceFlagsSelection) {
-            return;
+        const customDebugLevelOptions = this.getCustomDebugLevels()?.map(level => ({ label: level.name, debugLevel: level}));
+        const debugLevelOptions: Array<{ label: string, debugLevel?: SalesforceDebugLevel & { name?: string }, clear?: string }> = [ 
+            ...this.debugLevelOptions, 
+            ...(customDebugLevelOptions?.length ? [ { label: '', kind: vscode.QuickPickItemKind.Separator }, ...customDebugLevelOptions ] : []),
+            { label: '', kind: vscode.QuickPickItemKind.Separator },
+            ...this.clearDebugOptions
+        ];
+
+        if (customDebugLevelOptions?.length) {
+            debugLevelOptions.push(this.clearCustomFlagsOption);
         }
 
-        let traceFlags = traceFlagsSelection.traceFlags;
-        if (traceFlags === undefined) {
-            traceFlags = await this.getCustomTraceFlags();
-            if (!traceFlags) {
-                return;
-            }
+        const traceFlagsSelection = await vscode.window.showQuickPick(debugLevelOptions, { placeHolder: 'Select Debug Level for logging...' });
+        if (!traceFlagsSelection) {
+            return;
         }
 
         if (this.traceFlagsWatcherId) {
             clearInterval(this.traceFlagsWatcherId);
         }
 
+        if (traceFlagsSelection.clear === 'user') {
+            return this.vlocode.withActivity(traceFlagsSelection.label, () => this.salesforce.logs.clearUserTraceFlags());
+        } else if (traceFlagsSelection.clear === 'all') {
+            return this.vlocode.withActivity(traceFlagsSelection.label, () => this.salesforce.logs.clearAllTraceFlags());
+        } else if (traceFlagsSelection.clear === 'customFlags') {
+            return this.deleteAllCustomDebugLevels();
+        }
+
+        const debugLevelFlags = traceFlagsSelection.debugLevel ?? await this.getCustomDebugLevel();
+        if (!debugLevelFlags) {
+            return;
+        }
+
         return this.vlocode.withActivity({
-            activityTitle: `Set log level ${traceFlagsSelection.label}`, 
-            progressTitle: `Update log level: ${traceFlagsSelection.label}`,
+            activityTitle: `Set log level ${debugLevelFlags.name ?? traceFlagsSelection.label}`, 
+            progressTitle: `Setting log level to: ${debugLevelFlags.name ?? traceFlagsSelection.label}`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: false
         }, async () => {
-
-            let debugLevelName = `Vlocode: ${traceFlagsSelection.label}`;
-            const userInfo = await this.salesforce.getConnectedUserInfo();
-            if (!traceFlagsSelection.traceFlags) {
-                // custom flags are user-unique                
-                debugLevelName += ` ${userInfo.id}`;
-            }
-            debugLevelName = debugLevelName.replace(/[^0-9a-z_]+/ig, '_');
-
             // Clear existing trace flags and stop extending them
             if (this.traceFlagsWatcherId !== undefined) {
                 clearInterval(this.traceFlagsWatcherId);
             }
+
+            // Clear trace old flags
             await this.salesforce.logs.clearUserTraceFlags();
 
-            if (traceFlags) {
-                const debugLevel = await this.salesforce.logs.createDebugLevel(debugLevelName, traceFlags);
-                this.currentTraceFlagsId = await this.salesforce.logs.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
-                void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
+            // Set debug level
+            const debugLevelName = debugLevelFlags.name ?? `Vlocode: ${traceFlagsSelection.label}`;
+            const developerName = debugLevelName.replace(/[^0-9a-z_]+/ig, '_').replace(/^_+|_+$/, '');
+            const debugLevel = await this.salesforce.logs.createDebugLevel(developerName, debugLevelFlags!);
 
-                // Keep trace flags active extend with 5 min each time; this esnures trace flags are removed once
-                // vscode uis closed
-                this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher.bind(this), (this.traceFlagsDuration - 60) * 1000);
-            } else {
-                void vscode.window.showInformationMessage(`Successfully cleared traceflags for ${userInfo.username}`);
-            }
+            this.currentDebugLevel = debugLevelFlags;
+            this.currentTraceFlagsId = await this.salesforce.logs.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
+
+            void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
+
+            // Keep trace flags active extend with 5 min each time; this esnures trace flags are removed once vscode is closed
+            this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher.bind(this), (this.traceFlagsDuration - 60) * 1000);            
         });
     }
 
-    public async getCustomTraceFlags(): Promise<SalesforceDebugLevel | undefined> {
+    private async getCustomDebugLevel(): Promise<SalesforceDebugLevel & { created: number, name: string } | undefined> {
         const traceFlags: any = {};
         for (const [field, info] of Object.entries(this.logLevelOptions)) {
             // Create options list
@@ -164,7 +189,33 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             }
             traceFlags[field] = selected.label;
         }
-        return traceFlags;
+
+        const logLevelName = await vscode.window.showInputBox({ 
+            value: `Custom ${moment().format('M/D/YYYY HH:mm:ss')}`, 
+            title: `Debug Flags Name`, 
+            prompt: 'Name displayed in the debug level selection in vscode.'
+        });
+        if (!logLevelName) {
+            return;
+        }
+        return this.storeAsCustomDebugLevel(logLevelName, traceFlags);
+    }
+
+    private storeAsCustomDebugLevel(name: string, debugLevel: SalesforceDebugLevel) {
+        const customDebugLevels = this.getCustomDebugLevels();
+        const customDebugLevel = Object.assign(debugLevel, { name, created: Date.now() });
+        const updatedDebugLevels = [ ...(customDebugLevels?.slice(0, this.customDebugLevelMax - 1) ?? []), customDebugLevel ];
+        getContext().globalState.update(this.customDebugLevelKey, updatedDebugLevels);
+        return customDebugLevel;
+    }
+
+    private getCustomDebugLevels() {
+        const customLevels = getContext().globalState.get<Array<SalesforceDebugLevel & {name: string, created: number }>>(this.customDebugLevelKey);
+        return customLevels?.sort((a,b) => b.created - a.created);
+    }
+
+    private deleteAllCustomDebugLevels() {
+        getContext().globalState.update(this.customDebugLevelKey, undefined);
     }
 
     public async traceFlagsWatcher() {
