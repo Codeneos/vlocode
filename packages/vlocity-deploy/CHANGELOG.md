@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/Codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
+
+### Bug Fixes
+
+* add more unit tests for filterApplicableRecords and evalFilter ([f1d71cb](https://github.com/Codeneos/vlocode/commit/f1d71cb187ee6c3bd2027bcbc3376c56e854744b))
+* container injection for vlocode standalone does not always use internal container ([a5e1ce7](https://github.com/Codeneos/vlocode/commit/a5e1ce7f9242b22cd254034316243c6e584b7cfd))
+* content versions create new content documents during deployment instead of attaching to the existing content document as new version ([f7bc2b8](https://github.com/Codeneos/vlocode/commit/f7bc2b81ea9f901e41480eded09a563fbfa47323))
+* datapackDeploy register queryservice from root container into child container without a valid namespace provider ([f4d11f9](https://github.com/Codeneos/vlocode/commit/f4d11f9b1b5335a6006d5e3bb1486c2f5928077d))
+* deployment specs are not re-used but recreated for every spec call causing local state of specs to be lost as well as reducing performance ([866a443](https://github.com/Codeneos/vlocode/commit/866a44337512950c0bb4cba37570fa2abece5e23))
+* LWC compiler doesn't work on vlocity Winter '23 release ([d9618d1](https://github.com/Codeneos/vlocode/commit/d9618d1e30db9f68807e81b2a2d41a3fd40efd1e))
+* omniscript activator references vlocity_cmt namespace instead of the namespace placeholder ([b99e32e](https://github.com/Codeneos/vlocode/commit/b99e32e03947533323a20e29fc74de154d9dc3f1))
+* OmniScript spec doesn't always execute ([97b42c2](https://github.com/Codeneos/vlocode/commit/97b42c2a9ea856be8130cde76618e273fc464997))
+* override definitions are not correctly updated causing them to break ([b10e7f0](https://github.com/Codeneos/vlocode/commit/b10e7f0c428efe8ab2f9d5cd62834b4914e7667a))
+* update all spec filters to filter on RecordType instead of on Datapack Type; Datapack type is not always reliable and depends on headers being placed in correct folders. As vlocode doesn't require datapacks to be placed in the correct folder structure having specs only trigger on datapack type is unreliable. ([6bf1a04](https://github.com/Codeneos/vlocode/commit/6bf1a0488f1f9f25a6ace6db032c32befea56dde))
+* use record defined lookup keys instead of general matching keys to allow specs to modify lookupk keys on a per record level ([8370707](https://github.com/Codeneos/vlocode/commit/8370707d0cabb9aa128b8e798797b2f9ab51ee55))
+* validate datapack dependency/reference integrity ([ff98a55](https://github.com/Codeneos/vlocode/commit/ff98a553404f2e066e2929e38b853cd5db9afdc0))
+* vlocode crashes on start-up when packed with webpack ([bcd177f](https://github.com/Codeneos/vlocode/commit/bcd177f930b28c300370f97c0e8c53b99cc058f3))
+
+### Features
+
+* automatically create ContentDocumentLinks post deployment to make document templates available post-deployment without manual actions ([0c7e23c](https://github.com/Codeneos/vlocode/commit/0c7e23cc73c9396452c05827d361c29585b79b0f))
+* await batch classes executed by Vlocity Admin commands and report their progress in vscode ([16453df](https://github.com/Codeneos/vlocode/commit/16453df7eaee34805e63c51a2f101daf2f0296da))
+* cache Vlocity namespace prefix by org ([3978bff](https://github.com/Codeneos/vlocode/commit/3978bff73727ff90a03c6422603e46db317aa643))
+* combine layout and card deployment actions ([b565f6c](https://github.com/Codeneos/vlocode/commit/b565f6c67df47c5d6807b8392d691afabc578dce))
+* do not update ContentVersion when the version data is unchanged ([e998a86](https://github.com/Codeneos/vlocode/commit/e998a8648c097bc87e5c71366a1e78a65788be88))
+* do not use sfdx connection and upgrade to @salesforce/core@3 ([be6add4](https://github.com/Codeneos/vlocode/commit/be6add401f29131e4769feb8f9b7a59787285edf))
+* improve support for cancellation signaling during datapack deploymen ([e356132](https://github.com/Codeneos/vlocode/commit/e3561320f48c2b22c3efd5361e1d13676380a929))
+* log deployment object details when running with `debug` log level ([ba7f9b1](https://github.com/Codeneos/vlocode/commit/ba7f9b125f794fd6018a0a9ea1aeff83003b722b))
+* update TemplateContentDocumentId__c field when deploying templates with the latest content version ([325ebb6](https://github.com/Codeneos/vlocode/commit/325ebb6c2a43ada18f63e6a6955b9e01b58c524a))
+* update Vlocity datapack deployment hooks (specs) to allow them to run on record level and support for changing deployment action from a spec ([06b2500](https://github.com/Codeneos/vlocode/commit/06b25000ad47cdce83bd00468e5ecaabf8bba596))
+
 ## [0.17.11](https://github.com/Codeneos/vlocode/compare/v0.17.10...v0.17.11) (2022-10-11)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

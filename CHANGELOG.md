@@ -4,6 +4,60 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
+
+### Bug Fixes
+
+* add more unit tests for filterApplicableRecords and evalFilter ([f1d71cb](https://github.com/codeneos/vlocode/commit/f1d71cb187ee6c3bd2027bcbc3376c56e854744b))
+* allow to pass this argument to work queue improving type detection ([20f095d](https://github.com/codeneos/vlocode/commit/20f095dcb60402f582e5fcd682a9c376d7d1ca51))
+* container injection for vlocode standalone does not always use internal container ([a5e1ce7](https://github.com/codeneos/vlocode/commit/a5e1ce7f9242b22cd254034316243c6e584b7cfd))
+* content versions create new content documents during deployment instead of attaching to the existing content document as new version ([f7bc2b8](https://github.com/codeneos/vlocode/commit/f7bc2b81ea9f901e41480eded09a563fbfa47323))
+* datapackDeploy register queryservice from root container into child container without a valid namespace provider ([f4d11f9](https://github.com/codeneos/vlocode/commit/f4d11f9b1b5335a6006d5e3bb1486c2f5928077d))
+* deployment specs are not re-used but recreated for every spec call causing local state of specs to be lost as well as reducing performance ([866a443](https://github.com/codeneos/vlocode/commit/866a44337512950c0bb4cba37570fa2abece5e23))
+* deployOnSave setting for Vlocity datapacks is ignored ([4381d29](https://github.com/codeneos/vlocode/commit/4381d29f198a26ec5eadb1339b6a24e6218bc017))
+* do not mark string as iterable to avoid unintended behavior. ([db32e48](https://github.com/codeneos/vlocode/commit/db32e48be0027203a52b44c0cd1683ec73d5e480))
+* improve groupBy and mapGetOrCreate types ([24ff881](https://github.com/codeneos/vlocode/commit/24ff881f196f241069a3921ee2e734954278d582))
+* improve startup performance by avoiding explicit source map loading ([178f6d5](https://github.com/codeneos/vlocode/commit/178f6d5ddc09303efada7c2ab4bf7af9bcfb9eaf))
+* init command not awaited causing vlocode deploy to create duplicate dependencies ([534b5e1](https://github.com/codeneos/vlocode/commit/534b5e1891028cb8759e7bc7b6f76eb3845fb211))
+* lazy does not properly return type of initializer ([f960e08](https://github.com/codeneos/vlocode/commit/f960e08040b124a2ef8e2a535499d9490af7dacf))
+* LWC compiler doesn't work on vlocity Winter '23 release ([d9618d1](https://github.com/codeneos/vlocode/commit/d9618d1e30db9f68807e81b2a2d41a3fd40efd1e))
+* minor textual changes for activities ([22f0dcc](https://github.com/codeneos/vlocode/commit/22f0dcc74c0e83cd465f91bfc494d075445e4e84))
+* oath token doesn't refresh in rare circumstances ([44722fd](https://github.com/codeneos/vlocode/commit/44722fdf46df87dd9c0baf0193783e2ca62c7356))
+* omniscript activator references vlocity_cmt namespace instead of the namespace placeholder ([b99e32e](https://github.com/codeneos/vlocode/commit/b99e32e03947533323a20e29fc74de154d9dc3f1))
+* OmniScript spec doesn't always execute ([97b42c2](https://github.com/codeneos/vlocode/commit/97b42c2a9ea856be8130cde76618e273fc464997))
+* override definitions are not correctly updated causing them to break ([b10e7f0](https://github.com/codeneos/vlocode/commit/b10e7f0c428efe8ab2f9d5cd62834b4914e7667a))
+* pause/resume icon missing due to command router not running init function ([6dae67d](https://github.com/codeneos/vlocode/commit/6dae67d6d3452d33b4161e77c417bc1e60ee8efe))
+* remove debug statement from queryBuilder ([7e7ee17](https://github.com/codeneos/vlocode/commit/7e7ee175398a1ba117c36cb56e9b7c6fdfdb6bb8))
+* set log level to debug when running with `--debug` flag as true ([59483c8](https://github.com/codeneos/vlocode/commit/59483c8d1877eb345f7b4e9d74f88e568b01d742))
+* update all spec filters to filter on RecordType instead of on Datapack Type; Datapack type is not always reliable and depends on headers being placed in correct folders. As vlocode doesn't require datapacks to be placed in the correct folder structure having specs only trigger on datapack type is unreliable. ([6bf1a04](https://github.com/codeneos/vlocode/commit/6bf1a0488f1f9f25a6ace6db032c32befea56dde))
+* use record defined lookup keys instead of general matching keys to allow specs to modify lookupk keys on a per record level ([8370707](https://github.com/codeneos/vlocode/commit/8370707d0cabb9aa128b8e798797b2f9ab51ee55))
+* validate datapack dependency/reference integrity ([ff98a55](https://github.com/codeneos/vlocode/commit/ff98a553404f2e066e2929e38b853cd5db9afdc0))
+* vlocode can hang during initialization or org-switching ([7c95c2c](https://github.com/codeneos/vlocode/commit/7c95c2c6259e94e8c951e9f069473ddf8ad94fea))
+* vlocode crashes on start-up when packed with webpack ([bcd177f](https://github.com/codeneos/vlocode/commit/bcd177f930b28c300370f97c0e8c53b99cc058f3))
+
+### Features
+
+* add container name to logs in debug mode ([8f61318](https://github.com/codeneos/vlocode/commit/8f61318f58ab39219d5a4ca49e78c668ffb3966f))
+* add objectEquals utility method for comparing objects ([819c97f](https://github.com/codeneos/vlocode/commit/819c97fbae04bab3febf6b9ae512bfc7eb2a9251))
+* automatically create ContentDocumentLinks post deployment to make document templates available post-deployment without manual actions ([0c7e23c](https://github.com/codeneos/vlocode/commit/0c7e23cc73c9396452c05827d361c29585b79b0f))
+* await batch classes executed by Vlocity Admin commands and report their progress in vscode ([16453df](https://github.com/codeneos/vlocode/commit/16453df7eaee34805e63c51a2f101daf2f0296da))
+* cache Vlocity namespace prefix by org ([3978bff](https://github.com/codeneos/vlocode/commit/3978bff73727ff90a03c6422603e46db317aa643))
+* combine layout and card deployment actions ([b565f6c](https://github.com/codeneos/vlocode/commit/b565f6c67df47c5d6807b8392d691afabc578dce))
+* do not update ContentVersion when the version data is unchanged ([e998a86](https://github.com/codeneos/vlocode/commit/e998a8648c097bc87e5c71366a1e78a65788be88))
+* do not use sfdx connection and upgrade to @salesforce/core@3 ([be6add4](https://github.com/codeneos/vlocode/commit/be6add401f29131e4769feb8f9b7a59787285edf))
+* improve support for cancellation signaling during datapack deploymen ([e356132](https://github.com/codeneos/vlocode/commit/e3561320f48c2b22c3efd5361e1d13676380a929))
+* log deployment object details when running with `debug` log level ([ba7f9b1](https://github.com/codeneos/vlocode/commit/ba7f9b125f794fd6018a0a9ea1aeff83003b722b))
+* remove irrelevant activities from the Activities overview and only show relevant past activities ([d0d3b9c](https://github.com/codeneos/vlocode/commit/d0d3b9c6aa0c2943e21ed8124bcd0b8dc010fbf9))
+* report progress of developer logs deletion in vscode progress dialog ([f522a7a](https://github.com/codeneos/vlocode/commit/f522a7ac9a9b5203376083b9a7843617088b71a3))
+* store global cache as global and improve cache clear command ([ebd0e6d](https://github.com/codeneos/vlocode/commit/ebd0e6dd62dad1c0301e56615ab97b9a2fa87f3e))
+* support checking a class is decorated with `[@injectable](https://github.com/injectable)` ([918639e](https://github.com/codeneos/vlocode/commit/918639ee37c88f9617cb660d291426db3901029d))
+* support IoC container injecting it self as dependency ([70bc709](https://github.com/codeneos/vlocode/commit/70bc709dc2a77988bb1695f5fc439f587e8b7cc2))
+* support printing timer duration in multiple formats ([a010e9d](https://github.com/codeneos/vlocode/commit/a010e9db35ba7775355063b60e07114c255822e6))
+* support queryTooling through queryService ([9f599ef](https://github.com/codeneos/vlocode/commit/9f599efd62f2123d67ad574efe388b188a3d63c3))
+* update TemplateContentDocumentId__c field when deploying templates with the latest content version ([325ebb6](https://github.com/codeneos/vlocode/commit/325ebb6c2a43ada18f63e6a6955b9e01b58c524a))
+* update Vlocity datapack deployment hooks (specs) to allow them to run on record level and support for changing deployment action from a spec ([06b2500](https://github.com/codeneos/vlocode/commit/06b25000ad47cdce83bd00468e5ecaabf8bba596))
+* use standard vscode icons for activities and support hiding of activities in the activity overview ([eacc4b9](https://github.com/codeneos/vlocode/commit/eacc4b9dd49daff3e78c31444c6083fbe29de0fc))
+
 ## [0.17.12](https://github.com/codeneos/vlocode/compare/v0.17.11...v0.17.12) (2022-10-19)
 
 ### Bug Fixes

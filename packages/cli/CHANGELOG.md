@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/Codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
+
+### Bug Fixes
+
+* init command not awaited causing vlocode deploy to create duplicate dependencies ([534b5e1](https://github.com/Codeneos/vlocode/commit/534b5e1891028cb8759e7bc7b6f76eb3845fb211))
+* set log level to debug when running with `--debug` flag as true ([59483c8](https://github.com/Codeneos/vlocode/commit/59483c8d1877eb345f7b4e9d74f88e568b01d742))
+
 ## [0.17.11](https://github.com/Codeneos/vlocode/compare/v0.17.10...v0.17.11) (2022-10-11)
 
 **Note:** Version bump only for package @vlocode/cli

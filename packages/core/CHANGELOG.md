@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/Codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
+
+### Bug Fixes
+
+* allow to pass this argument to work queue improving type detection ([20f095d](https://github.com/Codeneos/vlocode/commit/20f095dcb60402f582e5fcd682a9c376d7d1ca51))
+* init command not awaited causing vlocode deploy to create duplicate dependencies ([534b5e1](https://github.com/Codeneos/vlocode/commit/534b5e1891028cb8759e7bc7b6f76eb3845fb211))
+* vlocode can hang during initialization or org-switching ([7c95c2c](https://github.com/Codeneos/vlocode/commit/7c95c2c6259e94e8c951e9f069473ddf8ad94fea))
+
+### Features
+
+* add container name to logs in debug mode ([8f61318](https://github.com/Codeneos/vlocode/commit/8f61318f58ab39219d5a4ca49e78c668ffb3966f))
+* await batch classes executed by Vlocity Admin commands and report their progress in vscode ([16453df](https://github.com/Codeneos/vlocode/commit/16453df7eaee34805e63c51a2f101daf2f0296da))
+* support checking a class is decorated with `[@injectable](https://github.com/injectable)` ([918639e](https://github.com/Codeneos/vlocode/commit/918639ee37c88f9617cb660d291426db3901029d))
+* support IoC container injecting it self as dependency ([70bc709](https://github.com/Codeneos/vlocode/commit/70bc709dc2a77988bb1695f5fc439f587e8b7cc2))
+* support queryTooling through queryService ([9f599ef](https://github.com/Codeneos/vlocode/commit/9f599efd62f2123d67ad574efe388b188a3d63c3))
+
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
 
 **Note:** Version bump only for package @vlocode/core

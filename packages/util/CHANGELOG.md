@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/Codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
+
+### Bug Fixes
+
+* do not mark string as iterable to avoid unintended behavior. ([db32e48](https://github.com/Codeneos/vlocode/commit/db32e48be0027203a52b44c0cd1683ec73d5e480))
+* improve groupBy and mapGetOrCreate types ([24ff881](https://github.com/Codeneos/vlocode/commit/24ff881f196f241069a3921ee2e734954278d582))
+* lazy does not properly return type of initializer ([f960e08](https://github.com/Codeneos/vlocode/commit/f960e08040b124a2ef8e2a535499d9490af7dacf))
+* vlocode can hang during initialization or org-switching ([7c95c2c](https://github.com/Codeneos/vlocode/commit/7c95c2c6259e94e8c951e9f069473ddf8ad94fea))
+
+### Features
+
+* add objectEquals utility method for comparing objects ([819c97f](https://github.com/Codeneos/vlocode/commit/819c97fbae04bab3febf6b9ae512bfc7eb2a9251))
+* do not use sfdx connection and upgrade to @salesforce/core@3 ([be6add4](https://github.com/Codeneos/vlocode/commit/be6add401f29131e4769feb8f9b7a59787285edf))
+* improve support for cancellation signaling during datapack deploymen ([e356132](https://github.com/Codeneos/vlocode/commit/e3561320f48c2b22c3efd5361e1d13676380a929))
+* store global cache as global and improve cache clear command ([ebd0e6d](https://github.com/Codeneos/vlocode/commit/ebd0e6dd62dad1c0301e56615ab97b9a2fa87f3e))
+* support printing timer duration in multiple formats ([a010e9d](https://github.com/Codeneos/vlocode/commit/a010e9db35ba7775355063b60e07114c255822e6))
+* update Vlocity datapack deployment hooks (specs) to allow them to run on record level and support for changing deployment action from a spec ([06b2500](https://github.com/Codeneos/vlocode/commit/06b25000ad47cdce83bd00468e5ecaabf8bba596))
+
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
 
 ### Bug Fixes

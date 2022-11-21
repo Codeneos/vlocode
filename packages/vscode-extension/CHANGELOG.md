@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/codeneos/vlocode/compare/v0.17.12...v0.18.0) (2022-11-21)
+
+### Bug Fixes
+
+* deployOnSave setting for Vlocity datapacks is ignored ([4381d29](https://github.com/codeneos/vlocode/commit/4381d29f198a26ec5eadb1339b6a24e6218bc017))
+* improve startup performance by avoiding explicit source map loading ([178f6d5](https://github.com/codeneos/vlocode/commit/178f6d5ddc09303efada7c2ab4bf7af9bcfb9eaf))
+* minor textual changes for activities ([22f0dcc](https://github.com/codeneos/vlocode/commit/22f0dcc74c0e83cd465f91bfc494d075445e4e84))
+* pause/resume icon missing due to command router not running init function ([6dae67d](https://github.com/codeneos/vlocode/commit/6dae67d6d3452d33b4161e77c417bc1e60ee8efe))
+* update all spec filters to filter on RecordType instead of on Datapack Type; Datapack type is not always reliable and depends on headers being placed in correct folders. As vlocode doesn't require datapacks to be placed in the correct folder structure having specs only trigger on datapack type is unreliable. ([6bf1a04](https://github.com/codeneos/vlocode/commit/6bf1a0488f1f9f25a6ace6db032c32befea56dde))
+* vlocode crashes on start-up when packed with webpack ([bcd177f](https://github.com/codeneos/vlocode/commit/bcd177f930b28c300370f97c0e8c53b99cc058f3))
+
+### Features
+
+* await batch classes executed by Vlocity Admin commands and report their progress in vscode ([16453df](https://github.com/codeneos/vlocode/commit/16453df7eaee34805e63c51a2f101daf2f0296da))
+* do not use sfdx connection and upgrade to @salesforce/core@3 ([be6add4](https://github.com/codeneos/vlocode/commit/be6add401f29131e4769feb8f9b7a59787285edf))
+* remove irrelevant activities from the Activities overview and only show relevant past activities ([d0d3b9c](https://github.com/codeneos/vlocode/commit/d0d3b9c6aa0c2943e21ed8124bcd0b8dc010fbf9))
+* report progress of developer logs deletion in vscode progress dialog ([f522a7a](https://github.com/codeneos/vlocode/commit/f522a7ac9a9b5203376083b9a7843617088b71a3))
+* use standard vscode icons for activities and support hiding of activities in the activity overview ([eacc4b9](https://github.com/codeneos/vlocode/commit/eacc4b9dd49daff3e78c31444c6083fbe29de0fc))
+
 ## [0.17.12](https://github.com/codeneos/vlocode/compare/v0.17.11...v0.17.12) (2022-10-19)
 
 ### Bug Fixes

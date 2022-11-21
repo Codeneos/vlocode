@@ -101,10 +101,10 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.6
       '@types/node': ^16
-      '@vlocode/core': ^0.17.9
-      '@vlocode/salesforce': ^0.17.11
-      '@vlocode/util': ^0.17.9
-      '@vlocode/vlocity-deploy': ^0.17.11
+      '@vlocode/core': ^0.18.0
+      '@vlocode/salesforce': ^0.18.0
+      '@vlocode/util': ^0.18.0
+      '@vlocode/vlocity-deploy': ^0.18.0
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
@@ -165,7 +165,7 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.6
       '@types/node': ^16
-      '@vlocode/util': ^0.17.9
+      '@vlocode/util': ^0.18.0
       chalk: ^4.1.2
       create-ts-index: ^1.14.0
       globby: ^11.0.4
@@ -200,8 +200,8 @@ importers:
       '@types/jest': ^28.1.6
       '@types/jsforce': 1.9.42
       '@types/node': ^16
-      '@vlocode/core': ^0.17.9
-      '@vlocode/util': ^0.17.9
+      '@vlocode/core': ^0.18.0
+      '@vlocode/util': ^0.18.0
       axios: ^0.25.0
       chalk: ^4.1.2
       create-ts-index: ^1.14.0
@@ -290,9 +290,9 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.6
       '@types/node': ^16
-      '@vlocode/core': ^0.17.9
-      '@vlocode/salesforce': ^0.17.11
-      '@vlocode/util': ^0.17.9
+      '@vlocode/core': ^0.18.0
+      '@vlocode/salesforce': ^0.18.0
+      '@vlocode/util': ^0.18.0
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
