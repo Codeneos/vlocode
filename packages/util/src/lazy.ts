@@ -4,32 +4,37 @@
  * @param args Arguments to be passed
  * @returns Return value of the lazy initailize
  */
-export function lazy<T extends (...args: any[]) => any>(initializer: T, ...args: Parameters<T>): ReturnType<T> {
-    let instance: any = null;
-    const getInstance = () => instance || (instance = initializer(...args));
-    return new Proxy({}, {
+export function lazy<T extends object, TArgs extends any[]>(initializer: (...args: TArgs) => T, ...args: TArgs): T {
+    const proxyObject: { instance?: T, initializer?: (...args: TArgs) => T, args?: TArgs } = { initializer, args };
+    const getInstance = (target: typeof proxyObject) => {
+        if (target.initializer && target.args) {
+            target.instance = target.initializer(...target.args);
+            // clean-up initializer and args they are not needed any more
+            delete target.args;
+            delete target.initializer;
+        }
+        return target.instance as T;
+    };
+    return new Proxy(proxyObject, {
         get(target, prop) {
-            return getInstance()[prop];
+            return getInstance(target)[prop];
         },
         set(target, prop, value) {
-            getInstance()[prop] = value;
+            getInstance(target)[prop] = value;
             return true;
         },
-        has(target, prop) { return prop in getInstance(); },
+        has(target, prop) { return prop in getInstance(target); },
         getOwnPropertyDescriptor(target, prop) {
-            return Object.getOwnPropertyDescriptor(getInstance(), prop);
+            return Object.getOwnPropertyDescriptor(getInstance(target), prop);
         },
-        getPrototypeOf() {
-            return getInstance().prototype;
+        getPrototypeOf(target) {
+            return Object.getPrototypeOf(getInstance(target));
         },
-        ownKeys() {
-            return Object.keys(getInstance());
-        },
-        enumerate() {
-            return Object.keys(getInstance());
+        ownKeys(target) {
+            return Object.keys(getInstance(target));
         },
         isExtensible() {
             return false;
         }
-    }) as ReturnType<T>;
+    }) as T;
 }
