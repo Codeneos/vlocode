@@ -7,6 +7,7 @@ import { DATAPACK_RESERVED_FIELDS } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { VlocityDatapack } from './datapack';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
+import { randomUUID } from 'crypto';
 
 @injectable()
 export class DatapackRecordFactory {
@@ -113,7 +114,7 @@ export class DatapackRecordFactory {
             return datapack.sourceKey;
         }
         // some objects do not have a source key - generate a unique key so we can deploy them
-        const primaryKey = datapack.globalKey || `Generated/${crypto.randomUUID()}`;
+        const primaryKey = datapack.globalKey || `Generated/${randomUUID()}`;
         return `${datapack.sobjectType}/${primaryKey}`;
     }
 
