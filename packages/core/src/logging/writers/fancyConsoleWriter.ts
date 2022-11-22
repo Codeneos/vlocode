@@ -1,6 +1,6 @@
 import { LogWriter, LogEntry, LogLevel } from '..';
 import * as chalk from 'chalk';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 
 export class FancyConsoleWriterOptions { 
     formatMessage: boolean; 
@@ -45,7 +45,7 @@ export class FancyConsoleWriter implements LogWriter {
     public format(entry: LogEntry) {
         const levelColor = (this.colors[entry.level] || this.chalk.grey);
         const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
-        const timestamp = this.chalk.white(`[${this.chalk.dim(`${moment(entry.time).format(this.options.dateFormat)}`)}]`);
+        const timestamp = this.chalk.white(`[${this.chalk.dim(`${DateTime.fromJSDate(entry.time).toFormat(this.options.dateFormat)}`)}]`);
         const category = this.chalk.white(`[${entry.category}]`);
 
         let messageBody = entry.message.replace(/\r/g,'').replace(/\n/g, this.options.terminalEol);

@@ -1,7 +1,7 @@
 import { VlocodeCommand } from '@root/constants';
 import { vscodeCommand } from '@root/lib/commandRouter';
 import { SalesforceDebugLevel } from '@vlocode/salesforce';
-import moment = require('moment');
+import { DateTime } from 'luxon';
 import * as vscode from 'vscode';
 import { getContext } from '../../lib/vlocodeContext';
 import MetadataCommand from '../metadata/metadataCommand';
@@ -191,7 +191,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         }
 
         const logLevelName = await vscode.window.showInputBox({ 
-            value: `Custom ${moment().format('M/D/YYYY HH:mm:ss')}`, 
+            value: `Custom ${DateTime.now().toFormat('M/D/YYYY HH:mm:ss')}`, 
             title: `Debug Flags Name`, 
             prompt: 'Name displayed in the debug level selection in vscode.'
         });

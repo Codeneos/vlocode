@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 import * as chalk from 'chalk';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 import { LogLevel, LogWriter, LogEntry } from '../../logging';
 
 const TERMINAL_EOL = '\r\n';
@@ -93,9 +93,8 @@ export class TerminalWriter implements LogWriter {
 
     public open() {
         this.isOpened = true;
-        let entry: LogEntry | undefined;
-        while(entry = this.queuedMessages.shift()) {
-            this.write(entry);
+        while(this.queuedMessages.length) {
+            this.write(this.queuedMessages.shift()!);
         }
         this.focus();
     }
@@ -126,7 +125,8 @@ export class TerminalWriter implements LogWriter {
             this.queuedMessages.push(entry);
         } else {
             const levelColor = (this.colors[entry.level] || this.chalk.grey);
-            const logPrefix = `[${this.chalk.green(moment(entry.time).format(LOG_DATE_FORMAT))}] [${this.chalk.white.bold(entry.category)}]`;
+            const timeFormat = DateTime.fromJSDate(entry.time).toFormat(LOG_DATE_FORMAT);
+            const logPrefix = `[${this.chalk.green(timeFormat)}] [${this.chalk.white.bold(entry.category)}]`;
             const logLevelName = levelColor(`[${LogLevel[entry.level]}]`);
 
             let messageBody = this.applyAutoColors(entry.message.replace(/\r/g,'').replace(/\n/g, TERMINAL_EOL));

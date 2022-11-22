@@ -1,5 +1,5 @@
 import { Readable } from 'stream';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
 
@@ -162,11 +162,11 @@ export class QueryService {
                 return 'null';
             }
             const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm:ssZ';
-            const date = moment(value);
-            if (!date.isValid()) {
-                throw new Error(`Value is not a valid date: ${value}`);
+            const date = QueryService.tryParseAsDateTime(value);
+            if (!date?.isValid) {
+                throw new Error(`Value is not a valid date: ${value} (${date?.invalidReason ?? 'reason unknown'})`);
             }
-            return moment(value).format(format);
+            return date.toFormat(format);
         } else if (field.type === 'boolean') {
             if (typeof value === 'string') {
                 return (value.toLowerCase() === 'true').toString();
@@ -183,5 +183,18 @@ export class QueryService {
         }
 
         return options.wrapStrings ? `'${value}'` : `${value}`;
+    }
+
+    private static tryParseAsDateTime(value: unknown) : DateTime | undefined {
+        if (value instanceof DateTime) {
+            return value;
+        } else if (value instanceof Date) {
+            return DateTime.fromJSDate(value);
+        } else if (typeof value === 'string') {
+            return DateTime.fromISO(value);
+        } else if (typeof value === 'number' && value > 0) {
+            return DateTime.fromMillis(value);
+        }
+        return undefined;
     }
 }

@@ -4,7 +4,7 @@ import LogManager from './logManager';
 
 export interface LogEntry {
     level: LogLevel;
-    time?: Date;
+    time: Date;
     category: string;
     message: string;
 }

@@ -1,9 +1,9 @@
-import { injectable, LifecyclePolicy, Logger } from "@vlocode/core";
-import { CancellationToken, Timer, wait } from "@vlocode/util";
+import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
+import { CancellationToken, wait } from '@vlocode/util';
 import moment = require("moment");
-import { QueryBuilder, QueryFilterCondition } from "./queryBuilder";
-import { QueryService } from "./queryService";
-import { SalesforceService } from "./salesforceService";
+import { QueryBuilder, QueryFilterCondition } from './queryBuilder';
+import { QueryService } from './queryService';
+import { SalesforceService } from './salesforceService';
 
 export type SalesforceBatchStatus = 'Processing' | 'Aborted' | 'Queued' | 'Completed';
 

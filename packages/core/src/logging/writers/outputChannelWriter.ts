@@ -1,5 +1,5 @@
 import type { OutputChannel } from 'vscode';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 import { LogWriter, LogEntry, LogLevel } from '../../logging';
 
 export class OutputChannelWriter implements LogWriter {
@@ -29,6 +29,6 @@ export class OutputChannelWriter implements LogWriter {
 
     public write({level, time, message} : LogEntry) : void {
         const levelPrefix = (LogLevel[level] || 'unknown')[0];
-        this.outputChannel.appendLine(`[${moment(time).format(OutputChannelWriter.LOG_DATE_FORMAT)}] ${levelPrefix}: ${message}`);
+        this.outputChannel.appendLine(`[${DateTime.fromJSDate(time).toFormat(OutputChannelWriter.LOG_DATE_FORMAT)}] ${levelPrefix}: ${message}`);
     }
 }

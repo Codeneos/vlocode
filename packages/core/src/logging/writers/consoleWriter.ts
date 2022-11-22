@@ -1,5 +1,5 @@
 import { LogWriter, LogEntry, LogLevel } from '..';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 
 export class ConsoleWriter implements LogWriter {
 
@@ -9,7 +9,8 @@ export class ConsoleWriter implements LogWriter {
     }
 
     public write({ level, time, category, message } : LogEntry) : void {
-        const formattedMessage = this.formatMessages ? `${moment(time).format(ConsoleWriter.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}]: ${message}` : message;
+        const timestamp = time ? DateTime.fromJSDate(time) : DateTime.now();
+        const formattedMessage = this.formatMessages ? `${timestamp.toFormat(ConsoleWriter.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}]: ${message}` : message;
         switch(level) {
             case LogLevel.debug: return console.debug(formattedMessage);
             case LogLevel.warn: return console.warn(formattedMessage);

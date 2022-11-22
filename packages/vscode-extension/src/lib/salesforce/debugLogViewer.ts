@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 import { DeveloperLog } from '@vlocode/salesforce';
 
 export class DebugLogViewer {
@@ -19,11 +19,11 @@ export class DebugLogViewer {
     }
 
     public async showDeveloperLog(log: DeveloperLog) {
-        return this.openLog(await log.getBody(), `${moment(log.startTime).format('MM-DD-YYYY_HH-mm-ss')}_${log.id}.log`);
+        return this.openLog(await log.getBody(), `${DateTime.fromJSDate(log.startTime).toFormat('MM-DD-YYYY_HH-mm-ss')}_${log.id}.log`);
     }
 
     public showExecutionLog(log: string) {
-        return this.openLog(this.formatExecutionLog(log), `${moment().format('MM-DD-YYYY_HH-mm-ss')}.log`);
+        return this.openLog(this.formatExecutionLog(log), `${DateTime.now().toFormat('MM-DD-YYYY_HH-mm-ss')}.log`);
     }
 
     private async openLog(logBody: string, logFileName: string) {
