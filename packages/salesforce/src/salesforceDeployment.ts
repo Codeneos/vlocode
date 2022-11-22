@@ -105,14 +105,11 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         };
 
         if (await this.salesforce.isProductionOrg()) {
-            this.logger.warn('Production deployment detected; running as validate/checkOnly');
-            // Always check only for production
             deployOptions.rollbackOnError = true;
             deployOptions.purgeOnDelete = false;
-            deployOptions.checkOnly = true;
         }
 
-        // Start deploy            
+        // Start deploy
         this.connection = await this.salesforce.getJsForceConnection();
         const zipInput = await this.sfPackage.getBuffer(this.compressionLevel);
         const deployJob = await this.connection.metadata.deploy(zipInput, deployOptions);

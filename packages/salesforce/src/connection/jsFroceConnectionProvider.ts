@@ -95,7 +95,7 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
     public async isProductionOrg() : Promise<boolean> {
         const connection = await this.getJsForceConnection();
         const results = await connection.query<{ IsSandbox: boolean }>('SELECT IsSandbox FROM Organization');
-        return results.records[0].IsSandbox;
+        return !results.records[0].IsSandbox;
     }
 
     public getApiVersion() : string {
