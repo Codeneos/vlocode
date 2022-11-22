@@ -58,9 +58,6 @@
         "reflect-metadata": "^0.1.13",
         "uuid": "^8.3.2"
     },
-    "bundledDependencies": [
-        "@salesforce/core"
-    ],
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"
 }
