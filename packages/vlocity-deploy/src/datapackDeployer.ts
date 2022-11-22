@@ -310,22 +310,24 @@ export class DatapackDeployer {
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, ...args: Parameters<E>) {
         for (const { spec, filter } of this.specRegistry.getSpecs()) {
             const specFunction = spec?.[eventType];
+            const specParams = [...args];
+
             if (typeof specFunction !== 'function') {
                 continue;
             }
 
-            if (isReadonlyArray(args[0])) {
-                const records = this.filterApplicableRecords(filter, args[0]);
+            if (isReadonlyArray(specParams[0])) {
+                const records = this.filterApplicableRecords(filter, specParams[0]);
                 if (!records.length) {
                     continue;
                 }
-                args[0] = records;
-            } else if (args[0] instanceof VlocityDatapack) {
-                if (!this.evalFilter(filter, args[0])) {
+                specParams[0] = records;
+            } else if (specParams[0] instanceof VlocityDatapack) {
+                if (!this.evalFilter(filter, specParams[0])) {
                     continue;
                 }
             } else {
-                const recordGroups = args[0].recordGroups
+                const recordGroups = specParams[0].recordGroups
                     .map(group => this.evalFilter(filter, group) 
                         ? group 
                         : new DatapackDeploymentRecordGroup(group.key, this.filterApplicableRecords(filter, group.records))
@@ -334,11 +336,11 @@ export class DatapackDeployer {
                 if (!recordGroups.length) {
                     continue;
                 }
-                args[0] = new DatapackDeploymentEvent(args[0].deployment, recordGroups);
+                specParams[0] = new DatapackDeploymentEvent(specParams[0].deployment, recordGroups);
             }
 
             try {
-                await specFunction.apply(spec, args) as ReturnType<E>;
+                await specFunction.apply(spec, specParams) as ReturnType<E>;
             } catch(err) {
                 // Print stack for custom specs
                 this.logger.error(
