@@ -1,6 +1,7 @@
 export * from './calculationMatrix';
 export * from './contentVersion';
 export * from './contentVersionLookup';
+export * from './customObjectMap';
 export * from './dataRaptor';
 export * from './documentTemplate';
 export * from './omniScript';
