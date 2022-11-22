@@ -4,6 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.3](https://github.com/codeneos/vlocode/compare/v0.18.2...v0.18.3) (2022-11-22)
+
+### Bug Fixes
+
+* incorrectly report sandboxes as production orgs blocking Salesforce deployments ([0efcc8c](https://github.com/codeneos/vlocode/commit/0efcc8c951d01926010f53454ed1fdb3903bb9c2))
+
+### Features
+
+* add support for purging object field maps before new-ones are deployed ([48f327c](https://github.com/codeneos/vlocode/commit/48f327c08b846219e3cc79459404cf9b1c0facba))
+
 ## [0.18.2](https://github.com/codeneos/vlocode/compare/v0.18.1...v0.18.2) (2022-11-22)
 
 ### Bug Fixes
