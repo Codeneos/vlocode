@@ -184,7 +184,7 @@ export class DatapackLookupService implements DependencyResolver {
                 const record = records.shift()!;
                 const matchedLookups = entries.filter(([,{ filter }]) => {
                     // Find all matching lookup requests
-                    return Object.entries(filter).every(([field, value]) => this.fieldEquals(record, field, value));
+                    return !Object.entries(filter).some(([field, value]) => !this.fieldEquals(record, field, value));
                 });
 
                 if (!matchedLookups.length) {
@@ -281,8 +281,8 @@ export class DatapackLookupService implements DependencyResolver {
             }
             // Attempt a date conversion of 2 strings
             const a = DateTime.fromISO(filterValue);
-            const b = DateTime.fromISO(recordValue);
-            if (a.diff(b, 'seconds').seconds === 0) {
+            const b = a.isValid && DateTime.fromISO(recordValue);
+            if (a && b && a.diff(b, 'seconds').seconds === 0) {
                 return true;
             }
             // Salesforce does not allow trailing spaces on strings in the DB
