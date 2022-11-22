@@ -1,6 +1,6 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, CancellationTokenSource } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, CancellationTokenSource, unique } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
@@ -533,7 +533,14 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
         } finally {
             const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];            
-            
+            const datapackTypes = [...unique([...datapackRecords.values()].map( r => r.datapackType))]; 
+            const recordTypes = [...unique([...datapackRecords.values()].map( r => r.normalizedSObjectType))];
+
+            if (datapackTypes.includes('VlocityUILayout')) {
+                // eslint-disable-next-line no-debugger
+                debugger;
+            }
+
             for (const group of completedGroups) {
                 if (group.status === DeploymentGroupStatus.Success) {
                     this.logger.info(`Deployed ${group.datapackKey}`);

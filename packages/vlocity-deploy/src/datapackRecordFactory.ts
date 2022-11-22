@@ -1,9 +1,8 @@
 
 import { SalesforceSchemaService, Field, NamespaceService } from '@vlocode/salesforce';
 import { Logger, injectable } from '@vlocode/core';
-import * as moment from 'moment';
 import { isSalesforceId } from '@vlocode/util';
-import * as uuid from 'uuid';
+import { DateTime } from 'luxon';
 import { DATAPACK_RESERVED_FIELDS } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { VlocityDatapack } from './datapack';
@@ -12,7 +11,12 @@ import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 @injectable()
 export class DatapackRecordFactory {
 
-    private uniqueWarnings = new Set<string>();
+    private readonly uniqueWarnings = new Set<string>();
+
+    private readonly dateFormat = {
+        date: 'YYYY-MM-DD',
+        datetime: 'YYYY-MM-DDTHH:mm:ss.SSSZZ'
+    };
 
     constructor(
         private readonly namespaceService: NamespaceService,
@@ -109,7 +113,7 @@ export class DatapackRecordFactory {
             return datapack.sourceKey;
         }
         // some objects do not have a source key - generate a unique key so we can deploy them
-        const primaryKey = datapack.globalKey || `Generated/${uuid.v4()}`;
+        const primaryKey = datapack.globalKey || `Generated/${crypto.randomUUID()}`;
         return `${datapack.sobjectType}/${primaryKey}`;
     }
 
@@ -144,18 +148,14 @@ export class DatapackRecordFactory {
                 if (!value) {
                     return null;
                 }
-                const dateFormat = {
-                    'date': 'YYYY-MM-DD',
-                    'datetime': 'YYYY-MM-DDTHH:mm:ss.SSSZZ'
-                };
-                const date = moment(value);
-                if (!date.isValid()) {
-                    throw new Error(`Value is not a valid date: ${value}`);
+                const date = this.tryParseAsDateTime(value);
+                if (!date?.isValid) {
+                    throw new Error(`Value is not a valid date: ${value} (${date?.invalidReason ?? 'unknown reason'})`);
                 }
                 if (field.type == 'datetime') {
-                    date.utc();
+                    return date.toUTC().toFormat(this.dateFormat[field.type])
                 }
-                return date.format(dateFormat[field.type]);
+                return date.toFormat(this.dateFormat[field.type]);
             }
             case 'percent':
             case 'currency':
@@ -192,6 +192,19 @@ export class DatapackRecordFactory {
                 return stringValue;
             }
         }
+    }
+
+    private tryParseAsDateTime(value: unknown) : DateTime | undefined {
+        if (value instanceof DateTime) {
+            return value;
+        } else if (value instanceof Date) {
+            return DateTime.fromJSDate(value);
+        } else if (typeof value === 'string') {
+            return DateTime.fromISO(value);
+        } else if (typeof value === 'number' && value > 0) {
+            return DateTime.fromMillis(value);
+        }
+        return undefined;
     }
 
     private convertValueToString(value: unknown) {

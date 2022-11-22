@@ -1,12 +1,12 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
 import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count } from '@vlocode/util';
+import { DateTime } from 'luxon';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
 import { VlocityNamespaceService } from './vlocityNamespaceService';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
-import * as moment from 'moment';
 
 /**
  * Describes a records status in the target org.
@@ -280,8 +280,9 @@ export class DatapackLookupService implements DependencyResolver {
                 return recordValue.substring(0, 15) == filterValue.substring(0, 15);
             }
             // Attempt a date conversion of 2 strings
-            const filterTs = moment(new Date(filterValue));
-            if (filterTs.isValid() && filterTs.isSame(moment(new Date(recordValue)), 'second')) {
+            const a = DateTime.fromISO(filterValue);
+            const b = DateTime.fromISO(recordValue);
+            if (a.diff(b, 'seconds').seconds === 0) {
                 return true;
             }
             // Salesforce does not allow trailing spaces on strings in the DB

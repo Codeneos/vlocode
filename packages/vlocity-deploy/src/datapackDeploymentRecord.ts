@@ -147,11 +147,18 @@ export class DatapackDeploymentRecord {
     }
 
     /**
-     *  Get or set a value in the underlying record data
+     * Get a value in the underlying record data
      * @param field field name
-     * @param value value to set if 
-     * @returns 
+     * @returns value of the field
      */
+    public value(field: string): any
+    /**
+     * Set the value in the underlying record data. To remove a field from the record pass the value as `undefined`
+     * @param field field name
+     * @param value value to set or `undefined` to remove the field
+     * @returns true if set or false if not set
+     */
+    public value(field: string, value: unknown | undefined): boolean
     public value(field: string, value?: any): any {
         const fieldNames = Object.keys(this.values);
         const matchingField = 
@@ -160,9 +167,13 @@ export class DatapackDeploymentRecord {
 
         if (arguments.length == 1) {
             return matchingField ? this.values[matchingField] : undefined;
-        } else {
+        } else if (value !== undefined) {
             this.values[matchingField ?? field] = value;
+            return true;
+        } else if (matchingField !== undefined) {
+            return delete this.values[matchingField];
         }
+        return false;
     }
 
     public updateStatus(status: DeploymentStatus, detail?: string) {
