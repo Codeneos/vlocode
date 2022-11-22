@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import VlocodeService from '@lib/vlocodeService';
 import { DeveloperLog } from '@vlocode/salesforce';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 import { ConfigurationManager } from '@lib/config';
 import { VlocodeCommand } from '@constants';
 import { Logger , injectable } from '@vlocode/core';
@@ -122,11 +122,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     public getTooltip(log: DeveloperLog): string {
-        return `${log.status} - ${moment(log.startTime).format('M/D/YYYY HH:mm:ss')}`;
+        return `${log.status} - ${DateTime.fromJSDate(log.startTime).toFormat('M/D/YYYY HH:mm:ss')}`;
     }
 
     public getStatusLabel(log: DeveloperLog): string {
-        return `${moment(log.startTime).format('M/D/YYYY HH:mm:ss')} (${(log.durationMilliseconds / 1000).toFixed(2)}s) - ${Math.floor(log.size / 102.4) / 10}KB`;
+        return `${DateTime.fromJSDate(log.startTime).toFormat('M/D/YYYY HH:mm:ss')} (${(log.durationMilliseconds / 1000).toFixed(2)}s) - ${Math.floor(log.size / 102.4) / 10}KB`;
     }
 
     public getLabel(log: DeveloperLog): string {
