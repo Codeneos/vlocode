@@ -15,8 +15,8 @@ export class DatapackRecordFactory {
     private readonly uniqueWarnings = new Set<string>();
 
     private readonly dateFormat = {
-        date: 'YYYY-MM-DD',
-        datetime: 'YYYY-MM-DDTHH:mm:ss.SSSZZ'
+        date: 'yyyy-MM-dd',
+        datetime: `yyyy-MM-dd'T'HH:mm:ss.SSSZZ`
     };
 
     constructor(

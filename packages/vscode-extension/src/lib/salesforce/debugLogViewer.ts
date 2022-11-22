@@ -19,11 +19,11 @@ export class DebugLogViewer {
     }
 
     public async showDeveloperLog(log: DeveloperLog) {
-        return this.openLog(await log.getBody(), `${DateTime.fromJSDate(log.startTime).toFormat('MM-DD-YYYY_HH-mm-ss')}_${log.id}.log`);
+        return this.openLog(await log.getBody(), `${DateTime.fromJSDate(log.startTime).toFormat('MM-dd-yyyy_HH-mm-ss')}_${log.id}.log`);
     }
 
     public showExecutionLog(log: string) {
-        return this.openLog(this.formatExecutionLog(log), `${DateTime.now().toFormat('MM-DD-YYYY_HH-mm-ss')}.log`);
+        return this.openLog(this.formatExecutionLog(log), `${DateTime.now().toFormat('MM-dd-yyyy_HH-mm-ss')}.log`);
     }
 
     private async openLog(logBody: string, logFileName: string) {

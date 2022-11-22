@@ -161,7 +161,7 @@ export class QueryService {
             if (!value) {
                 return 'null';
             }
-            const format = field.type === 'date' ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm:ssZ';
+            const format = field.type === 'date' ? 'yyyy-MM-dd' : `yyyy-MM-dd'T'HH:mm:ss.SSSZZ`;
             const date = QueryService.tryParseAsDateTime(value);
             if (!date?.isValid) {
                 throw new Error(`Value is not a valid date: ${value} (${date?.invalidReason ?? 'reason unknown'})`);

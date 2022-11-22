@@ -191,7 +191,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         }
 
         const logLevelName = await vscode.window.showInputBox({ 
-            value: `Custom ${DateTime.now().toFormat('M/D/YYYY HH:mm:ss')}`, 
+            value: `Custom ${DateTime.now().toFormat('M/d/yyyy HH:mm:ss')}`, 
             title: `Debug Flags Name`, 
             prompt: 'Name displayed in the debug level selection in vscode.'
         });

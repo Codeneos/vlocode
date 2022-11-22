@@ -122,11 +122,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     public getTooltip(log: DeveloperLog): string {
-        return `${log.status} - ${DateTime.fromJSDate(log.startTime).toFormat('M/D/YYYY HH:mm:ss')}`;
+        return `${log.status} - ${DateTime.fromJSDate(log.startTime).toFormat('M/d/yyyy HH:mm:ss')}`;
     }
 
     public getStatusLabel(log: DeveloperLog): string {
-        return `${DateTime.fromJSDate(log.startTime).toFormat('M/D/YYYY HH:mm:ss')} (${(log.durationMilliseconds / 1000).toFixed(2)}s) - ${Math.floor(log.size / 102.4) / 10}KB`;
+        return `${DateTime.fromJSDate(log.startTime).toFormat('M/d/yyyy HH:mm:ss')} (${(log.durationMilliseconds / 1000).toFixed(2)}s) - ${Math.floor(log.size / 102.4) / 10}KB`;
     }
 
     public getLabel(log: DeveloperLog): string {
