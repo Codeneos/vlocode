@@ -16,7 +16,7 @@ export class DatapackRecordFactory {
 
     private readonly dateFormat = {
         date: 'yyyy-MM-dd',
-        datetime: `yyyy-MM-dd'T'HH:mm:ss.SSSZZ`
+        datetime: `yyyy-MM-dd'T'HH:mm:ss.SSSZZZ`
     };
 
     constructor(
