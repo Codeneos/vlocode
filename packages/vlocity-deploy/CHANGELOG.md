@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.4](https://github.com/Codeneos/vlocode/compare/v0.18.3...v0.18.4) (2022-11-23)
+
+### Bug Fixes
+
+* crypto module not imported ([370dde6](https://github.com/Codeneos/vlocode/commit/370dde6e90aadcd7c12e6ac5574db1c5fa804494))
+* lookup service returns incorrectly matched records in edge case (to strings ending with `-1` are considered equal due to quirks in the js-Date class) ([23fc498](https://github.com/Codeneos/vlocode/commit/23fc498cf9ee3c8ee49ed82d0472aa6df1c40130))
+* only a single spec function executes for mixed deployments causing templates, scripts and other components from not being activated ([3a7f8af](https://github.com/Codeneos/vlocode/commit/3a7f8afb7b3626f6cd1bd35a6175784d86cb8c40))
+* references returned as boolean values in record factory ([8ac959e](https://github.com/Codeneos/vlocode/commit/8ac959ea9e89d782c377bb83bc163b3c4a93f74c))
+* using old moment date formats with luxon ([4f99eb3](https://github.com/Codeneos/vlocode/commit/4f99eb3984fddca44b221b281c72e28312647582))
+
+### Features
+
+* improve resolution speed by not comparing all fields of an object but exit once a single field mismatches in lookup service ([ceb32ac](https://github.com/Codeneos/vlocode/commit/ceb32aca0fbb7e90b5990a7d1df049f90a71e0c4))
+
 ## [0.18.3](https://github.com/Codeneos/vlocode/compare/v0.18.2...v0.18.3) (2022-11-22)
 
 ### Features

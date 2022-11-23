@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.4](https://github.com/codeneos/vlocode/compare/v0.18.3...v0.18.4) (2022-11-23)
+
+### Bug Fixes
+
+* using old moment date formats with luxon ([4f99eb3](https://github.com/codeneos/vlocode/commit/4f99eb3984fddca44b221b281c72e28312647582))
+
 ## [0.18.3](https://github.com/codeneos/vlocode/compare/v0.18.2...v0.18.3) (2022-11-22)
 
 **Note:** Version bump only for package vlocode

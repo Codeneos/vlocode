@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/salesforce",
-    "version": "0.18.3",
+    "version": "0.18.4",
     "description": "Salesforce utility library for Vlocode",
     "keywords": [
         "Salesforce"
@@ -55,7 +55,7 @@
     },
     "dependencies": {
         "@salesforce/source-deploy-retrieve": "^5",
-        "@vlocode/core": "^0.18.3",
+        "@vlocode/core": "^0.18.4",
         "@vlocode/util": "^0.18.3",
         "axios": "^0.25.0",
         "chalk": "^4.1.1",
