@@ -533,13 +533,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
         } finally {
             const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];            
-            const datapackTypes = [...unique([...datapackRecords.values()].map( r => r.datapackType))]; 
-            const recordTypes = [...unique([...datapackRecords.values()].map( r => r.normalizedSObjectType))];
-
-            if (datapackTypes.includes('VlocityUILayout')) {
-                // eslint-disable-next-line no-debugger
-                debugger;
-            }
 
             for (const group of completedGroups) {
                 if (group.status === DeploymentGroupStatus.Success) {
