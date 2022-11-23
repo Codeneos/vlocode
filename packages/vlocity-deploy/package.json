@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/vlocity-deploy",
-    "version": "0.18.4",
+    "version": "0.18.5",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
     "keywords": [
         "Vlocity",
@@ -61,7 +61,7 @@
     },
     "dependencies": {
         "@vlocode/core": "^0.18.4",
-        "@vlocode/salesforce": "^0.18.4",
+        "@vlocode/salesforce": "^0.18.5",
         "@vlocode/util": "^0.18.3",
         "chalk": "^4.1.1",
         "commander": "^9.2.0",

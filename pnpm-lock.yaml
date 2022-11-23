@@ -102,9 +102,9 @@ importers:
       '@types/jest': ^28.1.6
       '@types/node': ^16
       '@vlocode/core': ^0.18.4
-      '@vlocode/salesforce': ^0.18.4
+      '@vlocode/salesforce': ^0.18.5
       '@vlocode/util': ^0.18.3
-      '@vlocode/vlocity-deploy': ^0.18.4
+      '@vlocode/vlocity-deploy': ^0.18.5
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
@@ -300,7 +300,7 @@ importers:
       '@types/luxon': ^3.1.0
       '@types/node': ^16
       '@vlocode/core': ^0.18.4
-      '@vlocode/salesforce': ^0.18.4
+      '@vlocode/salesforce': ^0.18.5
       '@vlocode/util': ^0.18.3
       chalk: ^4.1.2
       commander: ^9.2.0
