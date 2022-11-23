@@ -177,7 +177,10 @@ export class DatapackRecordFactory {
                     if (!value) {
                         return null;
                     }
-                    return isSalesforceId(value);
+                    if (isSalesforceId(value)) {
+                        this.logger.warn(`Deploying hardcoded IDs (${value}) to '${field.name}' can result in unexpected behavior; check your datapack and replace the ID with a reference`);
+                        return value;
+                    }
                 }
                 throw new Error(`Value is not a valid Salesforce ID: ${value}`);
             }
@@ -203,7 +206,7 @@ export class DatapackRecordFactory {
         } else if (typeof value === 'string') {
             return DateTime.fromISO(value);
         } else if (typeof value === 'number' && value > 0) {
-            return DateTime.fromMillis(value);
+            return DateTime.fromSeconds(value);
         }
         return undefined;
     }

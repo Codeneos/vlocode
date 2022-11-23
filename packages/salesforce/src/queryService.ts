@@ -193,7 +193,7 @@ export class QueryService {
         } else if (typeof value === 'string') {
             return DateTime.fromISO(value);
         } else if (typeof value === 'number' && value > 0) {
-            return DateTime.fromMillis(value);
+            return DateTime.fromSeconds(value);
         }
         return undefined;
     }
