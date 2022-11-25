@@ -65,7 +65,44 @@ const uniqueNameConfig: uniqueNamesGeneratorConfig = {
 };
 
 /**
- * IoC container containing for dependency resolution  
+ * Dependency injection container that can create objects marked with the {@link injectable} and automatically resolving their dependencies.
+ * 
+ * To use the container mark any class with the {@link injectable}-decorator. {@link injectable} allows specifying the lifecycle policy of the 
+ * object which determines if the container will create a new instance or use the existing instance of the class registered in the container.
+ * 
+ * The container resolves all undefined constructor parameters and all properties marked with  {@link injectable.property}. 
+ * 
+ * Circular references are supported and handled by using a lzy resolution proxy.
+ * 
+ * Usage:
+ * ```typescript
+ * @injectable()
+ * class Bar {
+ *    constructor(private foo: Foo) {
+ *    }
+ * 
+ *    public helloFooBar() {
+ *        this.foo.helloBar();
+ *    }
+ * 
+ *    public hello() {
+ *        console.log('Hello!');
+ *    }
+ * }
+ * 
+ * @injectable()
+ * class Foo {
+ *    constructor(public bar: Bar) {
+ *    }
+ * 
+ *    public helloBar() {
+ *        this.bar.hello();
+ *    }
+ * }
+ * 
+ * container.get(Foo).helloBar(); // prints 'Hello!'
+ * container.get(Foo).bar.helloFooBar(); // prints 'Hello!'
+ * ```
  */
 export class Container {
 
@@ -86,6 +123,17 @@ export class Container {
     private readonly providers = new Map<string, (receiver: any) => any>();
 
     private readonly containerPath: string;
+
+    /**
+     * Wrap all instance created by this container in Proxies. When set to `true` each service instance created by this container is wrapped in 
+     * a Proxy<T>. Proxied service instances behave the same way as non-proxied service instances but each call will be routed through the proxy 
+     * which can impact performance. 
+     * 
+     * For now the recommended setting is `false` unless you need to dynamically swap service instances without recreated the dependencies that use them.
+     * 
+     * For circular references proxies will always be used even when {@link useInstanceProxies} is set to `false`
+     */
+    public useInstanceProxies: boolean = false;
 
     constructor(private readonly logger = LogManager.get(Container), private readonly parent?: Container) {
         logger.verbose(`Starting IoC container: ${this.containerGuid} (${parent ? `CHILD from ${parent.containerGuid}` : 'MAIN'})`);
@@ -171,14 +219,18 @@ export class Container {
             }
 
             this.resolveStack.push(type.ctor.name);
-            instance[lazyTarget].setInstance(resolver.createInstance(type.ctor) as T);
+            let serviceInstance = resolver.createInstance(type.ctor) as T;
+            if (this.useInstanceProxies) {
+                instance[lazyTarget].setInstance(serviceInstance);
+                serviceInstance = instance;
+            }
             this.resolveStack.pop();
 
             const effectiveLifecycle = overrideLifecycle ?? type.options?.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return resolver.registerAs(resolver.register(instance), service);
+                return resolver.registerAs(resolver.register(serviceInstance), service);
             }
-            return instance;
+            return serviceInstance;
         }
 
         // probe parent

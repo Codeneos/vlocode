@@ -2,17 +2,15 @@
 import { FileFilterFunction, FileFilterInfo } from '@lib/workspaceContextDetector';
 import { container, injectable } from '@vlocode/core';
 
-@injectable()
 export class DatapackDetector {
 
-    private static datapacksFoundSymbol = Symbol('[[hasDatapacks]]');
-    private isDatapackFileFn =  this.isDatapackFile.bind(this);
+    private static datapacksFoundSymbol = Symbol('@hasDatapacks');
 
     public static isDatapackFile(file: FileFilterInfo | string) {
         return (typeof file !== 'string' ? file.name : file).endsWith('_DataPack.json');
     }
 
-    public isDatapackFile(file: FileFilterInfo | string) {
+    public static isDatapackFileFn(file: FileFilterInfo | string) {
         if (typeof file === 'string') {
             return DatapackDetector.isDatapackFile(file);
         }
@@ -22,13 +20,13 @@ export class DatapackDetector {
         }
 
         if (file.name.endsWith('_DataPack.json')) {
-            file.siblings[DatapackDetector.datapacksFoundSymbol] = file.name;
+            file.siblings[DatapackDetector.datapacksFoundSymbol] = file.fullName;
             return true;
         }
 
         const datapackFile = file.siblings.find(DatapackDetector.isDatapackFile);
         if (datapackFile) { 
-            file.siblings[DatapackDetector.datapacksFoundSymbol] = datapackFile;
+            file.siblings[DatapackDetector.datapacksFoundSymbol] = datapackFile.fullName;
             return true;
         }
 
@@ -36,7 +34,6 @@ export class DatapackDetector {
     }
 
     public static filter(): FileFilterFunction {
-        const detector = container.get(DatapackDetector);
-        return detector.isDatapackFile.bind(detector);
+        return DatapackDetector.isDatapackFileFn;
     }
 }
