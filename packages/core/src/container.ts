@@ -281,9 +281,9 @@ export class Container {
                 // Only use the original ctor shares the same identity as the decorated ctor
                 // if the identities are different then the original ctor is a different class and we should not use it
                 ctor = originalCtor;
-            }            
-        } 
-        
+            }
+        }
+
         const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);
         const instance = this.decorateWithServiceGuid(new ctor(...resolvedArgs), instanceGuid);
         return this.resolveProperties(instance);
@@ -324,7 +324,7 @@ export class Container {
                 if (instanceGuid && args[i] !== undefined) {
                     this.trackServiceDependencies(instanceGuid, args[i]);
                 }
-            } 
+            }
         }
 
         return args;
