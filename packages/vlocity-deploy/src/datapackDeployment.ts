@@ -215,15 +215,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     /**
      * Gets the deployment status of a record by source key
-     * @param sourcekey 
+     * @param sourceKey Record source key to get the deployment status for
      */
     public getRecordStatus(sourceKey: string) : DeploymentStatus | undefined {
         return this.records.get(sourceKey)?.status;
     }
 
     /**
-     * Gets the deployment status of a record by source key
-     * @param sourcekey 
+     * Gets the deployment status of a Datapack by it's source key
+     * @param datapackKey Datapack key to get the deployment status for
      */
      public getDatapackStatus(datapackKey: string) : DeploymentStatus {
         const records = groupBy(this.getRecords(datapackKey), record => `${record.status}`);
