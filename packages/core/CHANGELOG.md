@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.6](https://github.com/Codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
+
+### Bug Fixes
+
+* excess spaces ([e6bf37d](https://github.com/Codeneos/vlocode/commit/e6bf37d0cd5babe6d4e763eb98d28a0e16b2a0ea))
+
+### Features
+
+* add `useInstanceProxies` setting controlling if the container always returns proxies or only when required to resolve circular references ([2a9ff46](https://github.com/Codeneos/vlocode/commit/2a9ff46dea9e50a24e28f89807d920b9463a65f7))
+
 ## [0.18.4](https://github.com/Codeneos/vlocode/compare/v0.18.3...v0.18.4) (2022-11-23)
 
 **Note:** Version bump only for package @vlocode/core
