@@ -82,7 +82,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
 
     private isVlocityJobFile(arg: unknown) : arg is VlocityJobFile {
         if (arg && typeof arg === 'object' && Array.isArray(arg['queries'])) {
-            return arg['queries'].every(query => Object.prototype.hasOwnProperty.apply(query, 'VlocityDataPackType'));
+            return arg['queries'].every(query => Object.prototype.hasOwnProperty.call(query, 'VlocityDataPackType'));
         }
         return false;
     }
