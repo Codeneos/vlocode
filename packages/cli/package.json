@@ -32,7 +32,7 @@
         "pack": "pnpm run prepublish && pnpm run pack-only",
         "prepublish": "pnpm run clean && pnpm run build-webpack && tsc",
         "pack-only": "pnpm pack",
-        "clean": "shx rm -rf ./dist ./lib ./.ts-temp"
+        "clean": "shx rm -rf ./dist ./lib ./.ts-temp ./*.tgz"
     },
     "repository": {
         "type": "git",
