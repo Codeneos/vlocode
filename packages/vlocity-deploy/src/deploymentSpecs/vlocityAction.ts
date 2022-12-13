@@ -11,6 +11,6 @@ export class VlocityAction implements DatapackDeploymentSpec {
     }
 
     public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.deployedRecords, () => ({ active__c: true }));
+        return this.activator.activateRecords(event.deployedRecords, () => ({ isActive__c: true }));
     }
 }
