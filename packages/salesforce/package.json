@@ -42,11 +42,13 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "devDependencies": {
+        "@types/csv-parse": "^1.2.2",
         "@types/fs-extra": "^9",
         "@types/jest": "^28.1.6",
         "@types/jsforce": "^1.9.41",
         "@types/luxon": "^3.1.0",
         "@types/node": "^16",
+        "@types/tough-cookie": "^4.0.2",
         "create-ts-index": "^1.14.0",
         "jest": "^28.1.3",
         "shx": "^0.3.4",
@@ -61,6 +63,7 @@
         "@vlocode/util": "^0.18.6",
         "axios": "^0.25.0",
         "chalk": "^4.1.1",
+        "csv-parse": "^5.3.3",
         "fs-extra": "^9.0",
         "glob": "^7.1.7",
         "js-yaml": "^4.1.0",
@@ -70,6 +73,7 @@
         "luxon": "^3.1.0",
         "moment": "^2.29.1",
         "salesforce-alm": "^52.1.9",
+        "tough-cookie": "^4.1.2",
         "xml2js": "^0.4.23"
     },
     "bundledDependencies": [

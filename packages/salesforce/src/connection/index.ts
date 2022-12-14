@@ -1,3 +1,4 @@
+export * from './httpTransport';
 export * from './interactiveConnectionProvider';
 export * from './jsFroceConnectionProvider';
 export * from './salesforceConnection';

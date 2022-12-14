@@ -81,7 +81,7 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
     }
 
     private initConnection(connection: Connection) {
-        const sfConnection: SalesforceConnection = Object.setPrototypeOf(connection, SalesforceConnection.prototype);
+        const sfConnection: SalesforceConnection = SalesforceConnection.create(connection);
         sfConnection.setLogger(LogManager.get('JsForce'));
         sfConnection.version = this.#version;   
         return sfConnection;
