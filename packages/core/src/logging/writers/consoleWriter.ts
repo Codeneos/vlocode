@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 
 export class ConsoleWriter implements LogWriter {
 
-    public static LOG_DATE_FORMAT = "HH:mm:ss.SS";
+    public static LOG_DATE_FORMAT = "HH:mm:ss.SSS";
 
     constructor(private readonly formatMessages: boolean = true) {
     }

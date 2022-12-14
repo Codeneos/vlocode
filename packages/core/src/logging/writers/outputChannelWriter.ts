@@ -4,7 +4,7 @@ import { LogWriter, LogEntry, LogLevel } from '../../logging';
 
 export class OutputChannelWriter implements LogWriter {
 
-    public static LOG_DATE_FORMAT = "HH:mm:ss.SS";
+    public static LOG_DATE_FORMAT = "HH:mm:ss.SSS";
 
     private _outputChannel?: OutputChannel;
 

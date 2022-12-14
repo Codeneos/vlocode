@@ -13,6 +13,18 @@ export enum LogLevel {
     fatal
 }
 
+/**
+ * Generic logging interface that contains common logging methods.
+ */
+export interface ILogger {
+    log(...args: any[]): void;
+    info(...args: any[]): void;
+    verbose(...args: any[]): void;
+    warn(...args: any[]): void;
+    error(...args: any[]): void;
+    debug(...args: any[]): void;
+}
+
 export * from './logger';
 export * from './distinctLogger';
 export * from './logManager';

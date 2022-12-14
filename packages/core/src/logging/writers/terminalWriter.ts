@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import { LogLevel, LogWriter, LogEntry } from '../../logging';
 
 const TERMINAL_EOL = '\r\n';
-const LOG_DATE_FORMAT = 'HH:mm:ss.SS';
+const LOG_DATE_FORMAT = 'HH:mm:ss.SSS';
 
 export interface TerminalWriterOptions {
     iconPath?: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon;
