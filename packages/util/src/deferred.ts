@@ -4,7 +4,7 @@
 export class DeferredPromise<T> implements Promise<T> {
     #innerPromise: Promise<T>;
     #reject: (err: any) => void;
-    #resolve: (result: T) => void;
+    #resolve: (result: T | Promise<T>) => void;
     #isResolved = false;
 
     public get [Symbol.toStringTag]() {
@@ -43,7 +43,7 @@ export class DeferredPromise<T> implements Promise<T> {
         this.#reject(err);
     }
 
-    public resolve(result: T) {
+    public resolve(result: T | Promise<T>) {
         if (this.#isResolved) {
             throw new Error('Promise is already resolved or rejected, cannot reject or resolve a promise twice.');
         }
