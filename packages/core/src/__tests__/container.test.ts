@@ -93,6 +93,8 @@ describe('container', () => {
 
             // Assert
             expect(results[0]).not.toBe(results[1]);
+            expect(results[0]).toBeInstanceOf(ServiceImpl);
+            expect(results[1]).toBeInstanceOf(ServiceImpl);
         });
         it('should create single instance when lifecycle is singleton', () => {
             // Arrange

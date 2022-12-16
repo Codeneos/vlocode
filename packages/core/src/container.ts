@@ -272,20 +272,21 @@ export class Container {
     private createInstance<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, args: Array<any> = []): InstanceType<T> {
         // Get argument types
         const instanceGuid = this.generateServiceGuid(ctor);
+        let instanceCtor = ctor;
 
-        if (ctor[InjectableDecorated]) {
-            const originalCtor = ctor[InjectableOriginalCtor];
-            // When decorated make sure to instantiate using the original Ctor
-            // the decorated ctor will use the standard container instead of the local container
-            if (ctor[InjectableIdentity] === originalCtor[InjectableIdentity]) {
-                // Only use the original ctor shares the same identity as the decorated ctor
-                // if the identities are different then the original ctor is a different class and we should not use it
-                ctor = originalCtor;
-            }
+        // When decorated make sure to instantiate using the original Ctor
+        // the decorated ctor will use the standard container instead of the local container
+        const originalCtor = ctor[InjectableDecorated] && ctor[InjectableOriginalCtor];
+
+        if (originalCtor && ctor[InjectableIdentity] === originalCtor[InjectableIdentity]) {
+            // Only use the original ctor shares the same identity as the decorated ctor
+            // if the identities are different then the original ctor is a different class and we should not use it
+            instanceCtor = originalCtor;
         }
 
         const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);
         const instance = this.decorateWithServiceGuid(new ctor(...resolvedArgs), instanceGuid);
+        Object.setPrototypeOf(instance, ctor.prototype);
         return this.resolveProperties(instance);
     }
 
