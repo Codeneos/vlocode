@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions, RequestInfo } from 'jsforce';
 import { HttpApiOptions } from 'jsforce/http-api';
 
-import { Logger, LogLevel } from '@vlocode/core';
+import { Logger, LogLevel, LogManager } from '@vlocode/core';
 import { lazy, wait } from '@vlocode/util';
 import { HttpTransport } from './httpTransport';
 
@@ -71,7 +71,7 @@ export class SalesforceConnection extends Connection {
      */
     private initializeLocalVariables() {
         this.disableFeedTracking = true;
-        this._transport = new HttpTransport(this, lazy(() => this.logger));
+        this._transport = new HttpTransport(this, LogManager.get('HttpTransport'));
     }
 
     /**
@@ -129,7 +129,7 @@ export class SalesforceConnection extends Connection {
             throw err;
         }
 
-        return super.request<T>(info, { ...options, transport: this._transport }).catch(errorHandler);
+        return super.request<T>(info, { ...options }).catch(errorHandler);
     }
 
     /**

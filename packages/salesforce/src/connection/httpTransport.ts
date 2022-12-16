@@ -43,7 +43,7 @@ interface HttpContentType {
 }
 
 export class HttpTransport {
-    private cookies = new CookieJar();   
+    private cookies = new CookieJar(); 
 
     /**
      * Shared HTTP agent used by this {@link HttpTransport} used for connection pooling
@@ -90,11 +90,20 @@ export class HttpTransport {
     constructor(
         private connection: SalesforceConnection, 
         private logger: ILogger) {
+        this.logger.info(`Enabled features ${this.getFeatureList().map(v => v.toUpperCase()).join(' ')}`);
+    }
+
+    public getFeatureList() {
+        const features = new Array<string>();
+        HttpTransport.useGzipEncoding && features.push('gzip');
+        HttpTransport.handleCookies && features.push('cookies');
+        HttpTransport.shouldKeepAlive && features.push('keepAlive');
+        return features;
     }
 
     public httpRequest(info: HttpRequestInfo, options?: HttpApiOptions): Promise<HttpResponse> {
         const url = this.parseUrl(info.url);
-        const requestPromise = new DeferredPromise<HttpResponse>()
+        const requestPromise = new DeferredPromise<HttpResponse>();
 
         if (url.protocol === 'http') {
             url.protocol = 'https';
@@ -116,7 +125,7 @@ export class HttpTransport {
         }
 
         if (HttpTransport.useGzipEncoding) {
-            request.setHeader('accept-encoding', 'gzip');
+            request.setHeader('accept-encoding', 'gzip, deflate');
         }
 
         if (HttpTransport.handleCookies) {
@@ -126,7 +135,7 @@ export class HttpTransport {
         request.once('error', (err) => requestPromise.reject(err));
 
         request.on('response', (response) => {
-            this.logger.debug(`http ${response.statusCode} -- ${response.statusMessage}`);
+            this.logger.debug(`${url.pathname}, status=${response.statusCode} (${Date.now() - startTime}ms)`);
 
             const setCookiesHeader = response.headers['set-cookie'];
             if (HttpTransport.handleCookies && setCookiesHeader?.length) {
@@ -181,23 +190,30 @@ export class HttpTransport {
     }
 
     private decodeResponseBody(response: http.IncomingMessage, responseBuffer: Buffer): Promise<Buffer> {
-        if (response.headers['content-encoding'] === 'gzip') {
+        // TODO: support chained encoding
+        const encoding = response.headers['content-encoding'];
+
+        if (encoding === 'gzip') {
             return new Promise((resolve, reject) => {
-                zlib.gunzip(responseBuffer, (err, body) => {
+                zlib.gunzip(responseBuffer, { finishFlush: zlib.constants.Z_SYNC_FLUSH }, (err, body) => {
                     err ? reject(err) : resolve(body);
                 });
             });            
         } 
         
-        if (response.headers['content-encoding'] === 'deflate') {
+        if (encoding === 'deflate') {
             return new Promise((resolve, reject) => {
-                zlib.deflate(responseBuffer, (err, body) => {
+                zlib.inflate(responseBuffer, (err, body) => {
                     err ? reject(err) : resolve(body);
                 });
             });            
         }
-        
-        return Promise.resolve(responseBuffer);
+
+        if (encoding === 'identity' || !encoding) {
+            return Promise.resolve(responseBuffer);
+        }
+
+        throw new Error(`Received unsupported 'content-encoding' header value: ${encoding}`);
     }
 
     private parseResponseBody(response: http.IncomingMessage, responseBuffer: Buffer): object | string {
