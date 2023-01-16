@@ -247,10 +247,67 @@ export class DatapackDeploymentRecord {
             });
         }
 
-        this.validateRecordDependency(dependency);
         const dependencyGuid = `$${dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey}`;
+        if (this._dependencies.has(dependencyGuid)) {
+            return;
+        }
+        
+        this.validateRecordDependency(dependency);
         this._dependencies.set(dependencyGuid, dependency);
         this._unresolvedDependencies.add(dependencyGuid);
+    }
+
+    /**
+     * Add a lookup dependency to this record based on only a source key string.
+     * @param sourceKey Dependencies source key in the following format: `<sobject>/<values...>`
+     */
+     public addLookupDependency(sourceKey: string) : void;
+
+    /**
+     * Add a lookup dependency to this record based on a SObject type and the source key string.
+     * @param sobjectType SObject type of the record on which this record is dependent. Replace vlocity namespace with the namespace placeholder.
+     * @param sourceKey String that describes the records source key; should be prefixed with the record sobject type otherwise it is automatically prepended
+     */
+    public addLookupDependency(sobjectType: string, sourceKey: string) : void;
+
+    /**
+     * Add a lookup dependency to this record is based on a SObject type and the matching key values of the record.
+     * @param sobjectType SObject type of the record on which this record is dependent. Replace vlocity namespace with the namespace placeholder.
+     * @param matchingKeyValues Object describing the matching key values that are concatenated into the source key 
+     * so the source key matches the following format: `<sobject>/<values...>`
+     */
+    public addLookupDependency(sobjectType: string, matchingKeyValues: Record<string, string | number | boolean | undefined | null>) : void;
+
+    public addLookupDependency(sobjectType: string, matchingKeyValues?: Record<string, string | number | boolean | undefined | null> | string) : void { 
+        if (matchingKeyValues === undefined) {
+            if (sobjectType.split('/').length === 1) {
+                throw new Error(`Invalid source key format; expected "<sobject>/<values...>" received: ${sobjectType}`);
+            }
+
+            return this.addDependency({
+                VlocityRecordSObjectType: sobjectType.split('/').shift()!, 
+                VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                VlocityMatchingRecordSourceKey: undefined,
+                VlocityLookupRecordSourceKey: sobjectType,
+            });
+        }
+       
+        if (typeof matchingKeyValues === 'string') {
+            return this.addDependency({
+                VlocityRecordSObjectType: sobjectType, 
+                VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                VlocityMatchingRecordSourceKey: undefined,
+                VlocityLookupRecordSourceKey: matchingKeyValues.startsWith(sobjectType) ? matchingKeyValues : `${sobjectType}/${matchingKeyValues}`,
+            });
+        }
+        
+       return this.addDependency({
+            ...matchingKeyValues,
+            VlocityRecordSObjectType: sobjectType, 
+            VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+            VlocityMatchingRecordSourceKey: undefined,
+            VlocityLookupRecordSourceKey: `${sobjectType}/${Object.values(matchingKeyValues).join('/')}`,
+        });
     }
     
     /**

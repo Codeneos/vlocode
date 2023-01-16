@@ -9,5 +9,6 @@ export * from './overrideDefinitionRecords';
 export * from './product2';
 export * from './recordActivator';
 export * from './vlocityAction';
-export * from './vlocityLayoutAndCards';
+export * from './vlocityCard';
+export * from './vlocityUILayout';
 export * from './vlocityUITemplate';

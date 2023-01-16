@@ -55,26 +55,18 @@ export class OmniScript implements DatapackDeploymentSpec {
         const propertySet = JSON.parse(record.value(`PropertySet__c`));
 
         if (type === 'OmniScript') {
-            record.addDependency({ 
+            record.addLookupDependency('%vlocity_namespace%__OmniScript__c', { 
                 ['%vlocity_namespace%__Type__c']: propertySet['Type'],
                 ['%vlocity_namespace%__SubType__c']: propertySet['Sub Type'],
-                ['%vlocity_namespace%__Language__c']: propertySet['Language'],
-                VlocityRecordSObjectType: '%vlocity_namespace%__OmniScript__c', 
-                VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
-                VlocityLookupRecordSourceKey: `%vlocity_namespace%__OmniScript__c/${propertySet['Type']}/${propertySet['Sub Type']}/${propertySet['Language']}`,
-                VlocityMatchingRecordSourceKey: undefined
+                ['%vlocity_namespace%__Language__c']: propertySet['Language']
             });
         } else if (propertySet.HTMLTemplateId) {
             if (this.embeddedTemplates.get(record.datapackKey)?.includes(propertySet.HTMLTemplateId)) {
                 // skip embedded templates; these templates are embedded through TestHTMLTemplates__c which and should not be treated as dependencies
                 return;
-            }
-            record.addDependency({
-                ['Name']: propertySet.HTMLTemplateId,
-                VlocityRecordSObjectType: '%vlocity_namespace%__VlocityUITemplate__c', 
-                VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
-                VlocityLookupRecordSourceKey: `%vlocity_namespace%__VlocityUITemplate__c/${propertySet.HTMLTemplateId}`,
-                VlocityMatchingRecordSourceKey: undefined
+            }            
+            record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', { 
+                ['Name']: propertySet.HTMLTemplateId
             });
         }
     }

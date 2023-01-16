@@ -5,7 +5,7 @@ import { RecordActivator } from './recordActivator';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 
-@deploymentSpec({ recordFilter: /^Vlocity(UILayout|Card)__c$/i })
+@deploymentSpec({ recordFilter: /^VlocityCard__c$/i })
 export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
 
     public constructor(
@@ -23,9 +23,7 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
 
     public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         for (const record of records) {
-            if (record.isSObjectOfType('VlocityCard__c')) {
-                this.addCardStateDependencies(record);
-            }            
+            this.addCardStateDependencies(record);
         }
     }
 
@@ -50,18 +48,18 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
         }
 
         for (const cardState of cardDefinition.states) {
-            if (!Array.isArray(cardState.childCards) && !cardState.childCards.length) {
-                continue;
+            if (Array.isArray(cardState.childCards) && cardState.childCards.length) {
+                for (const childCardName of cardState.childCards) {
+                    record.addLookupDependency('%vlocity_namespace%__VlocityCard__c', { Name: childCardName });
+                }
             }
 
-            for (const childCardName of cardState.childCards) {
-                record.addDependency({
-                    Name: childCardName,
-                    VlocityRecordSObjectType: '%vlocity_namespace%__VlocityCard__c', 
-                    VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
-                    VlocityLookupRecordSourceKey: `%vlocity_namespace%__VlocityCard__c/${childCardName}`,
-                    VlocityMatchingRecordSourceKey: undefined
-                });
+            if (cardState.templateUrl && typeof cardState.templateUrl === 'string') {
+                record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', { Name: cardState.templateUrl });
+            }
+
+            if (cardState.flyout?.layout && typeof cardState.flyout?.layout === 'string') {
+                record.addLookupDependency('%vlocity_namespace%__VlocityUILayout__c', { Name: cardState.flyout.layout });
             }
         }
     }
