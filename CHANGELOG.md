@@ -4,6 +4,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.7](https://github.com/codeneos/vlocode/compare/v0.18.6...v0.18.7) (2023-01-24)
+
+### Bug Fixes
+
+* "spec function failed to execute" error on action activation ([84617cf](https://github.com/codeneos/vlocode/commit/84617cf5070caa0b1581ce41525adb018433e6e7))
+* container returned classes do not pass instance-of test due to wrong prototype ([f7554c5](https://github.com/codeneos/vlocode/commit/f7554c54d1fb071aef7523ce69642c1ccade1670))
+* deferred promise does not allow resolving with a promise ([e3d670b](https://github.com/codeneos/vlocode/commit/e3d670b94db268bb5f04c722c2d09a8ca6b9fa9c))
+* fractions reported as 'SS' due to invalid fraction format in loggers (due to luxon migration) ([2675a46](https://github.com/codeneos/vlocode/commit/2675a46c4ac72a81d66a61bc7baafbc65be9e2a5))
+* http transport does not support deflate properly ([5e6ca2f](https://github.com/codeneos/vlocode/commit/5e6ca2feaee36b31f83b28a46fd7d7e934a21207))
+* missing comma causing build error ([1a3ab25](https://github.com/codeneos/vlocode/commit/1a3ab25b0302987327c816791d2eea7b88e552ca))
+* not passing client id to salesforce connection ([4c5e458](https://github.com/codeneos/vlocode/commit/4c5e458426f503c5e73eb5727deeeb46a3a18578))
+
+### Features
+
+* add custom HTTP transport for Salesforce connection with support for keep-alive, socket pooling, gzip, cookies and automatic retry in-case of a hung-up socket ([0ae47a9](https://github.com/codeneos/vlocode/commit/0ae47a925eabbc8184413372282accd3a510bf01))
+* ensure correct deployment order for Vlocity cards ([7758438](https://github.com/codeneos/vlocode/commit/77584386c74375fa870bfa83a4f2acb43937a04c))
+* ensure layouts are only activated after templates and cards are deployed and activated ([96ab0ce](https://github.com/codeneos/vlocode/commit/96ab0cedd60098031d57742ec184b756cdb21f46))
+
 ## [0.18.6](https://github.com/codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
 
 ### Bug Fixes

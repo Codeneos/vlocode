@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.7](https://github.com/Codeneos/vlocode/compare/v0.18.6...v0.18.7) (2023-01-24)
+
+### Bug Fixes
+
+* container returned classes do not pass instance-of test due to wrong prototype ([f7554c5](https://github.com/Codeneos/vlocode/commit/f7554c54d1fb071aef7523ce69642c1ccade1670))
+* fractions reported as 'SS' due to invalid fraction format in loggers (due to luxon migration) ([2675a46](https://github.com/Codeneos/vlocode/commit/2675a46c4ac72a81d66a61bc7baafbc65be9e2a5))
+
 ## [0.18.6](https://github.com/Codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
 
 ### Bug Fixes

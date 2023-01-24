@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.7](https://github.com/Codeneos/vlocode/compare/v0.18.6...v0.18.7) (2023-01-24)
+
+### Bug Fixes
+
+* "spec function failed to execute" error on action activation ([84617cf](https://github.com/Codeneos/vlocode/commit/84617cf5070caa0b1581ce41525adb018433e6e7))
+
+### Features
+
+* ensure correct deployment order for Vlocity cards ([7758438](https://github.com/Codeneos/vlocode/commit/77584386c74375fa870bfa83a4f2acb43937a04c))
+* ensure layouts are only activated after templates and cards are deployed and activated ([96ab0ce](https://github.com/Codeneos/vlocode/commit/96ab0cedd60098031d57742ec184b756cdb21f46))
+
 ## [0.18.6](https://github.com/Codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
 
 ### Features

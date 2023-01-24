@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.7](https://github.com/Codeneos/vlocode/compare/v0.18.6...v0.18.7) (2023-01-24)
+
+### Bug Fixes
+
+* deferred promise does not allow resolving with a promise ([e3d670b](https://github.com/Codeneos/vlocode/commit/e3d670b94db268bb5f04c722c2d09a8ca6b9fa9c))
+
+### Features
+
+* ensure correct deployment order for Vlocity cards ([7758438](https://github.com/Codeneos/vlocode/commit/77584386c74375fa870bfa83a4f2acb43937a04c))
+
 ## [0.18.6](https://github.com/Codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
 
 **Note:** Version bump only for package @vlocode/util
