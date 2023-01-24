@@ -61,8 +61,19 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
         } else if (typeof options['oauth2'] === 'object') {
             this.#jsConnection = this.cloneConnection(options as JsforceConnectionProperties);
         } else {
-            this.#jsConnection = this.initConnection(new Connection(options));
+            this.#jsConnection = this.newConnection(options as SalesforceOAuthDetails);
         }
+    }
+
+    private newConnection(options: SalesforceOAuthDetails) { 
+        return this.initConnection(new Connection({
+            version: options.version ?? this.#version,
+            oauth2: { 
+                clientId: options.clientId, 
+                clientSecret: options.clientSecret 
+            }
+            ...options
+        }));
     }
 
     private cloneConnection(jsConnection: JsforceConnectionProperties) {
