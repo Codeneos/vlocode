@@ -7,15 +7,15 @@ apexClass:
     name:
       placeholder: The name of the APEX class to create
       type: text
-  files: 
+  files:
     - path: ${name}.cls
-      template: | 
+      template: |
         public class ${name} {
             
         }
-    - &apex-meta 
+    - &apex-meta
       path: ${name}.cls-meta.xml
-      template: | 
+      template: |
         <?xml version="1.0" encoding="UTF-8"?>
         <ApexClass xmlns="urn:metadata.tooling.soap.sforce.com" fqn="${name}">
             <apiVersion>${apiVersion}</apiVersion>
@@ -31,9 +31,9 @@ apexInterface:
     name:
       placeholder: The name of the interface class to create
       type: text
-  files: 
+  files:
     - path: ${name}.cls
-      template: | 
+      template: |
         public interface ${name} {
             
         }
@@ -48,9 +48,9 @@ apexUnitTest:
     name:
       placeholder: Enter the name of the test class
       type: text
-  files: 
+  files:
     - path: ${name}.cls
-      template: | 
+      template: |
         @isTest
         class ${name} {
             
@@ -78,9 +78,9 @@ lwc:
     name:
       placeholder: Name for the new component
       type: text
-  files: 
+  files:
     - path: ${name}/${name}.js
-      template: | 
+      template: |
         import { api, track, LightningElement } from 'lwc';
 
         export default class ${name} extends LightningElement {
@@ -110,7 +110,7 @@ lwc:
             }
         }
     - path: ${name}/${name}.html
-      template: | 
+      template: |
         <template>
             <lightning-card title="Hello Vlocode" icon-name="standard:account">
                 <lightning-button label="New" slot="actions"></lightning-button>
@@ -119,11 +119,11 @@ lwc:
             </lightning-card>
         </template>
     - path: ${name}/${name}.css
-      template: | 
+      template: |
         :host {
         }
     - path: ${name}/${name}.js-meta.xml
-      template: | 
+      template: |
         <?xml version="1.0" encoding="UTF-8"?>
         <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="${name}">
             <apiVersion>${apiVersion}</apiVersion>
@@ -140,9 +140,9 @@ omniscriptLwc:
     name:
       placeholder: Name for the new component
       type: text
-  files: 
+  files:
     - path: ${name}/${name}.js
-      template: | 
+      template: |
         import { api, track, LightningElement } from 'lwc';
         import { OmniscriptBaseMixin } from '${vlocityNamespace}/omniscriptBaseMixin';
 
@@ -231,7 +231,7 @@ omniscriptLwc:
                     }
                 }));
             };
- 
+
             /**
              * Executed when the component is added to the DOM.
              * @returns {Promise<void> | void} 
@@ -255,7 +255,7 @@ omniscriptLwc:
             }
         }
     - path: ${name}/${name}.html
-      template: | 
+      template: |
         <template>
             <lightning-card title="Hello Vlocode" icon-name="standard:account">
                 <lightning-button label="New" slot="actions"></lightning-button>
@@ -264,11 +264,11 @@ omniscriptLwc:
             </lightning-card>
         </template>
     - path: ${name}/${name}.css
-      template: | 
+      template: |
         :host {
         }
     - path: ${name}/${name}.js-meta.xml
-      template: | 
+      template: |
         <?xml version="1.0" encoding="UTF-8"?>
         <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata" fqn="${name}">
             <apiVersion>${apiVersion}</apiVersion>

@@ -1,15 +1,11 @@
-
 {
     "entryPoints": [
         "packages/core/src/index.ts",
-        "packages/util/src/index.ts",        
+        "packages/util/src/index.ts",
         "packages/salesforce/src/index.ts",
         "packages/vlocity-deploy/src/index.ts"
     ],
-    "externalPattern": [
-        "packages/vscode-extension/**/*",
-        "packages/cli/**/*"
-    ],
+    "externalPattern": ["packages/vscode-extension/**/*", "packages/cli/**/*"],
     "cname": "vlocode.curlybracket.nl",
     "exclude": "*.test.ts",
     "readme": "SITE.md",

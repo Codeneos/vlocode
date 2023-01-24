@@ -8,9 +8,6 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": [ "src/**/*.ts", "src/**/*.json" ],
-    "references": [
-        { "path": "../util" },
-        { "path": "../core" }
-    ]
+    "include": ["src/**/*.ts", "src/**/*.json"],
+    "references": [{ "path": "../util" }, { "path": "../core" }]
 }

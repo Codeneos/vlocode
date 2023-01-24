@@ -8,8 +8,6 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": [ "src/**/*" ],    
-    "references": [
-        { "path": "../util" }
-    ]
+    "include": ["src/**/*"],
+    "references": [{ "path": "../util" }]
 }

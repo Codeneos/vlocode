@@ -1,4 +1,4 @@
-{    
+{
     "extends": "../../tsconfig",
     "compilerOptions": {
         "outDir": "lib",
@@ -14,16 +14,9 @@
             "@events/*": ["src/events/*"],
             "@commands/*": ["src/commands/*"]
         },
-        "types": [
-            "node",
-            "webpack-env"
-        ]
+        "types": ["node", "webpack-env"]
     },
-    "include": [ 
-        "src/**/*", 
-        "weboack/**/*", 
-        "types/**/*" 
-    ],
+    "include": ["src/**/*", "weboack/**/*", "types/**/*"],
     "references": [
         { "path": "../util" },
         { "path": "../core" },

@@ -1,90 +1,90 @@
 {
-    "$default" : {
+    "$default": {
         "nameField": "DeveloperName",
         "query": "select Id from ${type} where ${nameField} = '${name}' and NamespacePrefix = '${namespace}'",
         "url": "/lightning/setup/one/page?address=/${id}",
         "strategy": "tooling"
-    },   
-    "BrandingSet": {        
+    },
+    "BrandingSet": {
         "url": "/lightning/setup/ThemingAndBranding/${id}/edit"
     },
-    "ConnectedApp": {        
+    "ConnectedApp": {
         "strategy": "standard",
         "query": "select id from ConnectedApplication where Name = '${metadata.label}'"
     },
-    "ApexClass": {        
+    "ApexClass": {
         "nameField": "Name"
     },
-    "ApexComponent": {        
+    "ApexComponent": {
         "nameField": "Name"
     },
-    "ApexPage": {        
+    "ApexPage": {
         "nameField": "Name"
     },
-    "ApexTrigger": {        
+    "ApexTrigger": {
         "nameField": "Name"
     },
-    "StaticResource": {        
+    "StaticResource": {
         "nameField": "Name"
     },
-    "PermissionSet": {        
+    "PermissionSet": {
         "nameField": "Name"
     },
-    "Profile ": {        
+    "Profile ": {
         "nameField": "Name",
         "query": "select Id from ${type} where ${nameField} = '${name}'"
     },
-    "ContentAsset": {        
+    "ContentAsset": {
         "strategy": "standard"
     },
-    "Document": {        
+    "Document": {
         "strategy": "standard",
         "query": "select Id from ${type} where ${nameField} = '${name.split('/').pop()}' and NamespacePrefix = '${namespace}'"
     },
-    "CustomPermission": {        
+    "CustomPermission": {
         "strategy": "standard"
     },
-    "DuplicateRule": {        
+    "DuplicateRule": {
         "strategy": "standard",
         "query": "select Id from ${type} where ${nameField} = '${fullName.split('.').pop()}' and NamespacePrefix = '${namespace}'"
     },
-    "EmailTemplate": {        
+    "EmailTemplate": {
         "strategy": "standard",
         "query": "select Id from ${type} where ${nameField} = '${fullName.split('/').pop()}' and NamespacePrefix = '${namespace}'"
     },
     "CustomObject": {
         "query": null,
-        "url": "/lightning/setup/ObjectManager/${fullName}/Details/view"    
+        "url": "/lightning/setup/ObjectManager/${fullName}/Details/view"
     },
     "CustomField": {
         "query": "select Id from ${type} where ${nameField} = '${name.split('.').pop().split('__').shift()}' and EntityDefinitionId = '${fullName.split('.').shift()}' and NamespacePrefix = '${namespace}'",
-        "url": "/lightning/setup/ObjectManager/${name.split('.').shift()}/FieldsAndRelationships/${id}/view"    
+        "url": "/lightning/setup/ObjectManager/${name.split('.').shift()}/FieldsAndRelationships/${id}/view"
     },
     "CustomMetadataObject": {
         "query": "select Id from CustomObject where ${nameField} = '${name.split('__').shift()}' and NamespacePrefix = '${namespace}'",
-        "url": "/lightning/setup/CustomMetadata/page?address=/${id}?setupid=CustomMetadata"    
+        "url": "/lightning/setup/CustomMetadata/page?address=/${id}?setupid=CustomMetadata"
     },
     "CustomMetadataField": {
         "query": "select Id from ${type} where ${nameField} = '${name.split('.').pop().split('__').shift()}' and EntityDefinitionId = '${fullName.split('.').shift()}' and NamespacePrefix = '${namespace}'",
-        "url": "/lightning/setup/CustomMetadata/page?address=/${id}?setupid=CustomMetadata"    
+        "url": "/lightning/setup/CustomMetadata/page?address=/${id}?setupid=CustomMetadata"
     },
     "CustomObjectTranslation": {
         "query": null,
-        "url": "/lightning/setup/LabelWorkbenchTranslate/home"    
+        "url": "/lightning/setup/LabelWorkbenchTranslate/home"
     },
     "Translations": {
         "query": null,
-        "url": "/lightning/setup/LabelWorkbenchTranslate/home"    
+        "url": "/lightning/setup/LabelWorkbenchTranslate/home"
     },
     "FlexiPage": {
-        "url": "/visualEditor/appBuilder.app?id=${id}"    
+        "url": "/visualEditor/appBuilder.app?id=${id}"
     },
     "Group": {
         "query": "select Id from ${type} where ${nameField} = '${name}'",
         "url": "/lightning/setup/PublicGroups/page?address=/setup/own/groupdetail.jsp?id=${id}"
-    },    
+    },
     "Queue": {
-        "query": "select Id from Group where ${nameField} = '${name}' and Type = 'Queue'",        
+        "query": "select Id from Group where ${nameField} = '${name}' and Type = 'Queue'",
         "url": "/lightning/setup/Queues/page?address=/own/Queue?id=${id}"
     },
     "QuickAction": {
@@ -99,35 +99,35 @@
     },
     "Settings": {
         "query": null,
-        "url": "/lightning/setup/${name}Settings/home"    
+        "url": "/lightning/setup/${name}Settings/home"
     },
-    "Layout": {        
+    "Layout": {
         "nameField": "Name"
     },
-    "LeadConvertSettings ": {      
+    "LeadConvertSettings ": {
         "query": "select Id from ${type} where ${nameField} = '${name}'"
     },
-    "LetterHead ": {      
+    "LetterHead ": {
         "query": "select Id from ${type} where ${nameField} = '${name}' and NamespacePrefix = '${namespace}'",
         "strategy": "standard"
-    },    
-    "LightningExperienceTheme": {        
+    },
+    "LightningExperienceTheme": {
         "url": "/lightning/setup/ThemingAndBranding/${id}/edit"
     },
-    "MilestoneType": {        
+    "MilestoneType": {
         "nameField": "Name",
         "query": "select Id from ${type} where ${nameField} = '${name}'",
         "strategy": "standard"
     },
-    "Network": {        
+    "Network": {
         "nameField": "Name",
         "query": "select Id from ${type} where ${nameField} = '${name}'",
         "strategy": "standard"
     },
-    "StandardValueSet": {        
+    "StandardValueSet": {
         "nameField": "MasterLabel",
         "query": "select Id from StandardValueSet where MasterLabel = '${name}'"
-    },    
+    },
     "CustomMetadata": {
         "strategy": "standard",
         "query": "select Id from ${fullName.split('.').shift()}__mdt where DeveloperName = '${fullName.split('.').pop()}'",

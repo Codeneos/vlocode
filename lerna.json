@@ -1,31 +1,29 @@
 {
-  "useNx": false,
-  "version": "0.18.6",
-  "npmClient": "pnpm",
-  "packages": [
-    "packages/*"
-  ],
-  "command": {
-    "publish": {
-      "conventionalCommits": true
+    "useNx": false,
+    "version": "0.18.6",
+    "npmClient": "pnpm",
+    "packages": ["packages/*"],
+    "command": {
+        "publish": {
+            "conventionalCommits": true
+        },
+        "version": {
+            "gitRemote": "origin",
+            "conventionalCommits": true,
+            "syncWorkspaceLock": true,
+            "message": "chore: publish version %v",
+            "changelogHeaderMessage": "## Vlocity/Salesforce Integration for VSCode"
+        },
+        "run": {
+            "cmdDryRun": false
+        }
     },
-    "version": {
-      "gitRemote": "origin",
-      "conventionalCommits": true,
-      "syncWorkspaceLock": true,
-      "message": "chore: publish version %v",
-      "changelogHeaderMessage": "## Vlocity/Salesforce Integration for VSCode"
-    },
-    "run": {
-      "cmdDryRun": false
-    }
-  },
-  "ignoreChanges": [
-    "**/__fixtures__/**",
-    "**/__tests__/**",
-    "**/helpers/**",
-    "**/*.md",
-    ".vscode",
-    ".github"
-  ]
+    "ignoreChanges": [
+        "**/__fixtures__/**",
+        "**/__tests__/**",
+        "**/helpers/**",
+        "**/*.md",
+        ".vscode",
+        ".github"
+    ]
 }

@@ -8,10 +8,6 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": [ "src/**/*.ts", "src/**/*.json" ],
-    "references": [
-        { "path": "../util" },
-        { "path": "../core" },
-        { "path": "../salesforce" }
-    ]
+    "include": ["src/**/*.ts", "src/**/*.json"],
+    "references": [{ "path": "../util" }, { "path": "../core" }, { "path": "../salesforce" }]
 }
