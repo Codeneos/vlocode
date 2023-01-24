@@ -71,7 +71,7 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
             oauth2: { 
                 clientId: options.clientId, 
                 clientSecret: options.clientSecret 
-            }
+            },
             ...options
         }));
     }
