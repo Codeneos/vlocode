@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
-
-pnpm lint --quiet --fix
+export TERM=dumb #less fancy logging from lint-staged in IDEs and other git wrappers
+pnpm lint-staged

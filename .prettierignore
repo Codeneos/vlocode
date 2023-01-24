@@ -1,0 +1,9 @@
+# Ignore PNPM lock file
+node_modules
+package-lock.json
+pnpm-lock.yaml
+changelog.md
+coverage
+build
+lib
+.vscode-test

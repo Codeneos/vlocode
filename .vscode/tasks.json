@@ -42,8 +42,9 @@
                         }
                     }
                 }
-            ]
-        },        
+            ],
+            "dependsOn": ["watch-vlocity-deploy"]
+        },
         {
             "type": "shell",
             "command": "pnpm --filter @vlocode/cli watch-webpack",
@@ -83,9 +84,7 @@
                     }
                 }
             ],
-            "dependsOn": [
-                "watch-vlocity-deploy"
-            ]
+            "dependsOn": ["watch-vlocity-deploy"]
         },
         {
             "label": "watch-cli",
@@ -102,9 +101,7 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": [
-                "watch-vlocity-deploy"
-            ]
+            "dependsOn": ["watch-vlocity-deploy"]
         },
         {
             "label": "watch-vlocity-deploy",
@@ -121,9 +118,7 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": [
-                "watch-salesforce"
-            ]
+            "dependsOn": ["watch-salesforce"]
         },
         {
             "label": "watch-salesforce",
@@ -140,9 +135,7 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": [
-                "watch-core"
-            ]
+            "dependsOn": ["watch-core"]
         },
         {
             "label": "watch-core",
@@ -159,9 +152,7 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": [
-                "watch-util"
-            ]
+            "dependsOn": ["watch-util"]
         },
         {
             "label": "watch-util",
