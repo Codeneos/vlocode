@@ -103,10 +103,10 @@ importers:
       '@types/fs-extra': ^9
       '@types/jest': ^28.1.6
       '@types/node': ^16
-      '@vlocode/core': ^0.18.8
-      '@vlocode/salesforce': ^0.18.8
-      '@vlocode/util': ^0.18.8
-      '@vlocode/vlocity-deploy': ^0.18.8
+      '@vlocode/core': ^0.18.9
+      '@vlocode/salesforce': ^0.18.9
+      '@vlocode/util': ^0.18.9
+      '@vlocode/vlocity-deploy': ^0.18.9
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
@@ -168,7 +168,7 @@ importers:
       '@types/jest': ^28.1.6
       '@types/luxon': ^3.1.0
       '@types/node': ^16
-      '@vlocode/util': ^0.18.8
+      '@vlocode/util': ^0.18.9
       chalk: ^4.1.2
       create-ts-index: ^1.14.0
       globby: ^11.0.4
@@ -211,8 +211,8 @@ importers:
       '@types/luxon': ^3.1.0
       '@types/node': ^16
       '@types/tough-cookie': ^4.0.2
-      '@vlocode/core': ^0.18.8
-      '@vlocode/util': ^0.18.8
+      '@vlocode/core': ^0.18.9
+      '@vlocode/util': ^0.18.9
       axios: ^0.25.0
       chalk: ^4.1.2
       create-ts-index: ^1.14.0
@@ -315,9 +315,9 @@ importers:
       '@types/jest': ^28.1.6
       '@types/luxon': ^3.1.0
       '@types/node': ^16
-      '@vlocode/core': ^0.18.8
-      '@vlocode/salesforce': ^0.18.8
-      '@vlocode/util': ^0.18.8
+      '@vlocode/core': ^0.18.9
+      '@vlocode/salesforce': ^0.18.9
+      '@vlocode/util': ^0.18.9
       chalk: ^4.1.2
       commander: ^9.2.0
       create-ts-index: ^1.14.0
@@ -11540,7 +11540,7 @@ packages:
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 28.1.3_24esr3464d2gifgmzdt2yhkw2m
+      jest: 28.1.3_@types+node@16.11.34
       jest-util: 28.1.1
       json5: 2.2.1
       lodash.memoize: 4.1.2
