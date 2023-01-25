@@ -1,4 +1,3 @@
-import * as path from 'path';
 import * as open from 'open';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
@@ -17,6 +16,21 @@ export interface SalesforceAuthResult {
 export interface SalesforceOrgInfo extends SalesforceAuthResult {
     alias?: string;
 }
+
+/**
+ * Force SFDX to log to memory; we don't want to access or update
+ * the SFDX log file in vlocode libraries as it can causes locks when the SFDX CLI or 
+ * any of the standard SF extensions is used in parallel
+ */
+try {
+    salesforce.envVars.setString('SF_DISABLE_LOG_FILE', 'true');
+    salesforce.Logger.root().then(logger => {
+        logger.useMemoryLogging();
+    });
+} catch(err) {
+    // Ignore errors while updating SFDX logger
+}
+
 
 /**
  * A shim for accessing SFDX functionality
