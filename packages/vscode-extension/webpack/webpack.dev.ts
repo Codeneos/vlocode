@@ -8,7 +8,7 @@ const development : webpack.Configuration = {
         removeEmptyChunks: false
     },
     output: {
-        pathinfo: false,
+        pathinfo: true,
     }
 };
 

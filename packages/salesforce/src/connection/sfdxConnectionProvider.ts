@@ -6,6 +6,7 @@ import { LogManager } from '@vlocode/core';
 
 export { Connection };
 
+const refreshListenerSymbol = Symbol('tokenRefreshListenerAttached');
 export class SfdxConnectionProvider extends SalesforceConnectionProvider {
 
     private jsforceProvider: JsForceConnectionProvider;
@@ -23,11 +24,14 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
         }
 
         const conn = await this.jsforceProvider.getJsForceConnection();
-        conn.on('refresh', (accessToken) => {
-            sfdx.updateAccessToken(this.usernameOrAlias, accessToken)
-                .then(() => this.logger.verbose(`Updated SFDX access token for user ${this.usernameOrAlias}`))
-                .catch((err) => this.logger.warn(`Unable store updated SFDX access token ${this.usernameOrAlias}`, err));
-        });
+        if (conn[refreshListenerSymbol] !== true) {
+            conn[refreshListenerSymbol] = true;
+            conn.on('refresh', (accessToken) => {
+                sfdx.updateAccessToken(this.usernameOrAlias, accessToken)
+                    .then(() => this.logger.verbose(`Updated SFDX access token for user ${this.usernameOrAlias}`))
+                    .catch((err) => this.logger.warn(`Unable store updated SFDX access token ${this.usernameOrAlias}`, err));
+            });
+        }
         return conn;
     }
 
