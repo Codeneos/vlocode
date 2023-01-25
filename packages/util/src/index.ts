@@ -8,6 +8,7 @@ export * from './decorator';
 export * from './defaults';
 export * from './deferred';
 export * from './events';
+export * from './errors';
 export * from './fs';
 export * from './guards';
 export * from './hookManager';

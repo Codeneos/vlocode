@@ -1,9 +1,9 @@
-import { Connection, ConnectionOptions, RequestInfo } from 'jsforce';
+import { Connection, ConnectionOptions, RequestInfo, OAuth2, OAuth2Options } from 'jsforce';
 import { HttpApiOptions } from 'jsforce/http-api';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { lazy, wait } from '@vlocode/util';
-import { HttpTransport } from './httpTransport';
+import { CustomError, decorate, lazy, wait } from '@vlocode/util';
+import { HttpResponse, HttpTransport } from './httpTransport';
 
 /**
  * Salesforce connection decorator that extends the base JSForce connection
@@ -15,11 +15,6 @@ export class SalesforceConnection extends Connection {
      * @default true
      */
     public disableFeedTracking!: boolean;
-
-    /**
-     * Internal HTTP transport used by this connection.
-     */
-    private _transport: HttpTransport;
 
     /**
      * The client ID used in the request headers
@@ -38,11 +33,9 @@ export class SalesforceConnection extends Connection {
     public static retryInterval = 1000;
 
     /**
-     * Get the logger
+     * Internal logger for the connection, is adapted into a JSforce logger as well
      */
-    public get logger(): JsForceLogAdapter {
-        return this['_logger'];
-    }
+    private logger!: Logger;
 
     constructor(params: ConnectionOptions) {
         super(params);
@@ -71,16 +64,39 @@ export class SalesforceConnection extends Connection {
      */
     private initializeLocalVariables() {
         this.disableFeedTracking = true;
-        this._transport = new HttpTransport(this, LogManager.get('HttpTransport'));
+
+        // Setup transport
+        this['_transport'] = new HttpTransport({ instanceUrl: this.instanceUrl, baseUrl: this._baseUrl() }, LogManager.get('HttpTransport'));
+        if (this.oauth2) {
+            this.oauth2 = new SalesforceOAuth2(this.oauth2, this);
+        }
+
+        // Configure logger
+        this.logger = LogManager.get(SalesforceConnection)
+        this['_logger'] = new JsForceLogAdapter(this.logger);
+        this.tooling['_logger'] = new JsForceLogAdapter(this.logger);
+
+        // Overwrite refresh function on refresh delegate
+        this['_refreshDelegate']['_refreshFn'] = SalesforceConnection.refreshAccessToken;
     }
 
-    /**
-     * Change the default logger of the connection.
-     * @param logger Logger
-     */
-    public setLogger(logger: Logger) {
-        this['_logger'] = new JsForceLogAdapter(logger);
-        this.tooling['_logger'] = new JsForceLogAdapter(logger);
+    private static refreshAccessToken(_this: SalesforceConnection, callback: (err: any, accessToken?: string, response?: any) => void) : Promise<string> {
+        if (!_this.refreshToken) {
+            throw new Error('Unable to refresh token due to missing access token');
+        }
+
+        return _this.oauth2.refreshToken(_this.refreshToken)
+            .then((res: any) => {
+                _this.accessToken = res.access_token;
+                _this.instanceUrl = res.instance_url;
+                
+                const [ userId, organizationId ] = res['id'].split("/");
+                _this.userInfo = { id: userId, organizationId, url: res.id };
+
+                callback?.(undefined, res.access_token, res);
+                return res.access_token;
+            })
+            .catch(err => callback?.(err));
     }
 
     /**
@@ -129,7 +145,12 @@ export class SalesforceConnection extends Connection {
             throw err;
         }
 
-        return super.request<T>(info, { ...options }).catch(errorHandler);
+        const requestPromise = super.request<T>(info, { ...options }).catch(errorHandler);
+        if (callback) {
+            // @ts-ignore
+            return requestPromise.then(v => callback(undefined, v), err => callback(err, undefined));
+        }
+        return requestPromise;
     }
 
     /**
@@ -175,4 +196,54 @@ class JsForceLogAdapter {
     public warn(...args: any[]): void { this.logger.write(LogLevel.warn, ...args); }
     public error(...args: any[]): void { this.logger.write(LogLevel.error, ...args); }
     public debug(...args: any[]): void { this.logger.write(LogLevel.debug, ...args); }
+}
+
+class SalesforceOAuth2 extends decorate(OAuth2) {
+
+    private transport: HttpTransport;
+
+    constructor(oauth: OAuth2, connection: SalesforceConnection) {
+        super(oauth);
+
+        this.transport = new HttpTransport({ 
+            handleCookies: false,
+            // OAuth endpoints do not support gzip encoding
+            useGzipEncoding: false, 
+            shouldKeepAlive: false,
+            instanceUrl: connection.instanceUrl, 
+            baseUrl: connection._baseUrl() 
+        });
+    }
+
+    /**
+     * Post a request to token service
+     * @param params Params as object send as URL encoded data
+     * @returns Response body as JSON object
+     */
+    private async _postParams(params: Record<string, string>) {
+        const response = await this.transport.httpRequest({
+            method: 'POST',
+            url: this.tokenServiceUrl,
+            headers: { 
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            body: Object.entries(params).map(([v,k]) => `${v}=${encodeURIComponent(k)}`).join('&'),
+        });
+
+        if (response.statusCode && response.statusCode >= 400) {
+            if (typeof response.body === 'object') {
+                throw new CustomError(response.body['error_description'], { name: response.body['error'] });
+            }
+
+            throw new CustomError(response.body ?? '(SalesforceOAuth2) No response from server', { 
+                name: `ERROR_HTTP_${response.statusCode}` 
+            });
+        }
+
+        if (typeof response.body !== 'object') {
+            throw new Error('(SalesforceOAuth2) No response from server');
+        }
+
+        return response.body;
+    }
 }

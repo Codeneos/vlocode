@@ -68,10 +68,6 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
     private newConnection(options: SalesforceOAuthDetails) { 
         return this.initConnection(new Connection({
             version: options.version ?? this.#version,
-            oauth2: { 
-                clientId: options.clientId, 
-                clientSecret: options.clientSecret 
-            },
             ...options
         }));
     }
@@ -93,7 +89,6 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
 
     private initConnection(connection: Connection) {
         const sfConnection: SalesforceConnection = SalesforceConnection.create(connection);
-        sfConnection.setLogger(LogManager.get('JsForce'));
         sfConnection.version = this.#version;   
         return sfConnection;
     }

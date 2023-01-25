@@ -2,6 +2,7 @@ import { Connection } from 'jsforce';
 import { cache, sfdx } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 import { JsForceConnectionProvider } from './jsFroceConnectionProvider';
+import { LogManager } from '@vlocode/core';
 
 export { Connection };
 
@@ -9,6 +10,7 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
 
     private jsforceProvider: JsForceConnectionProvider;
     private version?: string;
+    private logger = LogManager.get(SfdxConnectionProvider);
 
     constructor(private readonly usernameOrAlias: string, version: string | undefined) {
         super();
@@ -19,7 +21,14 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
         if (!this.jsforceProvider) {
             await this.initConnectionProvider();
         }
-        return this.jsforceProvider.getJsForceConnection();
+
+        const conn = await this.jsforceProvider.getJsForceConnection();
+        conn.on('refresh', (accessToken) => {
+            sfdx.updateAccessToken(this.usernameOrAlias, accessToken)
+                .then(() => this.logger.verbose(`Updated SFDX access token for user ${this.usernameOrAlias}`))
+                .catch((err) => this.logger.warn(`Unable store updated SFDX access token ${this.usernameOrAlias}`, err));
+        });
+        return conn;
     }
 
     private async initConnectionProvider() {

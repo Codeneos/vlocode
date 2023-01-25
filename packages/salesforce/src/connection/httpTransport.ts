@@ -5,9 +5,9 @@ import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
 import { HttpApiOptions } from 'jsforce/http-api';
-import { DeferredPromise, XML } from '@vlocode/util';
+import { DeferredPromise, withDefaults, XML } from '@vlocode/util';
 import { SalesforceConnection } from './salesforceConnection';
-import { ILogger } from '@vlocode/core';
+import { ILogger, Logger, LogManager } from '@vlocode/core';
 
 export interface HttpResponse {
     statusCode?: number;
@@ -42,7 +42,38 @@ interface HttpContentType {
     parameters: Record<string, string | undefined>;
 }
 
-export class HttpTransport {
+interface HttpTransportOptions {
+    /**
+     * Threshold value when to apply Gzip encoding when posting data to Salesforce.
+     * @default 128
+     */
+    gzipThreshold: number;
+
+    /**
+     * When true and the length of the body exceeds {@link gzipThreshold} the request will be encoded using gzip compression. This also 
+     * sets the accept-encoding: gzip header on the request to tell Salesforce it can send back responses with gzip compression.
+     * 
+     * When disabled neither requests or responses will be encoded with gzip.
+     * @default true
+     */
+    useGzipEncoding: boolean;
+
+    /**
+     * Include a keep-alive header in all requests to re-use the HTTP connection and socket.
+     * @default true
+     */
+    shouldKeepAlive: boolean;
+
+    /**
+     * Parse set-cookies header and store cookies to be included in the request header on subsequent requests.
+     * 
+     * Note: handling of cookies is not required but avoids Salesforce from sending the full set-cookie header on each request
+     * @default true
+     */
+    handleCookies: boolean;
+}
+
+export class HttpTransport{
     private cookies = new CookieJar(); 
 
     /**
@@ -63,41 +94,33 @@ export class HttpTransport {
     public bodyEncoding: BufferEncoding = 'utf8';
 
     /**
-     * Threshold value when to apply Gzip encoding when posting data to Salesforce.
+     * Options applied to to this HTTP transport
      */
-    public static gzipThreshold = 128;
-
+    public options: HttpTransportOptions & { baseUrl?: string, instanceUrl?: string };
+    
     /**
-     * When true and the length of the body exceeds {@link gzipThreshold} the request will be encoded using gzip compression. This also 
-     * sets the accept-encoding: gzip header on the request to tell Salesforce it can send back responses with gzip compression.
-     * 
-     * When disabled neither requests or responses will be encoded with gzip.
+     * Default configuration for the transport options. When no specific value is set for an individual transport the
+     * defaults are used instead. 
      */
-    public static useGzipEncoding = 128;
-
-    /**
-     * Include a keep-alive header in all requests to re-use the HTTP connection and socket.
-     */
-    public static shouldKeepAlive = true;
-
-    /**
-     * Parse set-cookies header and store cookies to be included in the request header on subsequent requests.
-     * 
-     * Note: handling of cookies is not required but avoids Salesforce from sending the full set-cookie header on each request
-     */
-    public static handleCookies = true;
+    static options: HttpTransportOptions = {
+        gzipThreshold: 128,
+        useGzipEncoding: true,
+        shouldKeepAlive: true,
+        handleCookies: true,
+    };
 
     constructor(
-        private connection: SalesforceConnection, 
-        private logger: ILogger) {
+        options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
+        private logger: ILogger = Logger.null) {
+        this.options = withDefaults(options, HttpTransport.options);
         this.logger.info(`Enabled features ${this.getFeatureList().map(v => v.toUpperCase()).join(' ')}`);
     }
 
     public getFeatureList() {
         const features = new Array<string>();
-        HttpTransport.useGzipEncoding && features.push('gzip');
-        HttpTransport.handleCookies && features.push('cookies');
-        HttpTransport.shouldKeepAlive && features.push('keepAlive');
+        this.options.useGzipEncoding && features.push('gzip');
+        this.options.handleCookies && features.push('cookies');
+        this.options.shouldKeepAlive && features.push('keepAlive');
         return features;
     }
 
@@ -120,15 +143,19 @@ export class HttpTransport {
             method: info.method
         });
 
-        if (HttpTransport.shouldKeepAlive) {
+        if (this.options.shouldKeepAlive) {
             request.shouldKeepAlive = true;
         }
 
-        if (HttpTransport.useGzipEncoding) {
+        if (this.httpAgent.options.keepAlive !== this.options.shouldKeepAlive) {
+            this.httpAgent.options.keepAlive = this.options.shouldKeepAlive;
+        }
+
+        if (this.options.useGzipEncoding) {
             request.setHeader('accept-encoding', 'gzip, deflate');
         }
 
-        if (HttpTransport.handleCookies) {
+        if (this.options.handleCookies) {
             request.setHeader('cookie', this.cookies.getCookieStringSync(url.href));
         }
         
@@ -138,7 +165,7 @@ export class HttpTransport {
             this.logger.debug(`${url.pathname}, status=${response.statusCode} (${Date.now() - startTime}ms)`);
 
             const setCookiesHeader = response.headers['set-cookie'];
-            if (HttpTransport.handleCookies && setCookiesHeader?.length) {
+            if (this.options.handleCookies && setCookiesHeader?.length) {
                 setCookiesHeader.forEach(cookie => this.cookies.setCookieSync(cookie, url.href));
             }
             
@@ -177,7 +204,7 @@ export class HttpTransport {
     }
 
     private sendRequestBody(request: http.ClientRequest, body: string) : Promise<http.ClientRequest> {
-        if (body.length > HttpTransport.gzipThreshold && HttpTransport.useGzipEncoding) {
+        if (body.length > this.options.gzipThreshold && this.options.useGzipEncoding) {
             return new Promise((resolve, reject) => {
                 zlib.gzip(body, (err, value) => {
                     err ? reject(err) : resolve(request
@@ -277,9 +304,9 @@ export class HttpTransport {
     private parseUrl(url: string) {
         if (url.startsWith('/')) {
             if (url.startsWith('/services/')) {
-                return  new URL(this.connection.instanceUrl + url);
+                return new URL(this.options.instanceUrl + url);
             } 
-            return new URL(this.connection._baseUrl() + url);
+            return new URL(this.options.baseUrl + url);
         } 
         return new URL(url);
     }
