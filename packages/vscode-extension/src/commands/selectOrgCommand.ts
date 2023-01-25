@@ -52,8 +52,17 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     public async execute() : Promise<void> {
+        const selectionOptions = [ 
+            this.newOrgOption, 
+            this.refreshTokensOption
+        ];
+
         const knownOrgs = await this.vlocode.withStatusBarProgress('Loading SFDX org details...', this.getAuthorizedOrgs());
-        const selectedOrg = await vscode.window.showQuickPick([this.newOrgOption, this.refreshTokensOption].concat(knownOrgs),
+        if (knownOrgs.length) {
+            selectionOptions.push({ label: '', kind: -1 }, ...knownOrgs)
+        }
+
+        const selectedOrg = await vscode.window.showQuickPick(selectionOptions,
             { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
 
         if (!selectedOrg) {

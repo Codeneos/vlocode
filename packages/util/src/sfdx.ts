@@ -30,7 +30,7 @@ export namespace sfdx {
         info(...args: any[]): any;
     } = console;
 
-    export async function webLogin(options: { instanceUrl?: string; alias?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
+    export async function webLogin(options: { instanceUrl?: string; alias?: string, loginHint?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
         const oauthServer = await salesforce.WebOAuthServer.create({
             oauthConfig: {
                 loginUrl: options.instanceUrl ?? 'https://test.salesforce.com'
@@ -38,7 +38,8 @@ export namespace sfdx {
         });
 
         await oauthServer.start();
-        cancelToken?.isCancellationRequested || await open(oauthServer.getAuthorizationUrl(), { wait: false });
+        const authUrl = `${oauthServer.getAuthorizationUrl()}${options.loginHint ? `&login_hint=${encodeURIComponent(options.loginHint)}` : ''}`;
+        cancelToken?.isCancellationRequested || await open(authUrl, { wait: false });
         const result = oauthServer.authorizeAndSave().then(authInfo => authInfo.getFields(true) as SalesforceAuthResult);
 
         if (cancelToken) {
@@ -55,19 +56,26 @@ export namespace sfdx {
                 oauthServer.webServer.close();
             });
 
-            const caneledPromise = new Promise<SalesforceAuthResult>((_, reject) => cancelToken.onCancellationRequested(() => reject('Operation cancelled')));
+            const canceledPromise = new Promise<SalesforceAuthResult>((_, reject) => cancelToken.onCancellationRequested(() => reject('Operation cancelled')));
 
             // return race between cancel token
-            return Promise.race([ caneledPromise, result ]);
+            return Promise.race([ canceledPromise, result ]);
         }
 
         return result;
     }
 
     export async function refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
-        const username = await resolveAlias(usernameOrAlias) || usernameOrAlias;
-        const authInfo = await salesforce.AuthInfo.create({ username });
-        return webLogin(authInfo.getFields(false), cancelToken);
+        const orgDetails = await getOrgDetails(usernameOrAlias);
+        if (!orgDetails) {
+            throw new Error(`(sfdx.refreshOAuthTokens) No such org with username or alias ${usernameOrAlias}`);
+        }
+
+        return webLogin({
+            instanceUrl: orgDetails.instanceUrl,
+            alias: orgDetails.alias ?? orgDetails.username,
+            loginHint: orgDetails.username
+        }, cancelToken);
     }
 
     export async function getAllKnownOrgDetails() : Promise<SalesforceOrgInfo[]> {
@@ -108,8 +116,9 @@ export namespace sfdx {
                         loginUrl: authFields.loginUrl ?? authFields.instanceUrl,
                         username: authFields.username,
                         clientId: authFields.clientId!,
+                        clientSecret: authFields.clientSecret,
                         refreshToken: authFields.refreshToken!,
-                        alias: stateAggregator.aliases.resolveAlias(authFields.username) ?? undefined
+                        alias: stateAggregator.aliases.get(authFields.username) || undefined
                     };
                 } catch(err) {
                     logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
@@ -121,6 +130,7 @@ export namespace sfdx {
     }
 
     export async function getOrgDetails(usernameOrAlias: string) : Promise<SalesforceOrgInfo | undefined> {
+        const x = await getAllKnownOrgDetails();
         for await (const config of getAllValidatedConfigs()) {
             if (config.username?.toLowerCase() === usernameOrAlias?.toLowerCase() || 
                 config.alias?.toLowerCase() === usernameOrAlias?.toLowerCase()) {
@@ -129,33 +139,34 @@ export namespace sfdx {
         }
     }
 
-    export async function getOrg(usernameOrAlias: string) : Promise<salesforce.Org> {
-        const username = await resolveUsername(usernameOrAlias) ?? usernameOrAlias;
-
-        try {
-            const authInfo = await salesforce.AuthInfo.create({ username });
-            const connection = await salesforce.Connection.create({ authInfo });
-            const org = await salesforce.Org.create({ connection });
-            await org.refreshAuth();
-            return org;
-        } catch (err) {
-            if (err.name == 'NamedOrgNotFound') {
-                throw new Error(`The specified alias "${usernameOrAlias}" does not exists; resolve this error by register the alias using SFDX or try connecting using the username instead`)
-            }
-            throw err;
-        }
+    /**
+     * Update the currently stored access token for a username in the local SFDX configuration store
+     * @param usernameOrAlias Salesforce username or SFDX alias
+     * @param accessToken New access token to store for the specified username
+     */
+    export async function updateAccessToken(usernameOrAlias: string, accessToken: string) : Promise<void> {
+        const stateAggregator = await salesforce.StateAggregator.getInstance();
+        const username = stateAggregator.aliases.get(usernameOrAlias) || usernameOrAlias;
+        stateAggregator.orgs.update(username, { accessToken });
+        await stateAggregator.orgs.write(username);
     }
 
+    /**
+     * Resolves the username for an SFDX alias, if the specified {@link alias} cannot be mapped back to a valid Salesforce username returns `undefined`.
+     * @param alias SFDX Alias to resolve to a Salesforce username
+     */
     export async function resolveUsername(alias: string) : Promise<string | undefined> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        return stateAggregator.aliases.resolveUsername(alias) || undefined;
+        return stateAggregator.aliases.resolveUsername(alias);
     }
 
-    export async function resolveAlias(userName: string) : Promise<string | undefined> {
+    /**
+     * Returns the alias for a username, if no alias is set returns the username.
+     * @param userName username to resolve the alias for
+     */
+    export async function resolveAlias(userName: string) : Promise<string> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        userName = stateAggregator.aliases.resolveUsername(userName) || userName;
-        const aliases = stateAggregator.aliases.resolveAlias(userName);
-        return aliases || userName;
+        return stateAggregator.aliases.get(userName) || userName;
     }
 
     export async function updateAlias(alias: string, userName: string) : Promise<void> {
@@ -164,6 +175,10 @@ export namespace sfdx {
         await stateAggregator.aliases.write();
     }
 
+    /**
+     * @deprecated Use the appropriate Salesforce connection provider instead
+     * @param usernameOrAlias Username or SFDX alias for the username
+     */
     export async function getSfdxForceConnection(username: string) : Promise<salesforce.Connection> {
         const org = await getOrg(username);
         const connection = org.getConnection() as any;
@@ -171,5 +186,25 @@ export namespace sfdx {
             await connection.useLatestApiVersion();
         }
         return connection as salesforce.Connection;
+    }
+
+    /**
+     * @deprecated Use the appropriate Salesforce connection provider instead
+     * @param usernameOrAlias Username or SFDX alias for the username
+     */
+    export async function getOrg(usernameOrAlias: string) : Promise<salesforce.Org> {
+        const username = await resolveUsername(usernameOrAlias) ?? usernameOrAlias;
+
+        try {
+            const authInfo = await salesforce.AuthInfo.create({ username });
+            const connection = await salesforce.Connection.create({ authInfo });
+            const org = await salesforce.Org.create({ connection });
+            return org;
+        } catch (err) {
+            if (err.name == 'NamedOrgNotFound') {
+                throw new Error(`The specified alias "${usernameOrAlias}" does not exists; resolve this error by register the alias using SFDX or try connecting using the username instead`)
+            }
+            throw err;
+        }
     }
 }
