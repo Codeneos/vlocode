@@ -77,7 +77,9 @@ export class SalesforceConnection extends Connection {
         this.tooling['_logger'] = new JsForceLogAdapter(this.logger);
 
         // Overwrite refresh function on refresh delegate
-        this['_refreshDelegate']['_refreshFn'] = SalesforceConnection.refreshAccessToken;
+        if (this['_refreshDelegate']) {
+            this['_refreshDelegate']['_refreshFn'] = SalesforceConnection.refreshAccessToken;
+        }
     }
 
     private static refreshAccessToken(_this: SalesforceConnection, callback: (err: any, accessToken?: string, response?: any) => void) : Promise<string> {
