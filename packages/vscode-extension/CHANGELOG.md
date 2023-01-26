@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.11](https://github.com/codeneos/vlocode/compare/v0.18.9...v0.18.11) (2023-01-26)
+
+### Bug Fixes
+
+* extension no publishing due to outdated badge URL ([9112cf2](https://github.com/codeneos/vlocode/commit/9112cf2949f187c7c9f79ab4b4c948655ea59e7c))
+
 ## [0.18.10](https://github.com/codeneos/vlocode/compare/v0.18.9...v0.18.10) (2023-01-25)
 
 ### Bug Fixes

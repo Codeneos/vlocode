@@ -3,7 +3,7 @@
     "private": true,
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "0.18.10",
+    "version": "0.18.11",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -47,11 +47,6 @@
         {
             "description": "Downloads",
             "url": "https://badgen.net/vs-marketplace/d/curlybracket.vlocode",
-            "href": "https://marketplace.visualstudio.com/items?itemName=curlybracket.vlocode"
-        },
-        {
-            "description": "Rating",
-            "url": "https://vsmarketplacebadges.dev/rating-star/curlybracket.vlocode.svg",
             "href": "https://marketplace.visualstudio.com/items?itemName=curlybracket.vlocode"
         },
         {

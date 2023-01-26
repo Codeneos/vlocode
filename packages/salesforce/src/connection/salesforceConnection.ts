@@ -89,7 +89,11 @@ export class SalesforceConnection extends Connection {
             this['_refreshDelegate']['_refreshFn'] = SalesforceConnection.refreshAccessToken;
         }
 
-        this.patchAsyncResultLocator();
+        try {
+            this.patchAsyncResultLocator();
+        } catch (err) {
+            this.logger.warn('Patching async result locator failed; async metadata API results `done` property always false');
+        }        
     }
 
     private static refreshAccessToken(_this: SalesforceConnection, callback: (err: any, accessToken?: string, response?: any) => void) : Promise<string> {

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.11](https://github.com/Codeneos/vlocode/compare/v0.18.9...v0.18.11) (2023-01-26)
+
+### Bug Fixes
+
+* metadata API commands hand indefinitely due to jsforce post-processing of SOAP responses ([44c6291](https://github.com/Codeneos/vlocode/commit/44c62914ad39a3d9e754be1a9d35260f0635f094))
+
 ## [0.18.10](https://github.com/Codeneos/vlocode/compare/v0.18.9...v0.18.10) (2023-01-25)
 
 **Note:** Version bump only for package @vlocode/salesforce

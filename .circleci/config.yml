@@ -50,9 +50,10 @@ jobs:
       - checkout_install
       - run: pnpm pack-extension
       - run: echo $(node -p "require('./lerna.json').version") > .version
+      - run: echo $(node -p "fs.readFileSync('./CHANGELOG.md').toString().match(/(## \[(.*?))## \[/s)[1]") > release-notes.md
       - persist_to_workspace:
           root: .
-          paths: [ ".version", "packages/vscode-extension/*.vsix" ]
+          paths: [ ".version", "release-notes.md", "packages/vscode-extension/*.vsix" ]
   publish-vsc-extension:
     docker:
       - image: cimg/node:18.4-browsers
@@ -83,7 +84,8 @@ jobs:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            ghr -t ${GITHUB_TOKEN} -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
+            NOTES=$(cat ./artifacts/release-notes.md)
+            ghr -t ${GITHUB_TOKEN} -b "${NOTES}" -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
 
 workflows:
   validate:

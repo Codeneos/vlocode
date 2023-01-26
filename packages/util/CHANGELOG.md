@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.11](https://github.com/Codeneos/vlocode/compare/v0.18.9...v0.18.11) (2023-01-26)
+
+### Bug Fixes
+
+* avoid sfdx.log file locks by disabling file logging for the SFDX root logger ([c799ca9](https://github.com/Codeneos/vlocode/commit/c799ca96c7a404d31af9cef0b0fc9aee57b86532))
+
 ## [0.18.10](https://github.com/Codeneos/vlocode/compare/v0.18.9...v0.18.10) (2023-01-25)
 
 ### Bug Fixes

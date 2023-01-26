@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.11](https://github.com/codeneos/vlocode/compare/v0.18.9...v0.18.11) (2023-01-26)
+
+### Bug Fixes
+
+* avoid sfdx.log file locks by disabling file logging for the SFDX root logger ([c799ca9](https://github.com/codeneos/vlocode/commit/c799ca96c7a404d31af9cef0b0fc9aee57b86532))
+* extension no publishing due to outdated badge URL ([9112cf2](https://github.com/codeneos/vlocode/commit/9112cf2949f187c7c9f79ab4b4c948655ea59e7c))
+* metadata API commands hand indefinitely due to jsforce post-processing of SOAP responses ([44c6291](https://github.com/codeneos/vlocode/commit/44c62914ad39a3d9e754be1a9d35260f0635f094))
+
 ## [0.18.10](https://github.com/codeneos/vlocode/compare/v0.18.9...v0.18.10) (2023-01-25)
 
 ### Bug Fixes
