@@ -42,8 +42,7 @@
                         }
                     }
                 }
-            ],
-            "dependsOn": ["watch-vlocity-deploy"]
+            ]
         },
         {
             "type": "shell",

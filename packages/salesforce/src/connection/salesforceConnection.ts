@@ -1,9 +1,14 @@
-import { Connection, ConnectionOptions, RequestInfo, OAuth2, OAuth2Options } from 'jsforce';
+import { Connection, ConnectionOptions, RequestInfo, OAuth2, Metadata, Callback, DeployResult, DescribeMetadataResult } from 'jsforce';
 import { HttpApiOptions } from 'jsforce/http-api';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { CustomError, decorate, lazy, wait } from '@vlocode/util';
-import { HttpResponse, HttpTransport } from './httpTransport';
+import { CustomError, decorate, wait } from '@vlocode/util';
+import { HttpTransport } from './httpTransport';
+
+/**
+ * Promise with a `thenCall` callback method compatible with JSforce promises
+ */
+type CallbackPromise<T> = Promise<T> & { thenCall(callback: Callback<T> | undefined): CallbackPromise<T> };
 
 /**
  * Salesforce connection decorator that extends the base JSForce connection
@@ -63,13 +68,16 @@ export class SalesforceConnection extends Connection {
      * WHen the prototype is changed of connection local variables aren't re-initialized; this method sets the defaults for all private and public variables.
      */
     private initializeLocalVariables() {
-        this.disableFeedTracking = true;
+        this.disableFeedTracking = true;        
 
         // Setup transport
         this['_transport'] = new HttpTransport({ instanceUrl: this.instanceUrl, baseUrl: this._baseUrl() }, LogManager.get('HttpTransport'));
         if (this.oauth2) {
             this.oauth2 = new SalesforceOAuth2(this.oauth2, this);
         }
+
+        // Decorate metadata API
+        this.metadata = new SalesforceMetadata(this.metadata);
 
         // Configure logger
         this.logger = LogManager.get(SalesforceConnection)
@@ -80,6 +88,8 @@ export class SalesforceConnection extends Connection {
         if (this['_refreshDelegate']) {
             this['_refreshDelegate']['_refreshFn'] = SalesforceConnection.refreshAccessToken;
         }
+
+        this.patchAsyncResultLocator();
     }
 
     private static refreshAccessToken(_this: SalesforceConnection, callback: (err: any, accessToken?: string, response?: any) => void) : Promise<string> {
@@ -174,6 +184,30 @@ export class SalesforceConnection extends Connection {
             )
         );
     }
+
+    /**
+     * Monkey-patch jsforce async AsyncResultLocator to support `res.done` as boolean type
+     */
+    private patchAsyncResultLocator() {
+        const asyncResultLocatorPrototype = Object.getPrototypeOf(this.metadata.checkStatus(''));
+        if (typeof asyncResultLocatorPrototype.then === 'function') {
+            const convertType = function(res: any) {
+                if (res?.$["xsi:nil"] === 'true' || res?.$["xsi:nil"] === true) {
+                    return null;
+                }
+                return res;
+            };
+            asyncResultLocatorPrototype.then = function(onResolve, onReject) {
+                return this._results.then(results => {
+                    results = Array.isArray(results) ? results.map(convertType) : convertType(results);
+                    if (this._isArray && !Array.isArray(results)) {
+                        results = [ results ];
+                    }
+                    return onResolve?.(results);
+                }, onReject);
+            };
+        }
+    }
 }
 
 class JsForceLogAdapter {
@@ -199,6 +233,8 @@ class JsForceLogAdapter {
     public error(...args: any[]): void { this.logger.write(LogLevel.error, ...args); }
     public debug(...args: any[]): void { this.logger.write(LogLevel.debug, ...args); }
 }
+
+//Metadata.prototype.checkDeployStatus
 
 class SalesforceOAuth2 extends decorate(OAuth2) {
 
@@ -247,5 +283,39 @@ class SalesforceOAuth2 extends decorate(OAuth2) {
         }
 
         return response.body;
+    }
+}
+
+/**
+ * Patches Metadata access container that which fixes issues with `checkDeployStatus` and `describe` results
+ */
+class SalesforceMetadata extends decorate(Metadata) {
+
+    private get apiVersion(): string {
+        return this.connection.version;
+    }
+
+    private get connection(): SalesforceConnection {
+        return this['_conn'];
+    }
+
+    public checkDeployStatus(id: string, includeDetails?: boolean, callback?: Callback<DeployResult>): Promise<DeployResult> {
+        if (typeof includeDetails === 'function') {
+            callback = includeDetails;
+        }
+        return this['_invoke']('checkDeployStatus', {
+            asyncProcessId: id,
+            includeDetails: includeDetails === true
+        }).thenCall(callback);
+    }
+
+    public describe(version?: string, callback?: Callback<DescribeMetadataResult>): Promise<DescribeMetadataResult> {
+        if (typeof version !== 'string') {
+            callback = version;
+            version = this.apiVersion;
+        }
+        return this['_invoke']("describeMetadata", { 
+            asOfVersion: version
+        }).thenCall(callback);
     }
 }
