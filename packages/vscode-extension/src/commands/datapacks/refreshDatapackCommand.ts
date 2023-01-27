@@ -25,7 +25,6 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
 
         // determine what to refresh, get IDs for all relevant datapacks and select the best matching record Id
         const flatDatapackList = Object.values(datapacksByProject).flat();     
-        const showRecordSelection = flatDatapackList.length == 1;
         const progressTitle = flatDatapackList.length > 1 ? `Refreshing ${flatDatapackList.length} datapacks...` :  `Refreshing ${DatapackUtil.getLabel(flatDatapackList[0])}...`;
 
         if (!flatDatapackList.length) {
@@ -35,7 +34,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
         await this.vlocode.withActivity(progressTitle, async (progress, cancelToken) => {
             const results = await mapAsync(Object.entries(datapacksByProject),
                 async ([projectFolder, datapacks]) => {
-                    const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection });
+                    const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection: flatDatapackList.length > 1 });
                     return this.datapackService.export(exportEntries.filter(e => e.id), projectFolder, dependencyExportDepth, cancelToken);
                 }
             );
