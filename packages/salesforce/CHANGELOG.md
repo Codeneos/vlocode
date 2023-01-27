@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.12](https://github.com/Codeneos/vlocode/compare/v0.18.11...v0.18.12) (2023-01-27)
+
+### Bug Fixes
+
+* deployment command hangs due to error in async result locator ([bc2f164](https://github.com/Codeneos/vlocode/commit/bc2f16409308620f4150a39434f1e6f04b9efa6c))
+
 ## [0.18.11](https://github.com/Codeneos/vlocode/compare/v0.18.9...v0.18.11) (2023-01-26)
 
 ### Bug Fixes

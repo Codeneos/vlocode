@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.12](https://github.com/codeneos/vlocode/compare/v0.18.11...v0.18.12) (2023-01-27)
+
+### Bug Fixes
+
+* deployment command hangs due to error in async result locator ([bc2f164](https://github.com/codeneos/vlocode/commit/bc2f16409308620f4150a39434f1e6f04b9efa6c))
+* do not display record selection when refreshing a single datapack ([f29647a](https://github.com/codeneos/vlocode/commit/f29647a04edb52d2f607bfc43fa7cdfcf05c71b0))
+* error while refreshing custom datapack types ([8877c01](https://github.com/codeneos/vlocode/commit/8877c01c5baddb1b70f51390ec490347d16fc9a3))
+
 ## [0.18.11](https://github.com/codeneos/vlocode/compare/v0.18.9...v0.18.11) (2023-01-26)
 
 ### Bug Fixes
