@@ -196,7 +196,7 @@ export class SalesforceConnection extends Connection {
         const asyncResultLocatorPrototype = Object.getPrototypeOf(this.metadata.checkStatus(''));
         if (typeof asyncResultLocatorPrototype.then === 'function') {
             const convertType = function(res: any) {
-                if (res?.$["xsi:nil"] === 'true' || res?.$["xsi:nil"] === true) {
+                if (res?.$?.["xsi:nil"] === 'true' || res?.$?.["xsi:nil"] === true) {
                     return null;
                 }
                 return res;
