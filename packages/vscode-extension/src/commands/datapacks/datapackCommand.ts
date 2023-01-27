@@ -93,13 +93,13 @@ export abstract class DatapackCommand extends CommandBase {
 
         // Select object
         const recordOptions: Array<RecordQuickPickItem> = records.map(r => ({
-            label: queryDef.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
+            label: queryDef?.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
             description: r.attributes.url,
             record: r
         }));
         recordOptions.sort((a, b) => a.record.version__c ? b.record.version__c - a.record.version__c : a.label.localeCompare(b.label));
 
-        if (queryDef.groupKey) {
+        if (queryDef?.groupKey) {
             recordOptions.unshift({ kind: vscode.QuickPickItemKind.Separator } as any);
 
             // add latest version option
