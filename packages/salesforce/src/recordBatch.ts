@@ -1,9 +1,10 @@
 import { LogManager } from '@vlocode/core';
 import { Timer, arrayMapPush, CancellationToken } from '@vlocode/util';
-import { Connection, RecordResult, BatchInfo } from 'jsforce';
+import { RecordResult, BatchInfo } from 'jsforce';
 
 import { AwaitReturnType } from './types';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+import { SalesforceConnection } from './connection';
 
 type RecordOperationType = 'update' | 'insert';
 
@@ -79,7 +80,7 @@ export class RecordBatch {
         }
     }
 
-    public async *execute(connection: Connection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
+    public async *execute(connection: SalesforceConnection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
         if (this.isExecuting) {
             throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
         }
@@ -189,7 +190,7 @@ export class RecordBatch {
         }
     }
 
-    private async executeWithCollectionApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    private async executeWithCollectionApi(connection: SalesforceConnection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const timer = new Timer();
         const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, {
             allOrNone: false,
@@ -205,7 +206,7 @@ export class RecordBatch {
         return results;
     }
 
-    private async executeWithBulkApi(connection: Connection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    private async executeWithBulkApi(connection: SalesforceConnection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
         const bulkJob = connection.bulk.createJob(chunk.sobjectType, chunk.operation);
         const batchJob = bulkJob.createBatch();
         let processedCount = 0;

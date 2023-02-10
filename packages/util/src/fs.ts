@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
+import { Stream } from 'stream';
 
 // Import vscode as optional module, only load it when available
 const vscode = import('vscode').catch(() => null);
@@ -102,4 +103,20 @@ export function fileSuffix(pathLike: string) {
         return basename.substring(suffixSplit + 1);
     }
     return '';
+}
+
+/**
+ * Convert a stream-like object to a buffer
+ * @param stream Stream to convert into a buffer object 
+ * @returns Promise of a Buffer
+ */
+export function streamToBuffer(stream: Stream): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+        const buffers = new Array<any>();
+        stream.on('data', data => buffers.push(data));
+        stream.on('error', err => reject(err));
+        stream.on('end', () => {
+            resolve(Buffer.concat(buffers));
+        });
+    });
 }

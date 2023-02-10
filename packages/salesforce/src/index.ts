@@ -13,6 +13,7 @@ export * from './queryBuilder';
 export * from './queryParser';
 export * from './queryService';
 export * from './recordBatch';
+export * from './restClient';
 export * from './salesforceBatchService';
 export * from './salesforceDebugLevel';
 export * from './salesforceDeployService';

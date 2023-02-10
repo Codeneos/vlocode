@@ -1,13 +1,12 @@
 import { LogManager , container } from '@vlocode/core';
 import { AsyncEventEmitter } from '@vlocode/util';
-import { Connection, SalesforceConnectionProvider } from './connection';
-import { DetailedDeployResult } from './deploy';
+import { DeployOptions, DeployResult, SalesforceConnection, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackage } from './deploymentPackage';
 
 export interface SalesforceDeploymentEvents {
     progress: DeployProgress;
-    cancel: DetailedDeployResult;
-    complete: DetailedDeployResult;
+    cancel: DeployResult;
+    complete: DeployResult;
 }
 
 export interface DeployProgress {
@@ -17,23 +16,11 @@ export interface DeployProgress {
     errors: number;
 }
 
-export interface DeployOptions {
-    allowMissingFiles?: boolean;
-    autoUpdatePackage?: boolean;
-    checkOnly?: boolean;
-    ignoreWarnings?: boolean;
-    performRetrieve?: boolean;
-    rollbackOnError?: boolean;
-    runAllTests?: boolean;
-    runTests?: string[];
-    singlePackage?: boolean;
-}
-
 export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeploymentEvents> {
     private checkInterval = 1000;
     private deploymentId: string;
-    private connection: Connection;
-    private lastStatus: DetailedDeployResult;
+    private connection: SalesforceConnection;
+    private lastStatus: DeployResult;
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
     private lastProgress = 0;
@@ -92,7 +79,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
      */
     public async start(options?: DeployOptions): Promise<this> {
         // Set deploy options passed to JSforce; options arg can override the defaults
-        const deployOptions = {
+        const deployOptions: DeployOptions = {
             singlePackage: true,
             performRetrieve: true,
             ignoreWarnings: true,
@@ -101,6 +88,10 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             // We assume we only run on developer orgs by default
             purgeOnDelete: true,
             rollbackOnError: false,
+            testLevel: 'RunSpecifiedTests',
+            runTests: [
+                'XmlUtilTest'
+            ],
             ...(options ?? {})
         };
 
@@ -138,7 +129,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
 
         try {
             // Refresh status
-            this.lastStatus = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as DetailedDeployResult;
+            this.lastStatus = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as unknown as DeployResult;
         } catch(err) {
             // Ignore errors that occur here;
         } finally {
@@ -147,14 +138,14 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     }
 
     public getResult() {
-        return new Promise<DetailedDeployResult>(resolve => {
+        return new Promise<DeployResult>(resolve => {
             this.once('complete', resolve);
             this.once('cancel', resolve);
         });
     }
 
     private async checkDeployment() {
-        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as DetailedDeployResult;
+        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as unknown as DeployResult;
 
         // Reduce polling frequency for long running deployments
         if (this.pollCount++ > 10 && this.checkInterval < 5000) {
@@ -174,7 +165,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                     status: status.status,
                     deployed: status.numberComponentsDeployed ?? 0,
                     progress: (status.numberComponentsDeployed ?? 0),
-                    total: status.numberComponentsTotal,
+                    total: status.numberComponentsTotal ?? 0,
                     errors: status.numberComponentErrors ?? 0
                 });
                 this.lastProgress = status.numberComponentsDeployed ?? 0;

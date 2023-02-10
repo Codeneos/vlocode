@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { getDocumentBodyAsString } from '@vlocode/util';
 import { CommandBase } from '@root/lib/commandBase';
-import { DetailedDeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
+import { DeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 
 /**
  * Salesforce metadata base command 
@@ -37,7 +37,7 @@ export default abstract class MetadataCommand extends CommandBase {
      * @param manifest The deployment or destructive changes manifest
      * @param failures Array of component failures
      */
-    protected async logDeployResult(sfPackage: SalesforcePackage, result: DetailedDeployResult) {
+    protected async logDeployResult(sfPackage: SalesforcePackage, result: DeployResult) {
         if (result.success) {
             this.logger.info(`Deployment ${result?.id} -- ${result.status} (${result.numberComponentsDeployed}/${result.numberComponentsTotal})`);
         } else {

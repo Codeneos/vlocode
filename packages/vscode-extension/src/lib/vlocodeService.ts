@@ -311,7 +311,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }, taskRunner) as Promise<T>;
     }
 
-    public getJsForceConnection() : Promise<jsforce.Connection> {
+    public getJsForceConnection() {
         return this.getConnector().getJsForceConnection();
     }
 

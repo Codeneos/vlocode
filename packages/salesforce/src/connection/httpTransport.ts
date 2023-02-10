@@ -4,22 +4,29 @@ import * as zlib from 'zlib';
 import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
-import { HttpApiOptions } from 'jsforce/http-api';
 import { DeferredPromise, withDefaults, XML } from '@vlocode/util';
-import { SalesforceConnection } from './salesforceConnection';
-import { ILogger, Logger, LogManager } from '@vlocode/core';
+import { ILogger, Logger } from '@vlocode/core';
+import { randomUUID } from 'crypto';
+
+export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE' | 'PUT';
 
 export interface HttpResponse {
     statusCode?: number;
     statusMessage?: string;
     headers: http.IncomingHttpHeaders; 
-    body?: string | object;
+    body?: any;
 }
 
 export interface HttpRequestInfo {
     url: string;
-    method: string;
+    method: HttpMethod;
+    headers?: http.OutgoingHttpHeaders;
     body?: string | undefined;
+    parts?: HttpRequestPart[] | undefined;
+}
+
+export interface HttpRequestPart {
+    body: string | Buffer;
     headers?: http.OutgoingHttpHeaders | undefined;
 }
 
@@ -71,9 +78,21 @@ interface HttpTransportOptions {
      * @default true
      */
     handleCookies: boolean;
+
+    /**
+     * Custom content decoders that overwrite the standard content decoding from the HTTP transport 
+     * to a custom one implementation.
+     */
+    responseDecoders?: {
+        [type: string]: (buffer: Buffer, encoding: BufferEncoding) => any;
+    }
 }
 
-export class HttpTransport{
+export interface Transport {
+    httpRequest(request: HttpRequestInfo): Promise<HttpResponse>;
+}
+
+export class HttpTransport implements Transport {
     private cookies = new CookieJar(); 
 
     /**
@@ -107,6 +126,11 @@ export class HttpTransport{
         useGzipEncoding: true,
         shouldKeepAlive: true,
         handleCookies: true,
+        responseDecoders: {
+            json: (buffer, encoding) => JSON.parse(buffer.toString(encoding)),
+            xml: (buffer, encoding) => XML.parse(buffer.toString(encoding)),
+            csv: (buffer, encoding) => csv.parse(buffer, { encoding })
+        }
     };
 
     constructor(
@@ -124,7 +148,7 @@ export class HttpTransport{
         return features;
     }
 
-    public httpRequest(info: HttpRequestInfo, options?: HttpApiOptions): Promise<HttpResponse> {
+    public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse> {
         const url = this.parseUrl(info.url);
         const requestPromise = new DeferredPromise<HttpResponse>();
 
@@ -193,8 +217,11 @@ export class HttpTransport{
             });
         });  
 
-        if (info.body) {
-            this.sendRequestBody(request, info.body)
+        const body = info.parts ? this.encodeMultipartBody(request, info.parts) : info.body;
+
+        if (body) {
+            this.sendRequestBody(request, body)
+                .then((req) => new Promise((resolve, reject) => req.end(err => err ? reject(err) : resolve(req))))
                 .catch((err) => requestPromise.reject(err));
         } else {
             request.end();
@@ -203,18 +230,52 @@ export class HttpTransport{
         return requestPromise;
     }
 
-    private sendRequestBody(request: http.ClientRequest, body: string) : Promise<http.ClientRequest> {
+    private encodeMultipartBody(request: http.ClientRequest, parts: Array<HttpRequestPart>) : Buffer {
+        const boundary = `--${randomUUID()}`; 
+        request.setHeader('content-type', `multipart/form-data; boundary=${boundary}`);
+
+       const bodyParts = parts.flatMap(part => {
+            // write part headers
+            const headers = Object.entries(part.headers ?? {})
+                .map(([key, value]) => `${key.toLowerCase()}: ${value}`).join('\r\n');
+            return [
+                `--${boundary}\r\n${headers}\r\n\r\n`,
+                part.body,
+                `\r\n`
+            ];
+       });
+
+        return Buffer.concat([
+            ...bodyParts.map(item => typeof item === 'string' ? Buffer.from(item) : item),
+            Buffer.from(`--${boundary}--`, 'ascii')
+        ]);
+    }
+
+    private sendRequestBody(request: http.ClientRequest, body: string | Buffer) : Promise<http.ClientRequest> {
         if (body.length > this.options.gzipThreshold && this.options.useGzipEncoding) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve, reject) => {             
                 zlib.gzip(body, (err, value) => {
-                    err ? reject(err) : resolve(request
+                    err ? reject(err) : request
                         .setHeader('Content-Encoding', 'gzip')
-                        .end(value, 'binary'));
+                        .write(value, 'binary', err => 
+                            err ? reject(err) : resolve(request)
+                        );
                 });
             }); 
         }
-        return Promise.resolve(request.end(body, this.bodyEncoding));
+
+        return new Promise((resolve, reject) => 
+            request.write(body, this.bodyEncoding, err => 
+                err ? reject(err) : resolve(request)
+            )
+        );
     }
+
+    // private promisfy<T extends object, A extends any[]>(_this: T, fn: (...args: [...A, (err: any) => any]) => R, ...args: A) : Promise<T> {
+    //     return new Promise((resolve, reject) => 
+    //        fn.apply(_this, [...args, err => err ? reject(err) : resolve(_this)])
+    //     );
+    // }
 
     private decodeResponseBody(response: http.IncomingMessage, responseBuffer: Buffer): Promise<Buffer> {
         // TODO: support chained encoding
@@ -225,15 +286,15 @@ export class HttpTransport{
                 zlib.gunzip(responseBuffer, { finishFlush: zlib.constants.Z_SYNC_FLUSH }, (err, body) => {
                     err ? reject(err) : resolve(body);
                 });
-            });            
+            });
         } 
-        
+
         if (encoding === 'deflate') {
             return new Promise((resolve, reject) => {
                 zlib.inflate(responseBuffer, (err, body) => {
                     err ? reject(err) : resolve(body);
                 });
-            });            
+            });
         }
 
         if (encoding === 'identity' || !encoding) {
@@ -250,12 +311,11 @@ export class HttpTransport{
 
         try {
             if (contentType) {
-                if (contentType.subtype === 'json' || contentType.suffix === 'json') {
-                    return JSON.parse(responseBuffer.toString(encoding));
-                } else if (contentType.subtype === 'xml' || contentType.suffix === 'xml') {
-                    return XML.parse(responseBuffer.toString(encoding));
-                } else if (contentType.subtype === 'csv' || contentType.suffix === 'csv') {
-                    return csv.parse(responseBuffer, { encoding });
+                const decoder = this.options.responseDecoders?.[contentType.subtype] 
+                    ?? (contentType.suffix ? this.options.responseDecoders?.[contentType.suffix] : undefined);
+                
+                if (decoder) {
+                    return decoder(responseBuffer, encoding);
                 }
             }            
         } catch (err) {

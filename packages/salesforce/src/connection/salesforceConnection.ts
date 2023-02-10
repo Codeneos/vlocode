@@ -1,14 +1,27 @@
-import { Connection, ConnectionOptions, RequestInfo, OAuth2, Metadata, Callback, DeployResult, DescribeMetadataResult } from 'jsforce';
-import { HttpApiOptions } from 'jsforce/http-api';
+import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { CustomError, decorate, wait } from '@vlocode/util';
-import { HttpTransport } from './httpTransport';
+import { resumeOnce, CustomError, wait, asArray } from '@vlocode/util';
+import { HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
+import { EventEmitter } from 'events';
+import { SalesforceOAuth2 } from './oath2';
+import { MetadataApi } from './metadata';
 
-/**
- * Promise with a `thenCall` callback method compatible with JSforce promises
- */
-type CallbackPromise<T> = Promise<T> & { thenCall(callback: Callback<T> | undefined): CallbackPromise<T> };
+type RefreshTokenCallback = (err: Error | undefined, accessToken?: string, response?: any) => void;
+
+interface RefreshDelegate extends EventEmitter {
+    refresh(requestTime: number): string;
+    refresh(requestTime: number, callback: RefreshTokenCallback): void;
+
+    _refreshFn: (connection: SalesforceConnection, callback: RefreshTokenCallback) => void;
+    _refreshing: boolean;
+}
+
+interface RequestOptions {
+    responseType?: string;
+    transport?: Transport;
+    noContentResponse?: boolean;
+}
 
 /**
  * Salesforce connection decorator that extends the base JSForce connection
@@ -32,7 +45,7 @@ export class SalesforceConnection extends Connection {
     public static maxRetries = 5;
 
     /**
-     * The retry interval after which a failed http request is retried. 
+     * The retry interval after which a failed http request is retried.
      * The retry interval is multiplied by the retry number to gradually increase the interval between each retry up until the {@link maxRetries} is reached.
      */
     public static retryInterval = 1000;
@@ -42,6 +55,12 @@ export class SalesforceConnection extends Connection {
      */
     private logger!: Logger;
 
+    public metadata!: MetadataApi & Metadata;
+    public oauth2!: SalesforceOAuth2;
+
+    private _transport: HttpTransport;
+    private _refreshDelegate!: RefreshDelegate;
+
     constructor(params: ConnectionOptions) {
         super(params);
         this.initializeLocalVariables();
@@ -49,9 +68,9 @@ export class SalesforceConnection extends Connection {
 
     /**
      * Create instance of a {@link SalesforceConnection} from any existing JS Force type connection; replacing the connection prototype and initializing local variables.
-     * 
+     *
      * If the {@link connection} is already of type SalesforceConnection does not reinitialize the variables and returns the connection as is.
-     * 
+     *
      * @param connection JS Force Connection to use as base
      * @returns Instance of a {@link SalesforceConnection}
      */
@@ -68,16 +87,16 @@ export class SalesforceConnection extends Connection {
      * WHen the prototype is changed of connection local variables aren't re-initialized; this method sets the defaults for all private and public variables.
      */
     private initializeLocalVariables() {
-        this.disableFeedTracking = true;        
+        this.disableFeedTracking = true;
 
         // Setup transport
-        this['_transport'] = new HttpTransport({ instanceUrl: this.instanceUrl, baseUrl: this._baseUrl() }, LogManager.get('HttpTransport'));
+        this._transport = new HttpTransport({ instanceUrl: this.instanceUrl, baseUrl: this._baseUrl() }, LogManager.get('HttpTransport'));
         if (this.oauth2) {
             this.oauth2 = new SalesforceOAuth2(this.oauth2, this);
         }
 
-        // Decorate metadata API
-        this.metadata = new SalesforceMetadata(this.metadata);
+        // @ts-ignore Decorate metadata API
+        this.metadata = new MetadataApi(this);
 
         // Configure logger
         this.logger = LogManager.get(SalesforceConnection)
@@ -85,132 +104,183 @@ export class SalesforceConnection extends Connection {
         this.tooling['_logger'] = new JsForceLogAdapter(this.logger);
 
         // Overwrite refresh function on refresh delegate
-        if (this['_refreshDelegate']) {
-            this['_refreshDelegate']['_refreshFn'] = SalesforceConnection.refreshAccessToken;
+        if (this._refreshDelegate) {
+            this._refreshDelegate._refreshFn = (connection, callback) =>
+                connection.refreshAccessToken().then(token => !callback ? token : callback(undefined, token, undefined), callback);
         }
-
-        try {
-            this.patchAsyncResultLocator();
-        } catch (err) {
-            this.logger.warn('Patching async result locator failed; async metadata API results `done` property always false');
-        }        
     }
 
-    private static refreshAccessToken(_this: SalesforceConnection, callback: (err: any, accessToken?: string, response?: any) => void) : Promise<string> {
-        if (!_this.refreshToken) {
+    /**
+     * Refreshes the current access token and returns the refreshed token.
+     * @returns Refreshed token
+     */
+    public async refreshAccessToken(): Promise<string> {
+        if (!this.refreshToken) {
             throw new Error('Unable to refresh token due to missing access token');
         }
 
-        return _this.oauth2.refreshToken(_this.refreshToken)
-            .then((res: any) => {
-                _this.accessToken = res.access_token;
-                _this.instanceUrl = res.instance_url;
-                
-                const [ userId, organizationId ] = res['id'].split("/");
-                _this.userInfo = { id: userId, organizationId, url: res.id };
+        const tokens = await this.oauth2.refreshToken(this.refreshToken);
+        this.accessToken = tokens.access_token;
+        this.instanceUrl = tokens.instance_url;
 
-                callback?.(undefined, res.access_token, res);
-                return res.access_token;
-            })
-            .catch(err => callback?.(err));
+        const [userId, organizationId] = tokens.id.split("/");
+        this.userInfo = { id: userId, organizationId, url: tokens.id };
+
+        return tokens.access_token;
     }
 
     /**
-     * Generic request sink
-     * @param info Request info
-     * @param options Requesting options
-     * @param callback Completed callback
+     * Send a request to Salesforce and returns the parsed response based on the content type set in the response.
+     * @param request Request details; when passed as string a GET is performed
+     * @param options Additional request options
      * @returns Request promise
      */
-    public request<T = object>(
-        info: string | RequestInfo,
-        options?: HttpApiOptions | undefined,
-        callback?: ((err: Error, object: T) => void) | undefined): Promise<T> {
+    public async request<T = any>(
+        request: string | HttpRequestInfo,
+        options?: RequestOptions | any): Promise<T>;
 
-        if (typeof info === 'string') {
-            info = { method: 'GET', url: info };
+    public async request<T = any>(
+        info: string | HttpRequestInfo,
+        options?: RequestOptions | any,
+        callback?: any): Promise<T> {
+
+        if (callback || typeof options === 'function') {
+            throw new Error('Use promises instead of using a callback parameter');
         }
 
-        info.headers = Object.entries(info.headers ?? {}).reduce((headers, [key, value]) => 
-            Object.assign(headers, { [key.toLowerCase()]: value })
-        , {});
+        const request = this.prepareRequest(info);
+        let attempts = 0;
+
+        // eslint-disable-next-line no-constant-condition -- retry loop breaks when retry limit is reached
+        while(true) {
+            try {
+                // Await response so errors can be handled
+                return await this.executeRequest<T>(request, { ...options });
+            } catch(err) {
+                const canRetry = attempts++ < SalesforceConnection.maxRetries || SalesforceConnection.maxRetries < 0
+
+                if (!canRetry || !this.isRetryableError(err)) {
+                    //callback?.(err, undefined as any);
+                    this.logger.error(err);
+                    throw err;
+                }
+
+                this.logger.info(
+                    `Request failed with retryable error (${err.errorCode ?? err.code}) ` +
+                    `at attempt ${attempts}/${SalesforceConnection.maxRetries > 0 ? SalesforceConnection.maxRetries : 'infinite'}`
+                )
+
+                await wait(Math.min(SalesforceConnection.retryInterval * attempts, 5000));
+            }
+        }
+    }
+
+    private prepareRequest(info: string | HttpRequestInfo) : HttpRequestInfo {
+        const request: HttpRequestInfo = typeof info === 'string' ? { method: 'GET', url: info } : { ...info };
+
+        // Normalize the headers
+        request.headers = Object.fromEntries(
+            Object.entries(request.headers ?? {}).map(([key, value]) => ([ key.toLowerCase(), value ]))
+        );
 
         // Assign default headers for requests
-        Object.assign(info.headers, {
+        Object.assign(request.headers, {
             'disableFeedTracking': this.disableFeedTracking == true,
-            'content-type': info.headers['content-type'] ?? 'application/json; charset=utf-8',
+            'content-type': request.headers['content-type'] ?? 'application/json; charset=utf-8',
             'user-agent': SalesforceConnection.clientConnectionId
         });
 
-        let retries = 0;
+        return request;
+    }
 
-        const errorHandler = (err: any) => {
-            // Retry error handler
-            const canRetry = retries++ < SalesforceConnection.maxRetries || SalesforceConnection.maxRetries < 0;
-
-            if (canRetry && this.isRetryableError(err)) {
-                this.logger.info(
-                    `Request failed with retryable error (${err.errorCode ?? err.code}) ` + 
-                    `at attempt ${retries}/${SalesforceConnection.maxRetries > 0 ? SalesforceConnection.maxRetries : 'infinite'}`
-                );                
-                return wait(
-                    Math.min(SalesforceConnection.retryInterval * retries, 5000)
-                ).then(() => super.request<T>(info, options)).catch(errorHandler);
+    private async executeRequest<T>(
+        request: HttpRequestInfo,
+        options?: RequestOptions): Promise<T>
+    {
+        if (this._refreshDelegate._refreshing) {
+            const refreshError = await resumeOnce<Error | undefined>('resume', this._refreshDelegate);
+            if (refreshError) {
+                throw refreshError;
             }
-
-            throw err;
         }
 
-        const requestPromise = super.request<T>(info, { ...options }).catch(errorHandler);
-        if (callback) {
-            // @ts-ignore
-            return requestPromise.then(v => callback(undefined, v), err => callback(err, undefined));
+        if (this.accessToken) {
+            request.headers = Object.assign(request.headers ?? {}, {
+                authorization: `Bearer ${this.accessToken}`
+            });
         }
-        return requestPromise;
+
+        const requestTime = Date.now();
+        const response = await (options?.transport ?? this._transport).httpRequest(request);
+
+        if (this.isSessionExpired(response)) {
+            return new Promise((resolve, reject) => {
+                this._refreshDelegate.refresh(requestTime, (refreshError?: Error) => {
+                    if (refreshError) {
+                        return reject(refreshError);
+                    }
+                    resolve(this.executeRequest(request, options))
+                });
+            });
+        }
+
+        if (this.isErrorResponse(response)) {
+            throw this.getResponseError(response);
+        }
+
+        if (options?.responseType === 'raw') {
+            return response as any;
+        }
+
+        return response.body as T;
+    }
+
+    private isSessionExpired(response: HttpResponse) {
+        if (response.statusCode === 403) {
+            return response.body === 'Bad_OAuth_Token' || response.body === 'Missing_OAuth_Token';
+        }
+        return response.statusCode === 401;
+    }
+
+    private isErrorResponse(response: HttpResponse) {
+        return response.statusCode && response.statusCode >= 400;
     }
 
     /**
-     * Determine if an error can be retried; if returns true the error is retried before being thrown to the caller. 
+     * When {@link isErrorResponse} returns true this method is used to extract the error from the response body and return it.
+     * @param response The response object as returned by the transport layer
+     * @returns
+     */
+    private getResponseError(response: HttpResponse) {
+        if (typeof response.body === 'object') {
+            const error = asArray<any>(asArray(response.body)[0])[0];
+            return new CustomError(error.message, { ...error, name: error.code });
+        }
+
+        return new CustomError(String(response.body), {
+            errorCode: `ERROR_HTTP_${response.statusCode}`,
+            name: `ERROR_HTTP_${response.statusCode}`
+        });
+    }
+
+    /**
+     * Determine if an error can be retried; if returns true the error is retried before being thrown to the caller.
      * The number of retries is limited by the {@link SalesforceConnection.maxRetries} configured.
      * @param err Error thrown by the connection
      * @returns `true` if the error is retryable otherwise `false`
      */
-    private isRetryableError(err: unknown) : err is (Error & { code?: string, errorCode?: string }) {
+    private isRetryableError(err: unknown) : err is (Error & { code: string | undefined, errorCode: string | undefined }) {
         return err instanceof Error && (
-            err['code'] == 'ECONNRESET' || 
+            err['code'] == 'ECONNRESET' ||
             err['code'] == 'ENOTFOUND' ||  (
                 (
-                    err['code'] == 'REQUEST_LIMIT_EXCEEDED' || 
+                    err['code'] == 'REQUEST_LIMIT_EXCEEDED' ||
                     err['errorCode'] == 'REQUEST_LIMIT_EXCEEDED'
                 )
-                && 
+                &&
                 err.message.indexOf('ConcurrentPerOrgLongTxn') != -1
             )
         );
-    }
-
-    /**
-     * Monkey-patch jsforce async AsyncResultLocator to support `res.done` as boolean type
-     */
-    private patchAsyncResultLocator() {
-        const asyncResultLocatorPrototype = Object.getPrototypeOf(this.metadata.checkStatus(''));
-        if (typeof asyncResultLocatorPrototype.then === 'function') {
-            const convertType = function(res: any) {
-                if (res?.$?.["xsi:nil"] === 'true' || res?.$?.["xsi:nil"] === true) {
-                    return null;
-                }
-                return res;
-            };
-            asyncResultLocatorPrototype.then = function(onResolve, onReject) {
-                return this._results.then(results => {
-                    results = Array.isArray(results) ? results.map(convertType) : convertType(results);
-                    if (this._isArray && !Array.isArray(results)) {
-                        results = [ results ];
-                    }
-                    return onResolve?.(results);
-                }, onReject);
-            };
-        }
     }
 }
 
@@ -240,86 +310,249 @@ class JsForceLogAdapter {
 
 //Metadata.prototype.checkDeployStatus
 
-class SalesforceOAuth2 extends decorate(OAuth2) {
 
-    private transport: HttpTransport;
 
-    constructor(oauth: OAuth2, connection: SalesforceConnection) {
-        super(oauth);
 
-        this.transport = new HttpTransport({ 
-            handleCookies: false,
-            // OAuth endpoints do not support gzip encoding
-            useGzipEncoding: false, 
-            shouldKeepAlive: false,
-            instanceUrl: connection.instanceUrl, 
-            baseUrl: connection._baseUrl() 
-        });
-    }
 
-    /**
-     * Post a request to token service
-     * @param params Params as object send as URL encoded data
-     * @returns Response body as JSON object
-     */
-    private async _postParams(params: Record<string, string>) {
-        const response = await this.transport.httpRequest({
-            method: 'POST',
-            url: this.tokenServiceUrl,
-            headers: { 
-                'content-type': 'application/x-www-form-urlencoded'
-            },
-            body: Object.entries(params).map(([v,k]) => `${v}=${encodeURIComponent(k)}`).join('&'),
-        });
+// export class AsyncResultLocator<T extends AsyncResult | AsyncResult[]> extends EventEmitter implements Promise<T> {
 
-        if (response.statusCode && response.statusCode >= 400) {
-            if (typeof response.body === 'object') {
-                throw new CustomError(response.body['error_description'], { name: response.body['error'] });
-            }
+//     public [Symbol.toStringTag] = 'AsyncResultLocator';
+//     private isPolling = false;
+//     private isCompleted = false;
 
-            throw new CustomError(response.body ?? '(SalesforceOAuth2) No response from server', { 
-                name: `ERROR_HTTP_${response.statusCode}` 
-            });
-        }
+//     constructor(
+//         private metadataApi: MetadataApi,
+//         private results: Promise<T>,
+//         private isArray?: boolean) {
+//         super();
+//         results = results.then(result => this.normalizeResults(result));
+//     }
 
-        if (typeof response.body !== 'object') {
-            throw new Error('(SalesforceOAuth2) No response from server');
-        }
+//     public then<TResult1 = T, TResult2 = never>(
+//         onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined,
+//         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined): Promise<TResult1 | TResult2> {
+//         return this.results.then(onfulfilled, onrejected);
+//     }
 
-        return response.body;
-    }
-}
+//     public catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined): Promise<T | TResult> {
+//         return this.results.catch(onrejected);
+//     }
 
-/**
- * Patches Metadata access container that which fixes issues with `checkDeployStatus` and `describe` results
- */
-class SalesforceMetadata extends decorate(Metadata) {
+//     public finally(onfinally?: (() => void) | null | undefined): Promise<T> {
+//         return this.results.finally(onfinally);
+//     }
 
-    private get apiVersion(): string {
-        return this.connection.version;
-    }
+//     public thenCall(callback: Callback<T> | undefined) {
+//         return thenCall(this, callback);
+//     }
 
-    private get connection(): SalesforceConnection {
-        return this['_conn'];
-    }
+//     public async check(callback?: Callback<T>) {
+//         return thenCall(this.metadataApi.checkStatus(this.extractIds(await this.results)) as unknown as PromiseLike<T>, callback);
+//     }
 
-    public checkDeployStatus(id: string, includeDetails?: boolean, callback?: Callback<DeployResult>): Promise<DeployResult> {
-        if (typeof includeDetails === 'function') {
-            callback = includeDetails;
-        }
-        return this['_invoke']('checkDeployStatus', {
-            asyncProcessId: id,
-            includeDetails: includeDetails === true
-        }).thenCall(callback);
-    }
+//    /**
+//     * Polling the async result object until the status is changed to completed.
+//     * Events `'progress', 'complete' and 'error'` are emitted when the progress changes or completes.
+//     *
+//     * This method also returns a promise which is resolved when the
+//     *
+//     * @param interval Polling interval in milliseconds
+//     * @param timeout Polling timeout in milliseconds
+//     */
+//     public async poll(interval: number, timeout: number) : Promise<T> {
+//         if (this.isPolling) {
+//             throw new Error('Already polling this async result locator');
+//         }
 
-    public describe(version?: string, callback?: Callback<DescribeMetadataResult>): Promise<DescribeMetadataResult> {
-        if (typeof version !== 'string') {
-            callback = version;
-            version = this.apiVersion;
-        }
-        return this['_invoke']("describeMetadata", { 
-            asOfVersion: version
-        }).thenCall(callback);
-    }
-}
+//         this.isPolling = true;
+//         return poll<T>(async () => {
+//             const results = await this.check();
+//             const pending = asArray(results).filter(result => !result?.done);
+
+//             if (pending.length) {
+//                 pending.forEach(result => this.emit('progress', result));
+//             } else {
+//                 this.isCompleted = true;
+//                 this.results = Promise.resolve(results);
+//                 this.emit('complete', results);
+//                 return results;
+//             }
+//         }, timeout, interval).catch(err => {
+//             this.emit('error', err);
+//             throw err;
+//         });
+//     }
+
+//     /**
+//     * Polling the async result object until the status is changed to completed.
+//     * Events `'progress', 'complete' and 'error'` are emitted when the progress changes
+//     *
+//     * @param interval Polling interval in milliseconds
+//     * @param timeout Polling timeout in milliseconds
+//     */
+//     public async complete(callback: Callback<T>) {
+//         if (this.isCompleted) {
+//             return this.results;
+//         }
+//         if (this.isPolling) {
+//             return thenCall(resumeOnce('complete', this), callback);
+//         }
+//         return thenCall(this.poll(this.metadataApi.pollInterval, this.metadataApi.pollTimeout), callback);
+//     }
+
+//     private extractIds(results: AsyncResult | AsyncResult[]) {
+//         return (Array.isArray(results) ? results : [results]).map(result => result.id);
+//     }
+
+//     private normalizeResults(results: T): T {
+//         if (Array.isArray(results)) {
+//             // @ts-ignore
+//             return this.isArray ? results : results[0];
+//         }
+//         // @ts-ignore
+//         return this.isArray ? [ results ] : results;
+//     }
+// }
+
+
+// /**
+//  * The locator class for Metadata API asynchronous call result
+//  *
+//  * @protected
+//  * @class Metadata~AsyncResultLocator
+//  * @extends events.EventEmitter
+//  * @implements Promise.<Metadata~AsyncResult|Array.<Metadata~AsyncResult>>
+//  * @param {Metadata} meta - Metadata API object
+//  * @param {Promise.<Metadata~AsyncResult|Array.<Metadata~AsyncResult>>} results - Promise object for async result info
+//  * @param {Boolean} [isArray] - Indicates whether the async request is given in array or single object
+//  */
+// var AsyncResultLocator = function(meta, results, isArray) {
+//     this._meta = meta;
+//     this._results = results;
+//     this._isArray = isArray;
+//   };
+
+//   inherits(AsyncResultLocator, events.EventEmitter);
+
+//   /**
+//    * Promise/A+ interface
+//    * http://promises-aplus.github.io/promises-spec/
+//    *
+//    * Delegate to deferred promise, return promise instance for batch result
+//    *
+//    * @method Metadata~AsyncResultLocator#then
+//    */
+//   AsyncResultLocator.prototype.then = function(onResolve, onReject) {
+//     var self = this;
+//     return this._results.then(function(results) {
+//       var convertType = function(res) {
+//         if (res.$ && res.$["xsi:nil"] === 'true') {
+//           return null;
+//         }
+//         res.done = res.done === 'true';
+//         return res;
+//       };
+//       results = _.isArray(results) ? _.map(results, convertType) : convertType(results);
+//       if (self._isArray && !_.isArray(results)) {
+//         results = [ results ];
+//       }
+//       return onResolve(results);
+//     }, onReject);
+//   };
+
+//   /**
+//    * Promise/A+ extension
+//    * Call "then" using given node-style callback function
+//    *
+//    * @method Metadata~AsyncResultLocator#thenCall
+//    */
+//   AsyncResultLocator.prototype.thenCall = function(callback) {
+//     return _.isFunction(callback) ? this.then(function(res) {
+//       process.nextTick(function() {
+//         callback(null, res);
+//       });
+//     }, function(err) {
+//       process.nextTick(function() {
+//         callback(err);
+//       });
+//     }) : this;
+//   };
+
+//   /**
+//    * Check the status of async request
+//    *
+//    * @method Metadata~AsyncResultLocator#check
+//    * @param {Callback.<Metadata~AsyncResult|Array.<Metadata~AsyncResult>>} [callback] - Callback function
+//    * @returns {Promise.<Metadata~AsyncResult|Array.<Metadata~AsyncResult>>}
+//    */
+//   AsyncResultLocator.prototype.check = function(callback) {
+//     var self = this;
+//     var meta = this._meta;
+//     return this.then(function(results) {
+//       var ids = _.isArray(results) ? _.map(results, function(res){ return res.id; }) : results.id;
+//       self._ids = ids;
+//       return meta.checkStatus(ids);
+//     }).thenCall(callback);
+//   };
+
+//   /**
+//    * Polling until async call status becomes complete or error
+//    *
+//    * @method Metadata~AsyncResultLocator#poll
+//    * @param {Number} interval - Polling interval in milliseconds
+//    * @param {Number} timeout - Polling timeout in milliseconds
+//    */
+//   AsyncResultLocator.prototype.poll = function(interval, timeout) {
+//     var self = this;
+//     var startTime = new Date().getTime();
+//     var poll = function() {
+//       var now = new Date().getTime();
+//       if (startTime + timeout < now) {
+//         var errMsg = "Polling time out.";
+//         if (self._ids) {
+//           errMsg += " Process Id = " + self._ids;
+//         }
+//         self.emit('error', new Error(errMsg));
+//         return;
+//       }
+//       self.check().then(function(results) {
+//         var done = true;
+//         var resultArr = _.isArray(results) ? results : [ results ];
+//         for (var i=0, len=resultArr.length; i<len; i++) {
+//           var result = resultArr[i];
+//           if (result && !result.done) {
+//             self.emit('progress', result);
+//             done = false;
+//           }
+//         }
+//         if (done) {
+//           self.emit('complete', results);
+//         } else {
+//           setTimeout(poll, interval);
+//         }
+//       }, function(err) {
+//         self.emit('error', err);
+//       });
+//     };
+//     setTimeout(poll, interval);
+//   };
+
+//   /**
+//    * Check and wait until the async requests become in completed status
+//    *
+//    * @method Metadata~AsyncResultLocator#complete
+//    * @param {Callback.<Metadata~AsyncResult|Array.<Metadata~AsyncResult>>} [callback] - Callback function
+//    * @returns {Promise.<Metadata~AsyncResult|Array.<Metadata~AsyncResult>>}
+//    */
+//   AsyncResultLocator.prototype.complete = function(callback) {
+//     var deferred = Promise.defer();
+//     this.on('complete', function(results) {
+//       deferred.resolve(results);
+//     });
+//     this.on('error', function(err) {
+//       deferred.reject(err);
+//     });
+//     var meta = this._meta;
+//     this.poll(meta.pollInterval, meta.pollTimeout);
+//     return deferred.promise.thenCall(callback);
+//   };

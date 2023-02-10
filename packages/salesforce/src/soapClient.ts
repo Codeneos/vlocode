@@ -1,13 +1,7 @@
-import * as xml2js from 'xml2js';
-import axios from 'axios';
-import { Connection } from './connection';
+import { HttpTransport, SalesforceConnection } from './connection';
+import { CustomError, XML } from '@vlocode/util';
 
 const API_CLIENT_NAME = 'Vlocode SOAP client';
-const SOAP_XML_OPTIONS = {
-    xmldec: { version: '1.0', encoding: 'UTF-8' },
-    renderOpts: { pretty: true, indent: '    ', newline: '\n', normalizeTags: false, normalize: false }
-};
-
 export type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
 
 export interface SoapDebuggingHeader {
@@ -45,9 +39,25 @@ export interface SoapResponse {
  */
 export class SoapClient {
 
+    private transport: HttpTransport;
+    private clientName: string = API_CLIENT_NAME;
+
     constructor(
-        public readonly connection: Connection,
+        public readonly connection: SalesforceConnection,
+        public readonly endpoint: string,
         public readonly xmlNs: string = 'http://soap.sforce.com/2006/08/apex') {
+            
+        // Create SOAP transport
+        this.transport = new HttpTransport({
+            baseUrl: connection._baseUrl(),
+            instanceUrl: connection.instanceUrl,
+            handleCookies: false,
+            responseDecoders: {
+                xml: (buffer, encoding) => {
+                    return XML.parse(buffer.toString(encoding), { ignoreNameSpace: true });
+                }
+            }
+        });
     }
 
     /**
@@ -57,50 +67,44 @@ export class SoapClient {
      * @param debuggingHeader debugging header
      * @returns
      */
-    public async request(method: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
-        const endpoint = `${this.connection.instanceUrl}/services/Soap/s/${this.connection.version}`;
-        const result = await axios({
+    public async request<T = object>(method: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: T; debugLog?: string }> {
+        const result = await this.transport.httpRequest({
             method: 'POST',
-            url: endpoint,
+            url: this.endpoint, //`/services/Soap/s/${this.connection.version}`,
             headers: {
                 'SOAPAction': '""',
-                'Content-Type':  'text/xml;charset=UTF-8'
+                'Content-Type': 'text/xml;charset=UTF-8'
             },
-            transformResponse: (data: any) => {
-                return xml2js.parseStringPromise(data, {
-                    tagNameProcessors: [ xml2js.processors.stripPrefix ],
-                    attrNameProcessors: [ xml2js.processors.stripPrefix ],
-                    valueProcessors: [
-                        value => {
-                            if (/^[0-9]+(\.[0-9]+){0,1}$/i.test(value)) {
-                                return parseFloat(value);
-                            } else if (/^true|false$/i.test(value)) {
-                                return value.localeCompare('true', undefined, { sensitivity: 'base' }) === 0;
-                            }
-                            return value;
-                        }
-                    ],
-                    explicitArray: false
-                });
-            },
-            data: this.getRequestBody(method, request, debuggingHeader)
+            body: this.buildRequestBody(method, request, debuggingHeader)
         });
-        const response = (await result.data) as SoapResponse;
 
-        if (response.Envelope.Body?.Fault) {
-            throw new Error(`SOAP API Fault: ${response.Envelope.Body.Fault?.faultstring}`);
+        if (typeof result.body === 'string') {
+            throw new CustomError(result.body, { name: 'SOAP_ERROR' })
+        }
+
+        if (typeof result.body === 'undefined') {
+            return { body: result.body };
+        }
+
+        const soapResponse  = result.body as SoapResponse;
+
+        if (soapResponse.Envelope.Body?.Fault) {
+            throw new CustomError(`SOAP API Fault: ${soapResponse.Envelope.Body.Fault?.faultstring}`, { 
+                name: 'SOAP_ERROR', 
+                code: soapResponse.Envelope.Body.Fault.faultcode 
+            });
         }
 
         return {
-            body: response.Envelope.Body,
-            debugLog: response.Envelope?.Header?.DebuggingInfo.debugLog,
+            body: Object.values(soapResponse.Envelope.Body ?? {})[0],
+            debugLog: soapResponse.Envelope?.Header?.DebuggingInfo.debugLog,
         };
     }
 
     /**
      * Converts the contents of the package to XML that can be saved into a package.xml file
      */
-    private getRequestBody(method: string, body?: Object, debuggingHeader: SoapDebuggingHeader = {}) : string {
+    private buildRequestBody(method: string, body?: Object, debuggingHeader: SoapDebuggingHeader = {}) : string {
         const soapRequestObject = {
             'soap:Envelope': {
                 $: {
@@ -109,7 +113,7 @@ export class SoapClient {
                 },
                 'soap:Header': {
                     CallOptions: {
-                        client: API_CLIENT_NAME
+                        client: this.clientName
                     },
                     DebuggingHeader: {
                         categories: Object.entries(debuggingHeader).map(([category, level]) => ({ category, level }))
@@ -123,6 +127,6 @@ export class SoapClient {
                 }
             }
         };
-        return new xml2js.Builder(SOAP_XML_OPTIONS).buildObject(soapRequestObject);
+        return XML.stringify(soapRequestObject);
     }
 }

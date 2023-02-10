@@ -1,8 +1,8 @@
-import { Connection } from 'jsforce';
 import { sfdx } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 import { SfdxConnectionProvider } from './sfdxConnectionProvider';
 import { injectable, Logger } from '@vlocode/core';
+import { SalesforceConnection } from '../salesforceConnection';
 
 @injectable()
 export class InteractiveConnectionProvider implements SalesforceConnectionProvider {
@@ -14,7 +14,7 @@ export class InteractiveConnectionProvider implements SalesforceConnectionProvid
     constructor(private instanceUrl: string) {        
     }
 
-    public async getJsForceConnection() : Promise<Connection> {
+    public async getJsForceConnection() : Promise<SalesforceConnection> {
         if (this.sfdxProvider === undefined) {
             await this.initialize();
         }        

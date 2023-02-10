@@ -1,17 +1,9 @@
 
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import type { FileProperties, RetrieveResult } from 'jsforce';
 import * as ZipArchive from 'jszip';
 import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
-
-export interface RetrieveStatus extends RetrieveResult {
-    done: boolean | string;
-    success: boolean | string;
-    errorMessage?: string;
-    errorStatusCode?: string;
-    status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed';
-}
+import { FileProperties, RetrieveResult } from '../connection';
 
 export interface ExtendedFileProperties extends FileProperties {
     fullFileName: string;
@@ -39,7 +31,7 @@ export class RetrieveResultPackage {
         return this.result.fileProperties ? this.result.fileProperties.length - 1 : 0;
     }
 
-    constructor(private readonly result: RetrieveStatus, private readonly singlePackage: boolean, private readonly zip?: ZipArchive) {
+    constructor(private readonly result: RetrieveResult, private readonly singlePackage: boolean, private readonly zip?: ZipArchive) {
     }
 
     public componentNames() {

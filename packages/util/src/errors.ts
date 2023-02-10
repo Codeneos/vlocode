@@ -7,7 +7,10 @@ export class CustomError extends Error {
     constructor(message: string, options?: ({ name?: string, code?: string } & object) | Error) {
         super(message);
         if (options) {
-            Object.assign(this, options);
+            if (options['code'] && !options['name']) {
+                options['name'] = options['code'];
+            }
+            Object.assign(this, options);            
         }
     }
 }

@@ -1,6 +1,6 @@
 import { Logger, injectable, DeferredWorkQueue, WorkItemResult } from '@vlocode/core';
 import { cache, forEachAsyncParallel, getObjectProperty, setObjectProperty, Timer, visitObject } from '@vlocode/util';
-import { SalesforceConnectionProvider } from '../connection/salesforceConnectionProvider';
+import { SalesforceConnectionProvider } from '../connection';
 import { DescribeSObjectResult, Field } from '../types';
 import { SchemaDataStore } from './schemaDataStore';
 import { ToolingApiSchemaAccess } from './toolingApiSchemaAccess';

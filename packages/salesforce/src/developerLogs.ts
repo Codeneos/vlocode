@@ -1,4 +1,4 @@
-import { container, injectable, Logger } from '@vlocode/core';
+import { injectable, Logger } from '@vlocode/core';
 import { cache, CancellationToken } from '@vlocode/util';
 import type { SuccessResult } from 'jsforce';
 

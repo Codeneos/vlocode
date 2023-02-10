@@ -1,8 +1,7 @@
 
-import { Logger, LogLevel, LogManager } from '@vlocode/core';
 import { cache } from '@vlocode/util';
 import { Connection } from 'jsforce';
-import { SalesforceConnection } from './salesforceConnection';
+import { SalesforceConnection } from '../salesforceConnection';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 
 /**
@@ -37,7 +36,7 @@ export interface SalesforceOAuthDetails {
  * Basic JSforce connection provider Impl that ensures the connection is of the right prototype.
  */
 export class JsForceConnectionProvider extends SalesforceConnectionProvider {
-    #jsConnection: Connection;
+    #jsConnection: SalesforceConnection;
     #version: string = '55.0';
 
     /**
@@ -57,7 +56,7 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
         if (Object.getPrototypeOf(options) === Connection.prototype) {
             this.#jsConnection = this.initConnection(options as Connection);            
         } else if (Object.getPrototypeOf(options) === SalesforceConnection.prototype) {
-            this.#jsConnection = options as SalesforceConnection;            
+            this.#jsConnection = options as any as SalesforceConnection;            
         } else if (typeof options['oauth2'] === 'object') {
             this.#jsConnection = this.cloneConnection(options as JsforceConnectionProperties);
         } else {
@@ -93,7 +92,7 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
         return sfConnection;
     }
 
-    public getJsForceConnection() : Promise<Connection> {
+    public getJsForceConnection() : Promise<SalesforceConnection> {
         return Promise.resolve(this.#jsConnection);
     }
 

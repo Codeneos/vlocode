@@ -2,7 +2,7 @@ import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
 import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId } from '@vlocode/util';
 
-import { SalesforceConnectionProvider } from './connection';
+import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
 import { QueryService, QueryResult } from './queryService';
 import { RecordBatch } from './recordBatch';
@@ -58,7 +58,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return !(await this.getOrganizationDetails()).isSandbox;
     }
 
-    public getJsForceConnection() : Promise<jsforce.Connection> {
+    public getJsForceConnection() {
         return this.connectionProvider.getJsForceConnection();
     }
 
@@ -226,7 +226,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
 
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
         const connection = await this.getJsForceConnection();
-        const soapClient = new SoapClient(connection, 'http://soap.sforce.com/2006/08/apex');
+        const soapClient = new SoapClient(connection, `/services/Soap/s/${connection.version}`);
         return soapClient.request(methodName, request, debuggingHeader);
     }
 
@@ -479,7 +479,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param method Name of the method to call on the controller
      * @param data Data to pass to the controller
      */
-    public async requestApexRemote(page: string, action: string, method: string, data: any) {
+    public async requestApexRemote(page: string, action: string, method: HttpMethod, data: any) {
         const connection = await this.getJsForceConnection();
         const pageNamespace = this.namespaceService.updateNamespace(page).match(/(^[a-z_]+)__(?!c$)/i)?.[1];
         const body = {
@@ -495,7 +495,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
                 'ver': parseInt(connection.version, 10)
             }
         };
-        const request = {
+        const request: HttpRequestInfo = {
             'method': 'POST',
             'url': `${connection.instanceUrl}/apexremote`,
             'body': JSON.stringify(body),

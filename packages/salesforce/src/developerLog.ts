@@ -1,5 +1,5 @@
 import { cache } from '@vlocode/util';
-import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection';
 
 /**
  * Developer log data entry

@@ -1,9 +1,9 @@
 import { Logger, injectable } from '@vlocode/core';
 import { NamespaceService } from './namespaceService';
-import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema';
-import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix, Timer, validate } from '@vlocode/util';
+import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
 
 /**
  * Provides access to Database Schema methods like describe.

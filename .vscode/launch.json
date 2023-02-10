@@ -5,7 +5,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "Debug (vscode-extension)",
             "type": "extensionHost",
@@ -22,13 +21,9 @@
                 "packages/core/lib/**/*.js",
                 "packages/util/lib/**/*.js",
                 "packages/vlocity-deploy/lib/**/*.js"
-            ], 
-            "pauseForSourceMap": true,
-            "skipFiles": [
-                "<node_internals>/**/*.js",
-                "async_hooks.js",
-                "inspector_async_hook.js"
             ],
+            "pauseForSourceMap": true,
+            "skipFiles": ["<node_internals>/**/*.js", "async_hooks.js", "inspector_async_hook.js"],
             "preLaunchTask": "build-extension",
             "smartStep": true,
             "sourceMaps": true
@@ -38,14 +33,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/packages/cli/dist/cli.js",
             "name": "Debug CLI (webpacked)",
-            "args": [
-                "deploy",
-                "-u", "dev10pro",
-                "-v"
-            ],
-            "outFiles": [
-                "${workspaceRoot}/packages/cli/dist/**/*.js"
-            ], 
+            "args": ["deploy", "-u", "dev10pro", "-v"],
+            "outFiles": ["${workspaceRoot}/packages/cli/dist/**/*.js"],
             "preLaunchTask": "watch-cli-webpack",
             "smartStep": true,
             "sourceMaps": true
@@ -58,8 +47,9 @@
             "name": "Debug CLI (node)",
             "args": [
                 "deploy",
-                "${workspaceRoot}/test-deploy",
-                "-u", "dev10pro",
+                "${workspaceRoot}/.test-deploy",
+                "-u",
+                "dev10pro",
                 "-v",
                 "--debug",
                 "--strict-dependencies"
@@ -70,7 +60,7 @@
                 "${workspaceFolder}/packages/core/lib/**/*.js",
                 "${workspaceFolder}/packages/util/lib/**/*.js",
                 "${workspaceFolder}/packages/cli/lib/**/*.js"
-            ], 
+            ],
             "preLaunchTask": "watch-cli",
             "smartStep": true,
             "sourceMaps": true
@@ -85,26 +75,22 @@
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/out/test"
             ],
-            "outFiles": [
-                "${workspaceFolder}/out/test/**/*.js"
-            ], 
-            "skipFiles": [
-                "<node_internals>/**/*.js",
-                "async_hooks.js",
-                "inspector_async_hook.js"
-            ],
+            "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
+            "skipFiles": ["<node_internals>/**/*.js", "async_hooks.js", "inspector_async_hook.js"],
             "preLaunchTask": "build-cli",
-            "stopOnEntry": false,
             "sourceMaps": true
         },
         {
             "name": "Debug: Build Commands",
             "type": "node",
             "request": "launch",
-            "args": ["${workspaceRoot}/build/buildCommands.ts", "./package.json", "./commands.yaml"],
+            "args": [
+                "${workspaceRoot}/build/buildCommands.ts",
+                "./package.json",
+                "./commands.yaml"
+            ],
             "runtimeArgs": ["-r", "ts-node/register"],
             "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
             "internalConsoleOptions": "openOnSessionStart",
             "env": {
                 "TS_NODE_IGNORE": "false"
@@ -113,16 +99,11 @@
         {
             "name": "Debug: Webpack Build",
             "request": "launch",
-            "runtimeArgs": [
-                "run-script",
-                "build:debug"
-            ],
+            "runtimeArgs": ["run-script", "build:debug"],
             "cwd": "${workspaceRoot}/packages/vscode-extension",
             "runtimeExecutable": "npm",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "pwa-node"
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node"
         }
     ]
 }

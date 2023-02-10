@@ -3,9 +3,8 @@ import * as ZipArchive from 'jszip';
 
 import { Logger , injectable } from '@vlocode/core';
 import { CancellationToken, wait } from '@vlocode/util';
-import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
-import { DeploymentProgress, DetailedDeployResult, PackageManifest, RetrieveResultPackage, RetrieveStatus } from './deploy';
-import { DeployOptions } from './salesforceDeployment';
+import { DeployOptions, SalesforceConnectionProvider, DeployResult } from './connection';
+import { DeploymentProgress, PackageManifest, RetrieveResultPackage } from './deploy';
 import { SalesforcePackage } from './deploymentPackage';
 
 @injectable()
@@ -23,7 +22,7 @@ export class SalesforceDeployService {
      * @param options Optional deployment options to use
      * @param token A cancellation token to stop the process
      */
-    public async deployPackage(sfPackage: SalesforcePackage, options?: DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DetailedDeployResult> {
+    public async deployPackage(sfPackage: SalesforcePackage, options?: DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DeployResult> {
         return this.deploy(await sfPackage.getBuffer(), options, progress, token);
     }
 
@@ -33,7 +32,7 @@ export class SalesforceDeployService {
      * @param options additional deploy options
      * @param progressOptions progress options
      */
-    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DetailedDeployResult> {
+    private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DeployResult> {
         let checkInterval = 1000;
         const logInterval = 5000;
 
@@ -130,14 +129,13 @@ export class SalesforceDeployService {
         const checkInterval = 2000;
 
         const retrieveTask = async (cancellationToken?: CancellationToken) => {
-            // Create package
-            const singlePackage = true;
-
             // Start deploy            
             const connection = await this.salesforce.getJsForceConnection();
-            const retrieveJob = await connection.metadata.retrieve({
-                singlePackage, unpackaged: manifest.toJson(apiVersion ?? this.salesforce.getApiVersion())
-            }, undefined);
+            const retrieveId = await connection.metadata.retrieve({
+                apiVersion: connection.version,
+                singlePackage: true, 
+                unpackaged: manifest.toJson(apiVersion ?? this.salesforce.getApiVersion())
+            });
 
             // Wait for deploy
             while (await wait(checkInterval)) {
@@ -146,10 +144,10 @@ export class SalesforceDeployService {
                     throw new Error('Retrieve request cancelled');
                 }
 
-                const status = await connection.metadata.checkRetrieveStatus(retrieveJob.id) as RetrieveStatus;
-                if (status.done === true || status.done === 'true') {
+                const status = await connection.metadata.checkRetrieveStatus(retrieveId);
+                if (status.done === true) {
                     const retrieveZip = status.zipFile ? await new ZipArchive().loadAsync(Buffer.from(status.zipFile, 'base64')) : undefined;
-                    return new RetrieveResultPackage(status, singlePackage, retrieveZip);
+                    return new RetrieveResultPackage(status, true, retrieveZip);
                 }
             }
         };

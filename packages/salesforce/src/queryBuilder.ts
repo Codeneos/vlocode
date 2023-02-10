@@ -1,6 +1,6 @@
 import { container, LogManager } from '@vlocode/core';
 import { clone, flattenObject, lazy } from '@vlocode/util';
-import { Connection, SalesforceConnectionProvider } from './connection';
+import { SalesforceConnectionProvider } from './connection';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';

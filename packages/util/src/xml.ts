@@ -28,6 +28,7 @@ const DEFAULT_ENCODE_XML_OPTIONS = {
 export interface XMLParseOptions {
     trimValues?: boolean;
     ignoreAttributes?: boolean;
+    ignoreNameSpace?: boolean;
 }
 
 export interface XMLStringfyOptions {

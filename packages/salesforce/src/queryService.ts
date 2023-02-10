@@ -1,9 +1,8 @@
-import { Readable } from 'stream';
 import { DateTime } from 'luxon';
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
 
-import { SalesforceConnectionProvider } from './connection/salesforceConnectionProvider';
+import { SalesforceConnectionProvider } from './connection';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
 import { NamespaceService } from './namespaceService';
 

@@ -1,10 +1,8 @@
-import { Connection } from 'jsforce';
 import { cache, sfdx } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
-import { JsForceConnectionProvider } from './jsFroceConnectionProvider';
+import { JsForceConnectionProvider } from './jsForceConnectionProvider';
 import { LogManager } from '@vlocode/core';
-
-export { Connection };
+import { SalesforceConnection } from '../salesforceConnection';
 
 const refreshListenerSymbol = Symbol('tokenRefreshListenerAttached');
 export class SfdxConnectionProvider extends SalesforceConnectionProvider {
@@ -18,7 +16,7 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
         this.version = version && this.normalizeVersion(version);
     }
 
-    public async getJsForceConnection(): Promise<Connection> {
+    public async getJsForceConnection(): Promise<SalesforceConnection> {
         if (!this.jsforceProvider) {
             await this.initConnectionProvider();
         }
