@@ -1,3 +1,4 @@
+export * from './bulk';
 export * from './connection';
 export * from './deploy';
 export * from './metadata';

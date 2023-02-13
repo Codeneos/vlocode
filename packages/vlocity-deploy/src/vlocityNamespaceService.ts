@@ -1,5 +1,5 @@
 import { Logger , injectable } from '@vlocode/core';
-import { Connection, SalesforceConnectionProvider, NamespaceService, SalesforceConnection } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, NamespaceService, SalesforceConnection } from '@vlocode/salesforce';
 import { mapGetOrCreate, Timer } from '@vlocode/util';
 import * as chalk from 'chalk';
 import * as constants from './constants';

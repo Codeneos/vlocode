@@ -1,4 +1,5 @@
 import { compileFunction } from './compiler';
+import { getObjectProperty } from './object';
 
 /**
  * Compares strings for equality; by default comparisons are case insensitive
@@ -66,14 +67,16 @@ export function evalTemplate(expr: string, contextValues: any) : string {
 }
 
 /**
- * Format string using the specified context values; format: 'Bar ${foo}', with context values {foo: 'bar'} results in 'Bar bar'
+ * Format string using the specified context values supporting simple ES6 string interpolation at run-time.
+ * - ES6 interpolated string `Bar ${foo}`  with context values `{foo: 'bar'}` results in `Bar bar`
+ * - Using named context valyes `Bar ${foo}`  with context values `{foo: 'bar'}` results in `Bar bar`
  * @param stringFormat Format string
  * @param contextValues context values supplied
  */
 export function formatString(stringFormat: string, contextValues?: any) : string {
-    return stringFormat.replace(/\${(.+?(.*?))}/gm, match => {
-        const key = /\${(.+?(.*?))}/g.exec(match)?.[1];
-        return key === undefined || contextValues?.[key] === undefined ? match : contextValues[key];
+    return stringFormat.replace(/\$?{(.+?(.*?))}/gm, (match, key) => {
+        const value = getObjectProperty(contextValues, key);
+        return value === undefined ? match : (typeof value === 'string' ? value : `${value}`);
     });
 }
 

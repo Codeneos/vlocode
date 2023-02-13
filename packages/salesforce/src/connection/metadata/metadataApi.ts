@@ -1,5 +1,4 @@
-import { beforeHook, decorate, getObjectProperty, streamToBuffer } from "@vlocode/util";
-import { Metadata } from "jsforce";
+import { beforeHook, getObjectProperty, streamToBuffer } from "@vlocode/util";
 import { Stream } from 'stream';
 
 import { RestClient } from "../../restClient";
@@ -31,7 +30,6 @@ export enum ValueTypeNamespace {
  *  - Support rename of metadata
  *  - Support describe value type
  *  - Does not support old nodejs callback style; all calls return an awaitable promise
- * 
  */
 export class MetadataApi {
 
@@ -141,7 +139,7 @@ export class MetadataApi {
             body: contentBody
         } ];
 
-        return this.rest.post('deployRequest', bodyParts);
+        return this.rest.post(bodyParts, 'deployRequest');
     }
 
     public checkDeployStatus(id: string, includeDetails?: boolean): Promise<DeployResult> {
@@ -159,15 +157,10 @@ export class MetadataApi {
     // @ts-ignore
     public async cancelDeploy(id: string) {
         const result = await this.rest.patch<DeployRequest>(
-            `deployRequest/${id}`, 
-            { deployResult: { status: 'Cancelling' } }); 
+            { deployResult: { status: 'Cancelling' } }, 
+            `deployRequest/${id}`); 
         return result.deployResult;
     }
-
-    // Metadata.prototype.retrieve = function(request, callback) {
-    //     var res = this._invoke("retrieve", { request: request });
-    //     return new RetrieveResultLocator(this, res).thenCall(callback);
-    //   };
 
     public retrieve(retrieveRequest: RetrieveRequest): Promise<string> {
         return this.invoke('retrieve', {
@@ -187,11 +180,4 @@ export class MetadataApi {
             throw new Error('@vlocode/salesforce does not support the callback parameter for all metadata API related functions');
         }
     }
-
-    // protected [afterHook](name: string | symbol, args: any[], returnValue: any | undefined): any {
-    //     if (typeof returnValue === 'object' && typeof returnValue['_results']?.['then'] === 'function') {
-    //         return new AsyncResultLocator(this, returnValue['_results'], returnValue['_isArray']);
-    //     }
-    //     return returnValue;
-    // }
 }

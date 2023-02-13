@@ -8,9 +8,21 @@ describe('util', () => {
             // eslint-disable-next-line no-template-curly-in-string
             expect(string.formatString('Foo ${bar}', { bar: 'foo'})).toEqual('Foo foo');
         });
-        it('should not replace values not found in context array', () => {
+        it('should replace ES6 placeholders with context values', () => {
             // eslint-disable-next-line no-template-curly-in-string
             expect(string.formatString('Foo ${bar} foo', { foo: 'foo'})).toEqual('Foo ${bar} foo');
+        });
+        it('should replace values not found in context object', () => {
+            expect(string.formatString('Foo {bar}', { bar: 'foo'})).toEqual('Foo foo');
+        });
+        it('should replace values found in context array', () => {
+            expect(string.formatString('Foo {1}', ['foo', 'bar'])).toEqual('Foo bar');
+        });
+        it('should replace values in nested path', () => {
+            expect(string.formatString('Foo {bar.value}',{ bar: { value: 'bar' }})).toEqual('Foo bar');
+        });
+        it('should not replace values in nested path not found in context object', () => {
+            expect(string.formatString('Foo {bar.foo}',{ bar: { value: 'bar' }})).toEqual('Foo {bar.foo}');
         });
     });
 
