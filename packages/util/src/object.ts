@@ -282,11 +282,10 @@ export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: an
         if (typeof value === 'function') {
             continue;
         }
-
-        if (typeof value === 'object') {
-            visitObject(value, propertyVisitor);
-        }  else { 
-            propertyVisitor(prop, value, obj);
+        propertyVisitor(prop, value, obj);
+        const newValue = obj[prop];
+        if (typeof newValue === 'object') {
+            visitObject(newValue, propertyVisitor);
         }
     }
 
