@@ -1,29 +1,6 @@
 import * as xmlParser from 'fast-xml-parser';
-import * as he from 'he';
-
-const DEFAULT_XML_OPTIONS = {
-    attributeNamePrefix : '',
-    attrNodeName: '$',
-    textNodeName : '#text',
-    ignoreAttributes : false,
-    ignoreNameSpace : false,
-    allowBooleanAttributes : true,
-    parseNodeValue : true,
-    parseAttributeValue : true,
-    trimValues: true,
-    cdataTagName: '__cdata', // default is 'false'
-    cdataPositionChar: '\\c',
-    parseTrueNumberOnly: false,
-    arrayMode: false, // "strict"
-    tagValueProcessor : val => he.decode(val),
-    attrValueProcessor: val => he.decode(val, { isAttributeValue: true })
-};
-
-const DEFAULT_ENCODE_XML_OPTIONS = {
-    supressEmptyNode: false,
-    tagValueProcessor: val => he.escape(String(val)),
-    attrValueProcessor: val => he.escape(String(val))
-};
+import { decode, escape } from 'he';
+import { visitObject } from './object';
 
 export interface XMLParseOptions {
     trimValues?: boolean;
@@ -39,23 +16,65 @@ export interface XMLStringfyOptions {
 
 export namespace XML {
 
+    const options: Partial<xmlParser.X2jOptions> = {
+        attributeNamePrefix : '',
+        attrNodeName: '$',
+        textNodeName : '#text',
+        ignoreAttributes : false,
+        ignoreNameSpace : false,
+        allowBooleanAttributes : true,
+        parseNodeValue : true,
+        parseAttributeValue : true,
+        trimValues: true,
+        cdataTagName: '__cdata', // default is 'false'
+        cdataPositionChar: '\\c',
+        parseTrueNumberOnly: false,
+        arrayMode: false, // "strict"
+    } as const;
+    
+    /**
+     * Global parser options for XML to JSON; changing the defaults affects all parsing in all packages. Change with care.
+     */
+    export const globalParserOptions: Partial<xmlParser.X2jOptions> = {
+        ...options,
+        tagValueProcessor : val => decode(val),
+        attrValueProcessor: val => decode(val, { isAttributeValue: true })
+    } as const;
+
+    /**
+     * Global stringify options for converting JSON to XML; changing the defaults affects JSON to XML formatting in all packages. Change with care.
+     */
+    export const globalStringifyOptions: Partial<xmlParser.J2xOptions> = {
+        ...options,
+        supressEmptyNode: false,
+        tagValueProcessor: val => escape(String(val)),
+        attrValueProcessor: val => escape(String(val))
+    } as const;
+
     /**
      * Parse XML into a JSON object with the default options.
      * @param xml XML String
      * @returns 
      */
-    export function parse(xml: string | Buffer, options: XMLParseOptions = {}) : any {
+    export function parse<T = any>(xml: string | Buffer, options: XMLParseOptions = {}) : T {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
-        return xmlParser.parse(xml, {...DEFAULT_XML_OPTIONS, ...options} , true);
+        return visitObject(xmlParser.parse(xml, {...globalParserOptions, ...options} , true), (prop, value, target) => {
+            if (typeof value === 'object') {
+                // Parse nil as null as per XML spec
+                if (value['$']?.['nil'] === true) {
+                    target[prop] = null;
+                }
+            }
+        });
     }
 
     /**
      * Convert JSON object into XML string
      * @param jsonObj JSOn Object
      * @param indent Indent level; if set pretty prints the XML otherwise omits pretty prtining
-     * @returns 
+     * @returns
      */
     export function stringify(jsonObj: any, indent?: number | string, options: XMLStringfyOptions = {}) : string {
         const indentOptions = {
@@ -63,7 +82,7 @@ export namespace XML {
             supressEmptyNode: options.stripEmptyNodes,
             indentBy: indent !== undefined ? typeof indent === 'string' ? indent : ' '.repeat(indent) : undefined,
         };
-        const xmlString = new xmlParser.j2xParser({...DEFAULT_XML_OPTIONS, ...DEFAULT_ENCODE_XML_OPTIONS, ...indentOptions}).parse(jsonObj);
+        const xmlString = new xmlParser.j2xParser({...globalStringifyOptions, ...indentOptions}).parse(jsonObj);
         if (options?.headless !== true) {
             return `<?xml version="1.0" encoding="UTF-8"?>\n${xmlString}`;
         }
@@ -85,9 +104,15 @@ export namespace XML {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
-        if (xml.trimStart().startsWith('<?xml ')) {
-            return xml.match(/<([^-?!][\w\d]*)/im)?.[1];
+        const xmlTagMatch = xml.match(/<([^!> ]+)/)?.[1];
+        if (xmlTagMatch?.toLowerCase() === '?xml') {
+            // when there is a root tag use that
+            return xml.match(/<([^?!> ]+)/)?.[1];
         }
+        if (xmlTagMatch && /[_a-zA-Z]/.test(xmlTagMatch)) {
+            // when there is no XML tag match test the root tag match to see if it is valid XML
+            return xmlTagMatch;
+        }        
     }
 
     /**
@@ -105,6 +130,6 @@ export namespace XML {
      * @returns normalized XML string without comments or line-breaks.
      */
     export function normalize(xml: string | Buffer) {
-        return stringify(parse(xml, {  trimValues: true }));
+        return stringify(parse(xml, { trimValues: true }));
     }
 }
