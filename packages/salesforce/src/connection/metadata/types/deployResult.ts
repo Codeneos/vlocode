@@ -237,15 +237,93 @@ export interface FailureDeployMessage extends DeployMessage {
 }
 
 export interface DeployOptions {
+    /**
+     * Defaults to `false`. Set to true to perform a test deployment (validation) 
+     * of components without saving the components in the target org. 
+     * 
+     * A validation enables you to verify the results of tests that would be 
+     * generated in a deployment, but doesn’t commit any changes. 
+     * After a validation finishes with passing tests, sometimes it 
+     * can qualify for deployment without rerunning tests
+     * 
+     * @default false
+     */
     checkOnly?: boolean;
+    /**
+     * A list of Apex tests to run during deployment. Specify the class name, one name per instance. 
+     * The class name can also specify a namespace with a dot notation. 
+     * 
+     * __To use this option, set {@link testLevel} to `RunSpecifiedTests`.__
+     */
     runTests?: string[];
-    testLevel?: string;
+    /**
+     * Optional. Specifies which tests are run as part of a deployment. 
+     * The test level is enforced regardless of the types of components 
+     * that are present in the deployment package.
+     * 
+     * __If you don’t specify a test level, the default test execution behavior is used__
+     * 
+     * _Note: Apex tests that run as part of a deployment always run synchronously and serially._
+     */
+    testLevel?: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg';
+    /**
+     * Indicates whether the specified .zip file points to a directory 
+     * structure with a single package (`true`) or a set of packages (`false`).
+     */
     singlePackage?: boolean;
-    allowMissingFiles?: boolean;    
+    /**
+     * If files that are specified in `package.xml` are not in the .zip file, 
+     * specifies whether a deployment can still succeed.
+     * 
+     * __Do not set this argument for deployment to production orgs.__
+     */
+    allowMissingFiles?: boolean;  
+    /**
+     * Indicates whether a `retrieve()` call is performed immediately after the deployment (`true`) or not (`false`). 
+     * Set to `true` to retrieve whatever was just deployed.
+     */  
     performRetrieve?: boolean;
+    /**
+     * If a file is in the .zip file but not specified in `package.xml`, 
+     * specifies whether the file is automatically added to the package. 
+     * 
+     * A `retrieve()` is issued with the updated package.xml that includes the .zip file.
+     */
     autoUpdatePackage?: boolean;
+    /**
+     * Indicates whether any failure causes a complete rollback (`true`) or not (`false`). 
+     * If `false`, whatever actions can be performed without errors are performed, 
+     * and errors are returned for the remaining actions. 
+     * 
+     * __This parameter must be set to true if you are deploying to a production org.__
+     * 
+     * @default false
+     */
     rollbackOnError?: boolean;
+    /**
+     * Indicates whether deployments with warnings complete successfully (`true`) or not (`false`).
+     * 
+     * The DeployMessage object for a warning contains the following values:
+     * - problemType—Warning
+     * - problem—The text of the warning
+     * 
+     * If a warning occurs and ignoreWarnings is set to `true`, the success field in DeployMessage is `true`. 
+     * 
+     * If ignoreWarnings is set to false, success is set to false and the warning is treated like an error.
+     * 
+     * @default false
+     */
     ignoreWarnings?: boolean;
+    /**
+     * If `true`, the deleted components in the `destructiveChanges.xml` manifest 
+     * file aren't stored in the Recycle Bin. Instead, 
+     * they become immediately eligible for deletion.
+     * 
+     * __This option only works in Developer Edition or sandbox orgs. It doesn’t work in production orgs.__
+     */
     purgeOnDelete?: boolean;
+    /**
+     * @deprecated Only available in API version `33.0` and earlier.
+     */
     runAllTests?: boolean;
 }
