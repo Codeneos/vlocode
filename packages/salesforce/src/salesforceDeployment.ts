@@ -81,23 +81,29 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         // Set deploy options passed to JSforce; options arg can override the defaults
         const deployOptions: DeployOptions = {
             singlePackage: true,
-            performRetrieve: true,
             ignoreWarnings: true,
+            performRetrieve: false,
             autoUpdatePackage: false,
             allowMissingFiles: false,
             // We assume we only run on developer orgs by default
             purgeOnDelete: true,
             rollbackOnError: false,
-            testLevel: 'RunSpecifiedTests',
-            runTests: [
-                'XmlUtilTest'
-            ],
+            testLevel: 'NoTestRun',
             ...(options ?? {})
         };
 
         if (await this.salesforce.isProductionOrg()) {
             deployOptions.rollbackOnError = true;
             deployOptions.purgeOnDelete = false;
+
+            if (deployOptions.testLevel === 'NoTestRun') {
+                // not supported on production orgs; unset test level so default is used
+                delete deployOptions.testLevel;
+            }
+        }
+
+        if (deployOptions.testLevel === 'RunSpecifiedTests' && !deployOptions.runTests?.length) {
+            throw new Error('Test level "RunSpecifiedTests" requires property "runTests" to be set and not empty');
         }
 
         // Start deploy
@@ -122,16 +128,13 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         }
 
         try {
-            await this.connection.metadata.cancelDeploy(this.deploymentId);
+            try {
+                this.lastStatus = await this.connection.metadata.cancelDeploy(this.deploymentId);
+            } catch(err) {
+                this.lastStatus = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
+            }
         } catch(err) {
-            // if the deployment is already completed we will get an error ignore it
-        }
-
-        try {
-            // Refresh status
-            this.lastStatus = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as unknown as DeployResult;
-        } catch(err) {
-            // Ignore errors that occur here;
+            // Ignore errors that occur during cancellation
         } finally {
             void this.emit('cancel', this.lastStatus);
         }
@@ -145,7 +148,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     }
 
     private async checkDeployment() {
-        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true) as unknown as DeployResult;
+        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
 
         // Reduce polling frequency for long running deployments
         if (this.pollCount++ > 10 && this.checkInterval < 5000) {

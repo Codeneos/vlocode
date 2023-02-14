@@ -83,7 +83,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             this.deploymentTaskRef = setImmediate(async () => {
                 try {
-                    while (this.filesPendingDeployment.size > 0) {
+                    while (this.filesPendingDeployment.size > 0 && this.enabled) {
                         await this.doDeployMetadata(this.popPendingFiles());
                     }
                 } finally {
@@ -93,7 +93,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         } else {
             const fileNameText = selectedFiles.length == 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
             this.logger.info(`Deployment queued of ${fileNameText}`);
-            void vscode.window.showInformationMessage(`Queued deployment of ${fileNameText} (queue: ${this.filesPendingDeployment.size})...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
+            void vscode.window.showInformationMessage(`Queued deployment of ${fileNameText} (pending: ${this.filesPendingDeployment.size})...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
                 if (cancel) {
                     selectedFiles.forEach(this.filesPendingDeployment.delete.bind(this.filesPendingDeployment));
                 }
@@ -103,7 +103,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     protected async doDeployMetadata(files: vscode.Uri[]) {
         const apiVersion = this.vlocode.config.salesforce?.apiVersion ?? this.salesforce.getApiVersion();
-        const taskTitle = files.length == 1 ? `Deploying ${fileName(files[0].fsPath, true)}...` : 'Deploying Metadata...';
+        const taskTitle = files.length == 1 ? `Deploying ${fileName(files[0].fsPath, true).split('.')[0]}` : 'Deploying Metadata';
         await this.vlocode.withActivity({
             progressTitle: taskTitle,
             location: vscode.ProgressLocation.Notification,
