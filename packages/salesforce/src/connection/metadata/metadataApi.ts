@@ -4,47 +4,45 @@ import { Stream } from 'stream';
 import { RestClient } from "../../restClient";
 import { SoapClient } from "../../soapClient";
 import { SalesforceConnection } from "../salesforceConnection";
+import { RestDeploymentApi } from "./restDeploymentApi";
 import { DeployOptions, DeployResult, DescribeMetadataResult, DescribeValueTypeResult, FileProperties, RetrieveResult, SalesforceMetadata, SaveResult, UpsertResult } from "./types";
 import { ListMetadataQuery } from "./types/metadataQuery";
 import { RetrieveRequest } from "./types/retrieveRequest";
-
-interface DeployRequest {
-    id: string;
-    validatedDeployRequestId: string | null;
-    deployOptions: DeployOptions,
-    deployResult: DeployResult
-}
 
 export enum ValueTypeNamespace {
     metadata = 'http://soap.sforce.com/2006/04/metadata',
     tooling = 'urn:metadata.tooling.soap.sforce.com'
 }
 
+export interface DeploymentApi {
+    deploy(data: Stream | Buffer | string, deployOptions: DeployOptions): Promise<DeployResult>;
+    checkDeployStatus(id: string, includeDetails?: boolean): Promise<DeployResult>;
+    cancelDeploy(id: string): Promise<DeployResult>;
+}
+
 /**
  * Metadata API implementation for Vlocode partially compatible with Metadata API class  from JSforce.
- * 
+ *
  * Key differences between the JSforce implementation:
  *  - Does not support async Metadata API calls as these are deprecated by Salesforce since API version 31.0
  *  - Support for both REST as well as SOAP Metadata API
- *  - Support deployment cancellation 
+ *  - Support deployment cancellation
  *  - Support rename of metadata
  *  - Support describe value type
  *  - Does not support old nodejs callback style; all calls return an awaitable promise
  */
-export class MetadataApi {
+export class MetadataApi implements DeploymentApi {
+
+    
+    private deploymentApiType = RestDeploymentApi;
 
     private soap: SoapClient;
-    private rest: RestClient;
-
-    private get apiVersion(): string {
-        return this.connection.version;
-    }
+    private deployment: DeploymentApi;
 
     constructor(private connection: SalesforceConnection) {
-        this.rest = new RestClient(this.connection,             
-            `/services/data/v${this.apiVersion}/metadata`)
-        this.soap = new SoapClient(this.connection, 
-            `/services/Soap/m/${this.connection.version}`, 
+        this.deployment = new RestDeploymentApi(this.connection);
+        this.soap = new SoapClient(this.connection,
+            `/services/Soap/m/{apiVersion}`,
             'http://soap.sforce.com/2006/04/metadata'
         );
     }
@@ -100,10 +98,10 @@ export class MetadataApi {
     public update(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<SaveResult | SaveResult[]> {
         return this.invoke('updateMetadata', { type, metadata }, 'result');
     }
-    
+
     public upsert(type: string, metadata: SalesforceMetadata) : Promise<UpsertResult>;
     public upsert(type: string, metadata: SalesforceMetadata[]) : Promise<UpsertResult[]>;
-    public upsert(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<UpsertResult | UpsertResult[]> {        
+    public upsert(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<UpsertResult | UpsertResult[]> {
         return this.invoke('updateMetadata', { type, metadata }, 'result');
     }
 
@@ -111,55 +109,6 @@ export class MetadataApi {
     public delete(type: string, fullNames: string[]) : Promise<SaveResult[]>;
     public delete(type: string, fullNames: string | string[]) : Promise<SaveResult | SaveResult[]>{
         return this.invoke<SaveResult[] | SaveResult>('delete', { type, fullNames }, 'result');
-    }
-
-    //@ts-ignore
-    public async deploy(data: Stream | Buffer | string, deployOptions: DeployOptions) {
-        return (await this.deployRest(data, deployOptions)).deployResult;
-    }
-
-    public async deployRest(data: Stream | Buffer | string, deployOptions: DeployOptions): Promise<DeployRequest> {
-        const contentBody = Buffer.isBuffer(data) 
-            ? data
-            : typeof data !== 'string' 
-            ? (await streamToBuffer(data))
-            : data;
-        
-        const bodyParts = [ {
-            headers: {
-                'Content-Disposition': `form-data; name="json"`,
-                'Content-Type': `application/json`
-            },
-            body: JSON.stringify({ deployOptions })
-        }, {
-            headers: {
-                'Content-Disposition': `form-data; name="file"; filename="Deploy.zip"`,
-                'Content-Type': `application/zip`,              
-            },
-            body: contentBody
-        } ];
-
-        return this.rest.post(bodyParts, 'deployRequest');
-    }
-
-    public checkDeployStatus(id: string, includeDetails?: boolean): Promise<DeployResult> {
-        return this.invoke('checkDeployStatus', {
-            asyncProcessId: id,
-            includeDetails: includeDetails === true
-        }, 'result');
-    }
-
-    public async checkDeployStatusRest(id: string, includeDetails?: boolean) {
-        const result = await this.rest.get<DeployRequest>(`deployRequest/${id}?includeDetails=${!!includeDetails}`);
-        return result.deployResult;
-    }
-
-    // @ts-ignore
-    public async cancelDeploy(id: string) {
-        const result = await this.rest.patch<DeployRequest>(
-            { deployResult: { status: 'Cancelling' } }, 
-            `deployRequest/${id}`); 
-        return result.deployResult;
     }
 
     public retrieve(retrieveRequest: RetrieveRequest): Promise<string> {
@@ -175,9 +124,18 @@ export class MetadataApi {
         }, 'result');
     }
 
-    protected [beforeHook](name: string | symbol, args: any[]): any {
-        if (args.length && typeof args[args.length - 1] === 'function') {
-            throw new Error('@vlocode/salesforce does not support the callback parameter for all metadata API related functions');
-        }
+    public deploy(data: Stream | Buffer | string, deployOptions: DeployOptions): Promise<DeployResult> {
+        return this.deployment.deploy(data, deployOptions);
+    }
+
+    public checkDeployStatus(id: string, includeDetails?: boolean): Promise<DeployResult> {
+        return this.deployment.checkDeployStatus(id, includeDetails);
+    }
+
+    public cancelDeploy(id: string): Promise<DeployResult>{
+        return this.deployment.cancelDeploy(id);
     }
 }
+
+
+
