@@ -144,7 +144,6 @@ export namespace sfdx {
     }
 
     export async function getOrgDetails(usernameOrAlias: string) : Promise<SalesforceOrgInfo | undefined> {
-        const x = await getAllKnownOrgDetails();
         for await (const config of getAllValidatedConfigs()) {
             if (config.username?.toLowerCase() === usernameOrAlias?.toLowerCase() || 
                 config.alias?.toLowerCase() === usernameOrAlias?.toLowerCase()) {
@@ -160,7 +159,7 @@ export namespace sfdx {
      */
     export async function updateAccessToken(usernameOrAlias: string, accessToken: string) : Promise<void> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        const username = stateAggregator.aliases.get(usernameOrAlias) || usernameOrAlias;
+        const username = stateAggregator.aliases.getUsername(usernameOrAlias) || usernameOrAlias;
         stateAggregator.orgs.update(username, { accessToken });
         await stateAggregator.orgs.write(username);
     }
@@ -171,7 +170,7 @@ export namespace sfdx {
      */
     export async function resolveUsername(alias: string) : Promise<string | undefined> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        return stateAggregator.aliases.resolveUsername(alias);
+        return stateAggregator.aliases.getUsername(alias) || undefined;
     }
 
     /**
@@ -180,7 +179,7 @@ export namespace sfdx {
      */
     export async function resolveAlias(userName: string) : Promise<string> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        return stateAggregator.aliases.get(userName) || userName;
+        return stateAggregator.aliases.resolveAlias(userName) ?? userName;
     }
 
     export async function updateAlias(alias: string, userName: string) : Promise<void> {
