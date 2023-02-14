@@ -4,6 +4,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.13](https://github.com/codeneos/vlocode/compare/v0.18.12...v0.18.13) (2023-02-14)
+
+### Bug Fixes
+
+* refresh access token on connection does not emit event ([37098dd](https://github.com/codeneos/vlocode/commit/37098ddddef1056d878ec9ad340c272dfe46dccc))
+* soap client does not detect access token expiry causing error when token is expired instead of issuing a token refresh ([2cb1b2f](https://github.com/codeneos/vlocode/commit/2cb1b2f76834de22b418d09755b0c22652c16ecf))
+* updateAccessToken stores updated access tokens under alias instead of under username ([7410ed4](https://github.com/codeneos/vlocode/commit/7410ed4844c66fa3edf219c11e3bd082b350433a))
+* visitObject does not visit properties that have object values ([a140204](https://github.com/codeneos/vlocode/commit/a14020413a8d7076298a43ad15d561feb3bada44))
+* xml type nill is not parsed as null value ([6617c88](https://github.com/codeneos/vlocode/commit/6617c8840f2fd3d5b545c76c08a045a3bf9912b7))
+
+### Features
+
+* adjust deployment options for production deployments and prevent deployments with incorrect configuration from starting ([ade5fe9](https://github.com/codeneos/vlocode/commit/ade5fe90988e2faf59896ab7be4604dab2ff19a2))
+* do not bundle jsforce anymore; jsforce patches have been incorperated into Salesforce connection ([718e89d](https://github.com/codeneos/vlocode/commit/718e89d5ac19973c3f972bb5662d2e1c54052d10))
+* enable response and request logging for http-transport using static transport flag ([56116ca](https://github.com/codeneos/vlocode/commit/56116ca9792eff50fd03eaa2163578800a87bb52))
+* implement support bulk API 2.0 ([cd0c346](https://github.com/codeneos/vlocode/commit/cd0c3461c4915397c2fef18aed57e84c3113a8c9))
+* support both metadata REST and SOAP APIs for deployment ([5846c2e](https://github.com/codeneos/vlocode/commit/5846c2e1c448493888b1e1d7996626716277cf20))
+* support replacement tokens in URL ([9e359a9](https://github.com/codeneos/vlocode/commit/9e359a9c121195705b62a470641abc8cb7505dce))
+
 ## [0.18.12](https://github.com/codeneos/vlocode/compare/v0.18.11...v0.18.12) (2023-01-27)
 
 ### Bug Fixes

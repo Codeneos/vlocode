@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.13](https://github.com/codeneos/vlocode/compare/v0.18.12...v0.18.13) (2023-02-14)
+
+### Features
+
+* adjust deployment options for production deployments and prevent deployments with incorrect configuration from starting ([ade5fe9](https://github.com/codeneos/vlocode/commit/ade5fe90988e2faf59896ab7be4604dab2ff19a2))
+
 ## [0.18.12](https://github.com/codeneos/vlocode/compare/v0.18.11...v0.18.12) (2023-01-27)
 
 ### Bug Fixes

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.13](https://github.com/Codeneos/vlocode/compare/v0.18.12...v0.18.13) (2023-02-14)
+
+### Bug Fixes
+
+* refresh access token on connection does not emit event ([37098dd](https://github.com/Codeneos/vlocode/commit/37098ddddef1056d878ec9ad340c272dfe46dccc))
+* soap client does not detect access token expiry causing error when token is expired instead of issuing a token refresh ([2cb1b2f](https://github.com/Codeneos/vlocode/commit/2cb1b2f76834de22b418d09755b0c22652c16ecf))
+
+### Features
+
+* adjust deployment options for production deployments and prevent deployments with incorrect configuration from starting ([ade5fe9](https://github.com/Codeneos/vlocode/commit/ade5fe90988e2faf59896ab7be4604dab2ff19a2))
+* do not bundle jsforce anymore; jsforce patches have been incorperated into Salesforce connection ([718e89d](https://github.com/Codeneos/vlocode/commit/718e89d5ac19973c3f972bb5662d2e1c54052d10))
+* enable response and request logging for http-transport using static transport flag ([56116ca](https://github.com/Codeneos/vlocode/commit/56116ca9792eff50fd03eaa2163578800a87bb52))
+* implement support bulk API 2.0 ([cd0c346](https://github.com/Codeneos/vlocode/commit/cd0c3461c4915397c2fef18aed57e84c3113a8c9))
+* support both metadata REST and SOAP APIs for deployment ([5846c2e](https://github.com/Codeneos/vlocode/commit/5846c2e1c448493888b1e1d7996626716277cf20))
+* support replacement tokens in URL ([9e359a9](https://github.com/Codeneos/vlocode/commit/9e359a9c121195705b62a470641abc8cb7505dce))
+
 ## [0.18.12](https://github.com/Codeneos/vlocode/compare/v0.18.11...v0.18.12) (2023-01-27)
 
 ### Bug Fixes
