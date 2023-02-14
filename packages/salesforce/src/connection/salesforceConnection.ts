@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray } from '@vlocode/util';
+import { resumeOnce, CustomError, wait, asArray, formatString } from '@vlocode/util';
 import { HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
@@ -180,6 +180,9 @@ export class SalesforceConnection extends Connection {
 
     private prepareRequest(info: string | HttpRequestInfo) : HttpRequestInfo {
         const request: HttpRequestInfo = typeof info === 'string' ? { method: 'GET', url: info } : { ...info };
+
+        // replace placeholders
+        request.url = formatString(request.url, { apiVersion: this.version });
 
         // Normalize the headers
         request.headers = Object.fromEntries(

@@ -1,5 +1,5 @@
 import { HttpTransport, SalesforceConnection } from './connection';
-import { CustomError, setObjectProperty, wait, XML } from '@vlocode/util';
+import { CustomError, formatString, setObjectProperty, stringEquals, wait, XML } from '@vlocode/util';
 
 export type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
 
@@ -122,7 +122,7 @@ export class SoapClient {
     public async invoke<T = object>(request: SoapClientRequest, attempt?: number) : Promise<SoapClientResponse<T>>  {
         const result = await this.transport.httpRequest({
             method: 'POST',
-            url: this.endpoint,
+            url: formatString(this.endpoint, { apiVersion: this.connection.version }),
             headers: {
                 'SOAPAction': '""',
                 'Content-Type': 'text/xml;charset=UTF-8'
