@@ -125,7 +125,8 @@ export class SalesforceConnection extends Connection {
 
         const [userId, organizationId] = tokens.id.split("/");
         this.userInfo = { id: userId, organizationId, url: tokens.id };
-
+        this.emit('refresh', this.accessToken);
+        
         return tokens.access_token;
     }
 
