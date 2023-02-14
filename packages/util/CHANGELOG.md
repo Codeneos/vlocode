@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.14](https://github.com/Codeneos/vlocode/compare/v0.18.13...v0.18.14) (2023-02-14)
+
+### Bug Fixes
+
+* getRootTagName also detects root tags in files that have XML like strings ([4dcbd72](https://github.com/Codeneos/vlocode/commit/4dcbd72eb2871244cb1917d79bf0ef184cabbcbe))
+
 ## [0.18.13](https://github.com/Codeneos/vlocode/compare/v0.18.12...v0.18.13) (2023-02-14)
 
 ### Bug Fixes
