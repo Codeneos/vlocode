@@ -133,6 +133,12 @@ export class HttpTransport implements Transport {
         }
     };
 
+    /**
+     * Even when debug logging is enable request and response bodies are not logged for performance and security reason.
+     * Enabling this flag enables logging of both the request and response bodies including headers
+     */
+    static enableResponseLogging = false;
+
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
         private logger: ILogger = Logger.null) {
@@ -201,9 +207,13 @@ export class HttpTransport implements Transport {
 
             const responseData = new Array<Buffer>();
             response.on('data', (chunk) => responseData.push(chunk));
-            response.once('end', () => {        
+            response.once('end', () => {
                 this.decodeResponseBody(response, Buffer.concat(responseData))
                     .then(body => { 
+                        if (HttpTransport.enableResponseLogging) {
+                            this.logger.debug(`<headers>`, JSON.stringify(response.headers, undefined, 4));
+                            this.logger.debug(`<response>`, body.toString(this.bodyEncoding));
+                        }
                         const parsed = this.parseResponseBody(response, body);
                         if (typeof parsed !== 'string') {
                             response.headers['content-type'] = 'no-parse';
@@ -219,9 +229,14 @@ export class HttpTransport implements Transport {
 
         const body = info.parts ? this.encodeMultipartBody(request, info.parts) : info.body;
 
+        if (HttpTransport.enableResponseLogging) {
+            this.logger.debug(`${info.method} ${url.pathname}`);
+            this.logger.debug('<headers>', JSON.stringify(info.headers ?? {}, undefined, 2));
+        }
+
         if (body) {
             this.sendRequestBody(request, body)
-                .then((req) => new Promise((resolve, reject) => req.end(err => err ? reject(err) : resolve(req))))
+                .then((req) => new Promise((resolve) => req.end(() => resolve(req))))
                 .catch((err) => requestPromise.reject(err));
         } else {
             request.end();
@@ -252,11 +267,16 @@ export class HttpTransport implements Transport {
     }
 
     private sendRequestBody(request: http.ClientRequest, body: string | Buffer) : Promise<http.ClientRequest> {
+        if (HttpTransport.enableResponseLogging) {
+            this.logger.debug('<body>', typeof body === 'string' ? body : body.toString(this.bodyEncoding));
+        }
+
         if (body.length > this.options.gzipThreshold && this.options.useGzipEncoding) {
-            return new Promise((resolve, reject) => {             
+            const activeEncoding = request.getHeader('content-encoding');
+            return new Promise((resolve, reject) => {
                 zlib.gzip(body, (err, value) => {
                     err ? reject(err) : request
-                        .setHeader('Content-Encoding', 'gzip')
+                        .setHeader('content-encoding', activeEncoding ? `${activeEncoding}, gzip` : 'gzip')
                         .write(value, 'binary', err => 
                             err ? reject(err) : resolve(request)
                         );
@@ -270,12 +290,6 @@ export class HttpTransport implements Transport {
             )
         );
     }
-
-    // private promisfy<T extends object, A extends any[]>(_this: T, fn: (...args: [...A, (err: any) => any]) => R, ...args: A) : Promise<T> {
-    //     return new Promise((resolve, reject) => 
-    //        fn.apply(_this, [...args, err => err ? reject(err) : resolve(_this)])
-    //     );
-    // }
 
     private decodeResponseBody(response: http.IncomingMessage, responseBuffer: Buffer): Promise<Buffer> {
         // TODO: support chained encoding
