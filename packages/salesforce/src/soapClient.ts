@@ -199,8 +199,12 @@ export class SoapClient {
         });
     }
 
+    private getFaultCode(soapResponse: SoapResponse) {
+        return /^[^:]+:(.*)$/.exec(soapResponse.Envelope.Body?.Fault?.faultcode ?? '')?.[1];
+    }
+
     private isSessionExpired(soapResponse: SoapResponse) {
-        if (soapResponse.Envelope.Body?.Fault?.faultcode === 'INVALID_SESSION_ID') {
+        if (this.getFaultCode(soapResponse) === 'INVALID_SESSION_ID') {
             return true;
         }
         return false;
@@ -211,13 +215,15 @@ export class SoapClient {
             return false;
         }
 
-        if (soapResponse.Envelope.Body?.Fault?.faultcode === 'UNABLE_TO_LOCK_ROW' || 
-            soapResponse.Envelope.Body?.Fault?.faultcode === 'TOO_MANY_APEX_REQUESTS' || 
-            soapResponse.Envelope.Body?.Fault?.faultcode === 'TERRITORY_REALIGN_IN_PROGRESS' || 
-            soapResponse.Envelope.Body?.Fault?.faultcode === 'RECORD_IN_USE_BY_WORKFLOW' || 
-            soapResponse.Envelope.Body?.Fault?.faultcode === 'PROCESSING_HALTED' || 
-            soapResponse.Envelope.Body?.Fault?.faultcode === 'PLATFORM_EVENT_PUBLISHING_UNAVAILABLE' || 
-            soapResponse.Envelope.Body?.Fault?.faultcode === 'PLATFORM_EVENT_PUBLISH_FAILED') {
+        const soapFault = this.getFaultCode(soapResponse);
+        
+        if (soapFault === 'UNABLE_TO_LOCK_ROW' || 
+            soapFault === 'TOO_MANY_APEX_REQUESTS' || 
+            soapFault === 'TERRITORY_REALIGN_IN_PROGRESS' || 
+            soapFault === 'RECORD_IN_USE_BY_WORKFLOW' || 
+            soapFault === 'PROCESSING_HALTED' || 
+            soapFault === 'PLATFORM_EVENT_PUBLISHING_UNAVAILABLE' || 
+            soapFault === 'PLATFORM_EVENT_PUBLISH_FAILED') {
             return true;
         }
         
