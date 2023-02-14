@@ -104,15 +104,9 @@ export namespace XML {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
-        const xmlTagMatch = xml.match(/<([^!> ]+)/)?.[1];
-        if (xmlTagMatch?.toLowerCase() === '?xml') {
-            // when there is a root tag use that
-            return xml.match(/<([^?!> ]+)/)?.[1];
+        if (xml.trimStart().startsWith('<?xml ')) {
+            return xml.match(/<([^-?!][\w\d]*)/im)?.[1];
         }
-        if (xmlTagMatch && /[_a-zA-Z]/.test(xmlTagMatch)) {
-            // when there is no XML tag match test the root tag match to see if it is valid XML
-            return xmlTagMatch;
-        }        
     }
 
     /**

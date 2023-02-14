@@ -26,9 +26,6 @@ describe('xml', () => {
         });
     });
     describe('#getRootTagName', () => {
-        it('should return root tag for XML snippet (no declaration)', () => {
-            expect(XML.getRootTagName(`<test><tag>test</tag></test>`)).toBe('test');
-        });
         it('should ignore XML declaration', () => {
             expect(XML.getRootTagName(
                 `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
@@ -36,11 +33,9 @@ describe('xml', () => {
         });
         it('should ignore comments when on new line', () => {
             expect(XML.getRootTagName(
-                `<!-- test -->
+                `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+                 <!-- test -->
                  <test><tag>test</tag></test>`)).toBe('test');
-        });
-        it('should ignore comments when same line as root tag', () => {
-            expect(XML.getRootTagName(`<!-- test --><test><tag>test</tag></test>`)).toBe('test');
         });
         it('should ignore comments with XML declaration', () => {
             expect(XML.getRootTagName(
