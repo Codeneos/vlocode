@@ -1,8 +1,8 @@
 import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray, formatString } from '@vlocode/util';
-import { HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
+import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, stringEquals, getErrorMessage } from '@vlocode/util';
+import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
 import { MetadataApi } from './metadata';
@@ -23,21 +23,81 @@ interface RequestOptions {
     noContentResponse?: boolean;
 }
 
+interface Subrequest {
+    /**
+     * The method to use with the requested resource. 
+     * For a list of valid methods, refer to the documentation for the requested resource.
+     */
+    method: HttpMethod;
+    /**
+     * The resource to request.
+     * - The URL can include any query string parameters that the {@link Subrequest} supports. The query string must be URL-encoded.
+     * - You can use parameters to filter response bodies.
+     * - You __cannot__ apply headers at the {@link Subrequest} level.
+     */
+    url: string;
+    /**
+     * The name of the binary part in the multipart request.
+     * When multiple binary parts are uploaded in one batch request, this value is used to map a request to its binary part. 
+     * To prevent name collisions, use a unique value for each `binaryPartName` property in a batch request.
+     * 
+     * If this value exists, a `binaryPartNameAlias` value must also exist.
+     */
+    binaryPartName?: string;
+    /**
+     * The `name` parameter in the `Content-Disposition` header of the binary body part. 
+     * Different resources expect different values. See Insert or Update Blob Data.
+     * If this value exists, a `binaryPartName` value must also exist.
+     */
+    binaryPartNameAlias?: string;
+    /**
+     * The input body for the request.
+     * The type depends on the request specified in the url property.
+     */
+    richInput?: any;
+}
+
+interface SubrequestResult {
+    /**
+     * The type depends on the response type of the subrequest.
+     * __If the result is an error, the type is a collection containing the error message and error code.__
+     */
+    result?: any;
+    /**
+     * An HTTP status code indicating the status of this subrequest.
+     */
+    statusCode: number;
+}
+
+/**
+ * APIs that are supported `composite/batch` requests
+ */
+const compositeSupportedApis: ReadonlyArray<string> = Object.freeze([
+    'limits', 
+    'query', 
+    'queryAll', 
+    'search', 
+    'connect', 
+    'chatter', 
+    'actions', 
+    'sobjects'
+]);
+
 /**
  * Salesforce connection decorator that extends the base JSForce connection
  */
 export class SalesforceConnection extends Connection {
 
     /**
-     * When `true` feed tracking is disabled improving overall performance by not generating feed notifications on changes.
-     * @default true
+     * When `true` feed tracking is enabled improving decreasing overall performance by generating feed notifications on changes.
+     * @default false
      */
-    public disableFeedTracking!: boolean;
+    public enableFeedTracking: boolean;
 
     /**
      * The client ID used in the request headers
      */
-    public static clientConnectionId = `sfdx toolbelt:${process.env.VLOCODE_SET_CLIENT_IDS ?? 'vlocode'}`;
+    public static clientConnectionId = `sfdx toolbelt:${process.env.VLOCODE_SET_CLIENT_ID ?? 'vlocode'}`;
 
     /**
      * Max number of times a request is retried before throwing an error to the caller.
@@ -87,8 +147,6 @@ export class SalesforceConnection extends Connection {
      * WHen the prototype is changed of connection local variables aren't re-initialized; this method sets the defaults for all private and public variables.
      */
     private initializeLocalVariables() {
-        this.disableFeedTracking = true;
-
         // Setup transport
         this._transport = new HttpTransport({ instanceUrl: this.instanceUrl, baseUrl: this._baseUrl() }, LogManager.get('HttpTransport'));
         if (this.oauth2) {
@@ -111,25 +169,88 @@ export class SalesforceConnection extends Connection {
     }
 
     /**
-     * Refreshes the current access token and returns the refreshed token.
-     * @returns Refreshed token
+     * Executes up to 25 subrequests in a single request. The response bodies and HTTP statuses of 
+     * the subrequests in the batch are returned in a single response body. 
+     * Each subrequest counts against rate limits.
+     * 
+     * __Note__ all requests are executed against the connections API {@link version}. URLs that do contain 
+     * a version number such as `/services/data/v33.0/sobjects/Account/describe` are normalized to a format
+     * without a concrete API version such as, i.e: `{apiVersion}/sobjects/Account/describe`.
+     * 
+     * __Note__ only the following APIs are supported:
+     * - `limits`
+     * - `query`
+     * - `queryAll`
+     * - `search`
+     * - `connect`
+     * - `chatter`
+     * - `actions`
+     * - `sobjects`
+     * 
+     * Format of requests:
+     * ```js
+     * const requests = [{
+     *    method: 'GET',
+     *    url: 'sobjects/Account/describe'
+     * }, {
+     *    method: 'POST',
+     *    url: 'sobjects/Account',
+     *    richInput: { Name: 'CB Corp.' }
+     * }]
+     * ```
+     * 
+     * @param batchRequests Collection of subrequests to execute.
+     * @param haltOnError Controls whether a batch continues to process after a subrequest fails. The default is false.
+     * If the value is false and a subrequest in the batch doesn’t complete, Salesforce attempts to execute the subsequent subrequests in the batch.
+     * If the value is true and a subrequest in the batch doesn’t complete due to an HTTP response in the 400 or 500 range, Salesforce halts execution. It returns an HTTP 412 status code and a BATCH_PROCESSING_HALTED error message for each subsequent subrequest. The top-level request to /composite/batch returns HTTP 200, and the hasErrors property in the response is set to true.
+     * This setting is only applied during subrequest processing, and not during initial request deserialization. If an error is detected during deserialization, such as a syntax error in the Subrequest request data, Salesforce returns an HTTP 400 Bad Request error without processing any subrequests, regardless of the value of haltOnError. An example where this could occur is if a subrequest has an invalid method or url field.
+     * @returns Array of promises that reflect the batch requests; each promise can be rejected or resolved individually
      */
-    public async refreshAccessToken(): Promise<string> {
-        if (!this.refreshToken) {
-            throw new Error('Unable to refresh token due to missing access token');
+    public batchRequest<T = any>(requests: ReadonlyArray<Subrequest>, haltOnError?: boolean): Promise<T>[] {
+        if (requests.length > 25) {
+            throw new Error('Batch requests supports at most 25 requests in a single composite');
         }
 
-        const tokens = await this.oauth2.refreshToken(this.refreshToken);
-        this.accessToken = tokens.access_token;
-        this.instanceUrl = tokens.instance_url;
+        const responses = new Array<DeferredPromise<T>>();
+        const batchRequests = requests.map(req => ({ 
+            ...req,
+            url: this.normalizeBatchRequestUrl(req.url)
+        }));
 
-        const [userId, organizationId] = tokens.id.split("/");
-        this.userInfo = { id: userId, organizationId, url: tokens.id };
+        this.request<{ hasErrors: boolean; results: Array<SubrequestResult> }>({ 
+            method: 'POST',
+            url: `/services/data/v{apiVersion}/composite/batch`, 
+            body: JSON.stringify({ batchRequests, haltOnError })
+        }).then(resp => resp.results.map((res, i) => {
+            if (resp.hasErrors && this.isErrorResponse(res)) {
+                return responses[i].reject(this.getResponseError({
+                    body: res.result,
+                    statusCode: res.statusCode
+                }));
+            }
+            return responses[i].resolve(res.result);
+        })).catch(err => responses.forEach(req => req.reject(err)));
 
-        this.logger.debug(`token refresh complete`);
-        this.emit('refresh', this.accessToken);
+        return responses;
+    }
 
-        return tokens.access_token;
+    private normalizeBatchRequestUrl(url: string) {
+        if (!url.startsWith(`/`)) {
+            url = `/${url}`;
+        }        
+        if (url.startsWith(`/services/data/`)) {
+            url = url.slice(15);
+        }
+        if (url.startsWith(`v`)) {
+            url = `{apiVersion}/${url.split('/').slice(1).join('/')}`;
+        }
+        
+        const apiName = url.split('/')[0]!;
+        if (!compositeSupportedApis.includes(apiName)) {
+            throw new Error(`Composite Batch request does not support API "${apiName}": ${url}`);
+        }
+        
+        return this.replaceTokens(url);
     }
 
     /**
@@ -182,7 +303,7 @@ export class SalesforceConnection extends Connection {
         const request: HttpRequestInfo = typeof info === 'string' ? { method: 'GET', url: info } : { ...info };
 
         // replace placeholders
-        request.url = formatString(request.url, { apiVersion: this.version });
+        request.url = this.replaceTokens(request.url);
 
         // Normalize the headers
         request.headers = Object.fromEntries(
@@ -191,12 +312,19 @@ export class SalesforceConnection extends Connection {
 
         // Assign default headers for requests
         Object.assign(request.headers, {
-            'disableFeedTracking': this.disableFeedTracking == true,
+            'disableFeedTracking': !this.enableFeedTracking,
             'content-type': request.headers['content-type'] ?? 'application/json; charset=utf-8',
             'user-agent': SalesforceConnection.clientConnectionId
         });
 
         return request;
+    }
+
+    private replaceTokens(url: string): string {
+        // Replace tokens in the URL with concrete values; currently limited to API version
+        return formatString(url, {
+            apiVersion: this.version
+        });
     }
 
     private async executeRequest<T>(
@@ -248,7 +376,7 @@ export class SalesforceConnection extends Connection {
         return response.statusCode === 401;
     }
 
-    private isErrorResponse(response: HttpResponse) {
+    private isErrorResponse(response: HttpResponse | SubrequestResult) {
         return response.statusCode && response.statusCode >= 400;
     }
 
@@ -264,6 +392,7 @@ export class SalesforceConnection extends Connection {
         }
 
         return new CustomError(String(response.body), {
+            statusCode: response.statusCode,
             errorCode: `ERROR_HTTP_${response.statusCode}`,
             name: `ERROR_HTTP_${response.statusCode}`
         });
@@ -287,6 +416,28 @@ export class SalesforceConnection extends Connection {
                 err.message.indexOf('ConcurrentPerOrgLongTxn') != -1
             )
         );
+    }
+    
+    /**
+     * Refreshes the current access token and returns the refreshed token.
+     * @returns Refreshed token
+     */
+    public async refreshAccessToken(): Promise<string> {
+        if (!this.refreshToken) {
+            throw new Error('Unable to refresh token due to missing access token');
+        }
+
+        const tokens = await this.oauth2.refreshToken(this.refreshToken);
+        this.accessToken = tokens.access_token;
+        this.instanceUrl = tokens.instance_url;
+
+        const [userId, organizationId] = tokens.id.split("/");
+        this.userInfo = { id: userId, organizationId, url: tokens.id };
+
+        this.logger.debug(`token refresh complete`);
+        this.emit('refresh', this.accessToken);
+
+        return tokens.access_token;
     }
 }
 
