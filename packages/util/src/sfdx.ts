@@ -109,7 +109,7 @@ export namespace sfdx {
 
             for (const authFields of authFiles) {
                 try {
-                    if (!authFields.orgId || !authFields.username) {
+                    if (!authFields.username) {
                         continue;
                     }
 
@@ -124,7 +124,7 @@ export namespace sfdx {
                     }
 
                     yield {
-                        orgId: authFields.orgId,
+                        orgId: authFields.accessToken.split('!').shift()!,
                         accessToken: authFields.accessToken,
                         instanceUrl: authFields.instanceUrl,
                         loginUrl: authFields.loginUrl ?? authFields.instanceUrl,
@@ -160,7 +160,8 @@ export namespace sfdx {
     export async function updateAccessToken(usernameOrAlias: string, accessToken: string) : Promise<void> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
         const username = stateAggregator.aliases.getUsername(usernameOrAlias) || usernameOrAlias;
-        stateAggregator.orgs.update(username, { accessToken });
+        const authFields = stateAggregator.orgs.get(username, true)
+        stateAggregator.orgs.update(username, { refreshToken: authFields.refreshToken, accessToken });
         await stateAggregator.orgs.write(username);
     }
 
