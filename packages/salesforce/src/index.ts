@@ -1,7 +1,6 @@
 export * from './bulk';
 export * from './connection';
 export * from './deploy';
-export * from './metadata';
 export * from './schema';
 export * from './types';
 export * from './deploymentPackage';

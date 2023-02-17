@@ -227,7 +227,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
     private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
         const connection = await this.getJsForceConnection();
         const soapClient = new SoapClient(connection, `/services/Soap/s/${connection.version}`);
-        return soapClient.request(methodName, request, debuggingHeader);
+        return soapClient.request(methodName, request, { debuggingHeader });
     }
 
     /**

@@ -1,13 +1,16 @@
-import { beforeHook, getObjectProperty, streamToBuffer } from "@vlocode/util";
+import { getObjectProperty, asArray, setObjectProperty } from "@vlocode/util";
 import { Stream } from 'stream';
 
-import { RestClient } from "../../restClient";
 import { SoapClient } from "../../soapClient";
 import { SalesforceConnection } from "../salesforceConnection";
 import { RestDeploymentApi } from "./restDeploymentApi";
+import { Operations, Schemas } from "./metadataSchemas";
 import { DeployOptions, DeployResult, DescribeMetadataResult, DescribeValueTypeResult, FileProperties, RetrieveResult, SalesforceMetadata, SaveResult, UpsertResult } from "./types";
 import { ListMetadataQuery } from "./types/metadataQuery";
 import { RetrieveRequest } from "./types/retrieveRequest";
+import { MetadataTypes } from "./metadataTypes";
+import { DeleteResult } from "../../types";
+import { MetadataResponses } from "./metadataOperations";
 
 export enum ValueTypeNamespace {
     metadata = 'http://soap.sforce.com/2006/04/metadata',
@@ -33,9 +36,6 @@ export interface DeploymentApi {
  */
 export class MetadataApi implements DeploymentApi {
 
-    
-    private deploymentApiType = RestDeploymentApi;
-
     private soap: SoapClient;
     private deployment: DeploymentApi;
 
@@ -47,81 +47,172 @@ export class MetadataApi implements DeploymentApi {
         );
     }
 
-    private async invoke<T>(method: string, message: object, propertyPath?: string) : Promise<T> {
-        const response = await this.soap.request(method, message);
-        return (propertyPath ? getObjectProperty(response.body, propertyPath) : response) as T;
+    private invoke<K extends keyof MetadataResponses>(method: K, message: object, responsePath?: string) : Promise<MetadataResponses[K]>;
+    private async invoke<T>(method: string, message: object, responsePath?: string) : Promise<T> {
+        const response = await this.soap.request(method, message, {
+            requestSchema: Operations[method]?.request,
+            responseSchema: Operations[method]?.response
+        });
+        return (responsePath ? getObjectProperty(response.body, responsePath) : response) as T;
     }
 
+    private convertArray<T>(value: T | T[], asArray: true): T[];
+    private convertArray<T>(value: T | T[], asArray: false): T;
+    private convertArray<T>(value: T | T[], asArray: boolean): T[] | T;
+    private convertArray<T>(value: T | T[], asArray: boolean): T[] | T {
+        return asArray
+            ? Array.isArray(value) ? value : [ value ]
+            : Array.isArray(value) ? value[0] : value;
+    }
+
+    private normalizeMetadata(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]): SalesforceMetadata[] {
+        return asArray(metadata).map(md => setObjectProperty(md, '$.xsi:type', type));
+    }
+
+    /**
+     * Describes features of the metadata API.
+     * @param version API version
+     */
     public describe(version?: string): Promise<DescribeMetadataResult> {
         return this.invoke('describeMetadata', {
             asOfVersion: version
-        }, 'result');
+        }).then(r => r.result);
     }
 
+    /**
+     * Describe a complex value type
+     * @param type name of the type to describe
+     */
     public describeValueType(type: string): Promise<DescribeValueTypeResult>;
     public describeValueType(type: string, namespace: ValueTypeNamespace ): Promise<DescribeValueTypeResult>;
     public describeValueType(type: string, namespace: string): Promise<DescribeValueTypeResult>;
     public describeValueType(type: string, namespace?: ValueTypeNamespace | string): Promise<DescribeValueTypeResult> {
-        return this.invoke('describeMetadata', {
+        return this.invoke('describeValueType', {
             type: namespace ? `{${namespace}}${type}` : type
-        }, 'result');
+        }).then(r => r.result);
     }
 
+    /**
+     * Lists the available metadata components.
+     * @param queries Queries used to filter
+     * @param asOfVersion API version; optional
+     * @returns
+     */
     public list(queries: ListMetadataQuery | ListMetadataQuery[], asOfVersion?: string | number): Promise<FileProperties[]> {
-        return this.invoke<FileProperties[]>('listMetadata', {
+        return this.invoke('listMetadata', {
             queries, asOfVersion
-        }, 'result');
+        }).then(r => r.result ?? []);
     }
 
+    /**
+     * Renames a metadata entry synchronously.
+     * @param type Metadata type
+     * @param oldFullName Current full name
+     * @param newFullName New full name
+     * @returns
+     */
     public rename(type: string, oldFullName: string, newFullName: string) {
-        return this.invoke<SaveResult>('renameMetadata', {
+        return this.invoke('renameMetadata', {
             type, oldFullName, newFullName
-        });
+        }).then(r => r.result);
     }
+
+    /**
+     * Reads metadata entries synchronously.
+     * @param type Metadata type name
+     * @param fullNames list of metadata types
+     */
+    public read<K extends keyof MetadataTypes>(type: K, fullNames: string[]) : Promise<MetadataTypes[K][]>;
+    public read<K extends keyof MetadataTypes>(type: K, fullNames: string) : Promise<MetadataTypes[K]>;
 
     public read<T extends SalesforceMetadata>(type: string, fullNames: string) : Promise<T>;
     public read<T extends SalesforceMetadata>(type: string, fullNames: string[]) : Promise<T[]>;
-    public read<T extends SalesforceMetadata>(type: string, fullNames: string | string[]) : Promise<T | T[]> {
-        return this.invoke('readMetadata', {
+    public async read<T extends SalesforceMetadata>(type: string, fullNames: string | string[]) : Promise<T | T[]> {
+        const readResponse = await this.invoke('readMetadata', {
             type, fullNames
-        }, 'records');
+        });
+        // Normalize results to match schema
+        const schema = Schemas[type];
+        if (schema) {
+            readResponse.result.records.forEach(r => SoapClient.normalizeRequestResponse(schema, r));
+        }
+        // Convert to Array when input is an array otherwise return as single
+        return this.convertArray(readResponse.result.records as T[], Array.isArray(fullNames));
     }
+
+    /**
+     * Creates metadata entries synchronously.
+     * @param type Metadata type name
+     * @param metadata Metadata entry to create
+     */
+    public create<K extends keyof MetadataTypes>(type: K, metadata: MetadataTypes[K]) : Promise<SaveResult>;
+    public create<K extends keyof MetadataTypes>(type: K, metadata: MetadataTypes[K][]) : Promise<SaveResult[]>;
 
     public create(type: string, metadata: SalesforceMetadata) : Promise<SaveResult>;
     public create(type: string, metadata: SalesforceMetadata[]) : Promise<SaveResult[]>;
     public create(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<SaveResult | SaveResult[]> {
-        return this.invoke('createMetadata', { type, metadata }, 'result');
+        return this.invoke('createMetadata', {
+            type, metadata: this.normalizeMetadata(type, metadata)
+        }).then(r => this.convertArray(r.result ?? [], Array.isArray(metadata)))
     }
+
+    /**
+     * Updates metadata entries synchronously.
+     * @param type Metadata type name
+     * @param metadata Metadata entry to update
+     */
+    public update<K extends keyof MetadataTypes>(type: K, metadata: MetadataTypes[K]) : Promise<SaveResult>;
+    public update<K extends keyof MetadataTypes>(type: K, metadata: MetadataTypes[K][]) : Promise<SaveResult[]>;
 
     public update(type: string, metadata: SalesforceMetadata) : Promise<SaveResult>;
     public update(type: string, metadata: SalesforceMetadata[]) : Promise<SaveResult[]>;
     public update(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<SaveResult | SaveResult[]> {
-        return this.invoke('updateMetadata', { type, metadata }, 'result');
+        return this.invoke('updateMetadata', {
+            metadata: this.normalizeMetadata(type, metadata)
+        }).then(r => this.convertArray(r.result ?? [], Array.isArray(metadata)))
     }
+
+    /**
+     * Updates or inserts metadata entries synchronously.
+     * @param type Metadata type name
+     * @param metadata Metadata entry to update insert
+     */
+    public upsert<K extends keyof MetadataTypes>(type: K, metadata: MetadataTypes[K]) : Promise<UpsertResult>;
+    public upsert<K extends keyof MetadataTypes>(type: K, metadata: MetadataTypes[K][]) : Promise<UpsertResult[]>;
 
     public upsert(type: string, metadata: SalesforceMetadata) : Promise<UpsertResult>;
     public upsert(type: string, metadata: SalesforceMetadata[]) : Promise<UpsertResult[]>;
     public upsert(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<UpsertResult | UpsertResult[]> {
-        return this.invoke('updateMetadata', { type, metadata }, 'result');
+        return this.invoke('upsertMetadata', {
+            metadata: this.normalizeMetadata(type, metadata)
+        }).then(r => this.convertArray(r.result ?? [], Array.isArray(metadata)))
     }
 
-    public delete(type: string, fullNames: string) : Promise<SaveResult>;
-    public delete(type: string, fullNames: string[]) : Promise<SaveResult[]>;
-    public delete(type: string, fullNames: string | string[]) : Promise<SaveResult | SaveResult[]>{
-        return this.invoke<SaveResult[] | SaveResult>('delete', { type, fullNames }, 'result');
+    /**
+     * Delete metadata entries synchronously.
+     * @param type Metadata type name
+     * @param fullNames Dull name of the metadata to delete
+     */
+    public delete(type: keyof MetadataTypes, fullNames: string) : Promise<DeleteResult>;
+    public delete(type: keyof MetadataTypes, fullNames: string) : Promise<DeleteResult[]>;
+
+    public delete(type: string, fullNames: string) : Promise<DeleteResult>;
+    public delete(type: string, fullNames: string[]) : Promise<DeleteResult[]>;
+    public delete(type: string, fullNames: string | string[]) : Promise<DeleteResult | DeleteResult[]>{
+        return this.invoke('deleteMetadata', {
+            type, fullNames
+        }).then(r => this.convertArray(r.result ?? [], Array.isArray(fullNames)))
     }
 
     public retrieve(retrieveRequest: RetrieveRequest): Promise<string> {
-        return this.invoke('retrieve', {
-            retrieveRequest
-        }, 'result.id');
+        return this.invoke('retrieve', { retrieveRequest }).then(r => r.result.id);
     }
 
     public checkRetrieveStatus(id: string, includeZip?: boolean): Promise<RetrieveResult> {
-        return this.invoke('checkDeployStatus', {
+        return this.invoke('checkRetrieveStatus', {
             asyncProcessId: id,
             includeZip: includeZip === true
-        }, 'result');
+        }).then(r => r.result)
     }
 
     public deploy(data: Stream | Buffer | string, deployOptions: DeployOptions): Promise<DeployResult> {
@@ -136,6 +227,3 @@ export class MetadataApi implements DeploymentApi {
         return this.deployment.cancelDeploy(id);
     }
 }
-
-
-

@@ -1,5 +1,6 @@
 import { HttpTransport, SalesforceConnection } from './connection';
-import { CustomError, formatString, setObjectProperty, stringEquals, wait, XML } from '@vlocode/util';
+import { CustomError, formatString, setObjectProperty, wait, XML } from '@vlocode/util';
+import { Schema } from './types/schema';
 
 export type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
 
@@ -35,10 +36,15 @@ export interface SoapResponseFault {
     faultstring: string;
 }
 
-interface SoapClientRequest {
+interface SoapRequestOptions {
+    requestSchema?: Schema; 
+    responseSchema?: Schema; 
+    debuggingHeader?: SoapDebuggingHeader;
+}
+
+interface SoapClientRequest extends SoapRequestOptions {
     soapMethod: string; 
     message: object;
-    debuggingHeader?: SoapDebuggingHeader;
     clientName?: string;
     defaultNamespace?: string;
     allOrNone?: boolean;
@@ -115,8 +121,8 @@ export class SoapClient {
      * @param debuggingHeader debugging header
      * @returns
      */
-    public request<T = object>(method: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<SoapClientResponse<T>> {
-        return this.invoke<T>({ soapMethod: method, message: request, debuggingHeader });
+    public request<T = object>(method: string, request: object, options?: SoapRequestOptions) : Promise<SoapClientResponse<T>> {
+        return this.invoke<T>({ soapMethod: method, message: request, ...options });
     }
 
     public async invoke<T = object>(request: SoapClientRequest, attempt?: number) : Promise<SoapClientResponse<T>>  {
@@ -157,8 +163,13 @@ export class SoapClient {
             });
         }
 
+        const responseBody = Object.values(soapResponse.Envelope.Body ?? [])[0];
+        if (responseBody && request.responseSchema) {
+            SoapClient.normalizeRequestResponse(request.responseSchema, responseBody);
+        }
+
         return {
-            body: Object.values(soapResponse.Envelope.Body ?? {})[0],
+            body: responseBody,
             debugLog: soapResponse.Envelope.Header?.DebuggingInfo.debugLog,
         };
     }
@@ -189,6 +200,8 @@ export class SoapClient {
             'soap:Envelope': {
                 $: {
                     'xmlns:soap': 'http://schemas.xmlsoap.org/soap/envelope/',
+                    'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
+                    'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
                     'xmlns': this.xmlNs
                 },
                 'soap:Header': soapHeader,
@@ -197,6 +210,34 @@ export class SoapClient {
                 }
             }
         });
+    }
+
+    /**
+     * Normalize a request or response object that was converted from XML into JSON using a Schema definition
+     * that defines which properties are of which type and converts the properties where required so that they are compatible
+     * with the schema.
+     * 
+     * Modifies the object passed as argument instead of creating a new object.
+     * 
+     * @param schema Schema definition
+     * @param obj request or response object
+     * @returns Schema normalized object
+     */
+    public static normalizeRequestResponse(schema: Schema, obj: object) {
+        for (const field of Object.keys(obj)) {
+            const fieldDef = schema.fields[field];
+            if (!fieldDef) {
+                continue;
+            }            
+
+            const fieldValue = obj[field];
+            if (fieldDef.array && !Array.isArray(fieldValue)) {
+                obj[field] = [ fieldValue ];
+            } else if (typeof fieldDef.type === 'object' && typeof fieldValue === 'object') {
+                this.normalizeRequestResponse(fieldDef.type, obj[field]);
+            }
+        }
+        return obj;
     }
 
     private getFaultCode(soapResponse: SoapResponse) {

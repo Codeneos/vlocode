@@ -1,6 +1,5 @@
+import { SharingModel } from "../../types";
 import { FieldDefinition } from "./fieldDefinition";
-
-export type SharingModel = 'None' | 'Read' | 'Edit' | 'ReadWrite' | 'ControlledByLeadOrContact' | 'ControlledByCampaign';
 
 /**
  * Describes the EntityDefinition Tooling API Object in Salesforce retrieved with field(standard)

@@ -24,12 +24,12 @@ export class RestDeploymentApi implements DeploymentApi {
     }
 
     public async deploy(data: Stream | Buffer | string, deployOptions: DeployOptions): Promise<DeployResult> {
-        const contentBody = Buffer.isBuffer(data) 
+        const contentBody = Buffer.isBuffer(data)
             ? data
-            : typeof data !== 'string' 
+            : typeof data !== 'string'
             ? (await streamToBuffer(data))
             : data;
-        
+
         const bodyParts = [ {
             headers: {
                 'Content-Disposition': `form-data; name="json"`,
@@ -39,7 +39,7 @@ export class RestDeploymentApi implements DeploymentApi {
         }, {
             headers: {
                 'Content-Disposition': `form-data; name="file"; filename="Deploy.zip"`,
-                'Content-Type': `application/zip`,              
+                'Content-Type': `application/zip`,
             },
             body: contentBody
         } ];
@@ -55,8 +55,8 @@ export class RestDeploymentApi implements DeploymentApi {
 
     public async cancelDeploy(id: string) {
         const result = await this.rest.patch<DeployRequest>(
-            { deployResult: { status: 'Canceling' } as DeployResult }, 
-            `deployRequest/${id}`); 
+            { deployResult: { status: 'Canceling' } as DeployResult },
+            `deployRequest/${id}`);
         return result.deployResult;
     }
 }

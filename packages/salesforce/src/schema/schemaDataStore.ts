@@ -1,5 +1,4 @@
-import { DescribeSObjectResult, Field } from '../types';
-import { CustomObjectMetadata, CustomFieldMetadata } from '../metadata';
+import { CustomFieldMetadata, CustomObjectMetadata, DescribeSObjectResult, Field } from '../types';
 
 import { ensureDir, readFile, writeJson } from 'fs-extra';
 import { dirname } from 'path';
@@ -44,7 +43,7 @@ export class SchemaDataStore {
     }
 
     public addMetadata(info: CustomObjectMetadata) {
-        this.mergeStoreData(this.objectInfo, info.fullName, { metadata: info });
+        this.mergeStoreData(this.objectInfo, info.fullName!, { metadata: info });
         for (const field of info.fields ?? []) {            
             this.mergeStoreData(this.fieldInfo, `${info.fullName}.${field.fullName}`, { metadata: field });
         }
