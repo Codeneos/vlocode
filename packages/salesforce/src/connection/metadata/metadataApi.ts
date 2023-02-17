@@ -28,6 +28,7 @@ export interface DeploymentApi {
  *
  * Key differences between the JSforce implementation:
  *  - Does not support async Metadata API calls as these are deprecated by Salesforce since API version 31.0
+ *  - Support strongly typed metadata APIs with IDE type completion
  *  - Support for both REST as well as SOAP Metadata API
  *  - Support deployment cancellation
  *  - Support rename of metadata
@@ -53,7 +54,7 @@ export class MetadataApi implements DeploymentApi {
             requestSchema: Operations[method]?.request,
             responseSchema: Operations[method]?.response
         });
-        return (responsePath ? getObjectProperty(response.body, responsePath) : response) as T;
+        return (responsePath ? getObjectProperty(response.body, responsePath) : response.body) as T;
     }
 
     private convertArray<T>(value: T | T[], asArray: true): T[];
@@ -98,6 +99,8 @@ export class MetadataApi implements DeploymentApi {
      * @param asOfVersion API version; optional
      * @returns
      */
+    public list(queries: ListMetadataQuery<keyof MetadataTypes> | ListMetadataQuery<keyof MetadataTypes>[], asOfVersion?: string | number): Promise<FileProperties[]>;
+    public list(queries: ListMetadataQuery | ListMetadataQuery[], asOfVersion?: string | number): Promise<FileProperties[]>
     public list(queries: ListMetadataQuery | ListMetadataQuery[], asOfVersion?: string | number): Promise<FileProperties[]> {
         return this.invoke('listMetadata', {
             queries, asOfVersion
@@ -131,6 +134,9 @@ export class MetadataApi implements DeploymentApi {
         const readResponse = await this.invoke('readMetadata', {
             type, fullNames
         });
+        if (!readResponse.result?.records) {
+            throw new Error('readMetadata error; expected records to be set instead received undefined instead');
+        }
         // Normalize results to match schema
         const schema = Schemas[type];
         if (schema) {

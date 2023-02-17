@@ -1,7 +1,7 @@
 /**
  * The ListMetadataQuery parameter represents a list of objects that specify which components you are interested in.
  */
-export interface ListMetadataQuery {
+export interface ListMetadataQuery<T extends string = string> {
     /**
      * The folder associated with the component. 
      * This field is required for components that use folders, 
@@ -11,5 +11,5 @@ export interface ListMetadataQuery {
     /**
      * Required. The metadata type, such as `CustomObject`, `CustomField`, or `ApexClass`.
      */
-    type: string;
+    type: T;
 }
