@@ -17,7 +17,7 @@ export type IngestJobType = 'BigObjectIngest' | 'Classic' | 'V2Ingest' ;
 export type QueryJobType = 'V2Query';
 
 export type JobConcurrencyMode = 'parallel';
-export type JobState = 'Open' | 'UploadComplete' | 'Aborted' | 'JobComplete' | 'Failed';
+export type JobState = 'Open' | 'UploadComplete' | 'Aborted' | 'JobComplete' | 'Failed' | 'InProgress';
 export type JobContentType = 'CSV';
 export type JobLineEndingFormat = 'LF' | 'CRLF';
 
@@ -93,6 +93,10 @@ export interface BulkJobInfo {
      * Date and time in the UTC time zone when the job finished.
      */
     readonly systemModstamp: string;
+    /**
+     * Error message set when job is not completed successfully
+     */
+    readonly errorMessage?: string;
 }
 
 export class BulkJob<T extends BulkJobInfo> {
@@ -128,6 +132,12 @@ export class BulkJob<T extends BulkJobInfo> {
     public get state() { return this.info.state; }
 
     /**
+     * Boolean value indicating the job is still processing.
+     * A jov is considered processing when the state is either `InProgress`, `UploadComplete` or `Open`.
+     */
+    public get isProcessing() { return this.state === 'InProgress' || this.state === 'UploadComplete' || this.state === 'Open'; }
+
+    /**
      * Boolean value indicating the job is completed or not
      */
     public get isComplete() { return this.state === 'JobComplete'; }
@@ -138,9 +148,29 @@ export class BulkJob<T extends BulkJobInfo> {
     public get isFailed() { return this.state === 'Failed'; }
 
     /**
-     * Boolean value indicating the job is still accepting new data
+     * Boolean value indicating the job is aborted by the user.
+     */
+    public get isAborted() { return this.state === 'Aborted'; }
+
+    /**
+     * Boolean value indicating the job is still accepting new data (ingest jobs only)
      */
     public get isOpen() { return this.state === 'Open'; }
+
+    /**
+     * Number of records ingested or queried so far
+     */
+    public get recordsProcessed() { return this.info.numberRecordsProcessed; }
+
+    /**
+     * Error message when the job is in `Failed` state
+     */
+    public get errorMessage() { return this.info.errorMessage; }
+
+    /**
+     * Type of Bulk job
+     */
+    public get type() { return this.info.jobType; }
 
     protected readonly delimiterCharacter = ColumnDelimiters[this.columnDelimiter ?? 'COMMA'];
     protected readonly lineEndingCharacters = this.info.lineEnding === 'LF' ? '\n' : '\r\n';

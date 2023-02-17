@@ -44,11 +44,8 @@ export interface IngestJobInfo extends BulkJobInfo {
      * The number of records that were not processed successfully in this job.
      * @note This property is of type int in API version 46.0 and earlier.
      */
-    readonly numberRecordsFailed: number;    
-    /**
-     * Error message set when job is not completed successfully
-     */
-    readonly errorMessage?: string;
+    readonly numberRecordsFailed: number;
+
 }
 
 interface FailedRecord {

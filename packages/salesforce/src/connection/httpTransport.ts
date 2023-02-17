@@ -13,7 +13,7 @@ export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE' | 'PUT';
 export interface HttpResponse {
     statusCode?: number;
     statusMessage?: string;
-    headers: http.IncomingHttpHeaders; 
+    headers?: http.IncomingHttpHeaders; 
     body?: any;
 }
 
