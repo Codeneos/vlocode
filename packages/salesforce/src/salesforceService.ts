@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -16,13 +16,8 @@ import { NamespaceService } from './namespaceService';
 import { SoapClient, SoapDebuggingHeader } from './soapClient';
 import { DeveloperLogs } from './developerLogs';
 import { QueryBuilder } from './queryBuilder';
-import { isArrayBuffer } from 'util/types';
 import { SalesforceBatchService } from './salesforceBatchService';
 
-export interface InstalledPackageRecord extends jsforce.FileProperties {
-    manageableState: string;
-    namespacePrefix: string;
-}
 
 export interface OrganizationDetails {
     id: string;
@@ -101,20 +96,20 @@ export class SalesforceService implements SalesforceConnectionProvider {
         if (!installedPackage) {
             throw new Error(`Package with name ${packageName} is not installed on your Salesforce organization`);
         }
-        return installedPackage.namespacePrefix;
+        return installedPackage.fullName!;
     }
 
     @cache()
-    public async getInstalledPackageDetails(packageName: string | RegExp) : Promise<InstalledPackageRecord | undefined> {
+    public async getInstalledPackageDetails(packageName: string | RegExp){
         const results = await this.getInstalledPackages();
-        return results.find(packageInfo => typeof packageName === 'string' ? packageName == packageInfo.fullName : packageName.test(packageInfo.fullName));
+        return results.find(packageInfo => typeof packageName === 'string' ? packageName === packageInfo.fullName : packageName.test(packageInfo.fullName!));
     }
 
     @cache()
-    public async getInstalledPackages() : Promise<InstalledPackageRecord[]> {
+    public async getInstalledPackages() {
         const con = await this.getJsForceConnection();
-        const metadata = await con.metadata.list( { type: 'InstalledPackage' }) as InstalledPackageRecord[];
-        return metadata ? (Array.isArray(metadata) ? metadata : [ metadata ]) : [];
+        const packageList = await spreadAsync(con.metadata.readAll('InstalledPackage'));
+        return packageList;
     }
 
     @cache()
@@ -224,7 +219,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return deleteResults;
     }
 
-    private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) : Promise<{ body?: any; debugLog?: any }> {
+    private async soapToolingRequest(methodName: string, request: object, debuggingHeader?: SoapDebuggingHeader) {
         const connection = await this.getJsForceConnection();
         const soapClient = new SoapClient(connection, `/services/Soap/s/${connection.version}`);
         return soapClient.request(methodName, request, { debuggingHeader });
@@ -255,7 +250,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         }, logLevels);
 
         return {
-            ...response.body.executeAnonymousResponse.result,
+            ...response.body['result'],
             debugLog: response.debugLog
         };
     }
@@ -413,9 +408,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         const response = await this.soapToolingRequest('compileClasses', {
             scripts: apexClassBody
         });
-        return {
-            ...response.body.compileClassesResponse
-        };
+        return response.body;
     }
 
     /**
