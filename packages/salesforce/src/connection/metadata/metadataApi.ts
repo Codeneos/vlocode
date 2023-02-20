@@ -1,4 +1,4 @@
-import { getObjectProperty, asArray, setObjectProperty } from "@vlocode/util";
+import { getObjectProperty, asArray, setObjectProperty, chunkAsyncParallel, unique, filterUndefined } from "@vlocode/util";
 import { Stream } from 'stream';
 
 import { SoapClient } from "../../soapClient";
@@ -131,20 +131,36 @@ export class MetadataApi implements DeploymentApi {
     public read<T extends SalesforceMetadata>(type: string, fullNames: string) : Promise<T>;
     public read<T extends SalesforceMetadata>(type: string, fullNames: string[]) : Promise<T[]>;
     public async read<T extends SalesforceMetadata>(type: string, fullNames: string | string[]) : Promise<T | T[]> {
-        const readResponse = await this.invoke('readMetadata', {
-            type, fullNames
-        });
-        if (!readResponse.result?.records) {
-            throw new Error('readMetadata error; expected records to be set instead received undefined instead');
-        }
+        const records = await chunkAsyncParallel(asArray(fullNames), async chunk => {
+            const readResponse = await this.invoke('readMetadata', {
+                type, fullNames: chunk
+            });
+            if (!readResponse.result?.records) {
+                throw new Error('readMetadata error; expected records to be set instead received undefined instead');
+            }
+            return readResponse.result?.records;
+        }, 10, 2);
         // Normalize results to match schema
         const schema = Schemas[type];
         if (schema) {
-            readResponse.result.records.forEach(r => SoapClient.normalizeRequestResponse(schema, r));
+            records.forEach(r => r && SoapClient.normalizeRequestResponse(schema, r));
         }
         // Convert to Array when input is an array otherwise return as single
-        return this.convertArray(readResponse.result.records as T[], Array.isArray(fullNames));
+        return this.convertArray(records as T[], Array.isArray(fullNames));
     }
+
+    /**
+     * Reads ALL metadata entries of a specific type synchronously and yields the results. 
+     * @param type Metadata type name
+     * @param fullNames list of metadata types
+     */
+    public async *readAll<K extends keyof MetadataTypes>(type: K) : AsyncGenerator<MetadataTypes[K], any, undefined> {
+        const metadata = await this.list( { type } );
+        const metadataNames = [...unique(metadata.map(md => md.fullName))];
+        while(metadataNames.length > 0) {
+            yield *filterUndefined(await this.read(type, metadataNames.splice(0, 10)));
+        }
+     }
 
     /**
      * Creates metadata entries synchronously.
