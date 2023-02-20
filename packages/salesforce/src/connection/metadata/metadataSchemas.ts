@@ -15377,7 +15377,7 @@ for(const schema of Object.values(Schemas) as any[]) {
         schema.extends = Schemas[schema.extends];
     }
     for (const field of Object.values(schema.fields) as any[]) {
-        if (typeof field.type === 'string') {
+        if (typeof field.type === 'string' && Schemas[field.type]) {
             field.type = Schemas[field.type];
         }
     }
