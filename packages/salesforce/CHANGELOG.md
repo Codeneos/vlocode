@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.16](https://github.com/Codeneos/vlocode/compare/v0.18.15...v0.18.16) (2023-02-20)
+
+### Bug Fixes
+
+* fix change managed package detection to use both readMetadata instead of only listMetadata ([60ef988](https://github.com/Codeneos/vlocode/commit/60ef988bb6486018962cb1afaedf44a94853f098))
+* linking of schemas overrides default field types ([6d9c783](https://github.com/Codeneos/vlocode/commit/6d9c7838ccc7391f787477bb1ad200de9ce4a891))
+
+### Features
+
+* force defaults for SOAP items according to the schema ([2fce17e](https://github.com/Codeneos/vlocode/commit/2fce17e3742e62419fc6c0d10d1c40ef6f0cdcf1))
+* support reading more then 10 metadata records and all metadata from a certain type (readAll) ([87f4045](https://github.com/Codeneos/vlocode/commit/87f404596b3a8a16a72d015d8dc5e2173afcecb5))
+
 ## [0.18.15](https://github.com/Codeneos/vlocode/compare/v0.18.14...v0.18.15) (2023-02-20)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.16](https://github.com/Codeneos/vlocode/compare/v0.18.15...v0.18.16) (2023-02-20)
+
+### Features
+
+* add chunkArray and chunkAsyncParallel helper functions to chunk work into smaller chunks and process the chunks in parallel ([3f13eab](https://github.com/Codeneos/vlocode/commit/3f13eabe304415eb6cf8f036a5819ddb8d06ac8d))
+
 ## [0.18.15](https://github.com/Codeneos/vlocode/compare/v0.18.14...v0.18.15) (2023-02-20)
 
 ### Bug Fixes
