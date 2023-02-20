@@ -223,20 +223,38 @@ export class SoapClient {
      * @param obj request or response object
      * @returns Schema normalized object
      */
-    public static normalizeRequestResponse(schema: Schema, obj: object) {
-        for (const field of Object.keys(obj)) {
-            const fieldDef = schema.fields[field];
-            if (!fieldDef) {
-                continue;
-            }            
+    public static normalizeRequestResponse<T extends object>(schema: Schema, obj: T): T {
+        if (!obj) {
+            return obj;
+        }
 
+        for (const [field, fieldDef] of Object.entries(schema.fields)) {
             const fieldValue = obj[field];
+            const fieldValueNull = fieldValue === undefined || fieldValue === null;
+
+            if (fieldDef.optional && fieldValueNull) {
+                // Delete optional fields that are null or undefined
+                delete obj[field];
+            } else if (!fieldDef.nullable && fieldValueNull) {
+                // Init values for fields that are not nullable
+                if (fieldDef.type === 'boolean') {
+                    obj[field] = false;
+                } else if (fieldDef.type === 'number') {
+                    obj[field] = 0;
+                } else if (fieldDef.type === 'string') {
+                    obj[field] = '';
+                } else if (typeof fieldDef.type === 'object') {
+                    obj[field] = {};
+                }
+            }
+            
             if (fieldDef.array && !Array.isArray(fieldValue)) {
                 obj[field] = [ fieldValue ];
-            } else if (typeof fieldDef.type === 'object' && typeof fieldValue === 'object') {
-                this.normalizeRequestResponse(fieldDef.type, obj[field]);
+            } else if (typeof fieldDef.type === 'object' && fieldValue !== null && typeof fieldValue === 'object') {
+                this.normalizeRequestResponse(fieldDef.type, fieldValue);
             }
         }
+
         return obj;
     }
 
