@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.15](https://github.com/codeneos/vlocode/compare/v0.18.14...v0.18.15) (2023-02-20)
+
+### Bug Fixes
+
+* do not ignore SFDX entries without an orgId; derive orgId from access token instead ([44baded](https://github.com/codeneos/vlocode/commit/44baded238999881ebc41075407eae0311cc6bc4))
+* metadata API calls do not return response body when response path undefined ([44cc277](https://github.com/codeneos/vlocode/commit/44cc2777f078fdac890734f9931ab66ab7e471cf))
+
+### Features
+
+* expose more properties the bulk jobs ([5ae1f1a](https://github.com/codeneos/vlocode/commit/5ae1f1a309cab99119a13175775af4f1ccf727ec))
+* strongly typed metadata API and metadata API Schema validations ([dd1022f](https://github.com/codeneos/vlocode/commit/dd1022ff94e47d6e3a896283fa3657896bb5697f))
+* support composite requests and dynamic API versions on connection ([4036718](https://github.com/codeneos/vlocode/commit/4036718b06ca2c2c70af9f9e6e1ea16cb5d6c939))
+
 ## [0.18.14](https://github.com/codeneos/vlocode/compare/v0.18.13...v0.18.14) (2023-02-14)
 
 ### Bug Fixes

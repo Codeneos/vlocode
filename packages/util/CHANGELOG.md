@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.15](https://github.com/Codeneos/vlocode/compare/v0.18.14...v0.18.15) (2023-02-20)
+
+### Bug Fixes
+
+* do not ignore SFDX entries without an orgId; derive orgId from access token instead ([44baded](https://github.com/Codeneos/vlocode/commit/44baded238999881ebc41075407eae0311cc6bc4))
+
 ## [0.18.14](https://github.com/Codeneos/vlocode/compare/v0.18.13...v0.18.14) (2023-02-14)
 
 ### Bug Fixes
