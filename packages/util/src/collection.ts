@@ -400,3 +400,57 @@ export function mapToObject<K extends (string | number), V>(data: Map<K, V>): { 
     }
     return obj;
 }
+
+/**
+ * Split an array in equal chunks of the specified size
+ * @param array Array to split
+ * @param chunkSize Chunk size
+ */
+export function chunkArray<T>(array: T[], chunkSize: number) : Array<T[]> {
+    if (chunkSize > array.length) {
+        // always return shallow copy
+        return [ array.slice(0) ];
+    }
+    if (chunkSize < 1) {
+        throw new Error('Array chunk size cannot be smaller then 1');
+    }
+    const chunks = new Array<T[]>();
+    for (let offset = 0; offset < array.length; offset += chunkSize) {
+        chunks.push(array.slice(offset, offset + chunkSize));
+    }
+    return chunks;
+}
+
+/**
+ * Executed the callback function on each chunk in the array limiting the number of parallel executions up to the `parallelism` number passed.
+ * @param array Array with work items
+ * @param fn Callback functions executed for each chunk
+ * @param chunkSize Size of each chunk
+ * @param parallelism Max number of parallel worker callbacks active
+ * @returns Array of results
+ */
+export async function chunkAsyncParallel<T, K>(array: T[], fn: (chunk: T[], index: number, array: T[]) => Promise<K[]> | K[], chunkSize: number, parallelism: number = 2) {
+    const results = new Array<K>();
+    const parallel: Record<number, Promise<any>> = {}
+    let parallelWorkers = 0;
+
+    for (let offset = 0; offset < array.length; offset += chunkSize) {
+        const chunk = array.slice(offset, offset + chunkSize);
+        const result = fn(chunk, offset, array);
+
+        if (isPromise(result)) {
+            parallel[offset] = result.then(r => {
+                results.splice(offset, 0, ...r);
+                parallelWorkers--;
+                delete parallel[offset];
+            });
+            if (parallelism > 0 && ++parallelWorkers >= parallelism) {
+                await Promise.race(Object.values(parallel));
+            }
+        } else {
+            results.splice(offset, 0, ...result);
+        }
+    }
+
+    return Promise.all(Object.values(parallel)).then(() => results);
+}

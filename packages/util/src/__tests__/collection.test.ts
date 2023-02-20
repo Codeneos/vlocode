@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await */
 import 'jest';
+import { wait } from '../async';
 import * as collection from '../collection';
 
 describe('collection', () => {
@@ -63,6 +64,96 @@ describe('collection', () => {
         });
         it('should not throw an exception when parallelism is a negative number', async () => {
             expect(await collection.mapAsyncParallel([1,2], async i => i+1, -1)).toStrictEqual([2,3]);
+        });
+    });
+
+    describe('#chunkArray', () => {
+        it('should throw error when chunk size < 1', () => {
+            expect(() => collection.chunkArray([0,1,2,3], 0)).toThrowError();
+        });
+        it('should create 1 chunk when mod array size == chunk size ', () => {
+            const result = collection.chunkArray([0,1,2,3], 4);
+            expect(result).toStrictEqual([
+                [0,1,2,3]
+            ]);
+        });
+        it('should create 1 chunk when mod array size < chunk size ', () => {
+            const result = collection.chunkArray([0,1,2,3], 10);
+            expect(result).toStrictEqual([
+                [0,1,2,3]
+            ]);
+        });
+        it('should create equal chunks when mod array size by chunk size is 0 ', () => {
+            const result = collection.chunkArray([0,1,2,3], 2);
+            expect(result).toStrictEqual([
+                [0,1],
+                [2,3],
+            ]);
+        });
+        it('should create last chunk with left over when mod array size by chunk size is not 0', () => {
+            const result = collection.chunkArray([0,1,2,3,4], 2);
+            expect(result).toStrictEqual([
+                [0,1],
+                [2,3],
+                [4]
+            ]);
+        });
+    });
+
+    describe('#chunkAsyncParallel', () => {
+        it('should execute the async map-function for each chunk once', async () => {
+            const result = await collection.chunkAsyncParallel([
+                { processing: 0 },
+                { processing: 0 },
+                { processing: 0 },
+                { processing: 0 },
+                { processing: 0 },
+                { processing: 0 },
+            ], async (i, offset) => i.map(p => ({ processed: ++p.processing, offset })), 2);
+
+            expect(result).toStrictEqual([
+                { processed: 1, offset: 0 },
+                { processed: 1, offset: 0 },
+                { processed: 1, offset: 2 },
+                { processed: 1, offset: 2 },
+                { processed: 1, offset: 4 },
+                { processed: 1, offset: 4 },
+            ]);
+        });
+        it('should execute execute when chunk size is smaller then array size', async () => {
+            const result = await collection.chunkAsyncParallel([
+                { processing: 0 },
+                { processing: 0 },
+            ], async (i, offset) => i.map(p => ({ processed: ++p.processing, offset })), 4);
+
+            expect(result).toStrictEqual([
+                { processed: 1, offset: 0 },
+                { processed: 1, offset: 0 },
+            ]);
+        });
+        it('should execute in sequence when parallelism is 1', async () => {
+            let processingCount = 0;
+            const result = await collection.chunkAsyncParallel([
+                { processing: 0 },
+                { processing: 0 },
+                { processing: 0 },
+                { processing: 0 },
+            ], async (i, offset) => {
+                expect(i.length).toBe(1);
+                expect(++processingCount).toBe(1);
+                await wait(10);
+                const result = i.map(p => ({ processed: ++p.processing, offset }));
+                await wait(10);
+                expect(--processingCount).toBe(0);
+                return result;
+            }, 1, 1);
+
+            expect(result).toStrictEqual([
+                { processed: 1, offset: 0 },
+                { processed: 1, offset: 1 },
+                { processed: 1, offset: 2 },
+                { processed: 1, offset: 3 },
+            ]);
         });
     });
 });
