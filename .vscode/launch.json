@@ -97,6 +97,21 @@
             }
         },
         {
+            "name": "Debug: Build metadata types",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "${workspaceRoot}/packages/salesforce/build/buildMetadataTypes.ts",
+                "./metadata.xml"
+            ],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceRoot}/packages/salesforce/build",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "TS_NODE_IGNORE": "false"
+            }
+        },
+        {
             "name": "Debug: Webpack Build",
             "request": "launch",
             "runtimeArgs": ["run-script", "build:debug"],
