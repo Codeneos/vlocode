@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.17](https://github.com/Codeneos/vlocode/compare/v0.18.16...v0.18.17) (2023-02-23)
+
+### Bug Fixes
+
+* ensure xsi:type is set for all metadata operations ([1a63abb](https://github.com/Codeneos/vlocode/commit/1a63abbd8b237b610c7055f58ce7cf7c82542c9e))
+
 ## [0.18.16](https://github.com/Codeneos/vlocode/compare/v0.18.15...v0.18.16) (2023-02-20)
 
 ### Features
