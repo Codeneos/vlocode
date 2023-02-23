@@ -1,6 +1,35 @@
 import { XML } from "../xml";
 
 describe('xml', () => {
+    describe('#stringify', () => {
+        it('should write attributes when set', () => {
+            const xmlStr = '<tag attr="test"><value>foo</value></tag>';
+            expect(XML.stringify({
+                tag: {
+                    $: { attr: 'test' },
+                    value: 'foo'
+                }
+            }, undefined, { headless: true })).toBe(xmlStr);
+        });
+        it('should include namespace prefixes for attributes and tags', () => {
+            const xmlStr = '<tag xsi:attr="test"><ns:value>foo</ns:value></tag>';
+            expect(XML.stringify({
+                tag: {
+                    $: { 'xsi:attr': 'test' },
+                    ['ns:value']: 'foo'
+                }
+            }, undefined, { headless: true })).toBe(xmlStr);
+        });
+        it('should write tag body with attributes', () => {
+            const xmlStr = '<tag attr="test">foo</tag>';
+            expect(XML.stringify({
+                tag: {
+                    $: { attr: 'test' },
+                    '#text': 'foo'
+                }
+            }, undefined, { headless: true })).toBe(xmlStr);
+        });
+    });
     describe('#parse', () => {
         it('should replace tag-value with attribute nil:true by null', () => {
             const xmlStr = `<test><tag nil='true'></tag></test>`;

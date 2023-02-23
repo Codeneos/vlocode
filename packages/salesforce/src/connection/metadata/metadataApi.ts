@@ -67,7 +67,7 @@ export class MetadataApi implements DeploymentApi {
     }
 
     private normalizeMetadata(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]): SalesforceMetadata[] {
-        return asArray(metadata).map(md => setObjectProperty(md, '$.xsi:type', type));
+        return asArray(metadata).map(md => setObjectProperty(md, '$.xsi:type', type, { create: true }));
     }
 
     /**

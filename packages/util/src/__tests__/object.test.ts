@@ -45,17 +45,20 @@ describe('util', () => {
         it('should set property at path', () => {
             const obj = { foo: { bar: 'test' } };
             const result = setObjectProperty(obj, 'foo.bar', 'set');
-            expect(result).toEqual({ foo: { bar: 'set' } });
+            expect(result).toStrictEqual({ foo: { bar: 'set' } });
+            expect(obj).toStrictEqual({ foo: { bar: 'set' } });
         });
         it('should not set property at path when parent undefined', () => {
             const obj = { foo: { bar: 'test' } };
             const result: any = setObjectProperty(obj, 'foo.bar.foo.bar', 'set');
-            expect(result).toEqual({ foo: { bar: 'test' } });
+            expect(result).toStrictEqual({ foo: { bar: 'test' } });
+            expect(obj).toStrictEqual({ foo: { bar: 'test' } });
         });
-        it('should set property at path when parent undefined and createWhenNotFound is true', () => {
+        it('should set property at path when parent undefined and create is true', () => {
             const obj = { foo: undefined };
-            const result = setObjectProperty(obj, 'foo.bar.baz.bar', 'set', { createWhenNotFound: true });
-            expect(result).toEqual({ foo: { bar: { baz: { bar: 'set' } } } });
+            const result = setObjectProperty(obj, 'foo.bar.baz.bar', 'set', { create: true });
+            expect(result).toStrictEqual({ foo: { bar: { baz: { bar: 'set' } } } });
+            expect(obj).toStrictEqual({ foo: { bar: { baz: { bar: 'set' } } } });
         });
     });
     describe('#getObjectProperty', () => {

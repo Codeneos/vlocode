@@ -2,7 +2,7 @@ import 'jest';
 
 import { QueryFormatter, QueryParser } from '../queryParser';
 
-describe('QueryParser2', () => {
+describe('QueryParser', () => {
 
     describe('#parseQueryCondition', () => {
         it('should parse single condition as string', () => {

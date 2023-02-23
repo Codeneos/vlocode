@@ -236,11 +236,11 @@ export function getObjectProperty(obj: any, prop: string) {
  * @param obj Object to set the property on
  * @param prop Property path to set
  * @param value Value to set at the specified path
- * @param options.createWhenNotFound Create an object to be able to set the specified property, otherwise does not set the property specified
+ * @param options.create Create an object to be able to set the specified property, otherwise does not set the property specified
  * @returns The original obj with the property path set to the specified value;
  */
-export function setObjectProperty<T extends object>(obj: T, prop: string, value: any, options?: { createWhenNotFound?: boolean }) : T {
-    if (options?.createWhenNotFound) {
+export function setObjectProperty<T extends object>(obj: T, prop: string, value: any, options?: { create?: boolean }) : T {
+    if (options?.create) {
         obj = obj ?? {} as T; // init object with a default when not set
     }
     
@@ -250,7 +250,7 @@ export function setObjectProperty<T extends object>(obj: T, prop: string, value:
     let target = obj;
     for (const p of propPath) {
         if (target[p] === undefined || target === null) {
-            if (!options?.createWhenNotFound) {
+            if (!options?.create) {
                 return obj;
             }
         }
