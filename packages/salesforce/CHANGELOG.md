@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.18](https://github.com/Codeneos/vlocode/compare/v0.18.17...v0.18.18) (2023-03-01)
+
+### Bug Fixes
+
+* createMetadata incorrectly sends metadata as tag in payload ([8ea0aa2](https://github.com/Codeneos/vlocode/commit/8ea0aa25deee6ba2479cb87a2cae1bc45f7ef63f))
+
 ## [0.18.17](https://github.com/Codeneos/vlocode/compare/v0.18.16...v0.18.17) (2023-02-23)
 
 ### Bug Fixes
