@@ -46,23 +46,24 @@ describe('MetadataApi', () => {
             const soap = mockSoapClient();
             const sut = new MetadataApi(connection);
             sut['soap'] = soap;
-
-            // Act
-            await sut.create('CustomMetadata', {
+            const metadataObject = {
                 label: 'test',
                 fullName: 'test',
                 values: [
                     { field: 'Test', value: 1 }
                 ]
-            });
+            }
+
+            // Act
+            await sut.create('CustomMetadata', metadataObject);
 
             // Assert
             expect(soap.soapRequests[0].method).toBe('createMetadata');
-            expect(soap.soapRequests[0].request.type).toBe('CustomMetadata');
-            expect(soap.soapRequests[0].request.metadata.length).toBe(1);
-            expect(soap.soapRequests[0].request.metadata[0].$['xsi:type']).toBe('CustomMetadata');
-            expect(soap.soapRequests[0].request.metadata[0].label).toBe('test');
-            expect(soap.soapRequests[0].request.metadata[0].fullName).toBe('test');
+            expect(soap.soapRequests[0].request).toStrictEqual({
+                metadata: [ 
+                    { $: { 'xsi:type': 'CustomMetadata' }, ...metadataObject }
+                ]
+            });
         });
     });
 });

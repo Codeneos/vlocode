@@ -1,6 +1,6 @@
 import { HttpTransport, SalesforceConnection } from './connection';
 import { CustomError, formatString, setObjectProperty, wait, XML } from '@vlocode/util';
-import { Schema } from './types/schema';
+import { Schema } from './schemaValidator';
 
 export type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
 
@@ -37,8 +37,8 @@ export interface SoapResponseFault {
 }
 
 interface SoapRequestOptions {
-    requestSchema?: Schema; 
-    responseSchema?: Schema; 
+    requestSchema?: Schema.Definition; 
+    responseSchema?: Schema.Definition; 
     debuggingHeader?: SoapDebuggingHeader;
 }
 
@@ -223,7 +223,7 @@ export class SoapClient {
      * @param obj request or response object
      * @returns Schema normalized object
      */
-    public static normalizeRequestResponse<T extends object>(schema: Schema, obj: T): T {
+    public static normalizeRequestResponse<T extends object>(schema: Schema.Definition, obj: T): T {
         if (!obj) {
             return obj;
         }

@@ -11,6 +11,7 @@ import { RetrieveRequest } from "./types/retrieveRequest";
 import { MetadataTypes } from "./metadataTypes";
 import { DeleteResult } from "../../types";
 import { MetadataResponses } from "./metadataOperations";
+import { Schema } from "../../schemaValidator";
 
 export enum ValueTypeNamespace {
     metadata = 'http://soap.sforce.com/2006/04/metadata',
@@ -143,7 +144,7 @@ export class MetadataApi implements DeploymentApi {
         // Normalize results to match schema
         const schema = Schemas[type];
         if (schema) {
-            records.forEach(r => r && SoapClient.normalizeRequestResponse(schema, r));
+            records.forEach(r => r && Schema.normalize(schema, r));
         }
         // Convert to Array when input is an array otherwise return as single
         return this.convertArray(records as T[], Array.isArray(fullNames));
@@ -174,7 +175,7 @@ export class MetadataApi implements DeploymentApi {
     public create(type: string, metadata: SalesforceMetadata[]) : Promise<SaveResult[]>;
     public create(type: string, metadata: SalesforceMetadata | SalesforceMetadata[]) : Promise<SaveResult | SaveResult[]> {
         return this.invoke('createMetadata', {
-            type, metadata: this.normalizeMetadata(type, metadata)
+            metadata: this.normalizeMetadata(type, metadata)
         }).then(r => this.convertArray(r.result ?? [], Array.isArray(metadata)))
     }
 
