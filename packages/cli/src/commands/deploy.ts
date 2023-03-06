@@ -1,6 +1,6 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
+import { DatapackDeployer, DatapackLoader, VlocityNamespaceService, ForkedSassCompiler, DatapackDeploymentOptions, OmniScript, OmniScriptLocalDefinitionProvider, OmniScriptActivator } from '@vlocode/vlocity-deploy';
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
@@ -39,7 +39,11 @@ export default class extends Command {
             `this allows for more optimal chunking improving the overall speed of the deployment. ` +
             `If you are running into deployment errors and think that Vlocode does not follow the correct deployment order try enabling this setting.`
         ).default(false),
-        new Option('--skip-lwc', 'skip LWC activation for LWC enabled Omniscripts').default(false),
+        new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
+        new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),
+        new Option('--remote-script-activation', 'use anonymous apex to activate OmniScripts.' + 
+            'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' + 
+            'Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.').default(false),
     ];
 
     private prefixFormat = {
@@ -71,7 +75,9 @@ export default class extends Command {
             lookupFailedDependencies: !!options.lookupFailed,
             maxRetries: options.retryCount,
             deltaCheck: options.delta,
-            skipLwcActivation: options.skipLwc
+            skipLwcActivation: options.skipLwc,
+            remoteScriptActivation: options.remoteActivation,
+            useMetadataApi: options.useMetadataApi
         };
 
         // Create deployment
