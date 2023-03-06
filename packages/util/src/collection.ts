@@ -72,13 +72,92 @@ export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T)
 }
 
 /**
+ * Compares two values (a and b) and returns `0` when they are equal, `> 0` when a is bigger then b or `< 0` when a is smaller then b.
+ * Supports native comparison for types `string`, `boolean` and `number`. When a parameter a and b are not the same type they both are converted to string before being compared.
+ * @param a value a
+ * @param b value b
+ * @returns `0` when they are equal, `> 0` when a is bigger then b or `< 0` when a is smaller then b
+ */
+export function primitiveCompare(a: unknown, b: unknown) {
+    if (a === b) {
+        return 0;
+    }
+
+    if ((a === undefined || a === null) && b) {
+        return -1;
+    }
+
+    if ((b === undefined || b === null) && a) {
+        return 1;
+    }
+
+    if (typeof a === 'object' || typeof b === 'object') {
+        throw new Error('primitiveCompare is not meant for comparing objects or arrays');
+    }
+
+    if (typeof a === typeof b) {
+        if (typeof a === 'string') {
+            if (!/^[0-9.]+$/.test(a) || !/^[0-9.]+$/.test(b as string)) {
+                return a.localeCompare((b as string));
+            }
+
+            // when a and b both look like a number compare them as numbers
+            a = parseFloat(a);
+            b = parseFloat(b as string);
+        }
+
+        if (typeof a === 'boolean') {
+            return (a ? 1 : 0) - (b ? 1 : 0);
+        }
+
+        if (typeof a === 'number') {
+            return a > (b as number) ? 1 : -1;
+        }
+    }
+
+    if (typeof a === 'number' && typeof b === 'string' && /^[0-9.]+$/.test(b)) {
+        const d = a - parseFloat(b);
+        return d === 0 ? 0 : d > 0 ? 1 : -1;
+    }
+
+    if (typeof b === 'number' && typeof a === 'string' && /^[0-9.]+$/.test(a)) {
+        const d = parseFloat(a) - b;
+        return d === 0 ? 0 : d > 0 ? 1 : -1;
+    }
+
+    return primitiveCompare(`${a}`, `${b}`);
+}
+
+/**
+ * Sorts an array of objects by the specified object key/property or selected by function. In comparison to the native 
+ * {@link Array.sort} arrays are not sorted in placed but a newly sorted array is returned. The original array order is not changed
+ * @param iterable Iterable object or readonly array
+ * @param byField Property selector function or name
+ * @param order order by which to sort; defaults to 'asc' when undefined
+ * @returns Copy of the iterable or array as array sorted by the specified field in `desc` or `asc` order
+ */
+export function sortBy<T extends object, K extends string | number>(
+    iterable: Iterable<T> | readonly T[], 
+    byField: keyof T | ((item: T) => K),
+    order: 'asc' | 'desc' = 'asc') : Array<T> {
+    const fieldSelector = typeof byField === 'function' 
+        ? byField : (item: T) => item[byField];
+
+    const compareFn = (a: T, b: T): number => {
+        return primitiveCompare(fieldSelector(a), fieldSelector(b));
+    }
+    
+    return [...iterable].sort(order !== 'desc' ? compareFn : (a,b) => -compareFn(a,b));
+}
+
+/**
  * Groups an array into key accessible groups of objects
  * @param iterable iterable items to group
  * @param keySelector function to get the group by key
  */
 export function groupBy<T, I = T, K extends string | number = string>(
     iterable: Iterable<T>, 
-    keySelector: (item: T) => K | undefined,
+    keySelector: keyof T | ((item: T) => K | undefined),
     itemSelector?: (item: T) => I) : Record<K, I[]>
 
 /**
@@ -97,7 +176,7 @@ export function groupBy<T, K extends string | number, I = T>(
  * @param keySelector function to get the group by key
  */
 export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<T>, 
-    keySelector: (item: T) => K | undefined | Promise<K | undefined>,
+    keySelector: keyof T | ((item: T) => K | undefined | Promise<K | undefined>),
     itemSelector?: (item: T) => I) : Record<K, I[]> | Promise<Record<K, I[]>> {
     const acc = {} as Record<K, I[]>;
     const awaitables = new Array<Promise<any>>();
@@ -111,8 +190,11 @@ export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<
         }
     }
 
+    const _keySelector = typeof keySelector === 'function' 
+        ? keySelector : (item: T) => item[keySelector] as unknown as K;
+
     for (const item of iterable) {
-        const key = keySelector(item);
+        const key = _keySelector(item);
         if (isPromise(key)) {
             awaitables.push(key.then(k => accUpdate(acc, k, item)));
         } else {
@@ -248,22 +330,28 @@ export function setMapAdd<T, K>(map: Map<K, Set<T>>, key: K, value: T) : Set<T> 
  * @param key Key of the value in the map
  * @param valueInitializer Value initializer call when the value is not set
  */
-export function mapGetOrCreate<V, K, VI extends (Promise<V> | V)>(map: Map<K, VI>, key: K, valueInitializer: () => VI) : VI {
+export function mapGetOrCreate<K, V, VI extends (key: K) => V | Promise<V>>(map: Map<K, V>, key: K, valueInitializer: VI) : ReturnType<VI> {
     const currentValue = map.get(key);
     if (currentValue !== undefined) {
-        return currentValue as VI;
+        return currentValue as ReturnType<VI>;
     }
 
-    const value = valueInitializer();
-    map.set(key, value);
+    const pendingInitializers: Map<K, ReturnType<VI>> = map['$$pendingInitializers'] ?? (map['$$pendingInitializers'] = new Map<K, ReturnType<VI>>());
+    const pendingAsyncInitializer = pendingInitializers.get(key);
+    if (pendingAsyncInitializer !== undefined) {
+        return pendingAsyncInitializer;
+    }
+    
+    const value = valueInitializer(key);
     if (isPromise(value)) {
+        pendingInitializers.set(key, value as ReturnType<VI>);
         // Replace promise
         return value.then(v => {
             map.set(key, v);
             return v;
-        }) as VI;
+        }).finally(() => pendingInitializers.delete(key)) as ReturnType<VI>;
     }
-    return value;
+    return value as ReturnType<VI>;
 }
 
 /**
@@ -453,4 +541,20 @@ export async function chunkAsyncParallel<T, K>(array: T[], fn: (chunk: T[], inde
     }
 
     return Promise.all(Object.values(parallel)).then(() => results);
+}
+
+/**
+ * Find the first element in the array that matches any of the matchers. 
+ * Matchers are evaluated by priority provided by the order of the matchers in the array.
+ * @param items Array of items to search
+ * @param matchers Matchers to evaluate
+ * @returns First matching item or undefined if no match was found
+ */
+export function findFirstMatch<T>(items: T[], matchers: Iterable<(field: T) => boolean>): T | undefined {
+    for (const matcher of matchers) {
+        const matchingField = items.find(matcher);
+        if (matchingField) {
+            return matchingField;
+        }
+    }
 }

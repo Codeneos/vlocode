@@ -11,6 +11,15 @@ import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamesp
 @injectable.singleton()
 export class SalesforceSchemaService {
 
+    private readonly fieldMatchingStrategies: Array<(field: Field, name: string) => boolean> = [
+        (field, name) => field.name.toLowerCase() === name.toLowerCase(),
+        (field, name) => !!field.relationshipName && field.relationshipName.toLowerCase() === name.toLowerCase(),
+        (field, name) => removeNamespacePrefix(field.name).toLowerCase() === name.toLowerCase(),
+        (field, name) => !!field.relationshipName && removeNamespacePrefix(field.relationshipName).toLowerCase() === name.toLowerCase(),
+        (field, name) => removeNamespacePrefix(field.name).toLowerCase().replace('__c', '') === name.toLowerCase(),
+        (field, name) => !!field.relationshipName && removeNamespacePrefix(field.relationshipName).toLowerCase().replace('__r', '') === name.toLowerCase(),
+    ];
+
     @injectable.property private readonly logger: Logger;
     @injectable.property private readonly nsService: NamespaceService;
 
@@ -122,10 +131,8 @@ export class SalesforceSchemaService {
         // Resolve a full Field path
         for (const fieldName of fieldPath.split('.').map(fn => this.nsService?.updateNamespace(fn) ?? fn)) {
             const result = await this.describeSObject(type, throwWhenNotFound);
-            const normalizedFieldName = removeNamespacePrefix(fieldName.toLowerCase());
+            const field = this.getMatchingField(result?.fields ?? [], fieldName);
 
-            // First find a field with namespace, secondly without
-            const field = result?.fields.find(field => [field.name, field.relationshipName].some(name => name && removeNamespacePrefix(name.toLowerCase()) == normalizedFieldName));
             if (!field) {
                 if (throwWhenNotFound) {
                     throw new Error(`No such field with name "${fieldName}" on SObject ${type}`);
@@ -141,6 +148,15 @@ export class SalesforceSchemaService {
         }
 
         return resolved;
+    }
+
+    private getMatchingField(fields: Field[], name: string) {
+        for (const matcher of this.fieldMatchingStrategies) {
+            const matchingField = fields.find(field => matcher(field, name));
+            if (matchingField) {
+                return matchingField;
+            }
+        }
     }
 
     /**

@@ -155,5 +155,106 @@ describe('collection', () => {
                 { processed: 1, offset: 3 },
             ]);
         });
+    });    
+
+    describe('#primitiveCompare', () => {
+        it('should return 0 when strings are equal', () => {
+            expect(collection.primitiveCompare('a', 'a')).toBe(0);
+        });
+        it('should return 0 when numbers are equal', () => {
+            expect(collection.primitiveCompare(9, 9)).toBe(0);
+        });
+        it('should return 0 when booleans are equal', () => {
+            expect(collection.primitiveCompare(true, true)).toBe(0);
+        });
+        it('should return 1 when string a is better then b', () => {
+            expect(collection.primitiveCompare('X', 'A')).toBe(1);
+        });
+        it('should return -1 when string a is better then b', () => {
+            expect(collection.primitiveCompare('A', 'X')).toBe(-1);
+        });
+        it('should return 1 when number a is bigger then b', () => {
+            expect(collection.primitiveCompare(10, 0)).toBe(1);
+        });
+        it('should return -1 when number a is bigger then b', () => {
+            expect(collection.primitiveCompare(10, 100)).toBe(-1);
+        });
+        it('should return 1 when boolean a is not b and a is true', () => {
+            expect(collection.primitiveCompare(true, false)).toBe(1);
+        });
+        it('should return -1 when boolean a is not b and a is false', () => {
+            expect(collection.primitiveCompare(false, true)).toBe(-1);
+        });
+        it('should return 1 when string a is bigger then number b', () => {
+            expect(collection.primitiveCompare('10', 0)).toBe(1);
+        });
+        it('should return -1 when number a is bigger then string b', () => {
+            expect(collection.primitiveCompare(10, '100')).toBe(-1);
+        });
+        it('should return -1 when string a is bigger then string b', () => {
+            expect(collection.primitiveCompare('10', '20')).toBe(-1);
+        });
+        it('should return 1 when string a is bigger then string b', () => {
+            expect(collection.primitiveCompare('20', '10')).toBe(1);
+        });
+    });
+
+    describe('#sortBy', () => {
+        it('should sort by numbers selected by property', () => {
+            const items = [
+                { x: 1, a: 1 },
+                { x: 2, a: 3 },
+                { x: 3, a: 2 },
+                { x: 4, a: 1 }
+            ];
+            expect(collection.sortBy(items, 'a')).toEqual([
+                { x: 1, a: 1 },
+                { x: 4, a: 1 },
+                { x: 3, a: 2 },
+                { x: 2, a: 3 }
+            ]);
+        });
+        it('should sort by strings selected by property', () => {
+            const items = [
+                { x: 1, a: 'd' },
+                { x: 2, a: 'c' },
+                { x: 3, a: 'a' },
+                { x: 4, a: 'b' }
+            ];
+            expect(collection.sortBy(items, 'a')).toEqual([
+                { x: 3, a: 'a' },
+                { x: 4, a: 'b' },
+                { x: 2, a: 'c' },
+                { x: 1, a: 'd' },
+            ]);
+        });
+        it('should sort by numbers selected by fn', () => {
+            const items = [
+                { x: 1, a: 1 },
+                { x: 2, a: 3 },
+                { x: 3, a: 2 },
+                { x: 4, a: 1 }
+            ];
+            expect(collection.sortBy(items, i => i.a)).toEqual([
+                { x: 1, a: 1 },
+                { x: 4, a: 1 },
+                { x: 3, a: 2 },
+                { x: 2, a: 3 }
+            ]);
+        });
+        it('should sort by strings selected by fn', () => {
+            const items = [
+                { x: 1, a: 'd' },
+                { x: 2, a: 'c' },
+                { x: 3, a: 'a' },
+                { x: 4, a: 'b' }
+            ];
+            expect(collection.sortBy(items, i => i.a)).toEqual([
+                { x: 3, a: 'a' },
+                { x: 4, a: 'b' },
+                { x: 2, a: 'c' },
+                { x: 1, a: 'd' },
+            ]);
+        });
     });
 });

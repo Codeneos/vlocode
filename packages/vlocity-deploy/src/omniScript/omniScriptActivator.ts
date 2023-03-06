@@ -1,20 +1,32 @@
-import { QueryService, SalesforceService, NamespaceService, QueryBuilder, SalesforceDeployService } from '@vlocode/salesforce';
+import { SalesforceService, SalesforceDeployService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
-import { isSalesforceId, Iterable, Timer } from '@vlocode/util';
+import { spreadAsync, Timer } from '@vlocode/util';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
-import { VlocityNamespaceService } from '../vlocityNamespaceService';
+import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
+import { OmniScriptLookupService } from './omniScriptLookupService';
+import { OmniScriptLocalDefinitionProvider } from './omniScriptDefinitionGenerator';
 
-/**
- * Provides OmniScript definitions.
- */
- interface DefinitionProvider {
+export interface OmniScriptActivationOptions {
     /**
-     * Get the script definition of an OmniScript based on the Id or the type and subtype
-     * @param input Script definition or Id
+     * Skip deployment of LWC components even when the script is LWC enabled. 
+     * By default activation will rebuild and deploy the LWC component of the script; setting this option to `true` will skip this step.
      */
-    getScriptDefinition(input: string | OmniScriptDetail): OmniScriptDefinition | Promise<OmniScriptDefinition>;
+    skipLwcDeployment?: boolean;
+    /**0
+     * When `true`, the LWC components will be updated an deployed using the tooling API instead of the metadata API. 
+     * The benefit of this is that the LWC components will be deployed to the org without the need to deploy the entire package.
+     */
+    toolingApi?: boolean; 
+    /**
+     * When `true`, the script will be activated using the standard Vlocity APEX activation function exposed by the 
+     * Vlocity Business Process Controller that runs as anonymous Apex. 
+     * 
+     * When `false` (default) the script will be activated by locally generating the script activation records. This is faster compared to 
+     * the remote activation and avoids issues with governor limits that occur when activating a large scripts.
+     */
+    remoteActivation?: boolean; 
 }
 
 /**
@@ -26,13 +38,14 @@ export class OmniScriptActivator {
     /**
      * Method that is called to activate a single the script
      */
-    private readonly activationFunction = `%vlocity_namespace%.BusinessProcessController.bulkActivateBP(new List<Id> { '%script_id%' });`;
+    private readonly remoteActivationFunction = `%vlocity_namespace%.BusinessProcessController.bulkActivateBP(new List<Id> { '%script_id%' });`;
 
     constructor(
         private readonly salesforceService: SalesforceService,
-        private readonly queryService: QueryService,
+        private readonly lookup: OmniScriptLookupService,
         private readonly lwcCompiler: OmniScriptLwcCompiler,
-        @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: DefinitionProvider,
+        @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: OmniScriptDefinitionProvider,
+        @injectable.param(OmniScriptLocalDefinitionProvider) private readonly definitionGenerator: OmniScriptDefinitionProvider,
         private readonly logger: Logger
     ) {
     }
@@ -42,26 +55,100 @@ export class OmniScriptActivator {
      * Any existing active OmniScriptDefinition__c records will be deleted.
      * @param input OmniScript to activate
      */
-    public async activate(input: OmniScriptDetail | string, options?: { skipLwcDeployment?: boolean, toolingApi?: boolean }) {
-        const script = await this.getScript(input);
-        if (!script) {
-            throw new Error(`No such script found matching: ${JSON.stringify(input)}`);
-        }
+    public async activate(input: OmniScriptDetail | string, options?: { skipLwcDeployment?: boolean, toolingApi?: boolean, remoteActivation?: boolean }) {
+        const script = await this.lookup.getScript(input);
 
         // (Re-)Activate script
-        const result = await this.salesforceService.executeAnonymous(this.activationFunction.replace(/%script_id%/, script.id), { updateNamespace: true });
-
-        if (!result.success) {
-            if (!result.compiled) {
-                throw new Error(`APEX Compilation error at script activation: ${result.compileProblem}`);
-            }
-            throw new Error(`Activation error: ${result.exceptionMessage}`);
+        if (options?.remoteActivation) {
+            await this.remoteScriptActivation(script.id);
+        } else {
+            await this.localScriptActivation(script.id);
         }
 
         // Deploy LWC when required
         if (options?.skipLwcDeployment !== true && script.isLwcEnabled) {
             const definition = await this.definitionProvider.getScriptDefinition(script.id);
             await this.deployLwcComponent(definition, options);
+        }
+    }
+
+    private async remoteScriptActivation(scriptId: string) {
+        const result = await this.salesforceService.executeAnonymous(this.remoteActivationFunction.replace(/%script_id%/, scriptId), { updateNamespace: true });
+        if (!result.success) {
+            if (!result.compiled) {
+                throw new Error(`APEX Compilation error at script activation: ${result.compileProblem}`);
+            }
+            throw new Error(`Activation error: ${result.exceptionMessage}`);
+        }
+        return this.definitionProvider.getScriptDefinition(scriptId);
+    }
+
+    private async localScriptActivation(scriptId: string) {
+        const definition = await this.definitionGenerator.getScriptDefinition(scriptId);
+        await this.insertScriptDefinition(scriptId, definition);
+        return definition;
+    }
+
+    private async insertScriptDefinition(scriptId: string, definition: OmniScriptDefinition) {
+        const contentChunks = this.serializeDefinition(definition);
+        const records = contentChunks.map((content, index) => ({
+            ref: `${scriptId}_${index}`,
+            values: {
+                content: content,
+                sequence: index,
+                omniScriptId: scriptId, 
+            }            
+        }));
+        
+        await this.cleanScriptDefinitions(scriptId);
+        const results = await spreadAsync(this.salesforceService.insert('%vlocity_namespace%__OmniScriptDefinition__c', records));
+        if (results.some(result => !result.success)) {
+            throw new Error(`Failed to insert OmniScript activation records: ${results.map(result => result.error).join(', ')}`);
+        }
+        await spreadAsync(this.salesforceService.update('%vlocity_namespace%__OmniScript__c', [{ id: scriptId, isActive: true }]));
+    }
+
+    /**
+     * Serializes and split the OmniScript definition into chunks of max 131072 characters to avoid the 131072 character limit of the Salesforce String field.
+     * 
+     * The split ensures that chunks will never start or end with a whitespace character as whitespace characters are trimmed when saving the record.
+     * 
+     * @param definition JSON definition of the OmniScript
+     * @returns Array of strings containing the serialized OmniScript definition
+     */
+    private serializeDefinition(definition: OmniScriptDefinition, chunkSize = 131072) {
+        const serializedDefinition = JSON.stringify(definition);
+        const contentChunks = new Array<string>();
+        let offset = 0;
+
+        while(serializedDefinition.length > offset) {
+            let splitIndex = offset + chunkSize;
+            while(/\s/.test(serializedDefinition[splitIndex]) || (splitIndex+1 < serializedDefinition.length && /\s/.test(serializedDefinition[splitIndex+1]))) {
+                // while the end or start of the chunk is a whitespace character, move the split index backward
+                splitIndex--;
+            }
+            contentChunks.push(serializedDefinition.substring(offset, splitIndex));
+            offset = splitIndex;
+        }
+
+        return contentChunks;
+    }
+
+    /**
+     * Deletes the OmniScriptDefinition__c records for the specified OmniScript
+     * @param input OmniScript to clean the script definitions for
+     */
+    private async cleanScriptDefinitions(input: string | OmniScriptDetail) {
+        const script = await this.lookup.getScript(input);
+        const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', { 
+            omniScriptId: {
+                type: script.type,
+                subType: script.subType,
+                language: script.language 
+            }
+        });
+        if (results.some(result => !result.success)) {
+            this.logger.warn('Failed to delete old OmniScript activation records: ', results.map(result => result.error).join(', '));
         }
     }
 
@@ -128,52 +215,5 @@ export class OmniScriptActivator {
             return connection.tooling.update(type, toolingRecord) as any;
         } 
         return connection.tooling.create(type, toolingRecord) as any;
-    }
-
-    private async getScript(input: OmniScriptDetail | string) {
-        const scripts = await this.getScripts(input);
-        return scripts.find(script => script.isActive) ?? scripts.pop();
-    }
-
-    /**
-     * Get all active and inactive record for the specified OmniScript.
-     * @param script Definition or id of the script to get
-     * @returns Array of OmniScript details records
-     */
-    public async getScripts(script: OmniScriptDetail | string): Promise<Array<OmniScriptDetail & { id: string; isActive: boolean; version: string; isLwcEnabled: boolean; }>> {
-        const query = new QueryBuilder({
-            sobjectType: `%vlocity_namespace%__OmniScript__c`,
-            fieldList: [
-                `Id`, 
-                `%vlocity_namespace%__IsActive__c`, 
-                `%vlocity_namespace%__Version__c`, 
-                '%vlocity_namespace%__Type__c', 
-                '%vlocity_namespace%__SubType__c', 
-                '%vlocity_namespace%__Language__c', 
-                '%vlocity_namespace%__IsLwcEnabled__c'
-            ],
-            orderBy: [`%vlocity_namespace%__Version__c`],
-            orderByDirection: 'asc',
-        });
-
-        if (typeof script === 'string') {
-            query.where.equals('Id', script);
-        } else {
-            query.where.equals('%vlocity_namespace%__Type__c', script.type).and
-                .equals('%vlocity_namespace%__SubType__c', script.subType);
-            if (script.language) {
-                query.where.and.equals(`%vlocity_namespace%__Language__c`, script.language);
-            }
-        }
-
-        return (await this.queryService.query(query.getQuery(), false)).map(result => ({ 
-            id: result.Id, 
-            type: result.Type__c,
-            subType: result.SubType__c,
-            language: result.Language__c,
-            isActive: result.IsActive__c, 
-            version: result.Version__c,
-            isLwcEnabled: result.isLwcEnabled__c
-        }));
     }
 }

@@ -340,3 +340,17 @@ export function objectEquals(a?: unknown, b?: unknown) {
 
     return true;
 }
+
+/**
+ * Remove all properties from an object which have a value of `undefined`
+ * @param obj Object to remove undefined properties from
+ * @returns New object with all properties which had a value of `undefined` removed
+ */
+export function removeUndefinedProperties<T extends object>(obj: T): T {
+    return Object.entries(obj).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+            acc[key] = value;
+        }
+        return acc;
+    }, {} as T);
+}

@@ -1,9 +1,10 @@
 import { QueryFormatter, QueryService, SalesforceQueryData } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
+import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 
 @injectable()
-export class ScriptDefinitionProvider {
+export class ScriptDefinitionProvider implements OmniScriptDefinitionProvider {
     constructor(
         private readonly queryService: QueryService
     ) { }

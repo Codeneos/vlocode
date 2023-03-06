@@ -104,9 +104,14 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * When true LWC components are deployed using the metadata API instead of the tooling API. The tooling API is usually faster and thus the preferred way to compiled deploy LWC components.
      * 
      * Disable this if you need to use the metadata API to deploy LWC components.
-     * @default true;
+     * @default false;
      */
     useMetadataApi?: boolean;
+    /**
+     * When enabled the deployment will activate OmniScripts in the target org using Anonyms Apex.
+     * @default false;
+     */
+    remoteScriptActivation?: boolean;
 }
 
 export type DatapackFilter = 

@@ -5,6 +5,12 @@ import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { NamespaceService } from './namespaceService';
 
+type ObjectFilter<T> = {
+    [P in keyof T]?: T[P] | Array<T[P]> | string;
+};
+
+type LookupFilter<T> = ObjectFilter<T> | Array<ObjectFilter<T> | string> | string;
+
 /**
  * Look up records from Salesforce using an more convenient syntax
  */
@@ -19,12 +25,12 @@ export class SalesforceLookupService {
         private readonly queryService: QueryService) {
     }
 
-    public async lookupSingle<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K> | undefined>  {
+    public async lookupSingle<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K> | undefined>  {
         return (await this.lookup(type, filter, lookupFields, 1, useCache, cancelToken))[0];
     }
 
     /**
-     * Lookip records in the target org by their record ID
+     * Lookup records in the target org by their record ID
      * @param ids Iterable list of IDs
      * @param lookupFields Fields to lookup, any fields that do not exist on the object type are ignored. In case `all` or undefined all fields are retrieved.
      * @param useCache Optionally use the query cache for retrieving the request records
@@ -76,7 +82,7 @@ export class SalesforceLookupService {
      * @param limit limit the number of results to lookup, set to 0, null, undefined or false to not limit the lookup results; when specified as 1 returns a single record instead of an array.
      * @param useCache when true instructs the QueryService to cache the result in case of a cache miss and otherwise retrive the cached response. The default behavhior depends on the @see QueryService configuration.
      */
-    public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]>  {
+    public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]>  {
         const filters = await Promise.all(asArray(filter).map(f => typeof f === 'string' ? Promise.resolve(f) : this.createWhereClause(type, f)));
         const results = new Array<QueryResult<T, K>>();
         const lookupFieldLen = Array.isArray(lookupFields) ? lookupFields.reduce((a, f) => a + String(f).length, 0) : 1000;
@@ -119,7 +125,7 @@ export class SalesforceLookupService {
         return this.queryService.query(queryString, useCache, cancelToken);
     }
 
-    private async createWhereClause<T>(type: string, values: { [P in keyof T]?: T[P] | Array<T[P]> | string } | undefined | null, relationshipName: string = '') : Promise<string> {
+    private async createWhereClause<T>(type: string, values: ObjectFilter<T> | undefined | null, relationshipName: string = '') : Promise<string> {
         const lookupFilters: any[] = [];
 
         // eslint-disable-next-line prefer-const

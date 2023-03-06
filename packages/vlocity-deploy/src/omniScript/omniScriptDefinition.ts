@@ -5,9 +5,14 @@ export interface OmniScriptDetail {
 }
 
 export interface OmniScriptDefinition {
-    userCurrencyCode: string;
+    userTimeZone: null,
+    userProfile: string,
+    userName: string,
+    userId: string,
+    userCurrencyCode: string,
+    timeStamp: string,
     testTemplates: string;
-    templateList: any[];
+    templateList: string[];
     sOmniScriptId: string;
     sobjPL: object;
     RPBundle: string;
@@ -16,7 +21,7 @@ export interface OmniScriptDefinition {
     propSetMap: object;
     prefillJSON: string;
     lwcId: string;
-    labelMap: object;
+    labelMap: Record<string, string | null>;
     labelKeyMap: object;
     errorMsg: string;
     error: string;
@@ -25,11 +30,59 @@ export interface OmniScriptDefinition {
     depCusPL: object;
     customJS: string;
     cusPL: object;
-    children: [];
+    children: Array<OmniScriptElementDefinition>;
     bReusable: boolean;
-    bpVersion: 15.0;
+    bpVersion: number;
     bpType: string;
     bpSubType: string;
     bpLang: string;
     bHasAttachment: boolean;
 }
+
+interface OmniScriptBaseElementPropertySet {
+    show?: object;
+    label?: string;
+    HTMLTemplateId?: string;
+}
+
+export interface OmniScriptBaseElementDefinition {
+    type: string;
+    inheritShowProp?: object | null,
+    response?: object | null,  
+    JSONPath?: string;
+    offSet: number;
+    name: string;
+    level: number;
+    rootIndex?: number;
+    index?: number;
+    indexInParent: number;
+    bHasAttachment: boolean;
+    bEmbed: boolean;
+    propSetMap?: OmniScriptBaseElementPropertySet;
+}
+
+export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementDefinition {
+    children: Array<{
+        bHasAttachment: boolean,
+        eleArray: Array<OmniScriptElementDefinition>;
+        indexInParent: number;
+        level: number;
+        response: null;
+    }>,
+    bAccordionOpen: boolean,
+    bAccordionActive: boolean,
+}
+
+export interface OmniScriptEmbeddedScriptElementDefinition extends OmniScriptBaseElementDefinition {
+    type: 'OmniScript';    
+    propSetMap: OmniScriptBaseElementPropertySet & {
+        Type: string;
+        "Sub Type": string,
+        Language: string
+    }
+}
+
+export type OmniScriptElementDefinition = 
+    OmniScriptBaseElementDefinition | 
+    OmniScriptGroupElementDefinition | 
+    OmniScriptEmbeddedScriptElementDefinition;

@@ -22,4 +22,5 @@ export * from './salesforceLookupService';
 export * from './salesforceProfile';
 export * from './salesforceSchemaService';
 export * from './salesforceService';
+export * from './schemaValidator';
 export * from './soapClient';

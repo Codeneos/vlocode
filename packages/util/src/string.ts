@@ -138,3 +138,20 @@ export function joinLimit(parts: any[], limit: number, delimiter: string = ',') 
 
     return result;
 }
+
+const escapedCharacters = {
+    '&': '&amp;',
+    '"': '&quot;',
+    '\'': '&#39;',
+    '<': '&lt;',
+    '>': '&gt;'
+}
+
+/**
+ * Escapes &, ", ', <, > to their HTML entities.
+ * @param value Value to escape
+ * @returns Escaped value
+ */
+export function escapeHtmlEntity(value: string) {
+    return value.replace(/[&"'<>]/g, c => escapedCharacters[c] ?? c);
+}
