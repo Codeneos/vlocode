@@ -15,7 +15,7 @@ export default class extends Command {
     static args = [
         new Argument('scriptFilter', 
             'Salesforce ID <type>/<subType>(/<language>) filter of the scripts to activate. ' + 
-            'Supports wildcard characters, i.e: "MACD/*" to activate multiple scripts').argParser(value => {
+            'Supports wildcard characters, i.e: "MACD/" to activate multiple scripts').argParser(value => {
             if (isSalesforceId(value)) {
                 return value;
             }
@@ -26,8 +26,8 @@ export default class extends Command {
 
     static options = [
         new Option('-u, --user <username>', 'Salesforce username or alias of the org to deploy the datapacks to').makeOptionMandatory(false),        
-        new Option('-i, --instance <url>', 'the URL instance').default('test.salesforce.com'),
-        new Option('--parallel-activations', 'this number determines the amount of parallel activations to run').default(4),
+        new Option('-i, --instance <url>', 'Salesforce instance URL; for example: test.salesforce.com').default('test.salesforce.com'),
+        new Option('--parallel-activations', 'determines the amount of parallel activations to run').default(4),
         new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
         new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),
         new Option('--remote-activation', 'use anonymous apex to activate OmniScripts.' + 

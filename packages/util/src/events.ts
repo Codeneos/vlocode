@@ -35,6 +35,21 @@ export type AsyncEventHandler<T extends EventMap> = {
  * All handlers can be removed using  
  *  
  * If async event handlers throw an error when `hideExceptions` is set to `false` the emitter will receive the error.
+ * 
+ * @example
+ * ```ts
+ * // Prints "Hello world" after 1 second
+ * // before "End!"
+ * const emitter = new AsyncEventEmitter();
+ * emitter.on('hello', async (params) => {
+ *   await new Promise(resolve => setTimeout(resolve, 1000));
+ *   console.log('Hello', params); 
+ * });
+ * // pass `{async: true}` to not await the handler completion
+ * // which will print "End!" before "Hello world"
+ * await emitter.emit('hello', 'world'); 
+ * console.log('End!'); 
+ * ```
  */
 export class AsyncEventEmitter<T extends EventMap = any> {
 
@@ -118,7 +133,7 @@ export class AsyncEventEmitter<T extends EventMap = any> {
     }
 
     /**
-     * Removes all listeners, or those of the specified eventName.
+     * Removes all listeners, or those of the specified {@link event}.
      * 
      * It is bad practice to remove listeners added elsewhere in the code, particularly when the EventEmitter 
      * instance was created by some other component or module (e.g. sockets or file streams).
@@ -130,7 +145,31 @@ export class AsyncEventEmitter<T extends EventMap = any> {
         if (!event) {
             this.listeners.clear();
         } else {
-            this.listeners.delete(event);
+            for (const key of [...this.listeners.keys()]) {
+                if (key.startsWith(`${event}__`)) {
+                    this.listeners.delete(key);
+                }
+            }
         }
+    }
+
+    /**
+     * Removes the specified listener from the listener array for the event named {@link event}.
+     * 
+     * `removeListener()` will remove, at most, one instance of a listener from the listener array. 
+     * If any single listener has been added multiple times to the listener array for the specified eventName, 
+     * then `removeListener()` must be called multiple times to remove each instance.
+     * 
+     * @param event event type to remove listener from
+     * @param listener listener to remove
+     */
+    public removeListener<K extends EventKey<T>>(event: K, listener: EventReceiver<T[K]>): this {
+        for (const [key, entry] of this.listeners) {
+            if (key.startsWith(`${event}__`) && entry.callback === listener) {
+                this.listeners.delete(key);
+                break;
+            }
+        }
+        return this;
     }
 }
