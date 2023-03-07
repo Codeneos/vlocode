@@ -240,7 +240,7 @@ export class BulkJob<T extends BulkJobInfo> {
     protected *resultsToRecords<TRecord>(results: any[][]): Generator<TRecord> {
         const header = results.shift()!;
         for (const row of results) {
-            yield header.reduce((rec, name, i) => setObjectProperty(rec, name, this.convertValue(row[i])), {});
+            yield header.reduce((rec, name, i) => setObjectProperty(rec, name, this.convertValue(row[i]), { create: true }), {});
         }
     }
 
