@@ -29,7 +29,12 @@ export type AsyncEventHandler<T extends EventMap> = {
 };
 
 /**
- * Async event emitting with await support
+ * An event emitter that has better support async methods giving the emitter the option to execute event handlers async 
+ * in sequence instead of in parallel.
+ * 
+ * All handlers can be removed using  
+ *  
+ * If async event handlers throw an error when `hideExceptions` is set to `false` the emitter will receive the error.
  */
 export class AsyncEventEmitter<T extends EventMap = any> {
 
@@ -110,5 +115,22 @@ export class AsyncEventEmitter<T extends EventMap = any> {
         return {
             dispose: this.listeners.delete.bind(this.listeners, id)
         };
+    }
+
+    /**
+     * Removes all listeners, or those of the specified eventName.
+     * 
+     * It is bad practice to remove listeners added elsewhere in the code, particularly when the EventEmitter 
+     * instance was created by some other component or module (e.g. sockets or file streams).
+     * 
+     * Returns a reference to the EventEmitter, so that calls can be chained.
+     * @param event event type to remove listeners for if not specified all listeners are removed
+     */
+    public removeAllListeners<K extends EventKey<T>>(event?: K) {
+        if (!event) {
+            this.listeners.clear();
+        } else {
+            this.listeners.delete(event);
+        }
     }
 }
