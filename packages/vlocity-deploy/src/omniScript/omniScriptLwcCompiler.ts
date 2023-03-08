@@ -172,8 +172,8 @@ export class OmniScriptLwcCompiler{
      * @param scriptDefinition Definition of the OmniScript for which to generate the name
      */
     private getLwcName(script: OmniScriptDetail) {
-        const cpType = script.type.charAt(0).toLowerCase() + script.type.slice(1);
-        const cpSubType = script.subType.charAt(0).toUpperCase() + script.subType.slice(1);
+        const cpType = String(script.type).charAt(0).toLowerCase() + String(script.type).slice(1);
+        const cpSubType = String(script.subType).charAt(0).toUpperCase() + String(script.subType).slice(1);
         const cpLanguage = script.language ? (script.language.replace(/[\s()-]+/gi, '')) : script.language;
         return `${cpType}${cpSubType}${cpLanguage ?? ''}`;
     }

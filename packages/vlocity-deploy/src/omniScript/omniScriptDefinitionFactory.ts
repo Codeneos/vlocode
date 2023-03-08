@@ -43,7 +43,7 @@ export class OmniScriptDefinitionFactory {
         'bReusable': { field: 'IsReusable__c' },
         'bpVersion': { field: 'Version__c' },
         'bpType': { field: 'Type__c' },
-        'bpSubType': { field: 'Version__c' },
+        'bpSubType': { field: 'SubType__c' },
         'bpLang': { field: 'Language__c' },
         'bHasAttachment': false
     };
