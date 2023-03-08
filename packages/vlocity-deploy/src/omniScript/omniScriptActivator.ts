@@ -211,9 +211,14 @@ export class OmniScriptActivator {
             }
         }
 
-        if (toolingRecord.Id) { 
-            return connection.tooling.update(type, toolingRecord) as any;
-        } 
-        return connection.tooling.create(type, toolingRecord) as any;
+        const result: any = toolingRecord.Id 
+            ? await connection.tooling.update(type, toolingRecord)
+            : await connection.tooling.create(type, toolingRecord)
+        
+        if (result === '') {
+            // Patch can return status 204 with an empty body meaning the resource was not changed
+            return { success: true, errors: [] };
+        }
+        return result;
     }
 }
