@@ -4,7 +4,7 @@ import * as zlib from 'zlib';
 import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
-import { DeferredPromise, withDefaults, XML } from '@vlocode/util';
+import { DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
 import { ILogger, Logger } from '@vlocode/core';
 import { randomUUID } from 'crypto';
 
@@ -137,7 +137,7 @@ export class HttpTransport implements Transport {
      * Even when debug logging is enable request and response bodies are not logged for performance and security reason.
      * Enabling this flag enables logging of both the request and response bodies including headers
      */
-    static enableResponseLogging = false;
+    static enableResponseLogging = true;
 
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
@@ -205,12 +205,14 @@ export class HttpTransport implements Transport {
                 return requestPromise.resolve(this.httpRequest(redirectRequestInfo, options));
             }
 
+            const timer = new Timer();
             const responseData = new Array<Buffer>();
             response.on('data', (chunk) => responseData.push(chunk));
             response.once('end', () => {
                 this.decodeResponseBody(response, Buffer.concat(responseData))
                     .then(body => { 
                         if (HttpTransport.enableResponseLogging) {
+                            this.logger.debug(`${info.method} ${url.pathname} (${timer.stop()})`);
                             this.logger.debug(`<headers>`, JSON.stringify(response.headers, undefined, 4));
                             this.logger.debug(`<response>`, body.toString(this.bodyEncoding));
                         }
@@ -232,6 +234,9 @@ export class HttpTransport implements Transport {
         if (HttpTransport.enableResponseLogging) {
             this.logger.debug(`${info.method} ${url.pathname}`);
             this.logger.debug('<headers>', JSON.stringify(info.headers ?? {}, undefined, 2));
+            if (body) {
+                this.logger.debug(`<request>`, body.toString(this.bodyEncoding));
+            }
         }
 
         if (body) {

@@ -58,7 +58,6 @@ describe('util', () => {
             }
         });
     });
-
     describe('#substringAfter', () => {
         it('should return the first substring after needle', () => {
             const input = 'test__needle__c'
@@ -74,6 +73,63 @@ describe('util', () => {
             const input = 'test__needle__c'
             const result = string.substringAfter(input, /\w+?__/);
             expect(result).toEqual('needle__c');
+        });
+    });
+    describe('#substringAfterLast', () => {
+        it('should return the last substring after needle', () => {
+            const input = 'test__needle__c'
+            const result = string.substringAfterLast(input, '__');
+            expect(result).toEqual('c');
+        });
+        it('should return input when needle not found', () => {
+            const input = 'test__needle__c'
+            const result = string.substringAfterLast(input, '___');
+            expect(result).toEqual('test__needle__c');
+        });
+        it('should support matching with a regex', () => {
+            const input = 'test__needle__c'
+            const result = string.substringAfterLast(input, /\w+?__/);
+            expect(result).toEqual('c');
+        });
+    });
+    describe('#substringBefore', () => {
+        it('should return the first substring before needle', () => {
+            const input = 'test__needle__c'
+            const result = string.substringBefore(input, '__');
+            expect(result).toEqual('test');
+        });
+        it('should return input when needle not found', () => {
+            const input = 'test__needle__c'
+            const result = string.substringBefore(input, '___');
+            expect(result).toEqual('test__needle__c');
+        });
+        it('should support matching with a regex', () => {
+            const input = 'test__needle__c'
+            const result = string.substringBefore(input, /__/);
+            expect(result).toEqual('test');
+        });
+    });
+    describe('#substringBeforeLast', () => {
+        it('should return the first substring before last needle', () => {
+            const input = 'test__needle__c'
+            const result = string.substringBefore(input, '__');
+            expect(result).toEqual('test');
+        });
+        it('should return input when needle not found', () => {
+            const input = 'test__needle__c'
+            const result = string.substringBefore(input, '___');
+            expect(result).toEqual('test__needle__c');
+        });
+    });
+    describe('#lowerCamelCase', () => {
+        it('should strip spaces from string and upercase first letter of each word', () => {
+            expect(string.lowerCamelCase('My Test Word')).toEqual('myTestWord');
+        });
+        it('should strip none alpha numeric characters from the string', () => {
+            expect(string.lowerCamelCase('!M!y T!e#s%t_W$0(rd*!')).toEqual('myTestW0rd');
+        });
+        it('should not change string already in lower camel case when', () => {
+            expect(string.lowerCamelCase('iAmAGoodString')).toEqual('iAmAGoodString');
         });
     });
 });

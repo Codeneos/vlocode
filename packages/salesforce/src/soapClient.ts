@@ -37,8 +37,8 @@ export interface SoapResponseFault {
 }
 
 interface SoapRequestOptions {
-    requestSchema?: Schema.Definition; 
-    responseSchema?: Schema.Definition; 
+    requestSchema?: Schema.Definition;
+    responseSchema?: Schema.Definition;
     debuggingHeader?: SoapDebuggingHeader;
 }
 
@@ -165,7 +165,7 @@ export class SoapClient {
 
         const responseBody = Object.values(soapResponse.Envelope.Body ?? [])[0];
         if (responseBody && request.responseSchema) {
-            SoapClient.normalizeRequestResponse(request.responseSchema, responseBody);
+            Schema.normalize(request.responseSchema, responseBody);
         }
 
         return {
@@ -210,52 +210,6 @@ export class SoapClient {
                 }
             }
         });
-    }
-
-    /**
-     * Normalize a request or response object that was converted from XML into JSON using a Schema definition
-     * that defines which properties are of which type and converts the properties where required so that they are compatible
-     * with the schema.
-     * 
-     * Modifies the object passed as argument instead of creating a new object.
-     * 
-     * @param schema Schema definition
-     * @param obj request or response object
-     * @returns Schema normalized object
-     */
-    public static normalizeRequestResponse<T extends object>(schema: Schema.Definition, obj: T): T {
-        if (!obj) {
-            return obj;
-        }
-
-        for (const [field, fieldDef] of Object.entries(schema.fields)) {
-            const fieldValue = obj[field];
-            const fieldValueNull = fieldValue === undefined || fieldValue === null;
-
-            if (fieldDef.optional && fieldValueNull) {
-                // Delete optional fields that are null or undefined
-                delete obj[field];
-            } else if (!fieldDef.nullable && fieldValueNull) {
-                // Init values for fields that are not nullable
-                if (fieldDef.type === 'boolean') {
-                    obj[field] = false;
-                } else if (fieldDef.type === 'number') {
-                    obj[field] = 0;
-                } else if (fieldDef.type === 'string') {
-                    obj[field] = '';
-                } else if (typeof fieldDef.type === 'object') {
-                    obj[field] = {};
-                }
-            }
-            
-            if (fieldDef.array && !Array.isArray(fieldValue)) {
-                obj[field] = [ fieldValue ];
-            } else if (typeof fieldDef.type === 'object' && fieldValue !== null && typeof fieldValue === 'object') {
-                this.normalizeRequestResponse(fieldDef.type, fieldValue);
-            }
-        }
-
-        return obj;
     }
 
     private getFaultCode(soapResponse: SoapResponse) {

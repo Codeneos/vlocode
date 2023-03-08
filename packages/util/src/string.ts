@@ -81,14 +81,51 @@ export function formatString(stringFormat: string, contextValues?: any) : string
 }
 
 /**
+ * Returns section of the string before occurrence of the specified delimiter; in case the delimiter does not occur returns the whole string
+ * @param value Value
+ * @param delimiter Delimiter string passed ot split
+ */
+export function substringBefore(value: string, delimiter: string | RegExp): string {
+    if (typeof delimiter === 'string') {
+        // parse as string
+        const indexOfDelimiter = value.indexOf(delimiter);
+        if (indexOfDelimiter && indexOfDelimiter >= 0) {
+            return value.substring(0, indexOfDelimiter);
+        }
+        return value;
+    }    
+    return value.split(delimiter, 1).shift()!;
+}
+
+/**
+ * Returns section of the string before occurrence of the last specified delimiter; in case the delimiter does not occur returns the whole string
+ * @param value Value
+ * @param delimiter Delimiter string passed ot split
+ */
+export function substringBeforeLast(value: string, delimiter: string): string {
+    // parse as string
+    const indexOfDelimiter = value.lastIndexOf(delimiter);
+    if (indexOfDelimiter && indexOfDelimiter >= 0) {
+        return value.substring(0, indexOfDelimiter);
+    }
+    return value;
+}
+
+/**
  * Returns section of the string after the last occurrence of the specified delimiter; in case the delimiter does not occur returns the whole string
  * @param value Value
  * @param delimiter Delimiter string passed ot split
- * @param limit Maximum number of splits to execute
  */
 export function substringAfterLast(value: string, delimiter: string | RegExp): string {
-    const splitted = value.split(delimiter);
-    return splitted[splitted.length - 1];
+    if (typeof delimiter === 'string') {
+        // parse as string
+        const indexOfDelimiter = value.lastIndexOf(delimiter);
+        if (indexOfDelimiter && indexOfDelimiter >= 0) {
+            return value.substring(indexOfDelimiter + delimiter.length);
+        }
+        return value;
+    }    
+    return value.split(delimiter).pop()!;
 }
 
 /**
@@ -154,4 +191,40 @@ const escapedCharacters = {
  */
 export function escapeHtmlEntity(value: string) {
     return value.replace(/[&"'<>]/g, c => escapedCharacters[c] ?? c);
+}
+
+/**
+ * Normalizes a name to a lower `camelCase` format removing any special characters and spaces:
+ * - `OM_Rule` becomes `omRule`
+ * - `Xml-parser` becomes `xmlParser`
+ * - `my named prop` becomes `myNamedProp`
+ * @param name name to convert to lower camel case
+ */
+export function lowerCamelCase(name: string, options?: { forceLowerCase?: boolean }) : string {
+    let normalized = '';
+    let nextUpper = false;
+    for (let index = 0; index < name.length; index++) {        
+        const char = name.charAt(index);
+        if ((char === ' ' || char === '-' || char === '_') && normalized.length > 0) {
+            nextUpper = true;
+        } else if (isAlphaNumericChar(name.charCodeAt(index))) {
+            // Skip any other special character
+            continue;
+        } else if(nextUpper) {
+            normalized += char.toUpperCase();
+            nextUpper = false;
+        } else {
+            normalized += normalized.length === 0 || options?.forceLowerCase ? char.toLowerCase() : char;
+        }
+    }
+    return normalized;
+}
+
+/**
+ * Checks if the specified character is an alpha numeric character
+ * @param char Character point to check
+ * @returns `true` when the character is an alpha numeric character otherwise `false`
+ */
+export function isAlphaNumericChar(char: number) : boolean {
+    return !((char > 47 && char < 58) || (char > 64 && char < 91) || (char > 96 && char < 123));
 }

@@ -28,6 +28,43 @@ export type AsyncEventHandler<T extends EventMap> = {
     [K in keyof T]?: EventReceiver<T[K]>
 };
 
+export type EventDefinitions = Record<string | symbol, (...args: any[]) => any>
+
+/**
+ * Strong typed utility interface that allows defining of emittable events based on an event definition type.
+ * Provides event type validation at design time making avoiding type errors at runtime
+ * 
+ * Define all emittable events and their arguments in a new interface which extends the {@link EventDefinitions} type.
+ * Each function defined in the interface represents an event, the arguments of the method define the parameters 
+ * that are emitted by the emitter and that can be expected by listeners.
+ * 
+ * Usage sample:
+ * ```ts
+interface SalesforceConnectionEvents extends EventDefinitions {
+    refresh(token: string): any;
+    done(connection: this): any;
+}
+
+class SalesforceConnection implements EventEmittingType<SalesforceConnectionEvents> extends EventEmitter {
+}
+
+const c = new SalesforceConnection();
+c.on('refresh', (token) => console.log(token));
+c.emit('refresh', 'token');
+c.emit('done', c);
+```
+ */
+export interface EventEmittingType<E extends EventDefinitions, R = any> {
+    emit<K extends keyof E>(eventName: K, listener: (...args: Parameters<E[K]>) => R): this;
+    on<K extends keyof E>(eventName: K, listener: (...args: Parameters<E[K]>) => R): this;
+    once<K extends keyof E>(eventName: K, listener: (...args: Parameters<E[K]>) => R): this;
+    addListener<K extends keyof E>(eventName: K, listener: (...args: Parameters<E[K]>) => R): this;
+    off<K extends keyof E>(eventName: K, listener: (...args: any[]) => R): this;
+    removeListener<K extends keyof E>(eventName: K, listener: (...args: any[]) => R): this;
+    removeAllListeners<K extends keyof E>(eventName?: K): this;
+}
+
+
 /**
  * An event emitter that has better support async methods giving the emitter the option to execute event handlers async 
  * in sequence instead of in parallel.

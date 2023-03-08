@@ -28,7 +28,7 @@ export class BulkQueryJob<TRecord extends object = object> extends BulkJob<Query
         }
 
         do {
-            const response = await this.client.get<HttpResponse>(
+            const response = await this.client.get(
                 this.buildResultsResource({ locator, maxRecords: chunkSize ?? 500 }), 
                 { rawResponse: true });
             locator = response.headers['sforce-locator'];

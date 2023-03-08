@@ -5,6 +5,8 @@ import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationT
 import { SalesforceConnectionProvider } from './connection';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
 import { NamespaceService } from './namespaceService';
+import { QueryCache } from './queryCache';
+import { RecordFactory } from './queryRecordFactory';
 
 export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & SObjectRecord & { [P in TProps]: any; };
 
@@ -30,8 +32,11 @@ export interface QueryOptions {
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class QueryService {
 
-    private readonly queryCache: Map<string,  Promise<QueryResult<any>[]>> = new Map();
-    private readonly recordFieldNames: WeakMap<any, Map<string, string | number | symbol>> = new WeakMap();
+    private readonly cache = {
+        tooling: new QueryCache(),
+        data: new QueryCache()
+    };
+
     private queryCacheEnabled = true;
     private queryCacheDefault = false;
 
@@ -62,7 +67,8 @@ export class QueryService {
      * Clear cached query results.
      */
     public clearCache(): this {
-        this.queryCache.clear();
+        this.cache.data.clear();
+        this.cache.tooling.clear();
         return this;
     }
 
@@ -85,57 +91,26 @@ export class QueryService {
     }
 
     public execute<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, options?: QueryOptions) : Promise<QueryResult<T, K>[]> {
-        const nsNormalizedQuery = this.nsService.updateNamespace(query) ?? query;
+        const nsNormalizedQuery = this.nsService?.updateNamespace(query) ?? query;
         const enableCache = this.queryCacheEnabled && (options?.cache ?? this.queryCacheDefault);
-        const cachedResult = enableCache && this.queryCache.get(nsNormalizedQuery);
-        
-        if (cachedResult) {
-            this.logger.verbose(`Query: ${query} [cache hit]`);
-            return cachedResult;
-        }
-
-        const promisedResult = (async () => {
-            const queryTimer = new Timer();
+        const queryExecutor = async () => {
             const connection = await this.connectionProvider.getJsForceConnection();
-            const queryBackend = options?.toolingApi ? connection.tooling : connection;
-            let queryResult = await queryBackend.query<T>(nsNormalizedQuery);
-            const records = queryResult.records;
-            while (queryResult.nextRecordsUrl) {
-                if (options?.cancelToken?.isCancellationRequested) {
-                    break;
-                }
-                queryResult = await queryBackend.queryMore(queryResult.nextRecordsUrl);
-                records.push(...queryResult.records);
+            const result = connection.query2<QueryResult<T, K>>(nsNormalizedQuery, { 
+                queryType: options?.toolingApi ? 'tooling' : 'data', 
+                batchSize: options?.chunkSize 
+            });
+            const records = new Array<QueryResult<T, K>>();
+            for await (const record of result) {
+                records.push(RecordFactory.create<QueryResult<T, K>>(record));
             }
-            this.logger.verbose(`Query: ${query} [records ${records.length}] [${queryTimer.stop()}]`);
-            return records.map(record => this.wrapRecord<T>(record) as QueryResult<T, K>);
-        })().catch(err => {
-            throw new Error(err.message || err);
-        });
+            return records;
+        };
 
         if (enableCache) {
-            this.queryCache.set(nsNormalizedQuery, promisedResult);
+            return this.cache[options?.toolingApi ? 'tooling' : 'data'].getOrSet(nsNormalizedQuery, queryExecutor) as any;
         }
 
-        return promisedResult;
-    }
-
-    private wrapRecord<T extends object>(record: T) {
-        const getPropertyKey = (target: T, name: string | number | symbol) => {
-            const fieldMap = this.getRecordFieldMap(target);
-            const normalizedName = normalizeSalesforceName(name.toString());
-            return fieldMap.get(normalizedName) ?? name;
-        };
-        return new Proxy(record, new PropertyTransformHandler(getPropertyKey));
-    }
-
-    private getRecordFieldMap<T extends object>(record: T) {
-        let fieldMap = this.recordFieldNames.get(record);
-        if (!fieldMap) {
-            fieldMap = Object.keys(record).reduce((map, key) => map.set(normalizeSalesforceName(key.toString()), key), new Map());
-            this.recordFieldNames.set(record, fieldMap);
-        }
-        return fieldMap;
+        return queryExecutor();
     }
 
     /**

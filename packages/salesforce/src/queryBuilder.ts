@@ -1,5 +1,5 @@
 import { container, LogManager } from '@vlocode/core';
-import { clone, flattenObject, lazy } from '@vlocode/util';
+import { deepClone, flattenObject, lazy } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './connection';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
@@ -77,7 +77,7 @@ export class QueryBuilder extends QueryBuilderData {
     }
 
     public static clone(query: QueryBuilder) {
-        return new QueryBuilder(clone(query.query));
+        return new QueryBuilder(deepClone(query.query));
     }
 
     public static parse(query: string) {

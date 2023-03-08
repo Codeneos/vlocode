@@ -1,6 +1,7 @@
+import { substringAfterLast, substringBefore } from "@vlocode/util";
 import { EventEmitter } from "events";
 import { RestClient } from "../restClient";
-import { QueryResponse } from "./types";
+import { QueryRelationshipInfo, QueryResponse } from "./types";
 
 enum AsyncQueryIteratorState {
     idle,
@@ -66,11 +67,13 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
             this.state = AsyncQueryIteratorState.fetching;
             while (this.nextResourceUrl) {
                 const responses = await this.client.get<QueryResponse<T>>(this.nextResourceUrl);
-                this.nextResourceUrl = responses.nextRecordsUrl?.split('/').slice(-2).join('/');
+                this.nextResourceUrl = this.getQueryLocator(responses.nextRecordsUrl);
+                await this.processRecords(responses.records);
+
                 this.records.push(...responses.records);
                 this.emit('records', responses.records);
 
-                if (!this.nextResourceUrl || !this.queryMore) {
+                if (!this.queryMore) {
                     break;
                 }
             }
@@ -83,6 +86,53 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
             this.removeAllListeners();
             delete this.resultsPromise;
         }
+    }
+
+    private async processRecords(records: any[]) {
+        await Promise.all(records.map(record => this.processRelationships(record))); 
+    }
+
+    private async processRelationships(record: any) {
+        for (const key of Object.keys(record)) {
+            const value = record[key];
+            if (this.isRelationship(value)) {
+                // When the relationship is not yet fetched we need to fetch it
+                const records = value.records ?? [];
+                let nextRecordsUrl = this.getQueryLocator(value.queryLocator ?? value.nextRecordsUrl);
+                while (nextRecordsUrl && this.queryMore) {
+                    const responses = await this.client.get<QueryResponse<T>>(nextRecordsUrl);
+                    nextRecordsUrl = this.getQueryLocator(responses.queryLocator ?? value.nextRecordsUrl);
+                    records.push(...responses.records);
+                }
+
+                // Process fetched records
+                await this.processRecords(records);
+
+                // replace relationship with the fetched records
+                record[key] = records;
+            }
+
+            if (key.endsWith('__r') && !Array.isArray(value)) {
+                record[key] = [];
+            }
+
+            if(key === 'attributes' && typeof value['url'] === 'string' && !record['Id']) {
+                // Extract the ID from the URL
+                record['Id'] = substringBefore(substringAfterLast(value['url'], '/'), '.');
+            }
+        }
+    }
+
+    private getQueryLocator(value: string | undefined | null) {
+        if (value) {
+            const endpointParts = this.client.endpoint.split('/').filter(p => !!p);
+            const urlParts = value.split('/').filter(p => !!p);
+            return urlParts.slice(endpointParts.length).join('/');
+        }
+    }
+
+    private isRelationship(object: unknown): object is QueryRelationshipInfo {
+        return typeof object === 'object' && object !== null && typeof object['done'] === 'boolean' && Array.isArray(object['records']);
     }
 
     [Symbol.asyncIterator](): AsyncIterableIterator<T> {
@@ -113,10 +163,8 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
             void this.fetch();
         }
         if (!this.recordsPromise) {
-            this.recordsPromise = new Promise((resolve, reject) => {
-                this.once('done', () => resolve(this.records));
-                this.once('error', err => reject(err));
-            });
+            // return this.oncePromise('records', () => this.next());
+            this.recordsPromise = this.oncePromise('done', () => this.records);
         }
         return this.recordsPromise;
     }
@@ -145,9 +193,21 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
             void this.fetch();
         }
 
+        return this.oncePromise('records', () => this.next());
+    }
+
+    private oncePromise<TResult>(event: string, handler: (...args: any[]) => TResult): Promise<TResult> {
         return new Promise((resolve, reject) => {
-            this.once('records', () => resolve(this.next()));
-            this.once('error', (err) => reject(err));
+            const resolveHandler = (...args) => {
+                this.removeListener('error', rejectHandler);
+                resolve(handler(...args));
+            };
+            const rejectHandler = (error) => {
+                this.removeListener(event, resolveHandler);
+                reject(error);
+            };
+            this.once('error', rejectHandler);
+            this.once(event, resolveHandler);
         });
     }
 

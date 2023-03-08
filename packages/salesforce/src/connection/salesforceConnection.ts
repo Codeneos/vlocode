@@ -1,4 +1,4 @@
-import { Connection, ConnectionOptions, Metadata } from 'jsforce';
+import { Connection, ConnectionOptions, ExecuteOptions, Metadata, Query, QueryResult } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
 import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, stringEquals, getErrorMessage } from '@vlocode/util';
@@ -6,6 +6,9 @@ import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } f
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
 import { MetadataApi } from './metadata';
+import { RestClient } from '../restClient';
+import { AsyncQueryIterator, JsForceAsyncQueryIterator } from './asyncQueryIterator';
+import { QueryResponse } from './types';
 
 type RefreshTokenCallback = (err: Error | undefined, accessToken?: string, response?: any) => void;
 
@@ -17,7 +20,7 @@ interface RefreshDelegate extends EventEmitter {
     _refreshing: boolean;
 }
 
-interface RequestOptions {
+export interface RequestOptions {
     responseType?: string;
     transport?: Transport;
     noContentResponse?: boolean;
@@ -25,7 +28,7 @@ interface RequestOptions {
 
 interface Subrequest {
     /**
-     * The method to use with the requested resource. 
+     * The method to use with the requested resource.
      * For a list of valid methods, refer to the documentation for the requested resource.
      */
     method: HttpMethod;
@@ -38,14 +41,14 @@ interface Subrequest {
     url: string;
     /**
      * The name of the binary part in the multipart request.
-     * When multiple binary parts are uploaded in one batch request, this value is used to map a request to its binary part. 
+     * When multiple binary parts are uploaded in one batch request, this value is used to map a request to its binary part.
      * To prevent name collisions, use a unique value for each `binaryPartName` property in a batch request.
-     * 
+     *
      * If this value exists, a `binaryPartNameAlias` value must also exist.
      */
     binaryPartName?: string;
     /**
-     * The `name` parameter in the `Content-Disposition` header of the binary body part. 
+     * The `name` parameter in the `Content-Disposition` header of the binary body part.
      * Different resources expect different values. See Insert or Update Blob Data.
      * If this value exists, a `binaryPartName` value must also exist.
      */
@@ -73,13 +76,13 @@ interface SubrequestResult {
  * APIs that are supported `composite/batch` requests
  */
 const compositeSupportedApis: ReadonlyArray<string> = Object.freeze([
-    'limits', 
-    'query', 
-    'queryAll', 
-    'search', 
-    'connect', 
-    'chatter', 
-    'actions', 
+    'limits',
+    'query',
+    'queryAll',
+    'search',
+    'connect',
+    'chatter',
+    'actions',
     'sobjects'
 ]);
 
@@ -153,8 +156,8 @@ export class SalesforceConnection extends Connection {
             this.oauth2 = new SalesforceOAuth2(this.oauth2, this);
         }
 
-        // @ts-ignore Decorate metadata API
-        this.metadata = new MetadataApi(this);
+        // Replace metadata API
+        this.metadata = new MetadataApi(this) as any;
 
         // Configure logger
         this.logger = LogManager.get(SalesforceConnection)
@@ -169,14 +172,14 @@ export class SalesforceConnection extends Connection {
     }
 
     /**
-     * Executes up to 25 subrequests in a single request. The response bodies and HTTP statuses of 
-     * the subrequests in the batch are returned in a single response body. 
+     * Executes up to 25 subrequests in a single request. The response bodies and HTTP statuses of
+     * the subrequests in the batch are returned in a single response body.
      * Each subrequest counts against rate limits.
-     * 
-     * __Note__ all requests are executed against the connections API {@link version}. URLs that do contain 
+     *
+     * __Note__ all requests are executed against the connections API {@link version}. URLs that do contain
      * a version number such as `/services/data/v33.0/sobjects/Account/describe` are normalized to a format
      * without a concrete API version such as, i.e: `{apiVersion}/sobjects/Account/describe`.
-     * 
+     *
      * __Note__ only the following APIs are supported:
      * - `limits`
      * - `query`
@@ -186,7 +189,7 @@ export class SalesforceConnection extends Connection {
      * - `chatter`
      * - `actions`
      * - `sobjects`
-     * 
+     *
      * Format of requests:
      * ```js
      * const requests = [{
@@ -198,7 +201,7 @@ export class SalesforceConnection extends Connection {
      *    richInput: { Name: 'CB Corp.' }
      * }]
      * ```
-     * 
+     *
      * @param batchRequests Collection of subrequests to execute.
      * @param haltOnError Controls whether a batch continues to process after a subrequest fails. The default is false.
      * If the value is false and a subrequest in the batch doesn’t complete, Salesforce attempts to execute the subsequent subrequests in the batch.
@@ -212,14 +215,14 @@ export class SalesforceConnection extends Connection {
         }
 
         const responses = new Array<DeferredPromise<T>>();
-        const batchRequests = requests.map(req => ({ 
+        const batchRequests = requests.map(req => ({
             ...req,
             url: this.normalizeBatchRequestUrl(req.url)
         }));
 
-        this.request<{ hasErrors: boolean; results: Array<SubrequestResult> }>({ 
+        this.request<{ hasErrors: boolean; results: Array<SubrequestResult> }>({
             method: 'POST',
-            url: `/services/data/v{apiVersion}/composite/batch`, 
+            url: `/services/data/v{apiVersion}/composite/batch`,
             body: JSON.stringify({ batchRequests, haltOnError })
         }).then(resp => resp.results.map((res, i) => {
             if (resp.hasErrors && this.isErrorResponse(res)) {
@@ -237,19 +240,19 @@ export class SalesforceConnection extends Connection {
     private normalizeBatchRequestUrl(url: string) {
         if (!url.startsWith(`/`)) {
             url = `/${url}`;
-        }        
+        }
         if (url.startsWith(`/services/data/`)) {
             url = url.slice(15);
         }
         if (url.startsWith(`v`)) {
             url = `{apiVersion}/${url.split('/').slice(1).join('/')}`;
         }
-        
+
         const apiName = url.split('/')[0]!;
         if (!compositeSupportedApis.includes(apiName)) {
             throw new Error(`Composite Batch request does not support API "${apiName}": ${url}`);
         }
-        
+
         return this.replaceTokens(url);
     }
 
@@ -259,9 +262,13 @@ export class SalesforceConnection extends Connection {
      * @param options Additional request options
      * @returns Request promise
      */
-    public async request<T = any>(
+    public request<T = any>(
         request: string | HttpRequestInfo,
         options?: RequestOptions | any): Promise<T>;
+
+    public request(
+        request: HttpRequestInfo, 
+        options: RequestOptions & { responseType: 'raw' }): Promise<HttpResponse>;
 
     public async request<T = any>(
         info: string | HttpRequestInfo,
@@ -417,7 +424,7 @@ export class SalesforceConnection extends Connection {
             )
         );
     }
-    
+
     /**
      * Refreshes the current access token and returns the refreshed token.
      * @returns Refreshed token
@@ -437,8 +444,72 @@ export class SalesforceConnection extends Connection {
         this.logger.debug(`token refresh complete`);
         this.emit('refresh', this.accessToken);
 
-        return tokens.access_token;
+        return tokens.access_token;        
     }
+
+    /**
+     * Execute a query on Salesforce Tooling or Data (default) APIs and return the records.
+     * 
+     * By default fetches all records using the query locator when required; set {@link Query2Options.queryMore} 
+     * to `false` to only fetch the the first batch
+     * 
+     * @param soql SOQL Query to execute
+     * @param options Additional query options
+     * @returns Async iterable and awaitable results from the query
+     */
+    public query2<T extends object = Record<string, unknown>>(soql: string, options?: Query2Options): AsyncQueryIterator<T> {
+        return new AsyncQueryIterator<T>(
+            new RestClient(this, options?.queryType === 'tooling' ? `/services/data/v{apiVersion}/tooling` : `/services/data/v{apiVersion}`),
+            `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${this.encodeRFC3986URI(soql)}`,
+            options?.queryMore
+        );
+    }
+
+    /**
+     * Encode URL parameters according to RFC3986 using %-encoding. 
+     * Encodes spaces as `+`.
+     * @remarks differs from {@link encodeURIComponent} in also encoding `!`, `'`, `(`, `)`, and `*`
+     * @param str String value to encode 
+     * @returns encoded string 
+     */
+    private encodeRFC3986URI(str: string) {
+        return str.replace(
+            /[:/?#[\]@!$'()*+,;=% ]/g,
+            c => c === ' ' ? '+' : `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+          );
+      }
+}
+
+export interface Query2Options {
+    /**
+     * Defines the query backend type API to call. Some objects are available on both tooling and data API.
+     * When not set defaults to `data`
+     */
+    queryType?: 'tooling' | 'data';
+    /**
+     * A numeric value that specifies the number of records returned for a query request.
+     * Child objects count toward the number of records for the batch size. For example,
+     * in relationship queries, multiple child objects are returned per parent row returned.
+     *
+     * The default is `2000`; the minimum is `200`, and the maximum is `2000`.
+     *
+     * There is no guarantee that the requested batch size is the actual batch size.
+     * Changes are made as necessary to maximize performance.
+     *
+     * @default 2000
+     */
+    batchSize?: number;
+    /**
+     * Boolean value that specifies if deleted records should be included in the results.
+     * @default false
+     */
+    includeDeleted?: boolean;
+    /**
+     * Boolean value that if true will fetch additional `records` that did not fit in the responses batch until all
+     * result records are retrieved from the server.
+     * @default true
+     */
+    queryMore?: boolean;
 }
 
 class JsForceLogAdapter {

@@ -1,4 +1,4 @@
-import { stringEquals } from './string';
+import { lowerCamelCase, stringEquals } from './string';
 import { cacheFunction } from './cache';
 
 /**
@@ -101,7 +101,7 @@ export const normalizeSalesforceName = cacheFunction((name: string) => {
     strippedName = strippedName.substring(0,1).toLowerCase() + strippedName.substring(1);
     // Some salesforce names are already in lower camel case; only convert the ones that use underscores
     if (/[\W_]+/.test(strippedName)) {
-        strippedName = normalizeName(strippedName);
+        strippedName = lowerCamelCase(strippedName, { forceLowerCase: true });
     }
     // Ensure we keep the __r for relationship fields
     // or when the relationship field has an id postfix
@@ -112,30 +112,6 @@ export const normalizeSalesforceName = cacheFunction((name: string) => {
     }
     return strippedName;
 });
-
-/**
- * Normalizes a name to a valid js property by replacing any special characters and changing the name to lower camel case:
- * For example: OM_Rule -> omRule, Xml-parser -> xmlParser, my named prop -> myNamedProp
- * @param name name ot normalize
- */
-export function normalizeName(name: string) : string {
-    let normalized = '';
-    let nextUpper = false;
-    for (const char of Array.from(name.trim())) {
-        if (' _-'.includes(char) && normalized.length > 0) {
-            nextUpper = true;
-        } else if (/\W+/.test(char)) {
-            // Skip any other special character
-            continue;
-        } else if(nextUpper) {
-            normalized += char.toUpperCase();
-            nextUpper = false;
-        } else {
-            normalized += char.toLowerCase();
-        }
-    }
-    return normalized;
-}
 
 /**
  * Find the best matching Salesforce field name for the @param fieldName parameter in an array of fields

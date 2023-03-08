@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { createHash, Hash, randomUUID } from 'crypto';
 import { stringEquals } from './string';
 
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
@@ -150,11 +150,15 @@ export function filterKeys<TOut extends object = object, TIn extends object = ob
 }
 
 /**
- * Deep clone an object; 
+ * Deep clones an object return copy of primitives and embedded objects. 
+ * Also sets the prototype of the object so that if the source value is a class the clone will be an instance of the same class.
+ * 
+ * This method does **not** support deep recursive objects where object in the object graph refers to a parent or child.
+ * 
  * @param {*} value object
- * @returns Deep copy of the object trapped in the proxy
+ * @returns Deep copy of an object
  */
- export function clone<T>(value: T): T {
+export function deepClone<T>(value: T): T {
     if (value === undefined || value === null) {
         return value;
     }
@@ -176,6 +180,10 @@ export function merge(object: any, ...sources: any[]) {
             if (isObject(object[key]) && isObject(source[key])) {
                 merge(object[key], source[key]);
             } else if (isObject(source[key])) {
+                if (source[key] === source) {
+                    object[key] = object;
+                    continue;
+                }
                 object[key] = merge(createMergeTarget(source[key]), source[key]);
             } else {                
                 object[key] = source[key];
@@ -196,6 +204,32 @@ function createMergeTarget<T>(source: T): T {
 
 function isObject(obj: any) {
     return obj !== null && typeof obj === 'object';
+}
+
+/**
+ * Freeze an object and all nested objects recursively which prevents the modification 
+ * of existing property attributes and values, and prevents the addition of new properties. 
+ * 
+ * Freezes the object in place and returns the same object for convenience.
+ * 
+ * @param value Object to freeze
+ * @returns Frozen instance of the object
+ */
+export function deepFreeze<T>(value: T): T {
+    if (value === undefined || value === null) {
+        return value;
+    }
+    if (isObject(value)) {
+        for (const item of Object.values(value)) {
+            if (isObject(item) && !Object.isFrozen(item)) {
+                deepFreeze(item);
+            }
+        }
+        if (!Object.isFrozen(value)) {
+            Object.freeze(value);
+        }        
+    }
+    return value;    
 }
 
 /**
@@ -339,6 +373,35 @@ export function objectEquals(a?: unknown, b?: unknown) {
     }
 
     return true;
+}
+
+/**
+ * Hash an object and return the digested hashed value as hex 
+ * @param obj Object to calculate the unique hashed value for
+ * @param algorithm hashing algorithm to use; defaults to `sha1`
+ */
+export function calculateHash(obj: object, algorithm: string = 'sha1') {
+    return hashObjectUpdate(createHash(algorithm), obj).digest('hex');
+}
+
+function hashObjectUpdate(hash: Hash, obj: object): Hash {
+    for (const key of Object.keys(obj).sort()) {
+        hash.update(key);
+        
+        const value = obj[key];
+        if (value === undefined || value === null) {
+            continue
+        }
+
+        if (typeof value === 'object') {
+            this.objectHash(value, undefined, hash);
+        } else if (typeof value === 'function') {
+            continue;
+        } else {
+            hash.update(`${value}`);
+        }        
+    }    
+    return hash;
 }
 
 /**
