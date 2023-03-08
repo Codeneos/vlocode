@@ -1,5 +1,5 @@
 import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, QueryService } from '@vlocode/salesforce';
 import { VlocityNamespaceService, ForkedSassCompiler, OmniScriptActivator } from '@vlocode/vlocity-deploy';
 import { existsSync } from 'fs';
 import { Command, Argument, Option } from '../command';
@@ -64,7 +64,7 @@ export default class extends Command {
             this.logger.info(`Activating ${key} (version: ${lastVersion.version})`);
             try {
                 await activator.activate(lastVersion.id, { 
-                    useToolingApi: !options.useMetadataApi,
+                    toolingApi: !options.useMetadataApi,
                     skipLwcDeployment: options.skipLwc,
                     remoteActivation: options.remoteActivation 
                 });
