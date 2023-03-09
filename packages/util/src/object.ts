@@ -394,7 +394,7 @@ function hashObjectUpdate(hash: Hash, obj: object): Hash {
         }
 
         if (typeof value === 'object') {
-            this.objectHash(value, undefined, hash);
+            hashObjectUpdate(hash, value);
         } else if (typeof value === 'function') {
             continue;
         } else {
