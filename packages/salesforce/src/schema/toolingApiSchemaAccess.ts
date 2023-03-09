@@ -131,7 +131,7 @@ export class ToolingApiSchemaAccess {
 
         try {
             const chunkQuery = query.clone().filter({ [field]: chunk });
-            const normalizedResults = (await chunkQuery.executeTooling<T>(this.queryService)).map(this.normalize, this)
+            const normalizedResults = await chunkQuery.executeTooling<T>(this.queryService);
             results.push(...normalizedResults);
         } catch(err) {
             // For some objects we get unknown errors even when the query is fine
