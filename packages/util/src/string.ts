@@ -228,3 +228,24 @@ export function lowerCamelCase(name: string, options?: { forceLowerCase?: boolea
 export function isAlphaNumericChar(char: number) : boolean {
     return !((char > 47 && char < 58) || (char > 64 && char < 91) || (char > 96 && char < 123));
 }
+
+export function isUppercaseChar(char: number) : boolean {
+    return char > 64 && char < 91;
+}
+
+export function isLowercaseChar(char: number) : boolean {
+    return char > 96 && char < 123;
+}
+
+export function isNumericChar(char: number) : boolean {
+    return char > 47 && char < 58;
+}
+
+export function isAlphaNumeric(name: string) : boolean {
+    for (let index = 0; index < name.length; index++) {        
+        if (!isAlphaNumericChar(name.charCodeAt(index))) {
+            return false;
+        }
+    }
+    return true;
+}

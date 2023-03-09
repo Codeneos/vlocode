@@ -98,15 +98,23 @@ export function addFieldsToQuery(query: string, ...fields: string[]) {
  */
 export const normalizeSalesforceName = cacheFunction((name: string) => {
     let strippedName = name.replace(/(^.*?__)?(.*?)(__(c|r)$)/gi, '$2');
-    strippedName = strippedName.substring(0,1).toLowerCase() + strippedName.substring(1);
-    // Some salesforce names are already in lower camel case; only convert the ones that use underscores
-    if (/[\W_]+/.test(strippedName)) {
+    if (/^[a-zA-Z0-9]+$/.test(strippedName)) {
+        if (/^[A-Z0-9]+$/.test(strippedName)) {  
+            // Convert full name to lower camel case when it's an acronym, i.e. SFDC -> sfdc and XML -> xml
+            strippedName = strippedName.toLowerCase()
+        } else {
+            // If the salesforce name is already in camel case just convert the first character to lower case
+            strippedName = strippedName.substring(0,1).toLowerCase() + strippedName.substring(1);
+        }
+    } else {
+        // Convert full name to lower camel case
         strippedName = lowerCamelCase(strippedName, { forceLowerCase: true });
     }
+
     // Ensure we keep the __r for relationship fields
     // or when the relationship field has an id postfix
     if (name.toLowerCase().endsWith('id__r')) {
-        return strippedName.replace(/id$/i, '');
+        strippedName = strippedName.replace(/id$/i, '');
     } else if (name.toLowerCase().endsWith('__r')) {
         strippedName += '__r';
     }
