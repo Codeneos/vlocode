@@ -350,6 +350,8 @@ export function mapGetOrCreate<K, V, VI extends (key: K) => V | Promise<V>>(map:
             map.set(key, v);
             return v;
         }).finally(() => pendingInitializers.delete(key)) as ReturnType<VI>;
+    } else {
+        map.set(key, value);
     }
     return value as ReturnType<VI>;
 }
