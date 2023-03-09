@@ -1,4 +1,3 @@
-import { Logger } from '@vlocode/core';
 import { Argument, Option } from 'commander';
 export { Argument, Option } from 'commander';
 

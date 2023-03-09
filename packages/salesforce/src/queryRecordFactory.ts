@@ -1,5 +1,5 @@
 import { injectable, LifecyclePolicy } from '@vlocode/core';
-import { cache, extractNamespaceAndName, normalizeSalesforceName, PropertyTransformHandler, removeNamespacePrefix, substringAfter, substringAfterLast, substringBefore } from '@vlocode/util';
+import { cache, extractNamespaceAndName, normalizeSalesforceName, PropertyTransformHandler, removeNamespacePrefix, substringAfterLast, substringBefore } from '@vlocode/util';
 import { QueryResultRecord } from './connection';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 

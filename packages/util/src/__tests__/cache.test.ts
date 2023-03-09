@@ -29,18 +29,18 @@ class CacheTester {
     }
 
     @cache( { unwrapPromise: true } )
-    public async unwrapPromise(...args: any[]) {
+    public async unwrapPromise() {
         this.unwrapPromiseCount++;
         return this.deferredPromise = new DeferredPromise();
     }
 
     @cache( { immutable: true } )
-    public immutableArrayResponse(...args: any[]) {
+    public immutableArrayResponse() {
         return [1,2,3,4];
     }
 
     @cache()
-    public arrayResponse(...args: any[]) {
+    public arrayResponse() {
         return [1,2,3,4];
     }
 }

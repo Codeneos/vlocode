@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { PropertyTransformHandler, normalizeSalesforceName, Timer, CancellationToken } from '@vlocode/util';
+import { CancellationToken } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
 import { PropertyAccessor, SObjectRecord, Field } from './types';
@@ -56,7 +56,7 @@ export class QueryService {
     }
 
     /**
-     * Changes the default behavior for caching queries, when true if no explicit useChache parameters are passed the caching is decided based on the default cache paramter;
+     * Changes the default behavior for caching queries, when true if no explicit useCache parameters are passed the caching is decided based on the default cache parameter;
      */
     public setCacheDefault(enabled: boolean): this {
         this.queryCacheDefault = enabled;

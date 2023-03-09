@@ -1,5 +1,4 @@
 import { CancellationToken } from "@vlocode/util";
-import { HttpResponse } from "../connection";
 import { BulkJob, BulkJobInfo, QueryOperationType } from "./bulkJob";
 
 export interface QueryJobInfo extends BulkJobInfo {

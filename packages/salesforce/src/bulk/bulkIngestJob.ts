@@ -1,4 +1,3 @@
-import { Blob } from "buffer";
 import { DateTime } from "luxon";
 import { BulkJob, BulkJobInfo, IngestJobType, IngestOperationType } from "./bulkJob";
 

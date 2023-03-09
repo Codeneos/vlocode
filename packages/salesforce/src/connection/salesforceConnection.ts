@@ -1,14 +1,13 @@
-import { Connection, ConnectionOptions, ExecuteOptions, Metadata, Query, QueryResult } from 'jsforce';
+import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, stringEquals, getErrorMessage } from '@vlocode/util';
+import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise } from '@vlocode/util';
 import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
 import { MetadataApi } from './metadata';
 import { RestClient } from '../restClient';
-import { AsyncQueryIterator, JsForceAsyncQueryIterator } from './asyncQueryIterator';
-import { QueryResponse } from './types';
+import { AsyncQueryIterator } from './asyncQueryIterator';
 
 type RefreshTokenCallback = (err: Error | undefined, accessToken?: string, response?: any) => void;
 

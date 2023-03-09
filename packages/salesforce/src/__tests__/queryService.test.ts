@@ -2,7 +2,7 @@ import 'jest';
 
 import { QueryService } from '../queryService';
 import { Logger, container } from '@vlocode/core';
-import { HttpRequestInfo, HttpResponse, SalesforceConnection, SalesforceConnectionProvider } from '../connection';
+import { HttpRequestInfo, HttpResponse, SalesforceConnection } from '../connection';
 import { deepClone, wait } from '@vlocode/util';
 
 describe('queryService', () => {
@@ -17,7 +17,7 @@ describe('queryService', () => {
                 "records": records
             }
         };
-        async function httpRequest<T>(info: HttpRequestInfo): Promise<HttpResponse> {
+        async function httpRequest(info: HttpRequestInfo): Promise<HttpResponse> {
             await wait(5);
             apiRequests.push(info.url);
             return {

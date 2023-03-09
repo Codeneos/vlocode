@@ -1,4 +1,4 @@
-import { OmniScriptDefinition, OmniScriptDetail, OmniScriptElementDefinition } from './omniScriptDefinition';
+import { OmniScriptDefinition, OmniScriptElementDefinition } from './omniScriptDefinition';
 import { getErrorMessage, Iterable } from '@vlocode/util';
 import { OmniScriptElementRecord, OmniScriptRecord } from './omniScriptLookupService';
 

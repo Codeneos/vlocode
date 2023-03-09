@@ -1,6 +1,3 @@
-import { Package } from "jsforce";
-import { SalesforceMetadata } from "./metadataInfo";
-
 export interface RetrieveRequest {
     apiVersion: string | number;
     /**

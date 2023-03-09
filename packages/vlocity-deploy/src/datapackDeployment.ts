@@ -1,6 +1,6 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, CancellationTokenSource, unique } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
@@ -431,7 +431,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         const resolutionQueue = Iterable.transform(datapacks.values(), {
             filter: datapack => datapack.hasUnresolvedDependencies,
-            map: datapack => datapack.resolveDependencies(this).catch(err => {                
+            map: datapack => datapack.resolveDependencies(this).catch(err => {
                 datapacks.delete(datapack.sourceKey);
                 void this.handleError(datapack, err);
             })
