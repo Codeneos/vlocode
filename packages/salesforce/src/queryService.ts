@@ -41,9 +41,8 @@ export class QueryService {
     private queryCacheDefault = false;
 
     @injectable.property private readonly logger: Logger;
-    @injectable.property private readonly nsService: NamespaceService;
 
-    constructor(private readonly connectionProvider: SalesforceConnectionProvider) {
+    constructor(private readonly connectionProvider: SalesforceConnectionProvider, private readonly nsService?: NamespaceService) {
     }
 
     /**

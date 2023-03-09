@@ -83,7 +83,8 @@ export class RecordFactory {
                     continue;
                 } else if (Array.isArray(value)) {
                     // Modify the array in-place
-                    value.forEach((record, i) => value[i] = this.createWithDefine(record));
+                    value.filter((value) => typeof value === 'object' && value !== null)
+                        .forEach((record, i) => value[i] = this.createWithDefine(record));
                 } else {
                     // Modify the object in-place
                     value[key] = this.createWithDefine(value as QueryResultRecord);

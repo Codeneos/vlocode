@@ -137,7 +137,7 @@ export class HttpTransport implements Transport {
      * Even when debug logging is enable request and response bodies are not logged for performance and security reason.
      * Enabling this flag enables logging of both the request and response bodies including headers
      */
-    static enableResponseLogging = true;
+    static enableResponseLogging = false;
 
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
@@ -234,9 +234,6 @@ export class HttpTransport implements Transport {
         if (HttpTransport.enableResponseLogging) {
             this.logger.debug(`${info.method} ${url.pathname}`);
             this.logger.debug('<headers>', JSON.stringify(info.headers ?? {}, undefined, 2));
-            if (body) {
-                this.logger.debug(`<request>`, body.toString(this.bodyEncoding));
-            }
         }
 
         if (body) {
