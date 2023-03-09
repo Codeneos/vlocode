@@ -117,23 +117,46 @@ export class OmniScriptDefinitionBuilder {
      * Updates the template list of the script definition and embedded not already included templates in the script definition.
      */
     private updateEmbeddedTemplates() {
+        const templateHtml = new Array<string>();
+        const templateScript = new Array<string>();
+        const templateStyle = new Array<string>();
+        
         for (const [name, template] of this.embeddedTemplates) {
             if (this.scriptDef.templateList.includes(name)) {
                 continue;
             }
 
-            this.scriptDef.testTemplates += template.HTML ? this.createHtmlTag('script', template.HTML, { type: 'text/ng-template', id: name }) : '';
-            this.scriptDef.testTemplates += template.CSS ? this.createHtmlTag('style', template.CSS) : '';
+            if (template.html) {
+                templateHtml.push(this.createHtmlTag('script', template.html, { type: 'text/ng-template', id: name }));
+            }
+            
+            if(template.css) {
+                const cssSourceUrl = `\n/*# sourceURL=vlocity/dynamictemplate/${template.name}.css */\n`;
+                templateStyle.push(this.createHtmlTag('style', template.css + cssSourceUrl));
+            }
 
             if (template.customJavascript) {
-                // wrap in self-executing function to catch errors in custom JS
-                // note that custom JS can still escape the try/catch by using setTimeout, etc. or by throwing an error in a promise
-                const scriptBody = `(function() { try { ${template.customJavascript} } catch(e) { console.error('Error in ${name}.js', e); } })();`;
-                this.scriptDef.testTemplates += this.createHtmlTag('script', scriptBody, { type: 'text/javascript', id: `${name}.js` });
+                templateScript.push(this.createIIFE(name, template.customJavascript));
             }
 
             this.scriptDef.templateList.push(name);
         }
+
+        // First include templates followed by CSS styling and then load the embedded script controllers
+        this.scriptDef.testTemplates = (this.scriptDef.testTemplates ?? '') + templateHtml.join('') + templateStyle.join('') + templateScript.join('');
+    }
+
+    /**
+     * Create script-tag with an immediate-invoked function expression (IIFE) to wrap the script body.
+     * @param name Script name without extension
+     * @param script Script body
+     * @returns HTML script tag with IIFE
+     */
+    private createIIFE(name: string, script: string) {
+        const sourceMap = `\n//# sourceURL=vlocity/dynamictemplate/${name}.js\n`
+        const errorHandler = `console.error('Error in ${name}.js', e);`
+        const scriptBody = `(function() { try {\n${script}\n} catch(e) { ${errorHandler} } })();${sourceMap}`;
+        return this.createHtmlTag('script', scriptBody, { type: 'text/javascript', id: `${name}.js` });
     }
 
     private createHtmlTag(name: string, body?: string, attributes?: Record<string, string>) {
@@ -191,6 +214,8 @@ class OmniScriptElementGroupDefinitionBuilder {
         child.indexInParent = childIndex;  
         child.index = 0;
         child.JSONPath = "";
+        child.response = null;
+        child.children = [];
 
         this.group.children.push({
             bHasAttachment: false,
