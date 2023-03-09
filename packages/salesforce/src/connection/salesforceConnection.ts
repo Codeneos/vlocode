@@ -338,7 +338,7 @@ export class SalesforceConnection extends Connection {
         request: HttpRequestInfo,
         options?: RequestOptions): Promise<T>
     {
-        if (this._refreshDelegate._refreshing) {
+        if (this._refreshDelegate?._refreshing) {
             const refreshError = await resumeOnce<Error | undefined>('resume', this._refreshDelegate);
             if (refreshError) {
                 throw refreshError;
