@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom';
 import { Script } from 'vm';
 import { SalesforceService, SalesforcePackage } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
-import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
+import { OmniScriptDefinition, OmniScriptSpecification } from './omniScriptDefinition';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import { XML } from '@vlocode/util';
 
@@ -171,7 +171,7 @@ export class OmniScriptLwcCompiler{
      * Generated the LWC component name from the OmniScript definition
      * @param scriptDefinition Definition of the OmniScript for which to generate the name
      */
-    private getLwcName(script: OmniScriptDetail) {
+    private getLwcName(script: OmniScriptSpecification) {
         const cpType = String(script.type).charAt(0).toLowerCase() + String(script.type).slice(1);
         const cpSubType = String(script.subType).charAt(0).toUpperCase() + String(script.subType).slice(1);
         const cpLanguage = script.language ? (script.language.replace(/[\s()-]+/gi, '')) : script.language;

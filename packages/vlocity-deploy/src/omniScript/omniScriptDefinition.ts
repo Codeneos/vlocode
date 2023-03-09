@@ -1,4 +1,4 @@
-export interface OmniScriptDetail {
+export interface OmniScriptSpecification {
     type: string;
     subType: string; 
     language?: string;
@@ -59,6 +59,13 @@ export interface OmniScriptBaseElementDefinition {
     bHasAttachment: boolean;
     bEmbed: boolean;
     propSetMap?: OmniScriptBaseElementPropertySet;
+    children?: Array<{
+        bHasAttachment: boolean,
+        eleArray: Array<OmniScriptElementDefinition>;
+        indexInParent: number;
+        level: number;
+        response: null;
+    }>
 }
 
 export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementDefinition {
@@ -68,7 +75,7 @@ export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementD
         indexInParent: number;
         level: number;
         response: null;
-    }>,
+    }>
     bAccordionOpen: boolean,
     bAccordionActive: boolean,
 }

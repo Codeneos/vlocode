@@ -3,8 +3,8 @@
  */
 export interface VlocityUITemplate {
     name: string; 
-    HTML?: string;
+    html?: string;
     customJavascript?: string;
-    CSS?: string;
-    SASS?: string;
+    css?: string;
+    sass?: string;
 }

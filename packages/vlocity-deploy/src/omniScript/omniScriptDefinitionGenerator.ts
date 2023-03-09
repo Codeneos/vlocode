@@ -1,5 +1,5 @@
 import { injectable, Logger } from '@vlocode/core';
-import { OmniScriptDefinition, OmniScriptDetail, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition } from './omniScriptDefinition';
+import { OmniScriptDefinition, OmniScriptSpecification, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition } from './omniScriptDefinition';
 import { Iterable } from '@vlocode/util';
 import { OmniScriptDefinitionFactory } from './omniScriptDefinitionFactory';
 import { OmniScriptDefinitionBuilder } from './omniScriptDefinitionBuilder';
@@ -16,7 +16,7 @@ export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionPr
         private readonly logger: Logger) {
     }
     
-    public async getScriptDefinition(input: string | OmniScriptDetail): Promise<OmniScriptDefinition> {
+    public async getScriptDefinition(input: string | OmniScriptSpecification): Promise<OmniScriptDefinition> {
         const scriptRecord = await this.lookup.getScript(input);
         const scriptDef = await this.buildScriptDefinition(scriptRecord);
         return scriptDef;

@@ -1,6 +1,6 @@
 import { Container, Logger } from '@vlocode/core';
 import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
-import { forEachAsyncParallel, Iterable, Timer } from '@vlocode/util';
+import { forEachAsyncParallel, getErrorMessage, Iterable, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
@@ -113,7 +113,7 @@ export class OmniScript implements DatapackDeploymentSpec {
                     await this.activator.activateLwc(record.recordId, { toolingApi: true });
                 }
             } catch(err) {
-                this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${err}`);
+                this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${getErrorMessage(err, true)}`);
                 record.updateStatus(DeploymentStatus.Failed, err.message || err);
             }
         }, 8);

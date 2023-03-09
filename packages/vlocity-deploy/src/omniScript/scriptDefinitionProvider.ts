@@ -1,6 +1,6 @@
 import { QueryFormatter, QueryService, SalesforceQueryData } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
-import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
+import { OmniScriptDefinition, OmniScriptSpecification } from './omniScriptDefinition';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 
 @injectable()
@@ -14,7 +14,7 @@ export class ScriptDefinitionProvider implements OmniScriptDefinitionProvider {
      * @param input Script definition or Id
      * @returns
      */
-    public async getScriptDefinition(input: OmniScriptDetail | string): Promise<OmniScriptDefinition> {
+    public async getScriptDefinition(input: OmniScriptSpecification | string): Promise<OmniScriptDefinition> {
         const query: SalesforceQueryData = {
             sobjectType: `%vlocity_namespace%__OmniScriptDefinition__c`,
             fieldList: [`%vlocity_namespace%__Sequence__c`, `%vlocity_namespace%__Content__c`],

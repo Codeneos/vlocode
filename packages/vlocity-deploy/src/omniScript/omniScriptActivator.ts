@@ -1,11 +1,11 @@
 import { SalesforceService, SalesforceDeployService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
-import { OmniScriptDefinition, OmniScriptDetail } from './omniScriptDefinition';
+import { OmniScriptDefinition, OmniScriptSpecification } from './omniScriptDefinition';
 import { spreadAsync, Timer } from '@vlocode/util';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
-import { OmniScriptLookupService } from './omniScriptLookupService';
+import { OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
 import { OmniScriptLocalDefinitionProvider } from './omniScriptDefinitionGenerator';
 
 export interface OmniScriptActivationOptions {
@@ -55,14 +55,14 @@ export class OmniScriptActivator {
      * Any existing active OmniScriptDefinition__c records will be deleted.
      * @param input OmniScript to activate
      */
-    public async activate(input: OmniScriptDetail | string, options?: { skipLwcDeployment?: boolean, toolingApi?: boolean, remoteActivation?: boolean }) {
+    public async activate(input: OmniScriptSpecification | string, options?: { skipLwcDeployment?: boolean, toolingApi?: boolean, remoteActivation?: boolean }) {
         const script = await this.lookup.getScript(input);
 
         // (Re-)Activate script
         if (options?.remoteActivation) {
-            await this.remoteScriptActivation(script.id);
+            await this.remoteScriptActivation(script);
         } else {
-            await this.localScriptActivation(script.id);
+            await this.localScriptActivation(script);
         }
 
         // Deploy LWC when required
@@ -72,24 +72,42 @@ export class OmniScriptActivator {
         }
     }
 
-    private async remoteScriptActivation(scriptId: string) {
-        const result = await this.salesforceService.executeAnonymous(this.remoteActivationFunction.replace(/%script_id%/, scriptId), { updateNamespace: true });
+    private async remoteScriptActivation(script: OmniScriptRecord) {
+        const result = await this.salesforceService.executeAnonymous(this.remoteActivationFunction.replace(/%script_id%/, script.id), { updateNamespace: true });
         if (!result.success) {
             if (!result.compiled) {
                 throw new Error(`APEX Compilation error at script activation: ${result.compileProblem}`);
             }
             throw new Error(`Activation error: ${result.exceptionMessage}`);
         }
-        return this.definitionProvider.getScriptDefinition(scriptId);
+        return this.definitionProvider.getScriptDefinition(script.id);
     }
 
-    private async localScriptActivation(scriptId: string) {
-        const definition = await this.definitionGenerator.getScriptDefinition(scriptId);
-        await this.insertScriptDefinition(scriptId, definition);
+    private async localScriptActivation(script: OmniScriptRecord) {
+        const definition = await this.definitionGenerator.getScriptDefinition(script);
+        await this.updateScriptDefinition(script.id, definition);
+        await this.setAsActiveVersion(script);
         return definition;
     }
 
-    private async insertScriptDefinition(scriptId: string, definition: OmniScriptDefinition) {
+    private async setAsActiveVersion(script: OmniScriptRecord) {        
+        const scriptUpdates = (await this.lookup.getScriptVersions(script))
+            .filter(version => version.isActive && version.id !== version.id)
+            .map(version => ({ id: version.id, isActive: script.id === version.id }));
+
+        if (!scriptUpdates.length) {
+            // When there is no change in the active version, skip the update
+            return;
+        }
+
+        for await (const updateResult of this.salesforceService.update('%vlocity_namespace%__OmniScript__c', scriptUpdates)) {
+            if (script.id === updateResult.ref && !updateResult.success) {
+                throw new Error(`Activation error: ${updateResult.error}`);
+            }
+        }
+    }
+
+    private async updateScriptDefinition(scriptId: string, definition: OmniScriptDefinition) {
         const contentChunks = this.serializeDefinition(definition);
         const records = contentChunks.map((content, index) => ({
             ref: `${scriptId}_${index}`,
@@ -101,11 +119,11 @@ export class OmniScriptActivator {
         }));
         
         await this.cleanScriptDefinitions(scriptId);
-        const results = await spreadAsync(this.salesforceService.insert('%vlocity_namespace%__OmniScriptDefinition__c', records));
-        if (results.some(result => !result.success)) {
-            throw new Error(`Failed to insert OmniScript activation records: ${results.map(result => result.error).join(', ')}`);
-        }
-        await spreadAsync(this.salesforceService.update('%vlocity_namespace%__OmniScript__c', [{ id: scriptId, isActive: true }]));
+        for await (const insertResult of this.salesforceService.insert('%vlocity_namespace%__OmniScriptDefinition__c', records)) {
+            if (!insertResult.success) {
+                throw new Error(`Failed to insert OmniScript activation records: ${insertResult.error}`);
+            }
+        }        
     }
 
     /**
@@ -138,7 +156,7 @@ export class OmniScriptActivator {
      * Deletes the OmniScriptDefinition__c records for the specified OmniScript
      * @param input OmniScript to clean the script definitions for
      */
-    private async cleanScriptDefinitions(input: string | OmniScriptDetail) {
+    private async cleanScriptDefinitions(input: string | OmniScriptSpecification) {
         const script = await this.lookup.getScript(input);
         const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', { 
             omniScriptId: {
@@ -182,7 +200,7 @@ export class OmniScriptActivator {
             await this.deployLwcWithMetadataApi(definition);
         }
 
-        this.logger.info(`Deployed LWC ${definition.bpType}/${definition.bpSubType} in [${timer.stop()}]`);
+        this.logger.info(`Deployed LWC ${definition.bpType}/${definition.bpSubType} in ${timer.toString("seconds")}`);
     }
 
     private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {
