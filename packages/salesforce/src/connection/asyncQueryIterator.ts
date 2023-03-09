@@ -112,10 +112,6 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
                 record[key] = records;
             }
 
-            if (key.endsWith('__r') && !Array.isArray(value)) {
-                record[key] = [];
-            }
-
             if(key === 'attributes' && typeof value['url'] === 'string' && !record['Id']) {
                 // Extract the ID from the URL
                 record['Id'] = substringBefore(substringAfterLast(value['url'], '/'), '.');
