@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise } from '@vlocode/util';
+import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer } from '@vlocode/util';
 import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
@@ -443,7 +443,7 @@ export class SalesforceConnection extends Connection {
         this.logger.debug(`token refresh complete`);
         this.emit('refresh', this.accessToken);
 
-        return tokens.access_token;        
+        return tokens.access_token;
     }
 
     /**
@@ -457,11 +457,13 @@ export class SalesforceConnection extends Connection {
      * @returns Async iterable and awaitable results from the query
      */
     public query2<T extends object = Record<string, unknown>>(soql: string, options?: Query2Options): AsyncQueryIterator<T> {
+        this.logger.debug(`SOQL = ${soql}`);
+        const timer = new Timer();
         return new AsyncQueryIterator<T>(
             new RestClient(this, options?.queryType === 'tooling' ? `/services/data/v{apiVersion}/tooling` : `/services/data/v{apiVersion}`),
             `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${this.encodeRFC3986URI(soql)}`,
             options?.queryMore
-        );
+        ).once('done', (records) => this.logger.debug(`[SIZE=${records.length}] SOQL = ${soql} (${timer})`));
     }
 
     /**
@@ -473,7 +475,7 @@ export class SalesforceConnection extends Connection {
      */
     private encodeRFC3986URI(str: string) {
         return str.replace(
-            /[:/?#[\]@!$'()*+,;=% ]/g,
+            /[:/?#[\]@!$'()*+,;=%& ]/g,
             c => c === ' ' ? '+' : `%${c.charCodeAt(0).toString(16).toUpperCase()}`
           );
       }
