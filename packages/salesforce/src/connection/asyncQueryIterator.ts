@@ -29,6 +29,8 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
     private iteratorOffset = 0;
     private records = new Array<T>();
     private errors = new Array<any>();
+    private iteratorActive = true;
+    private nextResourceUrl: string | undefined;
 
     /**
      * True when all records are fetched or when an error occurred during fetching
@@ -46,9 +48,10 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
 
     constructor(
         private readonly client: RestClient,
-        private nextResourceUrl: string | undefined,
+        resourceUrl: string,
         private queryMore = true) {
         super();
+        this.nextResourceUrl = resourceUrl;
     }
     
     public execute(): this {
@@ -62,27 +65,35 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
      * @returns All records fetched
      */
     private async fetch() {
-        console.assert(this.state === AsyncQueryIteratorState.idle); 
+        console.assert(this.state === AsyncQueryIteratorState.idle, 'Iterator is already fetching records'); 
         try {
             this.state = AsyncQueryIteratorState.fetching;
-            while (this.nextResourceUrl) {
+            while (this.nextResourceUrl && this.iteratorActive) {
                 const responses = await this.client.get<QueryResponse<T>>(this.nextResourceUrl);
                 this.nextResourceUrl = this.getQueryLocator(responses.nextRecordsUrl);
                 await this.processRecords(responses.records);
+
+                if (!this.nextResourceUrl || !this.iteratorActive || !this.queryMore) {
+                    // Change state before calling emit to not crash the 
+                    // the async iterator when have 0 results
+                    this.state = AsyncQueryIteratorState.done;
+                }
 
                 this.records.push(...responses.records);
                 this.emit('records', responses.records);
 
                 if (!this.queryMore) {
+                    // Query more is disabled, stop fetching records but do fetch the first record set
                     break;
                 }
             }
-            this.emit('done');
+            this.state = AsyncQueryIteratorState.done;
+            this.emit('done', this.records);
         } catch (err) {
+            this.state = AsyncQueryIteratorState.done;
             this.errors.push(err);
             this.emit('error', err);
-        } finally {
-            this.state = AsyncQueryIteratorState.done;
+        } finally {            
             this.removeAllListeners();
             delete this.resultsPromise;
         }
@@ -133,6 +144,9 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
 
     [Symbol.asyncIterator](): AsyncIterableIterator<T> {
         this.iteratorOffset = 0;
+        if (this.nextResourceUrl) {
+            this.state = AsyncQueryIteratorState.idle;
+        }
         return this;
     }
 
@@ -208,7 +222,7 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
     }
 
     public return(): Promise<IteratorResult<T, undefined>> {
-        this.queryMore = false;
+        this.iteratorActive = false;
         this.iteratorOffset = Number.MAX_SAFE_INTEGER;
         return Promise.resolve({
             value: undefined,
@@ -217,7 +231,7 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
     }
 
     public throw(): Promise<IteratorResult<T, undefined>> {
-        this.queryMore = false;
+        this.iteratorActive = false;
         this.iteratorOffset = Number.MAX_SAFE_INTEGER;
         return Promise.resolve({
             value: undefined,

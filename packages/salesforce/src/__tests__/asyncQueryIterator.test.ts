@@ -101,9 +101,8 @@ describe('AsyncQueryIterator', () => {
         const client = new RestClient(connection, '/services/data/v57.0');             
 
         // Act
-        const sut = new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact', false);
         const results = new Array<any>();
-        for await (const record of sut) {
+        for await (const record of new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact', false)) {
             results.push(record);
         }
 
@@ -213,5 +212,120 @@ describe('AsyncQueryIterator', () => {
 
         // Assert
         expect(err).toBe('An error');
+    });
+    it('should exit iteration without yielding records when there are no results', async () => { 
+        // Arrange
+        const connection = {
+            async request(): Promise<any> {
+                await wait(15);
+                return {
+                    "totalSize": 0,
+                    "done": true,
+                    "nextRecordsUrl": null,
+                    "records": [ ]
+                }
+            }
+        };
+        const client = new RestClient(connection, '/services/data/v57.0');
+        
+        // Act
+        const records = new Array<any>();
+        for await (const result of new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact')) {
+            records.push(result);
+        }
+
+        // Assert
+        expect(records).toStrictEqual([]);
+    });
+    it('should return an empty array when awaited and query has no records', async () => { 
+        // Arrange
+        const connection = {
+            async request(): Promise<any> {
+                await wait(15);
+                return {
+                    "totalSize": 0,
+                    "done": true,
+                    "nextRecordsUrl": null,
+                    "records": [ ]
+                }
+            }
+        };
+        const client = new RestClient(connection, '/services/data/v57.0');
+        
+        // Act
+        const records = await new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact');
+
+        // Assert
+        expect(records).toStrictEqual([]);
+    });
+    it('should not query records again for a second iteration', async () => { 
+        // Arrange
+        const connection = setupConnection();
+        const client = new RestClient(connection, '/services/data/v57.0');              
+        
+        // Act
+        const sut = new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact');
+
+        const records1 = new Array<any>();
+        for await (const result of sut) {
+            records1.push(result);
+        }
+
+        const records2 = new Array<any>();
+        for await (const result of sut) {
+            records2.push(result);
+        }
+
+        // Assert
+        expect(connection.apiRequests.length).toStrictEqual(2);
+        expect(records1).toStrictEqual([ queryRecords[0], queryRecords[1] ]);
+        expect(records2).toStrictEqual([ queryRecords[0], queryRecords[1] ]);
+    });
+    it('should resume fetching of result set when first iteration breaks early', async () => { 
+        // Arrange
+        const connection = setupConnection();
+        const client = new RestClient(connection, '/services/data/v57.0');              
+        
+        // Act
+        const sut = new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact');
+
+        const records1 = new Array<any>();
+        for await (const result of sut) {
+            records1.push(result);
+            break;
+        }
+        expect(connection.apiRequests.length).toStrictEqual(1);
+
+        const records2 = new Array<any>();
+        for await (const result of sut) {
+            records2.push(result);
+        }
+        const records3 = await sut;
+
+        // Assert
+        expect(connection.apiRequests.length).toStrictEqual(2);
+        expect(records1).toStrictEqual([ queryRecords[0] ]);
+        expect(records2).toStrictEqual([ queryRecords[0], queryRecords[1] ]);
+        expect(records3).toStrictEqual([ queryRecords[0], queryRecords[1] ]);
+    });
+    it('should support awaiting iterator after iteration and fetch any pending records', async () => { 
+        // Arrange
+        const connection = setupConnection();
+        const client = new RestClient(connection, '/services/data/v57.0');              
+        
+        // Act
+        const sut = new AsyncQueryIterator(client, 'query?q=SELECT+Name,Id+FROM+Contact');
+        const records1 = new Array<any>();
+        for await (const result of sut) {
+            records1.push(result);
+            break;
+        }
+        expect(connection.apiRequests.length).toStrictEqual(1);
+        const records2 = await sut;
+
+        // Assert
+        expect(connection.apiRequests.length).toStrictEqual(2);
+        expect(records1).toStrictEqual([ queryRecords[0] ]);
+        expect(records2).toStrictEqual([ queryRecords[0], queryRecords[1] ]);
     });
 });
