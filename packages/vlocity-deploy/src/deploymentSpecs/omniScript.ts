@@ -73,7 +73,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         
         const getElementLevel = (element: ScriptElement) => {
             const parentElementPath = new Array<ScriptElement>();
-            while(element) {
+            while (element) {
                 const parentKey = element.ParentElementId__c?.VlocityMatchingRecordSourceKey;
                 const parent = parentKey && elementsByKey.get(parentKey);
                 if (!parent) {
@@ -103,8 +103,8 @@ export class OmniScript implements DatapackDeploymentSpec {
                 this.addPreprocessingWarning(datapack, `element "${element.Name}" level changed: ${currentLevel} -> ${calculatedLevel}`);
             }
 
-            element['%vlocity_namespace%__Order__c'] = orderInParent;
-            element['%vlocity_namespace%__Level__c'] = calculatedLevel;
+            currentOrder === undefined && (element['%vlocity_namespace%__Order__c'] = orderInParent);
+            currentLevel === undefined && (element['%vlocity_namespace%__Level__c'] = calculatedLevel);
 
             elementCountByParent.set(parentKey, orderInParent + 1);
         }
