@@ -130,7 +130,7 @@ export function getObjectValues(obj: object, depth = -1) : any[] {
 }
 
 /**
- * Transform the specified object into a different shape by transforming each property with the key transformer function. 
+ * Transform the specified object into a different shape by transforming each property with the key transformer function.
  * Does not change the orignal object but create a new object.
  * @param obj Object to transform
  * @param keyTransformer Transformation function
@@ -140,21 +140,21 @@ export function mapKeys(obj: object, keyTransformer: (key: string | number | sym
 }
 
 /**
- * Filter all keys matching the filter function and create a shallow clone of the object without the filtered keys 
+ * Filter all keys matching the filter function and create a shallow clone of the object without the filtered keys
  * @param obj object to filter the keys from
  * @param filterFn filter function
- * @returns 
+ * @returns
  */
 export function filterKeys<TOut extends object = object, TIn extends object = object>(obj: TIn, filterFn: (key: string) => any): TOut  {
     return Object.keys(obj).filter(filterFn).reduce((acc, key) => Object.assign(acc, { [key]: obj[key] }), {} as TOut);
 }
 
 /**
- * Deep clones an object return copy of primitives and embedded objects. 
+ * Deep clones an object return copy of primitives and embedded objects.
  * Also sets the prototype of the object so that if the source value is a class the clone will be an instance of the same class.
- * 
+ *
  * This method does **not** support deep recursive objects where object in the object graph refers to a parent or child.
- * 
+ *
  * @param {*} value object
  * @returns Deep copy of an object
  */
@@ -165,14 +165,14 @@ export function deepClone<T>(value: T): T {
     if (isObject(value)) {
         return merge(createMergeTarget(value), value);
     }
-    return value;    
+    return value;
 }
-    
+
 /**
  * Merge multiple objects recursively into the target object
  * @param {object} object target into which sources are merged
  * @param  {...object} sources source from which to merge
- * @returns 
+ * @returns
  */
 export function merge(object: any, ...sources: any[]) {
     for (const source of sources.filter(s => s)) {
@@ -185,11 +185,11 @@ export function merge(object: any, ...sources: any[]) {
                     continue;
                 }
                 object[key] = merge(createMergeTarget(source[key]), source[key]);
-            } else {                
+            } else {
                 object[key] = source[key];
             }
         }
-    }    
+    }
     return object;
 }
 
@@ -207,11 +207,11 @@ function isObject(obj: any) {
 }
 
 /**
- * Freeze an object and all nested objects recursively which prevents the modification 
- * of existing property attributes and values, and prevents the addition of new properties. 
- * 
+ * Freeze an object and all nested objects recursively which prevents the modification
+ * of existing property attributes and values, and prevents the addition of new properties.
+ *
  * Freezes the object in place and returns the same object for convenience.
- * 
+ *
  * @param value Object to freeze
  * @returns Frozen instance of the object
  */
@@ -227,9 +227,9 @@ export function deepFreeze<T>(value: T): T {
         }
         if (!Object.isFrozen(value)) {
             Object.freeze(value);
-        }        
+        }
     }
-    return value;    
+    return value;
 }
 
 /**
@@ -250,7 +250,7 @@ export function flattenObject<T extends object>(values: T, flattenPredicate?: (o
             if (!flattenPredicate?.(value)) {
                 return Object.assign(acc, flattenObject(value, flattenPredicate, separator, objectKey));
             }
-        } 
+        }
         return Object.assign(acc, { [objectKey]: value });
     }, {});
 }
@@ -277,7 +277,7 @@ export function setObjectProperty<T extends object>(obj: T, prop: string, value:
     if (options?.create) {
         obj = obj ?? {} as T; // init object with a default when not set
     }
-    
+
     const propPath = prop.split('.');
     const lastProp = propPath.pop()!;
 
@@ -301,13 +301,13 @@ export function setObjectProperty<T extends object>(obj: T, prop: string, value:
  * Recursively visit each property of an object and any nested objects it has, for arrays visits all elements. Does not visit functions if they exist.
  * @param obj Object for which on each property the property visitor is called
  * @param propertyVisitor Visitor function called for each property
- * @returns 
+ * @returns
  */
 export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: any, owner: any) => void, thisArg?: any): T {
     if (!obj) {
         return obj;
     }
-    
+
     if (thisArg) {
         propertyVisitor = propertyVisitor.bind(thisArg);
     }
@@ -328,7 +328,7 @@ export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: an
 
 /**
  * Type-safe function to get the error message from an error thrown in a try-catch block
- * @param err err as thrown 
+ * @param err err as thrown
  * @param withStack optionally include the stack in the error message; defaults to false
  * @returns String version of the err
  */
@@ -345,7 +345,7 @@ export function getErrorMessage(err: unknown | any, withStack?: boolean): string
 /**
  * Compare 2 objects for quality by comparing the values of the properties of the objects instead of only reference-equality.
  * - For none-object (primitives such as string, integer, etc) equality a `===`-comparison is used.
- * 
+ *
  * @param a Object to which object `b` is compared
  * @param b Object to which object `a` is compared
  * @returns True if objects a and b are equal otherwise false.
@@ -364,7 +364,7 @@ export function objectEquals(a?: unknown, b?: unknown) {
         // If A does not have the same amount of keys of B they cannot be equal
         return false;
     }
-    
+
     // Check if all keys of A are equal to the keys in B
     for (const key of Object.keys(a)) {
         if (!objectEquals(a[key], b[key])) {
@@ -376,18 +376,21 @@ export function objectEquals(a?: unknown, b?: unknown) {
 }
 
 /**
- * Hash an object and return the digested hashed value as hex 
+ * Hash an object and return the digested hashed value as hex
  * @param obj Object to calculate the unique hashed value for
  * @param algorithm hashing algorithm to use; defaults to `sha1`
  */
-export function calculateHash(obj: object, algorithm: string = 'sha1') {
+export function calculateHash(obj: object | string, algorithm: string = 'sha1') {
+    if (typeof obj === 'string') {
+        return createHash(algorithm).update(obj).digest('hex');
+    }
     return hashObjectUpdate(createHash(algorithm), obj).digest('hex');
 }
 
 function hashObjectUpdate(hash: Hash, obj: object): Hash {
     for (const key of Object.keys(obj).sort()) {
         hash.update(key);
-        
+
         const value = obj[key];
         if (value === undefined || value === null) {
             continue
@@ -399,8 +402,8 @@ function hashObjectUpdate(hash: Hash, obj: object): Hash {
             continue;
         } else {
             hash.update(`${value}`);
-        }        
-    }    
+        }
+    }
     return hash;
 }
 
