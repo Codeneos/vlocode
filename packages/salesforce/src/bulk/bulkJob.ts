@@ -208,7 +208,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * Refresh the job info and state of this job.
      */
     public async refresh() {
-        this.#info = Object.freeze<T>(await this.client.get(this.id));
+        this.#info = Object.freeze(await this.client.get<T>(this.id));
         return this;
     }
 
@@ -218,7 +218,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * @returns Instance of this job
      */
     protected async patch(info: Partial<T>) {
-        this.#info = Object.freeze<T>(await this.client.patch(info, this.id));
+        this.#info = Object.freeze(await this.client.patch<T>(info, this.id));
         return this;
     }
 
