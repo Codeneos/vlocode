@@ -1,7 +1,7 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, RecordBatchOptions, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger, injectable, container, LifecyclePolicy, Container } from '@vlocode/core';
-import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix } from '@vlocode/util';
+import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -159,9 +159,9 @@ export class DatapackDeployer {
                 await this.runSpecFunction('afterRecordConversion', records);
                 deployment.add(...records);
             } catch(err) {
-                const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${err.message || err}`;
+                const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${getErrorMessage(err, true)}`;
                 if (!options?.continueOnError) {
-                    throw new Error(errorMessage); 
+                    throw new CustomError(errorMessage); 
                 }
                 this.logger.error(errorMessage);
             }
