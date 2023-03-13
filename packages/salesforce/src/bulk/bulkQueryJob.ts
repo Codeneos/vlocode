@@ -15,7 +15,7 @@ export interface QueryJobInfo extends BulkJobInfo {
 export class BulkQueryJob<TRecord extends object = object> extends BulkJob<QueryJobInfo> {
 
     /**
-     * Get the query result records; when the query is not yet completed wait until completed before getting the results 
+     * Get the query result records; when the query is not yet completed wait until completed before getting the results
      * @param chunkSize Number of records to retrieve per call out
      */
     public async *records(chunkSize?: number, cancelToken?: CancellationToken): AsyncGenerator<TRecord> {
@@ -28,7 +28,7 @@ export class BulkQueryJob<TRecord extends object = object> extends BulkJob<Query
 
         do {
             const response = await this.client.get(
-                this.buildResultsResource({ locator, maxRecords: chunkSize ?? 500 }), 
+                this.buildResultsResource({ locator, maxRecords: chunkSize ?? 500 }),
                 { rawResponse: true });
             locator = response.headers['sforce-locator'];
             yield *this.resultsToRecords<TRecord>(response.body);
@@ -42,7 +42,7 @@ export class BulkQueryJob<TRecord extends object = object> extends BulkJob<Query
         const searchParams = Object.entries(queryParams ?? {})
             .filter(([, value]) => value !== null && value !== undefined)
             .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join(`&`);
-            
+
         return searchParams ? `${baseResource}?${searchParams}` : baseResource;
     }
 }

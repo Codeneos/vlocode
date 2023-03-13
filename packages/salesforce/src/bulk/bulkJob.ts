@@ -35,8 +35,8 @@ export interface BulkJobInfo {
      */
     operation: IngestOperationType | QueryOperationType;
     /**
-     * For future use. How the request was processed. 
-     * Currently only parallel mode is supported. 
+     * For future use. How the request was processed.
+     * Currently only parallel mode is supported.
      * (When other modes are added, the mode will be chosen automatically by the API and will not be user configurable.)
      */
     readonly concurrencyMode: JobConcurrencyMode;
@@ -172,20 +172,28 @@ export class BulkJob<T extends BulkJobInfo> {
      */
     public get type() { return this.info.jobType; }
 
+    /**
+     * Last known state of the job as returned by the API.
+     */
+    public get info() { return this.#info; }
+
     protected readonly delimiterCharacter = ColumnDelimiters[this.columnDelimiter ?? 'COMMA'];
     protected readonly lineEndingCharacters = this.info.lineEnding === 'LF' ? '\n' : '\r\n';
 
-    constructor(
-        protected client: RestClient,
-        protected info: T) {
+    /**
+     * Internal state detail of the job as last returned by the API.
+     */
+    #info: Readonly<T>;
+
+    constructor(protected client: RestClient, info: T) {
+        this.#info = Object.freeze<T>(info);
     }
 
     /**
      * Abort a job, the job doesn’t get queued or processed.
      */
     public async abort() {
-        this.info = await this.client.patch({ state: 'Aborted' }, this.id);
-        return this;
+        return this.patch({ state: 'Aborted' } as T);
     }
 
     /**
@@ -200,7 +208,17 @@ export class BulkJob<T extends BulkJobInfo> {
      * Refresh the job info and state of this job.
      */
     public async refresh() {
-        this.info = await this.client.get(this.id)
+        this.#info = Object.freeze<T>(await this.client.get(this.id));
+        return this;
+    }
+
+    /**
+     * Update the job info and state of this job.
+     * @param info Changes to the job
+     * @returns Instance of this job
+     */
+    protected async patch(info: Partial<T>) {
+        this.#info = Object.freeze<T>(await this.client.patch(info, this.id));
         return this;
     }
 
@@ -208,7 +226,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * Poll the bulk API until the job is processed.
      * @param interval Interval is ms when to refresh job data; when not set defaults to polling for job updates every 5 seconds
      * @param cancelToken Cancellation token to stop the polling process
-     * @returns 
+     * @returns
      */
     public async poll(interval?: number, cancelToken?: CancellationToken) {
         if (this.state === 'Open') {
@@ -257,7 +275,7 @@ export class BulkJob<T extends BulkJobInfo> {
         if (!isNaN(asNumber)) {
             return asNumber;
         }
-        
+
         return value;
     }
 }

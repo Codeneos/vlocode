@@ -22,20 +22,20 @@ export interface IngestJobInfo extends BulkJobInfo {
      */
     assignmentRuleId?: string;
     /**
-     * The external ID field in the object being updated. Only needed for upsert operations. 
+     * The external ID field in the object being updated. Only needed for upsert operations.
      * Field values must also exist in CSV job data.
      * Required for upsert operations
      */
     externalIdFieldName?: string;
     /**
-     * The number of milliseconds taken to process triggers and other processes related to the job data. 
-     * This doesn't include the time used for processing asynchronous and batch Apex operations. 
+     * The number of milliseconds taken to process triggers and other processes related to the job data.
+     * This doesn't include the time used for processing asynchronous and batch Apex operations.
      * If there are no triggers, the value is 0.
      */
     readonly apexProcessingTime: number;
     /**
-     * The number of milliseconds taken to actively process the job and includes apexProcessingTime, 
-     * but doesn't include the time the job waited in the queue to be processed 
+     * The number of milliseconds taken to actively process the job and includes apexProcessingTime,
+     * but doesn't include the time the job waited in the queue to be processed
      * or the time required for serialization and deserialization.
      */
     readonly apiActiveProcessingTime: number;
@@ -81,9 +81,9 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
     /**
      * Uploads data for a job using CSV data you provide.
-     * @param data data in CSV formatter using the correct column delimiter as specified in the 
+     * @param data data in CSV formatter using the correct column delimiter as specified in the
      *             job or an array of objects which is converted into CSV format
-     * 
+     *
      */
     public async uploadData(data: TRecord[], options?: { keepOpen?: boolean }) {
         for (const chunk of this.encodeData(data)) {
@@ -99,11 +99,11 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     }
 
     /**
-     * Confirm that all data for the job is uploaded. Salesforce queues the job and uploaded data for processing, 
+     * Confirm that all data for the job is uploaded. Salesforce queues the job and uploaded data for processing,
      * and you can’t add any more job data.
      */
     public async close() {
-        this.info = await this.client.patch({ state: 'UploadComplete' }, this.id);
+        this.patch({ state: 'UploadComplete' });
         return this;
     }
 
@@ -132,7 +132,7 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
         // Detect columns
         const columns = this.detectColumns(data);
         const csvStart = columns.map(c => this.encodeValue(c)).join(this.delimiterCharacter) + this.lineEndingCharacters;
-        
+
         const encodedHeader = Buffer.from(csvStart, this.encoding);
         let encodedData = [ encodedHeader ];
         let encodedDataSize = encodedHeader.byteLength;
@@ -149,7 +149,7 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
                 yield chunk;
             }
         }
-        
+
         if (encodedData.length > 1) {
             const chunk = Buffer.concat(encodedData);
             encodedData = [];
@@ -182,11 +182,11 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
         if (value instanceof DateTime) {
             return value.toFormat(`yyyy-MM-dd'T'HH:mm:ss.SSSZZZ`)
-        } 
+        }
 
         if (Buffer.isBuffer(value)) {
             return value.toString('base64');
-        } 
+        }
 
         if (typeof value === 'string') {
             if (this.alwaysQuote || value.includes('"') || value.includes(this.delimiterCharacter)) {
@@ -204,13 +204,13 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
     private isPrimitiveType(value: unknown): boolean {
         const type = typeof value;
-        return value === null 
+        return value === null
             || value instanceof Date || value instanceof DateTime
-            || Buffer.isBuffer(value) 
-            || type === 'boolean' 
-            || type === 'number' 
-            || type === 'bigint' 
-            || type === 'string' 
+            || Buffer.isBuffer(value)
+            || type === 'boolean'
+            || type === 'number'
+            || type === 'bigint'
+            || type === 'string'
             || type === 'undefined';
     }
 }
