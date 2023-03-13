@@ -34,27 +34,78 @@ The Vlocode CLI is packaged as a dependency-free CLI with a bit of help from Web
 $ npm i @vlocode/cli -g
 ```
 
-## Command Line Syntax
+## Commands
+
+List all commands available using the `--help` command. To get help on a specific command use the following command `vlocode <command> --help`.
+
+### `vlocode deploy`
 
 ```shell
-Usage: vlocode-cli deploy [options] <folder>
+Usage: vlocode deploy [options] <folder>
 
 Deploy datapacks to Salesforce
 
 Arguments:
-  folder                 path to a folder containing the datapacks to be deployed
+  folder                      path to a folder containing the datapacks to be deployed
 
 Options:
-  -v, --verbose          enable verbose logging (default: false)
-  --debug                print call stack when an unhandled error occurs (default: false)
-  -u, --user <username>  Salesforce username or alias of the org to deploy the datapacks to
-  -i, --instance <url>   the URL instance (default: "test.salesforce.com")
-  --purge-dependencies   purges records embedded in the datapack from the target org to ensure a clean deployment. Purging dependencies is slower (default: false)
-  --lookup-failed        lookup the Ids of records that failed to deploy but are dependencies for other parts of the deployment (default: false)
-  --retry-count <count>  the number of times a record deployment is retried before failing it (default: 1)
-  --bulk-api             use the Salesforce bulk API to update and insert records (default: false)
-  --delta                check for changes between the source data packs and source org and only deploy the datapacks that are changed (default: false)
-  -h, --help             display help for command
+  -v, --verbose               enable verbose logging (default: false)
+  --debug                     print call stack when an unhandled error occurs (default: false)
+  -u, --user <username>       Salesforce username or alias of the org to deploy the datapacks to
+  -i, --instance <url>        the URL instance (default: "test.salesforce.com")
+  --purge-dependencies        delete embedded dependencies with matching keys after the primary datapack record is
+                              deployed. By default Vlocode will only delete child records that do not have a
+                              matching key configuration, with this flag Vlocode will delete all child records that
+                              have a lookup relationships to the primary datapack record. For example; when
+                              deploying a Product2 datapack this flag will delete all child item records found in
+                              the targer org with a lookup to the Product2 datapack that is deployed. (default:
+                              false)
+  --lookup-failed             lookup the Ids of records that failed to deploy but are dependencies for other parts
+                              of the deployment (default: false)
+  --retry-count <count>       the number of times a record deployment is retried before failing it (default: 1)
+  --bulk-api                  use the Salesforce bulk API to update and insert records (default: false)
+  --delta                     check for changes between the source data packs and source org and only deploy the
+                              datapacks that are changed (default: false)
+  --strict-dependencies       enforce datapacks with dependencies on records inside other datapacks are fully
+                              deployed. By default Vlocode determines deployment order based on record level
+                              dependencies, this allows for more optimal chunking improving the overall speed of
+                              the deployment. If you are running into deployment errors and think that Vlocode does
+                              not follow the correct deployment order try enabling this setting. (default: false)
+  --skip-lwc                  skip LWC activation for LWC enabled OmniScripts (default: false)
+  --use-metadata-api          deploy LWC components using the Metadata API (slower) instead of the Tooling API
+                              (default: false)
+  --remote-script-activation  use anonymous apex to activate OmniScripts.By default Vlocode will generate script
+                              definitions locally which is faster and more reliable than remote activation. Enable
+                              this when you experience issues or inconsistencies in scripts deployed through
+                              Vlocode. (default: false)
+  -h, --help                  display help for command
+```
+
+### `vlocode activate`
+
+```shell
+Usage: vlocode activate [options] [scriptFilter]
+
+Activate OmniScripts in Salesforce and deploy associated LWC components
+
+Arguments:
+  scriptFilter            Salesforce ID <type>/<subType>(/<language>) filter of the scripts to activate. Supports
+                          wildcard characters, i.e: "MACD/" to activate multiple scripts
+
+Options:
+  -v, --verbose           enable verbose logging (default: false)
+  --debug                 print call stack when an unhandled error occurs (default: false)
+  -u, --user <username>   Salesforce username or alias of the org to deploy the datapacks to
+  -i, --instance <url>    Salesforce instance URL; for example: test.salesforce.com (default: "test.salesforce.com")
+  --parallel-activations  determines the amount of parallel activations to run
+  --skip-lwc              skip LWC activation for LWC enabled OmniScripts (default: false)
+  --use-metadata-api      deploy LWC components using the Metadata API (slower) instead of the Tooling API (default:
+                          false)
+  --remote-activation     use anonymous apex to activate OmniScripts.By default Vlocode will generate script
+                          definitions locally which is faster and more reliable than remote activation. Enable this
+                          when you experience issues or inconsistencies in scripts deployed through Vlocode. (default:
+                          false)
+  -h, --help              display help for command
 ```
 
 ## How to deploy using Vlocode CLI
@@ -72,3 +123,37 @@ To use an existing SFDX credential or alias use:
 ```shell
 vlocode deploy ./path-to-datapack-json-files -u <SFDX alias/username>
 ```
+
+## FAQ
+
+**Q: Does vlocode deploy the LWC enabled OmniScripts?**
+
+**A:** Yes, vlocode will deploy the OmniScript and compile the LWC component and deploy it using either the Metadata API or the Tooling API. By default the tooling API is used as it can run in parallel to an ongoing metadata deployment.
+
+**Q: Does vlocode deploy custom datapack properties that are not part of the standard datapack definition?**
+
+**A:** Yes, vlocode will load the datapack and match the fields in the datapack against the fields available in the target org. Matching fields are deployed, for any field that is specified in the datapack but not available an error is generated which can be reviewed at the end of the deployment.
+
+**Q: Vlocode does not delete Product Child Item's (PCI) that I have removed from the datapack, why is that?**
+
+**A:** Vlocode will is designed to be safe to run on production orgs and does not delete records unless explicitly requested. When removing child items from the product hierarchy it is recommended to set the state to disabled instead of deleting the PCI as deleting the PCI will have side effects on cached content and Assets already created based on the old definition.
+
+For none production orgs you can enable the `--purge-dependencies` option which will first delete all embedded records and only then deploy the new ones.
+
+**Q: Should I prefer the `--bulk-api` option for production deployments?**
+
+**A:** No, the performance of the bulk API is worse as it is dependent on the available resources on Salesforce and runs at a lower priority compared to regular database API operations. You will see inconsistent performance when using the `--bulk-api` and should only prefer it if you want to reduce API usage consumption when deploying.
+
+**Q: When I actictae my OmniScript from the UI it looks different then the one deployed by Vlocode**
+
+**A:** By default vlocode-cli will use a feature of the Vlocode deployment library called _local script definition generation_. This means that script definitions are generated by Vlocode instead of running a Vlocity remote APEX function. Although this feature has been extensively tested there is a possibility of mismatches which can either be due to bugs in the local script definition generation feature or in the APEX code running on Salesforce.
+
+if you encounter such discrepancy you can disable _local script definition generation_ by passing `--remote-script-activation` to the deployment. Also raise a bug on Github so that the _local script definition generation_ can be updated to handle your specific use case.
+
+**Q: Does vlocode compile FlexCards into LWC components?**
+
+**A:** No, at this moment Vlocode does not generate the LWC components for Flexcards. This is planned but due to the complexity and effort involved in porting the flex-card activation code to Javascript it will a bit more time for this to become available in vlocode as stable feature.
+
+**Q: We want to use Vlocode to improve our deployment, can you help us?**
+
+**A:** Yes, support for project implementations can be provided on request.
