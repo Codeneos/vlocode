@@ -4,7 +4,7 @@ import { QueryParser, SalesforceQueryData } from './queryParser';
 
 interface QueryCacheEntry {
     soql: string;
-    objectType: string;
+    objectType?: string;
     records: Array<any> | Promise<Array<any>>;
     time: number;
 }
@@ -32,14 +32,14 @@ export class QueryCache {
 
     /**
      * Get the records/result associated to the specified SOQL or execute the query.
-     * 
+     *
      * Returns a shallow copy of the cached result so that the caller can modify the result without affecting the cache.
-     * 
+     *
      * @param soql SOQL query
      * @returns Promise of the array pointing to the records retrieved or undefined if the query is not cached
      */
     public get<T>(soql: string): Promise<T[]> | T[] | undefined {
-        const cacheEntry = this.entries.get(this.queryHash(soql));        
+        const cacheEntry = this.entries.get(this.queryHash(soql));
         if (cacheEntry) {
             return this.prepareRecords(cacheEntry.records);
         }
@@ -47,9 +47,9 @@ export class QueryCache {
 
     /**
      * Get the records/result associated to the specified SOQL or execute the query.
-     * 
+     *
      * Returns a shallow copy of the cached result so that the caller can modify the result without affecting the cache.
-     * 
+     *
      * @param soql SOQL query
      * @param records executor to retrieve the records
      * @returns Promise of the array pointing to the records retrieved
@@ -57,13 +57,13 @@ export class QueryCache {
     public getOrSet<T>(soql: string, records: () => Promise<Array<T>>): Promise<T[]> | T[] {
         const cacheKey = this.queryHash(soql);
         const cacheEntry = this.entries.get(cacheKey);
-        
+
         if (cacheEntry) {
             return this.prepareRecords(cacheEntry.records);
         }
 
         const newEntry: QueryCacheEntry = {
-            soql, 
+            soql,
             records: records().then(records => {
                 const entry = this.entries.get(cacheKey);
                 if (entry) {
@@ -74,7 +74,7 @@ export class QueryCache {
                 this.entries.delete(cacheKey);
                 throw err;
             }),
-            objectType: QueryParser.parse(soql).sobjectType,
+            objectType: QueryParser.getSObjectType(soql),
             time: Date.now()
         };
         this.entries.set(cacheKey, newEntry);
@@ -102,16 +102,21 @@ export class QueryCache {
     }
 
     /**
-     * Calculate a unique hash for the specified query by sorting the query fields, order and group-by clauses to 
+     * Calculate a unique hash for the specified query by sorting the query fields, order and group-by clauses to
      * create a unique key that represents the query being executed best
      * @param soql SOQL
      * @returns unique SHA1 hash of the query that can be used as cache-entry
      */
     private queryHash(soql: string | SalesforceQueryData) {
-        const query = typeof soql === 'string' ? QueryParser.parse(soql.toLowerCase()) : soql;
-        query.fieldList.sort();
-        query.groupBy?.sort();
-        query.orderBy?.sort();
-        return calculateHash(query);
+        try {
+            const query = typeof soql === 'string' ? QueryParser.parse(soql.toLowerCase()) : soql;
+            query.fieldList.sort();
+            query.groupBy?.sort();
+            query.orderBy?.sort();
+            return calculateHash(query);
+        } catch(err) {
+            // Avoid crashing query cache when Query Parser cannot parse SOQL syntax
+            return calculateHash(typeof soql === 'string' ? soql.toLowerCase() : soql);
+        }
     }
 }
