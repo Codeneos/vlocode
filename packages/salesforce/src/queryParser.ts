@@ -78,6 +78,11 @@ export class QueryFormatter {
     constructor(private readonly namespace: NamespaceService = lazy(() => container.get(NamespaceService))) {
     }
 
+    /**
+     * Format structured query data into a SOQL query that can be executed against Salesforce.
+     * @param query Query data to format
+     * @returns Formatted SOQL query
+     */
     public static format(query: SalesforceQueryData) {
         return new QueryFormatter().format(query);
     }
@@ -173,17 +178,54 @@ export class QueryParser implements SalesforceQueryData {
         this.parser = new Parser(queryString);
     }
 
-    public static getSObjectType(queryString: string) {
-        return new QueryParser(queryString).parse();
+    /**
+     * Parse the query and extract the SObject type from the query string. If the QueryParser fails to parse the query, it will fallback to a regex matching.
+     * @param queryString SOQL string
+     * @returns SObject type of the SOQL or undefined if the query is not a SOQL query
+     */
+    public static getSObjectType(this: void, queryString: string) {
+        try {
+            return QueryParser.parse(queryString).sobjectType;
+        } catch(err) {
+            // Fallback to regex matching -- not as accurate as the parser
+            return queryString.match(/\s+from\s+(\w+)/i)?.[1];
+        }
     }
 
-    public static parse(queryString: string) {
+    /**
+     * Parse an `SOQL` string and return a SalesforceQueryData object containing the decomposed query.
+     *
+     * The parser will try to parse the query as accurately as possible, but it will not validate the query.
+     * If it encounters an unexpected keyword or operator the parser will not throw an error when in the root expression
+     * but will instead return the part of the query that it was able to parse.
+     * 
+     * The parser will throw an error if it encounters an unexpected keyword or operator in a sub-expression or 
+     * if the query is not starting with `SELECT` and lacking the `FROM` keyword.
+     *
+     * This parser supports the following parts of a SOQL query:
+     * - field list
+     * - sobject type
+     * - where condition
+     * - limit and offset
+     * - order by
+     * - group by
+     * - visibility context
+     * - query mode
+     *  -security enforced
+     *
+     * To convert the decomposed query back to a `SOQL` string see {@link QueryFormatter.format} which converts a SalesforceQueryData object back to an `SOQL` string.
+     *
+     * _Sub-queries and nested-queries are not parsed and will be stored as a string in the field list or condition_
+     * @param queryString `SOQL` string to parse
+     * @returns Decomposed query that can be analyzed and modified.
+     */
+    public static parse(this: void, queryString: string) {
         return new QueryParser(queryString).parse();
     }
 
     private parse(): SalesforceQueryData {
         if (this.parser.expectKeyword(QueryKeywords.SELECT)) {
-            this.fieldList = this.parseFieldsList(this.parser);
+            this.fieldList = this.parseFieldList(this.parser);
         }
 
         if (this.parser.expectKeyword(QueryKeywords.FROM)) {
@@ -195,15 +237,15 @@ export class QueryParser implements SalesforceQueryData {
         }
 
         if (this.parser.acceptKeyword(QueryKeywords.WITH)) {
-            this.parseWithCondition(this.parser);
+            this.parseWithExpression(this.parser);
         }
 
         if (this.parser.acceptKeyword(QueryKeywords.GROUP_BY)) {
-            this.groupBy = this.parseFieldsList(this.parser);
+            this.groupBy = this.parseFieldList(this.parser);
         }
 
         if (this.parser.acceptKeyword(QueryKeywords.ORDER_BY)) {
-            this.orderBy = this.parseFieldsList(this.parser);
+            this.orderBy = this.parseFieldList(this.parser);
         }
 
         if (this.parser.acceptKeyword(QueryKeywords.LIMIT)) {
@@ -217,7 +259,7 @@ export class QueryParser implements SalesforceQueryData {
         return this;
     }
 
-    private parseWithCondition(parser: Parser): void {
+    private parseWithExpression(parser: Parser): void {
         parser.skipWhitespace();
         if (parser.acceptKeyword('RecordVisibilityContext')) {
             assert(!this.mode && !this.securityEnforced, 'Cannot use visibility context with mode or security enforced');
@@ -250,10 +292,10 @@ export class QueryParser implements SalesforceQueryData {
     }
 
     public static parseFieldsList(this: void, query: string) {
-        return QueryParser.prototype.parseFieldsList(new Parser(query));
+        return QueryParser.prototype.parseFieldList(new Parser(query));
     }
 
-    private parseFieldsList(parser: Parser): string[] {
+    private parseFieldList(parser: Parser): string[] {
         const fields = new Array<string>();
 
         while(parser.skipWhitespace().hasMore()) {
@@ -294,84 +336,6 @@ export class QueryParser implements SalesforceQueryData {
             throw new Error(`Unexpected logical operator "${logicalOp}" in condition expression at column ${parser.index}: ${parser.input}`);
         }
         return { left, operator: logicalOp, right };
-
-        // while(parser.skipWhitespace().hasMore()) {
-        //     if (parser.matchKeyword(...queryKeywords)) {
-        //         break;
-        //     }
-
-        //     const logicalOp = parser.acceptKeyword('or', 'and');
-        //     if (logicalOp && conditionExpression === undefined) {
-        //         throw new Error(`Unexpected logical operator "${logicalOp}" in condition expression at column ${parser.index}: ${parser.input}`);
-        //     }
-
-        //     const block = parser.skipWhitespace().acceptBlock('(', ')', true);
-        //     const fieldExpression = block ? this.parseConditionExpression(new Parser(block)) : this.parseFieldExpression(parser);
-
-        //     if (!fieldExpression) {
-        //         throw new Error(`Unexpected empty block in condition expression at column ${parser.index}: ${parser.input}`);
-        //     }
-
-        //     if (logicalOp) {
-        //         if (typeof conditionExpression === 'object' && conditionExpression?.right !== undefined) {
-        //             conditionExpression.right = {
-        //                 left: conditionExpression,
-        //                 operator: logicalOp,
-        //                 right: fieldExpression
-        //             }
-        //         } else {
-        //             conditionExpression = {
-        //                 left: conditionExpression,
-        //                 operator: logicalOp,
-        //                 right: fieldExpression
-        //             }
-        //         }
-        //     } else {
-        //         conditionExpression = fieldExpression;
-        //     }
-
-        //     //     const left = this.parseQueryCondition(new Parser(backBuffer));
-        //     //     const right = this.parseQueryCondition(parser);
-        //     //     if (!right || !left) {
-        //     //         throw new Error(`Inconsistent query condition at: ${parser.input}`);
-        //     //     }
-        //     //     return { left, operator, right };
-        //     // } else if(parser.matchKeyword(...queryKeywords)) {
-        //     //     break;
-        //     // }
-
-        //     // if (parser.acceptMatch('not')) {
-        //     //     const right = this.parseQueryCondition(parser);
-        //     //     return { operator: 'not', right };
-        //     // }
-
-        //     // const leftOperand = parser.skipMatch(/s+/).expectMatch(/\w+\./);
-        //     // const qOperator = parser.skipMatch(/s+/).expectMatch(...queryOperators);
-
-        //     // if ([QueryOperators.IN, QueryOperators.NOT_IN,
-        //     //     QueryOperators.INCLUDES, QueryOperators.EXCLUDES].includes(qOperator)) {
-        //     //     const rightOperand = parser.expectBlock('(', ')', true);
-        //     // }
-
-        //     // const blockMatch = isBackBufferEmpty && parser.acceptBlock('(', ')', true);
-        //     // if (blockMatch) {
-        //     //     if (!isBackBufferEmpty) {
-        //     //         throw new Error(`Back buffer should be empty at the start of a new block`);
-        //     //     }
-        //     //     const left = this.parseQueryCondition(new Parser(blockMatch));
-        //     //     const operator = parser.skipWhitespace().acceptKeyword('or', 'and');
-        //     //     if (operator) {
-        //     //         const right = this.parseQueryCondition(parser);
-        //     //         return { left, operator, right };
-        //     //     } else {
-        //     //         return left;
-        //     //     }
-        //     // } else {
-        //     //     backBuffer += parser.read();
-        //     // }
-        // }
-
-        //return conditionExpression;
     }
 
     private parseFieldExpression(parser: Parser): string | QueryBinary | QueryUnary {
@@ -390,11 +354,13 @@ export class QueryParser implements SalesforceQueryData {
             operator === QueryOperators.INCLUDES || operator === QueryOperators.EXCLUDES) {
             const right = parser.skipWhitespace().expectBlock('(', ')', false);
             return `${left} ${operator} ${right}`;
-            //return { left, operator, right };
+            // For now do not decompose the field expression into an object
+            // return { left, operator, right };
         }
 
         const right = this.parseLiteral(parser);
         return `${left} ${operator} ${right}`;
+        // For now do not decompose the field expression into an object
         //return { left, operator, right };
     }
 
