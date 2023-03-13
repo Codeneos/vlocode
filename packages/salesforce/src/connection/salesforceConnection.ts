@@ -457,13 +457,13 @@ export class SalesforceConnection extends Connection {
      * @returns Async iterable and awaitable results from the query
      */
     public query2<T extends object = Record<string, unknown>>(soql: string, options?: Query2Options): AsyncQueryIterator<T> {
-        this.logger.debug(`SOQL = ${soql}`);
+        this.logger.debug(`SOQL=${soql}`);
         const timer = new Timer();
         return new AsyncQueryIterator<T>(
             new RestClient(this, options?.queryType === 'tooling' ? `/services/data/v{apiVersion}/tooling` : `/services/data/v{apiVersion}`),
             `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${this.encodeRFC3986URI(soql)}`,
             options?.queryMore
-        ).once('done', (records) => this.logger.debug(`[SIZE=${records.length}] SOQL = ${soql} (${timer})`));
+        ).once('done', (records) => this.logger.debug(`[SIZE=${records.length}] SOQL=${soql} (${timer})`));
     }
 
     /**
