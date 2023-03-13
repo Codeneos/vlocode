@@ -3,7 +3,6 @@ import 'jest';
 import { QueryFormatter, QueryParser } from '../queryParser';
 
 describe('QueryParser', () => {
-
     describe('#parseQueryCondition', () => {
         it('should parse single condition as string', () => {
             expect(QueryParser.parseQueryCondition(`Id = '12345'`)).toStrictEqual(`Id = '12345'`);
@@ -34,6 +33,7 @@ describe('QueryParser', () => {
             });
         });
         it('should parse nested conditions as binary', () => {
+            const x = QueryParser.parseQueryCondition(`( Id = '1' or Id = '2' )  and   (Name = 'a' or  Name = 'b'  )`);
             expect(QueryParser.parseQueryCondition(`( Id = '1' or Id = '2' )  and   (Name = 'a' or  Name = 'b'  )`)).toStrictEqual({
                 left: {
                     left: `Id = '1'`,
@@ -232,6 +232,11 @@ describe('QueryParser', () => {
             const query = QueryParser.parse(`select Id from account with security_enforced`);
             expect(query.securityEnforced).toStrictEqual(true);
         });
+        it('should parse query with keyword in where', () => {
+            const query = QueryParser.parse(`select Id from account where (Type__c = 'from VLO' and SubType__c = 'VLO Order from With Summary' and Language__c = 'Dutch' and OmniProcessType__c = 'OmniScript')`);
+            expect(query.sobjectType).toBe('account');
+            expect(query.fieldList).toStrictEqual([ 'Id' ]);
+        });
     });
 });
 
@@ -333,6 +338,13 @@ describe('QueryFormatter', () => {
                 fieldList: ['Id', 'Name'],
                 mode: 'user'
             })).toBe(`select Id, Name from account with USER_MODE`);
+        });
+        it('should format query with record visibility condition', () => {
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id', 'Name'],
+                visibilityContext: 'maxDescriptorPerRecord=100, supportsDomains=true, supportsDelegates=true'
+            })).toBe(`select Id, Name from account with RecordVisibilityContext (maxDescriptorPerRecord=100, supportsDomains=true, supportsDelegates=true)`);
         });
         it('should format query with record visibility condition', () => {
             expect(QueryFormatter.format({

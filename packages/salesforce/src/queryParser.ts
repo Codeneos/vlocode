@@ -173,38 +173,52 @@ export class QueryParser implements SalesforceQueryData {
         this.parser = new Parser(queryString);
     }
 
+    public static getSObjectType(queryString: string) {
+        return new QueryParser(queryString).parse();
+    }
+
     public static parse(queryString: string) {
         return new QueryParser(queryString).parse();
     }
 
     private parse(): SalesforceQueryData {
-        while(this.parser.hasMore()) {
-            if (this.parser.acceptKeyword(QueryKeywords.SELECT)) {
-                this.fieldList = this.parseFieldsList(this.parser.createParser());
-            } else if (this.parser.acceptKeyword(QueryKeywords.WHERE)) {
-                this.whereCondition = this.parseQueryCondition(this.parser.createParser())
-            } else if (this.parser.acceptKeyword(QueryKeywords.FROM)) {
-                this.sobjectType = this.parser.expectMatch(/\s*([^ ]+)\s*/).trim();
-            } else if (this.parser.acceptKeyword(QueryKeywords.GROUP_BY)) {
-                this.groupBy = this.parseFieldsList(this.parser.createParser());
-            } else if (this.parser.acceptKeyword(QueryKeywords.ORDER_BY)) {
-                this.orderBy = this.parseFieldsList(this.parser.createParser());
-            } else if (this.parser.acceptKeyword(QueryKeywords.LIMIT)) {
-                this.limit = Number(this.parser.expectMatch(/\s*(\d+)\s*/));
-            } else if (this.parser.acceptKeyword(QueryKeywords.OFFSET)) {
-                this.offset = Number(this.parser.expectMatch(/\s*(\d+)\s*/));
-            } else if (this.parser.acceptKeyword(QueryKeywords.WITH)) {
-                this.parseWithCondition(this.parser.createParser());
-            } else {
-                this.parser.skip();
-            }
+        if (this.parser.expectKeyword(QueryKeywords.SELECT)) {
+            this.fieldList = this.parseFieldsList(this.parser);
+        }
+
+        if (this.parser.expectKeyword(QueryKeywords.FROM)) {
+            this.sobjectType = this.parser.expectMatch(/\s*([^ ]+)\s*/).trim();
+        }
+
+        if (this.parser.acceptKeyword(QueryKeywords.WHERE)) {
+            this.whereCondition = this.parseConditionExpression(this.parser)
+        }
+
+        if (this.parser.acceptKeyword(QueryKeywords.WITH)) {
+            this.parseWithCondition(this.parser);
+        }
+
+        if (this.parser.acceptKeyword(QueryKeywords.GROUP_BY)) {
+            this.groupBy = this.parseFieldsList(this.parser);
+        }
+
+        if (this.parser.acceptKeyword(QueryKeywords.ORDER_BY)) {
+            this.orderBy = this.parseFieldsList(this.parser);
+        }
+
+        if (this.parser.acceptKeyword(QueryKeywords.LIMIT)) {
+            this.limit = Number(this.parser.expectMatch(/\s*(\d+)\s*/));
+        }
+
+        if (this.parser.acceptKeyword(QueryKeywords.OFFSET)) {
+            this.offset = Number(this.parser.expectMatch(/\s*(\d+)\s*/));
         }
 
         return this;
     }
 
     private parseWithCondition(parser: Parser): void {
-        parser.expectWhitespaceCharacters();
+        parser.skipWhitespace();
         if (parser.acceptKeyword('RecordVisibilityContext')) {
             assert(!this.mode && !this.securityEnforced, 'Cannot use visibility context with mode or security enforced');
             this.visibilityContext = this.parseVisibilityContext(parser);
@@ -227,7 +241,7 @@ export class QueryParser implements SalesforceQueryData {
     }
 
     private parseVisibilityContext(parser: Parser) {
-        const recordVisibility = parser.acceptNextBlock('(', ')', true);
+        const recordVisibility = parser.acceptBlock('(', ')', true);
         // TODO: Validate record visibility context fields and parse to concrete object
         if (!recordVisibility) {
             throw new Error(`Invalid SOQL record visibility context: ${parser.left}`);
@@ -241,80 +255,170 @@ export class QueryParser implements SalesforceQueryData {
 
     private parseFieldsList(parser: Parser): string[] {
         const fields = new Array<string>();
-        let backBuffer = '';
 
-        while(parser.hasMore()) {
-            if (parser.acceptMatch(',')) {
-                fields.push(backBuffer.trim());
-                backBuffer = '';
-                continue;
-            } else if(parser.matchKeyword(...queryKeywords)) {
+        while(parser.skipWhitespace().hasMore()) {
+            const block = parser.acceptBlock('(', ')', false);
+            if (block) {
+                fields.push(block);
+            } else {
+                fields.push(parser.expectMatch(/[^,\s]+(\s+as\s+[\w]+)?/).trim());
+            }
+
+            if (!parser.skipWhitespace().acceptMatch(',')) {
                 break;
             }
-
-            const blockMatch = parser.acceptNextBlock('(', ')', false);
-            if (blockMatch) {
-                fields.push(blockMatch);
-            } else {
-                backBuffer += parser.read();
-            }
-        }
-
-        if (backBuffer.trim()) {
-            fields.push(backBuffer.trim())
         }
 
         return fields;
     }
 
     public static parseQueryCondition(this: void, query: string) {
-        return QueryParser.prototype.parseQueryCondition(new Parser(query));
+        return QueryParser.prototype.parseConditionExpression(new Parser(query));
     }
 
-    private parseQueryCondition(parser: Parser): string | QueryBinary | QueryUnary {
-        let backBuffer = '';
-
-        while(parser.hasMore()) {
-            const operator = parser.acceptKeyword('or', 'and');
-            if (operator) {
-                const left = this.parseQueryCondition(new Parser(backBuffer));
-                const right = this.parseQueryCondition(parser);
-                if (!right || !left) {
-                    throw new Error(`Inconsistent query condition at: ${parser.input}`);
-                }
-                return { left, operator, right };
-            } else if(parser.matchKeyword(...queryKeywords)) {
-                break;
-            }
-
-            if (!backBuffer.trim() && parser.acceptMatch('not')) {
-                const right = this.parseQueryCondition(parser);
-                return { operator: 'not', right };
-            }
-
-            const blockMatch = !backBuffer.trim() && parser.acceptNextBlock('(', ')', true);
-            if (blockMatch) {
-                if (backBuffer.trim()) {
-                    throw new Error(`Back buffer should be empty at the start of a new block`);
-                }
-                const left = this.parseQueryCondition(new Parser(blockMatch));
-                const operator = parser.skipMatch(/\s+/s).acceptKeyword('or', 'and');
-                if (operator) {
-                    const right = this.parseQueryCondition(parser);
-                    return { left, operator, right };
-                } else {
-                    return left;
-                }
-            } else {
-                backBuffer += parser.read();
-            }
+    private parseConditionExpression(parser: Parser): string | QueryBinary | QueryUnary | undefined {
+        if (!parser.skipWhitespace().hasMore() || parser.skipWhitespace().matchKeyword(...queryKeywords)) {
+            return;
         }
 
-        return backBuffer.trim();
+        const block = parser.skipWhitespace().acceptBlock('(', ')', true);
+        const left = block ? this.parseConditionExpression(new Parser(block)) : this.parseFieldExpression(parser);
+
+        const logicalOp = parser.skipWhitespace().acceptKeyword('or', 'and');
+        if (!logicalOp) {
+            return left;
+        }
+
+        const right = this.parseConditionExpression(parser);
+        if (!right) {
+            throw new Error(`Unexpected logical operator "${logicalOp}" in condition expression at column ${parser.index}: ${parser.input}`);
+        }
+        return { left, operator: logicalOp, right };
+
+        // while(parser.skipWhitespace().hasMore()) {
+        //     if (parser.matchKeyword(...queryKeywords)) {
+        //         break;
+        //     }
+
+        //     const logicalOp = parser.acceptKeyword('or', 'and');
+        //     if (logicalOp && conditionExpression === undefined) {
+        //         throw new Error(`Unexpected logical operator "${logicalOp}" in condition expression at column ${parser.index}: ${parser.input}`);
+        //     }
+
+        //     const block = parser.skipWhitespace().acceptBlock('(', ')', true);
+        //     const fieldExpression = block ? this.parseConditionExpression(new Parser(block)) : this.parseFieldExpression(parser);
+
+        //     if (!fieldExpression) {
+        //         throw new Error(`Unexpected empty block in condition expression at column ${parser.index}: ${parser.input}`);
+        //     }
+
+        //     if (logicalOp) {
+        //         if (typeof conditionExpression === 'object' && conditionExpression?.right !== undefined) {
+        //             conditionExpression.right = {
+        //                 left: conditionExpression,
+        //                 operator: logicalOp,
+        //                 right: fieldExpression
+        //             }
+        //         } else {
+        //             conditionExpression = {
+        //                 left: conditionExpression,
+        //                 operator: logicalOp,
+        //                 right: fieldExpression
+        //             }
+        //         }
+        //     } else {
+        //         conditionExpression = fieldExpression;
+        //     }
+
+        //     //     const left = this.parseQueryCondition(new Parser(backBuffer));
+        //     //     const right = this.parseQueryCondition(parser);
+        //     //     if (!right || !left) {
+        //     //         throw new Error(`Inconsistent query condition at: ${parser.input}`);
+        //     //     }
+        //     //     return { left, operator, right };
+        //     // } else if(parser.matchKeyword(...queryKeywords)) {
+        //     //     break;
+        //     // }
+
+        //     // if (parser.acceptMatch('not')) {
+        //     //     const right = this.parseQueryCondition(parser);
+        //     //     return { operator: 'not', right };
+        //     // }
+
+        //     // const leftOperand = parser.skipMatch(/s+/).expectMatch(/\w+\./);
+        //     // const qOperator = parser.skipMatch(/s+/).expectMatch(...queryOperators);
+
+        //     // if ([QueryOperators.IN, QueryOperators.NOT_IN,
+        //     //     QueryOperators.INCLUDES, QueryOperators.EXCLUDES].includes(qOperator)) {
+        //     //     const rightOperand = parser.expectBlock('(', ')', true);
+        //     // }
+
+        //     // const blockMatch = isBackBufferEmpty && parser.acceptBlock('(', ')', true);
+        //     // if (blockMatch) {
+        //     //     if (!isBackBufferEmpty) {
+        //     //         throw new Error(`Back buffer should be empty at the start of a new block`);
+        //     //     }
+        //     //     const left = this.parseQueryCondition(new Parser(blockMatch));
+        //     //     const operator = parser.skipWhitespace().acceptKeyword('or', 'and');
+        //     //     if (operator) {
+        //     //         const right = this.parseQueryCondition(parser);
+        //     //         return { left, operator, right };
+        //     //     } else {
+        //     //         return left;
+        //     //     }
+        //     // } else {
+        //     //     backBuffer += parser.read();
+        //     // }
+        // }
+
+        //return conditionExpression;
+    }
+
+    private parseFieldExpression(parser: Parser): string | QueryBinary | QueryUnary {
+        if (parser.skipWhitespace().acceptMatch('not')) {
+            const right = this.parseConditionExpression(parser);
+            if (!right) {
+                throw new Error(`Expected condition expression after negation at column ${parser.index}: ${parser.input}`);
+            }
+            return { operator: 'not', right };
+        }
+
+        const left = parser.skipWhitespace().expectMatch(/[\w.]+/);
+        const operator = parser.skipWhitespace().expectMatch(...queryOperators).toLowerCase();
+
+        if (operator === QueryOperators.IN || operator === QueryOperators.NOT_IN ||
+            operator === QueryOperators.INCLUDES || operator === QueryOperators.EXCLUDES) {
+            const right = parser.skipWhitespace().expectBlock('(', ')', false);
+            return `${left} ${operator} ${right}`;
+            //return { left, operator, right };
+        }
+
+        const right = this.parseLiteral(parser);
+        return `${left} ${operator} ${right}`;
+        //return { left, operator, right };
+    }
+
+    private parseLiteral(parser: Parser): string {
+        parser.skipWhitespace();
+        const literal = parser.acceptQuoted('\'', '\\') ?? parser.acceptMatch(/[^\s]+/);
+        if (!literal) {
+            throw new Error(`Expected string, number or boolean literal at column ${parser.index}: ${parser.left}`);
+        }
+        return String(literal);
+    }
+
+    private parseNumericLiteral(parser: Parser): number | undefined {
+        const numericLiteral = parser.acceptMatch(/[-+\s]?(([0-9]*(\.[0-9]+))|([0-9]+(\.[0-9]+)?))(e[-+]?[0-9]+)?/i);
+        if (numericLiteral) {
+            return Number(numericLiteral);
+        }
     }
 }
 
 class Parser {
+
+    public quoteCharacter: string | RegExp = '\'';
+    public escapeCharacter: string = '\\';
 
     constructor(public readonly input: string, public index: number = 0) {
     }
@@ -362,6 +466,10 @@ class Parser {
         return this;
     }
 
+    public skipWhitespace() {
+        return this.skipMatch(/\s+/);
+    }
+
     /**
      * Skip input until the specified expr. doesn't match anymore
      * @param expr
@@ -405,6 +513,33 @@ class Parser {
         }
     }
 
+    /**
+     * Scan for the specified keyword and return the keyword if found and move the index to the end of the keyword.
+     *
+     * If the keyword is not found, the position of the parser is reset to the start position of the scan operation.
+     *
+     * @param options Keywords to scan for
+     * @returns The keyword found or undefined when none of the keywords were found
+     */
+    public scanKeyword<K extends string>(...options: K[]): K | undefined {
+        const scanStartIndex = this.index;
+        while(this.hasMore()) {
+            const keyword = this.acceptKeyword(...options);
+            if (keyword) {
+                return keyword;
+            }
+        }
+        this.index = scanStartIndex;
+    }
+
+    public expectKeyword<K extends string>(...options: K[]): K | undefined {
+        const match = this.acceptKeyword(...options);
+        if (!match) {
+            throw new Error(`Expected keyword(s) "${options.join(', ')}" at column ${this.index} instead saw "${this.left.substring(0, 10)}"`);
+        }
+        return match;
+    }
+
     public acceptKeyword<K extends string>(...options: K[]): K | undefined {
         const match = this.matchKeyword(...options);
         if (match) {
@@ -419,6 +554,8 @@ class Parser {
         return this;
     }
 
+    public expectMatch<K extends string>(...options: K[]): K;
+    public expectMatch(...options: RegExp[]): string;
     public expectMatch(...options: (string | RegExp)[]): string {
         const match = this.acceptMatch(...options);
         if (match === undefined) {
@@ -428,7 +565,43 @@ class Parser {
         return match;
     }
 
-    public acceptNextBlock(blockOpening: string, blockClosing: string, trimOpeningAndClosing: boolean = true) {
+    public expectQuoted(quote: string | RegExp, escapeCharacter: string) {
+        const quoted = this.acceptQuoted(quote, escapeCharacter);
+        if (quoted === undefined) {
+            throw new Error(`Parser error; expected quoted string at: ${this.left.substring(0, 10)}`);
+        }
+        return quoted;
+    }
+
+    public acceptQuoted(quote: string | RegExp = this.quoteCharacter, escapeCharacter: string = this.escapeCharacter) {
+        const openingMatch = this.acceptMatch(quote);
+        if (!openingMatch) {
+            return;
+        }
+        const openingIndex = this.index - openingMatch.length;
+
+        while(this.hasMore()) {
+            if (this.acceptMatch(escapeCharacter)) {
+                this.skip(1);
+            } else if (this.acceptMatch(quote)) {
+                return this.input.substring(openingIndex, this.index);
+            } else {
+                this.skip(1);
+            }
+        }
+
+        throw new Error(`Parser error; expected string literal closing character '${quote}' after opening at column ${openingIndex}`);
+    }
+
+    public expectBlock(blockOpening: string, blockClosing: string, trimOpeningAndClosing: boolean = true) {
+        const block = this.acceptBlock(blockOpening, blockClosing, trimOpeningAndClosing);
+        if (block === undefined) {
+            throw new Error(`Parser error; expected block starting with '${blockOpening}'`);
+        }
+        return block;
+    }
+
+    public acceptBlock(blockOpening: string, blockClosing: string, trimOpeningAndClosing: boolean = true) {
         if (!this.acceptMatch(blockOpening)) {
             return;
         }
@@ -437,6 +610,9 @@ class Parser {
         const openingIndex = this.index - blockOpening.length;
 
         while(this.hasMore()) {
+            if (this.acceptQuoted(this.quoteCharacter)) {
+                continue;
+            }
             if (this.acceptMatch(blockOpening)) {
                 blockLevel++;
             } else if (this.acceptMatch(blockClosing)) {
