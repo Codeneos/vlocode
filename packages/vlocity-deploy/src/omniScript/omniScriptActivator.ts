@@ -92,7 +92,7 @@ export class OmniScriptActivator {
 
     private async setAsActiveVersion(script: OmniScriptRecord) {        
         const scriptUpdates = (await this.lookup.getScriptVersions(script))
-            .filter(version => version.isActive && version.id !== version.id)
+            .filter(version => version.isActive ? version.id !== script.id : version.id === script.id)
             .map(version => ({ id: version.id, isActive: script.id === version.id }));
 
         if (!scriptUpdates.length) {
