@@ -44,16 +44,34 @@
             "request": "launch",
             "showAsyncStacks": true,
             "program": "${workspaceRoot}/packages/cli/lib/index.js",
-            "name": "Debug CLI (node)",
+            "name": "Debug CLI-deploy (node)",
             "args": [
                 "deploy",
-                "${workspaceRoot}/.test-deploy",
+                "${workspaceRoot}/.test-deploy/src/OmniScript",
                 "-u",
                 "dev10pro",
-                "-v",
+                "--strict-dependencies",
                 "--debug",
-                "--strict-dependencies"
+                "-v"
             ],
+            "outFiles": [
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/cli/lib/**/*.js"
+            ],
+            "preLaunchTask": "watch-cli",
+            "smartStep": true,
+            "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "showAsyncStacks": true,
+            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "name": "Debug CLI-activate (node)",
+            "args": ["activate", "SmeOrderCapture/precpq", "-u", "dev10pro", "--debug", "-v"],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
                 "${workspaceFolder}/packages/salesforce/lib/**/*.js",

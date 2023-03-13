@@ -5,6 +5,7 @@
         "packages/salesforce/src/index.ts",
         "packages/vlocity-deploy/src/index.ts"
     ],
+    "plugin": ["typedoc-plugin-resolve-crossmodule-references", "typedoc-plugin-rename-defaults"],
     "externalPattern": ["packages/vscode-extension/**/*", "packages/cli/**/*"],
     "cname": "vlocode.curlybracket.nl",
     "exclude": "*.test.ts",
