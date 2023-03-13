@@ -97,6 +97,66 @@ describe('QueryParser', () => {
                 }
             });
         });
+        it('should parse in condition with braces', () => {
+            expect(QueryParser.parseQueryCondition(`isActive = true and (name in ('myname')) or (name not in ('other')) and (name includes ('test'))`)).toStrictEqual({
+                left: `isActive = true`,
+                operator: 'and',
+                right: {
+                    left: `name in ('myname')`,
+                    operator: 'or',
+                    right: {
+                        left: `name not in ('other')`,
+                        operator: 'and',
+                        right: `name includes ('test')`
+                    }
+                }
+            });
+        });
+        it('should parse not in condition with braces', () => {
+            expect(QueryParser.parseQueryCondition(`isActive = true and (name in ('myname'))`)).toStrictEqual({
+                left: `isActive = true`,
+                operator: 'and',
+                right: `name in ('myname')`
+            });
+        });
+        it('should parse not like condition', () => {
+            expect(QueryParser.parseQueryCondition(`Account.Status = 'Active' and (NOT Account.Name like 'A Name %')`)).toStrictEqual({
+                left: `Account.Status = 'Active'`,
+                operator: 'and',
+                right: { operator: 'not', right: `Account.Name like 'A Name %'` }
+            });
+        });
+        it('should parse double joined negations in condition', () => {
+            expect(QueryParser.parseQueryCondition(`(not (id = 'id1')) and (not (id = 'id2'))`)).toStrictEqual({
+                left: { operator: 'not', right: `id = 'id1'` },
+                operator: 'and',
+                right: { operator: 'not', right: `id = 'id2'` }
+            });
+        });
+        it('should parse condition with joined negations', () => {
+            expect(QueryParser.parseQueryCondition(`(not (id = 'id1' and id = 'id2'))`)).toStrictEqual({
+                operator: 'not',
+                right: {
+                    left: `id = 'id1'`,
+                    operator: 'and',
+                    right: `id = 'id2'`
+                }
+            });
+        });
+        it('should parse keywords in condition operands', () => {
+            expect(QueryParser.parseQueryCondition(`name = 'order by' or name = 'limit' or name = 'with security enforced'`)).toStrictEqual({
+                left: `name = 'order by'`,
+                operator: 'or',
+                right: {
+                    left: `name = 'limit'`,
+                    operator: 'or',
+                    right: `name = 'with security enforced'`
+                }
+            });
+        });
+        it('should not parse keywords after condition', () => {
+            expect(QueryParser.parseQueryCondition(`name = 'order by' limit 10 offset 10`)).toStrictEqual(`name = 'order by'`);
+        });
     });
     describe('#parseFieldsList', () => {
         it('should parse well formated field list', () => {
@@ -131,14 +191,14 @@ describe('QueryParser', () => {
             expect(fieldList).toStrictEqual([ 'Id', 'Name' ]);
         });
         it('should parse query with condition', () => {
-            const { sobjectType, fieldList, whereCondition } = 
+            const { sobjectType, fieldList, whereCondition } =
                 QueryParser.parse(`select Id, Name from account where Name = 'Test'`);
             expect(sobjectType).toBe('account');
             expect(fieldList).toStrictEqual([ 'Id', 'Name' ]);
             expect(whereCondition).toBe(`Name = 'Test'`);
         });
         it('should parse query with condition and limit', () => {
-            const { sobjectType, fieldList, whereCondition, limit } = 
+            const { sobjectType, fieldList, whereCondition, limit } =
                 QueryParser.parse(`select Id, Name from account where Name = 'Test' limit 10`);
             expect(sobjectType).toBe('account');
             expect(fieldList).toStrictEqual([ 'Id', 'Name' ]);
@@ -146,7 +206,7 @@ describe('QueryParser', () => {
             expect(limit).toBe(10);
         });
         it('should parse query with condition and limit and offset', () => {
-            const { sobjectType, fieldList, whereCondition, limit, offset } = 
+            const { sobjectType, fieldList, whereCondition, limit, offset } =
                 QueryParser.parse(`select Id, Name from account where Name = 'Test' limit 10 offset 20`);
             expect(sobjectType).toBe('account');
             expect(fieldList).toStrictEqual([ 'Id', 'Name' ]);
@@ -155,22 +215,131 @@ describe('QueryParser', () => {
             expect(offset).toBe(20);
         });
         it('should parse query with sub-query', () => {
-            const { sobjectType, fieldList } = 
+            const { sobjectType, fieldList } =
                 QueryParser.parse(`select Id, Name, (select Id from Orders) from account`);
             expect(sobjectType).toBe('account');
             expect(fieldList).toStrictEqual([ 'Id', 'Name', '(select Id from Orders)' ]);
+        });
+        it('should parse query with USER_MODE condition', () => {
+            const query = QueryParser.parse(`select Id from account with user_mode`);
+            expect(query.mode).toBe('user');
+        });
+        it('should parse query with SYSTEM_MODE condition', () => {
+            const query = QueryParser.parse(`select Id from account with system_mode`);
+            expect(query.mode).toBe('system');
+        });
+        it('should parse query with SECURITY_ENFORCED condition', () => {
+            const query = QueryParser.parse(`select Id from account with security_enforced`);
+            expect(query.securityEnforced).toStrictEqual(true);
         });
     });
 });
 
 describe('QueryFormatter', () => {
-
     describe('#format', () => {
-        it('should format simple query', () => {
+        it('should format query without condition', () => {
             expect(QueryFormatter.format({
-                sobjectType: 'account',                
+                sobjectType: 'account',
                 fieldList: ['Id', 'Name']
             })).toBe(`select Id, Name from account`);
+        });
+        it('should format condition with and', () => {
+            const condition = {
+                left: `id = 'id1'`,
+                operator: 'and',
+                right: `id = 'id2'`
+            };
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id'],
+                whereCondition: condition
+            })).toBe(`select Id from account where id = 'id1' and id = 'id2'`);
+        });
+        it('should format condition with or', () => {
+            const condition = {
+                left: `id = 'id1'`,
+                operator: 'or',
+                right: `id = 'id2'`
+            };
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id'],
+                whereCondition: condition
+            })).toBe(`select Id from account where id = 'id1' or id = 'id2'`);
+        });
+        it('should format condition with braces for and with or conditions', () => {
+            const condition = {
+                left: `id = 'id1'`,
+                operator: 'or',
+                right: {
+                    left: `id = 'id2'`,
+                    operator: 'and',
+                    right: `id = 'id3'`
+                }
+            };
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id'],
+                whereCondition: condition
+            })).toBe(`select Id from account where id = 'id1' or (id = 'id2' and id = 'id3')`);
+        });
+        it('should format condition with braces and or condition', () => {
+            const condition = {
+                left: `isActive = true`,
+                operator: 'and',
+                right: {
+                    left: `name in ('myname')`,
+                    operator: 'or',
+                    right: {
+                        left: `name not in ('other')`,
+                        operator: 'and',
+                        right: `name includes ('test')`
+                    }
+                }
+            };
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id'],
+                whereCondition: condition
+            })).toBe(`select Id from account where isActive = true and (name in ('myname') or (name not in ('other') and name includes ('test')))`);
+        });
+        it('should format condition with double joined negations', () => {
+            const condition = {
+                left: { operator: 'not', right: `id = 'id1'` },
+                operator: 'and',
+                right: { operator: 'not', right: `id = 'id2'` }
+            };
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id'],
+                whereCondition: condition
+            })).toBe(`select Id from account where (not (id = 'id1')) and (not (id = 'id2'))`);
+        });
+        it('should format not like condition', () => {
+            const condition = {
+                left: `Account.Status = 'Active'`,
+                operator: 'and',
+                right: { operator: 'not', right: `Account.Name like 'A Name %'` }
+            };
+            expect(QueryFormatter.format({
+                sobjectType: 'Order',
+                fieldList: ['Id'],
+                whereCondition: condition
+            })).toBe(`select Id from Order where Account.Status = 'Active' and (not (Account.Name like 'A Name %'))`);
+        });
+        it('should format query with user_mode condition', () => {
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id', 'Name'],
+                mode: 'user'
+            })).toBe(`select Id, Name from account with USER_MODE`);
+        });
+        it('should format query with record visibility condition', () => {
+            expect(QueryFormatter.format({
+                sobjectType: 'account',
+                fieldList: ['Id', 'Name'],
+                visibilityContext: 'maxDescriptorPerRecord=100, supportsDomains=true, supportsDelegates=true'
+            })).toBe(`select Id, Name from account with RecordVisibilityContext (maxDescriptorPerRecord=100, supportsDomains=true, supportsDelegates=true)`);
         });
     });
 });

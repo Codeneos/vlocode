@@ -1,8 +1,18 @@
 import { container } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
+import assert = require("assert");
 import { NamespaceService } from "./namespaceService";
 
-export type QueryBinary = { left: QueryBinary | string, operator: string, right: QueryBinary | string };
+export type QueryUnary = { left?: undefined, operator: string, right: QueryBinary | QueryUnary | string };
+export type QueryBinary = { left: QueryBinary | QueryUnary | string, operator: string, right: QueryBinary | QueryUnary | string };
+
+export function isQueryUnary(operator: string | QueryBinary | QueryUnary): operator is QueryUnary {
+    return typeof operator === 'object' && operator.left === undefined;
+}
+
+export function isQueryBinary(operator: string | QueryBinary | QueryUnary): operator is QueryBinary {
+    return typeof operator === 'object' && operator.left !== undefined;
+}
 
 /**
  * Enum of SOQL query reserved keywords
@@ -11,27 +21,56 @@ enum QueryKeywords {
     SELECT = 'select',
     WHERE = 'where',
     FROM = 'from',
-    GROUP_BY = 'group by', 
-    ORDER_BY = 'order by', 
-    LIMIT = 'limit', 
-    OFFSET = 'offset', 
-    FOR = 'for' 
+    GROUP_BY = 'group by',
+    ORDER_BY = 'order by',
+    LIMIT = 'limit',
+    WITH = 'with',
+    OFFSET = 'offset',
+    FOR = 'for'
+}
+
+enum QueryOperators {
+    INCLUDES = 'includes',
+    EXCLUDES = 'excludes',
+    NOT_IN = 'not in',
+    IN = 'in',
+    LIKE = 'like',
+    EQUALS = '=',
+    NOT_EQUALS = '!=',
+    LESS_THEN = '<',
+    LESS_OR_EQUAL = '<=',
+    GREATER_THAN = '>',
+    GREATER_OR_EQUAL = '>='
+}
+
+enum QueryModifiers {
+    SECURITY_ENFORCED = 'SECURITY_ENFORCED',
+    SYSTEM_MODE = 'SYSTEM_MODE',
+    USER_MODE = 'USER_MODE'
 }
 
 /**
- * List of all query reserved keywords derrived from the QueryKeywords enum
+ * List of all query reserved keywords derived from the QueryKeywords enum
  */
 const queryKeywords = Object.freeze(Object.values(QueryKeywords));
+
+/**
+ * List of all query operators derived from the QueryOperators enum
+ */
+const queryOperators = Object.freeze(Object.values(QueryOperators));
 
 export interface SalesforceQueryData {
     sobjectType: string;
     fieldList: string[];
-    whereCondition?: QueryBinary | string;
+    whereCondition?: QueryBinary | QueryUnary | string;
     limit?: number;
     offset?: number;
     orderBy?: string[];
     orderByDirection?: 'asc' | 'desc';
     groupBy?: string[];
+    visibilityContext?: string;
+    mode?: 'system' | 'user';
+    securityEnforced?: boolean;
 }
 
 export class QueryFormatter {
@@ -53,13 +92,23 @@ export class QueryFormatter {
             queryParts.push(`${QueryKeywords.WHERE} ${this.formatCondition(query.whereCondition)}`);
         }
 
+        if (query.securityEnforced) {
+            assert(!query.mode && !query.visibilityContext, 'Cannot use security enforced with mode or visibility context');
+            queryParts.push(`${QueryKeywords.WITH} SECURITY_ENFORCED`);
+        } else if (query.mode) {
+            assert(!query.visibilityContext, 'Cannot use mode with visibility context');
+            queryParts.push(`${QueryKeywords.WITH} ${query.mode.toUpperCase()}_MODE`);
+        } else if (query.visibilityContext) {
+            queryParts.push(`${QueryKeywords.WITH} RecordVisibilityContext (${query.visibilityContext})`);
+        }
+
         if (query.groupBy) {
             queryParts.push(`${QueryKeywords.GROUP_BY} ${this.formatFieldList(query.groupBy)}`);
         }
 
         if (query.orderBy) {
             queryParts.push(`${QueryKeywords.ORDER_BY} ${this.formatFieldList(query.orderBy)}`);
-            if (query.orderByDirection) {                
+            if (query.orderByDirection) {
                 queryParts.push(query.orderByDirection);
             }
         }
@@ -75,19 +124,28 @@ export class QueryFormatter {
         return queryParts.join(' ');
     }
 
-    private formatCondition(condition: QueryBinary | string): string {
+    private formatCondition(condition: QueryBinary | QueryUnary | string, previousCondition?: QueryBinary | QueryUnary): string {
+        let formattedCondition = '';
         if (typeof condition === 'string') {
-            return this.updateNamespace(condition);
-        }        
-        return `${this.formatCondition(condition.left)} ${condition.operator} ${this.formatCondition(condition.right)}`
+            formattedCondition = this.updateNamespace(condition);
+        } else if (isQueryUnary(condition)) {
+            formattedCondition = `${condition.operator} (${this.formatCondition(condition.right, condition)})`
+        } else {
+            formattedCondition = `${this.formatCondition(condition.left, condition)} ${condition.operator} ${this.formatCondition(condition.right, condition)}`
+        }
+
+        if (typeof condition === 'object' && previousCondition && previousCondition?.operator !== condition.operator) {
+            return `(${formattedCondition})`;
+        }
+        return formattedCondition;
     }
 
     private formatFieldList(fields: string[]) {
-        const uniqueFields = new Map(fields.map(field => ([ 
+        const uniqueFields = new Map(fields.map(field => ([
             this.updateNamespace(field).toLowerCase(),
             this.updateNamespace(field),
         ])));
-        
+
         return [...uniqueFields.values()].join(', ');
     }
 
@@ -102,11 +160,14 @@ export class QueryParser implements SalesforceQueryData {
 
     public sobjectType: string;
     public fieldList: string[];
-    public whereCondition?: QueryBinary | string;
+    public whereCondition?: QueryBinary | QueryUnary | string;
     public limit?: number;
     public offset?: number;
     public orderBy?: string[];
     public groupBy?: string[];
+    public visibilityContext?: string;
+    public mode?: 'system' | 'user';
+    public securityEnforced?: boolean;
 
     private constructor(public readonly queryString: string, private index: number = 0) {
         this.parser = new Parser(queryString);
@@ -132,6 +193,8 @@ export class QueryParser implements SalesforceQueryData {
                 this.limit = Number(this.parser.expectMatch(/\s*(\d+)\s*/));
             } else if (this.parser.acceptKeyword(QueryKeywords.OFFSET)) {
                 this.offset = Number(this.parser.expectMatch(/\s*(\d+)\s*/));
+            } else if (this.parser.acceptKeyword(QueryKeywords.WITH)) {
+                this.parseWithCondition(this.parser.createParser());
             } else {
                 this.parser.skip();
             }
@@ -140,9 +203,41 @@ export class QueryParser implements SalesforceQueryData {
         return this;
     }
 
-    public static parseFieldsList(query: string) {
-        return new QueryParser('').parseFieldsList(new Parser(query));
-    }   
+    private parseWithCondition(parser: Parser): void {
+        parser.expectWhitespaceCharacters();
+        if (parser.acceptKeyword('RecordVisibilityContext')) {
+            assert(!this.mode && !this.securityEnforced, 'Cannot use visibility context with mode or security enforced');
+            this.visibilityContext = this.parseVisibilityContext(parser);
+        } else if (parser.acceptKeyword('DATA CATEGORY')) {
+            throw new Error('Parsing of queries With Data Category is not supported');
+        } else {
+            if (parser.acceptKeyword('SECURITY_ENFORCED')) {
+                assert(!this.mode && !this.visibilityContext, 'Cannot use SECURITY_ENFORCED with mode or visibility context');
+                this.securityEnforced = true;
+            } else if (parser.acceptKeyword('USER_MODE')) {
+                assert(!this.visibilityContext && this.securityEnforced === undefined, 'Cannot use USER_MODE with visibility context or security enforced');
+                this.mode = 'user';
+            } else if (parser.acceptKeyword('SYSTEM_MODE')) {
+                assert(!this.visibilityContext && this.securityEnforced === undefined, 'Cannot use SYSTEM_MODE with visibility context or security enforced');
+                this.mode = 'system';
+            } else {
+                throw new Error(`Invalid SOQL With condition: ${parser.left}`);
+            }
+        }
+    }
+
+    private parseVisibilityContext(parser: Parser) {
+        const recordVisibility = parser.acceptNextBlock('(', ')', true);
+        // TODO: Validate record visibility context fields and parse to concrete object
+        if (!recordVisibility) {
+            throw new Error(`Invalid SOQL record visibility context: ${parser.left}`);
+        }
+        return recordVisibility;
+    }
+
+    public static parseFieldsList(this: void, query: string) {
+        return QueryParser.prototype.parseFieldsList(new Parser(query));
+    }
 
     private parseFieldsList(parser: Parser): string[] {
         const fields = new Array<string>();
@@ -172,11 +267,11 @@ export class QueryParser implements SalesforceQueryData {
         return fields;
     }
 
-    public static parseQueryCondition(query: string) {
-        return new QueryParser('').parseQueryCondition(new Parser(query));
-    }    
+    public static parseQueryCondition(this: void, query: string) {
+        return QueryParser.prototype.parseQueryCondition(new Parser(query));
+    }
 
-    private parseQueryCondition(parser: Parser): string | QueryBinary {
+    private parseQueryCondition(parser: Parser): string | QueryBinary | QueryUnary {
         let backBuffer = '';
 
         while(parser.hasMore()) {
@@ -188,11 +283,16 @@ export class QueryParser implements SalesforceQueryData {
                     throw new Error(`Inconsistent query condition at: ${parser.input}`);
                 }
                 return { left, operator, right };
-            } else if(parser.matchKeyword(...queryKeywords)) {                
+            } else if(parser.matchKeyword(...queryKeywords)) {
                 break;
             }
-            
-            const blockMatch = parser.acceptNextBlock('(', ')', true);
+
+            if (!backBuffer.trim() && parser.acceptMatch('not')) {
+                const right = this.parseQueryCondition(parser);
+                return { operator: 'not', right };
+            }
+
+            const blockMatch = !backBuffer.trim() && parser.acceptNextBlock('(', ')', true);
             if (blockMatch) {
                 if (backBuffer.trim()) {
                     throw new Error(`Back buffer should be empty at the start of a new block`);
@@ -210,11 +310,11 @@ export class QueryParser implements SalesforceQueryData {
             }
         }
 
-        return backBuffer?.trim();
+        return backBuffer.trim();
     }
 }
 
-class Parser {    
+class Parser {
 
     constructor(public readonly input: string, public index: number = 0) {
     }
@@ -242,8 +342,8 @@ class Parser {
     /**
      * Move the stream ahead the specified number of characters
      * @param count Number of characters to move
-     * @returns 
-     */    
+     * @returns
+     */
     public read(count = 1): string | undefined {
         if (!this.hasMore()) {
             return undefined;
@@ -264,7 +364,7 @@ class Parser {
 
     /**
      * Skip input until the specified expr. doesn't match anymore
-     * @param expr 
+     * @param expr
      */
     public skipMatch(expr: RegExp) {
         while(this.hasMore()) {
@@ -281,7 +381,7 @@ class Parser {
     /**
      * Accept all currently read characters and move the consumed index to the read index
      * @param trimCount Number of characters to trim from the end
-     * @returns 
+     * @returns
      */
     public accept(count: number) {
         const str = this.input.substring(this.index, this.index + count);
@@ -305,11 +405,18 @@ class Parser {
         }
     }
 
-    public acceptKeyword(...options: string[]): string | undefined {
+    public acceptKeyword<K extends string>(...options: K[]): K | undefined {
         const match = this.matchKeyword(...options);
         if (match) {
-            return this.accept(match.length);
+            return this.accept(match.length) as K;
         }
+    }
+
+    public expectWhitespaceCharacters(): this {
+        if (!this.acceptMatch(/\s+/s)) {
+            throw new Error(`Expected whitespace at: ${this.left.substring(0, 10)}`);
+        }
+        return this;
     }
 
     public expectMatch(...options: (string | RegExp)[]): string {
@@ -321,10 +428,10 @@ class Parser {
         return match;
     }
 
-    public acceptNextBlock(blockOpening: string, blockClosing: string, trimOpeningAndClosing: boolean = true) {   
+    public acceptNextBlock(blockOpening: string, blockClosing: string, trimOpeningAndClosing: boolean = true) {
         if (!this.acceptMatch(blockOpening)) {
             return;
-        }     
+        }
 
         let blockLevel = 1;
         const openingIndex = this.index - blockOpening.length;
@@ -340,7 +447,7 @@ class Parser {
             } else {
                 this.skip();
             }
-        } 
+        }
 
         throw new Error(`Parser error; expected block closing '${blockClosing}' after opening at column ${openingIndex}`);
     }
