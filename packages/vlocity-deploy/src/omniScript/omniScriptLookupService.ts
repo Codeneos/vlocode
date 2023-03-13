@@ -105,6 +105,18 @@ export class OmniScriptLookupService {
         return this.getScriptsWithFields(script, ['id', 'type', 'subType', 'language', 'isActive', 'version', 'isLwcEnabled']);
     }
 
+    /**
+     * Get the type, subtype and language for the OmniScript specified by script id.
+     * 
+     * To get all fields use {@link getScripts}, to get all versions currently deployed use {@link getScriptVersions}.
+     * 
+     * @param scriptId Id of the script to get the specification for.
+     * @returns OmniScriptVersionDetail with script type, subtype, language, isActive, version and isLwcEnabled
+     */
+    public async getScriptVersionSpecification(scriptId: string): Promise<OmniScriptVersionDetail> {
+        return (await this.getScriptsWithFields(scriptId, ['id', 'type', 'subType', 'language', 'isActive', 'version', 'isLwcEnabled']))[0];
+    }
+
     private async getScriptsWithFields<F extends keyof OmniScriptRecord>(script?: OmniScriptSpecification | string | undefined, fields?: F[]): Promise<Array<OmniScriptRecord>> {
         const lookupFilter = script 
             ? typeof script === 'object' 

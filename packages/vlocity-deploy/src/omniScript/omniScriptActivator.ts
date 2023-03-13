@@ -10,23 +10,23 @@ import { OmniScriptLocalDefinitionProvider } from './omniScriptDefinitionGenerat
 
 export interface OmniScriptActivationOptions {
     /**
-     * Skip deployment of LWC components even when the script is LWC enabled. 
+     * Skip deployment of LWC components even when the script is LWC enabled.
      * By default activation will rebuild and deploy the LWC component of the script; setting this option to `true` will skip this step.
      */
     skipLwcDeployment?: boolean;
     /**0
-     * When `true`, the LWC components will be updated an deployed using the tooling API instead of the metadata API. 
+     * When `true`, the LWC components will be updated an deployed using the tooling API instead of the metadata API.
      * The benefit of this is that the LWC components will be deployed to the org without the need to deploy the entire package.
      */
-    toolingApi?: boolean; 
+    toolingApi?: boolean;
     /**
-     * When `true`, the script will be activated using the standard Vlocity APEX activation function exposed by the 
-     * Vlocity Business Process Controller that runs as anonymous Apex. 
-     * 
-     * When `false` (default) the script will be activated by locally generating the script activation records. This is faster compared to 
+     * When `true`, the script will be activated using the standard Vlocity APEX activation function exposed by the
+     * Vlocity Business Process Controller that runs as anonymous Apex.
+     *
+     * When `false` (default) the script will be activated by locally generating the script activation records. This is faster compared to
      * the remote activation and avoids issues with governor limits that occur when activating a large scripts.
      */
-    remoteActivation?: boolean; 
+    remoteActivation?: boolean;
 }
 
 /**
@@ -51,7 +51,7 @@ export class OmniScriptActivator {
     }
 
     /**
-     * Activates the specified OmniScript, creates the OmniScriptDefinition__c records in Salesforce and sets the OmniScript to active. 
+     * Activates the specified OmniScript, creates the OmniScriptDefinition__c records in Salesforce and sets the OmniScript to active.
      * Any existing active OmniScriptDefinition__c records will be deleted.
      * @param input OmniScript to activate
      */
@@ -87,22 +87,35 @@ export class OmniScriptActivator {
         const definition = await this.definitionGenerator.getScriptDefinition(script);
         await this.updateScriptDefinition(script.id, definition);
         await this.setAsActiveVersion(script);
+        await this.deleteAllInactiveScriptDefinitions(script.id);
         return definition;
     }
 
-    private async setAsActiveVersion(script: OmniScriptRecord) {        
-        const scriptUpdates = (await this.lookup.getScriptVersions(script))
+    private async setAsActiveVersion(script: OmniScriptRecord) {
+        const allVersions = await this.lookup.getScriptVersions(script);
+        const scriptUpdates = allVersions
             .filter(version => version.isActive ? version.id !== script.id : version.id === script.id)
             .map(version => ({ id: version.id, isActive: script.id === version.id }));
 
-        if (!scriptUpdates.length) {
-            // When there is no change in the active version, skip the update
-            return;
+        const versionDeactivations = scriptUpdates.filter(version => !version.isActive);
+        const versionActivations = scriptUpdates.filter(version => version.isActive);
+
+        // It is not possible to activate a new version and de-activate the old version in the same update
+        // due to a there being trigger on the OmniScript__c object that ensures only one active version is allowed
+
+        if (versionDeactivations.length) {
+            for await (const updateResult of this.salesforceService.update('%vlocity_namespace%__OmniScript__c', versionDeactivations)) {
+                if (!updateResult.success) {
+                    throw new Error(`Unable to de-activate old script version due to Salesforce error: ${updateResult.error}`);
+                }
+            }
         }
 
-        for await (const updateResult of this.salesforceService.update('%vlocity_namespace%__OmniScript__c', scriptUpdates)) {
-            if (script.id === updateResult.ref && !updateResult.success) {
-                throw new Error(`Activation error: ${updateResult.error}`);
+        if (versionActivations.length) {
+            for await (const updateResult of this.salesforceService.update('%vlocity_namespace%__OmniScript__c', versionActivations)) {
+                if (!updateResult.success) {
+                    throw new Error(`Unable set activate script version due to Salesforce error: ${updateResult.error}`);
+                }
             }
         }
     }
@@ -114,23 +127,24 @@ export class OmniScriptActivator {
             values: {
                 content: content,
                 sequence: index,
-                omniScriptId: scriptId, 
-            }            
+                omniScriptId: scriptId,
+            }
         }));
-        
-        await this.cleanScriptDefinitions(scriptId);
+
+        await this.deleteScriptDefinition(scriptId);
+
         for await (const insertResult of this.salesforceService.insert('%vlocity_namespace%__OmniScriptDefinition__c', records)) {
             if (!insertResult.success) {
                 throw new Error(`Failed to insert OmniScript activation records: ${insertResult.error}`);
             }
-        }        
+        }
     }
 
     /**
      * Serializes and split the OmniScript definition into chunks of max 131072 characters to avoid the 131072 character limit of the Salesforce String field.
-     * 
+     *
      * The split ensures that chunks will never start or end with a whitespace character as whitespace characters are trimmed when saving the record.
-     * 
+     *
      * @param definition JSON definition of the OmniScript
      * @returns Array of strings containing the serialized OmniScript definition
      */
@@ -156,17 +170,31 @@ export class OmniScriptActivator {
      * Deletes the OmniScriptDefinition__c records for the specified OmniScript
      * @param input OmniScript to clean the script definitions for
      */
-    private async cleanScriptDefinitions(input: string | OmniScriptSpecification) {
-        const script = await this.lookup.getScript(input);
-        const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', { 
+    private async deleteScriptDefinition(scriptId: string) {
+        const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', {
+            omniScriptId: scriptId
+        });
+        if (results.some(result => !result.success)) {
+            this.logger.warn(
+                `Unable to delete all definition record(s) for script with Id "${scriptId}"`,
+                results.map(result => result.error).join(', '));
+        }
+    }
+
+    private async deleteAllInactiveScriptDefinitions(input: OmniScriptSpecification | string) {
+        const script = typeof input === 'string' ? await this.lookup.getScriptVersionSpecification(input) : input;
+        const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', {
             omniScriptId: {
                 type: script.type,
                 subType: script.subType,
-                language: script.language 
+                language: script.language,
+                isActive: false
             }
         });
         if (results.some(result => !result.success)) {
-            this.logger.warn('Failed to delete old OmniScript activation records: ', results.map(result => result.error).join(', '));
+            this.logger.warn(
+                `Unable to delete all definition record(s) for script ${script.type}/${script.subType}/${script.language}`,
+                results.map(result => result.error).join(', '));
         }
     }
 
@@ -181,7 +209,7 @@ export class OmniScriptActivator {
 
     /**
      * Get the LWC component bundle as metadata package for the specified OmniScript
-     * @param id Id of the OmniScript 
+     * @param id Id of the OmniScript
      * @returns Deployable Metadata package
      */
     public async getLwcComponentBundle(id: string) {
@@ -194,7 +222,7 @@ export class OmniScriptActivator {
         const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
         this.logger.info(`Deploying LWC ${definition.bpType}/${definition.bpSubType} (${apiLabel} api)...`);
 
-        if (options?.toolingApi) { 
+        if (options?.toolingApi) {
             await this.deployLwcWithToolingApi(definition);
         } else {
             await this.deployLwcWithMetadataApi(definition);
@@ -204,12 +232,12 @@ export class OmniScriptActivator {
     }
 
     private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {
-        const sfPackage = await this.lwcCompiler.compileToPackage(definition);  
+        const sfPackage = await this.lwcCompiler.compileToPackage(definition);
         const deployService = new SalesforceDeployService(this.salesforceService, Logger.null);
         const result = await deployService.deployPackage(sfPackage);
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${result.details?.componentFailures.map(failure => failure.problem)}`);
-        } 
+        }
     }
 
     private async deployLwcWithToolingApi(definition: OmniScriptDefinition) {
@@ -217,22 +245,22 @@ export class OmniScriptActivator {
         const result = await this.upsertToolingRecord(`LightningComponentBundle`, tollingRecord);
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${JSON.stringify(result.errors)}`);
-        } 
+        }
     }
 
     private async upsertToolingRecord(type: string, toolingRecord: { Id?: string, FullName: string, Metadata: any }): Promise<{ success: boolean, errors: string[] }> {
         const connection = await this.salesforceService.getJsForceConnection();
         if (!toolingRecord.Id) {
             const existingRecord = await connection.tooling.query<{ Id: string }>(`SELECT Id FROM ${type} WHERE DeveloperName = '${toolingRecord.FullName}'`);
-            if (existingRecord.totalSize > 0) { 
+            if (existingRecord.totalSize > 0) {
                 toolingRecord.Id = existingRecord.records[0].Id;
             }
         }
 
-        const result: any = toolingRecord.Id 
+        const result: any = toolingRecord.Id
             ? await connection.tooling.update(type, toolingRecord)
             : await connection.tooling.create(type, toolingRecord)
-        
+
         if (result === '') {
             // Patch can return status 204 with an empty body meaning the resource was not changed
             return { success: true, errors: [] };

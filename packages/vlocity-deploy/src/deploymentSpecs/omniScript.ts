@@ -18,9 +18,9 @@ interface ScriptElement {
     Order__c?: number;
 }
 
-@deploymentSpec({ 
-    datapackFilter: /^(OmniScript|IntegrationProcedure)$/i, 
-    recordFilter: /^(OmniScript__c|Element__c)$/i 
+@deploymentSpec({
+    datapackFilter: /^(OmniScript|IntegrationProcedure)$/i,
+    recordFilter: /^(OmniScript__c|Element__c)$/i
 })
 export class OmniScript implements DatapackDeploymentSpec {
 
@@ -65,19 +65,19 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     /**
      * Update the order and level of the elements in the OmniScript or IntegrationProcedure.
-     * @param datapack 
+     * @param datapack
      */
-    private async updateElementOrder(datapack: VlocityDatapack) {
+    private updateElementOrder(datapack: VlocityDatapack) {
         // Map elements by their source key so we can easily lookup the parent elements
         const elementsByKey = new Map<string, ScriptElement>(datapack.Element__c.map(element => [element.VlocityRecordSourceKey, element]) );
-        
+
         const getElementLevel = (element: ScriptElement) => {
             const parentElementPath = new Array<ScriptElement>();
             while (element) {
                 const parentKey = element.ParentElementId__c?.VlocityMatchingRecordSourceKey;
                 const parent = parentKey && elementsByKey.get(parentKey);
                 if (!parent) {
-                    break;                
+                    break;
                 }
                 parentElementPath.push(element = parent);
             }
@@ -96,11 +96,11 @@ export class OmniScript implements DatapackDeploymentSpec {
             const calculatedLevel = getElementLevel(element);
 
             if (currentOrder !== undefined && currentOrder !== orderInParent) {
-                this.addPreprocessingWarning(datapack, `element "${element.Name}" order changed: ${currentOrder} -> ${orderInParent}`);
+                this.addPreprocessingWarning(datapack, `element "${element.Name}" expected "Order__c" to be "${orderInParent}"; instead saw "${currentOrder}"`);
             }
 
             if (currentLevel !== undefined && currentLevel !== calculatedLevel) {
-                this.addPreprocessingWarning(datapack, `element "${element.Name}" level changed: ${currentLevel} -> ${calculatedLevel}`);
+                this.addPreprocessingWarning(datapack, `element "${element.Name}" expected "Level__c" to be "${orderInParent}"; instead saw "${currentOrder}"`);
             }
 
             currentOrder === undefined && (element['%vlocity_namespace%__Order__c'] = orderInParent);
@@ -127,7 +127,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         const propertySet = JSON.parse(record.value(`PropertySet__c`));
 
         if (type === 'OmniScript') {
-            record.addLookupDependency('%vlocity_namespace%__OmniScript__c', { 
+            record.addLookupDependency('%vlocity_namespace%__OmniScript__c', {
                 ['%vlocity_namespace%__Type__c']: propertySet['Type'],
                 ['%vlocity_namespace%__SubType__c']: propertySet['Sub Type'],
                 ['%vlocity_namespace%__Language__c']: propertySet['Language']
@@ -136,8 +136,8 @@ export class OmniScript implements DatapackDeploymentSpec {
             if (this.embeddedTemplates.get(record.datapackKey)?.includes(propertySet.HTMLTemplateId)) {
                 // skip embedded templates; these templates are embedded through TestHTMLTemplates__c which and should not be treated as dependencies
                 return;
-            }            
-            record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', { 
+            }
+            record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', {
                 ['Name']: propertySet.HTMLTemplateId
             });
         }
@@ -155,7 +155,7 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     /**
      * Activate the OmniScripts in Parallel using the activator without deploying the LWC components
-     * @param event 
+     * @param event
      */
     private async activateScripts(event: DatapackDeploymentEvent) {
         await forEachAsyncParallel(event.getDeployedRecords('OmniScript__c'), async record => {
@@ -172,7 +172,7 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     /**
      * Deploy OmniScript LWC components to the target org
-     * @param event 
+     * @param event
      */
     private async deployLwcComponents(event: DatapackDeploymentEvent) {
         const packages = new Array<SalesforcePackage>();
@@ -200,14 +200,14 @@ export class OmniScript implements DatapackDeploymentSpec {
 
     /**
      * Add a warning message to a record from the preprocessing stage; stores the messages and adds them to the records in the afterRecordConversion stage.
-     * 
+     *
      * All pre-processor messages are warnings, if the pre-processor encounters an error it should throw an exception.
-     * 
+     *
      * @param sourceKey Source key of the future record to add the warning to
      * @param message Message to add
      */
     private addPreprocessingWarning(sourceKey: string | { VlocityRecordSourceKey?: string, sourceKey?: string }, message: string) {
-        sourceKey = typeof sourceKey === 'string' ? sourceKey : sourceKey.VlocityRecordSourceKey ?? sourceKey.sourceKey!;        
+        sourceKey = typeof sourceKey === 'string' ? sourceKey : sourceKey.VlocityRecordSourceKey ?? sourceKey.sourceKey!;
         this.logger.warn(`${substringAfter(sourceKey.replaceAll('%vlocity_namespace%__', ''), '/')} -- ${message}`);
         mapGetOrCreate(this.preprocessorMessages, sourceKey, () => new Array<string>()).push(message);
     }
