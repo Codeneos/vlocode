@@ -129,7 +129,7 @@ export function primitiveCompare(a: unknown, b: unknown) {
 }
 
 /**
- * Sorts an array of objects by the specified object key/property or selected by function. In comparison to the native 
+ * Sorts an array of objects by the specified object key/property or selected by function. In comparison to the native
  * {@link Array.sort} arrays are not sorted in placed but a newly sorted array is returned. The original array order is not changed
  * @param iterable Iterable object or readonly array
  * @param byField Property selector function or name
@@ -137,16 +137,16 @@ export function primitiveCompare(a: unknown, b: unknown) {
  * @returns Copy of the iterable or array as array sorted by the specified field in `desc` or `asc` order
  */
 export function sortBy<T extends object, K extends string | number>(
-    iterable: Iterable<T> | readonly T[], 
+    iterable: Iterable<T> | readonly T[],
     byField: keyof T | ((item: T) => K),
     order: 'asc' | 'desc' = 'asc') : Array<T> {
-    const fieldSelector = typeof byField === 'function' 
+    const fieldSelector = typeof byField === 'function'
         ? byField : (item: T) => item[byField];
 
     const compareFn = (a: T, b: T): number => {
         return primitiveCompare(fieldSelector(a), fieldSelector(b));
     }
-    
+
     return [...iterable].sort(order !== 'desc' ? compareFn : (a,b) => -compareFn(a,b));
 }
 
@@ -156,7 +156,7 @@ export function sortBy<T extends object, K extends string | number>(
  * @param keySelector function to get the group by key
  */
 export function groupBy<T, I = T, K extends string | number = string>(
-    iterable: Iterable<T>, 
+    iterable: Iterable<T>,
     keySelector: keyof T | ((item: T) => K | undefined),
     itemSelector?: (item: T) => I) : Record<K, I[]>
 
@@ -166,7 +166,7 @@ export function groupBy<T, I = T, K extends string | number = string>(
  * @param keySelector function to get the group by key
  */
 export function groupBy<T, K extends string | number, I = T>(
-    iterable: Iterable<T>, 
+    iterable: Iterable<T>,
     keySelector: (item: T) => Promise<K | undefined>,
     itemSelector?: (item: T) => I) : Promise<Record<K, I[]>>
 
@@ -175,12 +175,12 @@ export function groupBy<T, K extends string | number, I = T>(
  * @param iterable iterable items to group
  * @param keySelector function to get the group by key
  */
-export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<T>, 
+export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<T>,
     keySelector: keyof T | ((item: T) => K | undefined | Promise<K | undefined>),
     itemSelector?: (item: T) => I) : Record<K, I[]> | Promise<Record<K, I[]>> {
     const acc = {} as Record<K, I[]>;
     const awaitables = new Array<Promise<any>>();
-    
+
     function accUpdate(acc: any, key: K | undefined, item: T) {
         if (key) {
             if (!acc[key]) {
@@ -190,7 +190,7 @@ export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<
         }
     }
 
-    const _keySelector = typeof keySelector === 'function' 
+    const _keySelector = typeof keySelector === 'function'
         ? keySelector : (item: T) => item[keySelector] as unknown as K;
 
     for (const item of iterable) {
@@ -207,6 +207,26 @@ export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<
     }
 
     return acc;
+}
+
+/**
+ * Creates a {@link Map} of an iterable object mapping each item to the specified key.
+ * The key can be a property name or a function.
+ * If the key is not unique the last item will be used that matches the key.
+ * @param iterable iterable items to map
+ * @param keySelector function to get the map by key
+ * @param itemSelector function to get the the item value; defaults to the items being iterated
+ */
+export function mapBy<T, K extends string | number, I = T>(iterable: Iterable<T>,
+    keySelector: keyof T | ((item: T) => K | undefined),
+    itemSelector?: (item: T) => I) : Map<K, I> {
+
+    const _keySelector = typeof keySelector === 'function'
+        ? keySelector : (item: T) => item[keySelector] as unknown as K;
+
+    return new Map(
+        Iterable.map(iterable, item => [_keySelector(item), itemSelector ? itemSelector(item) : item] as [K, I])
+    );
 }
 
 /**
@@ -272,8 +292,8 @@ export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T,
         const bucket = index % parallelism;
         const task = async (result: R[]) => {
             // do not use Array.concat as it can cause issues when R is an array causing the items in the array to be added
-            result.push(await callback(value, index)); 
-            return result; 
+            result.push(await callback(value, index));
+            return result;
         };
         tasks[bucket] = tasks[bucket] !== undefined ? tasks[bucket].then(task) : task([]);
     }
@@ -341,7 +361,7 @@ export function mapGetOrCreate<K, V, VI extends (key: K) => V | Promise<V>>(map:
     if (pendingAsyncInitializer !== undefined) {
         return pendingAsyncInitializer;
     }
-    
+
     const value = valueInitializer(key);
     if (isPromise(value)) {
         pendingInitializers.set(key, value as ReturnType<VI>);
@@ -357,9 +377,9 @@ export function mapGetOrCreate<K, V, VI extends (key: K) => V | Promise<V>>(map:
 }
 
 /**
- * Converts specified array-like arguments to a single array; may return original parameter if only a single param is specified and that 
+ * Converts specified array-like arguments to a single array; may return original parameter if only a single param is specified and that
  * param is already an array. Otherwise the provided parameters are copied to a new array.
- * @param elements 
+ * @param elements
  */
 export function asArray<T>(...elements: Array<T[] | T | Iterable<T>>) : T[] {
     if (elements.length == 1 && Array.isArray(elements[0])) {
@@ -392,7 +412,7 @@ export function filterUndefined<T>(iterable: Iterable<T | undefined>): Array<T> 
 }
 
 /**
- * Get the last element from an array similair to pop but without removing the element. 
+ * Get the last element from an array similair to pop but without removing the element.
  * @param array Atray to get the last element from. Array is not altered.
  */
 export function last<T>(array: ReadonlyArray<T>): T | undefined {
@@ -422,7 +442,7 @@ export function except<T>(source: ReadonlyArray<T>, target: ReadonlyArray<T>): A
 }
 
 /**
- * Segregate an Array into a true-ish and false-ish Array. The first element of the result will contain the all elements where the filter returns a 
+ * Segregate an Array into a true-ish and false-ish Array. The first element of the result will contain the all elements where the filter returns a
  * true-ish value the second element of the result of the result will contain all items for which the filter returned a false-ish value
  * @param array Array
  */
@@ -435,7 +455,7 @@ export function segregate<T>(array: Array<T>, filter: (item: T) => any) : [ Arra
 }
 
 /**
- * Remove the first element from the array that matches the specified predicate 
+ * Remove the first element from the array that matches the specified predicate
  * @param source Source array
  * @param predicate predicate to match
  * @returns Item or undefined when not found
@@ -449,7 +469,7 @@ export function remove<T>(source: Array<T>, predicate: (item: T, index: number) 
 }
 
 /**
- * Remove all elements from the array that matches the specified predicate 
+ * Remove all elements from the array that matches the specified predicate
  * @param source Source array
  * @param predicate predicate to match
  * @returns Items removed from the array
@@ -466,7 +486,7 @@ export function remove<T>(source: Array<T>, predicate: (item: T, index: number) 
 }
 
 /**
- * Spread async generators into an array 
+ * Spread async generators into an array
  * @param gen Async generator to spread
  * @returns Array of results from the generator
  */
@@ -546,7 +566,7 @@ export async function chunkAsyncParallel<T, K>(array: T[], fn: (chunk: T[], inde
 }
 
 /**
- * Find the first element in the array that matches any of the matchers. 
+ * Find the first element in the array that matches any of the matchers.
  * Matchers are evaluated by priority provided by the order of the matchers in the array.
  * @param items Array of items to search
  * @param matchers Matchers to evaluate
