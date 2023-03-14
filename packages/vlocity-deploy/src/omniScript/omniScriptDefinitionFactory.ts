@@ -1,5 +1,5 @@
 import { OmniScriptDefinition, OmniScriptElementDefinition } from './omniScriptDefinition';
-import { getErrorMessage, Iterable } from '@vlocode/util';
+import { deepClone, getErrorMessage, Iterable } from '@vlocode/util';
 import { OmniScriptElementRecord, OmniScriptRecord } from './omniScriptLookupService';
 
 type DefinitionRecordMapping = Record<string, 
@@ -87,9 +87,9 @@ export class OmniScriptDefinitionFactory {
             if (typeof def === 'function') {
                 definition[field] = def(record, field);
             } else if (typeof def === 'object' && def !== null) {
-                definition[field] = def.field ? record[def.field] : def.value;
+                definition[field] = deepClone(def.field ? record[def.field] : def.value);
             } else {
-                definition[field] = def;
+                definition[field] = deepClone(def);
             }
         }
         return definition;
