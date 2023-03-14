@@ -80,29 +80,29 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     deltaCheck?: boolean;
     /**
-     * Continue the deployment when a fatal error occurs, note that continuing the deployment on fatal errors will result in an incomplete deployment. This setting 
+     * Continue the deployment when a fatal error occurs, note that continuing the deployment on fatal errors will result in an incomplete deployment. This setting
      * affects fatal errors such as unable to convert a datapack to valid Salesforce records and should not be enabled on production deployments.
      * @default false;
      */
     continueOnError?: boolean;
     /**
-     * When strict dependencies are enabled the deployment will wait for a records in a datapack to complete before proceeding with deploying 
+     * When strict dependencies are enabled the deployment will wait for a records in a datapack to complete before proceeding with deploying
      * the dependent record. This ensures that a datapack and all it's records an dependencies are deployed before deploying the dependent datapack.
-     * 
+     *
      * Enabling this reduces deployment performance as the deployment will be split in smaller chunks increasing the number of API calls to Salesforce.
      * @default false;
      */
     strictDependencies?: boolean;
     /**
      * When enabled LWC enabled OmniScripts will not get compiled into native LWC components and be deployed to the target org during deployment.
-     * 
+     *
      * Use this if you want to manually compile OmniScripts into LWC or have a batch process ot activate OmniScript LWCs in bulk.
      * @default false;
      */
     skipLwcActivation?: boolean;
     /**
      * When true LWC components are deployed using the metadata API instead of the tooling API. The tooling API is usually faster and thus the preferred way to compiled deploy LWC components.
-     * 
+     *
      * Disable this if you need to use the metadata API to deploy LWC components.
      * @default false;
      */
@@ -114,8 +114,8 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
     remoteScriptActivation?: boolean;
 }
 
-export type DatapackFilter = 
-    { recordFilter?: RegExp | string, datapackFilter: RegExp | string } | 
+export type DatapackFilter =
+    { recordFilter?: RegExp | string, datapackFilter: RegExp | string } |
     { recordFilter: RegExp | string, datapackFilter?: RegExp | string };
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
@@ -161,7 +161,7 @@ export class DatapackDeployer {
             } catch(err) {
                 const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${getErrorMessage(err, true)}`;
                 if (!options?.continueOnError) {
-                    throw new CustomError(errorMessage); 
+                    throw new CustomError(errorMessage);
                 }
                 this.logger.error(errorMessage);
             }
@@ -176,7 +176,7 @@ export class DatapackDeployer {
      * @param datapacks Datapacks to deploy
      * @param options options passed to the deployment
      * @param cancellationToken optional cancellation token
-     * @returns 
+     * @returns
      */
     public async deploy(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
         const deployment = await this.createDeployment(datapacks, options, cancellationToken);
@@ -208,10 +208,10 @@ export class DatapackDeployer {
     }
 
     /**
-     * Verifies the data deployed to the org matched the local data for the specified list of fields. This is especially useful for GlobalKey fields that are 
+     * Verifies the data deployed to the org matched the local data for the specified list of fields. This is especially useful for GlobalKey fields that are
      * updated by a Vlocity before update/insert trigger making it impossible to update the global key when Vlocity triggers are enabled.
      * @param records records
-     * @param fieldNames Array of field names to compare 
+     * @param fieldNames Array of field names to compare
      */
     private async verifyDeployedFieldData(records: Iterable<DatapackDeploymentRecord>, fieldNames: string[]) {
         const deployedRecordsByType = groupBy(Iterable.filter(records, r => r.isDeployed), r => r.sobjectType);
@@ -231,7 +231,7 @@ export class DatapackDeployer {
             const orgData = await this.objectLookupService.lookupById(deployedData.keys(), fields.map(f => f.name), false);
 
             for (const result of orgData.values()) {
-                const mismatchedFieldData = fields.map(field => ({ 
+                const mismatchedFieldData = fields.map(field => ({
                     field: field.name,
                     actual: result[field.name],
                     expected: deployedData.get(result.Id)?.values[field.name]
@@ -285,7 +285,7 @@ export class DatapackDeployer {
     }
 
     /**
-     * Event handler running before the deployment 
+     * Event handler running before the deployment
      * @param datapackRecords Datapacks being deployed
      */
     private async beforeDeployRecordGroup(deployment: DatapackDeployment, datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
@@ -333,8 +333,8 @@ export class DatapackDeployer {
                 }
             } else {
                 const recordGroups = specParams[0].recordGroups
-                    .map(group => this.evalFilter(filter, group) 
-                        ? group 
+                    .map(group => this.evalFilter(filter, group)
+                        ? group
                         : new DatapackDeploymentRecordGroup(group.key, this.filterApplicableRecords(filter, group.records))
                     )
                     .filter(group => group.records.length)
@@ -349,11 +349,11 @@ export class DatapackDeployer {
             } catch(err) {
                 // Print stack for custom specs
                 this.logger.error(
-                    `Spec function failed to execute:`, 
+                    `Spec function failed to execute:`,
                     err instanceof Error ? `${err.stack}` : err
                 );
-            }            
-        }        
+            }
+        }
     }
 
     private filterApplicableRecords(filter: DatapackFilter, arg: DatapackDeploymentRecord[]): DatapackDeploymentRecord[];
@@ -364,18 +364,18 @@ export class DatapackDeployer {
 
     private evalFilter(filter: DatapackFilter, arg: string | VlocityDatapack | DatapackDeploymentRecord | DatapackDeploymentRecordGroup) : boolean {
         const isMatch = (a: string | RegExp, b: string) => typeof a === 'string' ? a.toLowerCase() === b.toLowerCase() : a.test(b);
-        
+
         if (typeof arg === 'string') {
-            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg)) || 
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg)) ||
                 (!!filter.recordFilter && isMatch(filter.recordFilter, arg));
         } else if (arg instanceof DatapackDeploymentRecord) {
-            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) ||
                 (!!filter.recordFilter && isMatch(filter.recordFilter, arg.normalizedSObjectType));
         } else if (arg instanceof VlocityDatapack) {
-            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) ||
                 (!!filter.recordFilter && isMatch(filter.recordFilter, removeNamespacePrefix(arg.sobjectType)));
         } else if (arg instanceof DatapackDeploymentRecordGroup) {
-            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) || 
+            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) ||
                 (!!filter.recordFilter && arg.records.some(r => isMatch(filter.recordFilter!, r.normalizedSObjectType)));
         }
 

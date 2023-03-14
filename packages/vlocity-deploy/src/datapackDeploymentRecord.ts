@@ -102,7 +102,7 @@ export class DatapackDeploymentRecord {
     public get retryCount(): number {
         return this._retryCount;
     }
-    
+
     public get action(): DeploymentAction {
         return this._datapackAction;
     }
@@ -118,19 +118,19 @@ export class DatapackDeploymentRecord {
     }
 
     static fromValues(
-        sobjectType: string, 
-        values: object, 
+        sobjectType: string,
+        values: object,
         options?: {
             upsertFields?: string[],
             recordKey?: string,
         }
     ) {
         return new this(
-            sobjectType, 
-            sobjectType, 
-            options?.recordKey ?? `${sobjectType}/${randomUUID()}`, 
-            options?.recordKey ?? `${sobjectType}/${randomUUID()}`,  
-            options?.upsertFields, 
+            sobjectType,
+            sobjectType,
+            options?.recordKey ?? `${sobjectType}/${randomUUID()}`,
+            options?.recordKey ?? `${sobjectType}/${randomUUID()}`,
+            options?.upsertFields,
             values
         );
     }
@@ -138,10 +138,10 @@ export class DatapackDeploymentRecord {
     /**
      * Namespace and case normalized check to determine if the current datapack is of the specified type.
      * @param sobjectType SObject type with or without namespace prefix
-     * @returns 
+     * @returns
      */
     public isSObjectOfType(sobjectType: string) {
-        return sobjectType === this.sobjectType || 
+        return sobjectType === this.sobjectType ||
             sobjectType.toLowerCase() === this.sobjectType.toLowerCase() ||
             removeNamespacePrefix(sobjectType).toLowerCase() === this.normalizedSObjectType.toLowerCase();
     }
@@ -161,8 +161,8 @@ export class DatapackDeploymentRecord {
     public value(field: string, value: unknown | undefined): boolean
     public value(field: string, value?: any): any {
         const fieldNames = Object.keys(this.values);
-        const matchingField = 
-            fieldNames.find(name => name.toLowerCase() === field.toLowerCase()) ?? 
+        const matchingField =
+            fieldNames.find(name => name.toLowerCase() === field.toLowerCase()) ??
             fieldNames.find(name => removeNamespacePrefix(name) === removeNamespacePrefix(field));
 
         if (arguments.length == 1) {
@@ -201,13 +201,13 @@ export class DatapackDeploymentRecord {
             throw new Error(`Cannot set action to update without specifying an existing ID`);
         } else if (action == DeploymentAction.Insert) {
             this._existingId = undefined;
-        } else if (action == DeploymentAction.Skip) {            
+        } else if (action == DeploymentAction.Skip) {
             this._status = DeploymentStatus.Skipped;
         }
         if (arguments.length == 2) {
             this._existingId = updateId;
         }
-        this._datapackAction = action;        
+        this._datapackAction = action;
     }
 
     public hasGlobalKey() {
@@ -251,7 +251,7 @@ export class DatapackDeploymentRecord {
         if (this._dependencies.has(dependencyGuid)) {
             return;
         }
-        
+
         this.validateRecordDependency(dependency);
         this._dependencies.set(dependencyGuid, dependency);
         this._unresolvedDependencies.add(dependencyGuid);
@@ -261,7 +261,7 @@ export class DatapackDeploymentRecord {
      * Add a lookup dependency to this record based on only a source key string.
      * @param sourceKey Dependencies source key in the following format: `<sobject>/<values...>`
      */
-     public addLookupDependency(sourceKey: string) : void;
+    public addLookupDependency(sourceKey: string) : void;
 
     /**
      * Add a lookup dependency to this record based on a SObject type and the source key string.
@@ -273,43 +273,43 @@ export class DatapackDeploymentRecord {
     /**
      * Add a lookup dependency to this record is based on a SObject type and the matching key values of the record.
      * @param sobjectType SObject type of the record on which this record is dependent. Replace vlocity namespace with the namespace placeholder.
-     * @param matchingKeyValues Object describing the matching key values that are concatenated into the source key 
+     * @param matchingKeyValues Object describing the matching key values that are concatenated into the source key
      * so the source key matches the following format: `<sobject>/<values...>`
      */
     public addLookupDependency(sobjectType: string, matchingKeyValues: Record<string, string | number | boolean | undefined | null>) : void;
 
-    public addLookupDependency(sobjectType: string, matchingKeyValues?: Record<string, string | number | boolean | undefined | null> | string) : void { 
+    public addLookupDependency(sobjectType: string, matchingKeyValues?: Record<string, string | number | boolean | undefined | null> | string) : void {
         if (matchingKeyValues === undefined) {
             if (sobjectType.split('/').length === 1) {
                 throw new Error(`Invalid source key format; expected "<sobject>/<values...>" received: ${sobjectType}`);
             }
 
             return this.addDependency({
-                VlocityRecordSObjectType: sobjectType.split('/').shift()!, 
+                VlocityRecordSObjectType: sobjectType.split('/').shift()!,
                 VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
                 VlocityMatchingRecordSourceKey: undefined,
                 VlocityLookupRecordSourceKey: sobjectType,
             });
         }
-       
+
         if (typeof matchingKeyValues === 'string') {
             return this.addDependency({
-                VlocityRecordSObjectType: sobjectType, 
+                VlocityRecordSObjectType: sobjectType,
                 VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
                 VlocityMatchingRecordSourceKey: undefined,
                 VlocityLookupRecordSourceKey: matchingKeyValues.startsWith(sobjectType) ? matchingKeyValues : `${sobjectType}/${matchingKeyValues}`,
             });
         }
-        
+
        return this.addDependency({
             ...matchingKeyValues,
-            VlocityRecordSObjectType: sobjectType, 
+            VlocityRecordSObjectType: sobjectType,
             VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
             VlocityMatchingRecordSourceKey: undefined,
             VlocityLookupRecordSourceKey: `${sobjectType}/${Object.values(matchingKeyValues).join('/')}`,
         });
     }
-    
+
     /**
      * Validate dependency integrity by checking if mandator fields are set
      * @param dependency Dependency to check
@@ -349,8 +349,8 @@ export class DatapackDeploymentRecord {
     }
 
     /**
-     * Get embedded dependencies that are **not** resolved through lookup but instead are provided as part of the datapack. 
-     * These dependencies of datapack type **VlocityMatchingKeyObject** 
+     * Get embedded dependencies that are **not** resolved through lookup but instead are provided as part of the datapack.
+     * These dependencies of datapack type **VlocityMatchingKeyObject**
      * @returns Array with dependencies
      */
     public getMatchingDependencies(): { field: string, dependency: DatapackRecordDependency }[] {
@@ -361,7 +361,7 @@ export class DatapackDeploymentRecord {
     }
 
     /**
-     * Get dependencies that are resolved through a lookup and **not** provided as part of the datapack. 
+     * Get dependencies that are resolved through a lookup and **not** provided as part of the datapack.
      * These dependencies of datapack type **VlocityLookupMatchingKey**
      * @returns Array with dependencies
      */
@@ -379,14 +379,14 @@ export class DatapackDeploymentRecord {
     /**
      * Check if a field that is dependent on another record is resolved.
      * @param field name of the field
-     * @returns 
+     * @returns
      */
     public isResolved(field: string): boolean {
         return !this._unresolvedDependencies.has(field);
     }
 
     public async resolveDependencies(resolver: DependencyResolver) {
-        return Promise.all(Iterable.map(this._unresolvedDependencies, field => 
+        return Promise.all(Iterable.map(this._unresolvedDependencies, field =>
             resolver.resolveDependency(this._dependencies.get(field)!).then(resolution => {
                 if (resolution !== undefined) {
                     if (!field.startsWith('$')) {
@@ -399,15 +399,15 @@ export class DatapackDeploymentRecord {
     }
 
     /**
-     * Check if this record type matches the specified SObject type filter. Matches are always case 
-     * insensitive and will be matched against the full and normalized SObject (without namespace prefix) type. 
+     * Check if this record type matches the specified SObject type filter. Matches are always case
+     * insensitive and will be matched against the full and normalized SObject (without namespace prefix) type.
      * Matching will first be done against the normal sobject type and only after that against the normalized sobject type.
-     * @param filter SObjectType as string or RegEx 
+     * @param filter SObjectType as string or RegEx
      * @returns `true` if the record SObject type matches the filter otherwise `false`
      */
     public isMatch(filter: string | RegExp) {
         if (typeof filter === 'string') {
-            return this.sobjectType.toLowerCase() === filter.toLowerCase() || 
+            return this.sobjectType.toLowerCase() === filter.toLowerCase() ||
                 this.normalizedSObjectType.toLowerCase() === removeNamespacePrefix(filter).toLowerCase();
         }
 

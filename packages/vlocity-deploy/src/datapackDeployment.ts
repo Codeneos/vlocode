@@ -22,23 +22,23 @@ export interface DatapackDeploymentRecordMessage {
     message: string;
 }
 
-type RecordPurgePredicate = (item: { 
+type RecordPurgePredicate = (item: {
     /**
      * Field which has the lookup dependency
      */
-    field: string, 
+    field: string,
     /**
      * Record that contains the field @see this.field
      */
-    record: DatapackDeploymentRecord, 
+    record: DatapackDeploymentRecord,
     /**
      * Dependencies lookup details and source key
      */
-    dependency: DatapackRecordDependency, 
+    dependency: DatapackRecordDependency,
     /**
      * Record of the dependency itself
      */
-    dependencyRecord: DatapackDeploymentRecord 
+    dependencyRecord: DatapackDeploymentRecord
 }) => any;
 
 const datapackDeploymentDefaultOptions = {
@@ -156,7 +156,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private writeDeploymentSummaryToLog(timer: Timer) {
         // Generate a reasonable log message that summarizes the deployment
         const deployMessage = `Deployed ${this.deployedRecordCount} records${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
-        
+
         if (this.options.deltaCheck) {
             const skippedRecords = this.skippedRecordCount;
             if (this.totalRecordCount == skippedRecords) {
@@ -235,7 +235,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             return DeploymentStatus.Deployed;
         } else if (records[DeploymentStatus.Skipped]?.length) {
             return DeploymentStatus.Skipped;
-        } 
+        }
         return DeploymentStatus.Failed;
     }
 
@@ -243,7 +243,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * Get all records that can be deployed; i.e records that do not have any pending dependencies.
      */
     private getDeployableRecords() {
-        const records = new Map<string, DatapackDeploymentRecord>();        
+        const records = new Map<string, DatapackDeploymentRecord>();
         for (const record of this.records.values()) {
             if (record.isPending && record.retryCount == 0 && !this.hasPendingDependencies(record)) {
                 records.set(record.sourceKey, record);
@@ -265,13 +265,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 record.updateStatus(DeploymentStatus.Failed, `Missing dependencies: ${unsatisfiedDependencies}`);
             }
         }
-        
+
         return records.size > 0 ? records : undefined;
     }
 
     /**
      * Check if a record has pending dependencies that are not yet deployed as part of the current deployment
-     * @param record 
+     * @param record
      */
     private hasPendingDependencies(record: DatapackDeploymentRecord) : boolean {
         for(const key of record.getDependencySourceKeys()) {
@@ -314,7 +314,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     public async resolveDependencies(dependencies: DatapackRecordDependency[]) {
         const lookupResults = dependencies.map(dependency => this.resolveDeploymentDependency(dependency));
         const unresolvedDependencies = dependencies.filter((dep, i) => !lookupResults[i]);
-        
+
         if (unresolvedDependencies.length) {
             const results = await this.dependencyResolver.resolveDependencies(unresolvedDependencies);
             lookupResults.forEach((value, index) => {
@@ -369,20 +369,20 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private async resolveExistingIds(datapacks: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        // prepare batch        
+        // prepare batch
         const recordsForLookup = [...Iterable.filter(datapacks, rec => !rec.skipLookup)];
         this.logger.verbose(`Resolving existing IDs for ${recordsForLookup.length} record(s)`);
         const ids = await this.lookupService.lookupIds(recordsForLookup, cancelToken);
 
         for (const [i, datapack] of recordsForLookup.entries()) {
-            const existingId = ids[i];            
+            const existingId = ids[i];
             if (existingId) {
                 datapack.setAction(DeploymentAction.Update, existingId);
             } else {
                 datapack.setAction(DeploymentAction.Insert);
             }
         }
-    }    
+    }
 
     /**
      * Compared the to be deployed records to the records in the org
@@ -420,7 +420,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     /**
      * Compared the to be deployed records to the records in the org
-     * @param records Records 
+     * @param records Records
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
     private async getRecordSyncStatus(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
@@ -450,7 +450,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        // Find out to which record groups the record to be deployed belong record groups 
+        // Find out to which record groups the record to be deployed belong record groups
         const recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
         const recordGroupsStarted = new Set<string>();
         for (const datapackRecord of datapackRecords.values()) {
@@ -458,11 +458,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 throw new Error(`Datapack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
             }
 
-            // Figure out which record-groups are getting deployed; we trigger the post/pre deploy events only 
+            // Figure out which record-groups are getting deployed; we trigger the post/pre deploy events only
             // when a full record group is deployed
             const recordGroup = this.recordGroups.get(datapackRecord.datapackKey);
             if (!recordGroup) {
-                throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);                
+                throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);
             }
 
             recordGroups.set(datapackRecord.datapackKey, recordGroup);
@@ -479,8 +479,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             // After dependency resolution no datapacks left to deploy; move on to next chunk
             // but it's likely already over from here on..
             return;
-        }    
-        
+        }
+
         if (cancelToken?.isCancellationRequested) {
             await this.emit('onCancel', this, { hideExceptions: true, async: true });
             return;
@@ -527,21 +527,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             } else {
                 // When purgeMatchingDependencies is disabled only delete records that cannot be updated
                 // because they don't have a configured matching fields -or- because lookup is skipped
-                await this.purgeDependentRecords([...datapackRecords.values()], ({ dependency, record }) => 
-                    dependency?.VlocityMatchingRecordSourceKey && 
+                await this.purgeDependentRecords([...datapackRecords.values()], ({ dependency, record }) =>
+                    dependency?.VlocityMatchingRecordSourceKey &&
                     record.skipLookup || !record.upsertFields?.length);
             }
         } finally {
-            const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];            
+            const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
 
             for (const group of completedGroups) {
                 if (group.status === DeploymentGroupStatus.Success) {
                     this.logger.info(`Deployed ${group.datapackKey}`);
-                } else if (group.status === DeploymentGroupStatus.PartialSuccess) {                    
+                } else if (group.status === DeploymentGroupStatus.PartialSuccess) {
                     this.logger.warn(`Partially deployed ${group.datapackKey} (${group.size -group.failedCount}/${group.size})`);
-                } else if (group.status === DeploymentGroupStatus.Error) {                    
+                } else if (group.status === DeploymentGroupStatus.Error) {
                     this.logger.error(`Failed ${group.datapackKey}; see errors`);
-                }                
+                }
             }
 
             await this.emit('afterDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
@@ -567,10 +567,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Purge all records that depend on any of the records just deployed through their matching record key. Records that depend 
-     * on other records from within the same Datapack have a relation to the parent datapack through Matching source key. 
+     * Purge all records that depend on any of the records just deployed through their matching record key. Records that depend
+     * on other records from within the same Datapack have a relation to the parent datapack through Matching source key.
      * This function will delete all child records that have a relationship parent record through a Matching source key
-     * 
+     *
      * _**Note** this function will only delete records for parents that have been update and are deployed successfully_
      * @param records Records
      */
