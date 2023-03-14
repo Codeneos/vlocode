@@ -1,6 +1,7 @@
 import { OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
 import { escapeHtmlEntity, mapGetOrCreate } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';
+import { randomUUID } from 'crypto';
 /**
  * Builds a script definition from a list of elements and templates.
  */
@@ -95,6 +96,7 @@ export class OmniScriptDefinitionBuilder {
      * @returns Compiled script definition
      */
     public build() {
+        this.scriptDef.lwcId = randomUUID();
         this.updateEmbeddedTemplates();
         this.updateLabelMap();
         return this.scriptDef;
@@ -120,7 +122,7 @@ export class OmniScriptDefinitionBuilder {
         const templateHtml = new Array<string>();
         const templateScript = new Array<string>();
         const templateStyle = new Array<string>();
-        
+
         for (const [name, template] of this.embeddedTemplates) {
             if (this.scriptDef.templateList.includes(name)) {
                 continue;
@@ -129,7 +131,7 @@ export class OmniScriptDefinitionBuilder {
             if (template.html) {
                 templateHtml.push(this.createHtmlTag('script', template.html, { type: 'text/ng-template', id: name }));
             }
-            
+
             if(template.css) {
                 const cssSourceUrl = `\n/*# sourceURL=vlocity/dynamictemplate/${template.name}.css */\n`;
                 templateStyle.push(this.createHtmlTag('style', template.css + cssSourceUrl));
@@ -182,14 +184,14 @@ export class OmniScriptDefinitionBuilder {
 
 /**
  * Builder for a group element definition that keeps track of the group state and allows adding new elements to the group.
- * 
+ *
  * Groups can be Blocks or Step elements of the OmniScript.
  */
 class OmniScriptElementGroupDefinitionBuilder {
 
     private indexInParent = 0;
     private group: OmniScriptGroupElementDefinition;
-    
+
     constructor(group: OmniScriptElementDefinition) {
         if (!group['children']) {
             group['children'] = [{
@@ -199,7 +201,7 @@ class OmniScriptElementGroupDefinitionBuilder {
                 level: group.level,
                 response: null
             }];
-        } 
+        }
         this.group = group as OmniScriptGroupElementDefinition;
     }
 
@@ -210,8 +212,8 @@ class OmniScriptElementGroupDefinitionBuilder {
     public addElement(child: OmniScriptElementDefinition) {
         const childIndex = this.indexInParent++;
 
-        child.rootIndex = this.group.rootIndex ?? (this.group.indexInParent - this.group.offSet);      
-        child.indexInParent = childIndex;  
+        child.rootIndex = this.group.rootIndex ?? (this.group.indexInParent - this.group.offSet);
+        child.indexInParent = childIndex;
         child.index = 0;
         child.JSONPath = "";
         child.response = null;
@@ -219,7 +221,7 @@ class OmniScriptElementGroupDefinitionBuilder {
 
         this.group.children.push({
             bHasAttachment: false,
-            eleArray: [ child ],            
+            eleArray: [ child ],
             indexInParent: childIndex,
             level: this.group.level + 1,
             response: null

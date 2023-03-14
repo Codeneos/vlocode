@@ -84,18 +84,18 @@ export class OmniScriptActivator {
     }
 
     private async localScriptActivation(script: OmniScriptRecord) {
-        const definition = await this.definitionGenerator.getScriptDefinition(script);
+        const definition = await this.definitionGenerator.getScriptDefinition(script.id);
         await this.updateScriptDefinition(script.id, definition);
-        await this.setAsActiveVersion(script);
+        await this.setAsActiveVersion(script, { lwcId: definition.lwcId });
         await this.deleteAllInactiveScriptDefinitions(script.id);
         return definition;
     }
 
-    private async setAsActiveVersion(script: OmniScriptRecord) {
+    private async setAsActiveVersion(script: OmniScriptRecord, extraActivationValues?: Record<string, any>) {
         const allVersions = await this.lookup.getScriptVersions(script);
         const scriptUpdates = allVersions
             .filter(version => version.isActive ? version.id !== script.id : version.id === script.id)
-            .map(version => ({ id: version.id, isActive: script.id === version.id }));
+            .map(version => ({ id: version.id, isActive: script.id === version.id, ...(extraActivationValues ?? {}) }));
 
         const versionDeactivations = scriptUpdates.filter(version => !version.isActive);
         const versionActivations = scriptUpdates.filter(version => version.isActive);
@@ -228,7 +228,7 @@ export class OmniScriptActivator {
             await this.deployLwcWithMetadataApi(definition);
         }
 
-        this.logger.info(`Deployed LWC ${definition.bpType}/${definition.bpSubType} in ${timer.toString("seconds")}`);
+        this.logger.info(`Deployed LWC ${definition.bpType}/${definition.bpSubType} (${definition.sOmniScriptId}) in ${timer.toString("seconds")}`);
     }
 
     private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {
