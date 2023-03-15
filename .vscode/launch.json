@@ -6,7 +6,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug (vscode-extension)",
+            "name": "Debug: vscode-extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -32,7 +32,7 @@
             "type": "node",
             "request": "launch",
             "program": "${workspaceRoot}/packages/cli/dist/cli.js",
-            "name": "Debug CLI (webpacked)",
+            "name": "Debug: CLI (webpacked)",
             "args": ["deploy", "-u", "dev10pro", "-v"],
             "outFiles": ["${workspaceRoot}/packages/cli/dist/**/*.js"],
             "preLaunchTask": "watch-cli-webpack",
@@ -44,10 +44,10 @@
             "request": "launch",
             "showAsyncStacks": true,
             "program": "${workspaceRoot}/packages/cli/lib/index.js",
-            "name": "Debug CLI-deploy (node)",
+            "name": "Debug: CLI-deploy (node)",
             "args": [
                 "deploy",
-                "${workspaceRoot}/.test-deploy/src/OmniScript",
+                "${workspaceRoot}/.test-deploy/src",
                 "-u",
                 "dev10pro",
                 "--strict-dependencies",
@@ -70,8 +70,8 @@
             "request": "launch",
             "showAsyncStacks": true,
             "program": "${workspaceRoot}/packages/cli/lib/index.js",
-            "name": "Debug CLI-activate (node)",
-            "args": ["activate", "SmeOrderCapture/precpq", "-u", "dev10pro", "--debug", "-v"],
+            "name": "Debug: CLI-activate (node)",
+            "args": ["activate", "MACD", "-u", "dev10pro", "--debug", "-v"],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
                 "${workspaceFolder}/packages/salesforce/lib/**/*.js",
@@ -81,21 +81,6 @@
             ],
             "preLaunchTask": "watch-cli",
             "smartStep": true,
-            "sourceMaps": true
-        },
-        {
-            "name": "Run Tests (vscode)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/out/test"
-            ],
-            "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
-            "skipFiles": ["<node_internals>/**/*.js", "async_hooks.js", "inspector_async_hook.js"],
-            "preLaunchTask": "build-cli",
             "sourceMaps": true
         },
         {
@@ -115,7 +100,7 @@
             }
         },
         {
-            "name": "Debug: Build metadata types",
+            "name": "Debug: Build Metadata Types",
             "type": "node",
             "request": "launch",
             "args": [
@@ -130,7 +115,7 @@
             }
         },
         {
-            "name": "Debug: Webpack Build",
+            "name": "Debug: Build (extension)",
             "request": "launch",
             "runtimeArgs": ["run-script", "build:debug"],
             "cwd": "${workspaceRoot}/packages/vscode-extension",
