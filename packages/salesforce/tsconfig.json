@@ -3,7 +3,6 @@
     "compilerOptions": {
         "composite": true,
         "outDir": "lib",
-        "baseUrl": "src",
         "rootDir": "src",
         "declaration": true,
         "declarationMap": true

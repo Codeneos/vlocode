@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import VlocodeService from '@lib/vlocodeService';
 import { CommandFn } from '@lib/commandRouter';
 import { getContext } from '@lib/vlocodeContext';
-import * as uuid from 'uuid';
 import { VlocodeCommand } from '@constants';
+import { randomUUID } from 'crypto';
 
 /**
  * Base tree data provider
@@ -11,7 +11,7 @@ import { VlocodeCommand } from '@constants';
 export default abstract class BaseDataProvider<T> implements vscode.TreeDataProvider<T> {
 
     protected readonly dataChangedEmitter = new vscode.EventEmitter<T | undefined>();
-    protected readonly clickHandlerGuid = uuid.v4();
+    protected readonly clickHandlerGuid = randomUUID();
 
     public get onDidChangeTreeData(): vscode.Event<T | undefined> {
         return this.dataChangedEmitter.event;

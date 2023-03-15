@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from "crypto";
 
 interface EventListenerOptions {
     once: boolean;
@@ -159,7 +159,7 @@ export class AsyncEventEmitter<T extends EventMap = any> {
      * @param listener Listener to register
      */
     private registerListener<K extends EventKey<T>>(event: string, listener: EventReceiver<T[K]>, options: EventListenerOptions): EventToken {
-        const id = `${event}__${uuid()}`;
+        const id = `${event}__${randomUUID()}`;
         this.listeners.set(id, {
             callback: listener,
             ...options

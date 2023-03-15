@@ -12,7 +12,7 @@ import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '@lib/config';
 import { QueryBuilder, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import OpenSalesforceCommand from '@root/commands/datapacks/openSalesforceCommand';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
@@ -223,7 +223,7 @@ abstract class DatapackNode implements TreeNode {
 }
 
 class DatapackTextNode extends DatapackNode {
-    private readonly uniqueId = uuid()
+    private readonly uniqueId = randomUUID()
 
     constructor(public readonly text: string, public icon: { light: string; dark: string } | string | undefined = undefined) {
         super(DatapackNodeType.Text, false, icon);

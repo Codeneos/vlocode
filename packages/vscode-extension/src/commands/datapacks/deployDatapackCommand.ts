@@ -4,7 +4,6 @@ import * as vscode from 'vscode';
 import { forEachAsyncParallel } from '@vlocode/util';
 import { DatapackUtil } from '@vlocode/vlocity-deploy';
 import { DatapackCommand } from './datapackCommand';
-import { v4 } from 'uuid';
 import { vscodeCommand } from '@root/lib/commandRouter';
 import { VlocodeCommand } from '@root/constants';
 import { container } from '@vlocode/core';
@@ -12,6 +11,7 @@ import { VlocityToolsDeployment } from '@root/lib/vlocity/vlocodeDirectDeploy';
 import { VlocodeDirectDeployment } from '@root/lib/vlocity/vlocityToolsDeploy';
 import { VlocityDeploy } from '@root/lib/vlocity/vlocityDeploy';
 import { getContext } from '@root/lib/vlocodeContext';
+import { randomUUID } from 'crypto';
 
 const deployModeSuggestionKey: string = 'deploymodeSuggestion-0.17.0';
 const suggestionInterval: number = 9 * 24 * 3600 * 1000;
@@ -101,7 +101,7 @@ export class DeployDatapackCommand extends DatapackCommand {
 
         // keep track of all documents that we intend to save in a set to prevent
         // a second deployment from being triggered by the onDidSaveHandler.
-        const currentOperationId = v4();
+        const currentOperationId = randomUUID();
         const openDocumentPaths = new Set(openDocuments.map(d => d.fileName));
         DeployDatapackCommand.savingDocuments.set(currentOperationId, openDocumentPaths);
 

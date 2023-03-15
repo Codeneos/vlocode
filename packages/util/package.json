@@ -57,8 +57,7 @@
         "he": "^1.2.0",
         "open": "^8.2.1",
         "optional-require": "^1.1.7",
-        "reflect-metadata": "^0.1.13",
-        "uuid": "^8.3.2"
+        "reflect-metadata": "^0.1.13"
     },
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"

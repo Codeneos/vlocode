@@ -10,7 +10,10 @@ export class CustomError extends Error {
             if (options['code'] && !options['name']) {
                 options['name'] = options['code'];
             }
-            Object.assign(this, options);            
+            Object.assign(this, options);
+            if (options['stack']) {
+                this.stack = `${this.stack}\n\n${options['stack']}`;
+            }
         }
     }
 }

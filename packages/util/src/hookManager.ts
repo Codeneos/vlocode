@@ -1,5 +1,5 @@
+import { randomUUID } from 'crypto';
 import { isPromise } from 'util/types';
-import * as uuid from 'uuid';
 
 interface CallHookOptions<T = any> {
     target: T;
@@ -18,7 +18,7 @@ const hookManagerSymbol = Symbol('[[HookManager]]');
 export class HookManager<T extends object> {
     private readonly hooks: Array<CallHook<T>> = [];
     private enabled: boolean = true;
-    private readonly identity = uuid.v4();
+    private readonly identity = randomUUID();
     private readonly cacheSymbol = Symbol();
 
     /**
