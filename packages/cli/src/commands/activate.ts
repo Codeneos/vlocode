@@ -88,7 +88,7 @@ export default class extends Command {
                 } catch (error) {
                     info.status = 'error';
                     errors.push({ script: info.type, error });
-                    this.logger.error(`Activation error for ${info.type} (${info.script.id}): ${getErrorMessage(error, false)}`);
+                    this.logger.error(`Activation error for ${info.type} (${info.script.id}): ${getErrorMessage(error)}`);
                 }
             }, options.parallelActivations);
         }

@@ -3,6 +3,7 @@ import { Command as Commander, Option } from 'commander';
 import { readdirSync } from 'fs';
 import * as path from 'path';
 import { FancyConsoleWriter, Container, container, Logger, LogLevel, LogManager } from '@vlocode/core';
+import { getErrorMessage } from '@vlocode/util';
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
@@ -39,15 +40,17 @@ class CLI {
         this.program.parse(argv);
     }
 
-    private init(options: any) { 
-        this.logger.info(`${CLI.programName} v${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()}) - ${CLI.description}`);       
+    private init(options: any) {
+        this.logger.info(`${CLI.programName} v${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()}) - ${CLI.description}`);
         if (options.debug === true) {
             LogManager.setGlobalLogLevel(LogLevel.debug);
+            getErrorMessage.defaults.includeStack = true;
         } else if (options.verbose === true) {
             LogManager.setGlobalLogLevel(LogLevel.verbose);
+            getErrorMessage.defaults.includeStack = true;
         }
     }
-    
+
     public loadCommands(folder: string = '.') {
         const fullFolderPath = path.join(__dirname, this.commandsFolder, folder);
         for (const file of readdirSync(fullFolderPath, { withFileTypes: true } )) {
@@ -66,9 +69,9 @@ class CLI {
             .replace(/([a-z0-9])([A-Z][a-z0-9]+)/g, '$1-$2')
             .toLowerCase();
     }
-    
+
     private registerCommand(parentCommand: Commander, commandFile: string) {
-        try {    
+        try {
             // @ts-ignore
             const commandModule = nodeRequire(commandFile);
 
@@ -76,9 +79,9 @@ class CLI {
                 this.logger.debug(`Loading command from: ${commandFile}`);
 
                 const commandName = this.generateCommandName(commandFile)
-                const commandClass = commandModule.default;            
+                const commandClass = commandModule.default;
                 const command = parentCommand.command(commandName).description(commandClass.description);
-    
+
                 commandClass.args.forEach(arg => command.addArgument(arg));
                 [...CLI.options, ...commandClass.options].forEach(option => command.addOption(option));
 
@@ -90,14 +93,14 @@ class CLI {
                     if (commandInstance.init) {
                         await commandInstance.init(commandInstance.options);
                     }
-                    try { 
+                    try {
                         return await commandInstance.run(...args);
                     } catch(err) {
                         if (commandInstance.options.debug && err instanceof Error) {
                             this.logger.error(err.message, '\n', err.stack);
                         } else {
                             this.logger.error(err.message ?? err);
-                        }                                               
+                        }
                         process.exit(1);
                     } finally {
                         process.exit(0);
@@ -106,11 +109,11 @@ class CLI {
 
                 return command;
             }
-    
+
         } catch(err) {
             this.logger.error(err.message ?? err);
-        }        
-    }    
+        }
+    }
 }
 
 // Run

@@ -159,7 +159,7 @@ export class DatapackDeployer {
                 await this.runSpecFunction('afterRecordConversion', records);
                 deployment.add(...records);
             } catch(err) {
-                const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${getErrorMessage(err, true)}`;
+                const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${getErrorMessage(err)}`;
                 if (!options?.continueOnError) {
                     throw new CustomError(errorMessage);
                 }

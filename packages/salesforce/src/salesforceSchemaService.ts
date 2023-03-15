@@ -79,12 +79,12 @@ export class SalesforceSchemaService {
         try {
             const result = await this.schemaAccess.describe(this.nsService?.updateNamespace(type));
             if (result === undefined) {
-                throw Error();
+                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
             }
             return result;
-        } catch {
+        } catch (err) {
             if (throwWhenNotFound) {
-                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
+                throw err;
             }
         }
         return undefined;

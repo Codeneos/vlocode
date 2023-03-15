@@ -326,21 +326,43 @@ export function visitObject<T>(obj: T, propertyVisitor: (prop: string, value: an
     return obj;
 }
 
-/**
- * Type-safe function to get the error message from an error thrown in a try-catch block
- * @param err err as thrown
- * @param withStack optionally include the stack in the error message; defaults to false
- * @returns String version of the err
- */
-export function getErrorMessage(err: unknown | any, withStack?: boolean): string {
-    if (typeof err === 'string') {
-        return err;
-    }
-    if (err instanceof Error) {
-        return withStack && err.stack ? err.stack : err.message;
-    }
-    return String(err);
+interface GetErrorMessageOptions { 
+    /**
+     * If true the stack is included in the error message otherwise the stack is omitted from the message returned.
+     * @default false
+     */
+    includeStack?: boolean;
 }
+
+interface GetErrorMessage { 
+    /**
+     * Type-safe function to get the error message from an error thrown in a try-catch block
+     * @param err The error as string or Error object
+     * @param options Options that determine how the error message is returned; defaults can be changed by modifying the `defaults` property.
+     * @returns String version of the err
+     */
+    (err: unknown | any, options?: GetErrorMessageOptions);    
+    /**
+     * Default options for the {@link getErrorMessage} function that can be modified. Defaults are only 
+     * applied if for the options not explicity specified by the caller.
+     */
+    readonly defaults: GetErrorMessageOptions;
+}
+
+export const getErrorMessage: GetErrorMessage = Object.assign(
+    function (err: unknown | any, options?: GetErrorMessageOptions): string {
+        if (typeof err === 'string') {
+            return err;
+        }
+        if (err instanceof Error || ('stack' in err && 'message' in err)) {
+            return options?.includeStack && err.stack ? err.stack : err.message;
+        }
+        return String(err);
+    }, {
+    defaults: {
+        includeStack: false
+    }
+});
 
 /**
  * Compare 2 objects for quality by comparing the values of the properties of the objects instead of only reference-equality.

@@ -92,7 +92,7 @@ export class Logger {
 
     private formatArg(arg: any) : string | any {
         if (arg instanceof Error) {
-            return getErrorMessage(arg, true);
+            return getErrorMessage(arg);
         } else if (arg !== null && typeof arg === 'object') {
             try {
                 return JSON.stringify(arg, undefined, 2);
