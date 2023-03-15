@@ -17,8 +17,8 @@ const workspaceFolder = path.resolve(contextFolder, '..');
 
 const common : webpack.Configuration = {
     name: 'vlocode-cli',
+    mode: 'production',
     context: contextFolder,
-    devtool: undefined,
     target: 'node',
     entry:
         glob.sync('./src/commands/**/*.ts').reduce((map, file) => Object.assign(map, {
@@ -75,17 +75,17 @@ const common : webpack.Configuration = {
         __dirname: false,
         __filename: false
     },
-    mode: 'development',
     optimization: {
         minimize: false,
         runtimeChunk: false,
+        concatenateModules: true,
+        mergeDuplicateChunks: true,
+        mangleExports: false,
         removeEmptyChunks: true,
         removeAvailableModules: true,
         providedExports: false,
         usedExports: false,
         portableRecords: true,
-        moduleIds: 'named',
-        chunkIds: 'named',
         splitChunks: false,
     },
     externals: function({ request }, callback) {

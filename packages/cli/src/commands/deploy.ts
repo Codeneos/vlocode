@@ -44,6 +44,9 @@ export default class extends Command {
         new Option('--remote-script-activation', 'use anonymous apex to activate OmniScripts.' + 
             'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' + 
             'Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.').default(false),
+        new Option('-y, --continue-on-error', 'continue deploying when one of the datapacks can be loaded.' + 
+            'For any error that occurs while loading and converting a datapack to records the deployment will exit without making changes to the org. ' +
+            'You can ignore these errors and continue deploying the datapacks that were loaded without errors by setting this option.').default(false),
     ];
 
     private prefixFormat = {
@@ -77,7 +80,8 @@ export default class extends Command {
             deltaCheck: options.delta,
             skipLwcActivation: options.skipLwc,
             remoteScriptActivation: options.remoteActivation,
-            useMetadataApi: options.useMetadataApi
+            useMetadataApi: options.useMetadataApi,
+            continueOnError: options.continueOnError
         };
 
         // Create deployment
