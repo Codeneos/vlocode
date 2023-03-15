@@ -1,8 +1,9 @@
 import * as path from 'path';
-import * as sass from 'sass.js';
+import * as sass from 'sass';
 import * as fs from 'fs-extra';
 import { DeferredPromise } from '@vlocode/util';
-import type { SassCompilerOptions, SassImportRequest, SassImportResponse } from '../compiler';
+import { LogLevel } from '@vlocode/core';
+import type { SassCompileOptions, SassCompileResult } from '../compiler';
 import type { Message } from './compiler';
 
 /**
@@ -16,46 +17,54 @@ function send(payload: Message) {
     process.send(payload);
 }
 
-/**
- * Create import handler that scans the specified include paths
- * @param includePaths Paths to consider
- */
-function getImportHandler(includePaths: string[]) {
-    // Map include paths to absolute paths when required
-    const cwd = process.cwd();
-    const paths = includePaths.map(includePath => path.isAbsolute(includePath) ? includePath : path.relative(cwd, includePath));
+function DartSassImporter(
+    this: void,
+    includePaths: string[], 
+    options?: { workingDirectory?: string }): sass.Importer<"sync">
+{
+    const canonicalizedUrls = new Map<string, { path: string, contents?: sass.ImporterResult }>();
+    const importerPrefix = 'sass:///';
+    const cwd = options?.workingDirectory ?? process.cwd();
+    includePaths = includePaths.map(includePath => path.isAbsolute(includePath) ? includePath : path.relative(cwd, includePath));
 
-    // Session cache to speed-up lookups
-    const includeCache = new Map<string, string>();
-    const readFile = (file: string) => {
-        if (includeCache.has(file)) {
-            return includeCache.get(file);
-        }
-        const data = fs.readFileSync(file).toString('utf-8');
-        includeCache.set(file, data);
-        return data;
-    };
-
-    return (request: SassImportRequest, done: (response?: SassImportResponse) => void) => {
-
-        // resolve file
-        if (!request.path && request.current) {
-            const requestedPath = `${request.current.replace(/\\/g, '/')}/${request.current.replace(/\\/g, '/')}.scss`;
-            for (const checkPath of paths.map(includePath => path.join(includePath, requestedPath))) {
+    return {
+        load(this: void, canonicalUrl: URL): sass.ImporterResult | null {
+            const fileInfo = canonicalizedUrls.get(canonicalUrl.href);
+            if (!fileInfo) {
+                return null;
+            }
+            if (!fileInfo.contents) {
+                fileInfo.contents = {
+                    syntax: 'scss',
+                    contents: fs.readFileSync(fileInfo.path).toString('utf-8'),
+                    sourceMapUrl: new URL(`file:///${fileInfo.path.replace(/\\/g, '/')}`)
+                }
+            }
+            return fileInfo.contents;
+        },
+        canonicalize(this: void, url: string) {
+            if (canonicalizedUrls.has(url)) {
+                return new URL(url);
+            }
+            if (url.startsWith(importerPrefix)) {
+                url = url.substring(importerPrefix.length);
+            }
+            const normalizedUrl = `${url.replace(/\\/g, '/')}/${url.replace(/\\/g, '/')}.scss`;
+            for (const checkPath of includePaths.map(includePath => path.join(includePath, normalizedUrl))) {
                 try {
                     if (fs.existsSync(checkPath)) {
-                        return done({ content: readFile(checkPath) });
+                        const canonicalizedUrl = `${importerPrefix}${url}`;
+                        canonicalizedUrls.set(`${canonicalizedUrl}`, { path: checkPath });
+                        return new URL(`${canonicalizedUrl}`);
                     }
                 } catch (e) {
                     // ignore errors in fs.existsSync
                     // just try the next path and continue
                 }
             }
+            return null;
         }
-
-        // unable to resolve file
-        done();
-    };
+    }
 }
 
 /**
@@ -63,12 +72,29 @@ function getImportHandler(includePaths: string[]) {
  * @param data SASS source
  * @param options SASS options
  */
-export async function compile(data: string, options?: SassCompilerOptions) : Promise<string> {
+export async function compile(data: string, options?: SassCompileOptions) : Promise<SassCompileResult> {
     return new Promise((resolve, reject) => {
         try {
             // Use custom import handler
-            sass.importer(getImportHandler(options?.importer?.includePaths || [ process.cwd() ]));
-            sass.compile(data, options, resolve);
+            const result = sass.compileString(data, {
+                style: options?.style === 'compressed' ? 'compressed' : 'expanded',
+                verbose: false,
+                sourceMap: false,
+                logger: {
+                    warn: (message: string) => {
+                        log(LogLevel.warn, message.split('\n').shift());
+                    }
+                },
+                importers: [
+                    DartSassImporter(options?.importer?.includePaths ?? [ '.' ])
+                ]
+            });
+            resolve({
+                status: 0,
+                css: result.css,
+                loadedUrls: result.loadedUrls.map(url => url.href),
+                sourceMap: result.sourceMap
+            } as SassCompileResult);
         } catch(e) {
             reject(e);
         }
@@ -99,10 +125,11 @@ async function * getMessageLoop() : AsyncGenerator<Message> {
 
 /**
  * Log a message to the parent/host process
+ * @param severity Severity of the message
  * @param message Message parts
  */
-function log(...message: any[]) {
-    send({ type: 'log', payload: message.join(' ') });
+function log(severity: LogLevel, ...message: any[]) {
+    send({ type: 'log', payload: { message: message.join(' '), severity } });
 }
 
 /**

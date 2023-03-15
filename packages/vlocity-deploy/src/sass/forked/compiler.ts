@@ -1,10 +1,9 @@
 import { ChildProcess, fork } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as uuid from 'uuid';
 import { Logger , injectable , LifecyclePolicy } from '@vlocode/core';
-
-import { SassCompiler, SassCompileSuccessResult, SassCompileErrorResult } from '../compiler';
+import { SassCompiler, SassCompileResult } from '../compiler';
+import { randomUUID } from 'crypto';
 
 export interface Message {
     id?: string;
@@ -13,13 +12,13 @@ export interface Message {
 }
 
 interface SassCompileRequest {
-    reject(response: SassCompileErrorResult | string | Error): void;
-    resolve(response: SassCompileSuccessResult): void;
+    reject(response: string | Error): void;
+    resolve(response: SassCompileResult): void;
 }
 
 /**
  * A forked version of the SASS compiler running compilation of SASS in a separate thread;
- * This class is used by internally by the 
+ * This class is used by internally by the
  */
 @injectable({ provides: SassCompiler, lifecycle: LifecyclePolicy.singleton })
 export class ForkedSassCompiler implements SassCompiler {
@@ -31,14 +30,14 @@ export class ForkedSassCompiler implements SassCompiler {
     private readonly pendingRequests = new Map<string, SassCompileRequest>();
 
     public constructor(
-        public readonly compilerPath = path.join(__dirname, 'sass-compiler.js'), 
+        public readonly compilerPath = path.join(__dirname, 'sass-compiler.js'),
         private readonly logger: Logger) {
     }
 
-    public compile(sass: string, options?: any): Promise<SassCompileSuccessResult | SassCompileErrorResult> {
+    public compile(sass: string, options?: any): Promise<SassCompileResult> {
         return new Promise((resolve, reject) => {
             const payload = { data: sass, options };
-            const message = { id: uuid.v4(), type: 'compile', payload };
+            const message = { id: randomUUID(), type: 'compile', payload };
             this.getCompilerProcess().send(message);
             this.pendingRequests.set(message.id, { resolve, reject });
         });
@@ -50,7 +49,9 @@ export class ForkedSassCompiler implements SassCompiler {
 
         // Handle log messages from child
         switch (msg.type) {
-            case 'log': this.logger.log(msg.payload); return;
+            case 'log': {
+                this.logger.write(msg.payload.severity, msg.payload.message);
+            } return;
         }
 
         // handle specific messages
@@ -119,7 +120,7 @@ export class ForkedSassCompiler implements SassCompiler {
             path.join(__dirname, 'sass-compiler.js'),
             path.join(__dirname, 'fork.js'),
             path.join(__dirname, 'fork.ts')
-        ]        
+        ]
         for (const path of compilerPaths) {
             if (fs.existsSync(path)) {
                 return path;
