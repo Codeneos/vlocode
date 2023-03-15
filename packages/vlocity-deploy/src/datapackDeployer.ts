@@ -4,11 +4,11 @@ import { Logger, injectable, container, LifecyclePolicy, Container } from '@vloc
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
-import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
+import { DatapackDeploymentRecord, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';
-import { DatapackDeploymentSpec } from './datapackDeploymentSpec';
+import { DatapackDeploymentSpec, DeploymentSpecExecuteOptions } from './datapackDeploymentSpec';
 import { DatapackDeploymentSpecRegistry } from './datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
 
@@ -154,14 +154,14 @@ export class DatapackDeployer {
                 return;
             }
             try {
-                await this.runSpecFunction('preprocess', datapack);
+                await this.runSpecFunction('preprocess', { args: [ datapack ] });
                 const records = await recordFactory.createRecords(datapack);
-                await this.runSpecFunction('afterRecordConversion', records);
+                await this.runSpecFunction('afterRecordConversion', { args: [ records ], ignoreErrors: options?.continueOnError, errorSeverity: 'error' });
                 deployment.add(...records);
             } catch(err) {
-                const errorMessage = `Error while converting Datapack '${datapack.headerFile}' to records: ${getErrorMessage(err)}`;
+                const errorMessage = `Error while loading Datapack '${datapack.headerFile}' -- ${getErrorMessage(err)}`;
                 if (!options?.continueOnError) {
-                    throw new CustomError(errorMessage);
+                    throw new CustomError(errorMessage, err);
                 }
                 this.logger.error(errorMessage);
             }
@@ -270,7 +270,11 @@ export class DatapackDeployer {
         if (deployment.isCancelled) {
             return;
         }
-        await this.runSpecFunction('beforeDeployRecord', [...datapackRecords]);
+        await this.runSpecFunction('beforeDeployRecord', { 
+            args: [ [...datapackRecords] ], 
+            ignoreErrors: true, 
+            errorSeverity: 'error' 
+        });
     }
 
     private async afterDeployRecord(deployment: DatapackDeployment, datapackRecords: Iterable<DatapackDeploymentRecord>) {
@@ -281,7 +285,11 @@ export class DatapackDeployer {
             return;
         }
         await this.verifyDeployedFieldData(datapackRecords, [ 'GlobalKey__c', 'GlobalKey2__c', 'GlobalGroupKey__c' ]);
-        await this.runSpecFunction('afterDeployRecord', [...datapackRecords]);
+        await this.runSpecFunction('afterDeployRecord', { 
+            args: [ [...datapackRecords] ], 
+            ignoreErrors: true, 
+            errorSeverity: 'warn' 
+        });
     }
 
     /**
@@ -292,7 +300,11 @@ export class DatapackDeployer {
         if (deployment.isCancelled) {
             return;
         }
-        return this.runSpecFunction('beforeDeploy', new DatapackDeploymentEvent(deployment, [...datapackGroups]));
+        return this.runSpecFunction('beforeDeploy', { 
+            args: [ new DatapackDeploymentEvent(deployment, [...datapackGroups]) ], 
+            ignoreErrors: true, 
+            errorSeverity: 'error' 
+        });
     }
 
     /**
@@ -303,7 +315,11 @@ export class DatapackDeployer {
         if (deployment.isCancelled) {
             return;
         }
-        return this.runSpecFunction('afterDeploy', new DatapackDeploymentEvent(deployment, [...datapackGroups]));
+        return this.runSpecFunction('afterDeploy', { 
+            args: [ new DatapackDeploymentEvent(deployment, [...datapackGroups]) ],
+            ignoreErrors: true, 
+            errorSeverity: 'warn' 
+        });
     }
 
     /**
@@ -312,10 +328,10 @@ export class DatapackDeployer {
      * @param eventType Event/function type to run
      * @param args Arguments
      */
-    private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, ...args: Parameters<E>) {
+    private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, options: DeploymentSpecExecuteOptions<Parameters<E>>) {
         for (const { spec, filter } of this.specRegistry.getSpecs()) {
             const specFunction = spec?.[eventType];
-            const specParams = [...args];
+            const specParams = [ ...options.args ];
 
             if (typeof specFunction !== 'function') {
                 continue;
@@ -347,13 +363,37 @@ export class DatapackDeployer {
             try {
                 await specFunction.apply(spec, specParams) as ReturnType<E>;
             } catch(err) {
-                // Print stack for custom specs
-                this.logger.error(
-                    `Spec function failed to execute:`,
-                    err instanceof Error ? `${err.stack}` : err
-                );
+                if (!options?.ignoreErrors) {
+                    throw err;
+                }
+                this.handleSpecFunctionError(eventType, err, options);
             }
         }
+    }
+
+    private handleSpecFunctionError(eventType: string, err: unknown, options: DeploymentSpecExecuteOptions) {
+        this.logger.error(`Spec function failed to execute:`, getErrorMessage(err, { includeStack: true }));
+        for (const record of this.getAffectedRecords(options.args)) {
+            if (options.errorSeverity === 'warn') {
+                record.addWarning(`${eventType} spec error: ${getErrorMessage(err)}`);
+            } else if (options.errorSeverity === 'error') {
+                record.setFailed(`${eventType} spec error: ${getErrorMessage(err)}`);
+            }
+        }
+    }
+
+    private getAffectedRecords(parameters: unknown[]) {
+        const affectedRecords = new Set<DatapackDeploymentRecord>();
+        for (const param of parameters) {
+            if (param instanceof DatapackDeploymentEvent) {
+                param.records.forEach(record => affectedRecords.add(record));
+            } else if (param instanceof DatapackDeploymentRecord) {
+                affectedRecords.add(param);
+            } else if (Array.isArray(param) && param.length) {
+                this.getAffectedRecords(param).forEach(record => affectedRecords.add(record));
+            }
+        }
+        return [...affectedRecords];
     }
 
     private filterApplicableRecords(filter: DatapackFilter, arg: DatapackDeploymentRecord[]): DatapackDeploymentRecord[];

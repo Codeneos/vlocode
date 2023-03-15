@@ -27,15 +27,10 @@ export class VlocityUITemplate implements DatapackDeploymentSpec {
             const includePaths = [ datapack.datapackFolder, path.join(datapack.datapackFolder, '..') ];
             const result = await this.sass.compile(datapack.sass__c, { importer: { includePaths } });
             this.logger.info(`Compiled ${datapack.name} SASS [${timer.stop()}]`);
-
-            if (result.status == 0) {
-                datapack['%vlocity_namespace%__Css__c'] = result.text;
-            } else {
-                throw new Error(result.formatted);
-            }
+            datapack['%vlocity_namespace%__Css__c'] = result.css;
         }
 
-        // Update to inactive to allow insert; later in the process these are activated        
+        // Update to inactive to allow insert; later in the process these are activated
         datapack.data['%vlocity_namespace%__Active__c'] = false;
     }
 

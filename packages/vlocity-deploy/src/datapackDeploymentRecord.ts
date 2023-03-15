@@ -189,6 +189,10 @@ export class DatapackDeploymentRecord {
         this._statusDetail = detail;
     }
 
+    public setFailed(message: string) {
+        this.updateStatus(DeploymentStatus.Failed, message);
+    }
+
     public addWarning(message: string) {
         this._warnings.push(message);
     }

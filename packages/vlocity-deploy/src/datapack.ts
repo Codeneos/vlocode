@@ -1,6 +1,6 @@
 import { dirname } from 'path';
 import { PropertyTransformHandler, removeNamespacePrefix } from '@vlocode/util';
-import { v4 as generateGuid } from 'uuid';
+import { randomUUID as generateGuid } from 'crypto';
 import { ManifestEntry, ObjectEntry } from './types';
 
 export type VlocityDatapackReference = {
