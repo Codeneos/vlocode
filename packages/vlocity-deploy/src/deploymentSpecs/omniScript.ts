@@ -1,6 +1,6 @@
 import { Container, Logger } from '@vlocode/core';
 import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
-import { forEachAsyncParallel, getErrorMessage, Iterable, mapGetOrCreate, substringAfter, Timer } from '@vlocode/util';
+import { forEachAsyncParallel, getErrorMessage, groupBy, Iterable, mapGetOrCreate, substringAfter, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { VlocityDatapack } from '../datapack';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
@@ -47,6 +47,16 @@ export class OmniScript implements DatapackDeploymentSpec {
     public preprocess(datapack: VlocityDatapack) {
         if (datapack.IsLwcEnabled__c) {
             this.lwcEnabledDatapacks.add(datapack.key);
+        }
+
+        if (typeof datapack.Element__c !== 'object') {
+            throw new Error(
+                `All OmniScripts and Integration procedures should have elements. ` +
+                `Expected Element__c property to be an array for datapack: ${datapack.headerFile}`);
+        }
+
+        if (typeof datapack.Element__c === 'object' && !Array.isArray(datapack.Element__c)) {
+            datapack.Element__c = [ datapack.Element__c ];
         }
 
         // track local templates
@@ -110,34 +120,45 @@ export class OmniScript implements DatapackDeploymentSpec {
         }
     }
 
-    public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
-        for (const record of records) {
-            // Always create a new script version. don't update the existing versions if any is found
-            record.skipLookup = true;
+    public afterRecordConversion(allRecords: ReadonlyArray<DatapackDeploymentRecord>) {
+        const recordsByDatapack = groupBy(allRecords, record => record.datapackKey);
 
-            if (record.isSObjectOfType(`Element__c`)) {
-                this.addElementDependencies(record);
+        for (const records of Object.values(recordsByDatapack)) {
+            // Find the OmniScript record
+            const scriptRecord = records.find(record => record.isSObjectOfType(`OmniScript__c`));
+
+            if (!scriptRecord) {
+                throw new Error('No OmniScript__c record found; expected at least one OmniScript__c record in the datapack');
+            }
+
+            for (const record of records) {
+                // Always create a new script version. don't update the existing versions if any is found
+                record.skipLookup = true;
+                if (record.isSObjectOfType(`Element__c`)) {
+                    this.addElementDependencies(scriptRecord, record);
+                }
             }
         }
-        this.addPreprocessorMessages(records);
+
+        this.addPreprocessorMessages(allRecords);
     }
 
-    private addElementDependencies(record: DatapackDeploymentRecord) {
-        const type = record.value(`Type__c`);
-        const propertySet = JSON.parse(record.value(`PropertySet__c`));
+    private addElementDependencies(script: DatapackDeploymentRecord, element: DatapackDeploymentRecord) {
+        const type = element.value(`Type__c`);
+        const propertySet = JSON.parse(element.value(`PropertySet__c`));
 
         if (type === 'OmniScript') {
-            record.addLookupDependency('%vlocity_namespace%__OmniScript__c', {
+            script.addLookupDependency('%vlocity_namespace%__OmniScript__c', {
                 ['%vlocity_namespace%__Type__c']: propertySet['Type'],
                 ['%vlocity_namespace%__SubType__c']: propertySet['Sub Type'],
                 ['%vlocity_namespace%__Language__c']: propertySet['Language']
             });
         } else if (propertySet.HTMLTemplateId) {
-            if (this.embeddedTemplates.get(record.datapackKey)?.includes(propertySet.HTMLTemplateId)) {
+            if (this.embeddedTemplates.get(element.datapackKey)?.includes(propertySet.HTMLTemplateId)) {
                 // skip embedded templates; these templates are embedded through TestHTMLTemplates__c which and should not be treated as dependencies
                 return;
             }
-            record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', {
+            script.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', {
                 ['Name']: propertySet.HTMLTemplateId
             });
         }
