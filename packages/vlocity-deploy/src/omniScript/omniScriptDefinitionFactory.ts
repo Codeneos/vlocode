@@ -51,12 +51,10 @@ export class OmniScriptDefinitionFactory {
     private elementMapping: DefinitionRecordMapping = {
         'type': { field: 'Type__c' },
         'propSetMap': rec => this.parseAsJson(rec, 'PropertySet__c'),
-        'offSet': 0,
         'name': { field: 'Name' },
         'level': { field: 'Level__c' },
         'indexInParent': 0,
-        'bHasAttachment': false,
-        'bEmbed': null
+        'bHasAttachment': false
     };
 
     public createScript(scriptRecord: OmniScriptRecord): OmniScriptDefinition {

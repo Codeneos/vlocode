@@ -45,7 +45,7 @@ export class OmniScriptDefinitionBuilder {
             this.requiredTemplates.add(ele.propSetMap.HTMLTemplateId);
         }
 
-        if (options?.scriptElementId) {
+        if (options?.scriptElementId && !options?.parentElementId) {
             const scriptElement = this.elements.get(options.scriptElementId);
             if (!scriptElement) {
                 throw new Error(`Script element "${ele.name}" (${id}) links to ` +
@@ -58,7 +58,7 @@ export class OmniScriptDefinitionBuilder {
             ele.offSet = this.scriptOffsets.get(options.scriptElementId)!;
             ele.inheritShowProp = scriptElement.propSetMap?.show;
             ele.bEmbed = true;
-        } else {
+        } else if (!options?.parentElementId) {
             ele.bEmbed = false;
             ele.offSet = 0;
         }

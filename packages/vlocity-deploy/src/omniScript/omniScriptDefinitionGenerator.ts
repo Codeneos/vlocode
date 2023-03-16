@@ -54,11 +54,13 @@ export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionPr
 
         for (const [id, record] of elements) {
             if (!this.isElementActive(record, elements)) {
+                this.logger.debug(`Skipping [${record.type}] ${record.name} ${record.level}/${record.order} (${id})`);
                 continue;
             }
 
             const definition = this.generator.createElement(record);
 
+            this.logger.debug(`Adding [${record.type}] ${record.name} ${record.level}/${record.order} (${id})`);
             builder.addElement(id, definition, {
                 parentElementId: record.parentElementId,
                 ...(options ?? {})
@@ -71,6 +73,7 @@ export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionPr
                     language: definition.propSetMap['Language']
                 };
 
+                this.logger.debug(`Embedding script elements ${embeddedScript.type}/${embeddedScript.subType}/${embeddedScript.language}`);
                 await this.addElements(builder, embeddedScript, { scriptElementId: id });
             }
         }
