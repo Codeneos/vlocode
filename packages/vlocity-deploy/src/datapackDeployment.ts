@@ -24,21 +24,22 @@ export interface DatapackDeploymentRecordMessage {
 
 type RecordPurgePredicate = (item: {
     /**
-     * Field which has the lookup dependency
+     * The name of the field on the {@link dependentRecord} that references the {@link record}
      */
     field: string,
     /**
-     * Record that contains the field @see this.field
+     * Reference to the record that is dependent on just deployed record {@link record};
+     * This record is not yet deployed and will still be deployed.
      */
-    record: DatapackDeploymentRecord,
+    dependentRecord: DatapackDeploymentRecord,
     /**
-     * Dependencies lookup details and source key
+     * Describes the dependency between the dependent record and the record that is deployed.
      */
     dependency: DatapackRecordDependency,
     /**
-     * Record of the dependency itself
+     * Reference to the record that is deployed
      */
-    dependencyRecord: DatapackDeploymentRecord
+    record: DatapackDeploymentRecord
 }) => any;
 
 const datapackDeploymentDefaultOptions = {
@@ -527,9 +528,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             } else {
                 // When purgeMatchingDependencies is disabled only delete records that cannot be updated
                 // because they don't have a configured matching fields -or- because lookup is skipped
-                await this.purgeDependentRecords([...datapackRecords.values()], ({ dependency, record }) =>
-                    dependency?.VlocityMatchingRecordSourceKey &&
-                    record.skipLookup || !record.upsertFields?.length);
+                await this.purgeDependentRecords([...datapackRecords.values()], ({ dependency, dependentRecord, field }) => {
+                    if (field.startsWith('$') || dependency.VlocityDataPackType !== 'VlocityMatchingKeyObject') {
+                        return false;
+                    }
+                    return !dependentRecord.upsertFields?.length && dependency.skipLookup;
+                });
             }
         } finally {
             const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
@@ -575,12 +579,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param records Records
      */
     private async purgeMatchingDependentRecords(records: Iterable<DatapackDeploymentRecord>) {
-        return this.purgeDependentRecords(records, ({ dependency }) => dependency?.VlocityMatchingRecordSourceKey);
+        return this.purgeDependentRecords(records, ({ dependency, field }) =>
+            !field.startsWith('$') && dependency.VlocityDataPackType === 'VlocityMatchingKeyObject');
     }
 
     private async purgeDependentRecords(records: Iterable<DatapackDeploymentRecord>, predicate: RecordPurgePredicate) {
         const deleteFilters = new Map<string, Set<string>>();
-        //const r2 = [...records];
         const recordsById = new Map(Iterable.transform(records, {
             map: rec => [rec.recordId!, rec],
             filter: rec => (rec.isDeployed && rec.isUpdate) || (rec.recordId && rec.isSkipped)
@@ -604,7 +608,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         for (const [recordId, record] of recordsById.entries()) {
             for (const undeployRecord of Iterable.filter(this.records.values(), r => !r.isDeployed && !r.isSkipped)) {
                 const dependency = undeployRecord.isDependentOn(record);
-                if (dependency && predicate({ ...dependency, record: undeployRecord, dependencyRecord: record })) {
+                if (dependency && predicate({ ...dependency, dependentRecord: undeployRecord, record })) {
                     setMapAdd(deleteFilters, undeployRecord.sobjectType, `${dependency.field} = '${recordId}'`);
                 }
             }

@@ -1,5 +1,5 @@
 import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { CancellationToken, wait } from '@vlocode/util';
+import { CancellationToken, CustomError, wait } from '@vlocode/util';
 import moment = require("moment");
 import { QueryBuilder, QueryFilterCondition } from './queryBuilder';
 import { QueryService } from './queryService';
@@ -84,7 +84,7 @@ export class SalesforceBatchService {
                 this.logger.info(`Aborting batch job ${id}...`);
                 await this.salesforceService.executeAnonymous(`System.abortJob('${id}');`);
             } catch (err) {
-                throw new Error(`Unable to abort batch job with ID ${id} -- ${err.message || err}`);
+                throw new CustomError(`Unable to abort batch job with ID ${id}`, err);
             }
         }
     }
@@ -105,11 +105,11 @@ export class SalesforceBatchService {
      * @returns List of active or queued batches
      */
     public async getActiveBatchJobsOfType(...classNames: string[]) {
-        const classFilter = { 
-            'ApexClass.Name': { 
-                op: 'in', 
+        const classFilter = {
+            'ApexClass.Name': {
+                op: 'in',
                 value: classNames
-            } 
+            }
         };
         return this.getActiveBatchJobs(classFilter);
     }
@@ -119,11 +119,11 @@ export class SalesforceBatchService {
      * @returns List of active or queued batches
      */
     public getActiveBatchJobs(condition?: QueryFilterCondition) {
-        const statusFilter = { 
-            'Status': { 
-                op: 'in', 
-                value: [ 'Processing', 'Queued', 'Holding', 'Preparing' ] 
-            } 
+        const statusFilter = {
+            'Status': {
+                op: 'in',
+                value: [ 'Processing', 'Queued', 'Holding', 'Preparing' ]
+            }
         };
         return this.getBatchJobs(Object.assign(statusFilter, condition ?? {}));
     }
@@ -133,8 +133,8 @@ export class SalesforceBatchService {
      * @returns List of active or queued batches
      */
     public async getActiveBatchJobsByCurrentUser() {
-        return this.getActiveBatchJobs({ 
-            'CreatedById': (await this.salesforceService.getConnectedUserInfo()).id 
+        return this.getActiveBatchJobs({
+            'CreatedById': (await this.salesforceService.getConnectedUserInfo()).id
         });
     }
 
@@ -203,8 +203,8 @@ export class SalesforceBatchService {
         const batchParams = (options?.params ?? []).map(p => (typeof p === 'string' ? `'${p.replace(`'`, `\\'`)}'` : p)).join(',');
         const result = await this.salesforceService.executeAnonymous(
             `System.debug('#### Batch ID ' + Database.executeBatch(new ${className}(${batchParams}), ${options?.batchSize ?? 200}) + ' #');`,
-            { 
-                logLevels: { Apex_code: 'DEBUG' } 
+            {
+                logLevels: { Apex_code: 'DEBUG' }
             },
         );
 
@@ -243,7 +243,7 @@ export class SalesforceBatchService {
         if (typeof options === 'function') {
             options = { progressReport: options };
         }
-        
+
         // eslint-disable-next-line no-constant-condition
         while (true) {
             const batchStatus = await this.getBatchStatus(batchId);
@@ -266,8 +266,8 @@ export class SalesforceBatchService {
             if (options?.timeout && (Date.now() - start) > options?.timeout) {
                 try {
                     await this.abortBatchJob(batchId);
-                } catch {       
-                    // ignore errors in abort as we are going to throw a time-out exception             
+                } catch {
+                    // ignore errors in abort as we are going to throw a time-out exception
                 }
                 throw new Error(`Batch job ${batchStatus.apexClass} (${batchId}) exceeded max allowed execution time of ${options.timeout}`);
             }
