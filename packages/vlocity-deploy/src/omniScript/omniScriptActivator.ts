@@ -1,7 +1,7 @@
 import { SalesforceService, SalesforceDeployService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptSpecification } from './omniScriptDefinition';
-import { spreadAsync, Timer } from '@vlocode/util';
+import { Timer } from '@vlocode/util';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
@@ -27,6 +27,15 @@ export interface OmniScriptActivationOptions {
      * the remote activation and avoids issues with governor limits that occur when activating a large scripts.
      */
     remoteActivation?: boolean;
+    /**
+     * When `true`, any active dependent scripts will be re-activated. If false (default) only the specified script will be
+     * activated and if the script is re-used in other scripts these will not be updated.
+     *
+     * This is only required when you previously deactivated a script with through the UI and want dependent scripts that embed the to be activated script(s) to be reactivated as well.
+     * Generally this is not required when you **do not** deactivate scripts through the UI -or- when you run a full deployment/activation as this will automatically re-activate all dependent scripts in the correct order.
+     * Setting this to true for a full deployment will slow down the activation process as scripts are re-activated multiple times.
+     */
+    reactivateDependentScripts?: boolean;
 }
 
 /**
@@ -54,9 +63,11 @@ export class OmniScriptActivator {
      * Activates the specified OmniScript, creates the OmniScriptDefinition__c records in Salesforce and sets the OmniScript to active.
      * Any existing active OmniScriptDefinition__c records will be deleted.
      * @param input OmniScript to activate
+     * @param options Extra options that control how the script is activated
      */
-    public async activate(input: OmniScriptSpecification | string, options?: { skipLwcDeployment?: boolean, toolingApi?: boolean, remoteActivation?: boolean }) {
+    public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions) {
         const script = await this.lookup.getScript(input);
+        const definitionOld = await this.definitionProvider.getScriptDefinition(script.id);
 
         // (Re-)Activate script
         if (options?.remoteActivation) {
@@ -69,6 +80,10 @@ export class OmniScriptActivator {
         if (options?.skipLwcDeployment !== true && script.isLwcEnabled) {
             const definition = await this.definitionProvider.getScriptDefinition(script.id);
             await this.deployLwcComponent(definition, options);
+        }
+
+        if (options?.reactivateDependentScripts) {
+            await this.reactivateDependentScripts(script, options);
         }
     }
 
@@ -140,6 +155,12 @@ export class OmniScriptActivator {
         }
     }
 
+    private async reactivateDependentScripts(script: OmniScriptRecord, options?: OmniScriptActivationOptions) {
+        for (const dependentScript of await this.lookup.getActiveDependentScripts(script)) {
+            await this.activate(dependentScript, options);
+        }
+    }
+
     /**
      * Serializes and split the OmniScript definition into chunks of max 131072 characters to avoid the 131072 character limit of the Salesforce String field.
      *
@@ -182,7 +203,7 @@ export class OmniScriptActivator {
     }
 
     private async deleteAllInactiveScriptDefinitions(input: OmniScriptSpecification | string) {
-        const script = typeof input === 'string' ? await this.lookup.getScriptVersionSpecification(input) : input;
+        const script = typeof input === 'string' ? await this.lookup.getScriptInfo(input) : input;
         const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', {
             omniScriptId: {
                 type: script.type,
@@ -202,7 +223,7 @@ export class OmniScriptActivator {
      * Activate the LWC component for the specified OmniScript regardless of the script is LWC enabled or not.
      * @param id Id of the OmniScript for which to activate the LWC component
      */
-    public async activateLwc(id: string, options?: { toolingApi?: boolean }) {
+    public async activateLwc(id: string, options?: OmniScriptActivationOptions) {
         const definition = await this.definitionProvider.getScriptDefinition(id);
         await this.deployLwcComponent(definition, options);
     }
@@ -217,7 +238,7 @@ export class OmniScriptActivator {
         return this.lwcCompiler.compileToPackage(definition);
     }
 
-    private async deployLwcComponent(definition: OmniScriptDefinition, options?: { toolingApi?: boolean }) {
+    private async deployLwcComponent(definition: OmniScriptDefinition, options?: OmniScriptActivationOptions) {
         const timer = new Timer();
         const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
         this.logger.info(`Deploying LWC ${definition.bpType}/${definition.bpSubType} (${apiLabel} api)...`);

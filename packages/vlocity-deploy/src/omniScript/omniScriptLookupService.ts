@@ -12,6 +12,17 @@ export interface OmniScriptVersionDetail extends OmniScriptSpecification {
     isActive: boolean;
 }
 
+const scriptVersionDetailFields = [
+    'id',
+    'type',
+    'subType',
+    'language',
+    'version',
+    'isActive',
+    'isLwcEnabled',
+    'isReusable'
+] as const;
+
 export interface OmniScriptRecord extends OmniScriptSpecification, OmniScriptVersionDetail {
     id: string;
     name: string;
@@ -56,6 +67,10 @@ export class OmniScriptLookupService {
             return this.getScriptById(input);
         }
 
+        if (typeof input['id'] === 'string') {
+            return this.getScriptById(input['id']);
+        }
+
         const scripts = await this.getScriptVersions(input);
         if (!scripts.length) {
             throw new Error(input
@@ -70,7 +85,7 @@ export class OmniScriptLookupService {
     }
 
     private async getScriptById(scriptId: string): Promise<OmniScriptRecord> {
-        const scripts = await this.getScripts(scriptId);
+        const scripts = await this.getScriptsWithFields(scriptId);
         if (!scripts.length) {
             throw new Error(`Unable to find OmniScript with id: ${scriptId}`);
         }
@@ -92,9 +107,10 @@ export class OmniScriptLookupService {
      * This will only query the fields required to identify the script and its version; use {@link getScripts} to get a full script record with all fields.
      *
      * @param script Definition or id of the script to get
+     * @param extraFilter optional extra filter to apply to the lookup
      * @returns Array of OmniScript details records
      */
-    public async getScriptVersions(script?: OmniScriptSpecification | string): Promise<Array<OmniScriptVersionDetail>> {
+    public async getScriptVersions(script?: OmniScriptSpecification | string, extraFilter?: Partial<OmniScriptRecord>): Promise<Array<OmniScriptVersionDetail>> {
         if (typeof script === 'string') {
             // When the script is an ID find the script definition first and query the versions based on the definition
             script = (await this.getScriptsWithFields(script, ['type', 'subType', 'language']))[0];
@@ -102,7 +118,7 @@ export class OmniScriptLookupService {
                 throw new Error(`Unable to find OmniScript with id: ${script}`);
             }
         }
-        return this.getScriptsWithFields(script, ['id', 'type', 'subType', 'language', 'isActive', 'version', 'isLwcEnabled', 'isReusable']);
+        return this.getScriptsWithFields(script, scriptVersionDetailFields, extraFilter);
     }
 
     /**
@@ -110,20 +126,41 @@ export class OmniScriptLookupService {
      *
      * To get all fields use {@link getScripts}, to get all versions currently deployed use {@link getScriptVersions}.
      *
-     * @param scriptId Id of the script to get the specification for.
+     * @param scriptId id of the script to get information on
+     * @param extraFilter optional extra filter to apply to the lookup
      * @returns OmniScriptVersionDetail with script type, subtype, language, isActive, version and isLwcEnabled
      */
-    public async getScriptVersionSpecification(scriptId: string): Promise<OmniScriptVersionDetail> {
-        return (await this.getScriptsWithFields(scriptId, ['id', 'type', 'subType', 'language', 'isActive', 'version', 'isLwcEnabled']))[0];
+    public async getScriptInfo(scriptId?: string, extraFilter?: Partial<OmniScriptRecord>): Promise<OmniScriptVersionDetail> {
+        return (await this.getScriptsWithFields(scriptId, scriptVersionDetailFields, extraFilter))[0];
     }
 
-    private async getScriptsWithFields<F extends keyof OmniScriptRecord>(script?: OmniScriptSpecification | string | undefined, fields?: F[]): Promise<Array<OmniScriptRecord>> {
+    /**
+     * Get the active version for the specified OmniScript by type, subtype and language.
+     * @param script script definition or id of the script to get
+     * @param extraFilter optional extra filter to apply to the lookup
+     * @returns Active version of the OmniScript or undefined when there is no active version
+     */
+    public async getActiveScriptVersion(script: OmniScriptSpecification, extraFilter?: Partial<OmniScriptRecord>): Promise<OmniScriptVersionDetail> {
+        return (await this.getScriptVersions(script, { ...(extraFilter ?? {}), isActive: true }))[0];
+    }
+
+    private async getScriptsWithFields(
+        script?: OmniScriptSpecification | string | undefined, 
+        fields?: ReadonlyArray<keyof OmniScriptRecord>, 
+        extraFilter?: Partial<OmniScriptRecord>): Promise<Array<OmniScriptRecord>> 
+    {
         const lookupFilter = script
             ? typeof script === 'object'
                 ? { type: script.type, subType: script.subType, language: script.language, omniProcessType: 'OmniScript' }
                 : { id: script, omniProcessType: 'OmniScript' }
             : { omniProcessType: 'OmniScript' };
-        const records = await this.lookupService.lookup<OmniScriptRecord>('%vlocity_namespace%__OmniScript__c', removeUndefinedProperties(lookupFilter), fields);
+
+        const records = await this.lookupService.lookup<OmniScriptRecord>(
+            '%vlocity_namespace%__OmniScript__c',
+            removeUndefinedProperties({ ...lookupFilter, ...(extraFilter ?? {}) }),
+            fields
+        );
+
         return sortBy(records, 'version', 'asc');
     }
 
@@ -138,6 +175,37 @@ export class OmniScriptLookupService {
         }
         const records = await this.lookupService.lookup<OmniScriptElementRecord>('%vlocity_namespace%__Element__c', { omniScriptId: input, ...(extraFilter ?? {}) });
         return new Map(sortBy(records, rec => (rec.level << 16) | rec.order, 'asc').map(record => [record.id, record]));
+    }
+
+    /**
+     * Get **Active** OmniScripts Ids that depend on the script identified by the specified script specification.
+     * @param scriptSpec Script specification to get the dependent scripts for
+     * @returns Array of Salesforce Ids of the **Active** OmniScripts that depend on the specified script specification
+     */
+    public async getActiveDependentScripts(scriptSpec: OmniScriptSpecification): Promise<string[]> {
+        const lookupFilter = {
+            type: 'OmniScript',
+            omniScriptId__r: {
+                isActive: true,
+            },
+            active: true
+        };
+
+        const lookupFields = [ 
+            'propertySet',
+            'OmniScriptId'
+        ]
+
+        const activeScrips = (await this.lookupService.lookup('%vlocity_namespace%__Element__c', lookupFilter, lookupFields)).filter(
+            element => {
+                const propSet = JSON.parse(element.propertySet);
+                return scriptSpec.subType === propSet['Sub Type'] && 
+                    scriptSpec.type === propSet['Type'] && 
+                    scriptSpec.language === propSet['Language']
+            }
+        ).map(element => element.omniScriptId);
+
+        return activeScrips;
     }
 
     /**
