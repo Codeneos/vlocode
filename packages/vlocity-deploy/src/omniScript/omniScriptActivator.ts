@@ -6,7 +6,8 @@ import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
-import { OmniScriptLocalDefinitionProvider } from './omniScriptDefinitionGenerator';
+import { OmniScriptDefinitionGenerator } from './omniScriptDefinitionGenerator';
+import { writeFileSync } from 'fs-extra';
 
 export interface OmniScriptActivationOptions {
     /**
@@ -54,7 +55,7 @@ export class OmniScriptActivator {
         private readonly lookup: OmniScriptLookupService,
         private readonly lwcCompiler: OmniScriptLwcCompiler,
         @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: OmniScriptDefinitionProvider,
-        @injectable.param(OmniScriptLocalDefinitionProvider) private readonly definitionGenerator: OmniScriptDefinitionProvider,
+        @injectable.param(OmniScriptDefinitionGenerator) private readonly definitionGenerator: OmniScriptDefinitionProvider,
         private readonly logger: Logger
     ) {
     }
@@ -68,6 +69,9 @@ export class OmniScriptActivator {
     public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions) {
         const script = await this.lookup.getScript(input);
         const definitionOld = await this.definitionProvider.getScriptDefinition(script.id);
+        const definitionNew = await this.definitionGenerator.getScriptDefinition(script.id);
+        writeFileSync('definitionOld.json', JSON.stringify(definitionOld, null, 4));
+        writeFileSync('definitionNew.json', JSON.stringify(definitionNew, null, 4));
 
         // (Re-)Activate script
         if (options?.remoteActivation) {

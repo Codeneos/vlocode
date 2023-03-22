@@ -82,7 +82,7 @@ export namespace Iterable {
      * @param itr Iterator
      * @param mapFunc Mapping function
      */
-    export function map<T, K>(itr: Iterable<T>, mapFunc: (item: T) => K) : Iterable<K> {
+    export function map<T, K>(itr: Iterable<T>, mapFunc: (item: T, index: number) => K) : Iterable<K> {
         return transform(itr, { map: mapFunc });
     }
 
@@ -91,7 +91,7 @@ export namespace Iterable {
      * @param itr Iterator
      * @param filterFunc Filter function
      */
-    export function filter<T>(itr: Iterable<T>, filterFunc: (item: T) => any) : Iterable<T> {
+    export function filter<T>(itr: Iterable<T>, filterFunc: (item: T, index: number) => any) : Iterable<T> {
         return transform(itr, { filter: filterFunc });
     }
 
@@ -100,9 +100,10 @@ export namespace Iterable {
      * @param itr Iterable object
      * @param predicate predicate function
      */
-     export function find<T>(itr: Iterable<T>, predicate: (item: T) => any) : T | undefined {
+     export function find<T>(itr: Iterable<T>, predicate: (item: T, index: number) => any) : T | undefined {
+        let index = 0;
         for (const item of itr) {
-            if (predicate(item)) {
+            if (predicate(item, index++)) {
                 return item;
             }
         }
@@ -114,14 +115,15 @@ export namespace Iterable {
      * @param itr Iterator
      * @param filterFunc Filter function
      */
-    export function segregate<T>(itr: Iterable<T>, filterFunc: (item: T) => any) : [ Iterable<T>, Iterable<T> ] {
+    export function segregate<T>(itr: Iterable<T>, filterFunc: (item: T, index: number) => any) : [ Iterable<T>, Iterable<T> ] {
         return [
             transform(itr, { filter: filterFunc }), 
-            transform(itr, { filter: (item) => !filterFunc(item) })
+            transform(itr, { filter: (item, index) => !filterFunc(item, index) })
         ];
     }
 
-    export function transform<T, K = T>(itr: Iterable<T>, transformer: { map?(item: T): K; filter?(item: T): any }): Iterable<K> {
+    export function transform<T, K = T>(itr: Iterable<T>, transformer: { map?(item: T, index: number): K; filter?(item: T, index: number): any }): Iterable<K> {
+        const indexSymbol = Symbol('index');
         const iteratorNextTransformer = function() {
             // eslint-disable-next-line no-constant-condition
             while(true) {
@@ -129,12 +131,14 @@ export namespace Iterable {
                 if (value.done) {
                     return { done: true };
                 }
-                if (!value.done && transformer.filter && !transformer.filter(value.value)) {
+                if (!value.done && transformer.filter && !transformer.filter(value.value, this[indexSymbol])) {
+                    this[indexSymbol]++;
                     continue;
                 }
                 if (transformer.map) {
-                    return { done: false, value: transformer.map(value.value) };
+                    return { done: false, value: transformer.map(value.value, this[indexSymbol]++) };
                 }
+                this[indexSymbol]++;
                 return value;
             }
         };
@@ -142,6 +146,7 @@ export namespace Iterable {
         return {
             [Symbol.iterator]() {
                 const iterator = itr[Symbol.iterator]();
+                iterator[indexSymbol] = 0;
                 return {
                     next: iteratorNextTransformer.bind(iterator),
                     return: iterator.return?.bind(iterator),

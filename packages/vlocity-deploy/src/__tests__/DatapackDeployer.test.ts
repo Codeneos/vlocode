@@ -13,13 +13,13 @@ describe('datapackDeployer', () => {
         container.registerAs(Logger.null, Logger);
         container.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
     });
-    
+
     function createDatapack(type: string, data: any) {
         return new VlocityDatapack(
-            './mydatapack_DataPack.json', 
-            type, 
-            data.VlocityRecordSourceKey, 
-            './project-folder', 
+            './mydatapack_DataPack.json',
+            type,
+            data.VlocityRecordSourceKey,
+            './project-folder',
             data
         );
     }
@@ -34,9 +34,9 @@ describe('datapackDeployer', () => {
                 "VlocityRecordSObjectType": "%vlocity_namespace%__OmniScript__c",
                 "VlocityRecordSourceKey": "%vlocity_namespace%__OmniScript__c/Type/SubType/Dutch"
             });
-            const filter: DatapackFilter = { 
-                datapackFilter: /^(OmniScript|IntegrationProcedure)$/i, 
-                recordFilter: /^(OmniScript__c|Element__c)$/i 
+            const filter: DatapackFilter = {
+                datapackFilter: /^(OmniScript|IntegrationProcedure)$/i,
+                recordFilter: /^(OmniScript__c|Element__c)$/i
             }
 
             // test
@@ -46,10 +46,10 @@ describe('datapackDeployer', () => {
             // arrange
             const testContainer = container.new();
             const record = new DatapackDeploymentRecord(
-                'DataRaptor', 
-                'vlocity_cmt__DRBundle__c', 
-                "%vlocity_namespace%__DRBundle__c/Type/SubType/Dutch", 
-                "%vlocity_namespace%__DRBundle__c/Type/SubType/Dutch", 
+                'DataRaptor',
+                'vlocity_cmt__DRBundle__c',
+                "%vlocity_namespace%__DRBundle__c/Type/SubType/Dutch",
+                "%vlocity_namespace%__DRBundle__c/Type/SubType/Dutch",
                 [], {}
             );
             const filter: DatapackFilter = {
@@ -59,7 +59,7 @@ describe('datapackDeployer', () => {
             // test
             expect(testContainer.create(DatapackDeployer)['evalFilter'](filter, record)).toBe(true);
         });
-    });    
+    });
     describe('#filterApplicableRecords', () => {
         it('with record filter should remove records no matching filter', () => {
             // arrange
@@ -85,5 +85,5 @@ describe('datapackDeployer', () => {
             // test
             expect(testContainer.create(DatapackDeployer)['filterApplicableRecords'](filter, [ matchedRecord, mismatchedRecord ])).toEqual([ matchedRecord ]);
         });
-    });    
+    });
 });

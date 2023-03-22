@@ -218,14 +218,14 @@ export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<
  * @param itemSelector function to get the the item value; defaults to the items being iterated
  */
 export function mapBy<T, K extends string | number, I = T>(iterable: Iterable<T>,
-    keySelector: keyof T | ((item: T) => K | undefined),
-    itemSelector?: (item: T) => I) : Map<K, I> {
+    keySelector: keyof T | ((item: T, index: number) => K | undefined),
+    itemSelector?: (item: T, index: number) => I) : Map<K, I> {
 
     const _keySelector = typeof keySelector === 'function'
         ? keySelector : (item: T) => item[keySelector] as unknown as K;
 
     return new Map(
-        Iterable.map(iterable, item => [_keySelector(item), itemSelector ? itemSelector(item) : item] as [K, I])
+        Iterable.map(iterable, (item, index) => [_keySelector(item, index), itemSelector ? itemSelector(item, index) : item] as [K, I])
     );
 }
 

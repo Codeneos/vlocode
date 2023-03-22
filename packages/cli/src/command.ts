@@ -1,7 +1,7 @@
 import { Argument, Option } from 'commander';
 export { Argument, Option } from 'commander';
 
-export abstract class Command {    
+export abstract class Command {
     public static args: Argument[] = [];
     public static options: Option[] = []
     public static description: string;
@@ -11,4 +11,5 @@ export abstract class Command {
     protected args!: any;
 
     abstract run(...args: any[]) : void | Promise<void>;
+    protected init?(options: any) : void | Promise<void>;
 }

@@ -3,7 +3,8 @@ import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema';
-import { cache, findField, isSalesforceId, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
+import { cache, findField, groupBy, isSalesforceId, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
+import { PicklistEntry } from 'jsforce';
 
 /**
  * Provides access to Database Schema methods like describe.
@@ -107,6 +108,43 @@ export class SalesforceSchemaService {
         }
 
         throw Error(`No object found matching the key prefix specified: ${prefix}`);
+    }
+
+    public async describePicklistValues(type: string, fieldName: string): Promise<PicklistEntry[]>;
+    public async describePicklistValues(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<PicklistEntry[] | undefined>;
+    @cache({ cacheExceptions: true, unwrapPromise: true, immutable: true })
+    public async describePicklistValues(type: string, fieldName: string, throwWhenNotFound: boolean = true): Promise<PicklistEntry[] | undefined> {
+        const field = await this.describeSObjectField(type, fieldName, throwWhenNotFound);
+        if (!field) {
+            return;
+        }
+        if (!field.picklistValues) {
+            throw new Error(`Field with name "${fieldName}" on SObject ${type} is not a Picklist`);
+        }
+
+        if (!field.controllerName) {
+            return field.picklistValues;
+        }
+
+        const controllingField = await this.describeSObjectField(type, field.controllerName, false);
+        if (!controllingField || !controllingField.picklistValues) {
+            return field.picklistValues;
+        }
+
+        const controllingValuesBy = mapBy(controllingField.picklistValues, (entry, index) => {
+            return this.encodeIndexAsBitset(index)
+        });
+
+        return field.picklistValues.map(entry => {
+            const controllingValue = entry.validFor ? controllingValuesBy.get(entry.validFor) : undefined;
+            return controllingValue ? { ...entry, validFor: controllingValue.value } : entry;
+        });
+    }
+
+    private encodeIndexAsBitset(index: number) {
+        const bitset = Buffer.alloc(Math.max(3, (index >> 3) + 1), 0);
+        bitset[index >> 3] = 1 << (7 - (index % 8));
+        return bitset.toString('base64');
     }
 
     public async describeSObjectField(type: string, fieldName: string) : Promise<Field>

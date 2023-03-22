@@ -34,7 +34,7 @@ describe('datapackRecordFactory', () => {
             }) as VlocityMatchingKey
         } as any) as VlocityMatchingKeyService;
     }
-    
+
     beforeAll(() =>  container.registerAs(Logger.null, Logger));
 
     it('should convert datapack to multiple deployable records', async () => {
@@ -167,7 +167,6 @@ describe('datapackRecordFactory', () => {
 
     it('should stringify convert JSON object', async () => {
         // Arrange
-        const schemaDataFile = path.join(__dirname, './data/schema.json');
         const testContainer = container.new();
 
         const datapackData = {
@@ -194,7 +193,7 @@ describe('datapackRecordFactory', () => {
                         "type": "Text",
                         "unique": false
                     } ]
-                }, 
+                },
                 "describe": {
                     "keyPrefix": "000",
                     "name": "TestObject",

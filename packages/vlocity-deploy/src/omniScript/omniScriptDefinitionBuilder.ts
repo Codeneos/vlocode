@@ -1,11 +1,11 @@
-import { OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
-import { escapeHtmlEntity, mapGetOrCreate } from '@vlocode/util';
+import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
+import { deepClone, escapeHtmlEntity, mapGetOrCreate } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';
 import { randomUUID } from 'crypto';
 /**
  * Builds a script definition from a list of elements and templates.
  */
-export class OmniScriptDefinitionBuilder {
+export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDefinition> {
 
     private indexInParent = 0;
     private requiredTemplates = new Set<string>();
@@ -15,6 +15,14 @@ export class OmniScriptDefinitionBuilder {
     private scriptOffsets = new Map<string, number>();
 
     constructor(private readonly scriptDef: OmniScriptDefinition) {
+    }
+
+    /**
+     * True if picklists are to be loaded at script startup; otherwise false and the generator is expected to load the picklists at design time.
+     * In which case picklists labels are in the same language as the activating user
+     */
+    public get realtimePicklistSeed() {
+        return this.scriptDef.propSetMap.rtpSeed;
     }
 
     /**
@@ -33,6 +41,24 @@ export class OmniScriptDefinitionBuilder {
     }
 
     /**
+     * Add a custom picklist controller to the script definition. This controller is invoked at the start of the script to load the picklist values.
+     * @param controller Name of the controller to add in the following format: `<controller>.<method>`
+     */
+    public addCustomPicklistController(controller: string) {
+        this.scriptDef.cusPL[controller] = '';
+    }
+
+    /**
+     * Merges anther script definition into the script definition of the builder.
+     * This is used to merge the test templates and custom JS of specified definition.
+     * @param scriptDef Other definition to merge
+     */
+    public mergeScriptTemplates(scriptDef: OmniScriptDefinition) {
+        this.scriptDef.testTemplates += scriptDef.testTemplates;
+        this.scriptDef.customJS += scriptDef.customJS;
+    }
+
+    /**
      * Adds an element to the script definition.
      * @param id ID of the element to add
      * @param ele Element definition to add
@@ -43,6 +69,16 @@ export class OmniScriptDefinitionBuilder {
 
         if (ele.propSetMap?.HTMLTemplateId) {
             this.requiredTemplates.add(ele.propSetMap.HTMLTemplateId);
+        }
+
+        if (isChoiceScriptElement(ele)) {
+            if (ele.propSetMap.optionSource.type === 'Custom' && ele.propSetMap.optionSource.source.includes('.')) {
+                this.scriptDef.cusPL[ele.propSetMap.optionSource.source] = '';
+            }
+        }
+
+        if (ele.propSetMap?.repeat == true || ['Radio', 'Multi-select', 'Radio Group', 'Edit Block'].includes(ele.type)) {
+            this.scriptDef.rMap[ele.name] = "";
         }
 
         if (options?.scriptElementId && !options?.parentElementId) {
@@ -58,7 +94,7 @@ export class OmniScriptDefinitionBuilder {
             ele.offSet = this.scriptOffsets.get(options.scriptElementId)!;
             ele.inheritShowProp = scriptElement.propSetMap?.show;
             ele.bEmbed = true;
-        } else if (!options?.parentElementId) {
+        } else if (options?.scriptElementId || !options?.parentElementId)  {
             ele.bEmbed = false;
             ele.offSet = 0;
         }
@@ -71,13 +107,31 @@ export class OmniScriptDefinitionBuilder {
             }
             group.addElement(ele);
         } else {
-            if (this.isEmbeddedScriptElement(ele)) {
+            if (isEmbeddedScriptElement(ele)) {
                 this.scriptOffsets.set(id, this.indexInParent);
                 ele.indexInParent = 0;
             } else {
                 ele.indexInParent = this.indexInParent++;
             }
             this.scriptDef.children.push(ele);
+        }
+
+        if (ele.type === 'Input Block') {
+            ele.JSONPath = this.getJsonPath(ele);
+        }
+
+        if (ele.type === 'Type Ahead Block') {
+            const typeAheadElement = deepClone(ele);
+            this.getGroup(id)?.addElement(typeAheadElement);
+
+            // Update level and root index of inner type ahead
+            typeAheadElement.type = 'Type Ahead';
+            typeAheadElement.rootIndex = ele.indexInParent;
+            typeAheadElement.level = ele.level + 1;
+
+            // The outer type-ahead block gets a `-Block` postfix so it can be distinguished from the
+            // inner element which carries the original element name
+            ele.name += `-Block`;
         }
     }
 
@@ -108,7 +162,7 @@ export class OmniScriptDefinitionBuilder {
     private updateLabelMap() {
         this.scriptDef.labelMap = {};
         for (const child of this.getElements()) {
-            if (this.isEmbeddedScriptElement(child)) {
+            if (isEmbeddedScriptElement(child)) {
                 continue;
             }
             this.scriptDef.labelMap[child.name] = child.propSetMap?.label ?? null;
@@ -166,19 +220,52 @@ export class OmniScriptDefinitionBuilder {
         return `<${name}${tagAttributes ? ` ${tagAttributes}>` : '>'}${body ?? ''}</${name}>`;
     }
 
-    private isEmbeddedScriptElement(def: OmniScriptElementDefinition): def is OmniScriptEmbeddedScriptElementDefinition {
-        return def.type === 'OmniScript';
-    }
-
     private *getElements(elements: Array<OmniScriptElementDefinition> = this.scriptDef.children): IterableIterator<OmniScriptElementDefinition> {
         for (const child of elements) {
             yield child;
-            if (Array.isArray(child['children'])) {
+            if (Array.isArray(child['children']) && child.type !== 'Type Ahead Block') {
                 for (const ele of child['children']) {
                     yield* this.getElements(ele.eleArray);
                 }
             }
         }
+    }
+
+    [Symbol.iterator](): Iterator<OmniScriptElementDefinition, any, undefined> {
+        return this.getElements();
+    }
+
+    /**
+     * Find the element matching the specified predicate or name. Returns undefined when no matching element is found
+     * @param predicate predicate to which the element must match
+     */
+    public findElement(predicate: string | ((element: OmniScriptElementDefinition) => boolean)): OmniScriptElementDefinition | undefined {
+        const filter = typeof predicate === 'string' ? ((e) => e.name === predicate) : predicate;
+        for (const element of this) {
+            if (filter(element)) {
+                return element
+            }
+        }
+    }
+
+    /**
+     * Get the JSON path of an element in the script definition.
+     * If the element is not part of the script definition an error is thrown.     *
+     * @param element Element to get the JSON path for
+     * @returns JSON path of the element
+     */
+    private getJsonPath(element: OmniScriptElementDefinition): string {
+        if (element.level === 0) {
+            return element.name;
+        }
+
+        for (const [id, group] of this.groups) {
+            if (group.hasElement(element)) {
+                return [this.getJsonPath(this.elements.get(id)!), element.name].join(':');
+            }
+        }
+
+        throw new Error('Element not found in script definition');
     }
 }
 
@@ -206,6 +293,15 @@ class OmniScriptElementGroupDefinitionBuilder {
     }
 
     /**
+     * Checks if the group contains the given element.
+     * @param element Element to check
+     * @returns `true` if the group contains the given element otherwise `false`
+     */
+    public hasElement(element: OmniScriptElementDefinition) {
+        return this.group.children.some(c => c.eleArray.includes(element));
+    }
+
+    /**
      * Adds a child element to the group.
      * @param child Child element to add to the group
      */
@@ -220,11 +316,11 @@ class OmniScriptElementGroupDefinitionBuilder {
         child.children = [];
 
         this.group.children.push({
-            bHasAttachment: false,
+            bHasAttachment: child.bHasAttachment,
             eleArray: [ child ],
             indexInParent: childIndex,
             level: this.group.level + 1,
-            response: null
+            response: child.response
         });
     }
 }

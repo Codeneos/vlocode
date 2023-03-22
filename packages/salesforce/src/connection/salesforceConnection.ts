@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer } from '@vlocode/util';
+import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer, encodeRFC3986URI } from '@vlocode/util';
 import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
@@ -85,6 +85,14 @@ const compositeSupportedApis: ReadonlyArray<string> = Object.freeze([
     'sobjects'
 ]);
 
+export interface SalesforceConnectionOptions extends ConnectionOptions {
+    /**
+     * Set an alternative transport such as the {@link TransportRecorder} or {@link ReplayTransport}.
+     * Useful for sessions debugging and testing.
+     */
+    transport?: Transport;
+}
+
 /**
  * Salesforce connection decorator that extends the base JSForce connection
  */
@@ -120,12 +128,12 @@ export class SalesforceConnection extends Connection {
     public metadata!: MetadataApi & Metadata;
     public oauth2!: SalesforceOAuth2;
 
-    private _transport: HttpTransport;
+    private _transport: Transport;
     private _refreshDelegate!: RefreshDelegate;
 
-    constructor(params: ConnectionOptions) {
-        super(params);
-        this.initializeLocalVariables();
+    constructor(options: SalesforceConnectionOptions) {
+        super(options);
+        this.initializeLocalVariables(options);
     }
 
     /**
@@ -134,23 +142,30 @@ export class SalesforceConnection extends Connection {
      * If the {@link connection} is already of type SalesforceConnection does not reinitialize the variables and returns the connection as is.
      *
      * @param connection JS Force Connection to use as base
+     * @param options Extra options that control initialization of the connection
      * @returns Instance of a {@link SalesforceConnection}
      */
-    static create(connection: Connection): SalesforceConnection {
+    static create(connection: Connection, options?: SalesforceConnectionOptions): SalesforceConnection {
         if (connection instanceof SalesforceConnection) {
             return connection;
         }
         const sfConnection: SalesforceConnection = Object.setPrototypeOf(connection, SalesforceConnection.prototype);
-        sfConnection.initializeLocalVariables();
+        sfConnection.initializeLocalVariables(options);
         return sfConnection;
     }
 
     /**
      * WHen the prototype is changed of connection local variables aren't re-initialized; this method sets the defaults for all private and public variables.
      */
-    private initializeLocalVariables() {
+    private initializeLocalVariables(options?: SalesforceConnectionOptions) {
         // Setup transport
-        this._transport = new HttpTransport({ instanceUrl: this.instanceUrl, baseUrl: this._baseUrl() }, LogManager.get('HttpTransport'));
+        this._transport = options?.transport ?? new HttpTransport({
+                instanceUrl: this.instanceUrl,
+                baseUrl: this._baseUrl()
+            },
+            LogManager.get('HttpTransport')
+        );
+
         if (this.oauth2) {
             this.oauth2 = new SalesforceOAuth2(this.oauth2, this);
         }
@@ -266,7 +281,7 @@ export class SalesforceConnection extends Connection {
         options?: RequestOptions | any): Promise<T>;
 
     public request(
-        request: HttpRequestInfo, 
+        request: HttpRequestInfo,
         options: RequestOptions & { responseType: 'raw' }): Promise<HttpResponse>;
 
     public async request<T = any>(
@@ -448,10 +463,10 @@ export class SalesforceConnection extends Connection {
 
     /**
      * Execute a query on Salesforce Tooling or Data (default) APIs and return the records.
-     * 
-     * By default fetches all records using the query locator when required; set {@link Query2Options.queryMore} 
+     *
+     * By default fetches all records using the query locator when required; set {@link Query2Options.queryMore}
      * to `false` to only fetch the the first batch
-     * 
+     *
      * @param soql SOQL Query to execute
      * @param options Additional query options
      * @returns Async iterable and awaitable results from the query
@@ -461,24 +476,10 @@ export class SalesforceConnection extends Connection {
         const timer = new Timer();
         return new AsyncQueryIterator<T>(
             new RestClient(this, options?.queryType === 'tooling' ? `/services/data/v{apiVersion}/tooling` : `/services/data/v{apiVersion}`),
-            `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${this.encodeRFC3986URI(soql)}`,
+            `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${encodeRFC3986URI(soql)}`,
             options?.queryMore
         ).once('done', (records) => this.logger.debug(`[SIZE=${records.length}] SOQL=${soql} (${timer})`));
     }
-
-    /**
-     * Encode URL parameters according to RFC3986 using %-encoding. 
-     * Encodes spaces as `+`.
-     * @remarks differs from {@link encodeURIComponent} in also encoding `!`, `'`, `(`, `)`, and `*`
-     * @param str String value to encode 
-     * @returns encoded string 
-     */
-    private encodeRFC3986URI(str: string) {
-        return str.replace(
-            /[:/?#[\]@!$'()*+,;=%& ]/g,
-            c => c === ' ' ? '+' : `%${c.charCodeAt(0).toString(16).toUpperCase()}`
-          );
-      }
 }
 
 export interface Query2Options {

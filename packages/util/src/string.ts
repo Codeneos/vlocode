@@ -59,7 +59,7 @@ export function evalExpr(expr: string, contextValues: any) : string {
 /**
  * Evaluates ES6 like template string using the specified contest
  * @param expr Format string
- * @param contextValues context values supplied 
+ * @param contextValues context values supplied
  */
 export function evalTemplate(expr: string, contextValues: any) : string {
     const updatedContext = compileFunction(`$$result = \`${expr}\``)(contextValues, false);
@@ -93,7 +93,7 @@ export function substringBefore(value: string, delimiter: string | RegExp): stri
             return value.substring(0, indexOfDelimiter);
         }
         return value;
-    }    
+    }
     return value.split(delimiter, 1).shift()!;
 }
 
@@ -124,7 +124,7 @@ export function substringAfterLast(value: string, delimiter: string | RegExp): s
             return value.substring(indexOfDelimiter + delimiter.length);
         }
         return value;
-    }    
+    }
     return value.split(delimiter).pop()!;
 }
 
@@ -152,9 +152,9 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
 
 /**
  * Joins array parts together in one or more strings based on the max size of the string
- * @param parts 
- * @param delimiter 
- * @param limit 
+ * @param parts
+ * @param delimiter
+ * @param limit
  */
 export function joinLimit(parts: any[], limit: number, delimiter: string = ',') : string[] {
     const result = new Array<string>();
@@ -164,7 +164,7 @@ export function joinLimit(parts: any[], limit: number, delimiter: string = ',') 
     }
 
     for (const item of parts) {
-        const element = String(item);   
+        const element = String(item);
         const lastIndex = result.length ? result.length - 1 : 0;
         if (!result[lastIndex] || result[lastIndex].length + delimiter.length + element.length > limit) {
             result[result.length] = element;
@@ -203,7 +203,7 @@ export function escapeHtmlEntity(value: string) {
 export function lowerCamelCase(name: string, options?: { forceLowerCase?: boolean }) : string {
     let normalized = '';
     let nextUpper = false;
-    for (let index = 0; index < name.length; index++) {        
+    for (let index = 0; index < name.length; index++) {
         const char = name.charAt(index);
         if ((char === ' ' || char === '-' || char === '_') && normalized.length > 0) {
             nextUpper = true;
@@ -242,10 +242,24 @@ export function isNumericChar(char: number) : boolean {
 }
 
 export function isAlphaNumeric(name: string) : boolean {
-    for (let index = 0; index < name.length; index++) {        
+    for (let index = 0; index < name.length; index++) {
         if (!isAlphaNumericChar(name.charCodeAt(index))) {
             return false;
         }
     }
     return true;
+}
+
+/**
+ * Encode URL parameters according to RFC3986 using %-encoding.
+ * Encodes spaces as `+`.
+ * @remarks differs from {@link encodeURIComponent} in also encoding `!`, `'`, `(`, `)`, and `*`
+ * @param str String value to encode
+ * @returns encoded string
+ */
+export function encodeRFC3986URI(str: string) {
+    return str.replace(
+        /[:/?#[\]@!$'()*+,;=%& ]/g,
+        c => c === ' ' ? '+' : `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+    );
 }

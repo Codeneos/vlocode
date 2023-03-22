@@ -1,7 +1,7 @@
 
 import { cache } from '@vlocode/util';
 import { Connection } from 'jsforce';
-import { SalesforceConnection } from '../salesforceConnection';
+import { SalesforceConnection, SalesforceConnectionOptions } from '../salesforceConnection';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 
 /**
@@ -40,31 +40,34 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
     #version: string = '55.0';
 
     /**
-     * The client ID used in the request headers 
+     * The client ID used in the request headers
      */
     public clientConnectionId = `sfdx toolbelt:${process.env.VLOCODE_SET_CLIENT_IDS ?? 'vlocode'}`;
 
     /**
-     * Creates a new JSForce connection provide from an existing connection ensuring the connection returned. JSForce as part 
+     * Creates a new JSForce connection provide from an existing connection ensuring the connection returned. JSForce as part
      * of vlocode is patched to resolve various issues with JSForce. This ensures that JSForce is always of version 1.11.0 with the appropriate
      * patches.
-     * @param jsConnection JS force connection
-     * @returns 
+     * @param connection JS force connection
+     * @returns
      */
-    constructor(options: JsforceConnectionProperties | SalesforceOAuthDetails | Connection) {
+    constructor(connection: JsforceConnectionProperties | SalesforceOAuthDetails | Connection, private readonly options?: SalesforceConnectionOptions) {
         super();
-        if (Object.getPrototypeOf(options) === Connection.prototype) {
-            this.#jsConnection = this.initConnection(options as Connection);            
-        } else if (Object.getPrototypeOf(options) === SalesforceConnection.prototype) {
-            this.#jsConnection = options as any as SalesforceConnection;            
-        } else if (typeof options['oauth2'] === 'object') {
-            this.#jsConnection = this.cloneConnection(options as JsforceConnectionProperties);
+        if (!options) {
+            this.options = {};
+        }
+        if (Object.getPrototypeOf(connection) === Connection.prototype) {
+            this.#jsConnection = this.initConnection(connection as Connection);
+        } else if (Object.getPrototypeOf(connection) === SalesforceConnection.prototype) {
+            this.#jsConnection = connection as any as SalesforceConnection;
+        } else if (typeof connection['oauth2'] === 'object') {
+            this.#jsConnection = this.cloneConnection(connection as JsforceConnectionProperties);
         } else {
-            this.#jsConnection = this.newConnection(options as SalesforceOAuthDetails);
+            this.#jsConnection = this.newConnection(connection as SalesforceOAuthDetails);
         }
     }
 
-    private newConnection(options: SalesforceOAuthDetails) { 
+    private newConnection(options: SalesforceOAuthDetails) {
         return this.initConnection(new Connection({
             version: options.version ?? this.#version,
             ...options
@@ -87,8 +90,8 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
     }
 
     private initConnection(connection: Connection) {
-        const sfConnection: SalesforceConnection = SalesforceConnection.create(connection);
-        sfConnection.version = this.#version;   
+        const sfConnection: SalesforceConnection = SalesforceConnection.create(connection, this.options);
+        sfConnection.version = this.#version;
         return sfConnection;
     }
 

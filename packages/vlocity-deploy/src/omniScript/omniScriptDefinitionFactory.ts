@@ -54,7 +54,7 @@ export class OmniScriptDefinitionFactory {
         'name': { field: 'Name' },
         'level': { field: 'Level__c' },
         'indexInParent': 0,
-        'bHasAttachment': false
+        'bHasAttachment': rec => rec.type === 'File'
     };
 
     public createScript(scriptRecord: OmniScriptRecord): OmniScriptDefinition {
@@ -64,12 +64,25 @@ export class OmniScriptDefinitionFactory {
     public createElement(elementRecord: OmniScriptElementRecord): OmniScriptElementDefinition {
         const elementDefinition = this.createFromMapping<any>(elementRecord, this.elementMapping);
 
-        if (elementRecord.type === 'Step') {
+        if (elementDefinition.type === 'Step') {
             elementDefinition.response = null;
             elementDefinition.inheritShowProp = null;
             elementDefinition.children = [];
             elementDefinition.bAccordionOpen = false;
             elementDefinition.bAccordionActive = false;
+        }
+
+        if (elementDefinition.type === 'Edit Block') {
+            elementDefinition.propSetMap.rpe = true;
+        }
+
+        if (elementDefinition.type === 'Block') {
+            if (elementDefinition.propSetMap.repeat === true) {
+                elementDefinition.propSetMap.rpe = true;
+            }
+            if (elementDefinition.level < 2) {
+                elementDefinition.propSetMap.bus = true;
+            }
         }
 
         return elementDefinition;
