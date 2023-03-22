@@ -435,8 +435,18 @@ function hashObjectUpdate(hash: Hash, obj: object): Hash {
  * @returns New object with all properties which had a value of `undefined` removed
  */
 export function removeUndefinedProperties<T extends object>(obj: T): T {
+    return filterObject(obj, (_key, value) => value !== undefined);
+}
+
+/**
+ * Return a new object that only has the properties that match the specified predicate.
+ * @param obj Object to evaluate
+ * @param predicate Predicate which when true means the property is included otherwise the property is excluded
+ * @returns New object with only the properties for which the `predicate` returned a `true`ish value
+ */
+export function filterObject<T extends object>(obj: T, predicate: (key: string, value: any, obj: T) => boolean): T {
     return Object.entries(obj).reduce((acc, [key, value]) => {
-        if (value !== undefined) {
+        if (predicate(key, value, obj)) {
             acc[key] = value;
         }
         return acc;

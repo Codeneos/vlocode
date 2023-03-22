@@ -1,12 +1,10 @@
-import { CachedFileSystemAdapter, container, Logger, LogManager, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { VlocityNamespaceService, ForkedSassCompiler, OmniScriptActivator, OmniScriptVersionDetail } from '@vlocode/vlocity-deploy';
-import { existsSync } from 'fs';
-import { Command, Argument, Option } from '../command';
+import { Logger, LogManager } from '@vlocode/core';
+import { OmniScriptActivator, OmniScriptVersionDetail } from '@vlocode/vlocity-deploy';
+import { Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
-import { join } from 'path';
 import { forEachAsyncParallel, getErrorMessage, groupBy, isSalesforceId, Iterable, sortBy, Timer } from '@vlocode/util';
 import { OmniScriptLookupService } from '@vlocode/vlocity-deploy';
+import { SalesforceCommand } from '../salesforceCommand';
 
 interface ScriptActivationInfo {
     type: string,
@@ -16,7 +14,7 @@ interface ScriptActivationInfo {
     status?: 'pending' | 'activated' | 'error',
 }
 
-export default class extends Command {
+export default class extends SalesforceCommand {
 
     static description = 'Activate OmniScripts in Salesforce and deploy associated LWC components';
 
@@ -33,8 +31,7 @@ export default class extends Command {
     ];
 
     static options = [
-        new Option('-u, --user <username>', 'Salesforce username or alias of the org to deploy the datapacks to').makeOptionMandatory(false),
-        new Option('-i, --instance <url>', 'Salesforce instance URL; for example: test.salesforce.com').default('test.salesforce.com'),
+        ...SalesforceCommand.options,
         new Option('--parallel-activations', 'determines the amount of parallel activations to run').default(4),
         new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
         new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),
@@ -42,8 +39,6 @@ export default class extends Command {
             'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' +
             'Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.').default(false),
     ];
-
-    private container = container.new();
 
     constructor(private logger: Logger = LogManager.get('vlocode-cli')) {
         super();
@@ -54,7 +49,7 @@ export default class extends Command {
         const filterTimer = new Timer();
         this.logger.info(`Finding script(s) matching filter: ${scriptFilter ? JSON.stringify(scriptFilter) : 'ALL'}`);
 
-       const scripts = await this.getScripts(scriptFilter);
+        const scripts = await this.getScripts(scriptFilter);
         if (!scripts) {
             this.logger.error(`No OmniScripts found that match the specified filter criteria`);
             return;
@@ -157,26 +152,5 @@ export default class extends Command {
         }
 
         return scriptsToActivate
-    }
-
-    private async init(options: any) {
-        // Prep dependencies
-        if (options.user) {
-            this.container.registerAs(new SfdxConnectionProvider(options.user, undefined), SalesforceConnectionProvider);
-        } else {
-            this.container.registerAs(new InteractiveConnectionProvider(`https://${options.instance}`), SalesforceConnectionProvider);
-        }
-
-        // Setup Namespace replacer
-        this.container.registerAs(await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider)), NamespaceService);
-
-        // Setup a Cached file system for loading datapacks
-        this.container.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
-
-        // Setup SASS packed compiler when available (usually only when CLI is packed)
-        const packedSassCompiler = join(__dirname, '../sassCompiler.js');
-        if (existsSync(packedSassCompiler)) {
-            this.container.register(this.container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
-        }
     }
 }

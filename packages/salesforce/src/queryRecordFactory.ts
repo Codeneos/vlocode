@@ -10,9 +10,9 @@ export const RecordType = Symbol('type');
 interface RecordFactoryCreateOptions {
     /**
      * Create records using a proxy to intercept property access and transform the property name to the correct casing.
-     * 
+     *
      * If false uses the defineProperty approach to transform the property names which is by design case sensitive.
-     * 
+     *
      * @default false
      */
     useRecordProxy?: boolean
@@ -26,11 +26,11 @@ export class RecordFactory {
 
     /**
      * Create records using a proxy to intercept property access and transform the property name to the correct casing.
-     * 
+     *
      * If false uses the defineProperty approach to transform the property names which is by design case sensitive.
      */
     public static readonly useRecordProxy = false;
-    
+
     private readonly schemaService: SalesforceSchemaService;
 
     /**
@@ -42,9 +42,9 @@ export class RecordFactory {
 
     /**
      * Normalize the field names to the correct casing for making queried records accessible by both the API name and the normalized name.
-     * 
+     *
      * When using the proxy transformation (see {@link useRecordProxy} or {@link options.useRecordProxy}) fields access is case insensitive.
-     * 
+     *
      * @param queryResultRecord The raw salesforce record returned by the API
      * @param options Transformation options that override the default behavior of the factory
      * @returns The transformed record based on the specified options
@@ -64,7 +64,7 @@ export class RecordFactory {
         return this.createWithDefine(queryResultRecord);
     }
 
-    private createWithProxy<T extends object>(queryResultRecord: QueryResultRecord): T {       
+    private createWithProxy<T extends object>(queryResultRecord: QueryResultRecord): T {
         return new Proxy<T>(queryResultRecord as any, new PropertyTransformHandler(RecordFactory.getPropertyKey));
     }
 
@@ -87,7 +87,7 @@ export class RecordFactory {
                         .forEach((record, i) => value[i] = this.createWithDefine(record));
                 } else {
                     // Modify the object in-place
-                    value[key] = this.createWithDefine(value as QueryResultRecord);
+                    queryResultRecord[key] = this.createWithDefine<any>(value as QueryResultRecord);
                 }
             }
 
@@ -117,7 +117,9 @@ export class RecordFactory {
             }
         }
 
-        return Object.defineProperties(queryResultRecord as T, properties);
+        const newProperties = Object.fromEntries(
+            Object.entries(properties).filter(([key]) => !(key in queryResultRecord)));
+        return Object.defineProperties(queryResultRecord as T, newProperties);
     }
 
     @cache({ scope: 'instance', unwrapPromise: true, immutable: false })
@@ -136,7 +138,7 @@ export class RecordFactory {
                     // All items in the Array are always of the same type
                     this.getObjectTypes(value[0], types);
                 } else {
-                    this.getObjectTypes(value as QueryResultRecord, types);             
+                    this.getObjectTypes(value as QueryResultRecord, types);
                 }
             }
         }
@@ -156,9 +158,9 @@ export class RecordFactory {
         if (String(name).toLowerCase() === 'id' && target['']) {
             return 'Id';
         }
-        
-        return fieldMap.get(String(name).toLowerCase()) 
-            ?? fieldMap.get(normalizeSalesforceName(String(name)).toLowerCase()) 
+
+        return fieldMap.get(String(name).toLowerCase())
+            ?? fieldMap.get(normalizeSalesforceName(String(name)).toLowerCase())
             ?? name;
     }
 

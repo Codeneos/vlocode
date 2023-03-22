@@ -7,13 +7,15 @@ import { CookieJar } from 'tough-cookie';
 import { DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
 import { ILogger, Logger } from '@vlocode/core';
 import { randomUUID } from 'crypto';
+import { TransportRecorder } from './recorder/transportRecorder';
+import { SessionDataStore } from './recorder/sessionDataStore';
 
 export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE' | 'PUT';
 
 export interface HttpResponse {
     statusCode?: number;
     statusMessage?: string;
-    headers?: http.IncomingHttpHeaders; 
+    headers?: http.IncomingHttpHeaders;
     body?: any;
 }
 
@@ -34,11 +36,11 @@ interface HttpContentType {
     /**
      * Type of content after the first slash: **type**\/subtype+suffix; param=value
      */
-    type: string; 
+    type: string;
     /**
      * Sub type of content after the first slash: type/**subtype**+suffix; param=value
      */
-    subtype: string; 
+    subtype: string;
     /**
      * Type of content after the first slash: type/subtype+**suffix**; param=value
      */
@@ -57,9 +59,9 @@ interface HttpTransportOptions {
     gzipThreshold: number;
 
     /**
-     * When true and the length of the body exceeds {@link gzipThreshold} the request will be encoded using gzip compression. This also 
+     * When true and the length of the body exceeds {@link gzipThreshold} the request will be encoded using gzip compression. This also
      * sets the accept-encoding: gzip header on the request to tell Salesforce it can send back responses with gzip compression.
-     * 
+     *
      * When disabled neither requests or responses will be encoded with gzip.
      * @default true
      */
@@ -73,19 +75,25 @@ interface HttpTransportOptions {
 
     /**
      * Parse set-cookies header and store cookies to be included in the request header on subsequent requests.
-     * 
+     *
      * Note: handling of cookies is not required but avoids Salesforce from sending the full set-cookie header on each request
      * @default true
      */
     handleCookies: boolean;
 
     /**
-     * Custom content decoders that overwrite the standard content decoding from the HTTP transport 
+     * Custom content decoders that overwrite the standard content decoding from the HTTP transport
      * to a custom one implementation.
      */
     responseDecoders?: {
         [type: string]: (buffer: Buffer, encoding: BufferEncoding) => any;
     }
+
+    /**
+     * Optional recorder on which for each request the `record` method is called.
+     * @default undefined
+     */
+    recorder?: { record<T extends HttpResponse>(info: HttpRequestInfo, responsePromise: Promise<T>): Promise<T> };
 }
 
 export interface Transport {
@@ -93,12 +101,12 @@ export interface Transport {
 }
 
 export class HttpTransport implements Transport {
-    private cookies = new CookieJar(); 
+    private cookies = new CookieJar();
 
     /**
      * Shared HTTP agent used by this {@link HttpTransport} used for connection pooling
      */
-    public httpAgent = new https.Agent({ 
+    public httpAgent = new https.Agent({
         defaultPort: 443,
         keepAlive: true,
         keepAliveMsecs: 60000,
@@ -116,10 +124,10 @@ export class HttpTransport implements Transport {
      * Options applied to to this HTTP transport
      */
     public options: HttpTransportOptions & { baseUrl?: string, instanceUrl?: string };
-    
+
     /**
      * Default configuration for the transport options. When no specific value is set for an individual transport the
-     * defaults are used instead. 
+     * defaults are used instead.
      */
     static options: HttpTransportOptions = {
         gzipThreshold: 128,
@@ -188,7 +196,7 @@ export class HttpTransport implements Transport {
         if (this.options.handleCookies) {
             request.setHeader('cookie', this.cookies.getCookieStringSync(url.href));
         }
-        
+
         request.once('error', (err) => requestPromise.reject(err));
 
         request.on('response', (response) => {
@@ -198,7 +206,7 @@ export class HttpTransport implements Transport {
             if (this.options.handleCookies && setCookiesHeader?.length) {
                 setCookiesHeader.forEach(cookie => this.cookies.setCookieSync(cookie, url.href));
             }
-            
+
             if (this.isRedirect(response)) {
                 const redirectRequestInfo = this.getRedirectRequest(response, info);
                 response.destroy();
@@ -210,7 +218,7 @@ export class HttpTransport implements Transport {
             response.on('data', (chunk) => responseData.push(chunk));
             response.once('end', () => {
                 this.decodeResponseBody(response, Buffer.concat(responseData))
-                    .then(body => { 
+                    .then(body => {
                         if (HttpTransport.enableResponseLogging) {
                             this.logger.debug(`${info.method} ${url.pathname} (${timer.stop()})`);
                             this.logger.debug(`<headers>`, JSON.stringify(response.headers, undefined, 4));
@@ -222,12 +230,12 @@ export class HttpTransport implements Transport {
                         }
                         return parsed;
                     })
-                    .then(body => requestPromise.resolve(Object.assign(response, { 
+                    .then(body => requestPromise.resolve(Object.assign(response, {
                         time: Date.now() - startTime, body
                     })))
                     .catch(err => requestPromise.reject(err));
             });
-        });  
+        });
 
         const body = info.parts ? this.encodeMultipartBody(request, info.parts) : info.body;
 
@@ -244,11 +252,15 @@ export class HttpTransport implements Transport {
             request.end();
         }
 
+        if (this.options.recorder) {
+            return this.options.recorder.record(info, requestPromise);
+        }
+
         return requestPromise;
     }
 
     private encodeMultipartBody(request: http.ClientRequest, parts: Array<HttpRequestPart>) : Buffer {
-        const boundary = `--${randomUUID()}`; 
+        const boundary = `--${randomUUID()}`;
         request.setHeader('content-type', `multipart/form-data; boundary=${boundary}`);
 
        const bodyParts = parts.flatMap(part => {
@@ -279,15 +291,15 @@ export class HttpTransport implements Transport {
                 zlib.gzip(body, (err, value) => {
                     err ? reject(err) : request
                         .setHeader('content-encoding', activeEncoding ? `${activeEncoding}, gzip` : 'gzip')
-                        .write(value, 'binary', err => 
+                        .write(value, 'binary', err =>
                             err ? reject(err) : resolve(request)
                         );
                 });
-            }); 
+            });
         }
 
-        return new Promise((resolve, reject) => 
-            request.write(body, this.bodyEncoding, err => 
+        return new Promise((resolve, reject) =>
+            request.write(body, this.bodyEncoding, err =>
                 err ? reject(err) : resolve(request)
             )
         );
@@ -303,7 +315,7 @@ export class HttpTransport implements Transport {
                     err ? reject(err) : resolve(body);
                 });
             });
-        } 
+        }
 
         if (encoding === 'deflate') {
             return new Promise((resolve, reject) => {
@@ -327,13 +339,13 @@ export class HttpTransport implements Transport {
 
         try {
             if (contentType) {
-                const decoder = this.options.responseDecoders?.[contentType.subtype] 
+                const decoder = this.options.responseDecoders?.[contentType.subtype]
                     ?? (contentType.suffix ? this.options.responseDecoders?.[contentType.suffix] : undefined);
-                
+
                 if (decoder) {
                     return decoder(responseBuffer, encoding);
                 }
-            }            
+            }
         } catch (err) {
             this.logger.warn(`Failed to parse response of type ${contentType}: ${err?.message ?? err}`);
         }
@@ -346,7 +358,7 @@ export class HttpTransport implements Transport {
         if (!contentTypeHeader) {
             return;
         }
-        
+
         const contentHeaderParts = contentTypeHeader.split(';');
         const [type, subtypeWithSuffix] = contentHeaderParts.shift()!.split('/').map(v => v.trim().toLowerCase());
         const [subtype, suffix] = subtypeWithSuffix.split('+').map(v => v.trim().toLowerCase());
@@ -381,9 +393,9 @@ export class HttpTransport implements Transport {
         if (url.startsWith('/')) {
             if (url.startsWith('/services/')) {
                 return new URL(this.options.instanceUrl + url);
-            } 
+            }
             return new URL(this.options.baseUrl + url);
-        } 
+        }
         return new URL(url);
     }
 }

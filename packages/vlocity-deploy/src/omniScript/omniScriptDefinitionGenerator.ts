@@ -1,17 +1,20 @@
 import { injectable, Logger } from '@vlocode/core';
-import { OmniScriptDefinition, OmniScriptSpecification, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition } from './omniScriptDefinition';
+import { OmniScriptDefinition, OmniScriptSpecification, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition, isChoiceScriptElement, OmniScriptChoiceElementDefinition } from './omniScriptDefinition';
 import { OmniScriptDefinitionFactory } from './omniScriptDefinitionFactory';
 import { OmniScriptDefinitionBuilder } from './omniScriptDefinitionBuilder';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptElementRecord, OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
+import { SalesforceSchemaService } from '@vlocode/salesforce';
+import { groupBy } from '@vlocode/util';
 
 @injectable()
-export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionProvider {
+export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvider {
 
     private generator = new OmniScriptDefinitionFactory();
 
     constructor(
         private readonly lookup: OmniScriptLookupService,
+        private readonly schema: SalesforceSchemaService,
         private readonly logger: Logger) {
     }
 
@@ -60,6 +63,10 @@ export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionPr
 
             const definition = this.generator.createElement(record);
 
+            if (isChoiceScriptElement(definition)) {
+                await this.loadOptions(definition);
+            }
+
             this.logger.debug(`Adding [${record.type}] ${record.name} ${record.level}/${record.order} (${id})`);
             builder.addElement(id, definition, {
                 parentElementId: record.parentElementId,
@@ -74,7 +81,24 @@ export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionPr
                 };
 
                 this.logger.debug(`Embedding script elements ${embeddedScript.type}/${embeddedScript.subType}/${embeddedScript.language}`);
+                const scriptRecordPromise = this.lookup.getScript(embeddedScript);
                 await this.addElements(builder, embeddedScript, { scriptElementId: id });
+
+                // Merge JS and templates
+                const scriptRecord = await scriptRecordPromise;
+                if (scriptRecord.isActive) {
+                    builder.mergeScriptTemplates(this.generator.createScript(scriptRecord));
+                }
+            }
+        }
+    }
+
+    private async loadOptions(element: OmniScriptChoiceElementDefinition) {
+        if (element.propSetMap.optionSource.type === 'SObject') {
+            if (element.propSetMap.controllingField.element) {
+                element.propSetMap.dependency = await this.getDependentPicklistOptions(element.propSetMap.optionSource.source);
+            } else {
+                element.propSetMap.options = await this.getPicklistOptions(element.propSetMap.optionSource.source);
             }
         }
     }
@@ -91,5 +115,21 @@ export class OmniScriptLocalDefinitionProvider implements OmniScriptDefinitionPr
 
     private isEmbeddedScriptElement(def: OmniScriptElementDefinition): def is OmniScriptEmbeddedScriptElementDefinition {
         return def.type === 'OmniScript';
+    }
+
+    private async getPicklistOptions(picklist: string) {
+        const entries = await this.getActivePicklistEntries(picklist);
+        return entries.map(entry => ({ value: entry.label ?? entry.value, name: entry.value }));
+    }
+
+    private async getDependentPicklistOptions(picklist: string) {
+        const entries = await this.getActivePicklistEntries(picklist);
+        return groupBy(entries, 'validFor', entry => ({ value: entry.label ?? entry.value, name: entry.value }));
+    }
+
+    private async getActivePicklistEntries(picklist: string) {
+        const [type, field] = picklist.split('.');
+        const values = await this.schema.describePicklistValues(type, field);
+        return values.filter(entry => entry.active);
     }
 }

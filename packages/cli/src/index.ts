@@ -89,11 +89,10 @@ class CLI {
                     const commandInstance = container.create(commandClass);
                     commandInstance.options = args.slice(0, -1).pop();
                     commandInstance.args = args.slice(0, -2);
-                    this.init(commandInstance.options);
-                    if (commandInstance.init) {
-                        await commandInstance.init(commandInstance.options);
-                    }
+
                     try {
+                        this.init(commandInstance.options);
+                        await commandInstance.init?.(commandInstance.options);
                         return await commandInstance.run(...args);
                     } catch(err) {
                         if (commandInstance.options.debug && err instanceof Error) {

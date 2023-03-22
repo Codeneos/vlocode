@@ -5,12 +5,12 @@ describe('iterable', () => {
 
     describe('#map', () => {
         it('should transform next values', () => {
-            const itr = Iterable.map(new Set([ '1', '2', '3' ]), parseInt);
+            const itr = Iterable.map(new Set([ '1', '2', '3' ]), v => parseInt(v));
             const evaled = [...itr];
             expect(evaled).toEqual([1,2,3]);
         });
         it('should not be closed after execution', () => {
-            const itr = Iterable.map(new Set([ '1' ]), parseInt);
+            const itr = Iterable.map(new Set([ '1' ]), v => parseInt(v));
             const eval1 = [...itr];
             const eval2 = [...itr];
             expect(eval1).toEqual(eval2);
@@ -58,7 +58,7 @@ describe('iterable', () => {
 
     describe('#transform', () => {
         it('should remove and transform values', () => {
-            const itr = Iterable.transform(new Set([ '1', '2', '3' ]), { map: parseInt, filter: v => parseInt(v) % 2 == 0 });
+            const itr = Iterable.transform(new Set([ '1', '2', '3' ]), { map: v => parseInt(v), filter: v => parseInt(v) % 2 == 0 });
             expect([...itr]).toEqual([2]);
         });
         it('should not fail for empty iterable ', () => {

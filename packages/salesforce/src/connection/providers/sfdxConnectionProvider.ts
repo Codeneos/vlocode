@@ -2,7 +2,7 @@ import { cache, sfdx } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 import { JsForceConnectionProvider } from './jsForceConnectionProvider';
 import { LogManager } from '@vlocode/core';
-import { SalesforceConnection } from '../salesforceConnection';
+import { SalesforceConnection, SalesforceConnectionOptions } from '../salesforceConnection';
 
 const refreshListenerSymbol = Symbol('tokenRefreshListenerAttached');
 export class SfdxConnectionProvider extends SalesforceConnectionProvider {
@@ -11,9 +11,9 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
     private version?: string;
     private logger = LogManager.get(SfdxConnectionProvider);
 
-    constructor(private readonly usernameOrAlias: string, version: string | undefined) {
+    constructor(private readonly usernameOrAlias: string, private readonly options?: SalesforceConnectionOptions) {
         super();
-        this.version = version && this.normalizeVersion(version);
+        this.version = options?.version && this.normalizeVersion(options?.version);
     }
 
     public async getJsForceConnection(): Promise<SalesforceConnection> {
@@ -39,10 +39,10 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
             throw new Error(`No SFDX credentials found for alias or user: ${this.usernameOrAlias}`)
         }
 
-        this.jsforceProvider = new JsForceConnectionProvider(orgDetails);
+        this.jsforceProvider = new JsForceConnectionProvider(orgDetails, this.options);
         if (this.version) {
             this.jsforceProvider.setApiVersion(this.version);
-        }        
+        }
     }
 
     @cache({ unwrapPromise: true })

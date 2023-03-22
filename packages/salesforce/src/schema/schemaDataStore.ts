@@ -18,7 +18,7 @@ export class SchemaDataStore {
 
     private readonly storeVersion = 2;
 
-    private readonly objectInfo = new Map<string, SchemaData<CustomObjectMetadata, DescribeSObjectResult, EntityDefinition>>();    
+    private readonly objectInfo = new Map<string, SchemaData<CustomObjectMetadata, DescribeSObjectResult, EntityDefinition>>();
     private readonly fieldInfo = new Map<string, SchemaData<CustomFieldMetadata, Field, FieldDefinition>>();
 
     /**
@@ -28,7 +28,7 @@ export class SchemaDataStore {
      */
     public addDescribe(describe: DescribeSObjectResult) {
         this.mergeStoreData(this.objectInfo, describe.name, { describe });
-        for (const field of describe.fields) {            
+        for (const field of describe.fields) {
             this.mergeStoreData(this.fieldInfo, `${describe.name}.${field.name}`, { describe: field });
         }
         return this;
@@ -36,7 +36,7 @@ export class SchemaDataStore {
 
     public addEntityDefinition(entity: EntityDefinition) {
         this.mergeStoreData(this.objectInfo, entity.qualifiedApiName, { tooling: entity });
-        for (const field of entity.fields) {            
+        for (const field of entity.fields) {
             this.mergeStoreData(this.fieldInfo, field.qualifiedApiName, { tooling: field });
         }
         return this;
@@ -44,13 +44,13 @@ export class SchemaDataStore {
 
     public addMetadata(info: CustomObjectMetadata) {
         this.mergeStoreData(this.objectInfo, info.fullName!, { metadata: info });
-        for (const field of info.fields ?? []) {            
+        for (const field of info.fields ?? []) {
             this.mergeStoreData(this.fieldInfo, `${info.fullName}.${field.fullName}`, { metadata: field });
         }
         return this;
     }
 
-    private mergeStoreData<D,T,M>(store: Map<string, SchemaData<T, D, M>>, key: string, data: SchemaData<T, D, M>) {
+    private mergeStoreData<D, T, M>(store: Map<string, SchemaData<T, D, M>>, key: string, data: SchemaData<T, D, M>) {
         store.set(key.toLowerCase(), {
             ...(store.get(key.toLowerCase()) ?? {}),
             ...data
@@ -74,14 +74,17 @@ export class SchemaDataStore {
      */
     public async saveToFile(file: string) {
         await ensureDir(dirname(file));
-        await writeJson(file, { version: this.storeVersion, values: [...Iterable.map(this.objectInfo.entries(), ([name, value]) => ({ name, ...value }))] }); 
+        await writeJson(file, { 
+            version: this.storeVersion, 
+            values: [...Iterable.map(this.objectInfo.entries(), ([name, value]) => ({ name, ...value }))] 
+        });
     }
 
     /**
      * Load store contents from a file stored on disk
      * @param file file name to load
      */
-     public async loadFromFile(file: string) {
+    public async loadFromFile(file: string) {
         return this.load(await readFile(file));
     }
 
@@ -94,7 +97,7 @@ export class SchemaDataStore {
             data = data.toString();
         }
 
-        const cacheStoreData = typeof data !== 'object' ? JSON.parse(data) : data; 
+        const cacheStoreData = typeof data !== 'object' ? JSON.parse(data) : data;
         const loader = this[`loadCacheVersion${cacheStoreData?.version}`];
 
         if (typeof loader !== 'function') {
@@ -113,7 +116,7 @@ export class SchemaDataStore {
     }
 
     private loadCacheVersion2(data: any) {
-        for (const { metadata, describe, tooling } of data.values) {            
+        for (const { metadata, describe, tooling } of data.values) {
             this.addDescribe(describe);
             this.addMetadata(metadata);
             this.addEntityDefinition(tooling);
