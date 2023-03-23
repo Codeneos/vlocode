@@ -50,9 +50,9 @@ export class OmniScript implements DatapackDeploymentSpec {
         }
 
         if (typeof datapack.Element__c !== 'object') {
-            throw new Error(
-                `All OmniScripts and Integration procedures should have elements. ` +
-                `Expected Element__c property to be an array for datapack: ${datapack.headerFile}`);
+            this.addPreprocessingWarning(datapack.sourceKey,
+                `Expected Element__c property to be an array for datapack of type ${datapack.datapackType}`);
+            datapack.Element__c = [];
         }
 
         if (typeof datapack.Element__c === 'object' && !Array.isArray(datapack.Element__c)) {
