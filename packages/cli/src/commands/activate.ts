@@ -35,6 +35,8 @@ export default class extends SalesforceCommand {
         new Option('--parallel-activations', 'determines the amount of parallel activations to run').default(4),
         new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
         new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),
+        new Option('--skip-reactivate-dependencies', 'skips reactivating parent scripts that embed any of the scripts that are being activated. ' +
+            'When you activate a re-usable OmniScript all the OmniScript that embed this script will also get re-activated and updated.').default(false),
         new Option('--remote-activation', 'use anonymous apex to activate OmniScripts.' +
             'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' +
             'Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.').default(false),
@@ -76,7 +78,8 @@ export default class extends SalesforceCommand {
                     await activator.activate(info.script.id, {
                         toolingApi: !options.useMetadataApi,
                         skipLwcDeployment: options.skipLwc,
-                        remoteActivation: options.remoteActivation
+                        remoteActivation: options.remoteActivation,
+                        reactivateDependentScripts: options.skipReactivateDependencies !== true
                     });
                     info.status = 'activated';
                     this.logger.info(`${logSymbols.success} Activated: ${info.type} (${info.script.id})`);
