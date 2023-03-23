@@ -68,10 +68,6 @@ export class OmniScriptActivator {
      */
     public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions) {
         const script = await this.lookup.getScript(input);
-        const definitionOld = await this.definitionProvider.getScriptDefinition(script.id);
-        const definitionNew = await this.definitionGenerator.getScriptDefinition(script.id);
-        writeFileSync('definitionOld.json', JSON.stringify(definitionOld, null, 4));
-        writeFileSync('definitionNew.json', JSON.stringify(definitionNew, null, 4));
 
         // (Re-)Activate script
         if (options?.remoteActivation) {
@@ -86,7 +82,7 @@ export class OmniScriptActivator {
             await this.deployLwcComponent(definition, options);
         }
 
-        if (options?.reactivateDependentScripts) {
+        if (options?.reactivateDependentScripts && script.isReusable) {
             await this.reactivateDependentScripts(script, options);
         }
     }
@@ -105,12 +101,12 @@ export class OmniScriptActivator {
     private async localScriptActivation(script: OmniScriptRecord) {
         const definition = await this.definitionGenerator.getScriptDefinition(script.id);
         await this.updateScriptDefinition(script.id, definition);
-        await this.setAsActiveVersion(script, { lwcId: definition.lwcId });
+        await this.updateActiveVersion(script, { lwcId: definition.lwcId });
         await this.deleteAllInactiveScriptDefinitions(script.id);
         return definition;
     }
 
-    private async setAsActiveVersion(script: OmniScriptRecord, extraActivationValues?: Record<string, any>) {
+    private async updateActiveVersion(script: OmniScriptRecord, extraActivationValues?: Record<string, any>) {
         const allVersions = await this.lookup.getScriptVersions(script);
         const scriptUpdates = allVersions
             .filter(version => version.isActive ? version.id !== script.id : version.id === script.id)

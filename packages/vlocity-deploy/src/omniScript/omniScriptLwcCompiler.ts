@@ -29,7 +29,7 @@ interface OmniCompiler {
  * Compiler that transforms activated OmniScripts into LWC components that can easily be deployed or written to the disk.
  */
 @injectable()
-export class OmniScriptLwcCompiler{
+export class OmniScriptLwcCompiler {
 
     private readonly lwcCompilerResource = 'OmniscriptLwcCompiler';
     private compiler: OmniCompiler;
@@ -46,8 +46,8 @@ export class OmniScriptLwcCompiler{
         }
 
         // fetch compiler script from server
-        const [ compilerSource ] = await this.salesforceService.getStaticResource(this.lwcCompilerResource);
-        
+        const [compilerSource] = await this.salesforceService.getStaticResource(this.lwcCompilerResource);
+
         if (!compilerSource) {
             throw new Error('Unable to find OmniScript LWC compiler; is the Vlocity managed package installed?');
         }
@@ -72,14 +72,14 @@ export class OmniScriptLwcCompiler{
                 .replace(
                     /getApiVersion\s*=\s*function\s*\(\s*\)\s*{\s*return\s*['"`](.){4}['"`];?\s*}/gm,
                     `getApiVersion = function() { return '${this.compilerApiVersion}'; }`,
-                )                
+                )
                 .replace(
-                    `module.exports = OmniscriptLwcCompiler;`, 
+                    `module.exports = OmniscriptLwcCompiler;`,
                     `module.exports = window.OmniscriptLwcCompiler = OmniscriptLwcCompiler;`
                 )
             }
             this.lwcCompiler = new OmniscriptLwcCompiler('${compilerSource.namespace}');
-        `).runInContext(localDom.getInternalVMContext());        
+        `).runInContext(localDom.getInternalVMContext());
         this.compiler = localDom.window.lwcCompiler;
 
         // return the initialized compiler
@@ -92,7 +92,7 @@ export class OmniScriptLwcCompiler{
      * @param options Options to control the compilation
      * @returns 
      */
-    public async compile(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }) : Promise<{ name: string, resources: Array<CompiledResource> }> {
+    public async compile(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }): Promise<{ name: string, resources: Array<CompiledResource> }> {
         // Get the name of the component or generate it and compile the OS
         const componentName = options?.lwcName ?? this.getLwcName({ type: scriptDefinition.bpType, subType: scriptDefinition.bpSubType, language: scriptDefinition.bpLang });
         const compiler = await this.getCompiler();
@@ -111,7 +111,7 @@ export class OmniScriptLwcCompiler{
         const componentName = options?.lwcName ?? this.getLwcName({ type: scriptDefinition.bpType, subType: scriptDefinition.bpSubType, language: scriptDefinition.bpLang });
         const compiler = await this.getCompiler();
         const resources = await compiler.compileActivated(componentName, scriptDefinition, false, true, this.namespaceService.getNamespace());
-        
+
         const componentMetaDefinition = resources.find(r => r.name.endsWith('.js-meta.xml'));
         if (!componentMetaDefinition) {
             throw new Error(`LWC compiler did not generate a .js-meta.xml file for ${componentName}`);
@@ -121,11 +121,11 @@ export class OmniScriptLwcCompiler{
         const targetConfigs = XML.stringify(componentDef.targetConfigs, undefined, { headless: true });
 
         const toolingMetadata = {
-            apiVersion: componentDef.apiVersion,            
+            apiVersion: componentDef.apiVersion,
             lwcResources: {
-                lwcResource: resources.filter(f => !f.name.endsWith('.js-meta.xml')).map(res =>({ 
-                    filePath: res.name, 
-                    source: Buffer.from(res.source, 'utf-8').toString('base64') 
+                lwcResource: resources.filter(f => !f.name.endsWith('.js-meta.xml')).map(res => ({
+                    filePath: res.name,
+                    source: Buffer.from(res.source, 'utf-8').toString('base64')
                 }))
             },
             capabilities: {
