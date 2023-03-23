@@ -337,7 +337,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                     }
                 }
             });
-            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, this.config.salesforce.apiVersion));
+            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, { 
+                version: this.config.salesforce.apiVersion
+            }));
         }
         return this.connector!;
     }
