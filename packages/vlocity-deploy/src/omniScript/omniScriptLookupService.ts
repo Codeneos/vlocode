@@ -113,10 +113,11 @@ export class OmniScriptLookupService {
     public async getScriptVersions(script?: OmniScriptSpecification | string, extraFilter?: Partial<OmniScriptRecord>): Promise<Array<OmniScriptVersionDetail>> {
         if (typeof script === 'string') {
             // When the script is an ID find the script definition first and query the versions based on the definition
-            script = (await this.getScriptsWithFields(script, ['type', 'subType', 'language']))[0];
-            if (!script) {
+            const scriptRec = (await this.getScriptsWithFields(script, ['type', 'subType', 'language']))[0];
+            if (!scriptRec) {
                 throw new Error(`Unable to find OmniScript with id: ${script}`);
             }
+            script = scriptRec;
         }
         return this.getScriptsWithFields(script, scriptVersionDetailFields, extraFilter);
     }
