@@ -47,37 +47,37 @@ export class SalesforceLookupService {
             const results = await this.lookup(type, asArray(ids).map(Id => ({ Id })), lookupFields, undefined, useCache, cancelToken);
             results.forEach(r => resultsById.set(r.Id, r));
         }
-        return resultsById;        
+        return resultsById;
     }
 
     /**
      * Query multiple records based on the where condition. The filter condition can either be a string or a complex filter object.
      * @param type Name of the SObject type to lookup
-     * @param filter Object filter or Where conditional string, by default the object filter uses and equals comparison (=). 
+     * @param filter Object filter or Where conditional string, by default the object filter uses and equals comparison (=).
      * A different comparison mode can be specified by prefixing the value with any of these operators:
      * - `!=`: not equals
      * - `>`: greater then
      * - `<`: smaller then
      * - `~`: like/contains
-     * 
+     *
      * Arrays are interpreted as as `includes` operator. For example:
-     * ``` 
-     * lookup('Account', { Name: ['Peter', 'ACME'] }, ['Id', 'Name'] ) 
      * ```
-     * will translate to the follow query: 
+     * lookup('Account', { Name: ['Peter', 'ACME'] }, ['Id', 'Name'] )
+     * ```
+     * will translate to the follow query:
      * `
      * select Id, Name from Account where Name includes ('Peter', 'ACME')
      * `
-     * 
+     *
      * You can also specify multiple filters by passing an array of objects or strings:
-     * ``` 
-     * lookup('Account', [{ Name: 'Peter' }, { Name: 'ACME' }], ['Id', 'Name'] ) 
-     * ``` 
-     * Which will translate to the follow query: 
+     * ```
+     * lookup('Account', [{ Name: 'Peter' }, { Name: 'ACME' }], ['Id', 'Name'] )
+     * ```
+     * Which will translate to the follow query:
      * `
      * select Id, Name from Account where (Name = 'Peter') or (Name = 'ACME')
      * `
-     * @param lookupFields fields to lookup on the record, if not field list is provided this function will lookup All fields. 
+     * @param lookupFields fields to lookup on the record, if not field list is provided this function will lookup All fields.
      * Note that the Id field is always included in the results even when no fields are specified, or when a limited set is specified.
      * @param limit limit the number of results to lookup, set to 0, null, undefined or false to not limit the lookup results; when specified as 1 returns a single record instead of an array.
      * @param useCache when true instructs the QueryService to cache the result in case of a cache miss and otherwise retrive the cached response. The default behavhior depends on the @see QueryService configuration.
@@ -155,20 +155,20 @@ export class SalesforceLookupService {
                     } else if (value.startsWith('~')) {
                         operator = 'like';
                         value = value.substring(1);
-                    } 
+                    }
                 } else if (typeof value === 'object' && Array.isArray(value)) {
                     operator = 'in';
                     if (salesforceField.type == 'multipicklist') {
                         operator = 'includes';
                     }
                 }
-                        
+
                 if (typeof value === 'string' && isSalesforceId(value) && salesforceField.type === 'string') {
                     // doesn't work for Arrays nor does it handle < and > operators properly
                     value = [ value, value.substring(0, 15) ];
                     operator = operator == '=' ? 'in' : 'not in';
-                } 
-                
+                }
+
                 const fieldValue = QueryService.formatFieldValue(value, salesforceField);
                 lookupFilters.push(`${fieldName} ${operator} ${fieldValue}`);
             }
