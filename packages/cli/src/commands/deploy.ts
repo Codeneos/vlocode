@@ -106,7 +106,7 @@ export default class extends SalesforceCommand {
     }
 
     protected async init(options: any) {
-        super.init(options);
+        await super.init(options);
 
         // Setup SASS packed compiler when available (usually only when CLI is packed)
         const packedSassCompiler = join(__dirname, '../sassCompiler.js');
