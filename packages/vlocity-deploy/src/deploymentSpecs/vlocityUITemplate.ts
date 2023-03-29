@@ -4,7 +4,7 @@ import { Timer } from '@vlocode/util';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '../datapack';
-import { SassCompiler } from '../sass';
+import { SassCompiler } from '../scss';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
 
