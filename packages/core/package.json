@@ -13,7 +13,7 @@
     },
     "scripts": {
         "build": "pnpm run pre-build && tsc",
-        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo",
+        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo ./src/**/*.d.ts ./src/**/*.d.ts.map",
         "watch": "pnpm run pre-build && tsc -w",
         "pack": "pnpm run build && pnpm pack",
         "prepublish": "pnpm run build",
