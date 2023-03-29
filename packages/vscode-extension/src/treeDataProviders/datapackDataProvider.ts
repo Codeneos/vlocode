@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as constants from '../constants';
 import { LogManager, injectable, container } from '@vlocode/core';
 import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity-deploy';
-import { evalExpr, groupBy, normalizeSalesforceName, clearCache, lazy } from '@vlocode/util';
+import { evalExpr, groupBy, normalizeSalesforceName, clearCache, lazy, Iterable } from '@vlocode/util';
 
 import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';
 import { DescribeGlobalSObjectResult } from 'jsforce';
@@ -79,7 +79,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         const description = node.getItemDescription?.();
         const tooltip = node.getItemTooltip?.();
         const label = node.getItemLabel?.();
-        
+
         return {
             id: node.getId(),
             label: typeof label === 'string' ? label : '<LABEL MISSING>',
@@ -148,20 +148,32 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
     private async getExportableRecords(datapackType: string) : Promise<SObjectRecord[]> {
         const query = await this.getQuery(datapackType);
-        const results = await this.vlocode.salesforceService.query<SObjectRecord>(query);
+        const results = await this.vlocode.salesforceService.query<SObjectRecord>(query.getQuery());
         this.logger.log(`Found ${results.length} exportable datapacks form type ${datapackType}`);
         return results;
     }
 
     private async getQuery(datapackType: string) {
         const queryDefinition = await this.datapackService.getQueryDefinition(datapackType);
-        if (queryDefinition?.query) {
-            return QueryBuilder.parse(queryDefinition?.query).select('Name').getQuery();
+        const query = queryDefinition?.query 
+            ? QueryBuilder.parse(queryDefinition.query) 
+            : new QueryBuilder(await this.datapackInfoService.getSObjectType(datapackType));
+
+        if (!query.sobjectType) {
+            throw new Error(`Unable to determine SObject type for datapack: ${datapackType}`);
         }
 
-        const sobjectType = await this.datapackInfoService.getSObjectType(datapackType);
-        return new QueryBuilder(sobjectType, [ 'Id', 'Name' ]).getQuery();
+        const fields = await this.salesforceService.schema.getSObjectFields(query.sobjectType);
+        const nameFields = Iterable.transform(fields.entries(), { 
+            filter: ([,field]) => field.type === 'string' && /(Name|Title)(__c)?$/i,
+            map: ([name]) => name
+        });
+
+        query.select('Id', ...nameFields);
+        await query.validateFields(this.salesforceService.schema);
+        return query;
     }
+
 
     private async getExportableSObjectTypes() {
         const customObjects = await this.vlocode.salesforceService.schema.describeSObjects();
@@ -344,10 +356,10 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public get id(): string {
-        return this.record.Id;
+        return this.record.id;
     }
 
     public get name(): string {
-        return this.record.Name ?? '<NO_NAME>';
+        return this.record.name ?? this.record.title ?? '<NO_NAME>';
     }
 }

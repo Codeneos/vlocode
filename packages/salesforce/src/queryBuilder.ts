@@ -24,7 +24,7 @@ class QueryBuilderData {
     public get sobjectType() {
         return this.query.sobjectType;
     }
-    
+
     public execute<T = any>(executor?: SalesforceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
         if (!executor) {
             return this.execute(container.get(QueryService));
@@ -32,8 +32,8 @@ class QueryBuilderData {
 
         if (typeof executor['query'] === 'function') {
             return executor['query'](this.getQuery());
-        } 
-        
+        }
+
         // @ts-ignore executor is JsForceConnectionProvider
         return new QueryService(executor).query(this.getQuery());
     }
@@ -45,8 +45,8 @@ class QueryBuilderData {
 
         if (typeof executor['queryTooling'] === 'function') {
             return executor['queryTooling'](this.getQuery());
-        } 
-        
+        }
+
         // @ts-ignore executor is JsForceConnectionProvider
         return new QueryService(executor).queryTooling(this.getQuery());
     }
@@ -63,13 +63,29 @@ export interface QueryFilterCondition {
  */
 export class QueryBuilder extends QueryBuilderData {
 
-    private schema = lazy(() => container.get(SalesforceSchemaService));
-    private logger = lazy(() => LogManager.get(QueryBuilder));
-
     constructor(query: SalesforceQueryData);
     constructor(sobjectType: string, fieldList?: string[]);
     constructor(...args: any[]) {
         super(typeof args[0] === 'object' ? args[0] : { sobjectType: args[0], fieldList: args[1] ?? [ 'Id' ] });
+    }
+
+    /**
+     * Validate queried fields and remove any unknown field from the query using the schema access provided
+     * @param schema Schema access
+     */
+    public async validateFields(schema: SalesforceSchemaService): Promise<string[]> {
+        const removedFields = new Array<string>();
+        const resolvedFields = new Array<string>();
+        for (const field of this.fields) {
+            const fieldDef = await schema.describeSObjectFieldPath(this.sobjectType, field, false);
+            if (fieldDef) {
+                resolvedFields.push(field)
+            } else {
+                removedFields.push(field);
+            }
+        }
+        this.query.fieldList = resolvedFields;
+        return removedFields;
     }
 
     public clone() {
@@ -83,7 +99,7 @@ export class QueryBuilder extends QueryBuilderData {
     public static parse(query: string) {
         return new QueryBuilder(QueryParser.parse(query));
     }
-    
+
     public get where(): QueryConditionBuilder {
         return new QueryConditionBuilder(this.query);
     }
@@ -123,7 +139,7 @@ export class QueryBuilder extends QueryBuilderData {
     public offset(offset: number) : QueryBuilder {
         this.query.offset = offset;
         return this;
-    }    
+    }
 }
 
 export class QueryConditionBuilder extends QueryBuilderData {
