@@ -1,4 +1,4 @@
-import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
+import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptElementType, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
 import { deepClone, escapeHtmlEntity, mapGetOrCreate } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';
 import { randomUUID } from 'crypto';
@@ -13,6 +13,10 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     private elements = new Map<string, OmniScriptElementDefinition>();
     private groups = new Map<string, OmniScriptElementGroupDefinitionBuilder>();
     private scriptOffsets = new Map<string, number>();
+    private addElementHandlers: Partial<Record<OmniScriptElementType, OmniScriptDefinitionBuilder['addElement']>> = {
+        'Input Block': this.addInputBlock.bind(this),
+        'Type Ahead Block': this.addTypeAheadBlock.bind(this)
+    };
 
     constructor(private readonly scriptDef: OmniScriptDefinition) {
     }
@@ -116,24 +120,26 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
             this.scriptDef.children.push(ele);
         }
 
-        if (ele.type === 'Input Block') {
-            ele.JSONPath = this.getJsonPath(ele);
-        }
-
-        if (ele.type === 'Type Ahead Block') {
-            const typeAheadElement = deepClone(ele);
-            this.getGroup(id)?.addElement(typeAheadElement);
-
-            // Update level and root index of inner type ahead
-            typeAheadElement.type = 'Type Ahead';
-            typeAheadElement.rootIndex = ele.indexInParent;
-            typeAheadElement.level = ele.level + 1;
-
-            // The outer type-ahead block gets a `-Block` postfix so it can be distinguished from the
-            // inner element which carries the original element name
-            ele.name += `-Block`;
-        }
+        this.addElementHandlers[ele.type]?.(id, ele, options);
     }
+
+    private addInputBlock(id: string, ele: OmniScriptElementDefinition) {
+         ele.JSONPath = this.getJsonPath(ele);
+    }
+
+    private addTypeAheadBlock(id: string, ele: OmniScriptElementDefinition) {
+        const typeAheadElement = deepClone(ele);
+        this.getGroup(id)?.addElement(typeAheadElement);
+
+        // Update level and root index of inner type ahead
+        typeAheadElement.type = 'Type Ahead';
+        typeAheadElement.rootIndex = ele.indexInParent;
+        typeAheadElement.level = ele.level + 1;
+
+        // The outer type-ahead block gets a `-Block` postfix so it can be distinguished from the
+        // inner element which carries the original element name
+        ele.name += `-Block`;
+   }
 
     private getGroup(id: string) {
         const groupDefinition = this.elements.get(id);
