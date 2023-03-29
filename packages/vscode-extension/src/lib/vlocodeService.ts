@@ -331,7 +331,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             const connectorHooks = new HookManager<SfdxConnectionProvider>().registerHook({
                 post: args => {
                     if (args.name === 'getJsForceConnection') {
-                        args.returnValue = args.returnValue
+                        args.returnValue = Promise.resolve(args.returnValue)
                             .catch(err =>  this.handleGetConnectionError(args.target, err))
                             .then(connection => this.connectionHooks.attach(connection));
                     }
