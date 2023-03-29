@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { Logger, LogManager } from '@vlocode/core';
-import { Command } from '@lib/command';
+import { Command } from '../lib/command';
 import { CommandOptions } from './commandRouter';
 
 export class CommandExecutor implements Command {

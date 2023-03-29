@@ -1,8 +1,8 @@
-import { VlocodeCommand } from '@constants';
+import { VlocodeCommand } from '../../constants';
 import * as vscode from 'vscode';
 import DeployMetadataCommand from './deployMetadataCommand';
 import MetadataCommand from './metadataCommand';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { vscodeCommand } from '../../lib/commandRouter';
 
 @vscodeCommand(VlocodeCommand.pauseDeploymentQueue, { focusLog: true  })
 export default class PauseMetadataDeploymentsCommand extends MetadataCommand {

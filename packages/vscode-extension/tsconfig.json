@@ -4,19 +4,10 @@
         "outDir": "lib",
         "sourceMap": true,
         "declaration": false,
-        "baseUrl": ".",
-        "paths": {
-            "@root/*": ["src/*"],
-            "@constants": ["src/constants"],
-            "@util/*": ["src/lib/util/*"],
-            "@lib/*": ["src/lib/*"],
-            "@logging/*": ["src/lib/logging/*"],
-            "@events/*": ["src/events/*"],
-            "@commands/*": ["src/commands/*"]
-        },
+        "baseUrl": "src",
         "types": ["node", "webpack-env"]
     },
-    "include": ["src/**/*", "weboack/**/*", "types/**/*"],
+    "include": ["src/**/*.ts", "weboack/**/*.ts", "types/**/*.ts"],
     "references": [
         { "path": "../util" },
         { "path": "../core" },

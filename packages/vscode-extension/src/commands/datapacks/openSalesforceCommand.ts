@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import * as open from 'open';
 
 import { evalExpr } from '@vlocode/util';
-import { ObjectEntry } from '@lib/vlocity/vlocityDatapackService';
+import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
 
 @vscodeCommand(VlocodeCommand.openInSalesforce)
 export default class OpenSalesforceCommand extends DatapackCommand {

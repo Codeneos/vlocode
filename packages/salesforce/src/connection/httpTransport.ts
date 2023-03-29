@@ -7,8 +7,6 @@ import { CookieJar } from 'tough-cookie';
 import { DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
 import { ILogger, Logger } from '@vlocode/core';
 import { randomUUID } from 'crypto';
-import { TransportRecorder } from './recorder/transportRecorder';
-import { SessionDataStore } from './recorder/sessionDataStore';
 
 export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE' | 'PUT';
 
@@ -145,7 +143,7 @@ export class HttpTransport implements Transport {
      * Even when debug logging is enable request and response bodies are not logged for performance and security reason.
      * Enabling this flag enables logging of both the request and response bodies including headers
      */
-    static enableResponseLogging = false;
+    static enableResponseLogging = true;
 
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as constants from '@constants';
+import * as constants from '../../constants';
 
 import { groupBy , createRecordProxy, evalExpr } from '@vlocode/util';
 
@@ -7,8 +7,8 @@ import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { DatapackCommand } from './datapackCommand';
 import { SObjectRecord } from '@vlocode/salesforce';
 import { ObjectEntry } from '@vlocode/vlocity-deploy';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { DatapackResultCollection } from '@root/lib/vlocity/vlocityDatapackService';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { DatapackResultCollection } from '../../lib/vlocity/vlocityDatapackService';
 
 @vscodeCommand(constants.VlocodeCommand.exportDatapack, { focusLog: true  })
 export default class ExportDatapackCommand extends DatapackCommand {

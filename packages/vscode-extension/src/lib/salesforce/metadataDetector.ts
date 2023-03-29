@@ -1,5 +1,5 @@
 
-import { FileFilterFunction, FileFilterInfo } from '@lib/workspaceContextDetector';
+import { FileFilterFunction, FileFilterInfo } from '../../lib/workspaceContextDetector';
 import { container, injectable } from '@vlocode/core';
 import { fileSuffix, directoryName, fileName } from '@vlocode/util';
 import { MetadataRegistry } from '@vlocode/salesforce';

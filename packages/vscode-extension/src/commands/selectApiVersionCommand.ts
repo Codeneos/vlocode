@@ -1,6 +1,6 @@
-import { VlocodeCommand } from '@root/constants';
-import { CommandBase } from '@root/lib/commandBase';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../constants';
+import { CommandBase } from '../lib/commandBase';
+import { vscodeCommand } from '../lib/commandRouter';
 import * as vscode from 'vscode';
 
 @vscodeCommand(VlocodeCommand.selectApiVersion)

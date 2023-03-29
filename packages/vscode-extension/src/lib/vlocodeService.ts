@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as jsforce from 'jsforce';
-import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '@constants';
-import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '@lib/vlocodeActivity';
+import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
+import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '../lib/vlocodeActivity';
 import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options, poll, getErrorMessage } from '@vlocode/util';
 import * as chalk from 'chalk';
 import { Logger , injectable , container } from '@vlocode/core';

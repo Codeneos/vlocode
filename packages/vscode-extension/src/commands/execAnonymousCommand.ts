@@ -2,8 +2,8 @@ import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
 import { SoapDebuggingHeader } from '@vlocode/salesforce';
 import * as vscode from 'vscode';
 import MetadataCommand from './metadata/metadataCommand';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '../lib/commandRouter';
+import { VlocodeCommand } from '../constants';
 
 type LogLevelQuickPickItem = vscode.QuickPickItem & { debugHeader: SoapDebuggingHeader; name?: string };
 

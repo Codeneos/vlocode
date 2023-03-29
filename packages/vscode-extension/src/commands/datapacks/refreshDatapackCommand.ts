@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import { groupBy, mapAsync } from '@vlocode/util';
 import ExportDatapackCommand from './exportDatapackCommand';
 import { DatapackUtil } from '@vlocode/vlocity-deploy';
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
 
 @vscodeCommand(VlocodeCommand.refreshDatapack, { focusLog: true  })
 export default class RefreshDatapackCommand extends ExportDatapackCommand {

@@ -3,11 +3,11 @@ import * as vscode from 'vscode';
 
 import { forEachAsyncParallel ,  fileName } from '@vlocode/util';
 import * as open from 'open';
-import { ActivityProgress, VlocodeActivityStatus } from '@lib/vlocodeActivity';
-import { VlocodeCommand } from '@constants';
+import { ActivityProgress, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
+import { VlocodeCommand } from '../../constants';
 import MetadataCommand from './metadataCommand';
 import { SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { vscodeCommand } from '../../lib/commandRouter';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce

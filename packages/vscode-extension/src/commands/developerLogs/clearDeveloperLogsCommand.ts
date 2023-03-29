@@ -1,5 +1,5 @@
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
 import * as vscode from 'vscode';
 import MetadataCommand from '../metadata/metadataCommand';
 

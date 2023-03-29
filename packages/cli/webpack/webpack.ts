@@ -30,7 +30,7 @@ const common : webpack.Configuration = {
         }),
         {
             cli: './src/index.ts',
-            sassCompiler: '../vlocity-deploy/src/sass/forked/fork.ts'
+            sassCompiler: '../vlocity-deploy/src/scss/forked/fork.ts'
         }),
     module: {
         rules: [

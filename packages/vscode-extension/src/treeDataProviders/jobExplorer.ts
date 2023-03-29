@@ -1,11 +1,11 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
-import VlocityDatapackService from '@lib/vlocity/vlocityDatapackService';
+import VlocityDatapackService from '../lib/vlocity/vlocityDatapackService';
 import { LogManager, Logger } from '@vlocode/core';
 import * as yaml from 'js-yaml';
 
-import VlocityJobFile from '@lib/vlocity/vlocityJobFile';
+import VlocityJobFile from '../lib/vlocity/vlocityJobFile';
 import * as vlocity from 'vlocity';
 import { filterUndefined, getErrorMessage } from '@vlocode/util';
 import BaseDataProvider from './baseDataProvider';

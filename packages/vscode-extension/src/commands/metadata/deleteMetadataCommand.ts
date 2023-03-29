@@ -1,5 +1,5 @@
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
 import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import * as path from 'path';
 import * as vscode from 'vscode';

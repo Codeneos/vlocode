@@ -3,8 +3,9 @@ import * as fs from 'fs-extra';
 import { except } from '@vlocode/util';
 import MetadataCommand from './metadataCommand';
 import { SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { basename } from 'path';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce
@@ -19,25 +20,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {
         // Build manifest
         const apiVersion = this.vlocode.config.salesforce?.apiVersion || this.salesforce.getApiVersion();
-
-        // Build manifest
-        const sfPackage = await vscode.window.withProgress({
-            title: 'Building component manifest...',
-            location: vscode.ProgressLocation.Notification,
-        }, async (progress, token) => {
-            const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
-            return (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
-        });
-        this.clearPreviousErrors(sfPackage.files());
-
-        // Get task title
-        if (sfPackage.size() == 0) {
-            void vscode.window.showWarningMessage('None of the selected files or folders are refreshable Salesforce Metadata');
-            return;
-        }
-        const componentsRequested = sfPackage.getComponentNames();
-        const progressTitle = sfPackage.size() == 1 ? componentsRequested[0] : `${sfPackage.size()} components`;
-        this.logger.info(`Refresh ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
+        const progressTitle = selectedFiles.length == 1 ? basename(selectedFiles[0].fsPath) : `${selectedFiles.length} components`;
 
         await this.vlocode.withActivity({
             activityTitle: `Refresh ${progressTitle}`,
@@ -45,16 +28,21 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true,
-        }, async (progress, token) => {
+        }, async (_progress, token) => {
+            // Build manifest
+            const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
+            const sfPackage = (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
+            this.clearPreviousErrors(sfPackage.files());
+
+            if (sfPackage.size() == 0) {
+                void vscode.window.showWarningMessage('None of the selected files or folders are refreshable Salesforce Metadata');
+                return;
+            }
 
             const result = await this.salesforce.deploy.retrieveManifest(sfPackage.manifest, apiVersion, token);
 
             if (token?.isCancellationRequested) {
                 return;
-            }
-
-            if (!result.success) {
-                throw new Error('Failed to refresh selected metadata.');
             }
 
             if (result.retrieveCount == 0) {
@@ -85,6 +73,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
                 }
             }
 
+            const componentsRequested = sfPackage.getComponentNames();
             const componentsNotFound = except(componentsRequested, result.componentNames());
 
             if (componentsNotFound.length > 0) {
