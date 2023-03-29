@@ -1,8 +1,8 @@
 import * as path from 'path';
-import { EventHandlerBase } from '@events/eventHandlerBase';
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { getDocumentBodyAsString, XML } from '@vlocode/util';
+import { EventHandlerBase } from './eventHandlerBase';
 
 export default class extends EventHandlerBase<vscode.Uri> {
 

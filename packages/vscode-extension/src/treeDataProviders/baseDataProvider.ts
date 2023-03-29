@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import VlocodeService from '@lib/vlocodeService';
-import { CommandFn } from '@lib/commandRouter';
-import { getContext } from '@lib/vlocodeContext';
-import { VlocodeCommand } from '@constants';
+import VlocodeService from '../lib/vlocodeService';
+import { CommandFn } from '../lib/commandRouter';
+import { getContext } from '../lib/vlocodeContext';
+import { VlocodeCommand } from '../constants';
 import { randomUUID } from 'crypto';
 
 /**

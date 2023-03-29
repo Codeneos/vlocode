@@ -6,9 +6,9 @@ import { getDocumentBodyAsString , filterUndefined , substringAfterLast } from '
 import { VlocityDatapack, VlocityDatapackReference, DatapackLoader } from '@vlocode/vlocity-deploy';
 import { container } from '@vlocode/core';
 import { DatapackCommand } from './datapackCommand';
-import { getDatapackHeadersInWorkspace } from '@root/lib/vlocity/datapackUtil';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { getDatapackHeadersInWorkspace } from '../../lib/vlocity/datapackUtil';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
 
 @vscodeCommand(VlocodeCommand.buildParentKeyFiles)
 export default class BuildParentKeyFilesCommand extends DatapackCommand {

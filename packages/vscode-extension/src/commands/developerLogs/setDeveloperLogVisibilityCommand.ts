@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import type { VlocodeSalesforceConfiguration } from '@lib/vlocodeConfiguration';
+import type { VlocodeSalesforceConfiguration } from '../../lib/vlocodeConfiguration';
 import MetadataCommand from '../metadata/metadataCommand';
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
 
 /**
  * Set the developer log visibility

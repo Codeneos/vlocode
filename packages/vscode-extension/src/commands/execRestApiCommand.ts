@@ -1,5 +1,5 @@
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../constants';
+import { vscodeCommand } from '../lib/commandRouter';
 import { HttpMethod } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
 import * as vscode from 'vscode';

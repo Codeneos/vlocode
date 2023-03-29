@@ -1,4 +1,4 @@
-import { EventHandlerBase } from '@events/eventHandlerBase';
+import { EventHandlerBase } from './eventHandlerBase';
 import * as vscode from 'vscode';
 
 export default class extends EventHandlerBase<vscode.Uri> {

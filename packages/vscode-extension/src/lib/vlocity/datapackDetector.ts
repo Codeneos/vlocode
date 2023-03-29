@@ -1,5 +1,5 @@
 
-import { FileFilterFunction, FileFilterInfo } from '@lib/workspaceContextDetector';
+import { FileFilterFunction, FileFilterInfo } from '../../lib/workspaceContextDetector';
 import { container, injectable } from '@vlocode/core';
 
 export class DatapackDetector {

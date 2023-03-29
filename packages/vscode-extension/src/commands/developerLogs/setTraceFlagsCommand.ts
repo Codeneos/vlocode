@@ -1,5 +1,5 @@
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
 import { SalesforceDebugLevel } from '@vlocode/salesforce';
 import { DateTime } from 'luxon';
 import * as vscode from 'vscode';

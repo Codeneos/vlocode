@@ -5,7 +5,7 @@ import { CachedFileSystemAdapter, container, Logger, LogWriter, NodeFileSystem, 
 import { Connection, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
 
 import { DatapackDeployer, DatapackDeploymentOptions } from "./datapackDeployer";
-import { ForkedSassCompiler } from "./sass";
+import { ForkedSassCompiler } from "./scss";
 import { VlocityNamespaceService } from "./vlocityNamespaceService";
 import DatapackLoader from "./datapackLoader";
 
@@ -13,7 +13,7 @@ interface DatapackDeployOptions extends DatapackDeploymentOptions {
     /**
      * Optional JSForce connection to the org to which to deploy the specified datapacks
      */
-    jsforceConnection?: Connection;    
+    jsforceConnection?: Connection;
     /**
      * An SFDX username or alias used for connecting to Salesforce
      */
@@ -25,9 +25,9 @@ interface DatapackDeployOptions extends DatapackDeploymentOptions {
 }
 
 /**
- * Deploy 1 or more datapack from the specified folders to Salesforce. The deployment process can be controlled by the options parameter. 
- * At minimum a connection or sfdxAlias should be specified which will tell the deployment to which environment to connect. 
- * 
+ * Deploy 1 or more datapack from the specified folders to Salesforce. The deployment process can be controlled by the options parameter.
+ * At minimum a connection or sfdxAlias should be specified which will tell the deployment to which environment to connect.
+ *
  * This is a simple straight forward method that can be used to trigger a deployment without having to prepare and setup the dependent classes and objects.
  * @param input The folder(s) to load the datapacks from that will be deployed
  * @param options options that control the deployment

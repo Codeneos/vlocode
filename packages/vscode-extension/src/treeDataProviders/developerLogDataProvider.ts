@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import VlocodeService from '@lib/vlocodeService';
+import VlocodeService from '../lib/vlocodeService';
 import { DeveloperLog } from '@vlocode/salesforce';
 import { DateTime } from 'luxon';
-import { ConfigurationManager } from '@lib/config';
-import { VlocodeCommand } from '@constants';
+import { ConfigurationManager } from '../lib/config';
+import { VlocodeCommand } from '../constants';
 import { Logger , injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
-import { DebugLogViewer } from '@lib/salesforce/debugLogViewer';
+import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
 
 /**
  * Provides a list of recently executed or executing activities 

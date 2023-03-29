@@ -53,7 +53,7 @@ describe('HttpTransport', () => {
             const responseBuffer = Buffer.from('Id,Account,Order\n0,Test,My Order\n1,"Account","The ""Order"""');
             const response = { headers: { 'content-type': 'text/csv; charset=utf-8' } } as IncomingMessage;
 
-            expect((transport as any).parseResponseBody(response, responseBuffer)).toEqual([ 
+            expect((transport as any).parseResponseBody(response, responseBuffer)).toEqual([
                 ['Id', 'Account', 'Order'],
                 ['0', 'Test', 'My Order'],
                 ['1', 'Account', 'The "Order"']
@@ -71,7 +71,7 @@ describe('HttpTransport', () => {
                     heading: 'Reminder'
                 }
             })
-        });        
+        });
         it('should parse content type suffix XML as object', () => {
             const transport = new HttpTransport(undefined as unknown as SalesforceConnection, Logger.null);
             const responseBuffer = Buffer.from('<?xml version="1.0" encoding="UTF-8"?><note><to>Foo</to><from>Bar</from><heading>Reminder</heading></note>');

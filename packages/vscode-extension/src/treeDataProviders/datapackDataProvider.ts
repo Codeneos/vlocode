@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as constants from '@constants';
+import * as constants from '../constants';
 import { LogManager, injectable, container } from '@vlocode/core';
 import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity-deploy';
 import { evalExpr, groupBy, normalizeSalesforceName, clearCache, lazy } from '@vlocode/util';
@@ -9,9 +9,9 @@ import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
-import { ConfigurationManager } from '@lib/config';
+import { ConfigurationManager } from '../lib/config';
 import { QueryBuilder, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
-import OpenSalesforceCommand from '@root/commands/datapacks/openSalesforceCommand';
+import OpenSalesforceCommand from '../commands/datapacks/openSalesforceCommand';
 import { randomUUID } from 'crypto';
 
 @injectable()

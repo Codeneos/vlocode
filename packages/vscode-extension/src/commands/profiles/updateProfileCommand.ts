@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import { asArray } from '@vlocode/util';
 import MetadataCommand from '../metadata/metadataCommand';
 import { CustomFieldMetadata, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
 
 @vscodeCommand(VlocodeCommand.addToProfile, { params: [ 'add' ] })
 @vscodeCommand(VlocodeCommand.removeFromProfile, { params: [ 'remove' ] })

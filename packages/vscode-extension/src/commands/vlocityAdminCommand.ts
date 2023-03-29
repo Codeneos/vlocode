@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '@constants';
+import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '../constants';
 import { CommandBase } from '../lib/commandBase';
 import { SalesforceConnectionProvider } from '@vlocode/salesforce';
-import { vscodeCommand } from '@root/lib/commandRouter';
+import { vscodeCommand } from '../lib/commandRouter';
 import { CancellationToken } from '@vlocode/util';
 import { ActivityProgress } from '../lib/vlocodeActivity';
 

@@ -5,7 +5,7 @@
  */
 export * from './deploymentSpecs';
 export * from './types';
-export * from './sass';
+export * from './scss';
 export * from './apexExecutor';
 export * from './datapack';
 export * from './datapackDeploy';

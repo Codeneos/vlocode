@@ -7,8 +7,8 @@ import globby = require('globby');
 import { container } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 import MetadataCommand from './metadataCommand';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
 
 /**
  * Command for handling creation of Metadata components in Salesforce

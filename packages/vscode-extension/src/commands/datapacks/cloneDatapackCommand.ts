@@ -1,6 +1,6 @@
-import { VlocodeCommand } from '@root/constants';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { DatapackExportQueries } from '@root/lib/vlocity/datapackExportQueries';
+import { VlocodeCommand } from '../../constants';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { DatapackExportQueries } from '../../lib/vlocity/datapackExportQueries';
 import { container } from '@vlocode/core';
 import { VlocityDatapack } from '@vlocode/vlocity-deploy';
 

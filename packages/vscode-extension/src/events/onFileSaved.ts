@@ -1,9 +1,9 @@
-import { EventHandlerBase } from '@events/eventHandlerBase';
+import { EventHandlerBase } from './eventHandlerBase';
 import * as vscode from 'vscode';
-import { VlocodeCommand } from '@constants';
+import { VlocodeCommand } from '../constants';
 import { container } from '@vlocode/core';
-import { MetadataDetector } from '@lib/salesforce/metadataDetector';
 import { isPartOfDatapack } from '@vlocode/vlocity-deploy';
+import { MetadataDetector } from '../lib/salesforce/metadataDetector';
 
 export default class extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [

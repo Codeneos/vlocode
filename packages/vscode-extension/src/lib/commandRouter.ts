@@ -1,8 +1,8 @@
 import { Logger, injectable, LifecyclePolicy, container, LogManager } from '@vlocode/core';
-import VlocodeService from '@lib/vlocodeService';
+import VlocodeService from '../lib/vlocodeService';
 import * as vscode from 'vscode';
-import { Command } from '@lib/command';
-import { VlocodeCommand } from '@constants';
+import { Command } from '../lib/command';
+import { VlocodeCommand } from '../constants';
 import { lazy, withDefaults } from '@vlocode/util';
 import { CommandExecutor } from './commandExecutor';
 

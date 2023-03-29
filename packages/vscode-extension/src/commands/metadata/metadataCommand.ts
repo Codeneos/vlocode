@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getDocumentBodyAsString } from '@vlocode/util';
-import { CommandBase } from '@root/lib/commandBase';
+import { CommandBase } from '../../lib/commandBase';
 import { DeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 
 /**

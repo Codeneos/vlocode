@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity-deploy';
-import VlocodeConfiguration from '@lib/vlocodeConfiguration';
+import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';

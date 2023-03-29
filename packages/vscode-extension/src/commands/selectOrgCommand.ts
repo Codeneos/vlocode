@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { SalesforceOrgInfo, sfdx } from '@vlocode/util';
 import { CommandBase } from '../lib/commandBase';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '../lib/commandRouter';
+import { VlocodeCommand } from '../constants';
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
 
