@@ -5,6 +5,7 @@ import * as glob from 'glob';
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import * as CopyPlugin from 'copy-webpack-plugin';
 import WatchMarkersPlugin from './plugins/watchMarkers';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -20,6 +21,13 @@ const packageExternals = [
 
 const contextFolder = path.resolve(__dirname, '..');
 const workspaceFolder = path.resolve(contextFolder, '..');
+const workspacePackages = readdirSync(workspaceFolder, { withFileTypes: true })
+    .filter(p => p.isDirectory() && existsSync(path.join(workspaceFolder, p.name, 'package.json')))
+    .map(p => ({
+        name: p.name,
+        dir: path.join(workspaceFolder, p.name),
+        packageJson: JSON.parse(readFileSync(path.join(workspaceFolder, p.name, 'package.json')).toString())
+    }));
 
 const common : webpack.Configuration = {
     context: contextFolder,
@@ -60,11 +68,8 @@ const common : webpack.Configuration = {
             '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src'),
             '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src'),
             '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src')
-        },
-        plugins: [ 
-            new TsconfigPathsPlugin()
-        ]
+            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src'),
+        }
     },
     output: {
         filename: '[name].js',
@@ -119,7 +124,7 @@ const common : webpack.Configuration = {
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
             moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
-        )        
+        )
         if (isExternal){
             // @ts-ignore
             return callback(undefined, `commonjs ${request}`);
@@ -132,7 +137,7 @@ const common : webpack.Configuration = {
 const extension : webpack.Configuration = {
     entry: {
         'vlocode': './src/extension.ts',
-        'sass-compiler': '../vlocity-deploy/src/sass/forked/fork.ts'
+        'sass-compiler': '../vlocity-deploy/src/scss/forked/fork.ts'
     },
     name: 'vlocode',
     devtool: 'source-map',
