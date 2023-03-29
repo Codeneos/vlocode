@@ -1,6 +1,6 @@
 import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
-import { cache, removeNamespacePrefix } from '@vlocode/util';
+import { cache, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
 
 export interface VlocityDatapackDefinition {
     /**
@@ -50,7 +50,7 @@ export class DatapackInfoService {
 
     /**
      * Get the SObject Type and Datapack Type of all datapacks defined in Salesforce through a Datapack Configuration record.
-     * @returns {Promise<VlocityDatapackDefinition[]>} Array of datapack info objects linking datapacks to SObjects 
+     * @returns {Promise<VlocityDatapackDefinition[]>} Array of datapack info objects linking datapacks to SObjects
      */
     @cache()
     public async getDatapackDefinitions() : Promise<VlocityDatapackDefinition[]> {
@@ -61,13 +61,13 @@ export class DatapackInfoService {
         }
         this.logger.verbose(`Loaded ${configurationRecords.length} DataPack configurations`);
 
-        // Split between standard and custom configiration, custom is prefered over standard
+        // Split between standard and custom configuration, custom is preferred over standard
         const standardConfiguration = configurationRecords.filter(f => f.NamespacePrefix != null);
         const customConfiguration = configurationRecords.filter(f => f.NamespacePrefix == null);
 
         const datapackInfos = [...customConfiguration, ...standardConfiguration].map(record => [
             record.DeveloperName.toLowerCase(),
-            { sobjectType: record.PrimarySObjectType, datapackType: record.DeveloperName }
+            { sobjectType: record.primarySObjectType, datapackType: record.developerName }
         ]) as Array<[string, VlocityDatapackDefinition]>;
 
         return [...new Map(datapackInfos).values()];
@@ -78,11 +78,21 @@ export class DatapackInfoService {
      * @param sobjectType Salesforce object type
      */
     public async getDatapackType(sobjectType: string) : Promise<string | undefined> {
-        const regex = new RegExp(`${removeNamespacePrefix(sobjectType)}`,'ig');
-        const datapackInfo = (await this.getDatapackDefinitions()).find(dataPack => dataPack.sobjectType && regex.test(removeNamespacePrefix(dataPack.sobjectType)));
+        const objectRegex = new RegExp(`^([a-z0-9_%]+__)?${removeNamespacePrefix(sobjectType)}$`,'i');
+        const typeRegex = new RegExp(`^${substringBeforeLast(removeNamespacePrefix(sobjectType), '__')}$`,'i');
+        const definitions = await this.getDatapackDefinitions();
+
+        // Find datapacks matching the sobjectType specified
+        // if not found match based on datapack type; this is not 100% correct but yield good results with the standard configiration
+        // TODO: analyze DR and based on that determine the SObject type
+        const datapackInfo =
+            definitions.find(dataPack => dataPack.sobjectType && objectRegex.test(removeNamespacePrefix(dataPack.sobjectType))) ||
+            definitions.find(dataPack => dataPack.datapackType && typeRegex.test(dataPack.datapackType));
+
         if (!datapackInfo) {
-            this.logger.verbose(`No Datapack with SObject '${sobjectType}' configured in Salesforce (see VlocityDataPackConfiguration object)`);
+            this.logger.verbose(`No Datapack con with SObject '${sobjectType}' configured in Salesforce (see VlocityDataPackConfiguration object)`);
         }
+
         return datapackInfo?.datapackType;
     }
 
@@ -99,6 +109,9 @@ export class DatapackInfoService {
         if (!datapackInfo?.sobjectType) {
             throw new Error(`No primary SObject set datapack for datapack '${datapackType}' in VlocityDataPackConfiguration`);
         }
-        return (await this.salesforce.schema.describeSObject(datapackInfo.sobjectType)).name;
+        const sobjectType =
+            await this.salesforce.schema.describeSObject(datapackInfo.sobjectType, datapackInfo.sobjectType.startsWith('%vlocity_namespace%')) ||
+            await this.salesforce.schema.describeSObject(`%vlocity_namespace%__${datapackInfo.sobjectType}`);
+        return sobjectType.name;
     }
 }

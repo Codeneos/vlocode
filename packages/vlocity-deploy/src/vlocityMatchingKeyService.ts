@@ -99,17 +99,17 @@ export class VlocityMatchingKeyService {
 
     private async validateMatchingKeyFields(sobjectType: string, fields: string[]) {
         const resolvedFields = new Array<string>();
-        
+
         for (const field of fields) {
             const fieldDescribe = await this.schema.describeSObjectField(sobjectType, field, false);
             if (fieldDescribe) {
                 resolvedFields.push(fieldDescribe.name);
-            } else {                
+            } else {
                 if (!await this.schema.isSObjectFieldDefined(sobjectType, field)) {
                     this.logger.warn(`${sobjectType}: matching key field '${field}' is not accessible -- update the profile of the current user to fix this warning`);
                 } else {
                     this.logger.error(`${sobjectType}: matching key field '${field}' does not exist -- remove this field from the matching key definitions in Salesforce to fix this error`);
-                }                
+                }
             }
         }
 
