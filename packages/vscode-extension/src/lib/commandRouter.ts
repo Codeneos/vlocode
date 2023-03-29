@@ -39,7 +39,7 @@ export default class CommandRouter {
     private readonly commands = new Map<string, CommandExecutor>();
     private readonly commandTypes = new Map<string, string>();
     private readonly commandRegistrations = new Map<string, vscode.Disposable>();
-    
+
     constructor(private readonly logger: Logger) {
         for (const [ id, { command, options } ] of Object.entries(commandRegistry)) {
             this.register(id, command, options);
@@ -62,7 +62,7 @@ export default class CommandRouter {
     public async execute(commandName: VlocodeCommand | string, args?: any[]) : Promise<void> {
         const command = this.commands.get(commandName);
         if (command) {
-            await command.execute(...(args ?? []));            
+            await command.execute(...(args ?? []));
         } else {
             return vscode.commands.executeCommand(commandName, ...(args ?? []));
         }

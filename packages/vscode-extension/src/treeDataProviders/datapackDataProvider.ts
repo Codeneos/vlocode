@@ -69,8 +69,8 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
     protected getCommands() {
         return {
-            'vlocode.datapackExplorer.export': async node => this.onExport(node),
-            'vlocode.datapackExplorer.openSalesforce': OpenSalesforceCommand,
+            'vlocode.datapackExplorer.export': node => this.onExport(node),
+            'vlocode.datapackExplorer.openSalesforce': node => this.executeCommand(constants.VlocodeCommand.openInSalesforce, node),
             'vlocode.datapackExplorer.refresh': () => this.onRefresh()
         };
     }

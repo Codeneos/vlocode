@@ -42,7 +42,7 @@ export default class DatapackLoader {
             if (!datapackJson) {
                 throw new Error(`No such file exists: ${datapackHeader}`);
             }
-            
+
             return new VlocityDatapack(datapackHeader,
                 manifestEntry.datapackType,
                 manifestEntry.key,
