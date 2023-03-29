@@ -1,6 +1,3 @@
-import EventEmitter = require("events");
-import { isPromise } from "util/types";
-
 export interface CancellationToken {
     /**
      * Is `true` when the token has been cancelled, `false` otherwise.

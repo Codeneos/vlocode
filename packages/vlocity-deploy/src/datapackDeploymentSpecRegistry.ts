@@ -1,7 +1,7 @@
 import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
-import { DatapackFilter } from "./datapackDeployer";
-import { DatapackDeploymentSpec } from "./datapackDeploymentSpec";
+import { DatapackFilter } from './datapackDeployer';
+import { DatapackDeploymentSpec } from './datapackDeploymentSpec';
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeploymentSpecRegistry {

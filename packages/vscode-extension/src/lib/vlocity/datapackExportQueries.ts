@@ -2,7 +2,7 @@ import { injectable, Logger } from "@vlocode/core";
 import { QueryBinary, QueryBuilder, QueryFormatter, QueryParser, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
 import { VlocityMatchingKeyService } from "@vlocode/vlocity-deploy";
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
-import { ObjectEntry } from "./vlocityDatapackService";
+import { ObjectEntry } from './vlocityDatapackService';
 
 @injectable()
 export class DatapackExportQueries {

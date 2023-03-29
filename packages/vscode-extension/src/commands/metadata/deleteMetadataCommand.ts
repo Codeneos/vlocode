@@ -16,7 +16,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
     }
 
     protected async deleteMetadata(selectedFiles: vscode.Uri[]) {
-        const progressTitle = selectedFiles.length == 1
+        const progressTitle = selectedFiles.length === 1
             ? `${path.basename(selectedFiles[0].fsPath)}`
             : `${selectedFiles.length} files`;
 

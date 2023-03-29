@@ -1,4 +1,4 @@
-import { XML } from "../xml";
+import { XML } from '../xml';
 
 describe('xml', () => {
     describe('#stringify', () => {

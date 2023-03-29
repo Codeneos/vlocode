@@ -1,10 +1,10 @@
 import { getObjectProperty, streamToBuffer } from "@vlocode/util";
-import { Stream } from "stream";
-import { SoapClient } from "../../soapClient";
-import { SalesforceConnection } from "../salesforceConnection";
-import { DeploymentApi } from "./metadataApi";
-import { MetadataResponses } from "./metadataOperations";
-import { DeployOptions, DeployResult } from "./types";
+import { Stream } from 'stream';
+import { SoapClient } from '../../soapClient';
+import { SalesforceConnection } from '../salesforceConnection';
+import { DeploymentApi } from './metadataApi';
+import { MetadataResponses } from './metadataOperations';
+import { DeployOptions, DeployResult } from './types';
 
 /**
  * SOAP based deployment API implementation that uses the File based SOAP APIs to create and update deployments.

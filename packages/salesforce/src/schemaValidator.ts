@@ -41,7 +41,7 @@ export namespace Schema {
                 delete obj[field];
             } else {
                 // Init values for fields that are not nullable
-                obj[field] = normalizeFieldValue(obj[field], fieldDef)
+                obj[field] = normalizeFieldValue(obj[field], fieldDef);
             }
         }
 
@@ -70,7 +70,7 @@ export namespace Schema {
         if (fieldDef.array) {
             return (!Array.isArray(value) ? [ value ] : value)
                 .map(elementValue => normalizeFieldValue(elementValue, { ...fieldDef, array: false }))
-                .filter(elementValue => !fieldDef.optional || (elementValue !== null && elementValue !== undefined))
+                .filter(elementValue => !fieldDef.optional || (elementValue !== null && elementValue !== undefined));
         }
 
         if (typeof fieldDef.type === 'object' && typeof value === 'object' && value !== null) {

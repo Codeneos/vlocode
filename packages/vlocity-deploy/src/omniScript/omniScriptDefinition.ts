@@ -1,4 +1,4 @@
-import { OmniScript } from "../deploymentSpecs";
+import { OmniScript } from '../deploymentSpecs';
 
 export interface OmniScriptSpecification {
     type: string;

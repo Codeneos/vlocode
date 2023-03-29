@@ -1,7 +1,7 @@
 import { substringAfterLast, substringBefore } from "@vlocode/util";
-import { EventEmitter } from "events";
-import { RestClient } from "../restClient";
-import { QueryRelationshipInfo, QueryResponse } from "./types";
+import { EventEmitter } from 'events';
+import { RestClient } from '../restClient';
+import { QueryRelationshipInfo, QueryResponse } from './types';
 
 enum AsyncQueryIteratorState {
     idle,
