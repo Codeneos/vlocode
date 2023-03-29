@@ -99,7 +99,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         const elementCountByParent = new Map<string, number>();
         for (const element of datapack.Element__c as ScriptElement[]) {
             const parentKey = element.ParentElementId__c?.VlocityMatchingRecordSourceKey ?? 'root';
-            const orderInParent = elementCountByParent.get(parentKey) ?? 0;
+            const orderInParent = (elementCountByParent.get(parentKey) ?? 0) + 1;
 
             const currentLevel = element['%vlocity_namespace%__Level__c'];
             const currentOrder = element['%vlocity_namespace%__Order__c'];
