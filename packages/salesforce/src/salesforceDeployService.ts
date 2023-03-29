@@ -66,7 +66,7 @@ export class SalesforceDeployService {
                 deployOptions.purgeOnDelete = false;
             }
 
-            // Start deploy            
+            // Start deploy
             const connection = await this.salesforce.getJsForceConnection();
             const deployJob = await connection.metadata.deploy(zipInput, deployOptions);
 
@@ -129,11 +129,11 @@ export class SalesforceDeployService {
         const checkInterval = 2000;
 
         const retrieveTask = async (cancellationToken?: CancellationToken) => {
-            // Start deploy            
+            // Start deploy
             const connection = await this.salesforce.getJsForceConnection();
             const retrieveId = await connection.metadata.retrieve({
                 apiVersion: connection.version,
-                singlePackage: true, 
+                singlePackage: true,
                 unpackaged: manifest.toJson(apiVersion ?? this.salesforce.getApiVersion())
             });
 
@@ -144,7 +144,7 @@ export class SalesforceDeployService {
                     throw new Error('Retrieve request cancelled');
                 }
 
-                const status = await connection.metadata.checkRetrieveStatus(retrieveId);
+                const status = await connection.metadata.checkRetrieveStatus(retrieveId, true);
                 if (status.done === true) {
                     const retrieveZip = status.zipFile ? await new ZipArchive().loadAsync(Buffer.from(status.zipFile, 'base64')) : undefined;
                     return new RetrieveResultPackage(status, true, retrieveZip);
