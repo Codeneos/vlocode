@@ -347,7 +347,7 @@ export class QueryParser implements SalesforceQueryData {
             return { operator: 'not', right };
         }
 
-        const left = parser.skipWhitespace().expectMatch(/[\w.]+/);
+        const left = parser.skipWhitespace().expectMatch(/[%\w.]+/);
         const operator = parser.skipWhitespace().expectMatch(...queryOperators).toLowerCase();
 
         if (operator === QueryOperators.IN || operator === QueryOperators.NOT_IN ||
