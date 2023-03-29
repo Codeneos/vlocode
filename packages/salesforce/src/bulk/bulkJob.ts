@@ -1,5 +1,5 @@
 import { CancellationToken, setObjectProperty, wait } from "@vlocode/util";
-import { RestClient } from "../restClient";
+import { RestClient } from '../restClient';
 
 export const ColumnDelimiters = {
     'COMMA': ',',

@@ -1,17 +1,17 @@
 import { getObjectProperty, asArray, setObjectProperty, chunkAsyncParallel, unique, filterUndefined } from "@vlocode/util";
 import { Stream } from 'stream';
 
-import { SoapClient } from "../../soapClient";
-import { SalesforceConnection } from "../salesforceConnection";
-import { RestDeploymentApi } from "./restDeploymentApi";
-import { Operations, Schemas } from "./metadataSchemas";
-import { DeployOptions, DeployResult, DescribeMetadataResult, DescribeValueTypeResult, FileProperties, RetrieveResult, SalesforceMetadata, SaveResult, UpsertResult } from "./types";
-import { ListMetadataQuery } from "./types/metadataQuery";
-import { RetrieveRequest } from "./types/retrieveRequest";
-import { MetadataTypes } from "./metadataTypes";
-import { DeleteResult } from "../../types";
-import { MetadataResponses } from "./metadataOperations";
-import { Schema } from "../../schemaValidator";
+import { SoapClient } from '../../soapClient';
+import { SalesforceConnection } from '../salesforceConnection';
+import { RestDeploymentApi } from './restDeploymentApi';
+import { Operations, Schemas } from './metadataSchemas';
+import { DeployOptions, DeployResult, DescribeMetadataResult, DescribeValueTypeResult, FileProperties, RetrieveResult, SalesforceMetadata, SaveResult, UpsertResult } from './types';
+import { ListMetadataQuery } from './types/metadataQuery';
+import { RetrieveRequest } from './types/retrieveRequest';
+import { MetadataTypes } from './metadataTypes';
+import { DeleteResult } from '../../types';
+import { MetadataResponses } from './metadataOperations';
+import { Schema } from '../../schemaValidator';
 
 export enum ValueTypeNamespace {
     metadata = 'http://soap.sforce.com/2006/04/metadata',

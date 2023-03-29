@@ -1,6 +1,6 @@
-import { CancellationToken } from "./cancellationToken";
-import { DeferredPromise } from "./deferred";
-import { CustomError } from "./errors";
+import { CancellationToken } from './cancellationToken';
+import { DeferredPromise } from './deferred';
+import { CustomError } from './errors';
 
 /**
  * Optional promise type

@@ -1,5 +1,5 @@
-import { DateTime } from "luxon";
-import { BulkJob, BulkJobInfo, IngestJobType, IngestOperationType } from "./bulkJob";
+import { DateTime } from 'luxon';
+import { BulkJob, BulkJobInfo, IngestJobType, IngestOperationType } from './bulkJob';
 
 export interface IngestJobInfo extends BulkJobInfo {
     /**

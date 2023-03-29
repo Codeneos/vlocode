@@ -1,9 +1,9 @@
 import { streamToBuffer } from "@vlocode/util";
-import { Stream } from "stream";
-import { RestClient } from "../../restClient";
-import { SalesforceConnection } from "../salesforceConnection";
-import { DeploymentApi } from "./metadataApi";
-import { DeployOptions, DeployResult } from "./types";
+import { Stream } from 'stream';
+import { RestClient } from '../../restClient';
+import { SalesforceConnection } from '../salesforceConnection';
+import { DeploymentApi } from './metadataApi';
+import { DeployOptions, DeployResult } from './types';
 
 interface DeployRequest {
     id: string;

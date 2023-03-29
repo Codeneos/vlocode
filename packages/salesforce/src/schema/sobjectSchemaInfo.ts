@@ -1,5 +1,5 @@
 import { normalizeSalesforceName, removeNamespacePrefix } from "@vlocode/util";
-import { Field, DescribeSObjectResult } from "../types";
+import { Field, DescribeSObjectResult } from '../types';
 
 export class SObjectSchemaInfo {
 

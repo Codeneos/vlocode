@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import * as glob from 'glob';
-import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
+import { TsconfigPathsPlugin } from 'tsconfig-paths-webpack-plugin';
 import * as CopyPlugin from 'copy-webpack-plugin';
 import WatchMarkersPlugin from './plugins/watchMarkers';
 import { existsSync, readdirSync, readFileSync } from 'fs';

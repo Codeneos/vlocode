@@ -1,10 +1,10 @@
 import { CancellationToken, formatString } from "@vlocode/util";
 
-import { SalesforceConnection } from "../connection";
-import { RestClient } from "../restClient";
-import { IngestOperationType } from "./bulkJob";
-import { BulkIngestJob, IngestJobInfo } from "./bulkIngestJob";
-import { BulkQueryJob, QueryJobInfo } from "./bulkQueryJob";
+import { SalesforceConnection } from '../connection';
+import { RestClient } from '../restClient';
+import { IngestOperationType } from './bulkJob';
+import { BulkIngestJob, IngestJobInfo } from './bulkIngestJob';
+import { BulkQueryJob, QueryJobInfo } from './bulkQueryJob';
 
 interface IngestJobCreateRequest extends Partial<IngestJobInfo> {
     /**

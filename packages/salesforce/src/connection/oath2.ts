@@ -1,7 +1,7 @@
 import { CustomError, decorate } from "@vlocode/util";
-import { OAuth2 } from "jsforce";
-import { HttpTransport } from "./httpTransport";
-import { SalesforceConnection } from "./salesforceConnection";
+import { OAuth2 } from 'jsforce';
+import { HttpTransport } from './httpTransport';
+import { SalesforceConnection } from './salesforceConnection';
 
 interface OAuth2TokenResponse {
     id: string;

@@ -1,15 +1,15 @@
 // Auto generated type definitions from Metadata API WSDL
 // Designed for use with Vlocode libraries and extension
 // Provides design-time validation of Salesforce metadata types
-import type { AsyncResult } from "../connection/metadata/types/asyncResult";
-import type { Error } from "../connection/metadata/types/error";
-import type { ReadResult, SaveResult, UpsertResult } from "../connection/metadata/types/crudResult";
-import type { DeployMessage, DeployResult, DeployOptions, RunTestsResult } from "../connection/metadata/types/deployResult";
-import type { CancelDeployResult } from "../connection/metadata/types/cancelDeployResult";
-import type { DescribeMetadataResult } from "../connection/metadata/types/describeMetadataResult";
-import type { DescribeValueTypeResult } from "../connection/metadata/types/describeValueTypeResult";
-import type { ListMetadataQuery } from "../connection/metadata/types/metadataQuery";
-import type { FileProperties, RetrieveResult } from "../connection/metadata/types/retrieveResult";
+import type { AsyncResult } from '../connection/metadata/types/asyncResult';
+import type { Error } from '../connection/metadata/types/error';
+import type { ReadResult, SaveResult, UpsertResult } from '../connection/metadata/types/crudResult';
+import type { DeployMessage, DeployResult, DeployOptions, RunTestsResult } from '../connection/metadata/types/deployResult';
+import type { CancelDeployResult } from '../connection/metadata/types/cancelDeployResult';
+import type { DescribeMetadataResult } from '../connection/metadata/types/describeMetadataResult';
+import type { DescribeValueTypeResult } from '../connection/metadata/types/describeValueTypeResult';
+import type { ListMetadataQuery } from '../connection/metadata/types/metadataQuery';
+import type { FileProperties, RetrieveResult } from '../connection/metadata/types/retrieveResult';
 
 // Enums
 export type DeployProblemType = 'Warning' | 'Error' | 'Info';

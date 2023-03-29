@@ -1,4 +1,4 @@
-import { SalesforceMetadata } from "./metadataInfo";
+import { SalesforceMetadata } from './metadataInfo';
 
 interface Result {
     /**

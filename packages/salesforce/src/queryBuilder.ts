@@ -79,7 +79,7 @@ export class QueryBuilder extends QueryBuilderData {
         for (const field of this.fields) {
             const fieldDef = await schema.describeSObjectFieldPath(this.sobjectType, field, false);
             if (fieldDef) {
-                resolvedFields.push(field)
+                resolvedFields.push(field);
             } else {
                 removedFields.push(field);
             }

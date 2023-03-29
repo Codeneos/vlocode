@@ -1,5 +1,5 @@
 import { CancellationToken } from "@vlocode/util";
-import { BulkJob, BulkJobInfo, QueryOperationType } from "./bulkJob";
+import { BulkJob, BulkJobInfo, QueryOperationType } from './bulkJob';
 
 export interface QueryJobInfo extends BulkJobInfo {
     /**

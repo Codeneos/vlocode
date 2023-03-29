@@ -132,7 +132,7 @@ export class SalesforceSchemaService {
         }
 
         const controllingValuesBy = mapBy(controllingField.picklistValues, (entry, index) => {
-            return this.encodeIndexAsBitset(index)
+            return this.encodeIndexAsBitset(index);
         });
 
         return field.picklistValues.map(entry => {

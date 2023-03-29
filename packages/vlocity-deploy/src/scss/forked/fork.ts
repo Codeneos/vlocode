@@ -38,7 +38,7 @@ function DartSassImporter(
                     syntax: 'scss',
                     contents: fs.readFileSync(fileInfo.path).toString('utf-8'),
                     sourceMapUrl: new URL(`file:///${fileInfo.path.replace(/\\/g, '/')}`)
-                }
+                };
             }
             return fileInfo.contents;
         },
@@ -64,7 +64,7 @@ function DartSassImporter(
             }
             return null;
         }
-    }
+    };
 }
 
 /**

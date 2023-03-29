@@ -120,7 +120,7 @@ export class ForkedSassCompiler implements SassCompiler {
             path.join(__dirname, 'sass-compiler.js'),
             path.join(__dirname, 'fork.js'),
             path.join(__dirname, 'fork.ts')
-        ]
+        ];
         for (const path of compilerPaths) {
             if (fs.existsSync(path)) {
                 return path;

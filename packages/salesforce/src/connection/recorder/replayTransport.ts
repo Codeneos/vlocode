@@ -1,5 +1,5 @@
-import { HttpRequestInfo, HttpResponse, Transport } from "../httpTransport";
-import { SessionDataStore } from "./sessionDataStore";
+import { HttpRequestInfo, HttpResponse, Transport } from '../httpTransport';
+import { SessionDataStore } from './sessionDataStore';
 
 export class ReplayTransport implements Transport {
 

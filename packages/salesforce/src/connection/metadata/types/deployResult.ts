@@ -1,4 +1,4 @@
-import { RetrieveResult } from "./retrieveResult";
+import { RetrieveResult } from './retrieveResult';
 
 export type DeployStatus = 'Pending' |
     'InProgress' |

@@ -1,5 +1,5 @@
-import { SharingModel } from "../../types";
-import { FieldDefinition } from "./fieldDefinition";
+import { SharingModel } from '../../types';
+import { FieldDefinition } from './fieldDefinition';
 
 /**
  * Describes the EntityDefinition Tooling API Object in Salesforce retrieved with field(standard)

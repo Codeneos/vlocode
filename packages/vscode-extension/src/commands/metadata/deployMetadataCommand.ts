@@ -91,7 +91,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 }
             });
         } else {
-            const fileNameText = selectedFiles.length == 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
+            const fileNameText = selectedFiles.length === 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
             this.logger.info(`Deployment queued of ${fileNameText}`);
             void vscode.window.showInformationMessage(`Queued deployment of ${fileNameText} (pending: ${this.filesPendingDeployment.size})...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
                 if (cancel) {

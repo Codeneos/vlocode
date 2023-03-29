@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as glob from 'glob';
 import * as webpack from 'webpack';
 import WatchMarkersPlugin from './plugins/watchMarkers';
-import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
+import { TsconfigPathsPlugin } from 'tsconfig-paths-webpack-plugin';
 import type { Options } from 'ts-loader';
 import * as packageJson from '../package.json';
 

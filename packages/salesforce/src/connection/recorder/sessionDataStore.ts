@@ -1,6 +1,6 @@
-import { calculateHash, deepClone, encodeRFC3986URI, removeUndefinedProperties } from "@vlocode/util";
-import { readJsonSync, writeJsonSync } from "fs-extra";
-import { HttpRequestInfo, HttpResponse } from "../httpTransport";
+import { calculateHash, deepClone, removeUndefinedProperties } from '@vlocode/util';
+import { readJsonSync, writeJsonSync } from 'fs-extra';
+import { HttpRequestInfo, HttpResponse } from '../httpTransport';
 
 export interface SessionLogEntry {
     index: number;
@@ -11,7 +11,7 @@ export interface SessionLogEntry {
 }
 
 export class SessionDataStore {
-    private filterHeaderKeys = [
+    private readonly filterHeaderKeys = [
         'authorization',
         'cookie',
         'set-cookie',
@@ -97,7 +97,7 @@ export class SessionDataStore {
     private filterHeaders<T extends Record<string, string | string[] | number | undefined>>(headers: T | undefined): T {
         return Object.fromEntries(
             Object.entries<T>(headers ?? {}).filter(([key]) => !this.filterHeaderKeys.includes(key.toLowerCase()))
-        ) as any as T
+        ) as any as T;
     }
 
     private normalizePostBody(body: string): string {

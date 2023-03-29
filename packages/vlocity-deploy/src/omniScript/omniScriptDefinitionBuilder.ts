@@ -243,7 +243,7 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         const filter = typeof predicate === 'string' ? ((e) => e.name === predicate) : predicate;
         for (const element of this) {
             if (filter(element)) {
-                return element
+                return element;
             }
         }
     }
