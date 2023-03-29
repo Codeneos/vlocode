@@ -4,8 +4,8 @@ import { unique} from '@vlocode/util';
 import { DescribeGlobalSObjectResult, MetadataType, PackageManifest } from '@vlocode/salesforce';
 import { FileProperties } from 'jsforce';
 import MetadataCommand from './metadataCommand';
-import { vscodeCommand } from '@root/lib/commandRouter';
-import { VlocodeCommand } from '@root/constants';
+import { vscodeCommand } from '../../lib/commandRouter';
+import { VlocodeCommand } from '../../constants';
 
 /**
  * Command for handling deletion of Metadata components in Salesforce

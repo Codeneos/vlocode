@@ -18,7 +18,7 @@ export interface ExtendedFileProperties extends FileProperties {
 }
 
 /**
- * Wraps arround a RetrieveResult Object and allows easy iteration over the files contained in it.
+ * Wraps around a RetrieveResult Object and allows easy iteration over the files contained in it.
  */
 export class RetrieveResultPackage {
 
