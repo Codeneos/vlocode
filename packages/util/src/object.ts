@@ -450,3 +450,35 @@ export function filterObject<T extends object>(obj: T, predicate: (key: string, 
         return acc;
     }, {} as T);
 }
+
+/**
+ * Create a composite object that spreads access of multiple complex objects without creating a new
+ * object. Any modifications to the composite will be stored in a temporary object ensuring none of the original spread objects are modified.
+ *
+ * The composite does not have a prototype and the existing prototype cannot be modified, properties cannot be deleted but new properties can be defined.
+ */
+export function proxySpread<T extends object[]>(...objs: [...T]) {
+    objs = objs.filter(o => o !== undefined && o !== null) as [...T];
+    return new Proxy({} as T[0], {
+        get(target, property) {
+            const obj = objs.find(o => property in o);
+            return obj ? obj?.[property] : target[property];
+        },
+        set(target, property, value) {
+            target[property] = value;
+            return true;
+        },
+        has(target, property) {
+            return property in target || objs.some(o => property in o);
+        },
+        getOwnPropertyDescriptor(target, property) {
+            const obj = objs.find(o => property in o);
+            return Object.getOwnPropertyDescriptor(target, property) ?? objs.find(o => Object.getOwnPropertyDescriptor(o, property));
+        },
+        ownKeys(target) {
+            const keySet = new Set(Reflect.ownKeys(target));
+            objs.forEach(o => Reflect.ownKeys(o).forEach(key => keySet.add(key)));
+            return [...keySet];
+        }
+    })
+}

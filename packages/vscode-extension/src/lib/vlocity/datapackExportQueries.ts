@@ -1,6 +1,7 @@
 import { injectable, Logger } from "@vlocode/core";
 import { QueryBinary, QueryBuilder, QueryFormatter, QueryParser, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
 import { VlocityMatchingKeyService } from "@vlocode/vlocity-deploy";
+import { throws } from "assert";
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { ObjectEntry } from './vlocityDatapackService';
 
@@ -9,7 +10,8 @@ export class DatapackExportQueries {
 
     constructor(
         private readonly matchingKeys: VlocityMatchingKeyService, 
-        private readonly schema: SalesforceSchemaService) {        
+        private readonly schema: SalesforceSchemaService, 
+        private readonly logger: Logger) {
     }
 
     /**
@@ -45,13 +47,29 @@ export class DatapackExportQueries {
             }
         }
 
-        for (const field of query.fields) {
-            const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field);
-            const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack);
+        if (datapack.id) {
+            query.where.equals('Id', datapack.id);
+        } else {
+            const missingMatchingKeys = new Array<string>();
 
-            if (value !== undefined) {
-                const fullName = fieldDescribe.map(f => f.name).join('.');
-                query.where.and.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
+            for (const field of query.fields) {
+                const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field);
+                const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack);
+
+                if (value !== undefined) {
+                    const fullName = fieldDescribe.map(f => f.name).join('.');
+                    query.where.and.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
+                } else if (macthingKeys.fields.includes(field)) {
+                    missingMatchingKeys.push(field);
+                }
+            }
+
+            if (macthingKeys.fields.length && missingMatchingKeys.length === macthingKeys.fields.length) {
+                throw new Error(
+                    `Unable to build an export query for ${datapack.datapackType}; ` +
+                    `all matching key fields (${macthingKeys.fields.join(', ')}) are undefined: ${JSON.stringify(datapack, undefined, 2)}`);
+            } else if (missingMatchingKeys.length) {
+                this.logger.warn(`Datapack of type ${datapack.datapackType} is missing some matching key fields: ${missingMatchingKeys.join(', ')}`);
             }
         }
 

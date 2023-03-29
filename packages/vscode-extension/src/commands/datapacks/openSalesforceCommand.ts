@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as open from 'open';
 
-import { evalExpr } from '@vlocode/util';
+import { proxySpread, evalExpr } from '@vlocode/util';
 import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { VlocodeCommand } from '../../constants';
@@ -34,7 +34,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
 
         const matchingRecords = await this.datapackService.getDatapackRecords(datapack);
         if (!matchingRecords.length) {
-            void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; it might not be deployed on the connected org.');
+            void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; datapack might not be deployed on target org.');
             return;
         }
 
@@ -45,8 +45,8 @@ export default class OpenSalesforceCommand extends DatapackCommand {
     }
 
     protected async openObjectInSalesforce(obj: ObjectEntry) {
-        const salesforceId = obj.id || (await this.datapackService.getDatapackRecords(obj)).pop()?.Id;
-        return this.openIdInSalesforce(salesforceId, obj.datapackType);
+        const [ record ] = await this.datapackService.getDatapackRecords(obj);
+        return this.openIdInSalesforce(obj.id ?? record.Id, obj.datapackType, record);
     }
 
     protected async openIdInSalesforce(objectId: string | undefined, datapackType: string, extraFields?: any) {
@@ -61,7 +61,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         salesforceUrl = typeof salesforceUrl === 'string' ? { path: salesforceUrl } : salesforceUrl;
 
         const namespace = this.resolveNamespace(salesforceUrl.namespace);
-        const salesforcePath = evalExpr(salesforceUrl.path, {...extraFields, id: objectId, type: datapackType, namespace });
+        const salesforcePath = evalExpr(salesforceUrl.path, proxySpread(extraFields, { id: objectId, type: datapackType, namespace }));
 
         const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true });
         this.logger.info(`Opening URL: ${salesforcePath}`);

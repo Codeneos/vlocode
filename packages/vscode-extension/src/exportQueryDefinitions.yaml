@@ -25,9 +25,6 @@ VlocityUITemplate:
     fields: [Name, '%vlocity_namespace%__Version__c', '%vlocity_namespace%__Author__c']
 
 VlocityCard:
-  salesforceUrl:
-    namespace: vlocity
-    path: "'/apex/' + namespace + '__carddesignernew?id=' + id"
   query: SELECT Id, Name, LastModifiedDate, %vlocity_namespace%__Version__c, %vlocity_namespace%__Active__c, %vlocity_namespace%__Author__c FROM %vlocity_namespace%__VlocityCard__c
   <<: *basicGroupProps
   matchingKey:
@@ -36,12 +33,16 @@ VlocityCard:
 OmniScript:
   salesforceUrl:
     namespace: vlocity
-    path: "'/apex/' + namespace + '__omniscriptdesigner?id=' + id"
-  query: Select Id, Name, LastModifiedDate, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Language__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = false
+    path: >
+      IsLwcEnabled__c
+      ? '/lightning/cmp/' + namespace + '__OmniDesignerAuraWrapper?c__recordId=' + id
+      : '/apex/' + namespace + '__omniscriptdesigner?id=' + id
+  query: Select Id, Name, LastModifiedDate, %vlocity_namespace%__IsLwcEnabled__c, %vlocity_namespace%__Type__c, %vlocity_namespace%__SubType__c, %vlocity_namespace%__Language__c, %vlocity_namespace%__Version__c, %vlocity_namespace%__IsActive__c from %vlocity_namespace%__OmniScript__c where %vlocity_namespace%__IsProcedure__c = false
   <<: *basicGroupProps
+  orderBy: Type__c,SubType__c,Language__c,Version__c
   groupKey: Type__c + SubType__c + Language__c
   groupName: Type__c+'/'+SubType__c+' ('+Language__c+')'
-  description: "(IsActive__c ? 'Active' : '')"
+  description: "(IsActive__c ? 'Active - ' : '') + (IsLwcEnabled__c ? 'LWC' : 'classic')"
   matchingKey:
     fields:
       - '%vlocity_namespace%__SubType__c'
