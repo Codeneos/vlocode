@@ -153,7 +153,7 @@ export class OmniScript implements DatapackDeploymentSpec {
                 ['%vlocity_namespace%__SubType__c']: propertySet['Sub Type'],
                 ['%vlocity_namespace%__Language__c']: propertySet['Language']
             });
-        } else if (propertySet.HTMLTemplateId) {
+        } else if (propertySet.HTMLTemplateId && typeof propertySet.HTMLTemplateId === 'string') {
             if (this.embeddedTemplates.get(element.datapackKey)?.includes(propertySet.HTMLTemplateId)) {
                 // skip embedded templates; these templates are embedded through TestHTMLTemplates__c which and should not be treated as dependencies
                 return;
