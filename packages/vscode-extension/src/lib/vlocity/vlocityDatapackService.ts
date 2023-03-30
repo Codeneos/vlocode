@@ -373,8 +373,6 @@ export default class VlocityDatapackService implements vscode.Disposable {
      */
     public async getDatapackRecords(entries: ObjectEntry | ObjectEntry[]): Promise<SObjectRecord[][] | SObjectRecord[]> {
         const exportQueries = await this.createExportQueries(Array.isArray(entries) ? entries : [ entries ]);
-        // Query all objects even if they have an Id already; it is up to the caller to filter out objects with an Id if they
-        // do not want to query them
         const results = await Promise.all(exportQueries.map(({ query }) => this.salesforceService.query<SObjectRecord>(query)));
         return Array.isArray(entries) ? results : results[0];
     }

@@ -1,9 +1,10 @@
 import * as path from 'path';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise } from '@vlocode/util';
+import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, directoryName, substringBeforeLast } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from './datapackUtil';
 import { join } from 'path/posix';
+import { DatapackInfoService } from './datapackInfoService';
 
 type DatapackLoaderFunc = (fileName: string) => OptionalPromise<string | object>;
 
@@ -19,6 +20,7 @@ export default class DatapackLoader {
 
     constructor(
         private readonly fileSystem: FileSystem,
+        private readonly datapackInfo: DatapackInfoService,
         private readonly logger: Logger = LogManager.get(DatapackLoader)) {
     }
 
@@ -36,24 +38,34 @@ export default class DatapackLoader {
     public async loadDatapack(datapackHeader: string, bubbleExceptions: false) : Promise<VlocityDatapack | undefined>;
     public async loadDatapack(datapackHeader: string, bubbleExceptions = true) : Promise<VlocityDatapack | undefined> {
         try {
-            const manifestEntry = getDatapackManifestKey(datapackHeader);
-            this.logger.verbose(`Loading datapack ${manifestEntry.key} from "${datapackHeader}"`);
+            const [ datapackTypeFolder, datapackName ] = datapackHeader.split(/[\\|/]+/).slice(-3, -1);
             const datapackJson = await this.loadJson(datapackHeader);
+
             if (!datapackJson) {
-                throw new Error(`No such file exists: ${datapackHeader}`);
+                throw new Error(`No such file found: ${datapackHeader}`);
             }
 
+            if (typeof datapackJson['VlocityDataPackType'] !== 'string') {
+                throw new Error(`${datapackHeader} is not a Datapack JSON`);
+            }
+
+            const objectType = datapackJson['VlocityRecordSObjectType'];
+            const datapackType = await this.datapackInfo?.getDatapackType(objectType) ?? datapackTypeFolder;
+            const datapackKey = `${datapackType}/${datapackName}`;
+
+            this.logger.verbose(`Loaded datapack ${datapackKey} from "${datapackHeader}"`);
+
             return new VlocityDatapack(datapackHeader,
-                manifestEntry.datapackType,
-                manifestEntry.key,
+                datapackType,
+                datapackKey,
                 getExportProjectFolder(datapackHeader),
                 datapackJson
             );
-        } catch(err) {
-            this.logger.error(`Error loading datapack ${path.basename(datapackHeader)} -- ${err.message || err}`);
+        } catch(error) {
             if (bubbleExceptions) {
-                throw err;
+                throw new CustomError(`Error loading datapack ${path.basename(datapackHeader)}`, error);
             }
+            this.logger.error(`Error loading datapack ${path.basename(datapackHeader)} -- ${getErrorMessage(error)}`);
         }
     }
 

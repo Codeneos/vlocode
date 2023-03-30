@@ -82,6 +82,10 @@ export class DatapackInfoService {
         const typeRegex = new RegExp(`^${substringBeforeLast(removeNamespacePrefix(sobjectType), '__')}$`,'i');
         const definitions = await this.getDatapackDefinitions();
 
+        if (definitions.length === 0) {
+            this.logger.warn(`Current org does not contain Datapack configurations, see VlocityDataPackConfiguration__mdt metadata object`);
+        }
+
         // Find datapacks matching the sobjectType specified
         // if not found match based on datapack type; this is not 100% correct but yield good results with the standard configiration
         // TODO: analyze DR and based on that determine the SObject type
@@ -90,7 +94,7 @@ export class DatapackInfoService {
             definitions.find(dataPack => dataPack.datapackType && typeRegex.test(dataPack.datapackType));
 
         if (!datapackInfo) {
-            this.logger.verbose(`No Datapack con with SObject '${sobjectType}' configured in Salesforce (see VlocityDataPackConfiguration object)`);
+            this.logger.verbose(`No datapack configuration found for SObject '${sobjectType}' in Salesforce, see VlocityDataPackConfiguration__mdt metadata object`);
         }
 
         return datapackInfo?.datapackType;
