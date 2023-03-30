@@ -353,7 +353,9 @@ export const getErrorMessage: GetErrorMessage = Object.assign(
             return err;
         }
         if (err instanceof Error || ('stack' in err && 'message' in err)) {
-            return options?.includeStack && err.stack ? err.stack : err.message;
+            const includeStack = typeof options?.includeStack === 'boolean' 
+                ? options.includeStack : getErrorMessage.defaults.includeStack
+            return includeStack  && err.stack ? err.stack : err.message;
         }
         return String(err);
     }, {
