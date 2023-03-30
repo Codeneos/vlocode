@@ -70,7 +70,7 @@ export class OmniScriptActivator {
         const script = await this.lookup.getScript(input);
 
         // (Re-)Activate script
-        if (options?.remoteActivation) {
+        if (options?.remoteActivation || script.omniProcessType !== 'OmniScript') {
             await this.remoteScriptActivation(script);
         } else {
             await this.localScriptActivation(script);
@@ -110,10 +110,10 @@ export class OmniScriptActivator {
         const allVersions = await this.lookup.getScriptVersions(script);
         const scriptUpdates = allVersions
             .filter(version => version.isActive ? version.id !== script.id : version.id === script.id)
-            .map(version => ({ id: version.id, isActive: script.id === version.id, ...(extraActivationValues ?? {}) }));
+            .map(version => ({ id: version.id, isActive: script.id === version.id }) );
 
         const versionDeactivations = scriptUpdates.filter(version => !version.isActive);
-        const versionActivations = scriptUpdates.filter(version => version.isActive);
+        const versionActivations = scriptUpdates.filter(version => version.isActive).map(version => Object.assign(version, extraActivationValues));
 
         // It is not possible to activate a new version and de-activate the old version in the same update
         // due to a there being trigger on the OmniScript__c object that ensures only one active version is allowed
