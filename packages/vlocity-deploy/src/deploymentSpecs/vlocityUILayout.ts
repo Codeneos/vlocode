@@ -40,7 +40,7 @@ export class VlocityUILayout implements DatapackDeploymentSpec {
             } catch(err) {
                 record.addWarning('Unable to parse layout definition as JSON');
                 return;
-            }            
+            }
         }
 
         if (typeof definition !== 'object') {
@@ -54,8 +54,8 @@ export class VlocityUILayout implements DatapackDeploymentSpec {
         }
 
         if (typeof definition.templates === 'object') {
-            for (const templateName of Object.values(definition.templates)) {
-                record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', { Name: `${templateName}` });
+            for (const template of Object.values<{ templateUrl: string }>(definition.templates).filter(t => t?.templateUrl)) {
+                record.addLookupDependency('%vlocity_namespace%__VlocityUITemplate__c', { Name: template.templateUrl });
             }
         }
     }
