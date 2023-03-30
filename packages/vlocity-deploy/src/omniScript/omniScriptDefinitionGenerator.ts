@@ -94,7 +94,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     }
 
     private async loadOptions(element: OmniScriptChoiceElementDefinition) {
-        if (element.propSetMap.optionSource.type === 'SObject') {
+        if (element.propSetMap.optionSource.type === 'SObject' && element.propSetMap.optionSource.source) {
             if (element.propSetMap.controllingField.element) {
                 element.propSetMap.dependency = await this.getDependentPicklistOptions(element.propSetMap.optionSource.source);
             } else {
@@ -128,8 +128,13 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     }
 
     private async getActivePicklistEntries(picklist: string) {
-        const [type, field] = picklist.split('.');
-        const values = await this.schema.describePicklistValues(type, field);
-        return values.filter(entry => entry.active);
+        try {
+            const [type, field] = picklist.split('.');
+            const values = await this.schema.describePicklistValues(type, field);
+            return values.filter(entry => entry.active);
+        } catch(error) {
+            this.logger.warn(`Unable to retrieve picklist values for: ${picklist}`);
+        }
+        return [];
     }
 }
