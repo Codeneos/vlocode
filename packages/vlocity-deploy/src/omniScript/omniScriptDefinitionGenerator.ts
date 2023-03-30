@@ -27,7 +27,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     private async buildScriptDefinition(scriptRecord: OmniScriptRecord): Promise<OmniScriptDefinition> {
         if (scriptRecord.omniProcessType !== 'OmniScript') {
             throw new Error(
-                `Script with id ${scriptRecord.id} id not an OmniScript process (${scriptRecord.omniProcessType}). ` +
+                `OmniScript ${scriptRecord.id} is not an OmniScript process (${scriptRecord.omniProcessType}). ` +
                 `Only OmniScript process types supported script definition generation.`);
         }
 

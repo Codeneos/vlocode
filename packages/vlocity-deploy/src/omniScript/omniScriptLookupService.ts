@@ -152,9 +152,9 @@ export class OmniScriptLookupService {
     {
         const lookupFilter = script
             ? typeof script === 'object'
-                ? { type: script.type, subType: script.subType, language: script.language, omniProcessType: 'OmniScript' }
-                : { id: script, omniProcessType: 'OmniScript' }
-            : { omniProcessType: 'OmniScript' };
+                ? { type: script.type, subType: script.subType, language: script.language }
+                : { id: script }
+            : { };
 
         const records = await this.lookupService.lookup<OmniScriptRecord>(
             '%vlocity_namespace%__OmniScript__c',
