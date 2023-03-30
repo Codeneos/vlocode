@@ -349,10 +349,7 @@ export class DatapackDeployer {
                 }
             } else {
                 const recordGroups = specParams[0].recordGroups
-                    .map(group => this.evalFilter(filter, group)
-                        ? group
-                        : new DatapackDeploymentRecordGroup(group.key, this.filterApplicableRecords(filter, group.records))
-                    )
+                    .map(group => this.evalFilter(filter, group) ? group : this.filterApplicableRecords(filter, group))
                     .filter(group => group.records.length)
                 if (!recordGroups.length) {
                     continue;
@@ -396,10 +393,13 @@ export class DatapackDeployer {
         return [...affectedRecords];
     }
 
-    private filterApplicableRecords(filter: DatapackFilter, arg: DatapackDeploymentRecord[]): DatapackDeploymentRecord[];
-    private filterApplicableRecords(filter: DatapackFilter, arg: readonly DatapackDeploymentRecord[]): readonly DatapackDeploymentRecord[];
-    private filterApplicableRecords(filter: DatapackFilter, arg: readonly DatapackDeploymentRecord[] | DatapackDeploymentRecord[]) {
-        return arg.filter(record => this.evalFilter(filter, record));
+    private filterApplicableRecords(filter: DatapackFilter, arg: readonly DatapackDeploymentRecord[]): DatapackDeploymentRecord[];
+    private filterApplicableRecords(filter: DatapackFilter, arg: DatapackDeploymentRecordGroup): DatapackDeploymentRecordGroup;
+    private filterApplicableRecords(filter: DatapackFilter, arg: readonly DatapackDeploymentRecord[] | DatapackDeploymentRecordGroup) {
+        if (arg instanceof DatapackDeploymentRecordGroup) {
+            return new DatapackDeploymentRecordGroup(arg.key, this.filterApplicableRecords(filter, arg.records));
+        }
+        return arg.filter(record => this.evalFilter(filter, record)) as any;
     }
 
     private evalFilter(filter: DatapackFilter, arg: string | VlocityDatapack | DatapackDeploymentRecord | DatapackDeploymentRecordGroup) : boolean {
@@ -415,8 +415,7 @@ export class DatapackDeployer {
             return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) ||
                 (!!filter.recordFilter && isMatch(filter.recordFilter, removeNamespacePrefix(arg.sobjectType)));
         } else if (arg instanceof DatapackDeploymentRecordGroup) {
-            return (!!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType)) ||
-                (!!filter.recordFilter && arg.records.some(r => isMatch(filter.recordFilter!, r.normalizedSObjectType)));
+            return !!filter.datapackFilter && isMatch(filter.datapackFilter, arg.datapackType);
         }
 
         throw new Error('EvalFilter does not understand comparison argument type; pass either a VlocityDatapack or DatapackDeploymentRecord');
