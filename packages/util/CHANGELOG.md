@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.1](https://github.com/Codeneos/vlocode/compare/v0.18.18...v0.19.1) (2023-04-03)
+
+### Bug Fixes
+
+* add unit test for proxy transformer ([4a3d1c9](https://github.com/Codeneos/vlocode/commit/4a3d1c91b2773a02d3f3483e870458ae937cba5a))
+* calculateHash does incorrectly references `this` from a static context ([0575fd3](https://github.com/Codeneos/vlocode/commit/0575fd36bdb190010e5346bc5bd4d667562c96f1))
+* drop `uuid` package in favor of browser and node native `randomUUID` from `node:ctypto` ([78e954c](https://github.com/Codeneos/vlocode/commit/78e954c8cac5773962f76ea42827ab0475231ad9))
+* fix several script generation errors ([eff0ef0](https://github.com/Codeneos/vlocode/commit/eff0ef01e4fc72ff2917f5250e9b879ee8f437ca))
+* getErrorMessage does not use defaults when set ([00868ec](https://github.com/Codeneos/vlocode/commit/00868ecbc8be149232a6afc06f63577a6f00f5db))
+* lookup service does not report script name/id in lookup error ([8021d97](https://github.com/Codeneos/vlocode/commit/8021d97094b3d3f89c22f19928f5dc552345882f))
+* mapGetOrCreate does not play nice with sync-initializers ([d06d5cf](https://github.com/Codeneos/vlocode/commit/d06d5cfb52fdcb3ce3901ff06ad6408d8f79f9f4))
+* normalizeSalesforceName transforms uppercase acronyms to `xML` instead of `xml` ([8f3df44](https://github.com/Codeneos/vlocode/commit/8f3df44f8e55bab1a82c93ba1fbc80b1b479d443))
+* transform proxy does not transform array methods properly ([e7be106](https://github.com/Codeneos/vlocode/commit/e7be1064c77f93fc0806a9607354ca094693adec))
+
+### Features
+
+* add new mapBy function to easily map arrays by key ([23083b6](https://github.com/Codeneos/vlocode/commit/23083b683253fb4ab73a20c830b1438f08408878))
+* change getErrorMessage signature to accept options and allow default options to be set easily ([f1e8d46](https://github.com/Codeneos/vlocode/commit/f1e8d46132403672c3b3c87ed0bb39106a2c34bf))
+* introduce new uniform query API for data and tooling objects; update query service to use new query API. ([775ca10](https://github.com/Codeneos/vlocode/commit/775ca100f41cc72c73387f1b46da3681831a72b3))
+* open LWC OmniScripts in LWC editor and classic in Angular designer ([e016d3f](https://github.com/Codeneos/vlocode/commit/e016d3f45ad1ec7ef218ce37d52bc879961c2f8e))
+* support local OmniScript definition generation instead of using remote APEX. This speeds up OmniScript activation and avoids govern limit issue when activating large scripts. ([5bbd304](https://github.com/Codeneos/vlocode/commit/5bbd30462101d0918de34dfed7badee88d5e2dd9))
+* update calculateHash to also work on strings for convenience ([b5fd2c1](https://github.com/Codeneos/vlocode/commit/b5fd2c1e4e089cf9b63dce40286214f3e7785632))
+
 ## [0.18.17](https://github.com/Codeneos/vlocode/compare/v0.18.16...v0.18.17) (2023-02-23)
 
 ### Bug Fixes

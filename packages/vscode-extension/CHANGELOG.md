@@ -1,8 +1,23 @@
 # Change Log
-## Vlocity/Salesforce Integration for VSCode
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## [0.19.1](https://github.com/codeneos/vlocode/compare/v0.18.18...v0.19.1) (2023-04-03)
+
+### Bug Fixes
+
+* compile issue due to breaking change in SfdxConnectionProvider arguments ([ac3efc8](https://github.com/codeneos/vlocode/commit/ac3efc835ec4736dfaec24aa40f64ad858ac4b2c))
+* connection hook fails to attach due to connection not always being a promise ([2ef12cb](https://github.com/codeneos/vlocode/commit/2ef12cb8a532e458dcef1998acace956d9d19b21))
+* drop `uuid` package in favor of browser and node native `randomUUID` from `node:ctypto` ([78e954c](https://github.com/codeneos/vlocode/commit/78e954c8cac5773962f76ea42827ab0475231ad9))
+* rename sass folder to scss to avoid conflicts with sass nodejs module ([41dd5cf](https://github.com/codeneos/vlocode/commit/41dd5cf26856ceeeaac2f1bc4d80ba6b0f6c8e0b))
+* retrieveMetadata command does not request zip file causing no files from being refreshed ([e137dfd](https://github.com/codeneos/vlocode/commit/e137dfd253fc8bd2e46920f2ad42f945eaac99a3))
+
+### Features
+
+* open LWC OmniScripts in LWC editor and classic in Angular designer ([e016d3f](https://github.com/codeneos/vlocode/commit/e016d3f45ad1ec7ef218ce37d52bc879961c2f8e))
+* support correctly parsing datapacks that are not in a parent folder ([ae261c2](https://github.com/codeneos/vlocode/commit/ae261c2727d5fcc40afc78b471929a7162408d1f))
+* support more datapack types in datapack explorer ([3a19411](https://github.com/codeneos/vlocode/commit/3a1941197250a8b747cb1ae8774511ec4c4d22a9))
 
 ## [0.18.18](https://github.com/codeneos/vlocode/compare/v0.18.17...v0.18.18) (2023-03-01)
 

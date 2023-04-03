@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.1](https://github.com/Codeneos/vlocode/compare/v0.18.18...v0.19.1) (2023-04-03)
+
+### Bug Fixes
+
+* activate integration procedures using remote APEX ([3f79191](https://github.com/Codeneos/vlocode/commit/3f79191d7b6ae2b48b4b5f6eb29fdbd4c1d25e37))
+* additional validation on OmniScript templates to avoid linking templates that are not strings ([0d66200](https://github.com/Codeneos/vlocode/commit/0d66200594de340065334a67aae3cd95e8590d07))
+* before and after deploy specs do no respect record filter ([299eb4c](https://github.com/Codeneos/vlocode/commit/299eb4c5ea5450bd04914167da6e0b28dd621611))
+* datapack deployment tries to delete matching key records that can be updated in exceptional cases ([43b1ce4](https://github.com/Codeneos/vlocode/commit/43b1ce43c94b5646b2e3840ef53d0af8f2476332))
+* datapackLookupService does not update the namespace of the filter when comparing field values causing a bugcheck ([826205f](https://github.com/Codeneos/vlocode/commit/826205f277757fbb1f48ac719a3a17bc2cdc8bfb))
+* definition builder for OmniScripts concatenates templates in a different order then APEX activation. ([5abf833](https://github.com/Codeneos/vlocode/commit/5abf833fae1e1568837b1f594b32921fe36a7c19))
+* deployed OmniScript using local activation does not get updated to activated after deploying the definition and LWC ([4051b81](https://github.com/Codeneos/vlocode/commit/4051b819c869df22fc47d98116481c69e0b37cbf))
+* display warning for omniscript datapacks without elements instead of an error ([62f2398](https://github.com/Codeneos/vlocode/commit/62f2398aa2730fe0c838adee29aab12db87aa605))
+* do not dump old and new script definitions during activation ([81f9a17](https://github.com/Codeneos/vlocode/commit/81f9a17b83b14753635a7b96bbb062ee78991cfe))
+* drop `uuid` package in favor of browser and node native `randomUUID` from `node:ctypto` ([78e954c](https://github.com/Codeneos/vlocode/commit/78e954c8cac5773962f76ea42827ab0475231ad9))
+* ensure that script activation does not delete the old definitions before ensuring the new version can be activated (only when activating a new version) ([0e6631a](https://github.com/Codeneos/vlocode/commit/0e6631ad5bddf7f062185fca8f38e46040f7e920))
+* exclude datapacks that are not loaded properly due to spec-function errors from the deployment and properly log and attach spec function errors to the respective datapack that causes them ([c4c7fb1](https://github.com/Codeneos/vlocode/commit/c4c7fb10cdfe3129c8ab31543e3925fa0fc053bf))
+* fix several script generation errors ([eff0ef0](https://github.com/Codeneos/vlocode/commit/eff0ef01e4fc72ff2917f5250e9b879ee8f437ca))
+* incorrectly mapping version to sub type  for script definition generation ([e6ff15a](https://github.com/Codeneos/vlocode/commit/e6ff15acc7ae0a6797a2ee0f3a913276e8429376))
+* IPs with single elements crashed updateElementOrder due to that expecting elements to always be an array ([ae66a4a](https://github.com/Codeneos/vlocode/commit/ae66a4a332ac250b0769581b4121cbb3fccb1403))
+* lookup service does not report script name/id in lookup error ([8021d97](https://github.com/Codeneos/vlocode/commit/8021d97094b3d3f89c22f19928f5dc552345882f))
+* LWC compiler throws error when the tooling record is not updated as Salesforce returns a 204 status code with no body ([64e4eaf](https://github.com/Codeneos/vlocode/commit/64e4eaf319321a39317ca81bf669428827224ade))
+* LWC enabled scripts with embedded scripts did not render elements inside of blocks ([d0c9b9c](https://github.com/Codeneos/vlocode/commit/d0c9b9c18e41650771579370adb0842a8b052ce9))
+* only run tests for test and spec files in __tests__ folder ([65fb3a9](https://github.com/Codeneos/vlocode/commit/65fb3a975cc291fbb37b4dc04eea9afe97605924))
+* only update order and level when not set in the datapack. ([a26f6e3](https://github.com/Codeneos/vlocode/commit/a26f6e3151cbb4409e8afe089c2d4185957b85f5))
+* re-ordering of elements should start counting at 1 for element order instead of 0 ([1bdc38c](https://github.com/Codeneos/vlocode/commit/1bdc38c05474571a2991394e6dec6be934da04fa))
+* rename sass folder to scss to avoid conflicts with sass nodejs module ([41dd5cf](https://github.com/Codeneos/vlocode/commit/41dd5cf26856ceeeaac2f1bc4d80ba6b0f6c8e0b))
+* script gen crashed on invalid picklist configuration for a choice element ([89ec371](https://github.com/Codeneos/vlocode/commit/89ec3715e3337b9c2707ccb07333aa2aa050eade))
+* UI layouts are incorrectly linked to UI templates ([7b949fc](https://github.com/Codeneos/vlocode/commit/7b949fc47d4d065185acba18ce36ca577352a691))
+* update order and level of OmniScript elements before deployment (issue [#396](https://github.com/Codeneos/vlocode/issues/396)) ([c9c08f1](https://github.com/Codeneos/vlocode/commit/c9c08f1774fec7cda1c157fbf03c8e9e5fba8768))
+* when building multiple definitions they re-use the same objects instead of deepCloning them ([24fe045](https://github.com/Codeneos/vlocode/commit/24fe0451221818b321be92ff779a453dcdbd6188))
+
+### Features
+
+* add support for reactivating dependent scripts ([2a8a42c](https://github.com/Codeneos/vlocode/commit/2a8a42c6725ca83905462e0c0038dc4ed7ee6b42))
+* always regenerate the LWC id when building the script definitions ([2f57fc0](https://github.com/Codeneos/vlocode/commit/2f57fc06231be1969b2237150831f83e51b71e89))
+* change getErrorMessage signature to accept options and allow default options to be set easily ([f1e8d46](https://github.com/Codeneos/vlocode/commit/f1e8d46132403672c3b3c87ed0bb39106a2c34bf))
+* local OmniScript activation now updates the isActive flag to `true` and deactivates the old active version of the same script ([08092e4](https://github.com/Codeneos/vlocode/commit/08092e4f1f51927414a2810590c3a091b17559da))
+* open LWC OmniScripts in LWC editor and classic in Angular designer ([e016d3f](https://github.com/Codeneos/vlocode/commit/e016d3f45ad1ec7ef218ce37d52bc879961c2f8e))
+* report stack trace for datapack loading errors during datapack deployment while debugging ([b282180](https://github.com/Codeneos/vlocode/commit/b282180dd286116ba5bf7f55f96f8c46459218c5))
+* support correctly parsing datapacks that are not in a parent folder ([ae261c2](https://github.com/Codeneos/vlocode/commit/ae261c2727d5fcc40afc78b471929a7162408d1f))
+* support local OmniScript definition generation instead of using remote APEX. This speeds up OmniScript activation and avoids govern limit issue when activating large scripts. ([5bbd304](https://github.com/Codeneos/vlocode/commit/5bbd30462101d0918de34dfed7badee88d5e2dd9))
+* support more datapack types in datapack explorer ([3a19411](https://github.com/Codeneos/vlocode/commit/3a1941197250a8b747cb1ae8774511ec4c4d22a9))
+* support more lookup configurations for OmniScripts ([6ea32b4](https://github.com/Codeneos/vlocode/commit/6ea32b4528f9302b91765b9bba7beb5d6d679501))
+* support unlimited re-usable OmniScript embedding; allows more then 1 level deep embedding of scripts ([bb23f67](https://github.com/Codeneos/vlocode/commit/bb23f677ee8e74a0ae43a067e17ed1f0b1d21bdb))
+* switch from sass.js to sass-dart for scss compilation; sass.js is not unmaintained and not being updated anymore ([807e45c](https://github.com/Codeneos/vlocode/commit/807e45c593061b509309db849f66dc7188e7238a))
+
 ## [0.18.18](https://github.com/Codeneos/vlocode/compare/v0.18.17...v0.18.18) (2023-03-01)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

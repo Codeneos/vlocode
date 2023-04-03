@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.1](https://github.com/Codeneos/vlocode/compare/v0.18.18...v0.19.1) (2023-04-03)
+
+### Bug Fixes
+
+* bug in schema normalization not working properly for arrays ([44cec8f](https://github.com/Codeneos/vlocode/commit/44cec8f29f44a12b70cde1c8a90b3ac20b517660))
+* bulk queriy results do not include related object details ([6fd7e4f](https://github.com/Codeneos/vlocode/commit/6fd7e4f5e1c6050ff5a0057da16f5c8f48e0c53e))
+* bulkJob compiler error due to `info` being readonly type ([c32f014](https://github.com/Codeneos/vlocode/commit/c32f014bc6136266795cf0940e1d31b333a4aefe))
+* datapack deployment tries to delete matching key records that can be updated in exceptional cases ([43b1ce4](https://github.com/Codeneos/vlocode/commit/43b1ce43c94b5646b2e3840ef53d0af8f2476332))
+* datapack explorer does not list certain datapacks due to query parser error ([d031866](https://github.com/Codeneos/vlocode/commit/d031866ac9b39d91cc02e0ae80009dcb6f67b17b))
+* display warning for omniscript datapacks without elements instead of an error ([62f2398](https://github.com/Codeneos/vlocode/commit/62f2398aa2730fe0c838adee29aab12db87aa605))
+* do not exit when async interator has 0 results ([71ed265](https://github.com/Codeneos/vlocode/commit/71ed2653e29a681d71f17c69fa22f1e51159b59f))
+* drop `uuid` package in favor of browser and node native `randomUUID` from `node:ctypto` ([78e954c](https://github.com/Codeneos/vlocode/commit/78e954c8cac5773962f76ea42827ab0475231ad9))
+* encodeRFC3986URI does not encode `&` character causing queries with an & to fail ([029b607](https://github.com/Codeneos/vlocode/commit/029b6079d6a8a871a20ceb44841a5ccfd036f09c))
+* fix QueryService test mocks `query` operation instead of underlying transport ([5e33d7b](https://github.com/Codeneos/vlocode/commit/5e33d7bc8a0160e69a8b0e9bf84abaa6cc57dd23))
+* fix several script generation errors ([eff0ef0](https://github.com/Codeneos/vlocode/commit/eff0ef01e4fc72ff2917f5250e9b879ee8f437ca))
+* QueryService resolves namespace from base container ([e07b578](https://github.com/Codeneos/vlocode/commit/e07b578b136207a1903999515a47d751a0d65d54))
+* relationship incorrectly cast to arrays in iterator ([e9a5e03](https://github.com/Codeneos/vlocode/commit/e9a5e03a05934c7569f5612ab621fd9a69e8bebf))
+* retrieveMetadata command does not request zip file causing no files from being refreshed ([e137dfd](https://github.com/Codeneos/vlocode/commit/e137dfd253fc8bd2e46920f2ad42f945eaac99a3))
+* toolingApiSchemaAccess transforms nested results which are already processed by query2 ([825a0b6](https://github.com/Codeneos/vlocode/commit/825a0b61da7fc1b33b0b3846ae8dffc70113ee36))
+* use getSObjectType in query cache to avoid errors when caching complex queries not yet supported by the parser ([57aea51](https://github.com/Codeneos/vlocode/commit/57aea5194c0e83899fd6717b6b0136e5b7711842))
+
+### Features
+
+* add support for reactivating dependent scripts ([2a8a42c](https://github.com/Codeneos/vlocode/commit/2a8a42c6725ca83905462e0c0038dc4ed7ee6b42))
+* change getErrorMessage signature to accept options and allow default options to be set easily ([f1e8d46](https://github.com/Codeneos/vlocode/commit/f1e8d46132403672c3b3c87ed0bb39106a2c34bf))
+* expose job info on bulk/bulkJob.ts as readonly object from the job ([0b777be](https://github.com/Codeneos/vlocode/commit/0b777bec0bdb4c1e13655aa58dca073b699c53cf))
+* improve query parser correctness by enforcing keyword order on SOQL syntax parser ([04dc796](https://github.com/Codeneos/vlocode/commit/04dc796445cbb3ec538837066e53199ee5cf6f65))
+* include logging of queries in debug mode ([296395a](https://github.com/Codeneos/vlocode/commit/296395ab06d3eb019daab957d340efc3aa711cd5))
+* introduce new uniform query API for data and tooling objects; update query service to use new query API. ([775ca10](https://github.com/Codeneos/vlocode/commit/775ca100f41cc72c73387f1b46da3681831a72b3))
+* support local OmniScript definition generation instead of using remote APEX. This speeds up OmniScript activation and avoids govern limit issue when activating large scripts. ([5bbd304](https://github.com/Codeneos/vlocode/commit/5bbd30462101d0918de34dfed7badee88d5e2dd9))
+* support more datapack types in datapack explorer ([3a19411](https://github.com/Codeneos/vlocode/commit/3a1941197250a8b747cb1ae8774511ec4c4d22a9))
+* support unary operators, with condition and braces for query parsing and generation ([87d56c8](https://github.com/Codeneos/vlocode/commit/87d56c86fcd2f7faf0677bacef391f1e2f4cba94))
+
 ## [0.18.18](https://github.com/Codeneos/vlocode/compare/v0.18.17...v0.18.18) (2023-03-01)
 
 ### Bug Fixes
