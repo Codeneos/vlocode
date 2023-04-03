@@ -8,15 +8,15 @@ import { groupBy, removeNamespacePrefix } from '@vlocode/util';
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class RecordActivator {
-    
+
     public constructor(
         private readonly salesforceService: SalesforceService,
         private readonly logger: Logger) {
     }
 
     /**
-     * Activate the specified records of 1 specified. 
-     * @param records Iterable array of records which will be activated; if the {@link recordType} is 
+     * Activate the specified records of 1 specified.
+     * @param records Iterable array of records which will be activated; if the {@link recordType} is
      * @param activator Activator function executed for each record
      * @param recordType Optional record type filter; if set only records of the normalized record type matching will be activated
      */
@@ -30,7 +30,7 @@ export class RecordActivator {
 
             const exactMatch = sobjectType.toLowerCase() !== recordType.toLowerCase();
             const localMatch = removeNamespacePrefix(sobjectType).toLowerCase() !== recordType.toLowerCase();
-                
+
             return exactMatch || localMatch;
         }
 
@@ -38,8 +38,8 @@ export class RecordActivator {
             const recordsToActivate = recordsOfType.map(record => ({ id: record.recordId, ...activator(record) }));
 
             for await(const record of this.salesforceService.update(sobjectType, recordsToActivate)) {
-                const datapackRecord = recordsOfType.find(r => r.recordId === record.ref)!;   
-                if (!record.success) {     
+                const datapackRecord = recordsOfType.find(r => r.recordId === record.ref)!;
+                if (!record.success) {
                     datapackRecord.updateStatus(DeploymentStatus.Failed, `Activation failed: ${record.error}`);
                     this.logger.warn(`Failed activation for ${datapackRecord.datapackKey}: ${record.error}`);
                 } else {
