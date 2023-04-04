@@ -4,11 +4,15 @@ import { cache, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util
 
 export interface VlocityDatapackDefinition {
     /**
-     * Type of Datapack
+     * Primary SObject type exported for by datapack, e.g. VlocityUITemplate__c.
+     * The sobject type can be prefixed with the namespace, e.g. %vlocity_namespace%__VlocityUITemplate__c.
+     *
+     * This property is undefined if the datapack is not linked to a SObject through the
+     * primarySObjectType field in the custom metadata record.
      */
-    readonly sobjectType: string;
+    readonly sobjectType: string | undefined;
     /**
-     * Primary SObject type exported for this datapack
+     * Type name of the datapack, e.g. VlocityUITemplate
      */
     readonly datapackType: string;
 }
@@ -74,6 +78,19 @@ export class DatapackInfoService {
     }
 
     /**
+     * Gets the datapack info for the specified Datapack type.
+     * Returns undefined if no datapack is configured for the specified type, 
+     * otherwise returns the datapack definition.
+     * @param datapackType Datapack type
+     */
+    public async getDatapackInfo(datapackType: string) : Promise<VlocityDatapackDefinition | undefined> {
+        const lowerCaseType = datapackType.toLowerCase();
+        return (await this.getDatapackDefinitions()).find(
+            dataPack => dataPack.datapackType.toLowerCase() === lowerCaseType
+        );
+    }
+
+    /**
      * Gets the datapack name for the specified SObject type, namespaces prefixes are replaced with %vlocity_namespace% when applicable
      * @param sobjectType Salesforce object type
      */
@@ -105,8 +122,7 @@ export class DatapackInfoService {
      * @param sobjectType Datapack type
      */
     public async getSObjectType(datapackType: string) : Promise<string> {
-        const regex = new RegExp(`${datapackType}`,'i');
-        const datapackInfo = (await this.getDatapackDefinitions()).find(dataPack => regex.test(dataPack.datapackType));
+        const datapackInfo = await this.getDatapackInfo(datapackType);
         if (!datapackInfo) {
             throw new Error(`No Datapack with name '${datapackType}' is not configured in Salesforce (see VlocityDataPackConfiguration object)`);
         }

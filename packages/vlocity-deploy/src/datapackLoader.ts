@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, directoryName, substringBeforeLast } from '@vlocode/util';
+import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, directoryName, substringBeforeLast, normalizeSalesforceName, stringEquals, extractNamespaceAndName } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
 import { getDatapackManifestKey, getExportProjectFolder } from './datapackUtil';
 import { join } from 'path/posix';
@@ -49,8 +49,7 @@ export default class DatapackLoader {
                 throw new Error(`${datapackHeader} is not a Datapack JSON`);
             }
 
-            const objectType = datapackJson['VlocityRecordSObjectType'];
-            const datapackType = await this.datapackInfo?.getDatapackType(objectType) ?? datapackTypeFolder;
+            const datapackType = await this.getDatapackType(datapackHeader, datapackJson);
             const datapackKey = `${datapackType}/${datapackName}`;
 
             this.logger.verbose(`Loaded datapack ${datapackKey} from "${datapackHeader}"`);
@@ -67,6 +66,29 @@ export default class DatapackLoader {
             }
             this.logger.error(`Error loading datapack ${path.basename(datapackHeader)} -- ${getErrorMessage(error)}`);
         }
+    }
+
+    private async getDatapackType(datapackHeaderFile: string, datapackJson: object): Promise<string> {
+        const [ datapackTypeFolder ] = datapackHeaderFile.split(/[\\|/]+/).slice(-3, -1);
+        const objectType = datapackJson['VlocityRecordSObjectType'];
+
+        if (typeof datapackJson['VlocityDataPackType'] !== 'string' && typeof objectType !== 'string') {
+            throw new Error(`${datapackHeaderFile} is not a Datapack JSON`);
+        }
+
+        const datapackInfo = await this.datapackInfo?.getDatapackInfo(datapackTypeFolder);
+        const datapackObjectName = extractNamespaceAndName(objectType);
+
+        if (datapackInfo?.sobjectType) {
+            const infoObjectName = extractNamespaceAndName(datapackInfo.sobjectType);
+            if (stringEquals(infoObjectName.name, datapackObjectName.name)) {
+                return datapackTypeFolder;
+            }
+        } else if (datapackInfo) {
+            return datapackInfo.datapackType;
+        }
+
+        return await this.datapackInfo?.getDatapackType(objectType) ?? datapackTypeFolder;
     }
 
     public async loadDatapacks(datapackHeaders : string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
