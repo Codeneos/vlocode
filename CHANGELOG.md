@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.2](https://github.com/codeneos/vlocode/compare/v0.19.1...v0.19.2) (2023-04-04)
+
+### Bug Fixes
+
+* datapack type for integration procedures is set to OmniScript ([9c32b75](https://github.com/codeneos/vlocode/commit/9c32b757dca4a6ee3a0c960100f7925265ac2a11))
+
 ## [0.19.1](https://github.com/codeneos/vlocode/compare/v0.18.18...v0.19.1) (2023-04-03)
 
 ### Bug Fixes

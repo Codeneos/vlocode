@@ -178,7 +178,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     private async getExportableSObjectTypes() {
         const customObjects = await this.vlocode.salesforceService.schema.describeSObjects();
         const datapacks = (await this.datapackInfoService.getDatapackDefinitions()).filter(dp => !!dp.sobjectType);
-        const hasDatapack = (sobject: string) => datapacks.some(dp => normalizeSalesforceName(dp.sobjectType) === normalizeSalesforceName(sobject));
+        const hasDatapack = (sobject: string) => datapacks.some(dp => normalizeSalesforceName(dp.sobjectType!) === normalizeSalesforceName(sobject));
         const isExportable = (sobject: DescribeGlobalSObjectResult) => sobject.retrieveable && sobject.updateable && sobject.createable && !sobject.deprecatedAndHidden;
         const nonDatapackObjects = customObjects.filter(record => isExportable(record) && !hasDatapack(record.name));
         return nonDatapackObjects.map(record => new DatapackSObjectTypeNode(record.name));
