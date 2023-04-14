@@ -2,6 +2,7 @@ import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, O
 import { deepClone, escapeHtmlEntity, mapGetOrCreate } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';
 import { randomUUID } from 'crypto';
+
 /**
  * Builds a script definition from a list of elements and templates.
  */
@@ -48,8 +49,23 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
      * Add a custom picklist controller to the script definition. This controller is invoked at the start of the script to load the picklist values.
      * @param controller Name of the controller to add in the following format: `<controller>.<method>`
      */
-    public addCustomPicklistController(controller: string) {
-        this.scriptDef.cusPL[controller] = '';
+    public addRuntimePicklistSource(
+        optionSource: { type: 'SObject' | 'Custom' | 'Manual' | 'Image', source: string }, 
+        controllingField?: { type?: 'SObject' | 'Custom' | 'None', source: string, element: string}) 
+    {
+        if (!optionSource.source) {
+            return;
+        }
+
+        if (controllingField?.type === 'SObject' && controllingField.source) {
+            this.scriptDef.depSOPL[`${optionSource.source}/${controllingField.source}`] = '';
+        } else if (controllingField?.type === 'Custom' && controllingField.source) { 
+            this.scriptDef.depCusPL[`${controllingField?.element}/${controllingField.source}`] = '';
+        } else if (optionSource.type === 'Custom') {
+            this.scriptDef.cusPL[optionSource.source] = '';
+        } else if (optionSource.type === 'SObject') {
+            this.scriptDef.sobjPL[optionSource.source] = '';
+        }
     }
 
     /**

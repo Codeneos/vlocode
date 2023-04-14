@@ -6,6 +6,7 @@ import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptElementRecord, OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
 import { SalesforceSchemaService } from '@vlocode/salesforce';
 import { groupBy } from '@vlocode/util';
+import { VlocityInterfaceInvoker } from '../vlocityInterfaceInvoker';
 
 @injectable()
 export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvider {
@@ -14,6 +15,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
 
     constructor(
         private readonly lookup: OmniScriptLookupService,
+        private readonly genericInvoker: VlocityInterfaceInvoker,
         private readonly schema: SalesforceSchemaService,
         private readonly logger: Logger) {
     }
@@ -64,7 +66,13 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             const definition = this.generator.createElement(record);
 
             if (isChoiceScriptElement(definition)) {
-                await this.loadOptions(definition);
+                if (builder.realtimePicklistSeed) {
+                    // Add ru time picklists to definition so they can be resolved at runtime
+                    builder.addRuntimePicklistSource(definition.propSetMap.optionSource, definition.propSetMap.controllingField);
+                } else {
+                    // Loading of picklist options can fail
+                    await this.loadOptions(builder, definition);
+                }
             }
 
             this.logger.debug(`Adding [${record.type}] ${record.name} ${record.level}/${record.order} (${id})`);
@@ -93,12 +101,39 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         }
     }
 
-    private async loadOptions(element: OmniScriptChoiceElementDefinition) {
-        if (element.propSetMap.optionSource.type === 'SObject' && element.propSetMap.optionSource.source) {
-            if (element.propSetMap.controllingField.element) {
+    private async loadOptions(builder: OmniScriptDefinitionBuilder, element: OmniScriptChoiceElementDefinition) {
+        if (!element.propSetMap.optionSource.source) {
+            return;
+        }
+
+        if (element.propSetMap.optionSource.type === 'SObject') {
+            this.logger.debug(`Loading picklist options for SObject field: ${element.propSetMap.optionSource.source}`);
+            if (element.propSetMap.controllingField.type === 'SObject' && element.propSetMap.controllingField.element) {
                 element.propSetMap.dependency = await this.getDependentPicklistOptions(element.propSetMap.optionSource.source);
             } else {
                 element.propSetMap.options = await this.getPicklistOptions(element.propSetMap.optionSource.source);
+            }
+        }
+
+        if (element.propSetMap.optionSource.type === 'Custom') {
+            if (element.propSetMap.controllingField.type === 'Custom' && element.propSetMap.controllingField.element) {
+                // Let Vlocity handle custom dependent picklist sources at runtime
+                builder.addRuntimePicklistSource(element.propSetMap.optionSource, element.propSetMap.controllingField);
+            } else {
+                this.logger.debug(`Loading picklist options from Custom source: ${element.propSetMap.optionSource.source}`);
+                try {
+                    const response = await this.genericInvoker.invoke(element.propSetMap.optionSource.source);
+                    if (!Array.isArray(response.options)) {
+                        element.propSetMap.options = [ { value: `Error ${element.propSetMap.optionSource.source} returned no options`, name: 'ERR' } ];
+                    } else {
+                        element.propSetMap.options = response.options;
+                    }
+                } catch(err) {
+                    // When loading of picklist elements fails instead delegate loading to be done at runtime
+                    // to avoid blocking the script builder from generating the rest of the script definition
+                    builder.addRuntimePicklistSource(element.propSetMap.optionSource);
+                    this.logger.warn(`Unable to load custom picklist options for script element "${element.name}":`, err);
+                }
             }
         }
     }

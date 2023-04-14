@@ -92,9 +92,9 @@ export interface OmniScriptDefinition {
     userCurrencyCode: string,
     timeStamp: string,
     testTemplates: string;
+    customJS: string;
     templateList: string[];
     sOmniScriptId: string;
-    sobjPL: object;
     RPBundle: string;
     rMap: object;
     response: null;
@@ -106,10 +106,30 @@ export interface OmniScriptDefinition {
     errorMsg: string;
     error: string;
     dMap: object;
+    sobjPL: object;
     depSOPL: object;
-    depCusPL: object;
-    customJS: string;
-    cusPL: object;
+    /**
+     * Record keyed  by the name of the custom APEX method that loads the picklist values. Custom APEX classes listed in this array will be invoked at the script
+     * start to load picklist values instead of caching the values in the script definition at design time.
+     *
+     * ```json
+     * {
+     *   "myClass.getPicklistValues": ""
+     * }
+     * ```
+     */
+    cusPL: Record<string, "">;
+    /**
+     * Record keyed by the name of the custom APEX method that loads the picklist values. Custom APEX classes listed in this array will be invoked at the script
+     * start to load picklist values instead of caching the values in the script definition at design time.
+     *
+     * ```json
+     * {
+     *   "Select1/myClass.getDependentPicklistValues": ""
+     * }
+     * ```
+     */
+    depCusPL: Record<string, "">;
     children: Array<OmniScriptElementDefinition>;
     bReusable: boolean;
     bpVersion: number;
@@ -216,11 +236,11 @@ export interface OmniScriptChoiceElementDefinition extends OmniScriptInputElemen
         dependency?: Record<string, Array<{ value: string, name: string }>>;
         options: Array<{ value: string, name: string }>;
         optionSource: {
-            type: string,
+            type: 'SObject' | 'Custom' | 'Manual' | 'Image',
             source: string
         },
         controllingField: {
-            type: string,
+            type?: 'SObject' | 'Custom' | 'None',
             source: string
             element: string
         }

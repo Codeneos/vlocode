@@ -7,7 +7,6 @@ import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
 import { OmniScriptDefinitionGenerator } from './omniScriptDefinitionGenerator';
-import { writeFileSync } from 'fs-extra';
 
 export interface OmniScriptActivationOptions {
     /**

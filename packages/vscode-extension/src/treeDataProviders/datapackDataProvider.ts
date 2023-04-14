@@ -11,7 +11,6 @@ import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatap
 import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '../lib/config';
 import { QueryBuilder, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
-import OpenSalesforceCommand from '../commands/datapacks/openSalesforceCommand';
 import { randomUUID } from 'crypto';
 
 @injectable()
