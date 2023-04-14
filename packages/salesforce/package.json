@@ -75,7 +75,7 @@
         "moment": "^2.29.1",
         "salesforce-alm": "^52.1.9",
         "tough-cookie": "^4.1.2",
-        "xml2js": "^0.4.23"
+        "xml2js": "^0.5.0"
     },
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"
