@@ -23,19 +23,24 @@ export enum LifecyclePolicy {
      */
     singleton = 1,
     /**
-     * Opposite of the singleton Lifecycle; components with this lifecycle do not get registered and will be 
+     * Opposite of the singleton Lifecycle; components with this lifecycle do not get registered and will be
      * destroyed once there re no more references to them in memory.
      */
     transient = 2
 }
 
 export interface ServiceOptions {
-    /** Determines how a service is created and maintained in the system  */
+    /**
+     * Determines how a service is created and maintained in the container.
+     * A service with a lifecycle of `singleton` will be created once and is reused across resolutions.
+     * A service with a lifecycle of `transient` will be created each time it is resolved.
+     * @default LifecyclePolicy.singleton
+     */
     lifecycle: LifecyclePolicy;
-    /** 
-     * Optional priority that determines the preferred implementation when multiple implementations are available; 
-     * a higher number is preferred over a lower number. Services are registered with a priority of 0 by default. 
-     * 
+    /**
+     * Optional priority that determines the preferred implementation when multiple implementations are available;
+     * a higher number is preferred over a lower number. Services are registered with a priority of 0 by default.
+     *
      * _Note: Negative numbers are allowed and supported_
      */
     priority: number;
@@ -46,9 +51,9 @@ const lazyTarget = Symbol('[[Container:LazyTarget]]');
 const lazyIsResolved = Symbol('[[Container:LazyIsResolved]]');
 const serviceGuidSymbol = Symbol('[[Container:ServiceGuid]]');
 
-const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({ 
-    lifecycle: LifecyclePolicy.singleton, 
-    priority: 0 
+const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({
+    lifecycle: LifecyclePolicy.singleton,
+    priority: 0
 });
 
 interface LazyProxy<T extends object = object> {
@@ -66,40 +71,40 @@ const uniqueNameConfig: uniqueNamesGeneratorConfig = {
 
 /**
  * Dependency injection container that can create objects marked with the {@link injectable} and automatically resolving their dependencies.
- * 
- * To use the container mark any class with the {@link injectable}-decorator. {@link injectable} allows specifying the lifecycle policy of the 
+ *
+ * To use the container mark any class with the {@link injectable}-decorator. {@link injectable} allows specifying the lifecycle policy of the
  * object which determines if the container will create a new instance or use the existing instance of the class registered in the container.
- * 
- * The container resolves all undefined constructor parameters and all properties marked with  {@link injectable.property}. 
- * 
+ *
+ * The container resolves all undefined constructor parameters and all properties marked with  {@link injectable.property}.
+ *
  * Circular references are supported and handled by using a lzy resolution proxy.
- * 
+ *
  * Usage:
  * ```typescript
  * @injectable()
  * class Bar {
  *    constructor(private foo: Foo) {
  *    }
- * 
+ *
  *    public helloFooBar() {
  *        this.foo.helloBar();
  *    }
- * 
+ *
  *    public hello() {
  *        console.log('Hello!');
  *    }
  * }
- * 
+ *
  * @injectable()
  * class Foo {
  *    constructor(public bar: Bar) {
  *    }
- * 
+ *
  *    public helloBar() {
  *        this.bar.hello();
  *    }
  * }
- * 
+ *
  * container.get(Foo).helloBar(); // prints 'Hello!'
  * container.get(Foo).bar.helloFooBar(); // prints 'Hello!'
  * ```
@@ -125,12 +130,12 @@ export class Container {
     private readonly containerPath: string;
 
     /**
-     * Wrap all instance created by this container in Proxies. When set to `true` each service instance created by this container is wrapped in 
-     * a Proxy<T>. Proxied service instances behave the same way as non-proxied service instances but each call will be routed through the proxy 
-     * which can impact performance. 
-     * 
+     * Wrap all instance created by this container in Proxies. When set to `true` each service instance created by this container is wrapped in
+     * a Proxy<T>. Proxied service instances behave the same way as non-proxied service instances but each call will be routed through the proxy
+     * which can impact performance.
+     *
      * For now the recommended setting is `false` unless you need to dynamically swap service instances without recreated the dependencies that use them.
-     * 
+     *
      * For circular references proxies will always be used even when {@link useInstanceProxies} is set to `false`
      */
     public useInstanceProxies: boolean = false;
@@ -142,7 +147,7 @@ export class Container {
 
     /**
      * Create a new container that inherits all configuration form the parent but on top of that can register or overwrite dependencies;
-     * by default dependency resolution is first attempted using the providers, factories and registered service instance in the new container; 
+     * by default dependency resolution is first attempted using the providers, factories and registered service instance in the new container;
      * if that fails it resolution is delegated to the parent until the root container which will throw an exception in case it cannot resolve the requested module.
      */
     public new(options?: { isolated?: boolean }): Container {
@@ -295,11 +300,11 @@ export class Container {
      * @param ctor Constructor function
      * @param args arguments
      * @param instanceGuid instance guid
-     * @returns 
+     * @returns
      */
     public resolveParameters<T extends new(...args: any[]) => any>(ctor: T, args: any[] = [], instanceGuid?: string) {
         if (ctor.length === 0) {
-            // No params on CTOR; double check we aren't dealing with an extended type 
+            // No params on CTOR; double check we aren't dealing with an extended type
             // the inject decorator extends the original causing resolveParameters to fail as the new ctor will be parameter less
             const paramTypes = getParameterTypes(ctor);
             if (!paramTypes?.length) {
@@ -387,7 +392,7 @@ export class Container {
     /**
      * Register an already instantiated service/class in the container, if the instance provides one or more services which are registered
      * using the injectable decorator then those services will be made available in the container.
-     * @param instance 
+     * @param instance
      */
      public register<T extends object | object[]>(instances: T) {
         for (const instance of asArray(instances)) {
@@ -406,7 +411,7 @@ export class Container {
     }
 
     private getPrototypes(instance: any) {
-        const prototypes = new Array<{ constructor: new(...args: any[]) => any }>(); 
+        const prototypes = new Array<{ constructor: new(...args: any[]) => any }>();
         while (Object.getPrototypeOf(instance) && Object.getPrototypeOf(instance) !== Object.prototype) {
             prototypes.push(instance = Object.getPrototypeOf(instance));
         }
@@ -421,7 +426,7 @@ export class Container {
      */
     public registerAs<T extends Object, I extends T = T>(instance: I, services: ServiceType<T> | Array<ServiceType<T>>) {
         this.decorateWithServiceGuid(instance);
-        
+
         for (const service of Iterable.asIterable(services)) {
             const providedService = this.getServiceName(service);
             const providedServices: Set<string> = instance[this.servicesProvided] || (instance[this.servicesProvided] = new Set());
@@ -442,7 +447,7 @@ export class Container {
         }
         return instance;
     }
-        
+
     /**
      * Unregister an instance in the container; removes all the services
      * @param instance the instance to unregister
@@ -475,16 +480,16 @@ export class Container {
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/dot-notation 
+        // eslint-disable-next-line @typescript-eslint/dot-notation
         if (typeof instance['dispose'] === 'function') {
-            // eslint-disable-next-line @typescript-eslint/dot-notation 
+            // eslint-disable-next-line @typescript-eslint/dot-notation
             instance['dispose']();
         }
-    }    
+    }
 
     /**
      * Register a factory that can provide an instance of the specified factory
-     * @param services list of services to register 
+     * @param services list of services to register
      * @param factory factory that produces the an instance
      */
     public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
@@ -496,8 +501,8 @@ export class Container {
 
     /**
      * Registers a type in the container as provider of services; type specified is dynamically created when required injecting any resolving any dependency required
-     * @param type Type to register     
-     * @param services list of services to register 
+     * @param type Type to register
+     * @param services list of services to register
      * @param serviceOptions options including lifecycle policy of the service
      */
     public registerType<T extends Object, I extends T = T>(type: ServiceCtor<I>, services: ServiceType<T> | Array<ServiceType<T>>, serviceOptions?: Partial<ServiceOptions>) {
@@ -560,8 +565,8 @@ export class Container {
             getOwnPropertyDescriptor(target, prop) {
                 if (target.instance) {
                     return Object.getOwnPropertyDescriptor(prototype, prop);
-                } 
-                return undefined;               
+                }
+                return undefined;
             },
             getPrototypeOf() {
                 return prototype;
