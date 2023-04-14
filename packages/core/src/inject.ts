@@ -14,8 +14,12 @@ export const InjectableIdentity = Symbol('[[InjectableIdentity]]');
 export const InjectableOriginalCtor = Symbol('[[InjectableOriginalCtor]]');
 
 /**
- * Register a component/service into as injectable component into the main application container; services can have a LifecyclePolicy which 
- * determines how and when the service is created. 
+ * Register a class as injectable component into the application container.
+ * Each injectable class has a default lifecycle policy which determines if a new class is
+ * instantiated per resolution (`transient`) or if the same instance is reused across resolutions (`singleton`).
+ *
+ * If no lifecycle policy is specified, the default is `singleton`.
+ *
  * @param options Constructions options for the service
  */
 export const injectable = Object.assign(function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) : (ctor: T) => any {

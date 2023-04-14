@@ -69,6 +69,14 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
             if (Array.isArray(value)) {
                 return this.wrapArray(value);
             }
+            if (Buffer.isBuffer(value) || 
+                value instanceof Date || 
+                value instanceof RegExp || 
+                value instanceof BigInt) {
+                // do not wrap these types as they are immutable
+                // or primitive types that cannot be proxied
+                return value;
+            }
             return new Proxy(value, new PropertyTransformHandler(this.transformProperty, this.proxyIdentity));
         }
         return value;

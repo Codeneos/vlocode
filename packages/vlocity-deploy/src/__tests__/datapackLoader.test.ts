@@ -4,20 +4,37 @@ import { MemoryFileSystem, FileSystem, Logger, container } from '@vlocode/core';
 import { NamespaceService } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '../vlocityNamespaceService';
 import DatapackLoader from '../datapackLoader';
+import { DatapackInfoService } from '../datapackInfoService';
 
 describe('datapackLoader', () => {
 
     beforeAll(() => {
         container.registerAs(Logger.null, Logger);
         container.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
+        container.registerAs({
+            getDatapackType: async (objectType: string) => {
+                return 'Target';
+            },
+            getDatapackInfo: async (datapackType: string) => {
+                return {
+                    datapackType: 'Target',
+                    sobjectType: datapackType,
+                };
+            },
+        } as any, DatapackInfoService);
     });
+
+    const datapackBasic = {
+        VlocityDataPackType: "SObject",
+        VlocityRecordSObjectType: "Target__c",
+    }
 
     describe('#loadFrom', () => {
         it('should recursively load embedded files', async () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                'datapack.json': JSON.stringify({ name: 'test', json1: 'test1.json', html: 'test.html' }),
+                'datapack.json': JSON.stringify({ ...datapackBasic, name: 'test', json1: 'test1.json', html: 'test.html' }),
                 'test1.json': JSON.stringify({ name: 'test1', json2: 'test2.json' }),
                 'test2.json': JSON.stringify({ name: 'test2', html: 'test.html' }),
                 'test.html': 'test_content'
@@ -38,7 +55,7 @@ describe('datapackLoader', () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                'datapack.json': JSON.stringify({ name: 'test', nonExisting: 'non_existing.json', html: 'test.html' }),
+                'datapack.json': JSON.stringify({ ...datapackBasic, name: 'test', nonExisting: 'non_existing.json', html: 'test.html' }),
             }), FileSystem);
 
             // test
@@ -53,7 +70,7 @@ describe('datapackLoader', () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                'datapack.json': JSON.stringify({ name: 'test', text: 'object-multi-document-creation-docx-template.js' }),
+                'datapack.json': JSON.stringify({ ...datapackBasic, name: 'test', text: 'object-multi-document-creation-docx-template.js' }),
                 'object-multi-document-creation-docx-template.js': 'text',
             }), FileSystem);
 
@@ -68,7 +85,7 @@ describe('datapackLoader', () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                'datapack.json': JSON.stringify({ name: 'test', binary: 'json-js.docx' }),
+                'datapack.json': JSON.stringify({ ...datapackBasic, name: 'test', binary: 'json-js.docx' }),
                 'json-js.docx': 'text',
             }), FileSystem);
 
@@ -84,7 +101,7 @@ describe('datapackLoader', () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                'datapack.json': JSON.stringify({ files: [ 'nested_datapack_1.json', 'nested_datapack_2.JSON', 'nested_datapack_3.jSoN' ] }),
+                'datapack.json': JSON.stringify({ ...datapackBasic, files: [ 'nested_datapack_1.json', 'nested_datapack_2.JSON', 'nested_datapack_3.jSoN' ] }),
                 'nested_datapack_1.json': JSON.stringify({ name: '1' }),
                 'nested_datapack_2.JSON': JSON.stringify({ name: '2' }),
                 'nested_datapack_3.jSoN': JSON.stringify({ name: '3' }),
@@ -105,7 +122,7 @@ describe('datapackLoader', () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                'datapack.json': JSON.stringify({ files: [ 'nested_datapack_1.json' ] }),
+                'datapack.json': JSON.stringify({ ...datapackBasic, files: [ 'nested_datapack_1.json' ] }),
                 'nested_datapack_1.json': JSON.stringify({ child: 'nested_datapack_2.json' }),
                 'nested_datapack_2.json': JSON.stringify({ child: 'nested_datapack_3.json' }),
                 'nested_datapack_3.json': JSON.stringify({ name: '3' }),
@@ -124,22 +141,22 @@ describe('datapackLoader', () => {
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({ }), FileSystem);
 
-            // test            
+            // test
             const loadedDatapack = await testContainer.new().create(DatapackLoader).loadDatapack('datapack.json').catch(err => err);
 
             // assert
             expect(loadedDatapack).toBeInstanceOf(Error);
         });
     });
-    
+
     describe('#loadDatapacksFromFolder', () => {
         it('should load all files ending with _DataPack.json', async () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                './src/Datapack/Datapack1_DataPack.json': JSON.stringify({ name: '1' }),
-                './src/Datapacks/Datapack2_DataPack.json': JSON.stringify({ name: '2' }),
-                './src/Datapacks/Datapack3_DataPack.json': JSON.stringify({ name: '3' })
+                './src/Datapack/Datapack1_DataPack.json': JSON.stringify({ ...datapackBasic, name: '1' }),
+                './src/Datapacks/Datapack2_DataPack.json': JSON.stringify({ ...datapackBasic, name: '2' }),
+                './src/Datapacks/Datapack3_DataPack.json': JSON.stringify({ ...datapackBasic, name: '3' })
             }), FileSystem);
 
             // test
@@ -152,9 +169,9 @@ describe('datapackLoader', () => {
             // arrange
             const testContainer = container.new();
             testContainer.registerAs(new MemoryFileSystem({
-                './src/Datapack/Datapack1_Data.json': JSON.stringify({ name: '1' }),
-                './src/Datapacks/Datapack2_DP.json': JSON.stringify({ name: '2' }),
-                './src/Datapacks/Datapack3_DataPack.json': JSON.stringify({ name: '3' })
+                './src/Datapack/Datapack1_Data.json': JSON.stringify({ ...datapackBasic, name: '1' }),
+                './src/Datapacks/Datapack2_DP.json': JSON.stringify({ ...datapackBasic, name: '2' }),
+                './src/Datapacks/Datapack3_DataPack.json': JSON.stringify({ ...datapackBasic, name: '3' })
             }), FileSystem);
 
             // test
@@ -164,5 +181,5 @@ describe('datapackLoader', () => {
             expect(datapacks.length).toBe(1);
         });
     });
-    
+
 });

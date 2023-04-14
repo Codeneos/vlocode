@@ -38,15 +38,15 @@ export default class DatapackLoader {
     public async loadDatapack(datapackHeader: string, bubbleExceptions: false) : Promise<VlocityDatapack | undefined>;
     public async loadDatapack(datapackHeader: string, bubbleExceptions = true) : Promise<VlocityDatapack | undefined> {
         try {
-            const [ datapackTypeFolder, datapackName ] = datapackHeader.split(/[\\|/]+/).slice(-3, -1);
+            const [ datapackName ] = datapackHeader.split(/[\\|/]+/).slice(-2, -1);
             const datapackJson = await this.loadJson(datapackHeader);
 
             if (!datapackJson) {
-                throw new Error(`No such file found: ${datapackHeader}`);
+                throw new Error(`No such file: ${datapackHeader}`);
             }
 
             if (typeof datapackJson['VlocityDataPackType'] !== 'string') {
-                throw new Error(`${datapackHeader} is not a Datapack JSON`);
+                throw new Error(`Missing "VlocityDataPackType" property in JSON`);
             }
 
             const datapackType = await this.getDatapackType(datapackHeader, datapackJson);
@@ -62,7 +62,7 @@ export default class DatapackLoader {
             );
         } catch(error) {
             if (bubbleExceptions) {
-                throw new CustomError(`Error loading datapack ${path.basename(datapackHeader)}`, error);
+                throw new CustomError(`Error loading datapack ${path.basename(datapackHeader)}: ${getErrorMessage(error, { includeStack: false })}`, error);
             }
             this.logger.error(`Error loading datapack ${path.basename(datapackHeader)} -- ${getErrorMessage(error)}`);
         }
@@ -72,11 +72,11 @@ export default class DatapackLoader {
         const [ datapackTypeFolder ] = datapackHeaderFile.split(/[\\|/]+/).slice(-3, -1);
         const objectType = datapackJson['VlocityRecordSObjectType'];
 
-        if (typeof datapackJson['VlocityDataPackType'] !== 'string' && typeof objectType !== 'string') {
-            throw new Error(`${datapackHeaderFile} is not a Datapack JSON`);
+        if (typeof datapackJson['VlocityDataPackType'] !== 'string' || typeof objectType !== 'string') {
+            throw new Error(`Datapack missing "VlocityDataPackType" or "VlocityRecordSObjectType" property of type string`);
         }
 
-        const datapackInfo = await this.datapackInfo?.getDatapackInfo(datapackTypeFolder);
+        const datapackInfo = datapackTypeFolder ? await this.datapackInfo?.getDatapackInfo(datapackTypeFolder) : undefined;
         const datapackObjectName = extractNamespaceAndName(objectType);
 
         if (datapackInfo?.sobjectType) {
