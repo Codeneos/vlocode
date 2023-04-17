@@ -19,7 +19,7 @@ const suggestionInterval: number = 9 * 24 * 3600 * 1000;
 @vscodeCommand(VlocodeCommand.deployDatapack, { focusLog: true })
 export class DeployDatapackCommand extends DatapackCommand {
 
-    /** 
+    /**
      * In order to prevent double deployment keep a list of files recently saved by this command
      */
     private static readonly savingDocuments = new Map<string, Set<string>>();
@@ -27,14 +27,14 @@ export class DeployDatapackCommand extends DatapackCommand {
     private get strategy(): VlocityDeploy {
         if (this.vlocode.config.deploymentMode === 'direct') {
             return container.get(VlocodeDirectDeployment);
-        } 
-        return container.get(VlocityToolsDeployment);        
+        }
+        return container.get(VlocityToolsDeployment);
     }
 
     public execute(...args: any[]): void | Promise<void> {
         const selectedFiles = args[1] ?? [ args[0] ?? this.currentOpenDocument ];
         const filesForDeployment = this.filterAutoSavedFiles(selectedFiles);
-        
+
         if (!filesForDeployment.length) {
             return;
         }
@@ -83,7 +83,7 @@ export class DeployDatapackCommand extends DatapackCommand {
             const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
             const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
             return `Deploying: ${datapackNames.join(', ')} ...`;
-        }        
+        }
         return `Deploying: ${datapackHeaders.length} datapacks ...`;
     }
 
@@ -112,7 +112,7 @@ export class DeployDatapackCommand extends DatapackCommand {
         await forEachAsyncParallel(openDocuments, async doc => {
             this.logger.verbose(`Saving ${doc.fileName} before deployment`);
             await doc.save();
-        });        
+        });
         this.logger.info(`Saved ${openDocuments.length} datapack files before deployment`);
     }
 
@@ -142,7 +142,7 @@ export class DeployDatapackCommand extends DatapackCommand {
     /**
      * Suggest a deployment mode change from compatibility to Direct deployment mode. This suggestion is only shown
      * if it wasn't shown recently and the user choice is remebered in the global state with the last suggested time stamp.
-     * 
+     *
      * If the users closes the question without anwsering it it will re-popup on the next deployment.
      */
     private async suggestDeploymentModeChange() {
@@ -150,19 +150,19 @@ export class DeployDatapackCommand extends DatapackCommand {
         const usingDirectMode = this.vlocode.config.deploymentMode === 'direct';
         const currentSuggestionState = suggestionState.get<number>(deployModeSuggestionKey);
         const allowSuggest = !currentSuggestionState || (currentSuggestionState + suggestionInterval < Date.now());
-        
+
         if (allowSuggest && !usingDirectMode) {
             const result = await vscode.window.showInformationMessage(
                 `Deployments taking a long time? Try the Direct/Vlocode deployment mode`, ...[
-                { mode: 'direct',  title: 'Yes, make it so'}, 
+                { mode: 'direct',  title: 'Yes, make it so'},
                 { mode: 'compatibility',  title: 'No, I prefer the wait'}
             ]);
 
             if (result) {
                 if (result?.mode === 'direct') {
                     await vscode.window.showInformationMessage(
-                        `Good call! Deployment mode is updated to "direct". ` + 
-                        `In case of issues you can always switch back to "compatibility" mode from extension settings.`, 
+                        `Good call! Deployment mode is updated to "direct". ` +
+                        `In case of issues you can always switch back to "compatibility" mode from extension settings.`,
                         'Ok'
                     );
                     this.vlocode.config.deploymentMode = result?.mode;
@@ -173,7 +173,7 @@ export class DeployDatapackCommand extends DatapackCommand {
                     );
                 }
                 void suggestionState.update(deployModeSuggestionKey, Date.now());
-            }           
+            }
         }
     }
 }

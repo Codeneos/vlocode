@@ -8,13 +8,13 @@ import VlocityDatapackService from './vlocityDatapackService';
 
 @injectable()
 export class VlocodeDirectDeployment implements VlocityDeploy {
-    
+
     constructor(
-        private readonly datapackService: VlocityDatapackService, 
-        private readonly datapackDeployer: DatapackDeployer, 
-        private readonly logger: Logger) {        
+        private readonly datapackService: VlocityDatapackService,
+        private readonly datapackDeployer: DatapackDeployer,
+        private readonly logger: Logger) {
     }
-   
+
     async deploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
         const deployment = await this.datapackDeployer.createDeployment(datapacks, {

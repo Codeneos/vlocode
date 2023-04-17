@@ -97,7 +97,7 @@ export abstract class DatapackCommand extends CommandBase {
             description: r.attributes.url,
             record: r
         }));
-        recordOptions.sort((a, b) => a.record.version__c ? b.record.version__c - a.record.version__c : a.label.localeCompare(b.label));
+        recordOptions.sort((a, b) => a.record.version ? b.record.version - a.record.version : a.label.localeCompare(b.label));
 
         if (queryDef?.groupKey) {
             recordOptions.unshift({ kind: vscode.QuickPickItemKind.Separator } as any);
@@ -111,7 +111,7 @@ export abstract class DatapackCommand extends CommandBase {
             });
 
             // add active version option
-            const activeVersion = records.find(r => r.isActive__c || r.active);
+            const activeVersion = records.find(r => r.isActive || r.active || r.status === 'Active');
             if (activeVersion) {
                 recordOptions.unshift({
                     label: '$(primitive-dot) Active',

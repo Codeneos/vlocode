@@ -65,6 +65,6 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
     }
 
     public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.deployedRecords, () => ({ active__c: true }));
+        return this.activator.activateRecords(event.deployedRecords, () => ({ Active__c: true }));
     }
 }
