@@ -138,7 +138,7 @@ export class DatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        this.container.register(this.container.create(QueryService, this.connectionProvider).setCacheDefault(true));
+        this.container.register(this.container.create(QueryService, this.connectionProvider).setCacheDefault(false));
         const deployment = this.container.create(DatapackDeployment, options);
         const recordFactory = this.container.create(DatapackRecordFactory);
 
