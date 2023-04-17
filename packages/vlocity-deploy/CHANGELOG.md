@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.3](https://github.com/Codeneos/vlocode/compare/v0.19.2...v0.19.3) (2023-04-17)
+
+### Bug Fixes
+
+* binary data (docx etc) not properly exposed in proxy ([e7afe72](https://github.com/Codeneos/vlocode/commit/e7afe72172899ed006e60d8679ee2554287cd600))
+* do not use query cache during deployment to avoid issues caused by a stale cache ([cbb45fa](https://github.com/Codeneos/vlocode/commit/cbb45fa59a13f48dd4bfae2bcdb77ed3636484e7))
+* script builder does not properly generate options for picklists with custom source ([3e2aeb2](https://github.com/Codeneos/vlocode/commit/3e2aeb22ea4e513fc745da149f3dad839b3f5d34))
+* versionable datapacks are not sorted by version when using export command ([757783d](https://github.com/Codeneos/vlocode/commit/757783d9a8ab9aea3a64672c6aee5e2ab2436c23))
+
 ## [0.19.2](https://github.com/Codeneos/vlocode/compare/v0.19.1...v0.19.2) (2023-04-04)
 
 ### Bug Fixes

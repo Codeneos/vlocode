@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.3](https://github.com/Codeneos/vlocode/compare/v0.19.2...v0.19.3) (2023-04-17)
+
+### Bug Fixes
+
+* disable verbose logging of HTTP transport class ([09c8e0b](https://github.com/Codeneos/vlocode/commit/09c8e0bfc4e86275d5b0cd14d5dce286562734b1))
+* update xml2js 0.5.0 to address CVE-2023-0842 ([85bda4e](https://github.com/Codeneos/vlocode/commit/85bda4ee84fdeba2d9f35243eb245ae65986544e))
+
 ## [0.19.2](https://github.com/Codeneos/vlocode/compare/v0.19.1...v0.19.2) (2023-04-04)
 
 **Note:** Version bump only for package @vlocode/salesforce
