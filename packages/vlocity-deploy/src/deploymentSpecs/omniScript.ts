@@ -105,7 +105,7 @@ export class OmniScript implements DatapackDeploymentSpec {
             const currentOrder = element['%vlocity_namespace%__Order__c'];
             const calculatedLevel = getElementLevel(element);
 
-            if (currentOrder !== undefined && currentOrder !== orderInParent) {
+            if (currentOrder !== undefined && currentOrder < orderInParent) {
                 this.addPreprocessingWarning(datapack, `element "${element.Name}" expected "Order__c" to be "${orderInParent}"; instead saw "${currentOrder}"`);
             }
 
@@ -116,7 +116,7 @@ export class OmniScript implements DatapackDeploymentSpec {
             currentOrder === undefined && (element['%vlocity_namespace%__Order__c'] = orderInParent);
             currentLevel === undefined && (element['%vlocity_namespace%__Level__c'] = calculatedLevel);
 
-            elementCountByParent.set(parentKey, orderInParent + 1);
+            elementCountByParent.set(parentKey, orderInParent);
         }
     }
 
