@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.5](https://github.com/codeneos/vlocode/compare/v0.19.4...v0.19.5) (2023-04-18)
+
+### Bug Fixes
+
+* reduce order warnings for script elements ([09085ad](https://github.com/codeneos/vlocode/commit/09085adfe8e45abafb74d74071a6533ce6a48459))
+
 ## [0.19.4](https://github.com/codeneos/vlocode/compare/v0.19.3...v0.19.4) (2023-04-18)
 
 ### Bug Fixes
