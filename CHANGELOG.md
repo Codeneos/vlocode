@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.4](https://github.com/codeneos/vlocode/compare/v0.19.3...v0.19.4) (2023-04-18)
+
+### Bug Fixes
+
+* datapack deployment does not delete not updatable child records (i.e; matrix rows) ([15b5776](https://github.com/codeneos/vlocode/commit/15b5776a40963668e6d5f93b5829bddf46356f36))
+
 ## [0.19.3](https://github.com/codeneos/vlocode/compare/v0.19.2...v0.19.3) (2023-04-17)
 
 ### Bug Fixes

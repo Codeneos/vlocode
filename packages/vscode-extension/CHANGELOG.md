@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.4](https://github.com/codeneos/vlocode/compare/v0.19.3...v0.19.4) (2023-04-18)
+
+**Note:** Version bump only for package vlocode
+
 ## [0.19.3](https://github.com/codeneos/vlocode/compare/v0.19.2...v0.19.3) (2023-04-17)
 
 ### Bug Fixes
