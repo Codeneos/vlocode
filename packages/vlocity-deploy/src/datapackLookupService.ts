@@ -94,9 +94,6 @@ export class DatapackLookupService implements DependencyResolver {
         const lookupResults = new Array<string | undefined>();
 
         // Determine matching keys per object
-        const recordObjectTypes = unique(datapackRecords, r => r.sobjectType, r => r.sobjectType);
-        const recordMatchingFields = new Map(await mapAsync(recordObjectTypes, async sobjectType => [sobjectType, await this.getMatchingFields(sobjectType)]));
-
         const lookupRequests = datapackRecords.map((record, index) => ({
                 index, record, sobjectType: record.sobjectType,
                 lookupKey: this.buildLookupKey(record.sobjectType, record.upsertFields ?? [], record.values)!,

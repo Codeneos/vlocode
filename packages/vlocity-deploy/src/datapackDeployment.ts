@@ -532,7 +532,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     if (field.startsWith('$') || dependency.VlocityDataPackType !== 'VlocityMatchingKeyObject') {
                         return false;
                     }
-                    return !dependentRecord.upsertFields?.length && dependency.skipLookup;
+                    return !dependentRecord.upsertFields?.length || dependency.skipLookup;
                 });
             }
         } finally {
