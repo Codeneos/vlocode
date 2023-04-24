@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/resources/logo1.png" height="160">
+<img src="https://raw.githubusercontent.com/Codeneos/vlocode/master/packages/vscode-extension/resources/logo1.png" height="160">
 
 [![CircleCI](https://circleci.com/gh/Codeneos/vlocode/tree/master.svg?style=svg)](https://circleci.com/gh/Codeneos/vlocode/tree/master)
 [![GitHub top language](https://img.shields.io/github/languages/top/codeneos/vlocode.svg?logo=github)](https://github.com/Codeneos/vlocode)
