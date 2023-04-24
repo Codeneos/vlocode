@@ -138,7 +138,6 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
 
         this.addElementHandlers[ele.type]?.(id, ele, options);
     }
-
     private addInputBlock(id: string, ele: OmniScriptElementDefinition) {
          ele.JSONPath = this.getJsonPath(ele);
     }
@@ -337,12 +336,16 @@ class OmniScriptElementGroupDefinitionBuilder {
         child.response = null;
         child.children = [];
 
-        this.group.children.push({
-            bHasAttachment: child.bHasAttachment,
-            eleArray: [ child ],
-            indexInParent: childIndex,
-            level: this.group.level + 1,
-            response: child.response
-        });
+        if (this.group.type === 'Type Ahead Block' && this.group.children.length) {
+            this.group.children[0].eleArray[0].propSetMap!.taAction = child;
+        } else {
+            this.group.children.push({
+                bHasAttachment: child.bHasAttachment,
+                eleArray: [ child ],
+                indexInParent: childIndex,
+                level: this.group.level + 1,
+                response: child.response
+            });
+        }
     }
 }
