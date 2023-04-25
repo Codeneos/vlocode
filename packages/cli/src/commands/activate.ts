@@ -79,7 +79,7 @@ export default class extends SalesforceCommand {
                         toolingApi: !options.useMetadataApi,
                         skipLwcDeployment: options.skipLwc,
                         remoteActivation: options.remoteActivation,
-                        reactivateDependentScripts: options.skipReactivateDependencies !== true
+                        reactivateDependentScripts: scriptFilter && options.skipReactivateDependencies !== true
                     });
                     info.status = 'activated';
                     this.logger.info(`${logSymbols.success} Activated: ${info.type} (${info.script.id})`);
