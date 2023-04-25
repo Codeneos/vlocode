@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.7](https://github.com/codeneos/vlocode/compare/v0.19.6...v0.19.7) (2023-04-25)
+
+### Bug Fixes
+
+* seed values of embedded scripts are not included in parent script ([cb09cf9](https://github.com/codeneos/vlocode/commit/cb09cf9f305fcfb79a8e4de44da703a7b6206879))
+
 ## [0.19.6](https://github.com/codeneos/vlocode/compare/v0.19.5...v0.19.6) (2023-04-24)
 
 ### Bug Fixes
