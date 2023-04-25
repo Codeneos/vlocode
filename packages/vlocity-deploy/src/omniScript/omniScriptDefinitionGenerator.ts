@@ -116,7 +116,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             if (element.propSetMap.controllingField.type === 'Custom' && element.propSetMap.controllingField.element) {
                 // Let Vlocity handle custom dependent picklist sources at runtime
                 builder.addRuntimePicklistSource(element.propSetMap.optionSource, element.propSetMap.controllingField);
-            } else {
+            } else if (element.propSetMap.optionSource.source?.includes('.')) {
                 this.logger.debug(`Loading picklist options from Custom source: ${element.propSetMap.optionSource.source}`);
                 try {
                     const response = await this.genericInvoker.invoke(element.propSetMap.optionSource.source);
