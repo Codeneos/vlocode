@@ -89,14 +89,11 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
                 };
 
                 this.logger.debug(`Embedding script elements ${embeddedScript.type}/${embeddedScript.subType}/${embeddedScript.language}`);
-                const scriptRecordPromise = this.lookup.getScript(embeddedScript);
                 await this.addElements(builder, embeddedScript, { scriptElementId: id });
 
                 // Merge JS and templates
-                const scriptRecord = await scriptRecordPromise;
-                if (scriptRecord.isActive) {
-                    builder.mergeScriptTemplates(this.generator.createScript(scriptRecord));
-                }
+                const scriptRecord = await this.lookup.getScript(embeddedScript);
+                builder.embedScriptHeader(this.generator.createScript(scriptRecord));
             }
         }
     }

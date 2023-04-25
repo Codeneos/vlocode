@@ -190,7 +190,7 @@ export interface OmniScriptBaseElementDefinition {
         eleArray: Array<OmniScriptElementDefinition>;
         indexInParent: number;
         level: number;
-        response: null;
+        response: null | string;
     }>
 }
 
@@ -200,7 +200,7 @@ export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementD
         eleArray: Array<OmniScriptElementDefinition>;
         indexInParent: number;
         level: number;
-        response: null;
+        response: null | string;
     }>
     bAccordionOpen: boolean,
     bAccordionActive: boolean,

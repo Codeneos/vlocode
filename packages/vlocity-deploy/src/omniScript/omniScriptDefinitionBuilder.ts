@@ -73,9 +73,12 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
      * This is used to merge the test templates and custom JS of specified definition.
      * @param scriptDef Other definition to merge
      */
-    public mergeScriptTemplates(scriptDef: OmniScriptDefinition) {
+    public embedScriptHeader(scriptDef: OmniScriptDefinition) {
         this.scriptDef.testTemplates += scriptDef.testTemplates;
         this.scriptDef.customJS += scriptDef.customJS;
+        if (scriptDef.propSetMap.seedDataJSON) {
+            Object.assign(this.scriptDef.propSetMap.seedDataJSON, scriptDef.propSetMap.seedDataJSON);
+        }
     }
 
     /**
@@ -99,6 +102,10 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
 
         if (ele.propSetMap?.repeat == true || ['Radio', 'Multi-select', 'Radio Group', 'Edit Block'].includes(ele.type)) {
             this.scriptDef.rMap[ele.name] = "";
+        }
+
+        if (!options?.parentElementId) {
+            ele.level = 0;
         }
 
         if (options?.scriptElementId && !options?.parentElementId) {
@@ -237,7 +244,7 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     }
 
     private createHtmlTag(name: string, body?: string, attributes?: Record<string, string>) {
-        const tagAttributes = Object.entries(attributes ?? {}).map(([key, value]) => `${key}="${escapeHtmlEntity(value)}"`).join(' ');
+        const tagAttributes = attributes && Object.entries(attributes).map(([key, value]) => `${key}="${escapeHtmlEntity(value)}"`).join(' ');
         return `<${name}${tagAttributes ? ` ${tagAttributes}>` : '>'}${body ?? ''}</${name}>`;
     }
 
@@ -297,19 +304,11 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
  */
 class OmniScriptElementGroupDefinitionBuilder {
 
-    private indexInParent = 0;
+    private indexInParent: number;
     private group: OmniScriptGroupElementDefinition;
 
     constructor(group: OmniScriptElementDefinition) {
-        if (!group['children']) {
-            group['children'] = [{
-                bHasAttachment: false,
-                eleArray: [],
-                indexInParent: group.indexInParent,
-                level: group.level,
-                response: null
-            }];
-        }
+        this.indexInParent = group.children?.length ?? 0;
         this.group = group as OmniScriptGroupElementDefinition;
     }
 
@@ -344,7 +343,7 @@ class OmniScriptElementGroupDefinitionBuilder {
                 eleArray: [ child ],
                 indexInParent: childIndex,
                 level: this.group.level + 1,
-                response: child.response
+                response: child.response as any
             });
         }
     }
