@@ -87,8 +87,8 @@ export function directoryName(pathLike: string) {
  * @returns Basename of a path with the file suffix
  */
 export function fileName(pathLike: string, removeExtension: boolean = false) {
-    const pathParts = pathLike.split(/[\\/]/g);
-    return removeExtension ? pathParts[pathParts.length - 1].split('.').slice(0,-1).join('.') : pathParts[pathParts.length - 1];
+    const match = (removeExtension ? /^.*[\\|/|](.*)(\.[^.]+)$/s : /^.*[\\|/](.*)$/s).exec(pathLike);
+    return match ? match[1] : pathLike;
 }
 
 /**
@@ -97,12 +97,9 @@ export function fileName(pathLike: string, removeExtension: boolean = false) {
  * @returns File suffix without . and an empty string when there is no suffix
  */
 export function fileSuffix(pathLike: string) {
-    const basename = fileName(pathLike);
-    const suffixSplit = basename.lastIndexOf('.');
-    if (suffixSplit >= 0) {
-        return basename.substring(suffixSplit + 1);
-    }
-    return '';
+    //const match = /^.*[\\|/|](.*)(\.[^.]+)$/s.exec(pathLike);
+    //return match ? match[2] : pathLike;
+    return path.extname(pathLike).slice(1);
 }
 
 /**

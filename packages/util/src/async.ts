@@ -24,7 +24,7 @@ export async function wait(ms: number, cancelToken?: CancellationToken): Promise
     const timeout = setTimeout(() => {
         deferredPromise.resolve(true);
         onCancel?.dispose();
-    }, ms);    
+    }, ms);
 
     return deferredPromise;
 }
