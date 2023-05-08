@@ -4,6 +4,7 @@ import { QueryService } from '../queryService';
 import { Logger, container } from '@vlocode/core';
 import { HttpRequestInfo, HttpResponse, SalesforceConnection } from '../connection';
 import { deepClone, wait } from '@vlocode/util';
+import { DateTime } from 'luxon';
 
 describe('queryService', () => {
 
@@ -99,6 +100,111 @@ describe('queryService', () => {
         it('objects in nested arrays should be accessible by their normalized name', async () => {
             const records = await new QueryService(mockConnectionProvider([ testRecord ])).query('test');
             expect(records[0].list[0].customField).toEqual(testRecord.List__c.records[0].Custom_Field__c);
+        });
+    });
+    describe('#formatFieldValue', () => {
+        it('date/time like objects should be formatted as UTC', () => {
+            expect(QueryService.formatFieldValue(new Date(2023, 10, 5, 1, 22, 33, 444), {
+                type: 'datetime'
+            })).toEqual('2023-11-05T00:22:33.444+0000');
+        });
+        it('moment.js like objects should be formatted as UTC', () => {
+            const momentLikeObj = new (class {
+                toISOString() {
+                    return '2023-11-05T02:22:33.444+0200';
+                }
+            })();
+            expect(QueryService.formatFieldValue(momentLikeObj, {
+                type: 'datetime'
+            })).toEqual('2023-11-05T00:22:33.444+0000');
+        });
+        it('unix TS (seconds) should be formatted as UTC when field type is datetime', () => {
+            expect(QueryService.formatFieldValue(1699143753, {
+                type: 'datetime'
+            })).toEqual('2023-11-05T00:22:33.000+0000');
+        });
+        it('full ISO string should be formatted as UTC when field type is datetime', () => {
+            expect(QueryService.formatFieldValue('2023-11-05T02:22:33.444+0200', {
+                type: 'datetime'
+            })).toEqual('2023-11-05T00:22:33.444+0000');
+        });
+        it('ISO string without TZ should be formatted as UTC in local TZ when field type is datetime', () => {
+            const expected = DateTime.fromJSDate(new Date(2023, 10, 5, 1, 22, 33, 444))
+                .toUTC().toFormat(`yyyy-MM-dd'T'HH:mm:ss.SSSZZZ`);
+            const formatted = QueryService.formatFieldValue('2023-11-05T01:22:33.444', {
+                type: 'datetime'
+            });
+            expect(formatted).toEqual(expected);
+        });
+        it('ISO date string should be formatted as UTC in local TZ when field type is datetime', () => {
+            expect(QueryService.formatFieldValue('2023-11-05', {
+                type: 'datetime'
+            })).toEqual('2023-11-04T23:00:00.000+0000');
+        });
+        it('ISO date string should be formatted as UTC as local date when field type is date', () => {
+            expect(QueryService.formatFieldValue('2023-11-05', {
+                type: 'date'
+            })).toEqual('2023-11-05');
+        });
+        it('ISO string should be formatted as UTC as local date when field type is date', () => {
+            expect(QueryService.formatFieldValue('2023-11-05T00:22:33.444+0200', {
+                type: 'date'
+            })).toEqual('2023-11-04');
+        });
+        it('RFC2822 string should be formatted as UTC', () => {
+            expect(QueryService.formatFieldValue('5 Nov 2023 02:22:33 +0200', {
+                type: 'datetime'
+            })).toEqual('2023-11-05T00:22:33.000+0000');
+        });
+        // Luxon doesn't support this yet
+        // it('SQL datetime string should be formatted as UTC', () => {
+        //     expect(QueryService.formatFieldValue('2023-05-11 02:22:33', {
+        //         type: 'datetime'
+        //     })).toEqual('2023-11-05T00:22:33.444+0000');
+        // });
+        it('boolean is formatted as true or false when type is boolean', () => {
+            expect(QueryService.formatFieldValue(true, { type: 'boolean' })).toEqual('true');
+            expect(QueryService.formatFieldValue(false, { type: 'boolean' })).toEqual('false');
+        });
+        it('numbers > 0 are formatted as true when type is boolean', () => {
+            expect(QueryService.formatFieldValue(1, { type: 'boolean' })).toEqual('true');
+            expect(QueryService.formatFieldValue(2, { type: 'boolean' })).toEqual('true');
+            expect(QueryService.formatFieldValue(100, { type: 'boolean' })).toEqual('true');
+        });
+        it('numbers < 1 are formatted as false when type is boolean', () => {
+            expect(QueryService.formatFieldValue(0, { type: 'boolean' })).toEqual('false');
+            expect(QueryService.formatFieldValue(-1, { type: 'boolean' })).toEqual('false');
+            expect(QueryService.formatFieldValue(-100, { type: 'boolean' })).toEqual('false');
+        });
+        it('string value true is formatted as true when type is boolean', () => {
+            expect(QueryService.formatFieldValue('TRUE', { type: 'boolean' })).toEqual('true');
+            expect(QueryService.formatFieldValue('true', { type: 'boolean' })).toEqual('true');
+            expect(QueryService.formatFieldValue('TrUe', { type: 'boolean' })).toEqual('true');
+        });
+        it('string value false is formatted as true when type is boolean', () => {
+            expect(QueryService.formatFieldValue('FALSE', { type: 'boolean' })).toEqual('false');
+            expect(QueryService.formatFieldValue('false', { type: 'boolean' })).toEqual('false');
+            expect(QueryService.formatFieldValue('FaLsE', { type: 'boolean' })).toEqual('false');
+        });
+        it('string values are formatted with dot decimal separator when type is number-like', () => {
+            expect(QueryService.formatFieldValue('1,000,000.00', { type: 'currency' })).toEqual('1000000.00');
+            expect(QueryService.formatFieldValue('1,000.00', { type: 'currency' })).toEqual('1000.00');
+            expect(QueryService.formatFieldValue('1.000,00', { type: 'currency' })).toEqual('1000.00');
+            expect(QueryService.formatFieldValue('1,000', { type: 'currency' })).toEqual('1000');
+            expect(QueryService.formatFieldValue('1.000', { type: 'currency' })).toEqual('1.000');
+            expect(QueryService.formatFieldValue('$ 1000', { type: 'currency' })).toEqual('1000');
+        });
+        it('number values are formatted with dot decimal separator when type is number-like', () => {
+            expect(QueryService.formatFieldValue(1000, { type: 'int' })).toEqual('1000');
+            expect(QueryService.formatFieldValue(123.456, { type: 'int' })).toEqual('123.456');
+        });
+        it('always format undefined and null as null', () => {
+            expect(QueryService.formatFieldValue(undefined, { type: 'boolean' })).toEqual("null");
+            expect(QueryService.formatFieldValue(null, { type: 'string' })).toEqual("null");
+        });
+        it('arrays are formatted as lists wrapped in parenthesis', () => {
+            expect(QueryService.formatFieldValue([1,2,3,4], { type: 'double' })).toEqual("(1,2,3,4)");
+            expect(QueryService.formatFieldValue([true,false,4], { type: 'string' })).toEqual(`('true','false','4')`);
         });
     });
 });

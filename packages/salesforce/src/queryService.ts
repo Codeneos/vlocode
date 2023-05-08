@@ -3,7 +3,7 @@ import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { CancellationToken } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
-import { PropertyAccessor, SObjectRecord, Field } from './types';
+import { PropertyAccessor, SObjectRecord, Field, FieldType } from './types';
 import { NamespaceService } from './namespaceService';
 import { QueryCache } from './queryCache';
 import { RecordFactory } from './queryRecordFactory';
@@ -118,16 +118,14 @@ export class QueryService {
      * @param fieldName Field Name
      * @param options Extra options such as wrapping and escaping; both default to true
      */
-    public static formatFieldValue(value: any, field: Field, options = { wrapStrings: true, escapeStrings: true }) : string {
+    public static formatFieldValue(value: any, field: { type: FieldType }, options = { wrapStrings: true, escapeStrings: true }) : string {
         // TODO: should not be here!
         if (value === null || value === undefined) {
             return 'null';
         }
 
         if (typeof value === 'object' && Array.isArray(value)) {
-            return `(${value.map(v => this.formatFieldValue(v, field)).join(',')})`;
-        } else if (typeof value === 'object' && !(value instanceof Date)) {
-            throw new Error('Cannot format Object value to a valid Salesforce field value.');
+            return `(${value.map(v => this.formatFieldValue(v, field, options)).join(',')})`;
         }
 
         if (field.type === 'date' || field.type === 'datetime') {
@@ -139,20 +137,38 @@ export class QueryService {
             if (!date?.isValid) {
                 throw new Error(`Value is not a valid date: ${value} (${date?.invalidReason ?? 'reason unknown'})`);
             }
-            return date.toFormat(format);
-        } else if (field.type === 'boolean') {
+            return (field.type === 'date' ? date : date.toUTC()).toFormat(format);
+        }
+
+        if (typeof value === 'object') {
+            throw new Error('Cannot format Object value to a valid Salesforce field value.');
+        }
+
+        if (field.type === 'boolean') {
             if (typeof value === 'string') {
                 return (value.toLowerCase() === 'true').toString();
             } else if (typeof value === 'number') {
                 return (value > 0).toString();
             }
             return (!!value).toString();
-        } else if (['double', 'int', 'currency', 'percent'].includes(field.type)) {
-            return value.toString().replace(/[,.]([0-9]{3})/g,'$1').toString().replace(/[.,]/, '.');
-        } 
+        }
+
+        if (['double', 'int', 'currency', 'percent'].includes(field.type)) {
+            if (typeof value === 'string') {
+                if (value.includes('.') && value.includes(',') && value.indexOf(',') > value.indexOf('.')) {
+                    // EU format
+                    value = value.replace(/\./g, '').replace(/,/g, '.');
+                } else {
+                    value = value.replace(/,/g, '');
+                }
+                return value.replace(/[^0-9.]/g, '');
+            } else if (typeof value === 'number') {
+                return value.toString(10);
+            }
+        }
 
         if (options.escapeStrings && field.type === 'string') {
-            value = value.replace(/(['\\])/ig, '\\$1');
+            value = String(value).replace(/(['\\])/ig, '\\$1');
         }
 
         return options.wrapStrings ? `'${value}'` : `${value}`;
@@ -164,10 +180,38 @@ export class QueryService {
         } else if (value instanceof Date) {
             return DateTime.fromJSDate(value);
         } else if (typeof value === 'string') {
-            return DateTime.fromISO(value);
+            return QueryService.tryParseAsDateTimeString(String(value));
         } else if (typeof value === 'number' && value > 0) {
             return DateTime.fromSeconds(value);
+        } else if (typeof value === 'object' && typeof value?.["toISOString"] === 'function') {
+            // Detect moment.js objects anc convert to Luxon
+            return DateTime.fromISO(value?.["toISOString"]());
+        } else if (typeof value === 'object' && value) {
+            // Try to handle objects that are not dates but can be converted to dates
+            // by calling toString() on them
+            return QueryService.tryParseAsDateTimeString(String(value));
         }
+        return undefined;
+    }
+
+    private static tryParseAsDateTimeString(value: string) : DateTime | undefined {
+        if (value === '[object Object]' || value === 'null') {
+            return undefined;
+        }
+
+        const strategies = [
+            DateTime.fromISO,
+            DateTime.fromRFC2822,
+            DateTime.fromSQL
+        ];
+
+        for (const strategy of strategies) {
+            const date = strategy(value);
+            if (date.isValid) {
+                return date;
+            }
+        }
+
         return undefined;
     }
 }
