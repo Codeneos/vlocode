@@ -133,11 +133,9 @@ export class SalesforceLookupService {
             const salesforceFields = [...await this.schemaService.describeSObjectFieldPath(type, fieldPath)];
             const salesforceField = salesforceFields.pop()!;
             const fieldName = [ ...salesforceFields.map(field => field.relationshipName), salesforceField.name ].join('.');
+            const isLookup = salesforceField.type == 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName;
 
-            if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-                if (salesforceField.type != 'reference' || !salesforceField.referenceTo || !salesforceField.relationshipName) {
-                    throw new Error(`Object type set for non-reference field ${fieldPath} on type ${type}`);
-                }
+            if (isLookup && value !== null && typeof value === 'object' && !Array.isArray(value)) {
                 lookupFilters.push(await this.createWhereClause(type, mapKeys(value, key => `${fieldName}.${String(key)}`)));
             } else {
                 // Set intended comparison operator
