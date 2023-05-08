@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/salesforce",
-    "version": "0.19.7",
+    "version": "0.19.8",
     "description": "Salesforce utility library for Vlocode",
     "keywords": [
         "Salesforce"

@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.8](https://github.com/Codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
+
+### Bug Fixes
+
+* lookup service fails when looking objects with date-time values stored as Date like object ([e0c6828](https://github.com/Codeneos/vlocode/commit/e0c6828233d896c4027268272fa1407335113d11))
+
+### Features
+
+* improve consistency of `formatFieldValue` for queryService to better handle date and number types ([f27e913](https://github.com/Codeneos/vlocode/commit/f27e91323ca4068ea748a06088114924fd9227e7))
+
 ## [0.19.7](https://github.com/Codeneos/vlocode/compare/v0.19.6...v0.19.7) (2023-04-25)
 
 **Note:** Version bump only for package @vlocode/salesforce

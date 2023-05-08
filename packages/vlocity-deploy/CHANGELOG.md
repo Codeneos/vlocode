@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.8](https://github.com/Codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
+
+### Bug Fixes
+
+* do not invoke controller picklist command when optionSource is not a valid controller method ([a8c5ac4](https://github.com/Codeneos/vlocode/commit/a8c5ac45be7d6f06110503916428a7b175519ef5))
+
 ## [0.19.7](https://github.com/Codeneos/vlocode/compare/v0.19.6...v0.19.7) (2023-04-25)
 
 ### Bug Fixes

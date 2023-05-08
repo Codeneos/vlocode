@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.8](https://github.com/Codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
+
+### Features
+
+* speed up activate command by not reactivating dependencies when running for all scripts ([2be0ec5](https://github.com/Codeneos/vlocode/commit/2be0ec53e1a9d771eec38d071bfca0bd7bcecf52))
+
 ## [0.19.7](https://github.com/Codeneos/vlocode/compare/v0.19.6...v0.19.7) (2023-04-25)
 
 **Note:** Version bump only for package @vlocode/cli
