@@ -185,7 +185,7 @@ export function merge(object: any, ...sources: any[]) {
         for (const key of Object.keys(source)) {
             if (isObject(object[key]) && isObject(source[key])) {
                 merge(object[key], source[key]);
-            } else if (isObject(source[key])) {
+            } else if (isObject(source[key]) && !isImmutable(source[key])) {
                 if (source[key] === source) {
                     object[key] = object;
                     continue;
@@ -197,6 +197,10 @@ export function merge(object: any, ...sources: any[]) {
         }
     }
     return object;
+}
+
+function isImmutable(value: any) {
+    return typeof value !== 'object' || value instanceof Date || value instanceof RegExp || value instanceof BigInt;
 }
 
 function createMergeTarget<T>(source: T): T {
@@ -416,6 +420,14 @@ export function calculateHash(obj: object | string, algorithm: string = 'sha1') 
     }
     return hashObjectUpdate(createHash(algorithm), obj).digest('hex');
 }
+
+/**
+ * Hash an object and return the digested hashed value as hex
+ * @param obj Object to calculate the unique hashed value for
+ * @param algorithm hashing algorithm to use; defaults to `sha1`
+ */
+export const objectHash = calculateHash;
+
 
 function hashObjectUpdate(hash: Hash, obj: object): Hash {
     for (const key of Object.keys(obj).sort()) {

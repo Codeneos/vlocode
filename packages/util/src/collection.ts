@@ -21,7 +21,7 @@ export function flatten<T>(array: T[], depth: number = 1) : T {
 }
 
 /**
- * Get unique values from an Array based on the specified fnction which returns the key or object making the item unique
+ * Get unique values from an Array based on the specified function which returns the key or object making the item unique
  * @param arr Array
  * @param uniqueKeyFunc Filter that determines uniqueness of an item
  */
