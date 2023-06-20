@@ -112,7 +112,7 @@ export class DatapackDeploymentRecord {
         public readonly sobjectType: string,
         public readonly sourceKey: string,
         public readonly datapackKey: string,
-        public readonly upsertFields: string[] | undefined = undefined,
+        public upsertFields: string[] | undefined = undefined,
         public readonly values: object = {}) {
         this.normalizedSObjectType = removeNamespacePrefix(this.sobjectType);
     }
@@ -163,7 +163,7 @@ export class DatapackDeploymentRecord {
         const fieldNames = Object.keys(this.values);
         const matchingField =
             fieldNames.find(name => name.toLowerCase() === field.toLowerCase()) ??
-            fieldNames.find(name => removeNamespacePrefix(name) === removeNamespacePrefix(field));
+            fieldNames.find(name => removeNamespacePrefix(name.toLowerCase()) === removeNamespacePrefix(field.toLowerCase()));
 
         if (arguments.length == 1) {
             return matchingField ? this.values[matchingField] : undefined;
@@ -238,7 +238,11 @@ export class DatapackDeploymentRecord {
     }
 
     public getLookup(field: string) {
-        return this._dependencies.get(field);
+        const fieldNames = [...this._dependencies.keys()];
+        const matchingField =
+            fieldNames.find(name => name.toLowerCase() === field.toLowerCase()) ??
+            fieldNames.find(name => removeNamespacePrefix(name.toLowerCase()) === removeNamespacePrefix(field.toLowerCase()));
+        return matchingField ? this._dependencies.get(matchingField) : undefined;
     }
 
     public addDependency(dependency: DatapackRecordDependency | DatapackDeploymentRecord) {

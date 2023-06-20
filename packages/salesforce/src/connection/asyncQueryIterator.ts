@@ -12,7 +12,7 @@ enum AsyncQueryIteratorState {
 /**
  * Async query result iterator that iterates over the query results using the REST API
  * for either tooling (`/services/tooling`) or sobject records (`/services/data`)
- * 
+ *
  * The AsyncQueryIterator emits the following events:
  *  - `error` thrown when an error occurs during
  *  - `done` emitted when the fetching of records completes
@@ -53,7 +53,7 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
         super();
         this.nextResourceUrl = resourceUrl;
     }
-    
+
     public execute(): this {
         void this.fetch();
         return this;
@@ -65,7 +65,7 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
      * @returns All records fetched
      */
     private async fetch() {
-        console.assert(this.state === AsyncQueryIteratorState.idle, 'Iterator is already fetching records'); 
+        console.assert(this.state === AsyncQueryIteratorState.idle, 'Iterator is already fetching records');
         try {
             this.state = AsyncQueryIteratorState.fetching;
             while (this.nextResourceUrl && this.iteratorActive) {
@@ -74,7 +74,7 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
                 await this.processRecords(responses.records);
 
                 if (!this.nextResourceUrl || !this.iteratorActive || !this.queryMore) {
-                    // Change state before calling emit to not crash the 
+                    // Change state before calling emit to not crash the
                     // the async iterator when have 0 results
                     this.state = AsyncQueryIteratorState.done;
                 }
@@ -93,14 +93,14 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
             this.state = AsyncQueryIteratorState.done;
             this.errors.push(err);
             this.emit('error', err);
-        } finally {            
+        } finally {
             this.removeAllListeners();
             delete this.resultsPromise;
         }
     }
 
     private async processRecords(records: any[]) {
-        await Promise.all(records.map(record => this.processRelationships(record))); 
+        await Promise.all(records.map(record => this.processRelationships(record)));
     }
 
     private async processRelationships(record: any) {
@@ -274,20 +274,20 @@ export class JsForceAsyncQueryIterator<T extends object = Record<string, unknown
     }
 
     private registerHandler(
-        type: 'on' | 'once' | 'prependListener' | 'prependOnceListener' | 'appendOnceListener' | 'addListener', 
-        name: string, 
-        handler: (...args: any[]) => any) 
-    {        
+        type: 'on' | 'once' | 'prependListener' | 'prependOnceListener' | 'appendOnceListener' | 'addListener',
+        name: string,
+        handler: (...args: any[]) => any)
+    {
         if (this.handlersRegistered && (name === 'end' || name === 'record')) {
             this.on('done', () => this.emit('end'));
             this.on('records', records => records.forEach(r => this.emit('record', r)));
             this.handlersRegistered = true;
-        }        
+        }
         return super[type](name, handler);
     }
 
     public then<TResult1 = any, TResult2 = never>(
-        onfulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null | undefined, 
+        onfulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null | undefined,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined): Promise<TResult1 | TResult2> {
         return this.promise().then(onfulfilled, onrejected);
     }
