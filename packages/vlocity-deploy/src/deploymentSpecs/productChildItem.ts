@@ -18,7 +18,8 @@ export class ProductChildItem implements DatapackDeploymentSpec {
         for (const record of records) {
             if (this.isRootChildItem(record)) {
                 record.upsertFields = [
-                    'ParentProductId__c',
+                    'IsOverride__c',
+                    'IsRootProductChildItem__c',
                     'Name'
                 ];
             }

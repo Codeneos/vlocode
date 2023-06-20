@@ -97,7 +97,7 @@ export class DatapackLookupService implements DependencyResolver {
         const lookupRequests = datapackRecords.map((record, index) => ({
                 index, record, sobjectType: record.sobjectType,
                 lookupKey: this.buildLookupKey(record.sobjectType, record.upsertFields ?? [], record.values)!,
-                filter: this.buildFilter(record.values, record.upsertFields ?? []),
+                filter: this.buildFilter(record, record.upsertFields ?? []),
                 reportWarning: (message: string) => {
                     record.addWarning(message);
                     this.distinctLogger.warn(`Datapack ${record.sourceKey} -- ${message}`);
@@ -125,7 +125,7 @@ export class DatapackLookupService implements DependencyResolver {
         for (const lookup of lookupRequests) {
             const parentFields = await this.getParentRecordMatchingFields(lookup.record);
             if (parentFields.length) {
-                Object.assign(lookup.filter, this.buildFilter(lookup.record.values, parentFields));
+                Object.assign(lookup.filter, this.buildFilter(lookup.record, parentFields));
             }
         }
 
@@ -299,11 +299,11 @@ export class DatapackLookupService implements DependencyResolver {
     //     return key.join('/');
     // }
 
-    private buildFilter<K extends string>(data: any, fields?: K[]): { [P in K]?: any } {
+    private buildFilter<K extends string>(record: DatapackDeploymentRecord, fields?: K[]): { [P in K]?: any } {
         const filter: { [P in K]?: any } = {};
 
-        for (const field of fields ?? Object.keys(data)) {
-            const value = data[field];
+        for (const field of fields ?? Object.keys(record.values)) {
+            const value = record.value(field);
             if (value !== undefined) {
                 filter[field] = value;
             }
