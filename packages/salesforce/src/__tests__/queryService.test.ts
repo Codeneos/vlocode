@@ -104,7 +104,7 @@ describe('queryService', () => {
     });
     describe('#formatFieldValue', () => {
         it('date/time like objects should be formatted as UTC', () => {
-            expect(QueryService.formatFieldValue(new Date(2023, 10, 5, 1, 22, 33, 444), {
+            expect(QueryService.formatFieldValue(new Date('2023-11-05T00:22:33.444+0000'), {
                 type: 'datetime'
             })).toEqual('2023-11-05T00:22:33.444+0000');
         });
@@ -137,9 +137,13 @@ describe('queryService', () => {
             expect(formatted).toEqual(expected);
         });
         it('ISO date string should be formatted as UTC in local TZ when field type is datetime', () => {
+            const currentOffset = new Date('2023-11-05T00:00:00.000+0000').getTimezoneOffset() * 60 * 1000;
+            const utcExpected = new Date('2023-11-05T00:00:00.000+0000').getTime();
+            const localeExpected = DateTime.fromJSDate(new Date(utcExpected + currentOffset))
+                .toUTC().toFormat(`yyyy-MM-dd'T'HH:mm:ss.SSSZZZ`);
             expect(QueryService.formatFieldValue('2023-11-05', {
                 type: 'datetime'
-            })).toEqual('2023-11-04T23:00:00.000+0000');
+            })).toEqual(localeExpected);
         });
         it('ISO date string should be formatted as UTC as local date when field type is date', () => {
             expect(QueryService.formatFieldValue('2023-11-05', {
