@@ -29,6 +29,13 @@ export class PackageManifest {
     private readonly metadataMembers = new Map<string, Set<string>>();
 
     /**
+     * Returns `true` if the package is empty otherwise `false`
+     */
+    public get isEmpty() {
+        return this.metadataMembers.size === 0;
+    }
+
+    /**
      * Get all types that are mentioned in this package.
      */
     public types() {

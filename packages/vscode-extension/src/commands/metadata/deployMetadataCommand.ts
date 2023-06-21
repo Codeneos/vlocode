@@ -82,9 +82,15 @@ export default class DeployMetadataCommand extends MetadataCommand {
         const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, this.vlocode.getApiVersion());
         const sfPackage = (await packageBuilder.addFiles(selectedFiles)).getPackage();
 
-        if (sfPackage.size() == 0) {
+        if (sfPackage.isEmpty) {
             void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
             return;
+        }
+
+        if (sfPackage.hasSestructiveChanges) {
+            if (!await this.showDestructiveChangesWarning()) {
+                return;
+            }
         }
 
         await this.saveOpenFiles(sfPackage);
@@ -191,5 +197,16 @@ export default class DeployMetadataCommand extends MetadataCommand {
             this.logger.info(`Deployment ${result?.id} -- successfully deployed ${deployment.deploymentPackage.componentsDescription}`);
             void vscode.window.showInformationMessage(`Successfully deployed ${deployment.deploymentPackage.componentsDescription}`);
         }
+    }
+
+    protected async showDestructiveChangesWarning() : Promise<never | boolean> {
+        const destructiveChangesWarning = await vscode.window.showWarningMessage(
+            'Delete metadata from Salesforce?',
+            {
+                detail: `This operation will delete metadata from the currently selected Salesforce instance. Are you sure you want to continue?`,
+                modal: true,
+            }, 'Yes', 'No'
+        );
+        return destructiveChangesWarning === 'Yes';
     }
 }

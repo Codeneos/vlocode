@@ -18,6 +18,23 @@ export class SalesforcePackage {
     public readonly manifest = new PackageManifest();
 
     /**
+     * Checl if this package has any destructive changes.
+     * @returns `true` if the package has destructive changes otherwise `false`
+     */
+    public get hasSestructiveChanges() {
+        return !this.destructiveChanges.pre.isEmpty || 
+            !this.destructiveChanges.post.isEmpty;
+    }
+
+    /**
+     * Check if this package is empty; a package is empty if it does not contain any metadata and does not contain any destructive changes.
+     * @returns `true` if the package is empty otherwise `false`
+     */
+    public get isEmpty() {
+        return this.manifest.isEmpty && !this.hasSestructiveChanges;
+    }
+
+    /**
      * Access the pre or post destructive changes in this package
      */
     private readonly destructiveChanges = {
