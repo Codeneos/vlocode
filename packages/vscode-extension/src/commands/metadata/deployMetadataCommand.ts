@@ -6,9 +6,8 @@ import * as open from 'open';
 import { ActivityProgress, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
 import { VlocodeCommand } from '../../constants';
 import MetadataCommand from './metadataCommand';
-import { SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, DeployStatus, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
-
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
@@ -19,7 +18,9 @@ export default class DeployMetadataCommand extends MetadataCommand {
      * In order to prevent double deployment keep a list of pending deploy ops
      */
     private readonly filesPendingDeployment = new Set<vscode.Uri>();
-    private deploymentTaskRef?: any;
+    private readonly pendingPackages = new Array<SalesforcePackage>();
+
+    private deploymentTaskRef?: NodeJS.Immediate;
     private enabled = true;
 
     public get pendingFiles() {
@@ -34,10 +35,12 @@ export default class DeployMetadataCommand extends MetadataCommand {
         this.setEnabled(true);
     }
 
-    private popPendingFiles() : vscode.Uri[] {
-        const files = [...this.filesPendingDeployment];
-        this.filesPendingDeployment.clear();
-        return files;
+    private getNextPackage(): SalesforcePackage | undefined {
+        const firstPackage = this.pendingPackages.shift();
+        while(firstPackage && this.pendingPackages.length) {
+            firstPackage.merge(this.pendingPackages.shift()!);
+        }
+        return firstPackage;
     }
 
     public setEnabled(state: boolean) {
@@ -75,111 +78,118 @@ export default class DeployMetadataCommand extends MetadataCommand {
             }
         }
 
-        // Queue files
-        selectedFiles.forEach(file => this.filesPendingDeployment.add(file));
+        // build package
+        const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, this.vlocode.getApiVersion());
+        const sfPackage = (await packageBuilder.addFiles(selectedFiles)).getPackage();
+
+        if (sfPackage.size() == 0) {
+            void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
+            return;
+        }
+
+        await this.saveOpenFiles(sfPackage);
+        this.pendingPackages.push(sfPackage);
+
+        if (!this.enabled || this.deploymentTaskRef !== undefined) {
+            const fileNameText = selectedFiles.length === 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
+            this.logger.info(`Adding ${fileNameText} to deployment queue`);
+            void vscode.window.showInformationMessage(`Add ${fileNameText} to deployment queue...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
+                if (cancel) {
+                    this.pendingPackages.splice(this.pendingPackages.indexOf(sfPackage), 1);
+                }
+            });
+            return;
+        }
 
         // Start deployment
-        if (this.deploymentTaskRef === undefined && this.enabled) {
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises
-            this.deploymentTaskRef = setImmediate(async () => {
-                try {
-                    while (this.filesPendingDeployment.size > 0 && this.enabled) {
-                        await this.doDeployMetadata(this.popPendingFiles());
+        this.deploymentTaskRef = this.deploymentTaskRef = setImmediate(async () => {
+            try {
+                while (this.pendingPackages.length && this.enabled) {
+                    const deployPackage = this.getNextPackage();
+                    if (deployPackage) {
+                        await this.vlocode.withActivity({
+                            progressTitle: `Deploy ${deployPackage.componentsDescription}`,
+                            location: vscode.ProgressLocation.Notification,
+                            propagateExceptions: false,
+                            cancellable: true
+                        }, this.getDeploymentActivity(deployPackage));
                     }
-                } finally {
-                    this.deploymentTaskRef = undefined;
                 }
-            });
-        } else {
-            const fileNameText = selectedFiles.length === 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
-            this.logger.info(`Deployment queued of ${fileNameText}`);
-            void vscode.window.showInformationMessage(`Queued deployment of ${fileNameText} (pending: ${this.filesPendingDeployment.size})...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
-                if (cancel) {
-                    selectedFiles.forEach(this.filesPendingDeployment.delete.bind(this.filesPendingDeployment));
-                }
-            });
-        }
+            } finally {
+                this.deploymentTaskRef = undefined;
+            }
+        });
     }
 
-    protected async doDeployMetadata(files: vscode.Uri[]) {
-        const apiVersion = this.vlocode.config.salesforce?.apiVersion ?? this.salesforce.getApiVersion();
-        const taskTitle = files.length == 1 ? `Deploying ${fileName(files[0].fsPath, true).split('.')[0]}` : 'Deploying Metadata';
-        await this.vlocode.withActivity({
-            progressTitle: taskTitle,
-            location: vscode.ProgressLocation.Notification,
-            propagateExceptions: false,
-            cancellable: true
-        }, this.getDeploymentActivity(apiVersion, files));
-    }
-
-    protected getDeploymentActivity(apiVersion: string, files: vscode.Uri[]) {
+    private getDeploymentActivity(sfPackage: SalesforcePackage) {
         return async (progress: ActivityProgress, token: vscode.CancellationToken) => {
-            token.onCancellationRequested(() => progress.report({ message: 'cancellation in progress' }));
-
-            // Build manifest
-            progress.report({ message: 'building package' });
-            const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
-            const sfPackage = (await packageBuilder.addFiles(files, token)).getPackage();
-
-            if (!sfPackage || token?.isCancellationRequested) {
-                return;
-            }
-
-            // Get task title
-            if (sfPackage.size() == 0) {
-                void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
-                return;
-            }
-
-            const componentNames = sfPackage.getComponentNames();
-            const progressTitle = sfPackage.size() == 1 ? componentNames[0] : `${sfPackage.size()} components`;
-            this.logger.info(`Added ${sfPackage.size()} components from ${sfPackage.files().size} source files`);
-            progress.report({ message: `deploying ${sfPackage.size()} components` });
-
-            // Save manifest
-            await this.saveOpenFiles(sfPackage);
-
-            // Clear errors before starting the deployment
-            this.clearPreviousErrors(sfPackage.files());
+            progress.report({ message: `scheduling` });
 
             // start deployment
             const deployment = new SalesforceDeployment(sfPackage);
-            deployment.on('progress', status => {
-                progress.report({
-                    message: `${status.status} ${status.total ? `${status.deployed}/${status.total}` : ''}`,
-                    increment: status.deployed,
-                    total: status.total
-                });
+            const progressReporter = deployment.on('progress', result => {
+                if (deployment.isServerSideCancelled) {
+                    progress.report({ message: 'Server-side cancellation requested' });
+                    progressReporter.dispose();
+                } else {
+                    progress.report({
+                        message: `${this.getStatusLabel(result.status)} ${result.total ? `${result.deployed}/${result.total}` : ''}`,
+                        progress: result.deployed,
+                        total: result.total
+                    });
+                }
             });
-            token.onCancellationRequested(() => deployment.cancel());
-            await deployment.start({ ignoreWarnings: true });
+            token.onCancellationRequested(() => {
+                progress.report({ message: 'Cancellation in progress' });
+                progressReporter.dispose();
+                deployment.cancel();
+            });
 
+            await deployment.start({ ignoreWarnings: true });
             this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
             const result = await deployment.getResult();
-            await this.logDeployResult(sfPackage, result);
 
-            if (!result.success) {
-                void vscode.window.showErrorMessage(`Deployment ${result?.id} ${result.status}`, 'See details').then(async selected =>
-                    selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
-                );
-                progress.report({ status: VlocodeActivityStatus.Failed });
+            if (deployment.isCancelled) {
                 return;
             }
 
-            // success will be `true` even when not all components are successfully deployed
-            // so check if we had any errors
-            const partialSuccess = !!result.details?.componentFailures?.length;
-
-            if (partialSuccess) {
-                // Partial success
-                this.logger.warn(`Deployment ${result?.id} -- partially completed; see log for details`);
-                void vscode.window.showWarningMessage(`Partially deployed ${progressTitle}`, 'See details').then(async selected =>
-                    selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
-                );
-            } else {
-                this.logger.info(`Deployment ${result?.id} -- successfully deployed ${progressTitle}`);
-                void vscode.window.showInformationMessage(`Successfully deployed ${progressTitle}`);
-            }
+            return this.onDeploymentComplete(deployment, result);
         };
+    }
+
+    private getStatusLabel(status: DeployStatus) {
+        if (status === 'InProgress') {
+            return 'In Pogress';
+        } else if (status === 'SucceededPartial') {
+            return 'Partially Deployed';
+        }
+        return status;
+    }
+
+    private onDeploymentComplete(deployment: SalesforceDeployment, result: DeployResult) {
+        // Clear errors before starting the deployment
+        this.clearPreviousErrors(deployment.deploymentPackage.files());
+        void this.logDeployResult(deployment.deploymentPackage, result);
+
+        if (!result.success) {
+            void vscode.window.showErrorMessage(`Deployment ${result?.id} ${result.status}`, 'See details').then(async selected =>
+                selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
+            );
+        }
+
+        // success will be `true` even when not all components are successfully deployed
+        // so check if we had any errors
+        const partialSuccess = !!result.details?.componentFailures?.length;
+
+        if (partialSuccess) {
+            // Partial success
+            this.logger.warn(`Deployment ${result?.id} -- partially completed; see log for details`);
+            void vscode.window.showWarningMessage(`Partially deployed ${deployment.deploymentPackage.componentsDescription}`, 'See details').then(async selected =>
+                selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
+            );
+        } else {
+            this.logger.info(`Deployment ${result?.id} -- successfully deployed ${deployment.deploymentPackage.componentsDescription}`);
+            void vscode.window.showInformationMessage(`Successfully deployed ${deployment.deploymentPackage.componentsDescription}`);
+        }
     }
 }

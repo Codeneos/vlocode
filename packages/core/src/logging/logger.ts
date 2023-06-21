@@ -59,7 +59,7 @@ export class Logger {
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
 
     public write(level: LogLevel, ...args: any[]) : void {
-        const logLevel = this.manager?.getLogLevel(this.name);        
+        const logLevel = this.manager?.getLogLevel(this.name);
         if (logLevel !== undefined && level < logLevel) {
             return;
         }

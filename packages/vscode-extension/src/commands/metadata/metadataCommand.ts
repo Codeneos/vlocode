@@ -5,7 +5,7 @@ import { CommandBase } from '../../lib/commandBase';
 import { DeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 
 /**
- * Salesforce metadata base command 
+ * Salesforce metadata base command
  */
 export default abstract class MetadataCommand extends CommandBase {
 
@@ -49,13 +49,13 @@ export default abstract class MetadataCommand extends CommandBase {
         }
 
         // Some times we get a lot of the same errors from Salesforce, in case of 'An unexpected error occurred' errors;
-        // these are not useful to display so we instead filter these out        
+        // these are not useful to display so we instead filter these out
         const filterFailures = result.details.componentFailures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
 
         for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
             const info = sfPackage.getSourceFile(failure.fileName.replace(/^src\//i, ''));
             if (info) {
-                // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference                
+                // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference
                 await this.reportProblem(vscode.Uri.file(info), failure);
             }
         }
@@ -68,7 +68,7 @@ export default abstract class MetadataCommand extends CommandBase {
     }
 
     protected async reportProblem(localPath: vscode.Uri, failure: { problem: string; lineNumber: any; columnNumber: any }) {
-        // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference     
+        // vscode starts counting lines and characters at 0, Salesforce at 1, compensate for the difference
         const startPosition = new vscode.Position(parseInt(failure.lineNumber, 10) - 1, parseInt(failure.columnNumber, 10) - 1);
         const fileBody = await getDocumentBodyAsString(localPath.fsPath);
 
@@ -119,7 +119,7 @@ export default abstract class MetadataCommand extends CommandBase {
 
     /**
      * Clears all the errors and warning for the specified file.
-     * @param file 
+     * @param file
      */
     protected clearMessages(file: vscode.Uri) : void {
         const currentMessages = this.getDiagnostics().get(file);

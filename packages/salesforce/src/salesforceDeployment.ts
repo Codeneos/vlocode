@@ -1,6 +1,6 @@
 import { LogManager , container } from '@vlocode/core';
-import { AsyncEventEmitter } from '@vlocode/util';
-import { DeployOptions, DeployResult, SalesforceConnection, SalesforceConnectionProvider } from './connection';
+import { AsyncEventEmitter, CancellationToken } from '@vlocode/util';
+import { DeployOptions, DeployResult, DeployStatus, SalesforceConnection, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackage } from './deploymentPackage';
 
 export interface SalesforceDeploymentEvents {
@@ -10,7 +10,7 @@ export interface SalesforceDeploymentEvents {
 }
 
 export interface DeployProgress {
-    status: string;
+    status: DeployStatus;
     deployed: number;
     total: number;
     errors: number;
@@ -18,12 +18,12 @@ export interface DeployProgress {
 
 export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeploymentEvents> {
     private checkInterval = 1000;
+    private cancelled: true | undefined;
     private deploymentId: string;
     private connection: SalesforceConnection;
     private lastStatus: DeployResult;
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
-    private lastProgress = 0;
     private nextProgressTimeoutId: NodeJS.Timeout;
 
     /**
@@ -39,8 +39,48 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     /**
      * Get the deployment status data as it was last retrieved; only set after the deployment has started.
      */
-    public get status() {
+    public get result() {
+        if (!this.lastStatus) {
+            throw new Error('Deployment has not yet started, start the deployment before accessing the result property');
+        }
         return this.lastStatus;
+    }
+
+    /**
+     * Determine if the deployment has completed, either successfully or with errors or warnings.
+     * Returns `false` if the deployment has not yet started.
+     * Returns `true` if the deployment is completed.
+     */
+    public get isCompleted() {
+        return this.lastStatus?.done ?? false;
+    }
+
+    /**
+     * Returns `true` if the deployment has been cancelled or is currently cancelling.
+     */
+    public get isCancelled() {
+        return this.cancelled === true || this.lastStatus?.status === 'Canceled' || this.lastStatus?.status === 'Canceling';
+    }
+
+    /**
+     * Returns `true` if the deployment has been cancelled from the server side (Salesforce UI)
+     */
+     public get isServerSideCancelled() {
+        return this.cancelled === undefined && this.isCancelled;
+    }
+
+    /**
+     * Determine if the deployment has completed successfully.
+     */
+    public get status() {
+        return this.lastStatus?.status ?? 'Pending';
+    }
+
+    /**
+     * Determine if the deployment has completed successfully.
+     */
+    public get isPartialSuccess() {
+        return this.lastStatus.success && !!this.lastStatus.details?.componentFailures?.length;
     }
 
     /**
@@ -55,6 +95,13 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
      */
     public get id() {
         return this.deploymentId;
+    }
+
+    /**
+     * Get package containing the metadata that is being deployed as part of this deployment;
+     */
+    public get deploymentPackage() {
+        return this.sfPackage;
     }
 
     /**
@@ -111,7 +158,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         const zipInput = await this.sfPackage.getBuffer(this.compressionLevel);
         const deployJob = await this.connection.metadata.deploy(zipInput, deployOptions);
         this.deploymentId = deployJob.id;
-        
+
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         setImmediate(() => this.checkDeployment());
 
@@ -127,6 +174,9 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             clearTimeout(this.nextProgressTimeoutId);
         }
 
+        // Set client side cancelled flag
+        this.cancelled = true;
+
         try {
             try {
                 this.lastStatus = await this.connection.metadata.cancelDeploy(this.deploymentId);
@@ -140,7 +190,13 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         }
     }
 
-    public getResult() {
+    public getResult(token?: CancellationToken) {
+        if (this.isCompleted) {
+            return this.result;
+        }
+        token?.onCancellationRequested(() => {
+            void this.cancel();
+        });
         return new Promise<DeployResult>(resolve => {
             this.once('complete', resolve);
             this.once('cancel', resolve);
@@ -149,6 +205,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
 
     private async checkDeployment() {
         const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
+        this.lastStatus = status;
 
         // Reduce polling frequency for long running deployments
         if (this.pollCount++ > 10 && this.checkInterval < 5000) {
@@ -171,9 +228,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                     total: status.numberComponentsTotal ?? 0,
                     errors: status.numberComponentErrors ?? 0
                 });
-                this.lastProgress = status.numberComponentsDeployed ?? 0;
             }
-
             this.lastPrintedLogStamp = Date.now();
         }
 
@@ -187,7 +242,5 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             this.nextProgressTimeoutId = setTimeout(() => this.checkDeployment(), this.checkInterval);
         }
-
-        this.lastStatus = status;
     }
 }

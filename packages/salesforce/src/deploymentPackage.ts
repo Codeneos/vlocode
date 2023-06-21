@@ -38,6 +38,19 @@ export class SalesforcePackage {
     private readonly packageComponents = new Map<string, string[]>();
 
     /**
+     * Get printable name of the package components for use in the UI.
+     * Returns the name of the component in the package if there is only a single component in the package; otherwise returns the component count:
+     */
+    public get componentsDescription() {
+        const types = [...this.manifest.types()];
+        const typeName = types.length === 1 ? types[0] : `components`;
+        const componentNames = this.manifest.list();
+        return componentNames.length === 1
+            ? `${componentNames[0]}`
+            : `${componentNames.length} ${typeName}s`;
+    }
+
+    /**
      * Create a new metadata package
      * @param apiVersion API version of the package
      * @param packageDir the package directory, either package or an empty string
@@ -201,14 +214,11 @@ export class SalesforcePackage {
 
     /**
      * Merge an existing destructive changes XML into the package as pre or post change.
-     * @param sourceFile Source file path
+     * @param manifestSource Source file
      * @param type Type of changes
      */
-    public async mergeDestructiveChanges(sourceFile: string, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
-        if (!this.fs) {
-            throw new Error(`Cannot merge destructive changes without a file system`);
-        }
-        const items = (await xml2js.parseStringPromise((await this.readFile(sourceFile)).toString('utf-8'))).Package;
+    public mergeDestructiveChanges(manifestSource: string | Buffer, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
+        const items = XML.parse(manifestSource).Package;
         for (const packageType of items.types) {
             const xmlName = packageType.name[0];
             for (const member of packageType.members) {
@@ -248,15 +258,8 @@ export class SalesforcePackage {
      * Get the currently packaged data for the specified path in the package.
      * @param packagePath Package path
      */
-    public async getPackageData(packagePath: string) {
-        const data = this.packageData.get(packagePath.replace(/\/|\\/g, '/'));
-        if (!data) {
-            return;
-        }
-        if (!data.data) {
-            data.data = await this.readFile(data.fsPath!);
-        }
-        return data.data;
+    public getPackageData(packagePath: string): { data?: string | Buffer, fsPath?: string } | undefined {
+        return this.packageData.get(packagePath.replace(/\/|\\/g, '/'));
     }
 
     /**
@@ -292,7 +295,7 @@ export class SalesforcePackage {
     /**
      * Builds the ZipArchive from the current package and returns the package archive
      */
-    public async generateArchive(): Promise<ZipArchive> {
+    public async generateArchive(options?: { fs?: FileSystem }): Promise<ZipArchive> {
         const packageZip = new ZipArchive();
         const xmlPackage = this.manifest.toXml(this.apiVersion);
         packageZip.file(path.posix.join(this.packageDir, 'package.xml'), xmlPackage);
@@ -307,16 +310,36 @@ export class SalesforcePackage {
                 this.destructiveChanges.post.toXml(this.apiVersion));
         }
 
-        for (const [packagePath, { data, fsPath }] of this.packageData.entries()) {
-            let fileData = data ?? await this.readFile(fsPath!);
-            if (XML.isXml(fileData)) {
-                // Normalize all XML data to avoid SF deployment errors due to excess spaces
-                fileData = XML.normalize(fileData);
-            }
-            packageZip.file(path.posix.join(this.packageDir, packagePath), fileData);
+        for (const [packagePath, entry] of this.packageData.entries()) {
+            const fileData = await this.getFileData(entry, options);
+            packageZip.file(
+                path.posix.join(this.packageDir, packagePath), 
+                this.normalizeDataForPackage(packagePath, fileData)
+            );
         }
 
         return packageZip;
+    }
+
+    private getFileData(data: SalesforcePackageFileData, options?: { fs?: FileSystem }) {
+        if (data.data) {
+            return data.data;
+        }
+        if (data.fsPath) {
+            if (!options?.fs) {
+                throw new Error('Specify a file system to read data from when including files based on their file system path.');
+            }
+            return options.fs.readFile(data.fsPath);
+        }
+        throw new Error(`No data or file system path specified for manifest entry ${data.xmlName}/${data.componentName}`);
+    }
+
+    private normalizeDataForPackage(packagePath: string, data: Buffer | string) {
+        if (XML.isXml(data)) {
+            // Normalize all XML data to avoid SF deployment errors due to excess spaces
+            return XML.normalize(data);
+        }
+        return data;
     }
 
     /**
@@ -350,15 +373,15 @@ export class SalesforcePackage {
      * @param name Name of the component
      * @returns Parsed XML metadata associated to the component as defined in the package
      */
-    public async getPackageMetadata(type: string, name: string) : Promise<any> {
+    public getPackageMetadata<T extends object = Record<string, any>>(type: string, name: string): T | undefined {
         const fsPaths = this.getComponentSourceFiles(type, name);
         if (fsPaths?.length) {
             const metaFile = fsPaths.length == 1 ? fsPaths[0] : fsPaths.find(f => f.toLowerCase().endsWith('.xml'));
             const metaFileSourceMap = metaFile && this.sourceFileMap.get(metaFile);
             if (metaFileSourceMap) {
-                const packageData = await this.getPackageData(metaFileSourceMap.packagePath);
-                if (packageData && XML.isXml(packageData)) {
-                    return Object.values(XML.parse(packageData)).pop();
+                const packageData = this.getPackageData(metaFileSourceMap.packagePath);
+                if (packageData?.data && XML.isXml(packageData.data)) {
+                    return Object.values(XML.parse<T>(packageData.data)).pop();
                 }
             }
         }

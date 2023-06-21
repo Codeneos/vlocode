@@ -59,7 +59,7 @@ export class SalesforcePackageBuilder {
             const xmlName = await this.getComponentType(file);
             if (xmlName == 'Package' && path.basename(file).includes('destructive')) {
                 const destructiveChangeType = file.toLocaleLowerCase().includes('post') ? 'post' : 'pre';
-                await this.mdPackage.mergeDestructiveChanges(file, destructiveChangeType);
+                this.mdPackage.mergeDestructiveChanges(await this.fs.readFile(file), destructiveChangeType);
                 continue;
             }
 
@@ -122,7 +122,7 @@ export class SalesforcePackageBuilder {
         });
     }
 
-    private async* getFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken) {
+    private async* getFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken): AsyncGenerator<string> {
         const fileNames = Iterable.map(files, file => typeof file !== 'string' ? file.fsPath : file);
 
         // Build zip archive for all expanded file; filter out files already parsed
@@ -208,6 +208,7 @@ export class SalesforcePackageBuilder {
                 xmlName: metadataType.xmlName,
                 componentName,
                 packagePath,
+                data: await this.fs.readFile(file),
                 fsPath: file
             });
         }
@@ -321,7 +322,7 @@ export class SalesforcePackageBuilder {
         }
 
         // Load existing XML
-        let existingPackageData = await this.mdPackage.getPackageData(packagePath);
+        let existingPackageData = await this.readPackageData(packagePath);
         if (!existingPackageData) {
             // ensure parent files are included
             const parentBaseName =  path.posix.basename(packagePath);
@@ -335,6 +336,15 @@ export class SalesforcePackageBuilder {
         // Merge child metadata into parent metadata
         const mergedMetadata = this.mergeMetadata(existingMetadata, { [decomposition.xmlFragmentName]: fragmentMetadata });
         this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata), xmlName: metadataType.xmlName, componentName: path.basename(packagePath, `.${metadataType.suffix}`) });
+    }
+
+    private async readPackageData(packagePath: string): Promise<string | Buffer | undefined> {
+        const existingPackageData = this.mdPackage.getPackageData(packagePath);
+        if (existingPackageData?.data) {
+            return existingPackageData.data;
+        } else if (existingPackageData?.fsPath) {
+            return this.fs.readFile(existingPackageData.fsPath);
+        }
     }
 
     private mergeMetadata(targetMetadata: object, sourceMetadata: object) {

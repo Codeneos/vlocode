@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { asArray } from '@vlocode/util';
 import MetadataCommand from '../metadata/metadataCommand';
-import { CustomFieldMetadata, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
+import { CustomFieldMetadata, CustomObjectMetadata, PackageManifest, SalesforceFieldPermission, SalesforcePackageBuilder, SalesforcePackageType, SalesforceProfile } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
 
@@ -32,14 +32,14 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
 
         const classes = manifest.list('ApexClass');
         const pages = manifest.list('ApexPage');
-        const fields = await Promise.all(manifest.list('CustomField').map(async field => {
-            const data = await mdPackage.getPackageMetadata('CustomField', field);
+        const fields = manifest.list('CustomField').map(field => {
+            const data = mdPackage.getPackageMetadata<CustomObjectMetadata>('CustomField', field);
             return {
                 field,
-                metadata: asArray(data.fields).find(f => f.fullName == field.split('.').pop()) as CustomFieldMetadata
+                metadata: asArray(data?.fields ?? []).find(f => f.fullName == field.split('.').pop())
             };
-        }));
-        const addableFields = fields.filter(( { metadata } ) => this.isProfileCompatibleField(metadata));
+        });
+        const addableFields = fields.filter(( { metadata } ) => metadata && this.isProfileCompatibleField(metadata));
 
         if (!manifest.count()) {
             return void vscode.window.showErrorMessage('None of the selected files are detected as Salesforce metadata');
