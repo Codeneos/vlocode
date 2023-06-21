@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { ExtensionContext, Memento } from 'vscode';
+import type { ExtensionContext, Memento, ExtensionMode } from 'vscode';
 import { singleton, getInstance } from '@vlocode/util';
 import type VlocodeService from './vlocodeService';
 
@@ -14,15 +14,6 @@ class VlocodeContext {
 		 */
         readonly extensionPath: string,
         /**
-		 * An absolute file path of a workspace specific directory in which the extension
-		 * can store private state. The directory might not exist on disk and creation is
-		 * up to the extension. However, the parent directory is guaranteed to be existent.
-		 *
-		 * Use [`workspaceState`](#ExtensionContext.workspaceState) or
-		 * [`globalState`](#ExtensionContext.globalState) to store key value data.
-		 */
-        readonly storagePath: string | undefined,
-        /**
          * A memento object that stores state in the context
          * of the currently opened {@link workspace.workspaceFolders workspace}.
          */
@@ -35,7 +26,11 @@ class VlocodeContext {
         /**
          * Primary service class
          */
-        readonly service: VlocodeService) {
+        readonly service: VlocodeService,
+        /**
+         * The mode the extension is running in.
+         */
+        readonly mode: ExtensionMode) {
     }
 
 
@@ -62,5 +57,11 @@ export function getContext() {
  * @param context VS Codes extension context
  */
 export function initializeContext(context: ExtensionContext, service: VlocodeService) {
-    return singleton(VlocodeContext, context.extensionPath, context.storagePath, context.workspaceState, context.globalState, service);
+    return singleton(VlocodeContext,
+        context.extensionPath,
+        context.workspaceState,
+        context.globalState,
+        service,
+        context.extensionMode
+    );
 }

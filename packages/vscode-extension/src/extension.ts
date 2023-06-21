@@ -12,7 +12,7 @@ import { getContext, initializeContext } from './lib/vlocodeContext';
 import { ConfigurationManager } from './lib/config';
 import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
-import { lazy } from '@vlocode/util';
+import { getErrorMessage, lazy } from '@vlocode/util';
 import { WorkspaceContextDetector } from './lib/workspaceContextDetector';
 import { MetadataDetector } from './lib/salesforce/metadataDetector';
 import { DatapackDetector } from './lib/vlocity/datapackDetector';
@@ -52,8 +52,8 @@ class VlocityLogFilter {
 
 class Vlocode {
 
-    private readonly isDebug = /--debug|--inspect-brk/.test(process.execArgv.join(' '));
     private static instance: Vlocode;
+    private isDebug: boolean;
     private service: VlocodeService;
 
     constructor() {
@@ -94,6 +94,7 @@ class Vlocode {
         });
 
         if (this.isDebug) {
+            getErrorMessage.defaults.includeStack = true;
             LogManager.registerWriter(new ConsoleWriter());
         }
 
@@ -121,6 +122,12 @@ class Vlocode {
     }
 
     private activate(context: vscode.ExtensionContext) {
+        // Check context flags
+        this.isDebug = context.extensionMode > 1 || /--debug|--inspect-brk/.test(process.execArgv.join(' '));
+        if (this.isDebug) {
+            import('source-map-support/register');
+        }
+
         // All SFDX and Vlocity commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));
         this.setWorkingDirectory();
