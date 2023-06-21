@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.10](https://github.com/Codeneos/vlocode/compare/v0.19.9...v0.19.10) (2023-06-21)
+
+### Bug Fixes
+
+* issues with parsing destructive changes containing a single component ([3dbe9b3](https://github.com/Codeneos/vlocode/commit/3dbe9b320713dbd27179021956ffc2bc67e5b375))
+
+### Features
+
+* support deploying of destructive changes to an org ([d229035](https://github.com/Codeneos/vlocode/commit/d229035f2cf9a5eaabaaa4771d5abfa17c83ac6d))
+
 ## [0.19.9](https://github.com/Codeneos/vlocode/compare/v0.19.8...v0.19.9) (2023-06-21)
 
 ### Bug Fixes
