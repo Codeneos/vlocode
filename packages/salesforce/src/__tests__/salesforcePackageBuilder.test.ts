@@ -56,6 +56,7 @@ describe('SalesforcePackageBuilder', () => {
         'src/destructiveChangesPost2.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'a', 'b' ] } ] }),
         'src/destructiveChangesPre.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'c', 'd' ] } ] }),
         'src/destructiveChanges.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'g', 'h' ] } ] }),
+        'src/destructiveChangesSingle.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: 'a' } ] }),
     });
 
     beforeAll(() =>  container.registerAs(Logger.null, Logger));
@@ -275,7 +276,7 @@ describe('SalesforcePackageBuilder', () => {
             });
         });
         describe('#destructiveChanges', () => {
-            it('should add changes to deployment as-is', async () => {
+            it('should add destructive changes to deployment as-is', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/destructiveChangesPost.xml' ]);
 
@@ -286,7 +287,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(filesAdded).toEqual(expect.arrayContaining([ 'destructiveChangesPost.xml' ]));
                 expect(manifest.types.length).toEqual(0);
             });
-            it('should merge multiple changes into single package file', async () => {
+            it('should merge multiple destructive changes into single package file', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([
                     'src/destructiveChangesPost.xml',
@@ -328,6 +329,21 @@ describe('SalesforcePackageBuilder', () => {
                 expect(filesAdded).toEqual(expect.arrayContaining([
                     'destructiveChangesPre.xml',
                     'destructiveChangesPost.xml'
+                ]));
+                expect(manifest.types.length).toEqual(0);
+            });
+            it('should correctly parse destructive changes with just one component', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                await packageBuilder.addFiles([
+                    'src/destructiveChangesSingle.xml'
+                ]);
+
+                const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+
+                expect(filesAdded.length).toEqual(2);
+                expect(filesAdded).toEqual(expect.arrayContaining([
+                    'destructiveChangesPre.xml'
                 ]));
                 expect(manifest.types.length).toEqual(0);
             });

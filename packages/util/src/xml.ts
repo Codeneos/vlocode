@@ -6,6 +6,7 @@ export interface XMLParseOptions {
     trimValues?: boolean;
     ignoreAttributes?: boolean;
     ignoreNameSpace?: boolean;
+    arrayMode?: boolean | 'strict';
 }
 
 export interface XMLStringfyOptions {

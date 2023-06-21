@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
-import { Iterable, XML , directoryName, arrayMapPush } from '@vlocode/util';
+import { Iterable, XML , directoryName, arrayMapPush, asArray } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
@@ -219,9 +219,9 @@ export class SalesforcePackage {
      */
     public mergeDestructiveChanges(manifestSource: string | Buffer, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
         const items = XML.parse(manifestSource).Package;
-        for (const packageType of items.types) {
+        for (const packageType of asArray(items.types)) {
             const xmlName = packageType.name[0];
-            for (const member of packageType.members) {
+            for (const member of asArray(packageType.members)) {
                 this.addDestructiveChange(xmlName, member, type);
             }
         }
