@@ -21,9 +21,7 @@ export class MetadataDetector {
             return true;
         }
         return file.siblings.some(f => {
-            const siblingType = this.registry.getMetadataTypeBySuffix(fileSuffix(f.name));
-            if (siblingType?.isBundle) {
-                // Aura/LWC
+            if (f.name.endsWith('-meta.xml')) {
                 return true;
             }
             return false;
