@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.9](https://github.com/codeneos/vlocode/compare/v0.19.8...v0.19.9) (2023-06-21)
+
+### Bug Fixes
+
+* datapackLookupService does not allow namespace-less lookup fields ([eed26c4](https://github.com/codeneos/vlocode/commit/eed26c4c26513208f42ed8223734e5ce2dc979d9))
+* deepClone does not clone date objects as they are immutable ([e133380](https://github.com/codeneos/vlocode/commit/e1333802c24f4f4f880a8bcf6553601536acad4a))
+* do not cause deployment loop when changing the same metadata then t=what is being deployed ([f1fa238](https://github.com/codeneos/vlocode/commit/f1fa238435d79901bbb7f3fc5647e0bd6a208619))
+* error stacks are not logged when in debug mode ([1db79cd](https://github.com/codeneos/vlocode/commit/1db79cd8eedf139672c423fb0caa97d6bd580012))
+* LWC and Aura bundles are detected as metadata folders ([0fab3e2](https://github.com/codeneos/vlocode/commit/0fab3e2c65204a7f415492ee0675e146855f3522))
+* metadata API read command can return undefined records when there are no records matching the full names ([236912a](https://github.com/codeneos/vlocode/commit/236912a933309da6150fbde073ee6ebf3bf5088f))
+* queryService.test.ts test fails due to DST adjustments ([fe729ca](https://github.com/codeneos/vlocode/commit/fe729caea3c17969ea30f0339294c2f05dbf8f1c))
+* when deploying a Product2 datapack for the first time a duplicate Root PCI record is created when running with triggers enabled ([3461618](https://github.com/codeneos/vlocode/commit/346161840c89e9baa10369b511d22a1a6c47c3fe))
+
 ## [0.19.8](https://github.com/codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
 
 ### Bug Fixes

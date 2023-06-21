@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.9](https://github.com/Codeneos/vlocode/compare/v0.19.8...v0.19.9) (2023-06-21)
+
+### Bug Fixes
+
+* do not cause deployment loop when changing the same metadata then t=what is being deployed ([f1fa238](https://github.com/Codeneos/vlocode/commit/f1fa238435d79901bbb7f3fc5647e0bd6a208619))
+
 ## [0.19.8](https://github.com/Codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
 
 **Note:** Version bump only for package @vlocode/core

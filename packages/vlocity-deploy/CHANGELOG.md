@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.9](https://github.com/Codeneos/vlocode/compare/v0.19.8...v0.19.9) (2023-06-21)
+
+### Bug Fixes
+
+* datapackLookupService does not allow namespace-less lookup fields ([eed26c4](https://github.com/Codeneos/vlocode/commit/eed26c4c26513208f42ed8223734e5ce2dc979d9))
+* when deploying a Product2 datapack for the first time a duplicate Root PCI record is created when running with triggers enabled ([3461618](https://github.com/Codeneos/vlocode/commit/346161840c89e9baa10369b511d22a1a6c47c3fe))
+
 ## [0.19.8](https://github.com/Codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
 
 ### Bug Fixes

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.9](https://github.com/codeneos/vlocode/compare/v0.19.8...v0.19.9) (2023-06-21)
+
+### Bug Fixes
+
+* do not cause deployment loop when changing the same metadata then t=what is being deployed ([f1fa238](https://github.com/codeneos/vlocode/commit/f1fa238435d79901bbb7f3fc5647e0bd6a208619))
+* error stacks are not logged when in debug mode ([1db79cd](https://github.com/codeneos/vlocode/commit/1db79cd8eedf139672c423fb0caa97d6bd580012))
+* LWC and Aura bundles are detected as metadata folders ([0fab3e2](https://github.com/codeneos/vlocode/commit/0fab3e2c65204a7f415492ee0675e146855f3522))
+
 ## [0.19.8](https://github.com/codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
 
 **Note:** Version bump only for package vlocode
