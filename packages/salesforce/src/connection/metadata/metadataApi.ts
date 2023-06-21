@@ -137,7 +137,7 @@ export class MetadataApi implements DeploymentApi {
                 type, fullNames: chunk
             });
             if (!readResponse.result?.records) {
-                throw new Error('readMetadata error; expected records to be set instead received undefined instead');
+                return [];
             }
             return readResponse.result?.records;
         }, 10, 2);
