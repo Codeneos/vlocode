@@ -9,10 +9,10 @@ import { FieldDefinition } from './types/fieldDefinition';
 
 @injectable()
 export class CompositeSchemaAccess {
-    
+
     constructor(
-        private readonly schemaStore: SchemaDataStore, 
-        private readonly toolingAccess: ToolingApiSchemaAccess, 
+        private readonly schemaStore: SchemaDataStore,
+        private readonly toolingAccess: ToolingApiSchemaAccess,
         private readonly describeAccess: DescribeSchemaAccess) {
     }
 
@@ -45,8 +45,8 @@ export class CompositeSchemaAccess {
 
     @cache({ unwrapPromise: true, cacheExceptions: true })
     private async enqueue(sobjectType: string) {
-        const [ describe, entity ] = await Promise.allSettled([ 
-            this.describeAccess.describe(sobjectType), 
+        const [ describe, entity ] = await Promise.allSettled([
+            this.describeAccess.describe(sobjectType),
             this.toolingAccess.getEntityDefinition(sobjectType)
         ]);
 

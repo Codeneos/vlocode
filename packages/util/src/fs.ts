@@ -97,8 +97,6 @@ export function fileName(pathLike: string, removeExtension: boolean = false) {
  * @returns File suffix without . and an empty string when there is no suffix
  */
 export function fileSuffix(pathLike: string) {
-    //const match = /^.*[\\|/|](.*)(\.[^.]+)$/s.exec(pathLike);
-    //return match ? match[2] : pathLike;
     return path.extname(pathLike).slice(1);
 }
 

@@ -7,25 +7,52 @@ import { SchemaDataStore } from './schemaDataStore';
 import { QueryService } from '../queryService';
 
 /**
- * Lazy access to Salesforce schema objects, instead of pre-loading all schema data schema and describe calls are made when needed. This speeds up initial loading time but the total time needed 
+ * Lazy access to Salesforce schema objects, instead of pre-loading all schema data schema and describe calls are made when needed. This speeds up initial loading time but the total time needed
  * for describing all objects will be significantly higher.
  */
 @injectable()
 export class ToolingApiSchemaAccess {
 
+    public fieldDefinition = {
+        name: 'FieldDefinition',
+        fields: [
+            'fields(standard)',
+            'isFlsEnabled',
+            'ValueType.DeveloperName',
+            'EntityDefinition.DurableId'
+        ]
+    };
+
+    public entityDefinition = {
+        name: 'EntityDefinition',
+        fields: [
+            'fields(standard)',
+            'isFlsEnabled',
+            '(select FieldId, IsRestrictedDelete, IsCascadeDelete, JunctionIdListNames from ChildRelationships)',
+            '(select Name from Layouts)'
+        ],
+        filter: {
+            IsDeprecatedAndHidden: false,
+            IsEverCreatable: true,
+            IsQueryable: true,
+            KeyPrefix: { op: '!=', value: null }
+        }
+    };
+
     private readonly fieldDefinitionObjectName = 'FieldDefinition';
-    private readonly fieldDefinitionObjectFields = [ 
-        'fields(standard)', 
-        'ValueType.DeveloperName', 
+    private readonly fieldDefinitionObjectFields = [
+        'fields(standard)',
+        'isFlsEnabled',
+        'ValueType.DeveloperName',
         'EntityDefinition.DurableId'
-    ];    
+    ];
 
     private readonly entityDefinitionObjectName = 'EntityDefinition';
-    private readonly entityDefinitionObjectFields = [ 
+    private readonly entityDefinitionObjectFields = [
         'fields(standard)',
+        'isFlsEnabled',
         '(select FieldId, IsRestrictedDelete, IsCascadeDelete, JunctionIdListNames from ChildRelationships)',
         '(select Name from Layouts)'
-        //Layouts
     ];
 
     private readonly entityDefinitionFilter = {
@@ -35,8 +62,16 @@ export class ToolingApiSchemaAccess {
         KeyPrefix: { op: '!=', value: null }
     };
 
-    private readonly chunkSize = 50;
-    private readonly parallelism = 5;
+    /**
+     * Default chunk size for fetching entities
+     */
+    public chunkSize = 50;
+
+    /**
+     * Number of parallel processing threads for fetching entity definitions from the server
+     */
+    public parallelism = 5;
+
     private readonly objectListChunkSize = 2000;
     private readonly excludedObjectListPostFixes = [
         'ChangeEvent', 'Share', 'Feed', 'History', '__hd', '__ViewStat', '__VoteStat', '__ka', '__kav', '__OwnerSharingRule'
@@ -70,7 +105,7 @@ export class ToolingApiSchemaAccess {
         return entities;
     }
 
-    async getEntityDefinition(type: string): Promise<EntityDefinition | undefined> {
+    public async getEntityDefinition(type: string): Promise<EntityDefinition | undefined> {
         if (!this.schemaStore.get(type)?.tooling) {
             await this.enqueue(type);
         }
@@ -82,18 +117,18 @@ export class ToolingApiSchemaAccess {
         return this.deferredProcessor.enqueue(sobjectType);
     }
 
-    private async getEntityDefinitions(sobjectTypes: string[], chunkSize = this.chunkSize) { 
+    private async getEntityDefinitions(sobjectTypes: string[], chunkSize = this.chunkSize) {
         const results = new Array<WorkItemResult>();
         const objectNameChunks = Array<Array<string>>();
         for (let index = 0; index < sobjectTypes.length; index += chunkSize) {
             objectNameChunks.push(sobjectTypes.slice(index, index + chunkSize));
         }
 
-        const timer = new Timer(); 
-        let readCount = 0;   
+        const timer = new Timer();
+        let readCount = 0;
 
         await forEachAsyncParallel(objectNameChunks, async (chunk, chunkNr) => {
-            this.logger.verbose(`Describing ${chunk.join(', ')} ${readCount += chunk.length}/${sobjectTypes.length}`);  
+            this.logger.verbose(`Describing ${chunk.join(', ')} ${readCount += chunk.length}/${sobjectTypes.length}`);
 
             const entityDefQuery = new QueryBuilder(this.entityDefinitionObjectName, this.entityDefinitionObjectFields)
                 .filter(this.entityDefinitionFilter);
@@ -137,9 +172,10 @@ export class ToolingApiSchemaAccess {
             // For some objects we get unknown errors even when the query is fine
             // to avoid excluding specific objects we try to isolate the object causing the issue
             const connectionReset = err?.message?.includes('read ECONNRESET');
+            const limitError = err?.message?.includes('EXCEEDED_ID_LIMIT');
             const unexpectedError = err?.message?.includes('An unexpected error occurred. Please include this ErrorId if you contact support');
-            
-            if (!unexpectedError && !connectionReset) {
+
+            if (!unexpectedError && !connectionReset && !limitError) {
                 // Throw the Error when we retrying is meaningless due to query errors etc
                 throw err;
             }
@@ -148,9 +184,9 @@ export class ToolingApiSchemaAccess {
                 return results;
             }
 
-            const workItems = Array.from(chunk);            
+            const workItems = Array.from(chunk);
             const chunkSize = chunk.length <= 5 ? 1 : Math.round(chunk.length / 2);
-            
+
             while(workItems.length) {
                 results.push(...await this.executeToolingQuery<T>(query, field, workItems.splice(0, chunkSize)));
             }
@@ -168,7 +204,7 @@ export class ToolingApiSchemaAccess {
             return obj.records.map(this.normalize, this);
         }
 
-        const normalized = mapKeys(obj, (key: string) => `${key[0].toLowerCase()}${key.substring(1)}`);        
+        const normalized = mapKeys(obj, (key: string) => `${key[0].toLowerCase()}${key.substring(1)}`);
         for (const key of Object.keys(normalized)) {
             if (Array.isArray(normalized[key])) {
                 normalized[key] = normalized[key].map(this.normalize, this);

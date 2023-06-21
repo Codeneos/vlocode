@@ -96,7 +96,8 @@ export class QueryService {
             const connection = await this.connectionProvider.getJsForceConnection();
             const result = connection.query2<QueryResult<T, K>>(nsNormalizedQuery, { 
                 queryType: options?.toolingApi ? 'tooling' : 'data', 
-                batchSize: options?.chunkSize 
+                batchSize: options?.chunkSize,
+                queryMore: !options?.toolingApi
             });
             const records = new Array<QueryResult<T, K>>();
             for await (const record of result) {
@@ -183,9 +184,9 @@ export class QueryService {
             return QueryService.tryParseAsDateTimeString(String(value));
         } else if (typeof value === 'number' && value > 0) {
             return DateTime.fromSeconds(value);
-        } else if (typeof value === 'object' && typeof value?.["toISOString"] === 'function') {
+        } else if (typeof value === 'object' && typeof value?.['toISOString'] === 'function') {
             // Detect moment.js objects anc convert to Luxon
-            return DateTime.fromISO(value?.["toISOString"]());
+            return DateTime.fromISO(value?.['toISOString']());
         } else if (typeof value === 'object' && value) {
             // Try to handle objects that are not dates but can be converted to dates
             // by calling toString() on them
