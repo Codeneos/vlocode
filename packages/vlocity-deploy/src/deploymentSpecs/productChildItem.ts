@@ -35,6 +35,6 @@ export class ProductChildItem implements DatapackDeploymentSpec {
 
     private isRootChildItem(this: void, record: DatapackDeploymentRecord) {
         return record.value('Name') === 'Root PCI' ||
-            record.value('IsRootProductChildItem__c') === true
+            record.value('IsRootProductChildItem__c') === true;
     }
 }

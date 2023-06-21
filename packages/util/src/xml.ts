@@ -56,7 +56,7 @@ export namespace XML {
      * @param xml XML String
      * @returns 
      */
-    export function parse<T = any>(xml: string | Buffer, options: XMLParseOptions = {}) : T {
+    export function parse<T extends object = Record<string, any>>(xml: string | Buffer, options: XMLParseOptions = {}) : T {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
