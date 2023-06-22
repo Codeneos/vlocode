@@ -108,6 +108,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
     @cache()
     public async getInstalledPackages() {
         const con = await this.getJsForceConnection();
+        const x = await con.metadata.readAll('InstalledPackage');
         const packageList = await spreadAsync(con.metadata.readAll('InstalledPackage'));
         return packageList;
     }
@@ -318,7 +319,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
                 return {
                     ...this.getNameInfo(info),
                     type: info.componentType,
-                    fullName: info.name,
+                    fullName: info.componentName,
                     metadata: metadata && Object.values(metadata).pop()
                 };
             }
@@ -326,10 +327,10 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return Array.isArray(input) ? infos : infos.pop();
     }
 
-    private getNameInfo(metadataInfo: { componentType: string; name: string }) : { name: string; namespace?: string } {
-        let name = metadataInfo.name;
+    private getNameInfo(metadataInfo: { componentType: string; componentName: string }) : { name: string; namespace?: string } {
+        let name = metadataInfo.componentName;
         if (metadataInfo.componentType == 'Layout') {
-            name = substringAfter(metadataInfo.name, '-');
+            name = substringAfter(metadataInfo.componentName, '-');
         }
 
         const nameParts = name.split('__');
@@ -342,7 +343,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
 
         return { name };
     }
-    
+
     /**
      * Get all static resources matching the specified name, the body of the resource is retrieved when required. The body of the static resource is cached
      * @param resourceName Name of the static resource
