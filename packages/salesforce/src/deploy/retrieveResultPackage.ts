@@ -18,6 +18,29 @@ export interface ExtendedFileProperties extends FileProperties {
 }
 
 /**
+ * Represents a single component in a retrieve result package with all its related files.
+ * @see RetrieveResult
+ */
+export interface RetrieveResultComponent {
+    /**
+     * The full name of the component (e.g. ApexClass/MyClass)
+     */
+    fullName: string,
+    /**
+     * The component type (e.g. ApexClass) 
+     */
+    componentType: string,
+    /**
+     * The component name (e.g. MyClass)
+     */
+    componentName: string,
+    /**
+     * The files tha represent this component.
+     */
+    files: ExtendedFileProperties[]
+}
+
+/**
  * Wraps around a RetrieveResult Object and allows easy iteration over the files contained in it.
  */
 export class RetrieveResultPackage {
@@ -38,7 +61,11 @@ export class RetrieveResultPackage {
         return [...new Set(this.result.fileProperties.filter(fi => fi.type != 'Package').map(fi => `${fi.type}/${fi.fullName.split('/').shift()}`))];
     }
 
-    public components() {
+    /**
+     * Get all components in the retrieve result package that are not package.xml files 
+     * @returns A list of all components in the retrieve result package
+     */
+    public components(): Array<RetrieveResultComponent> {
         const resultsByType = groupBy(this.getFiles().filter(fi => fi.type != 'Package'), fi => `${fi.type}/${fi.componentName}`);
         return Object.entries(resultsByType).map( ([key, files]) => {
             return {

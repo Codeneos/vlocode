@@ -1,14 +1,15 @@
 import * as path from 'path';
-import * as vscode from 'vscode';
 import * as chalk from 'chalk';
 import * as ZipArchive from 'jszip';
 
-import { Logger , injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML } from '@vlocode/util';
+import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage } from './deploymentPackage';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
+import { SalesforceDeployService } from './salesforceDeployService';
+import { RetrieveResultComponent } from './deploy/retrieveResultPackage';
 
 export enum SalesforcePackageType {
     /**
@@ -25,8 +26,15 @@ export enum SalesforcePackageType {
     destruct = 'destruct',
 }
 
+type FilePath = string | FileSystemUri;
+
 @injectable( { lifecycle: LifecyclePolicy.transient } )
 export class SalesforcePackageBuilder {
+
+    /**
+     * Default API version to use when no version is specified.
+     */
+    public static defaultApiVersion = '50.0';
 
     private readonly mdPackage: SalesforcePackage;
     private readonly fs: FileSystem;
@@ -35,11 +43,12 @@ export class SalesforcePackageBuilder {
     @injectable.property private readonly logger: Logger;
 
     constructor(
-        public readonly type: SalesforcePackageType,
-        public readonly apiVersion?: string,
-        fs?: FileSystem) {
-        this.fs = new CachedFileSystemAdapter(fs!);
-        this.mdPackage = new SalesforcePackage(apiVersion ?? '50.0', '', this.fs);
+        public readonly type: SalesforcePackageType = SalesforcePackageType.deploy,
+        public readonly apiVersion: string = SalesforcePackageBuilder.defaultApiVersion,
+        fs?: FileSystem
+    ) {
+        this.fs = fs ? new CachedFileSystemAdapter(fs) : fs!;
+        this.mdPackage = new SalesforcePackage(this.apiVersion);
     }
 
     /**
@@ -48,7 +57,7 @@ export class SalesforcePackageBuilder {
      * @param token Optional cancellation token
      * @returns Instance of the package builder.
      */
-    public async addFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken) : Promise<this> {        
+    public async addFiles(files: Iterable<FilePath>, token?: CancellationToken) : Promise<this> {        
         const childMetadataFiles = new Array<[string, string, MetadataType]>();
 
         // Build zip archive for all expanded file; filter out files already parsed
@@ -122,7 +131,7 @@ export class SalesforcePackageBuilder {
         });
     }
 
-    private async* getFiles(files: Iterable<string | vscode.Uri>, token?: vscode.CancellationToken): AsyncGenerator<string> {
+    private async* getFiles(files: Iterable<FilePath>, token?: CancellationToken): AsyncGenerator<string> {
         const fileNames = Iterable.map(files, file => typeof file !== 'string' ? file.fsPath : file);
 
         // Build zip archive for all expanded file; filter out files already parsed
@@ -374,6 +383,72 @@ export class SalesforcePackageBuilder {
         return targetMetadata;
     }
 
+    public async getDeltaPackage(deployService: SalesforceDeployService, deltaTypes?: string[], token?: CancellationToken) {        
+        const retrievalManifest = this.getManifest(deltaTypes);
+        //const deltaPackage = new SalesforcePackage(this.apiVersion);
+
+        if (!retrievalManifest.isEmpty) {
+            this.logger.log(`Retrieving delta package for types: ${retrievalManifest.types()}`);
+            const retrieveResult = await deployService.retrieveManifest(retrievalManifest, this.apiVersion, token);
+            for (const component of retrieveResult.components()) {
+                if (await this.isComponentChanged(component)) {
+                    // Add component to delta package
+                    this.logger.verbose(`Adding ${component.fullName} to delta package`);
+                }
+            }
+        }
+
+        return this.mdPackage;
+    }
+
+    /**
+     * Compare the retrieved component against the component in the current package to determine if it has changed.
+     * @param component The retrieved component to compare against the same component in package
+     * @returns Retruns true if the component has changed
+     */
+    private async isComponentChanged(component: RetrieveResultComponent) {
+        const metadataType = this.metadataRegistry.getMetadataType(component.componentType);
+        if (!metadataType) {
+            return true;
+        }
+
+        for (const componentFile of component.files) {
+            const packageData = await this.readPackageData(componentFile.fullFileName);
+            const orgData = await componentFile.getBuffer();
+
+            if (this.isDataChanged(packageData, orgData, metadataType)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private isDataChanged(a: Buffer | string | undefined, b: Buffer | string | undefined, type: MetadataType): boolean {
+        if (a === b) {
+            return false;
+        }
+
+        if (a === undefined || b === undefined) {
+            return true;
+        }
+
+        if (type.name === 'StaticResource' ||
+            type.name === 'ContentAsset' ||
+            type.name === 'Document')
+        {
+            // binary comparison
+            const bufferA = typeof a === 'string' ? Buffer.from(a) : a;
+            const bufferB = typeof b === 'string' ? Buffer.from(b) : b;
+            return bufferA.compare(bufferB) !== 0;
+        }
+
+        a = (typeof a === 'string' ? a : a.toString('utf8')).trim();
+        b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
+
+        return a !== b;
+    }
+
     /**
      * Gets SalesforcePackage underlying the builder.
      */
@@ -385,9 +460,15 @@ export class SalesforcePackageBuilder {
     /**
      * Gets SalesforcePackage underlying the builder.
      */
-    public getManifest(): PackageManifest {
-        this.mdPackage.generateMissingMetaFiles();
-        return this.mdPackage.manifest;
+    public getManifest(types?: string[]): PackageManifest {
+        if (!types) {
+            return this.mdPackage.manifest;
+        }
+        const manifest = new PackageManifest();
+        types.forEach(metadataType => {
+            manifest.add(metadataType, this.mdPackage.manifest.list(metadataType));
+        });
+        return manifest;
     }
 
     private getMetadataType(xmlName: string) {
