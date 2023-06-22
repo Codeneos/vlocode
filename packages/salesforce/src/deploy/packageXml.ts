@@ -43,31 +43,48 @@ export class PackageManifest {
     }
 
     /**
-     * Add a new memeber to te package XML manifest
+     * Add a new member/s to the package XML manifest
      * @param type Type of component to add
-     * @param member Name of the component to add
+     * @param member Name of the component/s to add
      */
-    public add(type: string, member: string): void {
+    public add(type: string, member: string | string[]): void {
         // Add component to package if this is a meta like file
+        const membersToAdd = Array.isArray(member) ? member : [ member ];
+
         let members = this.metadataMembers.get(type);
-        if (members == null) {
-            this.metadataMembers.set(type, members = new Set<string>());
+        if (!members) {
+            this.metadataMembers.set(type, (members = new Set<string>()));
         }
 
         if (members.has('*')) {
             return;
         }
 
-        if (member == '*') {
+        if (membersToAdd.includes('*')) {
             members.clear();
         }
 
-        members.add(member);
+        membersToAdd.forEach(member => members?.add(member));
     }
 
     /**
-     * Get a list of all componts of the specified type in this package
-     * @param type The XML type to list the compoents from
+     * Removes a member from the manifest
+     * @param type Type of component to remove
+     * @param member Name of the component to remove
+     */
+    public remove(type: string, member: string): void {
+        const members = this.metadataMembers.get(type);
+        
+        if (!members) {
+            return;
+        }
+
+        members.delete(member);
+    }
+
+    /**
+     * Get a list of all components of the specified type in this package
+     * @param type The XML type to list the components from
      */
     public list(type?: string): string[] {
         if (type) {

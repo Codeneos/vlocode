@@ -158,6 +158,19 @@ export class SalesforcePackage {
     }
 
     /**
+     * Remove metadata file from the package and manifest
+     * @param entry 
+     */
+    public remove(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
+        this.manifest.remove(entry.xmlName, entry.componentName);
+        this.packageData.delete(entry.packagePath);
+
+        if (entry.fsPath) {
+            this.sourceFileMap.delete(entry.fsPath);
+        }
+    }
+
+    /**
      * Get source folder containing the specified component.
      * @param componentType Type of the component
      * @param componentName Name of the component
@@ -307,6 +320,23 @@ export class SalesforcePackage {
      */
     public getPackageTypeCount(xmlName: string) {
         return this.manifest.count(xmlName);
+    }
+
+    /**
+     * Gets the package manifest for types specified 
+     */
+    public getPackageManifest(metadataTypes?: string[]): PackageManifest {
+        if (!metadataTypes) {
+            return this.manifest;
+        }
+
+        const manifestForReceivedTypes = new PackageManifest();
+
+        metadataTypes.forEach(metadataType => {
+            manifestForReceivedTypes.add(metadataType, this.manifest.list(metadataType));
+        });
+
+        return manifestForReceivedTypes;
     }
 
     /**

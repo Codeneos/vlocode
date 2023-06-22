@@ -155,4 +155,21 @@ export class SalesforceDeployService {
         // @ts-expect-error TS does not correctly detect the return param for the while loop `await wait` loop
         return retrieveTask(token);
     }
+
+    private async removeUnchangedComponentFromPackage(sfPackage: SalesforcePackage, token?: CancellationToken): Promise<void> {
+        const result = await this.retrieveManifest(sfPackage.getPackageManifest(), sfPackage.apiVersion, token);
+        
+        if (token?.isCancellationRequested) {
+            return;
+        }
+
+        if (!result.success) {
+            throw new Error('Failed to retrieve metadata for finding out changed components.');
+        }
+
+        for (const componentFromOrg of result.components()) {
+            //for every file in component compare Buffer for difference           
+            
+        }
+    }
 }
