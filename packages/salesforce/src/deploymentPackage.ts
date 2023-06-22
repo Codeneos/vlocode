@@ -75,8 +75,8 @@ export class SalesforcePackage {
      */
     constructor(
         public readonly apiVersion: string,
-        private readonly packageDir: string = '',
-        private readonly fs?: FileSystem) {
+        private readonly packageDir: string = ''
+    ) {
         if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
             throw new Error(`Invalid API version: ${apiVersion}`);
         }
@@ -456,13 +456,6 @@ export class SalesforcePackage {
                 ...(data || {})
             }
         });
-    }
-
-    private readFile(fsPath: string) {
-        if (!this.fs) {
-            throw new Error(`Cannot read files whiteout a file system reference; create the SalesforcePackage with a file system reference to add files from disk`);
-        }
-        return this.fs.readFile(fsPath);
     }
 
     /**
