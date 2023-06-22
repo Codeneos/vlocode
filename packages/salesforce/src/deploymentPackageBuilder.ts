@@ -3,10 +3,10 @@ import * as chalk from 'chalk';
 import * as ZipArchive from 'jszip';
 
 import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri } from '@vlocode/util';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, intersect, except } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
-import { SalesforcePackage } from './deploymentPackage';
+import { SalesforcePackage, SalesforcePackageComponent } from './deploymentPackage';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
 import { SalesforceDeployService } from './salesforceDeployService';
 import { RetrieveResultComponent } from './deploy/retrieveResultPackage';
@@ -214,7 +214,7 @@ export class SalesforcePackageBuilder {
         } else {
             const packagePath = await this.getPackagePath(file, metadataType);
             this.mdPackage.add({
-                xmlName: metadataType.xmlName,
+                componentType: metadataType.xmlName,
                 componentName,
                 packagePath,
                 data: await this.fs.readFile(file),
@@ -237,10 +237,10 @@ export class SalesforcePackageBuilder {
         if (this.type === SalesforcePackageType.destruct) {
             this.mdPackage.addDestructiveChange('StaticResource', componentName);
         } else if (this.type === SalesforcePackageType.retrieve) {
-            this.mdPackage.add({ xmlName: 'StaticResource', componentName, packagePath });
+            this.mdPackage.add({ componentType: 'StaticResource', componentName, packagePath });
         } else {
             this.mdPackage.add({
-                xmlName: 'StaticResource', componentName, packagePath,
+                componentType: 'StaticResource', componentName, packagePath,
                 data: await this.compressFolder(folder)
             });
         }
@@ -308,7 +308,7 @@ export class SalesforcePackageBuilder {
             } else {
                 this.mdPackage.addManifestEntry(metadataType.xmlName, parentComponentName);
             }
-            this.mdPackage.addSourceMap(sourceFile, { xmlName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
+            this.mdPackage.addSourceMap(sourceFile, { componentType: xmlName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
         }
 
         this.logger.verbose(`Adding ${path.basename(sourceFile)} as ${parentComponentName}.${childComponentName}`);
@@ -344,7 +344,7 @@ export class SalesforcePackageBuilder {
 
         // Merge child metadata into parent metadata
         const mergedMetadata = this.mergeMetadata(existingMetadata, { [decomposition.xmlFragmentName]: fragmentMetadata });
-        this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata), xmlName: metadataType.xmlName, componentName: path.basename(packagePath, `.${metadataType.suffix}`) });
+        this.mdPackage.setPackageData(packagePath, { data: this.buildMetadataXml(metadataType.xmlName, mergedMetadata), componentType: metadataType.xmlName, componentName: path.basename(packagePath, `.${metadataType.suffix}`) });
     }
 
     private async readPackageData(packagePath: string): Promise<string | Buffer | undefined> {
@@ -385,20 +385,31 @@ export class SalesforcePackageBuilder {
 
     public async getDeltaPackage(deployService: SalesforceDeployService, deltaTypes?: string[], token?: CancellationToken) {        
         const retrievalManifest = this.getManifest(deltaTypes);
-        //const deltaPackage = new SalesforcePackage(this.apiVersion);
+        const mdPackage = this.getPackage();
+        if (retrievalManifest.isEmpty) {
+            return mdPackage;
+        }
 
-        if (!retrievalManifest.isEmpty) {
-            this.logger.log(`Retrieving delta package for types: ${retrievalManifest.types()}`);
-            const retrieveResult = await deployService.retrieveManifest(retrievalManifest, this.apiVersion, token);
-            for (const component of retrieveResult.components()) {
-                if (await this.isComponentChanged(component)) {
-                    // Add component to delta package
-                    this.logger.verbose(`Adding ${component.fullName} to delta package`);
-                }
+        this.logger.log(`Retrieving delta package for types: ${retrievalManifest.types()}`);
+
+        const deltaPackage = new SalesforcePackage(this.apiVersion);
+        const retrieveResult = await deployService.retrieveManifest(retrievalManifest, this.apiVersion, token);
+        const unchangedComponents = new Array<SalesforcePackageComponent>();
+
+        for (const component of retrieveResult.components()) {
+            if (!await this.isComponentChanged(component)) {
+                unchangedComponents.push(component);
             }
         }
 
-        return this.mdPackage;
+        for (const component of this.mdPackage.components()) {
+            if (unchangedComponents.some(c => c.componentName == component.componentName && c.componentType == component.componentType)) {
+                continue;
+            }
+            deltaPackage.add([...this.mdPackage.getComponentFiles(component)]);
+        }
+
+        return deltaPackage;
     }
 
     /**

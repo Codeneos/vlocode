@@ -2,13 +2,28 @@
 import * as path from 'path';
 import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
-import { Iterable, XML , directoryName, arrayMapPush, asArray } from '@vlocode/util';
+import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
 
-interface SalesforcePackageFileData { fsPath?: string; data?: string | Buffer, xmlName: string; componentName: string }
-interface SalesforcePackageSourceMap { packagePath: string; componentType: string; name: string }
+export interface SalesforcePackageComponent {
+    componentType: string; // componentType
+    componentName: string; // componentName
+}
+
+interface SalesforcePackageFileData extends SalesforcePackageComponent {
+    fsPath?: string;
+    data?: string | Buffer;
+}
+
+interface SalesforcePackageSourceMap extends SalesforcePackageComponent {
+    packagePath: string;
+}
+
+interface SalesforcePackageComponentFile extends SalesforcePackageFileData {
+    packagePath: string;
+}
 
 export class SalesforcePackage {
 
@@ -22,7 +37,7 @@ export class SalesforcePackage {
      * @returns `true` if the package has destructive changes otherwise `false`
      */
     public get hasSestructiveChanges() {
-        return !this.destructiveChanges.pre.isEmpty || 
+        return !this.destructiveChanges.pre.isEmpty ||
             !this.destructiveChanges.post.isEmpty;
     }
 
@@ -83,7 +98,7 @@ export class SalesforcePackage {
     }
 
     /**
-     * Merge this package with another package and returns this 
+     * Merge this package with another package and returns this
      * @param otherPackage Package to merge
      */
     public merge(otherPackage: SalesforcePackage) {
@@ -94,21 +109,25 @@ export class SalesforcePackage {
     }
 
     /**
-     * Add a metadata file to the package an update the manifest.
+     * Adds one or more components to the package and updates the package manifest.
      * @param entry Package data entry to add
      */
-    public add(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
+    public add(entry: SalesforcePackageComponentFile | SalesforcePackageComponentFile[]) {
+        asArray(entry).forEach(entry => this.addSingle(entry));
+    }
+
+    private addSingle(entry: SalesforcePackageComponentFile) {
         if (!entry.componentName) {
             throw new Error(`Component name cannot be empty when adding metadata to a package`);
         }
 
-        if (!entry.xmlName) {
+        if (!entry.componentType) {
             throw new Error(`XML name cannot be empty when adding metadata to a package`);
         }
 
-        this.addManifestEntry(entry.xmlName, entry.componentName);
+        this.addManifestEntry(entry.componentType, entry.componentName);
         this.setPackageData(entry.packagePath, {
-            xmlName: entry.xmlName,
+            componentType: entry.componentType,
             componentName: entry.componentName,
             data: entry.data,
             fsPath: entry.fsPath
@@ -119,13 +138,29 @@ export class SalesforcePackage {
         }
     }
 
-    public addSourceMap(fsPath: string, entry: { xmlName: string; componentName: string; packagePath: string }) {
+    /**
+     * Get all files related to the specified component in the package
+     * @param component Component specification for which to get the files
+     */
+    public *getComponentFiles(component: SalesforcePackageComponent) : Generator<SalesforcePackageComponentFile> {
+        for (const [path, entry] of this.packageData.entries()) {
+            if (entry.componentName === component.componentName && 
+                entry.componentType === component.componentType) {
+                yield {
+                    packagePath: path,
+                    ...entry,
+                }
+            }
+        }
+    }
+
+    public addSourceMap(fsPath: string, entry: SalesforcePackageSourceMap) {
         this.sourceFileMap.set(fsPath, {
             packagePath: entry.packagePath,
-            name: entry.componentName,
-            componentType: entry.xmlName
+            componentName: entry.componentName,
+            componentType: entry.componentType
         });
-        arrayMapPush(this.packageComponents, `${entry.xmlName}.${entry.componentName}`.toLowerCase(), fsPath);
+        arrayMapPush(this.packageComponents, `${entry.componentType}.${entry.componentName}`.toLowerCase(), fsPath);
     }
 
     /**
@@ -141,7 +176,7 @@ export class SalesforcePackage {
             if (!data.componentName) {
                 throw new Error(`Component name cannot be empty when adding metadata to a package`);
             }
-            if (!data.xmlName) {
+            if (!data.componentType) {
                 throw new Error(`XML name cannot be empty when adding metadata to a package`);
             }
             this.packageData.set(packagePath.replace(/\/|\\/g, '/'), data as SalesforcePackageFileData);
@@ -159,10 +194,10 @@ export class SalesforcePackage {
 
     /**
      * Remove metadata file from the package and manifest
-     * @param entry 
+     * @param entry
      */
     public remove(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
-        this.manifest.remove(entry.xmlName, entry.componentName);
+        this.manifest.remove(entry.componentType, entry.componentName);
         this.packageData.delete(entry.packagePath);
 
         if (entry.fsPath) {
@@ -178,19 +213,11 @@ export class SalesforcePackage {
      */
     public getSourceFolder(componentType: string, componentName: string) {
         for (const [fsPath, sourceFileInfo] of this.sourceFileMap.entries()) {
-            if (sourceFileInfo.componentType == componentType && sourceFileInfo.name == componentName) {
+            if (sourceFileInfo.componentType === componentType && 
+                sourceFileInfo.componentName === componentName) {
                 return directoryName(fsPath);
             }
         }
-    }
-
-    /**
-     * Get the source file for any package path in the package.
-     * @param packagePath package path
-     * @returns Source file FS path
-     */
-    public getSourceFile(packagePath: string) {
-        return this.packageData.get(packagePath)?.fsPath;
     }
 
     /**
@@ -218,10 +245,22 @@ export class SalesforcePackage {
         return new Set(Iterable.filter(Iterable.map(this.packageData.values(), value => value.fsPath!), value => !!value));
     }
 
+    /**
+     * Get a list of paths to files included in this packageand the respective files on the file system from which they were generated.
+     */
     public *sourceFiles() {
         for (const [packagePath, { fsPath }] of this.packageData) {
             yield { packagePath, fsPath };
         }
+    }
+
+    /**
+     * Get the source file for any package path in the package.
+     * @param packagePath package path
+     * @returns Source file FS path
+     */
+    public getSourceFile(packagePath: string) {
+        return this.packageData.get(packagePath)?.fsPath;
     }
 
     /**
@@ -258,7 +297,7 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get a list of all test classes with unit tests from added to the current package. 
+     * Get a list of all test classes with unit tests from added to the current package.
      * Uses annotation and testmethod detection on APEX class bodies.
      */
     public getTestClasses() {
@@ -301,10 +340,21 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get an iterator over the defined types in the current package
+     * Get a list of all components in the package optionally filtered by component type.
+     * @param componentType Component type to filter by or undefined to get all components
+     * @returns Array of components in the package and their respective files
      */
-    public *getPackageTypes() {
-        yield *this.manifest.types();
+    public components(componentType?: string): Array<SalesforcePackageComponent & { files: SalesforcePackageFileData[] }> {
+        const data = groupBy(
+            Iterable.filter(this.packageData, ([,entry]) => !componentType || entry.componentType === componentType),
+            ([,entry]) => `${entry.componentType}/${entry.componentName}`,
+            ([packagePath, entry]) => ({ packagePath, ...entry })
+        );
+        return Object.values(data).map(files => ({
+            componentType: files[0].componentType,
+            componentName: files[0].componentName,
+            files: files
+        }));
     }
 
     /**
@@ -315,27 +365,24 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get the number of packaged components for a specific XML memeber type
-     * @param xmlName XML type name
+     * Get the types of the components in this package.
      */
-    public getPackageTypeCount(xmlName: string) {
-        return this.manifest.count(xmlName);
+    public getComponentTypes() {
+        return this.manifest.types();
     }
 
     /**
-     * Gets the package manifest for types specified 
+     * Gets a new package manifest optionally filtered by the specified metadata types.
      */
-    public getPackageManifest(metadataTypes?: string[]): PackageManifest {
+    public getManifest(metadataTypes?: string[]): PackageManifest {
         if (!metadataTypes) {
             return this.manifest;
         }
 
         const manifestForReceivedTypes = new PackageManifest();
-
         metadataTypes.forEach(metadataType => {
             manifestForReceivedTypes.add(metadataType, this.manifest.list(metadataType));
         });
-
         return manifestForReceivedTypes;
     }
 
@@ -360,7 +407,7 @@ export class SalesforcePackage {
         for (const [packagePath, entry] of this.packageData.entries()) {
             const fileData = await this.getFileData(entry, options);
             packageZip.file(
-                path.posix.join(this.packageDir, packagePath), 
+                path.posix.join(this.packageDir, packagePath),
                 this.normalizeDataForPackage(packagePath, fileData)
             );
         }
@@ -378,7 +425,7 @@ export class SalesforcePackage {
             }
             return options.fs.readFile(data.fsPath);
         }
-        throw new Error(`No data or file system path specified for manifest entry ${data.xmlName}/${data.componentName}`);
+        throw new Error(`No data or file system path specified for manifest entry ${data.componentType}/${data.componentName}`);
     }
 
     private normalizeDataForPackage(packagePath: string, data: Buffer | string) {
@@ -396,18 +443,18 @@ export class SalesforcePackage {
         for (const [packagePath, entry] of this.packageData.entries()) {
             if (packagePath.endsWith('.cls')) {
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
-                    this.packageData.set(`${packagePath}-meta.xml`, { 
-                        data: this.buildClassMetadata(this.apiVersion), 
-                        xmlName: entry.xmlName, 
-                        componentName: entry.componentName 
+                    this.packageData.set(`${packagePath}-meta.xml`, {
+                        data: this.buildClassMetadata(this.apiVersion),
+                        componentType: entry.componentType,
+                        componentName: entry.componentName
                     });
                 }
             } else if (packagePath.endsWith('.trigger')) {
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
-                    this.packageData.set(`${packagePath}-meta.xml`, { 
-                        data: this.buildTriggerMetadata(this.apiVersion), 
-                        xmlName: entry.xmlName, 
-                        componentName: entry.componentName 
+                    this.packageData.set(`${packagePath}-meta.xml`, {
+                        data: this.buildTriggerMetadata(this.apiVersion),
+                        componentType: entry.componentType,
+                        componentName: entry.componentName
                     });
                 }
             }

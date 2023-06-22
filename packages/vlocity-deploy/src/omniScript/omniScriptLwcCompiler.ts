@@ -157,7 +157,7 @@ export class OmniScriptLwcCompiler {
 
         for (const source of compiledBundle.resources) {
             sfPackage.add({
-                xmlName: 'LightningComponentBundle',
+                componentType: 'LightningComponentBundle',
                 componentName: compiledBundle.name,
                 packagePath: source.name,
                 data: source.source
