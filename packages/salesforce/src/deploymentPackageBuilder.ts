@@ -415,12 +415,19 @@ export class SalesforcePackageBuilder {
     /**
      * Compare the retrieved component against the component in the current package to determine if it has changed.
      * @param component The retrieved component to compare against the same component in package
-     * @returns Retruns true if the component has changed
+     * @returns Returns true if the component has changed
      */
     private async isComponentChanged(component: RetrieveResultComponent) {
         const metadataType = this.metadataRegistry.getMetadataType(component.componentType);
         if (!metadataType) {
             return true;
+        }
+        
+        const packageComponent = this.mdPackage.getComponent(component.componentName, component.componentType);
+        if (packageComponent.files.length !== component.files.length) {
+            this.logger.log(`for ${component.componentType}\\${component.componentName} number of files miss match`);
+            //not returning true here for now since salesforce does not return metadata files as files
+            //we will have to unpackfolder and check metadata files for mismatch as well
         }
 
         for (const componentFile of component.files) {

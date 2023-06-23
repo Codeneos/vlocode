@@ -87,7 +87,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
             return;
         }
 
-        if (sfPackage.hasSestructiveChanges) {
+        if (sfPackage.hasDestructiveChanges) {
             if (!await this.showDestructiveChangesWarning()) {
                 return;
             }
