@@ -36,7 +36,7 @@ export class SalesforcePackage {
      * Checl if this package has any destructive changes.
      * @returns `true` if the package has destructive changes otherwise `false`
      */
-    public get hasSestructiveChanges() {
+    public get hasDestructiveChanges() {
         return !this.destructiveChanges.pre.isEmpty ||
             !this.destructiveChanges.post.isEmpty;
     }
@@ -46,7 +46,7 @@ export class SalesforcePackage {
      * @returns `true` if the package is empty otherwise `false`
      */
     public get isEmpty() {
-        return this.manifest.isEmpty && !this.hasSestructiveChanges;
+        return this.manifest.isEmpty && !this.hasDestructiveChanges;
     }
 
     /**
@@ -355,6 +355,21 @@ export class SalesforcePackage {
             componentName: files[0].componentName,
             files: files
         }));
+    }
+
+    /**
+     * Get a component in the package filtered by component type and name.
+     * @param componentType Component type to filter by or undefined to get all components
+     * @returns Array of components in the package and their respective files
+     */
+    public getComponent(componentName: string, componentType: string): SalesforcePackageComponent & { files: SalesforcePackageFileData[] } {
+        const componentFiles = Array.from(Iterable.filter(this.packageData.values(), 
+            entry => entry.componentType === componentType && entry.componentName === componentName));
+        return {
+            componentName,
+            componentType,
+            files: componentFiles
+        };
     }
 
     /**
