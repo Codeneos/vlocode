@@ -102,6 +102,31 @@ describe('util', () => {
             const b = { foo: { bar: true} };
             expect(objectEquals(a, b)).toBe(false);
         });
+        it('should return true for arrays with same order', () => {
+            const a = { foo: [ { bar: 1 }, { bar: 2 } ] };
+            const b = { foo: [ { bar: 1 }, { bar: 2 } ] };
+            expect(objectEquals(a, b)).toBe(true);
+        });
+        it('should return false for arrays with same elements but different order', () => {
+            const a = { foo: [ { bar: 1 }, { bar: 2 } ] };
+            const b = { foo: [ { bar: 2 }, { bar: 1 } ] };
+            expect(objectEquals(a, b)).toBe(false);
+        });
+        it('should return true for arrays with same elements but different order when ignoreArrayOrder is true', () => {
+            const a = { foo: [ { bar: 1 }, { bar: 2 } ] };
+            const b = { foo: [ { bar: 2 }, { bar: 1 } ] };
+            expect(objectEquals(a, b, { ignoreArrayOrder: true })).toBe(true);
+        });
+        it('should return true for arrays with duplicate elements in different order when ignoreArrayOrder is true', () => {
+            const a = { foo: [ { bar: 1 }, { bar: 2 }, { bar: 1 } ] };
+            const b = { foo: [ { bar: 2 }, { bar: 1 }, { bar: 1 } ] };
+            expect(objectEquals(a, b, { ignoreArrayOrder: true })).toBe(true);
+        });
+        it('should return false for arrays with duplicate elements in different order when ignoreArrayOrder is false', () => {
+            const a = { foo: [ { bar: 1 }, { bar: 2 }, { bar: 1 } ] };
+            const b = { foo: [ { bar: 2 }, { bar: 1 }, { bar: 1 } ] };
+            expect(objectEquals(a, b, { ignoreArrayOrder: false })).toBe(false);
+        });
         it('should return true for equal primitives', () => {
             expect(objectEquals('a', 'a')).toBe(true);
             expect(objectEquals('b', 'b')).toBe(true);
