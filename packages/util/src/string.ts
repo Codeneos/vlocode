@@ -5,7 +5,7 @@ import { getObjectProperty } from './object';
  * Compares strings for equality; by default comparisons are case insensitive
  * @param a String a
  * @param b String b
- * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
+ * @param caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
  */
 export function stringEquals(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
     if (a === b) {
@@ -18,7 +18,30 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
         return false;
     }
     if (caseInsensitive) {
-        return b.toLowerCase() == a.toLowerCase();
+        return b.toLowerCase() === a.toLowerCase();
+    }
+    return false;
+}
+
+/**
+ * Case insensetive string equals comparison that supports string arrays as well as single strings.
+ * Comparisons are case insensitive, and the comparison is true if any of the strings in the array match the specified string.
+ * @param a String a to compare
+ * @param b String b to compare or array of strings to compare against a
+ * @returns `true` if a matches any of the strings in b, `false` otherwise
+ */
+export function stringEqualsIgnoreCase(a : string | undefined | null, b: string | string[] | undefined | null) : boolean {
+    if (a === b) {
+        return true;
+    }
+    if (a === null || a === undefined) {
+        return false;
+    }
+    if (b === null || b === undefined) {
+        return false;
+    }
+    if (Array.isArray(b)) {
+        return b.some(e => e.toLowerCase() === a.toLowerCase());
     }
     return false;
 }
@@ -27,7 +50,7 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
  * Determines if the string spcified ends with the other string, caseInsensitive by default
  * @param a String a
  * @param b String b
- * @param insensitive Wether or not to do a case insensitive or case-sensitive comparison
+ * @param caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
  */
 export function endsWith(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
     if (a === null || a === undefined) {
