@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
-import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy } from '@vlocode/util';
+import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEqualsIgnoreCase } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
@@ -371,7 +371,7 @@ export class SalesforcePackage {
      */
     public components(componentType?: string): Array<SalesforcePackageComponent & { files: SalesforcePackageFileData[] }> {
         const data = groupBy(
-            Iterable.filter(this.packageData, ([,entry]) => !componentType || entry.componentType === componentType),
+            Iterable.filter(this.packageData, ([,entry]) => !componentType || stringEqualsIgnoreCase(entry.componentType, componentType)),
             ([,entry]) => `${entry.componentType}/${entry.componentName}`,
             ([packagePath, entry]) => ({ packagePath, ...entry })
         );
@@ -383,16 +383,57 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get a component in the package filtered by component type and name.
-     * @param componentType Component type to filter by or undefined to get all components
-     * @returns Array of components in the package and their respective files
+     * Get a component in the package filtered by component name getting the first component that matches the name ignore the component type.
+     * If the specified component name is a full name the type will be extracted from the full name (format: <type>/<name>) and used to filter the component.
+     * If the component does not exist in the package the files property will be an empty array.
+     * @param componentName Name of the component
+     * @returns Component matching the specified component name in the package and it's respective files
      */
-    public getComponent(componentName: string, componentType: string): SalesforcePackageComponent & { files: SalesforcePackageFileData[] } {
-        const componentFiles = Array.from(Iterable.filter(this.packageData.values(), 
-            entry => entry.componentType === componentType && entry.componentName === componentName));
+    public getComponent(componentNameOrFullName: string): SalesforcePackageComponent & { files: SalesforcePackageFileData[] };
+    /**
+     * Get a component in the package filtered by component type and name.
+     * If the component does not exist in the package the files property will be an empty array.
+     * @param componentType Type of the component
+     * @param componentName Name of the component
+     * @returns Component matching the specified component type and name in the package and it's respective files
+     */
+    public getComponent(componentType: string, componentName: string): SalesforcePackageComponent & { files: SalesforcePackageFileData[] };
+    /**
+     * Get a component in the package filtered by component type and name.
+     * If the component does not exist in the package the files property will be an empty array.
+     * @param component Component to get specified by type and name
+     * @returns Component matching the specified component type and name in the package and it's respective files
+     */
+    public getComponent(component: SalesforcePackageComponent): SalesforcePackageComponent & { files: SalesforcePackageFileData[] };
+    public getComponent(component: string | SalesforcePackageComponent, componentName?: string): SalesforcePackageComponent & { files: SalesforcePackageFileData[] } {
+        const componentSpec = typeof component === 'string'
+            ? {
+                componentType: componentName === undefined ? undefined : component,
+                componentName: componentName ?? component 
+            }
+            : component;
+
+        if (componentName === undefined && typeof component === 'string' && component.includes('/')) {
+            // When the component is specified as a string and contains a slash we assume it's in the format <type>/<name>
+            const [type, name] = component.split('/');
+            componentSpec.componentName = name;
+            componentSpec.componentType = type;
+        }
+
+        const componentFiles = Array.from(
+            Iterable.filter(
+                this.packageData.values(),
+                entry =>
+                    stringEqualsIgnoreCase(entry.componentType, componentSpec.componentType) && 
+                    stringEqualsIgnoreCase(entry.componentName, componentSpec.componentName)
+            )
+        );
+
         return {
-            componentName,
-            componentType,
+            // Don't spread componentSpec here because it might contain additional properties
+            // which we don't want to spread into the result.
+            componentType: componentFiles[0]?.componentType ?? componentSpec.componentType,
+            componentName: componentSpec.componentName,
             files: componentFiles
         };
     }
