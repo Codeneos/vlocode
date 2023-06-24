@@ -1,7 +1,5 @@
 
-import * as constants from '../constants';
-import { Iterable } from '@vlocode/util';
-import * as xml2js from 'xml2js';
+import { asArray, Iterable, XML } from '@vlocode/util';
 
 export interface MetadataManifest {
     apiVersion: string;
@@ -20,6 +18,20 @@ export interface MetadataManifest {
             localPath?: undefined;
         });
     };
+}
+
+/**
+ * Describes the deserialized package.xml filestructure
+ */
+interface PackageXml {
+    Package: {
+        $?: Record<string, string | undefined>;
+        version: string;
+        types: {
+            name: string;
+            members: string[];
+        }[];
+    }
 }
 
 /**
@@ -43,14 +55,20 @@ export class PackageManifest {
     }
 
     /**
-     * Add a new member/s to the package XML manifest
-     * @param type Type of component to add
-     * @param member Name of the component/s to add
+     * Get all types that are mentioned in this package.
      */
-    public add(type: string, member: string | string[]): void {
-        // Add component to package if this is a meta like file
-        const membersToAdd = Array.isArray(member) ? member : [ member ];
+     public *components() {
+        for (const [componentType, members] of this.metadataMembers.entries()) {
+            yield *Iterable.map(members, componentName => ({ componentType, componentName }));
+        }
+    }
 
+    /**
+     * Add a new member(s) to the package XML manifest
+     * @param type Type of component to add
+     * @param member Name of the component(s) to add
+     */
+    public add(type: string, member: string | Iterable<string>): void {
         let members = this.metadataMembers.get(type);
         if (!members) {
             this.metadataMembers.set(type, (members = new Set<string>()));
@@ -60,26 +78,45 @@ export class PackageManifest {
             return;
         }
 
-        if (membersToAdd.includes('*')) {
-            members.clear();
+        if (typeof member === 'string') {
+            if (member === '*') {
+                members.clear();
+                members.add('*');
+            } else {
+                members.add(member);
+            }
+        } else {
+            for (const m of member) {
+                if (m === '*') {
+                    members.clear();
+                    members.add('*');
+                    return;
+                } else {
+                    members.add(m);
+                }
+            }
         }
-
-        membersToAdd.forEach(member => members?.add(member));
     }
 
     /**
-     * Removes a member from the manifest
+     * Removes one or more members from the manifest, if no member is specified all members of the specified type are removed.
      * @param type Type of component to remove
-     * @param member Name of the component to remove
+     * @param member If specified, the name of the component to remove. If not specified, all components of the specified type are removed.
      */
-    public remove(type: string, member: string): void {
+    public remove(type: string, member?: string | Iterable<string>): void {
         const members = this.metadataMembers.get(type);
-        
+
         if (!members) {
             return;
         }
 
-        members.delete(member);
+        if (!member) {
+            this.metadataMembers.delete(type);
+        } else if (typeof member === 'string') {
+            members.delete(member);
+        } else {
+            Iterable.forEach(member, m => members.delete(m));
+        }
     }
 
     /**
@@ -115,13 +152,7 @@ export class PackageManifest {
     /**
      * Converts the contents of the package to a JSON structure that can be use for retrieval
      */
-    public toJson(apiVersion: string): {
-        version: string;
-        types: {
-            name: string;
-            members: string[];
-        }[];
-    } {
+    public toJson(apiVersion: string): PackageXml['Package'] {
         if (!/^\d{2,3}\.\d$/.test(apiVersion)) {
             throw new Error(`Invalid API version: ${apiVersion}`);
         }
@@ -136,8 +167,7 @@ export class PackageManifest {
      * Converts the contents of the package to XML that can be saved into a package.xml file
      */
     public toXml(apiVersion: string): string {
-        const xmlBuilder = new xml2js.Builder(constants.MD_XML_OPTIONS);
-        return xmlBuilder.buildObject({
+        return XML.stringify({
             Package: {
                 $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
                 ...this.toJson(apiVersion)
@@ -146,10 +176,42 @@ export class PackageManifest {
     }
 
     /**
+     * Creates a new package XML structure object from a JSON structure or a package.xml file
+     * @param data Deserialized JSON structure or package.xml file
+     * @returns New PackageManifest object
+     */
+    public static fromJson(data: PackageXml['Package'] | PackageXml): PackageManifest {
+        if (data['Package']) {
+            data = data['Package'] as PackageXml['Package'];
+        } else {
+            data = data as PackageXml['Package'];
+        }
+
+        const manifest = new PackageManifest();
+        for (const info of Object.values(asArray(data.types))) {
+            asArray(info.members).forEach(member => manifest.add(info.name, member));
+        }
+        return manifest;
+    }
+
+    /**
+     * Deserializes a package.xml file into a package XML structure object
+     * @param manifest Buffer or string containing the package.xml file contents
+     * @returns New PackageManifest object
+     */
+    public static fromPackageXml(manifest: string | Buffer): PackageManifest {
+        return this.fromJson(XML.parse(manifest));
+    }
+
+    /**
      * Creates a package XML structure object from a MetadataManifest
      * @param manifest The manifest to create a PackageXML from
      */
-    static from(manifest: MetadataManifest): PackageManifest {
+    public static from(manifest: MetadataManifest | string | Buffer): PackageManifest {
+        if (typeof manifest === 'string' || Buffer.isBuffer(manifest)) {
+            return this.fromPackageXml(manifest)
+        }
+
         const packageXml = new PackageManifest();
         for (const info of Object.values(manifest.files)) {
             if (info.type) {
