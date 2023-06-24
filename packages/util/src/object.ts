@@ -378,15 +378,39 @@ export const getErrorMessage: GetErrorMessage = Object.assign(
 
 /**
  * Compare 2 objects for quality by comparing the values of the properties of the objects instead of only reference-equality.
- * - For none-object (primitives such as string, integer, etc) equality a `===`-comparison is used.
+ * For none-object (primitives such as string, integer, etc) a `primitiveCompare` can be specified; it no `primitiveCompare` is specified
+ * equality for primtices defaults a `===`-comparison.
+ *
+ * When comparing objects a `objectCompare` can be specified; if no `objectCompare` is specified the `objectEquals`-function is used to compare the objects.
+ *
+ * If there is a self-referencing loop in the object graph the function will throw an error.
  *
  * @param a Object to which object `b` is compared
  * @param b Object to which object `a` is compared
- * @returns True if objects a and b are equal otherwise false.
+ * @param options Additonal options to control the comparison
+ * @returns `true` if objects a and b are equal otherwise `false`.
  */
-export function objectEquals(a?: unknown, b?: unknown) {
+export function objectEquals(
+    a?: unknown, 
+    b?: unknown, 
+    options?: {
+        /**
+         * Function to compare 2 primitives for equality, defaults to `===`-comparison; the function should return true if the 2 primitives are equal otherwise false.
+         */
+        primitiveCompare?: (a: Exclude<unknown, object>, b: Exclude<unknown, object>) => boolean;
+        /**
+         * Function to compare 2 objects for equality, defaults to `objectEquals`-comparison; the function should return true if the 2 objects are equal otherwise false.
+         * If the function is not specified the `objectEquals`-function is used to compare the objects; 
+         */
+        objectCompare?: (a: object, b: object) => boolean;
+        /**
+         * Ignore the order of the elements in an array when comparing arrays for equality. 
+         */
+        ignoreArrayOrder?: boolean;
+    }
+): boolean {
     if (typeof a !== 'object' || typeof b !== 'object' || a === null || b == null) {
-        return a === b;
+        return options?.primitiveCompare?.(a, b) ?? a === b;
     }
 
     if (a === b) {
@@ -399,15 +423,43 @@ export function objectEquals(a?: unknown, b?: unknown) {
         return false;
     }
 
+    const objectEqualtyFn: typeof objectEquals = options?.objectCompare ?? objectEquals;
+
+    // If both A and B are arrays and the ignoreArrayOrder option is set, then check if all elements of A are in B
+    // but ignore the order of the elements in B
+    if (options?.ignoreArrayOrder && Array.isArray(a) && Array.isArray(b)) {
+        const validElements = [...b];
+        for (const key of a) {
+            const index = validElements.findIndex(a => objectEqualtyFn(a[key], b[key], options));
+            if (index === -1) {
+                return false;
+            }
+            validElements.splice(index, 1);
+        }
+        return validElements.length === 0;
+    }
+
     // Check if all keys of A are equal to the keys in B
     for (const key of Object.keys(a)) {
-        if (!objectEquals(a[key], b[key])) {
+        if (!objectEqualtyFn(a[key], b[key], options)) {
             return false;
         }
     }
 
     return true;
 }
+
+/**
+ * Alias for {@link objectEquals}; see {@link objectEquals} for more details
+ * @see {objectEquals}
+ */
+export const deepCompare = objectEquals;
+
+/**
+ * Alias for {@link objectEquals}; see {@link objectEquals} for more details
+ * @see {objectEquals}
+ */
+export const objectCompare = objectEquals;
 
 /**
  * Hash an object and return the digested hashed value as hex
@@ -454,20 +506,28 @@ function hashObjectUpdate(hash: Hash, obj: object): Hash {
  * @param obj Object to remove undefined properties from
  * @returns New object with all properties which had a value of `undefined` removed
  */
-export function removeUndefinedProperties<T extends object>(obj: T): T {
-    return filterObject(obj, (_key, value) => value !== undefined);
+export function removeUndefinedProperties<T extends object>(obj: T, options?: { recusive?: boolean }): T {
+    return filterObject(obj, (_key, value) => value !== undefined, options);
 }
 
 /**
  * Return a new object that only has the properties that match the specified predicate.
+ *
+ * Optionally the `predicate` can be specified to be recursive; if the `predicate` returns a `true`ish value for a property that is an object and the 
+ * `recursive` option is specified the object will be filtered recursively. The recursive option defaults to `false`.
+ *
  * @param obj Object to evaluate
  * @param predicate Predicate which when true means the property is included otherwise the property is excluded
  * @returns New object with only the properties for which the `predicate` returned a `true`ish value
  */
-export function filterObject<T extends object>(obj: T, predicate: (key: string, value: any, obj: T) => boolean): T {
+export function filterObject<T extends object>(obj: T, predicate: (key: string, value: any, obj: T) => boolean, options?: { recusive?: boolean }): T {
     return Object.entries(obj).reduce((acc, [key, value]) => {
         if (predicate(key, value, obj)) {
-            acc[key] = value;
+            if (value !== null && typeof value === 'object' && options?.recusive) {
+                acc[key] = filterObject(value, predicate);
+            } else {
+                acc[key] = value;
+            }
         }
         return acc;
     }, {} as T);
