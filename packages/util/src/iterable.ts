@@ -122,6 +122,12 @@ export namespace Iterable {
         ];
     }
 
+    /**
+     * Transform an iterator by applying a map and/or filter function to each item in the iterator. The map and filter functions are applied in the order they are specified
+     * @param itr Iterator to transform
+     * @param transformer Transformer object containing the filter and/or map functions
+     * @returns Transformed iterator
+     */
     export function transform<T, K = T>(itr: Iterable<T>, transformer: { map?(item: T, index: number): K; filter?(item: T, index: number): any }): Iterable<K> {
         const indexSymbol = Symbol('index');
         const iteratorNextTransformer = function() {
@@ -213,6 +219,18 @@ export namespace Iterable {
             unfolded.push(item);
         }
         return unfolded;
+    }
+
+    /**
+     * Similar to Array.prototype.forEach but for iterables
+     * @param itr Iterate over the items in this iterable
+     * @param fn Iterator function
+     */
+    export function forEach<T>(itr: Iterable<T>, fn: (item: T, index: number) => any): void {
+        let index = 0;
+        for (const item of itr) {
+            fn(item, index++);
+        }
     }
 }
 
