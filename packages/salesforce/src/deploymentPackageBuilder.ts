@@ -425,11 +425,10 @@ export class SalesforcePackageBuilder {
             return true;
         }
 
-        const packageComponent = this.mdPackage.getComponent(component.componentName, component.componentType);
+        const packageComponent = this.mdPackage.getComponent(component);
         if (packageComponent.files.length !== component.files.length) {
-            this.logger.log(`for ${component.componentType}\\${component.componentName} number of files miss match`);
-            //not returning true here for now since salesforce does not return metadata files as files
-            //we will have to unpackfolder and check metadata files for mismatch as well
+            this.logger.debug(`component ${component.componentType}\\${component.componentName} changed due to component file count mismatch`);
+            return true;
         }
 
         for (const componentFile of component.files) {
@@ -437,6 +436,7 @@ export class SalesforcePackageBuilder {
             const orgData = await componentFile.getBuffer();
 
             if (this.isDataChanged(componentFile.packagePath, packageData, orgData, metadataType)) {
+                this.logger.debug(`component ${component.componentType}\\${component.componentName} changed due to data mismatch in ${componentFile.packagePath}`);
                 return true;
             }
         }
