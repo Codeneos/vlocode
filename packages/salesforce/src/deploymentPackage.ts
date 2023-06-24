@@ -6,6 +6,7 @@ import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy } from '@
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
+import { type } from 'os';
 
 export interface SalesforcePackageComponent {
     componentType: string; // componentType
@@ -24,6 +25,12 @@ interface SalesforcePackageSourceMap extends SalesforcePackageComponent {
 interface SalesforcePackageComponentFile extends SalesforcePackageFileData {
     packagePath: string;
 }
+
+export interface SalesforceDestructiveChange extends SalesforcePackageComponent {
+    type: DestructiveChangeType;
+}
+
+type DestructiveChangeType = 'pre' | 'post';
 
 export class SalesforcePackage {
 
@@ -52,7 +59,7 @@ export class SalesforcePackage {
     /**
      * Access the pre or post destructive changes in this package
      */
-    private readonly destructiveChanges = {
+    private readonly destructiveChanges: Record<DestructiveChangeType, PackageManifest> = {
         pre: new PackageManifest(),
         post: new PackageManifest()
     };
@@ -294,6 +301,24 @@ export class SalesforcePackage {
                 this.addDestructiveChange(xmlName, member, type);
             }
         }
+    }
+
+    /**
+     * Get a list of all destructive changes in the package for the specified component type.
+     * @param componentType Component type to filter by
+     * @returns Array of destructive changes matching the specified component type
+     */
+    public getDestructiveChanges(componentType?: string): Array<SalesforceDestructiveChange> {
+        return Object.entries(this.destructiveChanges).flatMap(
+            ([type, manifest]) => [
+                ...Iterable.transform(
+                    manifest.components(), {
+                        filter: component => !componentType || component.componentType === componentType,
+                        map: component => ({ type: type as DestructiveChangeType, ...component })
+                    }
+                )
+            ]
+        );
     }
 
     /**

@@ -3,7 +3,7 @@ import * as chalk from 'chalk';
 import * as ZipArchive from 'jszip';
 
 import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, intersect, except } from '@vlocode/util';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, intersect, except, primitiveCompare, deepCompare, filterObject } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage, SalesforcePackageComponent } from './deploymentPackage';
@@ -395,6 +395,7 @@ export class SalesforcePackageBuilder {
         const deltaPackage = new SalesforcePackage(this.apiVersion);
         const retrieveResult = await deployService.retrieveManifest(retrievalManifest, this.apiVersion, token);
         const unchangedComponents = new Array<SalesforcePackageComponent>();
+        const serverMainfest = await retrieveResult.getManifest();
 
         for (const component of retrieveResult.components()) {
             if (!await this.isComponentChanged(component)) {
@@ -409,6 +410,7 @@ export class SalesforcePackageBuilder {
             deltaPackage.add([...this.mdPackage.getComponentFiles(component)]);
         }
 
+        this.logger.warn(serverMainfest);
         return deltaPackage;
     }
 
@@ -422,7 +424,7 @@ export class SalesforcePackageBuilder {
         if (!metadataType) {
             return true;
         }
-        
+
         const packageComponent = this.mdPackage.getComponent(component.componentName, component.componentType);
         if (packageComponent.files.length !== component.files.length) {
             this.logger.log(`for ${component.componentType}\\${component.componentName} number of files miss match`);
@@ -431,10 +433,10 @@ export class SalesforcePackageBuilder {
         }
 
         for (const componentFile of component.files) {
-            const packageData = await this.readPackageData(componentFile.fullFileName);
+            const packageData = await this.readPackageData(componentFile.packagePath);
             const orgData = await componentFile.getBuffer();
 
-            if (this.isDataChanged(packageData, orgData, metadataType)) {
+            if (this.isDataChanged(componentFile.packagePath, packageData, orgData, metadataType)) {
                 return true;
             }
         }
@@ -442,13 +444,22 @@ export class SalesforcePackageBuilder {
         return false;
     }
 
-    private isDataChanged(a: Buffer | string | undefined, b: Buffer | string | undefined, type: MetadataType): boolean {
+    private isDataChanged(
+        packagePath: string, 
+        a: Buffer | string | undefined, 
+        b: Buffer | string | undefined, 
+        type: MetadataType): boolean 
+    {
         if (a === b) {
             return false;
         }
 
         if (a === undefined || b === undefined) {
             return true;
+        }
+
+        if (packagePath.endsWith('.xml')) {
+            return this.isXmlChanged(a, b);
         }
 
         if (type.name === 'StaticResource' ||
@@ -465,6 +476,23 @@ export class SalesforcePackageBuilder {
         b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
 
         return a !== b;
+    }
+
+    private isXmlChanged(a: Buffer | string, b: Buffer | string) {
+        // Note: this function does not yet properly deal with changes in the order of XML elements in an array
+        // Parse XML and filter out attributes as they are not important for comparison of metadata
+        const parsedA = XML.parse(a, { arrayMode: true, ignoreAttributes: true });
+        const parsedB = XML.parse(b, { arrayMode: true, ignoreAttributes: true });
+
+        // Compare parsed XML
+        return deepCompare(parsedA, parsedB, {
+                primitiveCompare: (a, b) => {
+                    // treated empty strings, nulls and undefineds as equals
+                    return a === b || (!a && !b);
+                },
+                // Should we ignore element order or artay elements or not?
+                // ignoreArrayOrder: true,
+            }) === false;
     }
 
     /**

@@ -119,17 +119,17 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
             }
 
             const unpackedFiles = new Array<string>();
-            for (const file of result.getFiles().filter(f => f.fileName != 'package.xml')) {
+            for (const file of result.getFiles()) {
                 try {
                     if (this.vlocode.config.salesforce.exportFormat === 'sfdx') {
                         void vscode.window.showWarningMessage('Decomposing metadata into SFDX format is currently not supported.');
                     }
                     const unpackTarget = path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.', this.vlocode.config.salesforce.exportFolder);
-                    await file.unpackToFolder(unpackTarget);
-                    this.logger.log(`Exported ${file.fullFileName}`);
-                    unpackedFiles.push(path.join(unpackTarget, file.fullFileName));
+                    await file.writeFile(unpackTarget);
+                    this.logger.log(`Exported ${file.archivePath}`);
+                    unpackedFiles.push(path.join(unpackTarget, file.archivePath));
                 } catch(err) {
-                    this.logger.error(`${file.fullName} -- ${err.message || err}`);
+                    this.logger.error(`${file.componentName} -- ${err.message || err}`);
                 }
             }
 
