@@ -28,6 +28,23 @@ export enum SalesforcePackageType {
 
 type FilePath = string | FileSystemUri;
 
+/**
+ * Interface for a strategy to determine which components in the packages have changed and need to be deployed.
+ * Returns a list of components that have changed which can be used to create a new deployment package.
+ */
+export interface DeltaPackageStrategy<TOptions extends object = object> {
+    /**
+     * Gets a list of components that have changed since the last deployment.
+     * @param metadataPackage Package to get changed components for.
+     */
+    getChangedComponents(
+        metadataPackage: SalesforcePackage, 
+        options?: { 
+            cancellationToken?: CancellationToken 
+        } & TOptions
+    ): Promise<Array<SalesforcePackageComponent>>;
+}
+
 @injectable( { lifecycle: LifecyclePolicy.transient } )
 export class SalesforcePackageBuilder {
 
@@ -383,143 +400,31 @@ export class SalesforcePackageBuilder {
         return targetMetadata;
     }
 
-    public async getDeltaPackage(
-        deployService: SalesforceDeployService,
-        options?: { 
-            deltaTypes?: string[];
-            cancellationToken?: CancellationToken;
-            /**
-             * Enable parallel retrieval of metadata types; when set to true
-             * each metadata type is retrieved in parallel. By default a max of `5` parallel retrievals are done.
-             * You can change the default parallelism by setting the parallel option to a number.
-             */
-             parallel?: boolean | number;
-             /**
-              * When parallel retrieval is enabled, this option can be used to set the chunk size of each parallel retrieval.
-              * The chunk size determines the number of metadata types that are retrieved in a single parallel call.
-              *
-              * Defaults to `1` when not set explicitly. Meaning that each metadata type is retrieved in a separate parallel call.
-              */
-             parallelChunkSize?: number;
-        })
-    {
+    /**
+     * Gets a SalesforcePackage containing only the changed components using the provided strategy.
+     * TODO: Based on the type of metadata a different strategy should be used instead of the generic one.
+     * This will allow for more efficient in delta packaging by using a different API for certain metadata types.
+     * @param strategy The strategy to use for getting the changed components
+     * @param options Options that are passed to the strategy
+     * @returns A SalesforcePackage containing only the changed components
+     */
+    public async getDeltaPackage<T extends object>(
+        strategy: DeltaPackageStrategy<T>, 
+        options?: Parameters<DeltaPackageStrategy<T>['getChangedComponents']>[1]
+    ) {
         const mdPackage = this.getPackage();
-        const retrievalManifest = mdPackage.getManifest(options?.deltaTypes);
+        const changedComponents = await strategy.getChangedComponents(mdPackage, options);
 
-        if (retrievalManifest.isEmpty) {
+        if (!changedComponents.length) {
             return mdPackage;
         }
 
-        this.logger.debug(`Retrieving delta package for types: ${retrievalManifest.types()}`);
-
         const deltaPackage = new SalesforcePackage(this.apiVersion);
-        const retrieveResult = await deployService.retrieveManifest(retrievalManifest, { apiVersion: this.apiVersion, ...options });
-        const unchangedComponents = new Array<SalesforcePackageComponent>();
-
-        for (const component of retrieveResult.components()) {
-            if (!await this.isComponentChanged(component)) {
-                unchangedComponents.push(component);
-            }
-        }
-
-        for (const component of this.mdPackage.components()) {
-            if (unchangedComponents.some(c => c.componentName == component.componentName && c.componentType == component.componentType)) {
-                continue;
-            }
+        for (const component of changedComponents) {
             deltaPackage.add([...this.mdPackage.getComponentFiles(component)]);
         }
 
         return deltaPackage;
-    }
-
-    /**
-     * Compare the retrieved component against the component in the current package to determine if it has changed.
-     * @param component The retrieved component to compare against the same component in package
-     * @returns Returns true if the component has changed
-     */
-    private async isComponentChanged(component: RetrieveResultComponent) {
-        const metadataType = this.metadataRegistry.getMetadataType(component.componentType);
-        if (!metadataType) {
-            return true;
-        }
-
-        const packageComponent = this.mdPackage.getComponent(component);
-        if (packageComponent.files.length !== component.files.length) {
-            this.logger.debug(`component ${component.componentType}\\${component.componentName} changed due to component file count mismatch`);
-            return true;
-        }
-
-        for (const componentFile of component.files) {
-            const packageData = await this.readPackageData(componentFile.packagePath);
-            const orgData = await componentFile.getBuffer();
-
-            if (this.isDataChanged(componentFile.packagePath, packageData, orgData, metadataType)) {
-                this.logger.debug(`component ${component.componentType}\\${component.componentName} changed due to data mismatch in ${componentFile.packagePath}`);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private isDataChanged(
-        packagePath: string, 
-        a: Buffer | string | undefined, 
-        b: Buffer | string | undefined, 
-        type: MetadataType): boolean 
-    {
-        if (a === b) {
-            return false;
-        }
-
-        if (a === undefined || b === undefined) {
-            return true;
-        }
-
-        if (packagePath.endsWith('.xml')) {
-            return this.isXmlChanged(a, b);
-        }
-
-        if (!type.metaFile && type.suffix && packagePath.endsWith(type.suffix)) {
-            try {
-                return this.isXmlChanged(a, b);
-            } catch {
-                // Fallback to binary comparison when XML parsing fails
-            }
-        }
-
-        if (type.name === 'StaticResource' ||
-            type.name === 'ContentAsset' ||
-            type.name === 'Document' ||
-            type.contentIsBinary)
-        {
-            // binary comparison
-            const bufferA = typeof a === 'string' ? Buffer.from(a) : a;
-            const bufferB = typeof b === 'string' ? Buffer.from(b) : b;
-            return bufferA.compare(bufferB) !== 0;
-        }
-
-        a = (typeof a === 'string' ? a : a.toString('utf8')).trim();
-        b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
-
-        return a !== b;
-    }
-
-    private isXmlChanged(a: Buffer | string, b: Buffer | string) {
-        // Note: this function does not yet properly deal with changes in the order of XML elements in an array
-        // Parse XML and filter out attributes as they are not important for comparison of metadata
-        const parsedA = XML.parse(a, { arrayMode: true, ignoreAttributes: true });
-        const parsedB = XML.parse(b, { arrayMode: true, ignoreAttributes: true });
-
-        // Compare parsed XML
-        return deepCompare(parsedA, parsedB, {
-                primitiveCompare: (a, b) => {
-                    // treated empty strings, nulls and undefineds as equals
-                    return a === b || (!a && !b);
-                },
-                // Should we ignore element order or artay elements or not?
-                // ignoreArrayOrder: true,
-            }) === false;
     }
 
     /**
