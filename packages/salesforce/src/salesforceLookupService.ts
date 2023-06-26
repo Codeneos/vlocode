@@ -1,9 +1,10 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable, mapKeys } from '@vlocode/util';
+import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable, mapKeys, unique } from '@vlocode/util';
 import { PropertyAccessor } from './types';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { NamespaceService } from './namespaceService';
+import { DateTime } from 'luxon';
 
 type ObjectFilter<T> = {
     [P in keyof T]?: T[P] | Array<T[P]> | string;
@@ -98,6 +99,40 @@ export class SalesforceLookupService {
         return results;
     }
 
+    public async lookupMultiple<T extends object, K extends PropertyAccessor = keyof T>(
+        type: string,
+        filters: ObjectFilter<T>[],
+        lookupFields?: K[] | readonly K[] | 'all',
+        cancelToken?: CancellationToken): Promise<Array<QueryResult<T, K>[] | undefined>>
+    {
+        const lookupResults = new Array<QueryResult<T, K>[] | undefined>();
+
+        // Lookup all fields that are part of the filter
+        const fields = (!lookupFields || lookupFields === 'all') ? 'all'
+            : [...filters.reduce((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id', ...lookupFields ]))];
+
+        // lookup records
+        const records = await this.lookup<T, K>(type, filters, fields as any, undefined, false);
+
+        // map record results back to lookup requests
+        while (records.length) {
+            const record = records.shift()!;
+            const matchedFilters = filters.map((filter, index) => ({
+                index, isMatch: this.recordMatches(record, filter),
+            }));
+
+            for (const { index } of matchedFilters.filter(f => f.isMatch)) {
+                if (lookupResults[index]) {
+                    // @ts-expect-error TS does not understand lookupResults[index] is not undefined
+                    lookupResults[index].push(record)
+                }
+                lookupResults[index] = [ record ];
+            }
+        }
+
+        return lookupResults;
+    }
+
     private async lookupWhere<T extends object, K extends PropertyAccessor = keyof T>(type: string, where?: string, selectFields: K[] | readonly K[] | 'all' = 'all', limit?: number, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
         this.logger.verbose(`Lookup ${type} records ${limit ? `- limit ${limit} ` : ``}- fields:`, () => JSON.stringify(selectFields));
         const fields = new Set(['Id']);
@@ -173,5 +208,40 @@ export class SalesforceLookupService {
         }
 
         return lookupFilters.join(' and ');
+    }
+
+    private recordMatches<T extends object>(record: QueryResult<T, string>, filter: ObjectFilter<T>): boolean {
+        return !Object.entries(filter).some(([field, value]) => !this.fieldEquals(record, field, value));
+    }
+
+    private fieldEquals(record: object, field: string, filterValue: any): boolean {
+        // TODO: normalize filter object so namespace updates on field names are not required
+        const recordValue = this.nsService.updateNamespace(field).split('.').reduce((o, p) => o?.[p], record);
+        if (recordValue == filterValue) {
+            return true;
+        }
+
+        if (recordValue === null) {
+            return typeof filterValue === 'string' ? filterValue.trim() === '' : false;
+        } else if(filterValue === null && typeof recordValue === 'string' && recordValue === '') {
+            return true;
+        }
+
+        if (typeof filterValue === 'string' && typeof recordValue === 'string') {
+            if (isSalesforceId(recordValue) && recordValue.length != filterValue.length) {
+                // compare 15 to 18 char IDs -- simple compare covering 99% of the cases
+                return recordValue.substring(0, 15) === filterValue.substring(0, 15);
+            }
+            // Attempt a date conversion of 2 strings
+            const a = DateTime.fromISO(filterValue);
+            const b = a.isValid && DateTime.fromISO(recordValue);
+            if (a && b && a.diff(b, 'seconds').seconds === 0) {
+                return true;
+            }
+            // Salesforce does not allow trailing spaces on strings in the DB
+            return this.nsService.updateNamespace(filterValue).toLowerCase().trim() === recordValue.toLowerCase();
+        }
+
+        return false;
     }
 }

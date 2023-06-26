@@ -383,19 +383,38 @@ export class SalesforcePackageBuilder {
         return targetMetadata;
     }
 
-    public async getDeltaPackage(deployService: SalesforceDeployService, deltaTypes?: string[], token?: CancellationToken) {        
-        const retrievalManifest = this.getManifest(deltaTypes);
+    public async getDeltaPackage(
+        deployService: SalesforceDeployService,
+        options?: { 
+            deltaTypes?: string[];
+            cancellationToken?: CancellationToken;
+            /**
+             * Enable parallel retrieval of metadata types; when set to true
+             * each metadata type is retrieved in parallel. By default a max of `5` parallel retrievals are done.
+             * You can change the default parallelism by setting the parallel option to a number.
+             */
+             parallel?: boolean | number;
+             /**
+              * When parallel retrieval is enabled, this option can be used to set the chunk size of each parallel retrieval.
+              * The chunk size determines the number of metadata types that are retrieved in a single parallel call.
+              *
+              * Defaults to `1` when not set explicitly. Meaning that each metadata type is retrieved in a separate parallel call.
+              */
+             parallelChunkSize?: number;
+        })
+    {
         const mdPackage = this.getPackage();
+        const retrievalManifest = mdPackage.getManifest(options?.deltaTypes);
+
         if (retrievalManifest.isEmpty) {
             return mdPackage;
         }
 
-        this.logger.log(`Retrieving delta package for types: ${retrievalManifest.types()}`);
+        this.logger.debug(`Retrieving delta package for types: ${retrievalManifest.types()}`);
 
         const deltaPackage = new SalesforcePackage(this.apiVersion);
-        const retrieveResult = await deployService.retrieveManifest(retrievalManifest, this.apiVersion, token);
+        const retrieveResult = await deployService.retrieveManifest(retrievalManifest, { apiVersion: this.apiVersion, ...options });
         const unchangedComponents = new Array<SalesforcePackageComponent>();
-        const serverMainfest = await retrieveResult.getManifest();
 
         for (const component of retrieveResult.components()) {
             if (!await this.isComponentChanged(component)) {
@@ -410,7 +429,6 @@ export class SalesforcePackageBuilder {
             deltaPackage.add([...this.mdPackage.getComponentFiles(component)]);
         }
 
-        this.logger.warn(serverMainfest);
         return deltaPackage;
     }
 
@@ -462,9 +480,18 @@ export class SalesforcePackageBuilder {
             return this.isXmlChanged(a, b);
         }
 
+        if (!type.metaFile && type.suffix && packagePath.endsWith(type.suffix)) {
+            try {
+                return this.isXmlChanged(a, b);
+            } catch {
+                // Fallback to binary comparison when XML parsing fails
+            }
+        }
+
         if (type.name === 'StaticResource' ||
             type.name === 'ContentAsset' ||
-            type.name === 'Document')
+            type.name === 'Document' ||
+            type.contentIsBinary)
         {
             // binary comparison
             const bufferA = typeof a === 'string' ? Buffer.from(a) : a;
@@ -504,17 +531,10 @@ export class SalesforcePackageBuilder {
     }
 
     /**
-     * Gets SalesforcePackage underlying the builder.
+     * @see SalesforcePackage.getManifest
      */
     public getManifest(types?: string[]): PackageManifest {
-        if (!types) {
-            return this.mdPackage.manifest;
-        }
-        const manifest = new PackageManifest();
-        types.forEach(metadataType => {
-            manifest.add(metadataType, this.mdPackage.manifest.list(metadataType));
-        });
-        return manifest;
+        return this.mdPackage.getManifest(types);
     }
 
     private getMetadataType(xmlName: string) {

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel ,  fileName } from '@vlocode/util';
+import { forEachAsyncParallel ,  fileName, Timer } from '@vlocode/util';
 import * as open from 'open';
 import { ActivityProgress, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
 import { VlocodeCommand } from '../../constants';
