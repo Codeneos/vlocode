@@ -1,11 +1,13 @@
 import { Stream } from 'stream';
 import * as ZipArchive from 'jszip';
 
-import { Logger , injectable } from '@vlocode/core';
-import { CancellationToken, wait } from '@vlocode/util';
+import { Logger, injectable } from '@vlocode/core';
+import { Timer, removeAll, stringEqualsIgnoreCase, Iterable } from '@vlocode/util';
+import { CancellationToken, mapAsyncParallel, wait, chunkArray } from '@vlocode/util';
 import { DeployOptions, SalesforceConnectionProvider, DeployResult } from './connection';
 import { DeploymentProgress, PackageManifest, RetrieveResultPackage } from './deploy';
 import { SalesforcePackage } from './deploymentPackage';
+import { MetadataRegistry } from './metadataRegistry';
 
 @injectable()
 export class SalesforceDeployService {
@@ -13,6 +15,7 @@ export class SalesforceDeployService {
     constructor(...args: any[]);
     constructor(
         private readonly salesforce: SalesforceConnectionProvider,
+        private readonly metadataRegister: MetadataRegistry,
         private readonly logger: Logger) {
     }
 
@@ -120,39 +123,117 @@ export class SalesforceDeployService {
     }
 
     /**
-     * Retrieve the files specified in the Manifest from the currently connected org.
-     * @param files Files to deploy
-     * @param options Extra deploy options
-     * @param progressOptions Progress options
+     * Retrieve metadata specified in the Manifest from the currently connected org.
+     * @param manifest Manifest to retrieve
+     * @param options Retrieve options
      */
-    public async retrieveManifest(manifest: PackageManifest, apiVersion?: string, token?: CancellationToken) : Promise<RetrieveResultPackage> {
-        const checkInterval = 2000;
+    public async retrieveManifest(
+        manifest: PackageManifest, 
+        options: { 
+            apiVersion?: string;
+            checkInterval?: number;
+            cancellationToken?: CancellationToken;
+            /**
+             * Enable parallel retrieval of metadata types; when set to true
+             * each metadata type is retrieved in parallel. By default a max of `5` parallel retrievals are done.
+             * You can change the default parallelism by setting the parallel option to a number.
+             */
+            parallel?: boolean | number;
+            /**
+             * When parallel retrieval is enabled, this option can be used to set the chunk size of each parallel retrieval.
+             * The chunk size determines the number of metadata types that are retrieved in a single parallel call.
+             *
+             * Defaults to `1` when not set explicitly. Meaning that each metadata type is retrieved in a separate parallel call.
+             */
+            parallelChunkSize?: number;
+        }) : Promise<RetrieveResultPackage> 
+    {
+        if (options.parallel) {
+            const results = await mapAsyncParallel(
+                this.splitManifest(manifest, options.parallelChunkSize ?? 1),
+                (manifestChunk) => this.getRetrieveTask(manifestChunk, options)(options.cancellationToken),
+                typeof options.parallel === 'number' ? options.parallel : 5
+            );
+            return results.reduce((result, chunkResult) => result.merge(chunkResult));
+        } else {
+            return this.getRetrieveTask(manifest, options)(options.cancellationToken);
+        }
+    }
 
-        const retrieveTask = async (cancellationToken?: CancellationToken) => {
-            // Start deploy
+    /**
+     * Split the manifest into chunks of metadata types that can be retrieved in parallel;
+     * when a metadata type has child metadata types, all child metadata types are retrieved in the same chunk as the parent.
+     * All other metadata types are retrieved in separate chunks.
+     * @param manifest Manifest to split
+     * @param typesPerChunk Number of metadata types to retrieve in a single chunk
+     * @returns Array of manifests that can be retrieved in parallel
+     */
+    private splitManifest(manifest: PackageManifest, typesPerChunk: number) {
+        const types = manifest.types();
+        const metadataGroups: string[][] = [];
+
+        while(types.length) {
+            const typeName = types.shift()!;
+            const metadataInfo = this.metadataRegister.getMetadataType(typeName);
+            const currentGroup = metadataGroups.find(group => group.length < typesPerChunk) 
+                ?? (metadataGroups[metadataGroups.length] = []);
+
+            if (metadataInfo) {
+                // Due to the way the metadata API works, we can't retrieve a single child type
+                // as it will always retrieve the parent type as well -- even if the parent type is not specified in the manifest
+                for (const group of Iterable.join(metadataGroups, [ types ])) {
+                    if (group !== currentGroup) {
+                        currentGroup.push(
+                            ...removeAll(group, (item) => stringEqualsIgnoreCase(item, metadataInfo.childXmlNames))
+                        );
+                    }
+                }
+            }
+
+            currentGroup.push(typeName);
+        }
+
+        return metadataGroups.filter(group => group.length).map(group => manifest.filter(group));
+    }
+
+    private getRetrieveTask(manifest: PackageManifest, options: { apiVersion?: string, checkInterval?: number }) {
+        return async (cancellationToken?: CancellationToken) => {
+            // Start retrieve
+            this.logger.debug(
+                `Start retrieve of: ${
+                    manifest.types().map(type => `${type} (${manifest.count(type)})`)
+                }`
+            );
+
+            const timer = new Timer();
             const connection = await this.salesforce.getJsForceConnection();
             const retrieveId = await connection.metadata.retrieve({
                 apiVersion: connection.version,
                 singlePackage: true,
-                unpackaged: manifest.toJson(apiVersion ?? this.salesforce.getApiVersion())
+                unpackaged: manifest.toJson(options.apiVersion ?? this.salesforce.getApiVersion())
             });
 
-            // Wait for deploy
-            while (await wait(checkInterval)) {
+            // Wait for retrieve to complete
+            while (await wait(options.checkInterval ?? 2000)) {
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
                     // We can't cancel a retrieve
                     throw new Error('Retrieve request cancelled');
                 }
 
-                const status = await connection.metadata.checkRetrieveStatus(retrieveId, true);
+                const status = await connection.metadata.checkRetrieveStatus(retrieveId, false);
                 if (status.done === true) {
-                    const retrieveZip = status.zipFile ? await new ZipArchive().loadAsync(Buffer.from(status.zipFile, 'base64')) : undefined;
-                    return new RetrieveResultPackage(status, true, retrieveZip);
+                    this.logger.debug(
+                        `Retrieve completed; fetching zip-file from server ${timer.toString('seconds')} [${
+                            manifest.types().map(type => `${type} (${manifest.count(type)})`)
+                        }]`
+                    );
+                    const statusWithArchive = await connection.metadata.checkRetrieveStatus(retrieveId, true);
+                    const metadataArchive = statusWithArchive.zipFile ? await new ZipArchive().loadAsync(Buffer.from(statusWithArchive.zipFile, 'base64')) : undefined;
+                    return new RetrieveResultPackage(status, true, metadataArchive);
                 }
             }
-        };
 
-        // @ts-expect-error TS does not correctly detect the return param for the while loop `await wait` loop
-        return retrieveTask(token);
+            throw new Error('Retrieve request timed out');
+        };  
     }
 }

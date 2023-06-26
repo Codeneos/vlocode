@@ -57,10 +57,22 @@ export class PackageManifest {
     /**
      * Get all types that are mentioned in this package.
      */
-     public *components() {
+    public *components() {
         for (const [componentType, members] of this.metadataMembers.entries()) {
             yield *Iterable.map(members, componentName => ({ componentType, componentName }));
         }
+    }
+
+    /**
+     * Merge another package into this package
+     * @param other Other package to merge into this package
+     * @returns This manifest with all members of the other package added
+     */
+    public merge(other: PackageManifest): this {
+        other.metadataMembers.forEach((members, type) => {
+            this.add(type, members);
+        })
+        return this;
     }
 
     /**
@@ -173,6 +185,24 @@ export class PackageManifest {
                 ...this.toJson(apiVersion)
             }
         });
+    }
+
+    /**
+     * Gets a new package manifest with just the specified metadata types. If no metadata types are specified a copy of the current manifest is returned.
+     * @param metadataTypes Filter expression or metadata types to include in the new manifest
+     */
+    public filter(metadataTypes: string | string[] | ((type: string, name: string) => any)): PackageManifest {
+        const manifest = new PackageManifest();
+        this.metadataMembers.forEach((members, type) => {
+            if (typeof metadataTypes === 'string') { 
+                metadataTypes === type && members.forEach(member => manifest.add(type, member));
+            } else if (Array.isArray(metadataTypes)) { 
+                metadataTypes.includes(type) && members.forEach(member => manifest.add(type, member));
+            } else {
+                members.forEach(member => metadataTypes(type, member) && manifest.add(type, member));
+            }
+        })
+        return manifest;
     }
 
     /**

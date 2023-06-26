@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import * as ZipArchive from 'jszip';
 import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
 import { FileProperties, RetrieveResult } from '../connection';
-import { SalesforcePackageComponent } from '../deploymentPackage';
+import { SalesforcePackageComponent, SalesforcePackageComponentFile } from '../deploymentPackage';
 import { PackageManifest } from './packageXml';
 
 /**
@@ -43,7 +43,9 @@ export interface ExtendedFileProperties extends FileProperties {
  * Represents a single component in a retrieve result package with all its related files.
  * @see RetrieveResult
  */
-export interface RetrieveResultComponent {
+export interface RetrieveResultComponent<
+    F extends SalesforceRetrievedComponentFile = SalesforceRetrievedComponentFile
+> {
     /**
      * The full name of the component (e.g. ApexClass/MyClass)
      */
@@ -59,10 +61,18 @@ export interface RetrieveResultComponent {
     /**
      * The files tha represent this component.
      */
-    files: RetrieveResultFile[]
+    files: F[]
 }
 
-export class RetrieveResultFile implements SalesforcePackageComponent {
+export interface SalesforceRetrievedComponentFile extends SalesforcePackageComponentFile {
+    /**
+     * Gets a buffer of the file contents.
+     * @returns {Promise<Buffer> | Buffer}| Buffer of the file contents.
+     */
+    getBuffer(): Promise<Buffer> | Buffer;
+}
+
+export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     /**
      * Type of the component (e.g. ApexClass)
      */
@@ -146,7 +156,7 @@ export class RetrieveResultFile implements SalesforcePackageComponent {
      * Gets a buffer of the file contents.
      * @returns {Promise<Buffer>} Buffer of the file contents.
      */
-    public getBuffer(): Promise<Buffer> | undefined {
+    public getBuffer(): Promise<Buffer>{
         return this.getFile().async('nodebuffer');
     }
 
@@ -154,7 +164,7 @@ export class RetrieveResultFile implements SalesforcePackageComponent {
      * Gets a readable stream of the file contents.
      * @returns {NodeJS.ReadableStream} Stream of the file contents.
      */
-    public getStream(): NodeJS.ReadableStream | undefined {
+    public getStream(): NodeJS.ReadableStream {
         return this.getFile().nodeStream();
     }
 
@@ -188,6 +198,7 @@ export class RetrieveResultPackage {
     }
 
     private files: RetrieveResultFile[] | undefined;
+    private archives: ZipArchive[] | undefined;
 
     /**
      * Creates a new RetrieveResultPackage instance from a RetrieveResult object.
@@ -198,8 +209,28 @@ export class RetrieveResultPackage {
     constructor(
         private readonly result: RetrieveResult, 
         private readonly singlePackage: boolean, 
-        private readonly archive?: ZipArchive
+        archive?: ZipArchive
     ) {
+        this.archives = archive ? [ archive ] : undefined;
+    }
+
+    /**
+     * Merge another retrieve result package into this one.
+     * @param other Other retrieve result package to merge into this one.
+     * @returns A reference to this retrieve result package.
+     */
+    public merge(other: RetrieveResultPackage): this {
+        // Merge file props
+        this.result.fileProperties.push(...other.result.fileProperties);
+        if (this.archives) {
+            this.archives?.push(...other.archives!);
+        } else {
+            this.archives = other.archives;
+        }
+        if (this.files) {
+            this.files = undefined;
+        }
+        return this;
     }
 
     /**
@@ -220,7 +251,7 @@ export class RetrieveResultPackage {
      * Get all components in the retrieve result package that are not package.xml files 
      * @returns A list of all components in the retrieve result package
      */
-    public components(): Array<RetrieveResultComponent> {
+    public components(): Array<RetrieveResultComponent<RetrieveResultFile>> {
         const resultsByType = groupBy(
             this.getFiles().filter(fi => fi.componentType != 'Package'), 
             fi => `${fi.componentType}/${fi.componentName}`
@@ -250,9 +281,10 @@ export class RetrieveResultPackage {
                     return [];
                 }
 
-                const sourceFile = this.archive?.file(fileProperties.fileName) || undefined;
-                const metaFile = this.archive?.file(`${fileProperties.fileName}-meta.xml`);
+                const sourceFile = this.file(fileProperties.fileName) || undefined;
+                const metaFile = this.file(`${fileProperties.fileName}-meta.xml`);
                 const files = [ new RetrieveResultFile(fileProperties, sourceFile) ];
+
                 if (metaFile) {
                     // Meta files are not returned by Salesforce, so we add them manually
                     // to the files list if they exist in the archive.
@@ -263,6 +295,7 @@ export class RetrieveResultPackage {
                         )
                     );
                 }
+
                 return files;
             }
         );
@@ -274,19 +307,18 @@ export class RetrieveResultPackage {
      * @returns The package manifest of the retrieve result.
      */
     public async getManifest() {
-        const packageXml = this.result.fileProperties.find(file => file.fileName.endsWith('package.xml'));
-        if (!packageXml) {
-            throw new Error('Package.xml file not found in retrieve result');
-        }
-        const packageXmlSource = this.archive?.file(packageXml.fileName) || undefined;
-        if (!packageXmlSource) {
+        const packageXmlSources = this.filterFiles(f => f.endsWith('package.xml'));
+        if (!packageXmlSources.length) {
             throw new Error('Package.xml file mentioned in retrieve result was not found in zip archive');
         }
-        return PackageManifest.fromPackageXml(await packageXmlSource.async('nodebuffer'));
+        const manifests = await Promise.all(packageXmlSources.map(async packageXmlSource => {
+            return PackageManifest.fromPackageXml(await packageXmlSource.async('nodebuffer'));
+        }));
+        return manifests.reduce((manifest, current) => manifest.merge(current));
     }
 
     public async unpackFolder(packageFolder: string, targetPath: string) : Promise<void> {
-        const files = this.archive?.filter(file => directoryName(file).endsWith(packageFolder.toLowerCase()));
+        const files = this.filterFiles(file => directoryName(file).endsWith(packageFolder.toLowerCase()));
         if (!files) {
             throw new Error(`The specified folder ${packageFolder} was not found in retrieved package or is empty`);
         }
@@ -296,7 +328,7 @@ export class RetrieveResultPackage {
     }
 
     public unpackFile(packageFile: string, targetPath: string) : Promise<void> {
-        const file = this.archive?.filter(file => file.toLowerCase().endsWith(packageFile.toLowerCase()))[0];
+        const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
         if (!file) {
             throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
         }
@@ -304,11 +336,30 @@ export class RetrieveResultPackage {
     }
 
     public unpackFileToFolder(packageFile: string, targetPath: string) : Promise<void> {
-        const file = this.archive?.filter(file => file.toLowerCase().endsWith(packageFile.toLowerCase()))[0];
+        const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
         if (!file) {
             throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
         }
         return this.streamFileToDisk(file, path.join(targetPath, baseName(file.name)));
+    }
+
+    private file(filter: string | ((file: string) => any)) : ZipArchive.JSZipObject | undefined {
+        for (const archive of this.archives ?? []) {
+            const file = typeof filter === 'string' 
+                ? archive.file(filter)
+                : archive.filter(filter)[0];
+            if (file) {
+                return file;
+            }
+        }
+    }
+
+    private filterFiles(filter: (file: string) => any) : Array<ZipArchive.JSZipObject> {
+        const files = new Array<ZipArchive.JSZipObject>();
+        for (const archive of this.archives ?? []) {
+            files.push(...archive.filter(filter));
+        }
+        return files;
     }
 
     private streamFileToDisk(file: ZipArchive.JSZipObject, targetPath: string) : Promise<void> {

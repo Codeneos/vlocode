@@ -257,4 +257,45 @@ describe('collection', () => {
             ]);
         });
     });
+
+    describe('#removeAll', () => {
+        it('should remove matching elements', () => {
+            const items = [1,2,3,4,5,6,7,8,9,10];
+            expect(collection.removeAll(items, i => i > 3 && i < 9)).toStrictEqual([4,5,6,7,8]);
+            expect(items).toStrictEqual([1,2,3,9,10]);
+        });
+        it('should remove matching elements sparse', () => {
+            const items = [1,2,3,4,5,6,7,8,9,10];
+            expect(collection.removeAll(items, i => i  % 2 === 0)).toStrictEqual([2,4,6,8,10]);
+            expect(items).toStrictEqual([1,3,5,7,9]);
+        });
+        it('should remove matching element if last', () => {
+            const items = [1,2,3,4,5,6,7,8,9,10];
+            expect(collection.removeAll(items, i => i === 10)).toStrictEqual([10]);
+            expect(items).toStrictEqual([1,2,3,4,5,6,7,8,9]);
+        });
+        it('should remove matching element if first', () => {
+            const items = [1,2,3,4,5,6,7,8,9,10];
+            expect(collection.removeAll(items, i => i < 3)).toStrictEqual([1,2]);
+            expect(items).toStrictEqual([3,4,5,6,7,8,9,10]);
+        });
+        it('should return empty array when no matches', () => {
+            const items = [1,2,3,4,5,6,7,8,9,10];
+            expect(collection.removeAll(items, i => i > 10)).toStrictEqual([]);
+            expect(items).toStrictEqual([1,2,3,4,5,6,7,8,9,10]);
+        });
+    });
+
+    describe('#remove', () => {
+        it('should remove first matching element', () => {
+            const items = [1,2,3,3,3,3];
+            expect(collection.remove(items, i => i === 3)).toStrictEqual(3);
+            expect(items).toStrictEqual([1,2,3,3,3]);
+        });
+        it('should return undefined when no match', () => {
+            const items = [1,2,3,3,3,3];
+            expect(collection.remove(items, i => i === 10)).toStrictEqual(undefined);
+            expect(items).toStrictEqual([1,2,3,3,3,3]);
+        });
+    });
 });

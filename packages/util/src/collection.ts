@@ -282,22 +282,33 @@ export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: 
 
 /**
  * Execute the map callback async in parallel on each of the items in the specified Iterable
- * @param array An Iterable to execute the callback on
+ * @param iterable An Iterable to execute the callback on
  * @param callback The callback to execute for each item
+ * @param parallelism The number of parallel tasks to execute
+ * @returns A promise that resolves to an array of the results of the callback
  */
 export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T, index: number) => PromiseLike<R>, parallelism = 2) : Promise<R[]> {
     parallelism = parallelism < 1 ? 1 : parallelism;
-    const tasks = new Array<Promise<R[]>>();
-    for (const [index, value] of enumerateWithIndex(iterable)) {
-        const bucket = index % parallelism;
-        const task = async (result: R[]) => {
-            // do not use Array.concat as it can cause issues when R is an array causing the items in the array to be added
-            result.push(await callback(value, index));
-            return result;
-        };
-        tasks[bucket] = tasks[bucket] !== undefined ? tasks[bucket].then(task) : task([]);
+    const iterator = enumerateWithIndex(iterable);
+    const pendingWork = new Array<PromiseLike<R>>();
+    const taskResults = new Array<R>();
+
+    const getTask = () => {
+        const item = iterator.next();
+        if (item.done) {
+            return Promise.resolve();
+        }
+        return callback(item.value[1], item.value[0]).then(result => {
+            taskResults.push(result);
+            return getTask();
+        });
     }
-    return Promise.all(tasks).then(flatten);
+
+    for (let i = 0; i < parallelism; i++) {
+        pendingWork.push(getTask());
+    }
+
+    return Promise.all(pendingWork).then(() => taskResults);
 }
 
 /**
@@ -479,7 +490,7 @@ export function remove<T>(source: Array<T>, predicate: (item: T, index: number) 
     for (let i = 0; i < source.length; i++) {
         const element = source[i];
         if (predicate(element, i)) {
-            matched.push(...source.splice(i, 1));
+            matched.push(...source.splice(i--, 1));
         }
     }
     return matched;

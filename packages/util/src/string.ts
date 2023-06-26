@@ -24,26 +24,24 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
 }
 
 /**
- * Case insensetive string equals comparison that supports string arrays as well as single strings.
+ * Case insensetive tring equals comparison that supports string arrays as well as single strings.
  * Comparisons are case insensitive, and the comparison is true if any of the strings in the array match the specified string.
  * @param a String a to compare
  * @param b String b to compare or array of strings to compare against a
  * @returns `true` if a matches any of the strings in b, `false` otherwise
  */
 export function stringEqualsIgnoreCase(a : string | undefined | null, b: string | string[] | undefined | null) : boolean {
-    if (a === b) {
-        return true;
-    }
-    if (a === null || a === undefined) {
+    if (typeof a === 'string') {
+        if (typeof b === 'string') {
+            return b.toLowerCase() === a.toLowerCase();
+        } else if (Array.isArray(b)) {
+            return b.some(e => e.toLowerCase() === a.toLowerCase());
+        }
+        // A is string but b is not a string and not an array so never equal
         return false;
     }
-    if (b === null || b === undefined) {
-        return false;
-    }
-    if (Array.isArray(b)) {
-        return b.some(e => e.toLowerCase() === a.toLowerCase());
-    }
-    return false;
+    // Only equal if a strict equals b
+    return a === b;
 }
 
 /**

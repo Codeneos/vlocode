@@ -6,11 +6,14 @@ import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEq
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
-import { type } from 'os';
 
 export interface SalesforcePackageComponent {
     componentType: string; // componentType
     componentName: string; // componentName
+}
+
+export interface SalesforcePackageComponentFile extends SalesforcePackageComponent {
+    packagePath: string;
 }
 
 interface SalesforcePackageFileData extends SalesforcePackageComponent {
@@ -22,13 +25,13 @@ interface SalesforcePackageSourceMap extends SalesforcePackageComponent {
     packagePath: string;
 }
 
-interface SalesforcePackageComponentFile extends SalesforcePackageFileData {
-    packagePath: string;
-}
-
 export interface SalesforceDestructiveChange extends SalesforcePackageComponent {
     type: DestructiveChangeType;
 }
+
+type SalesforcePackageEntry = 
+    SalesforcePackageComponentFile & 
+    SalesforcePackageFileData;  /*& ({ fsPath: string } | { data: string | Buffer})*/
 
 type DestructiveChangeType = 'pre' | 'post';
 
@@ -67,7 +70,7 @@ export class SalesforcePackage {
     private readonly packageData = new Map<string, SalesforcePackageFileData>();
 
     /**
-     * Maps source files to package contents
+     * Maps source files with their FS path to package contents
      */
     private readonly sourceFileMap = new Map<string, SalesforcePackageSourceMap>();
 
@@ -117,32 +120,16 @@ export class SalesforcePackage {
 
     /**
      * Adds one or more components to the package and updates the package manifest.
-     * @param entry Package data entry to add
+     * @param entry Package data entry to add 
      */
-    public add(entry: SalesforcePackageComponentFile | SalesforcePackageComponentFile[]) {
-        asArray(entry).forEach(entry => this.addSingle(entry));
-    }
-
-    private addSingle(entry: SalesforcePackageComponentFile) {
-        if (!entry.componentName) {
-            throw new Error(`Component name cannot be empty when adding metadata to a package`);
-        }
-
-        if (!entry.componentType) {
-            throw new Error(`XML name cannot be empty when adding metadata to a package`);
-        }
-
-        this.addManifestEntry(entry.componentType, entry.componentName);
-        this.setPackageData(entry.packagePath, {
-            componentType: entry.componentType,
-            componentName: entry.componentName,
-            data: entry.data,
-            fsPath: entry.fsPath
+    public add(entry: SalesforcePackageEntry | SalesforcePackageEntry[]) {
+        asArray(entry).forEach(entry => {
+            this.addManifestEntry(entry);
+            this.setPackageData(entry.packagePath, entry);
+            if (entry.fsPath) {
+                this.addSourceMap(entry.fsPath, entry);
+            }
         });
-
-        if (entry.fsPath) {
-            this.addSourceMap(entry.fsPath, entry);
-        }
     }
 
     /**
@@ -176,9 +163,15 @@ export class SalesforcePackage {
      * @param data Data to set
      */
     public setPackageData(packagePath: string, data: Partial<SalesforcePackageFileData>) {
-        const entry = this.packageData.get(packagePath);
+        const normalizedPackagePath = packagePath.replace(/\/|\\/g, '/');
+        const entry = this.packageData.get(normalizedPackagePath);
         if (entry) {
-            Object.assign(entry, data);
+            Object.assign(entry, {
+                componentType: data.componentType || entry.componentType,
+                componentName: data.componentName || entry.componentName,
+                data: data.data,
+                fsPath: data.fsPath
+            });
         } else {
             if (!data.componentName) {
                 throw new Error(`Component name cannot be empty when adding metadata to a package`);
@@ -186,17 +179,41 @@ export class SalesforcePackage {
             if (!data.componentType) {
                 throw new Error(`XML name cannot be empty when adding metadata to a package`);
             }
-            this.packageData.set(packagePath.replace(/\/|\\/g, '/'), data as SalesforcePackageFileData);
+            this.packageData.set(normalizedPackagePath, {
+                packagePath,
+                componentType: data.componentType,
+                componentName: data.componentName,
+                data: data.data,
+                fsPath: data.fsPath
+            });
         }
     }
 
     /**
-     * Add a manifest entry without adding the actual file to the package. You should use {@link setPackageData} to add the actual file, or use {@link add} to add both the file and the manifest entry.
-     * @param xmlName XML name
+     * Add a manifest entry without adding the actual file to the package. 
+     * You should use {@link setPackageData} to add the actual file, or use {@link add} to add both the file and the manifest entry.
+     * @param component A component to add to the manifest
+     */
+    public addManifestEntry(component : SalesforcePackageComponent): void;
+    /**
+     * Add a manifest entry without adding the actual file to the package. 
+     * You should use {@link setPackageData} to add the actual file, or use {@link add} to add both the file and the manifest entry.
+     * @param componentType XML name
      * @param componentName Component name
      */
-    public addManifestEntry(xmlName: string, componentName: string) {
-        this.manifest.add(xmlName, componentName);
+    public addManifestEntry(componentType: string, componentName: string): void;
+    public addManifestEntry(componentType: string | SalesforcePackageComponent, componentName?: string) {
+        if (typeof componentType === 'object') {
+            componentName = componentType.componentName;
+            componentType = componentType.componentType;
+        }
+        if (!componentName) {
+            throw new Error(`Component name cannot be empty when adding metadata to a package`);
+        }
+        if (!componentType) {
+            throw new Error(`Component type cannot be empty when adding metadata to a package`);
+        }
+        this.manifest.add(componentType, componentName);
     }
 
     /**
@@ -453,18 +470,11 @@ export class SalesforcePackage {
     }
 
     /**
-     * Gets a new package manifest optionally filtered by the specified metadata types.
+     * Gets a new package manifest with just the specified metadata types. If no metadata types are specified a copy of the current manifest is returned.
+     * @param metadataTypes Metadata types to filter by or undefined (default) to get all metadata types
      */
     public getManifest(metadataTypes?: string[]): PackageManifest {
-        if (!metadataTypes) {
-            return this.manifest;
-        }
-
-        const manifestForReceivedTypes = new PackageManifest();
-        metadataTypes.forEach(metadataType => {
-            manifestForReceivedTypes.add(metadataType, this.manifest.list(metadataType));
-        });
-        return manifestForReceivedTypes;
+        return this.manifest.filter(metadataTypes ?? this.manifest.types());
     }
 
     /**

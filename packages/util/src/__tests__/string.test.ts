@@ -132,4 +132,24 @@ describe('util', () => {
             expect(string.lowerCamelCase('iAmAGoodString')).toEqual('iAmAGoodString');
         });
     });
+    describe('#stringEqualsIgnoreCase', () => {
+        it('should return true for equal strings with different case', () => {
+            expect(string.stringEqualsIgnoreCase('UnitTest', 'unittest')).toStrictEqual(true);
+        });
+        it('should return false for unequal strings with same case', () => {
+            expect(string.stringEqualsIgnoreCase('unittest1', 'unittest')).toStrictEqual(false);
+        });
+        it('should return true if string is found in array of strings with different case', () => {
+            expect(string.stringEqualsIgnoreCase('UnitTest', ['foo', 'unittest', 'bar'])).toStrictEqual(true);
+        });
+        it('should return true for undefied', () => {
+            expect(string.stringEqualsIgnoreCase(undefined, undefined)).toStrictEqual(true);
+        });
+        it('should return true for null', () => {
+            expect(string.stringEqualsIgnoreCase(null, null)).toStrictEqual(true);
+        });
+        it('should return false for nul/undefined', () => {
+            expect(string.stringEqualsIgnoreCase(undefined, null)).toStrictEqual(false);
+        });
+    });
 });

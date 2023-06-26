@@ -104,7 +104,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
             cancellable: true,
         }, async (progress, token) => {
 
-            const result = await this.salesforce.deploy.retrieveManifest(manifest, apiVersion, token);
+            const result = await this.salesforce.deploy.retrieveManifest(manifest, { apiVersion, cancellationToken: token });
 
             if (token?.isCancellationRequested) {
                 return;
