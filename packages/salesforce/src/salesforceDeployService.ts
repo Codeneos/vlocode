@@ -9,6 +9,25 @@ import { DeploymentProgress, PackageManifest, RetrieveResultPackage } from './de
 import { SalesforcePackage } from './deploymentPackage';
 import { MetadataRegistry } from './metadataRegistry';
 
+export interface RetrieveManifestOptions { 
+    apiVersion?: string;
+    checkInterval?: number;
+    cancellationToken?: CancellationToken;
+    /**
+     * Enable parallel retrieval of metadata types; when set to true
+     * each metadata type is retrieved in parallel. By default a max of `5` parallel retrievals are done.
+     * You can change the default parallelism by setting the parallel option to a number.
+     */
+    parallel?: boolean | number;
+    /**
+     * When parallel retrieval is enabled, this option can be used to set the chunk size of each parallel retrieval.
+     * The chunk size determines the number of metadata types that are retrieved in a single parallel call.
+     *
+     * Defaults to `1` when not set explicitly. Meaning that each metadata type is retrieved in a separate parallel call.
+     */
+    parallelChunkSize?: number;
+}
+
 @injectable()
 export class SalesforceDeployService {
 
@@ -129,26 +148,9 @@ export class SalesforceDeployService {
      */
     public async retrieveManifest(
         manifest: PackageManifest, 
-        options: { 
-            apiVersion?: string;
-            checkInterval?: number;
-            cancellationToken?: CancellationToken;
-            /**
-             * Enable parallel retrieval of metadata types; when set to true
-             * each metadata type is retrieved in parallel. By default a max of `5` parallel retrievals are done.
-             * You can change the default parallelism by setting the parallel option to a number.
-             */
-            parallel?: boolean | number;
-            /**
-             * When parallel retrieval is enabled, this option can be used to set the chunk size of each parallel retrieval.
-             * The chunk size determines the number of metadata types that are retrieved in a single parallel call.
-             *
-             * Defaults to `1` when not set explicitly. Meaning that each metadata type is retrieved in a separate parallel call.
-             */
-            parallelChunkSize?: number;
-        }) : Promise<RetrieveResultPackage> 
+        options?: RetrieveManifestOptions ): Promise<RetrieveResultPackage> 
     {
-        if (options.parallel) {
+        if (options?.parallel) {
             const results = await mapAsyncParallel(
                 this.splitManifest(manifest, options.parallelChunkSize ?? 1),
                 (manifestChunk) => this.getRetrieveTask(manifestChunk, options)(options.cancellationToken),
@@ -156,7 +158,7 @@ export class SalesforceDeployService {
             );
             return results.reduce((result, chunkResult) => result.merge(chunkResult));
         } else {
-            return this.getRetrieveTask(manifest, options)(options.cancellationToken);
+            return this.getRetrieveTask(manifest, options)(options?.cancellationToken);
         }
     }
 
@@ -196,7 +198,7 @@ export class SalesforceDeployService {
         return metadataGroups.filter(group => group.length).map(group => manifest.filter(group));
     }
 
-    private getRetrieveTask(manifest: PackageManifest, options: { apiVersion?: string, checkInterval?: number }) {
+    private getRetrieveTask(manifest: PackageManifest, options?: { apiVersion?: string, checkInterval?: number }) {
         return async (cancellationToken?: CancellationToken) => {
             // Start retrieve
             this.logger.debug(
@@ -210,11 +212,11 @@ export class SalesforceDeployService {
             const retrieveId = await connection.metadata.retrieve({
                 apiVersion: connection.version,
                 singlePackage: true,
-                unpackaged: manifest.toJson(options.apiVersion ?? this.salesforce.getApiVersion())
+                unpackaged: manifest.toJson(options?.apiVersion ?? this.salesforce.getApiVersion())
             });
 
             // Wait for retrieve to complete
-            while (await wait(options.checkInterval ?? 2000)) {
+            while (await wait(options?.checkInterval ?? 2000)) {
                 if (cancellationToken && cancellationToken.isCancellationRequested) {
                     // We can't cancel a retrieve
                     throw new Error('Retrieve request cancelled');
