@@ -5,7 +5,7 @@ import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
 import { DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
-import { ILogger, Logger } from '@vlocode/core';
+import { ILogger, Logger, LogManager } from '@vlocode/core';
 import { randomUUID } from 'crypto';
 
 export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE' | 'PUT';
@@ -102,9 +102,9 @@ export class HttpTransport implements Transport {
     private cookies = new CookieJar();
 
     /**
-     * Shared HTTP agent used by this {@link HttpTransport} used for connection pooling
+     * HTTP agent used by this {@link HttpTransport} used for connection pooling
      */
-    public httpAgent = new https.Agent({
+    private httpAgent = new https.Agent({
         defaultPort: 443,
         keepAlive: true,
         keepAliveMsecs: 60000,
@@ -147,7 +147,8 @@ export class HttpTransport implements Transport {
 
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
-        private logger: ILogger = Logger.null) {
+        private readonly logger: ILogger = LogManager.get('salesforce.httpTransport')
+    ) {
         this.options = withDefaults(options, HttpTransport.options);
         this.logger.info(`Enabled features ${this.getFeatureList().map(v => v.toUpperCase()).join(' ')}`);
     }

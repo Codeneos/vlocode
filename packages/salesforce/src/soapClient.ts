@@ -100,7 +100,7 @@ export class SoapClient {
         public readonly connection: SalesforceConnection,
         public readonly endpoint: string,
         public readonly xmlNs: string = 'http://soap.sforce.com/2006/08/apex') {
-            
+
         // Create SOAP transport
         this.transport = new HttpTransport({
             baseUrl: connection._baseUrl(),
