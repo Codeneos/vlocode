@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.11](https://github.com/codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
+
+### Bug Fixes
+
+* soap client does not log due to null logger being used ([3b69d7d](https://github.com/codeneos/vlocode/commit/3b69d7d5af65be0ace2620676d84a0046295a0a6))
+
+### Features
+
+* add forEach function to iterable ([b7cc28c](https://github.com/codeneos/vlocode/commit/b7cc28c5da9cf6680abdfadf6b96e14fd93ac388))
+* add package builder logging to understand why some data is marked as changed ([7e0eddb](https://github.com/codeneos/vlocode/commit/7e0eddbe136482f81dfb0d077428fe2a7f5fee28))
+* added new dedicated ignore case string compare ([f84ecf0](https://github.com/codeneos/vlocode/commit/f84ecf04042be6d10927b263125d3fb214a0948c))
+* extend object comparison to allow comparing of objects with unequal array element order. ([d28f898](https://github.com/codeneos/vlocode/commit/d28f898fd6dcae70b169651d5dd0b3bf570a657b))
+* support creation of PackageManifest from XML ([eaf7830](https://github.com/codeneos/vlocode/commit/eaf7830b4b69b954bf1fb7229d913be03ac8a3d5))
+* support detecting changed in object metadata when using retrieve strategy ([87aa5d4](https://github.com/codeneos/vlocode/commit/87aa5d42de4545c28ef7e8ed70b7247018ad8781))
+
 ## [0.19.10](https://github.com/codeneos/vlocode/compare/v0.19.9...v0.19.10) (2023-06-21)
 
 ### Bug Fixes

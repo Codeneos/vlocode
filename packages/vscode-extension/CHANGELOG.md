@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.11](https://github.com/codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
+
+### Features
+
+* support creation of PackageManifest from XML ([eaf7830](https://github.com/codeneos/vlocode/commit/eaf7830b4b69b954bf1fb7229d913be03ac8a3d5))
+* support detecting changed in object metadata when using retrieve strategy ([87aa5d4](https://github.com/codeneos/vlocode/commit/87aa5d42de4545c28ef7e8ed70b7247018ad8781))
+
 ## [0.19.10](https://github.com/codeneos/vlocode/compare/v0.19.9...v0.19.10) (2023-06-21)
 
 ### Features
