@@ -1,6 +1,7 @@
 import { HttpTransport, SalesforceConnection } from './connection';
 import { CustomError, formatString, setObjectProperty, wait, XML } from '@vlocode/util';
 import { Schema } from './schemaValidator';
+import { LogManager } from '@vlocode/core';
 
 export type SoapDebuggingLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FINE' | 'FINER' | 'FINEST';
 
@@ -111,7 +112,7 @@ export class SoapClient {
                     return XML.parse(buffer.toString(encoding), { ignoreNameSpace: true });
                 }
             }
-        });
+        }, LogManager.get('SoapTransport'));
     }
 
     /**

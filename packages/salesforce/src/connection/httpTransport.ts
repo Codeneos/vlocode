@@ -147,7 +147,7 @@ export class HttpTransport implements Transport {
 
     constructor(
         options: Partial<HttpTransportOptions & { baseUrl?: string, instanceUrl?: string }>,
-        private readonly logger: ILogger = LogManager.get('salesforce.httpTransport')
+        private readonly logger: ILogger = LogManager.get(HttpTransport)
     ) {
         this.options = withDefaults(options, HttpTransport.options);
         this.logger.info(`Enabled features ${this.getFeatureList().map(v => v.toUpperCase()).join(' ')}`);
