@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.11](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
+
+### Bug Fixes
+
+* soap client does not log due to null logger being used ([3b69d7d](https://github.com/Codeneos/vlocode/commit/3b69d7d5af65be0ace2620676d84a0046295a0a6))
+
+### Features
+
+* add package builder logging to understand why some data is marked as changed ([7e0eddb](https://github.com/Codeneos/vlocode/commit/7e0eddbe136482f81dfb0d077428fe2a7f5fee28))
+* support creation of PackageManifest from XML ([eaf7830](https://github.com/Codeneos/vlocode/commit/eaf7830b4b69b954bf1fb7229d913be03ac8a3d5))
+* support detecting changed in object metadata when using retrieve strategy ([87aa5d4](https://github.com/Codeneos/vlocode/commit/87aa5d42de4545c28ef7e8ed70b7247018ad8781))
+
 ## [0.19.10](https://github.com/Codeneos/vlocode/compare/v0.19.9...v0.19.10) (2023-06-21)
 
 ### Bug Fixes
