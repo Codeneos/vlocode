@@ -1,4 +1,5 @@
 import * as xmlParser from 'fast-xml-parser';
+import { DOMParser } from '@xmldom/xmldom';
 import { decode, escape } from 'he';
 import { visitObject } from './object';
 
@@ -13,6 +14,16 @@ export interface XMLStringfyOptions {
     trimValues?: boolean;
     headless?: boolean;
     stripEmptyNodes?: boolean;
+}
+
+export interface TextPosition {
+    column: number;
+    line: number;
+}
+
+export interface TextRange {
+    start: TextPosition;
+    end: TextPosition;
 }
 
 export namespace XML {
@@ -126,5 +137,46 @@ export namespace XML {
      */
     export function normalize(xml: string | Buffer) {
         return stringify(parse(xml, { trimValues: true }));
+    }
+
+    /**
+     * Find the first node in a XML string matching the specified path. The path is a dot separated list of tags and can include a index number to select a specific node.
+     * @example 
+     * Returns the first inner node of rootTag:
+     * ```js
+     * const xml = `<rootTag> <inner /> <inner /> </rootTag>`;
+     * const tag = getNode(xml, 'rootTag.inner|1');
+     * ```
+     * @param xml XML string or buffer
+     * @param path Dot separated path to the node
+     * @returns Node or undefined if not found
+     */
+    export function getNode(xml: string, path: string): Node | undefined {
+        if (Buffer.isBuffer(xml)) {
+            xml = xml.toString('utf-8');
+        }
+        return path.split(/\.|:/).reduce((node, tagWithIndex) => {
+            const [tag, index] = tagWithIndex.split('|');
+            let childNodeIndex = 0;
+            return node && Array.from(node.childNodes).find(child => 
+               (tag === '*' || child.nodeName === tag) && (!index || ++childNodeIndex === Number(index))
+            );
+        }, new DOMParser().parseFromString(xml, 'text/xml') as Node);
+    }
+
+    export function getNodeTextRange(xml: string, path: string): TextRange | undefined {
+        const node = getNode(xml, path);
+        if (node) {
+            const lines = String(node).split('\n');
+            const start = {
+                column: node['columnNumber'],
+                line: node['lineNumber'],
+            };
+            const end = {
+                column: (lines.length === 1 ? start.column : 1) + lines[lines.length - 1].length,
+                line: start.line + lines.length - 1,
+            };
+            return { start, end };
+        }
     }
 }

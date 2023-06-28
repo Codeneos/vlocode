@@ -73,4 +73,51 @@ describe('xml', () => {
                  <test><tag>test</tag></test>`)).toBe('test');
         });
     });
+    describe('#getNode', () => {
+        it('should get node based on property path', () => {
+            expect(String(XML.getNode(
+                `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+                 <test><tag><bar>bar</bar></tag><bar>foo</bar></test>`, 
+                 'test.tag.bar'))).toEqual('<bar>bar</bar>');
+        });
+        it('should get node based based on indexer property in path', () => {
+            expect(String(XML.getNode(
+                `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+                 <test><tag><bar>bar1</bar><bar>bar2</bar></tag><bar>foo</bar></test>`, 
+                 'test.tag.bar|2'))).toEqual('<bar>bar2</bar>');
+        });
+    });
+    describe('#getNodeTextRange', () => {
+        it('should get node text range on multiple lines', () => {
+            const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+            <test>
+            <tag>
+            <bar>
+                bar
+            </bar>
+            </tag>
+            <bar>foo</bar>
+            </test>`
+            expect(XML.getNodeTextRange(xml, 'test.tag.bar')).toEqual( {
+                start: { line: 4, column: 13 },
+                end: { line: 6, column: 19 }
+            });
+        });
+        it('should get node text range when on same line', () => {
+            const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+            <test><tag><bar>bar</bar></tag><bar>bar</bar></test>`
+            expect(XML.getNodeTextRange(xml, 'test.tag.bar')).toEqual( {
+                start: { line: 2, column: 24 },
+                end: { line: 2, column: 38 }
+            });
+        });
+        it('should get node text range of root node', () => {
+            const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+            <test><tag><bar>bar</bar></tag><bar>bar</bar></test>`
+            expect(XML.getNodeTextRange(xml, 'test')).toEqual( {
+                start: { line: 2, column: 13 },
+                end: { line: 2, column: 65 }
+            });
+        });
+    });
 });
