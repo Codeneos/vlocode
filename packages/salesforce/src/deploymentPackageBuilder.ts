@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as chalk from 'chalk';
 import * as ZipArchive from 'jszip';
 
-import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem } from '@vlocode/core';
+import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, container, Container } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, intersect, except, primitiveCompare, deepCompare, filterObject } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
@@ -408,12 +408,13 @@ export class SalesforcePackageBuilder {
      * @param options Options that are passed to the strategy
      * @returns A SalesforcePackage containing only the changed components
      */
-    public async getDeltaPackage<T extends object>(
-        strategy: DeltaPackageStrategy<T>, 
-        options?: Parameters<DeltaPackageStrategy<T>['getChangedComponents']>[1]
+    public async getDeltaPackage<S extends DeltaPackageStrategy<T>, T extends object>(
+        strategy: new(...args: any[]) => S,
+        options?: Parameters<S['getChangedComponents']>[1]
     ) {
         const mdPackage = this.getPackage();
-        const changedComponents = await strategy.getChangedComponents(mdPackage, options);
+        const deltaStrategy = Container.get(this).create(strategy);
+        const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
 
         if (!changedComponents.length) {
             return mdPackage;

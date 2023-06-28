@@ -46,10 +46,16 @@ export interface ServiceOptions {
     priority: number;
 }
 
-const lazyMarker = Symbol('[[Container:Lazy]]');
-const lazyTarget = Symbol('[[Container:LazyTarget]]');
-const lazyIsResolved = Symbol('[[Container:LazyIsResolved]]');
-const serviceGuidSymbol = Symbol('[[Container:ServiceGuid]]');
+/**
+ * Symbol used to store the container instance on the container that 
+ * is used to resolve the container instance. 
+ */
+export const ContainerSymbol = Symbol('Container');
+
+const lazyMarker = Symbol('Container:Lazy');
+const lazyTarget = Symbol('Container:LazyTarget');
+const lazyIsResolved = Symbol('Container:LazyIsResolved');
+const serviceGuidSymbol = Symbol('Container:ServiceGuid');
 
 const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({
     lifecycle: LifecyclePolicy.singleton,
@@ -277,22 +283,34 @@ export class Container {
     private createInstance<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, args: Array<any> = []): InstanceType<T> {
         // Get argument types
         const instanceGuid = this.generateServiceGuid(ctor);
-        let instanceCtor = ctor;
+        //let instanceCtor = ctor;
 
         // When decorated make sure to instantiate using the original Ctor
         // the decorated ctor will use the standard container instead of the local container
-        const originalCtor = ctor[InjectableDecorated] && ctor[InjectableOriginalCtor];
+        //const originalCtor = ctor[InjectableDecorated] && ctor[InjectableOriginalCtor];
 
-        if (originalCtor && ctor[InjectableIdentity] === originalCtor[InjectableIdentity]) {
-            // Only use the original ctor shares the same identity as the decorated ctor
-            // if the identities are different then the original ctor is a different class and we should not use it
-            instanceCtor = originalCtor;
-        }
+        // if (originalCtor && ctor[InjectableIdentity] === originalCtor[InjectableIdentity]) {
+        //     // Only use the original ctor shares the same identity as the decorated ctor
+        //     // if the identities are different then the original ctor is a different class and we should not use it
+        //     instanceCtor = originalCtor;
+        // }
 
         const resolvedArgs = this.resolveParameters(ctor, args, instanceGuid);
         const instance = this.decorateWithServiceGuid(new ctor(...resolvedArgs), instanceGuid);
+        Object.defineProperty(instance, ContainerSymbol, { value: this, enumerable: false, writable: false, configurable: false });
         Object.setPrototypeOf(instance, ctor.prototype);
         return this.resolveProperties(instance);
+    }
+
+    /**
+     * Get's the container that owns or created the specified instance.
+     */
+    public static get(instance: object): Container {
+        const owner = instance[ContainerSymbol];
+        if (!owner) {
+            throw new Error('Unable to determine owner of instance');
+        }
+        return owner;
     }
 
     /**
@@ -580,18 +598,47 @@ export class Container {
 
 class ProxyTarget<T extends Object> extends EventEmitter {
     public instance?: T & Object;
+    private static supportedEvents: (symbol | string)[] = [ 'resolved' ];
 
     constructor(private readonly factory: () => T) {
         super();
     }
 
-    public setInstance(instance: T) {
-        this.instance = instance;
+    public on(eventName: string | symbol, listener: (...args: any[]) => void): this {
+        return this.listen('on', eventName, listener);
     }
 
-    public getInstance() {
+    public once(eventName: string | symbol, listener: (...args: any[]) => void): this {
+        return this.listen('once', eventName, listener);
+    }
+
+    public listen(type: 'on' | 'once', eventName: string | symbol, listener: (...args: any[]) => void): this {
+        if (!ProxyTarget.supportedEvents.includes(eventName)) {
+            throw new Error(`Unsupported event: ${String(eventName)}`);
+        }
+
+        if (eventName === 'resolved' && this.instance) {
+            listener(this.instance);
+        } else {
+            super[type](eventName, listener);
+        }
+
+        return this;
+    }
+
+    public setInstance(instance: T): T {
+        const shouldEmit = !this.instance;
+        this.instance = instance
+        if (shouldEmit) {
+            this.emit('resolved', instance);
+            this.removeAllListeners();
+        }
+        return instance;
+    }
+
+    public getInstance(): T {
         if (!this.instance) {
-            this.emit('resolved', this.instance = this.factory());
+            return this.setInstance(this.factory());
         }
         return this.instance;
     }
