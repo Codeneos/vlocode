@@ -6,7 +6,7 @@ import * as open from 'open';
 import { ActivityProgress, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
 import { VlocodeCommand } from '../../constants';
 import MetadataCommand from './metadataCommand';
-import { DeployResult, DeployStatus, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, DeployStatus, RetrieveDeltaStragey, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -81,6 +81,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         // build package
         const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, this.vlocode.getApiVersion());
         const sfPackage = (await packageBuilder.addFiles(selectedFiles)).getPackage();
+        const delta = await packageBuilder.getDeltaPackage(RetrieveDeltaStragey);
 
         if (sfPackage.isEmpty) {
             void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
