@@ -47,6 +47,7 @@ const common : webpack.Configuration = {
                 use: [{
                     loader: 'ts-loader',
                     options: {
+                        configFile: path.resolve(__dirname, 'tsconfig.json'),
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     }
                 }],
@@ -81,6 +82,16 @@ const common : webpack.Configuration = {
         new webpack.IgnorePlugin({
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
+        }),
+        new webpack.SourceMapDevToolPlugin({
+            filename: '[file].map[query]',
+            exclude: ['vendor.js', 'lib-sass.js'],
+            noSources: true,
+            module: true,
+            columns: true,
+            moduleFilenameTemplate: (info: { absoluteResourcePath: string }) => {
+                return info.absoluteResourcePath;
+            }
         })
     ],
     node: {
@@ -140,7 +151,6 @@ const extension : webpack.Configuration = {
         'sass-compiler': '../vlocity-deploy/src/scss/forked/fork.ts'
     },
     name: 'vlocode',
-    devtool: 'source-map',
     output: {
         libraryTarget: 'commonjs2',
         path: path.resolve(contextFolder, 'out'),

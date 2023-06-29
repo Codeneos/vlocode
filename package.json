@@ -63,6 +63,7 @@
     },
     "scripts": {
         "build": "pnpm run -r build",
+        "pack": "pnpm run build && pnpm run -r pack",
         "clean": "pnpm run -r clean",
         "watch": "pnpm run -r --parallel --stream --no-bail watch",
         "watch-cli": "pnpm run --filter @vlocode/cli... --parallel --stream --no-bail watch",
