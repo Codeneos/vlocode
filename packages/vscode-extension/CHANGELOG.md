@@ -1,8 +1,19 @@
 # Change Log
-## Vlocity/Salesforce Integration for VSCode
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## [0.19.12](https://github.com/codeneos/vlocode/compare/v0.19.10...v0.19.12) (2023-07-04)
+
+### Bug Fixes
+
+* support `getDeltaPackage` with out having to create the strategy from the container, instead the builder will create the strategy ([2d50461](https://github.com/codeneos/vlocode/commit/2d50461b15aaf46446b3800da8922ceae7bb3b5b))
+
+### Features
+
+* provide more clear warning when deploying to production instances ([f886216](https://github.com/codeneos/vlocode/commit/f886216776493db4ed78aaf773854754eef98d95))
+* support creation of PackageManifest from XML ([779df29](https://github.com/codeneos/vlocode/commit/779df29bb6e6c4f7fa77c9ab4208080920ca9ca0))
+* support detecting changed in object metadata when using retrieve strategy ([a31d170](https://github.com/codeneos/vlocode/commit/a31d170757108ce76ff7ff7344eff704a294420a))
 
 ## [0.19.11](https://github.com/codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
 

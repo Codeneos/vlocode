@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.12](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.12) (2023-07-04)
+
+### Features
+
+* add forEach function to iterable ([ffc6bed](https://github.com/Codeneos/vlocode/commit/ffc6bed9bf552056e36f3457e748412ef1a5719a))
+* add XML text range and node utility functions ([ee80736](https://github.com/Codeneos/vlocode/commit/ee80736f3c9855c81f19bfb7d0666b4694c43a1f))
+* added new dedicated ignore case string compare ([822eb02](https://github.com/Codeneos/vlocode/commit/822eb020ce62ca7a55f13849bf14675a402b1036))
+* extend object comparison to allow comparing of objects with unequal array element order. ([46a24c7](https://github.com/Codeneos/vlocode/commit/46a24c77193a522ed687a789f532df4d1379948a))
+* support detecting changed in object metadata when using retrieve strategy ([a31d170](https://github.com/Codeneos/vlocode/commit/a31d170757108ce76ff7ff7344eff704a294420a))
+
 ## [0.19.11](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
 
 ### Features

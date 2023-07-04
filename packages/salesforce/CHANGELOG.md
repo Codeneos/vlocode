@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.12](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.12) (2023-07-04)
+
+### Bug Fixes
+
+* soap client does not log due to null logger being used ([4f0f5f4](https://github.com/Codeneos/vlocode/commit/4f0f5f4987cf030f76e86a933c9844ed83b18545))
+* support `getDeltaPackage` with out having to create the strategy from the container, instead the builder will create the strategy ([5fbc313](https://github.com/Codeneos/vlocode/commit/5fbc313ad36b8979280db860841fbeb2880a3904))
+
+### Features
+
+* add package builder logging to understand why some data is marked as changed ([8dc215b](https://github.com/Codeneos/vlocode/commit/8dc215bd397704ca94333b745f598959f50cb273))
+* support creation of PackageManifest from XML ([779df29](https://github.com/Codeneos/vlocode/commit/779df29bb6e6c4f7fa77c9ab4208080920ca9ca0))
+* support detecting changed in object metadata when using retrieve strategy ([a31d170](https://github.com/Codeneos/vlocode/commit/a31d170757108ce76ff7ff7344eff704a294420a))
+
 ## [0.19.11](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.12](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.12) (2023-07-04)
+
+### Bug Fixes
+
+* support `getDeltaPackage` with out having to create the strategy from the container, instead the builder will create the strategy ([5fbc313](https://github.com/Codeneos/vlocode/commit/5fbc313ad36b8979280db860841fbeb2880a3904))
+
 ## [0.19.11](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
 
 **Note:** Version bump only for package @vlocode/core

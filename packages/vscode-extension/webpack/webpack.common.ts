@@ -2,7 +2,6 @@ import * as path from 'path';
 import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import * as glob from 'glob';
-import { TsconfigPathsPlugin } from 'tsconfig-paths-webpack-plugin';
 import * as CopyPlugin from 'copy-webpack-plugin';
 import WatchMarkersPlugin from './plugins/watchMarkers';
 import { existsSync, readdirSync, readFileSync } from 'fs';
@@ -83,16 +82,16 @@ const common : webpack.Configuration = {
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
         }),
-        new webpack.SourceMapDevToolPlugin({
-            filename: '[file].map[query]',
-            exclude: ['vendor.js', 'lib-sass.js'],
-            noSources: true,
-            module: true,
-            columns: true,
-            moduleFilenameTemplate: (info: { absoluteResourcePath: string }) => {
-                return info.absoluteResourcePath;
-            }
-        })
+        // new webpack.SourceMapDevToolPlugin({
+        //     filename: '[file].map[query]',
+        //     exclude: ['vendor.js', 'lib-sass.js'],
+        //     noSources: true,
+        //     module: true,
+        //     columns: true,
+        //     moduleFilenameTemplate: (info: { absoluteResourcePath: string }) => {
+        //         return info.absoluteResourcePath;
+        //     }
+        // })
     ],
     node: {
         __dirname: false,
