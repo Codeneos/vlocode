@@ -26,18 +26,27 @@ export abstract class CommandBase implements Command {
     }
 
     /**
-     * Show a warning message about making changes to a production org allowing the user to cancel the operation in case it was unintended
-     * @param throwException Throw an exception instead of returning a boolean; default behavior is throwing an exception
+     * Show a warning message about making changes to a production org allowing
+     * the user to cancel the operation in case it was unintended.
+     *
+     * By default this method will throw an exception if the user cancels the operation, use overload with the `throwException` parameter to change this behavior.
+     *
+     * @param throwException Throw an exception if the user cancels the operation
      */
+    protected async showProductionWarning(throwException?: true) : Promise<never | true>;
+    protected async showProductionWarning(throwException: false) : Promise<boolean>;
     protected async showProductionWarning(throwException = true) : Promise<never | boolean> {
-        const productionWarning = await vscode.window.showQuickPick([
-            { continue: false, label: '$(circle-slash) No', description: 'cancel the current operation' },
-            { continue: true, label: '$(check) Yes', description: 'continue and make changes to the connected Production instance' }
-        ], { placeHolder: 'Make changes to connected Production instance?' });
+        const productionWarning = await vscode.window.showWarningMessage(
+            'Make changes to a Production org?',
+            {
+                detail: 'You are about to make changes to a Production org. It is not recommended to direcly make changes to a Production instance doing so may result in data loss. Are you sure you want to continue?',
+                modal: true,
+            }, 'Yes', 'No'
+        );
 
-        if(!productionWarning || !productionWarning.continue ) {
+        if (productionWarning !== 'Yes') {
             if (throwException) {
-                throw new Error('Operation cancelled by user after making changes to production warning');
+                throw new Error('Operation cancelled by user due to production warning');
             }
             return false;
         }
