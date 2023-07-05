@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.13](https://github.com/codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
+
+### Bug Fixes
+
+* Error "Unable to determine owner of instance" on metadata deployment ([c523f8d](https://github.com/codeneos/vlocode/commit/c523f8dad307a0a8f5f0d0e8342f2735726ec578))
+
 ## [0.19.12](https://github.com/codeneos/vlocode/compare/v0.19.10...v0.19.12) (2023-07-04)
 
 ### Bug Fixes
