@@ -150,7 +150,7 @@ export class HttpTransport implements Transport {
         private readonly logger: ILogger = LogManager.get(HttpTransport)
     ) {
         this.options = withDefaults(options, HttpTransport.options);
-        this.logger.info(`Enabled features ${this.getFeatureList().map(v => v.toUpperCase()).join(' ')}`);
+        this.logger.verbose(`Transport options: ${this.getFeatureList().map(v => v.toUpperCase()).join(' ') || 'NONE'}`);
     }
 
     public getFeatureList() {

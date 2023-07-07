@@ -1,3 +1,4 @@
+import { LogManager } from "@vlocode/core";
 import { CustomError, decorate } from "@vlocode/util";
 import { OAuth2 } from 'jsforce';
 import { HttpTransport } from './httpTransport';
@@ -24,7 +25,7 @@ export class SalesforceOAuth2 extends decorate(OAuth2) {
             shouldKeepAlive: false,
             instanceUrl: connection.instanceUrl,
             baseUrl: connection._baseUrl()
-        });
+        }, LogManager.get(SalesforceOAuth2));
     }
 
     /**
