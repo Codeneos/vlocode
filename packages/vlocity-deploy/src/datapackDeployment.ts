@@ -156,7 +156,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     private writeDeploymentSummaryToLog(timer: Timer) {
         // Generate a reasonable log message that summarizes the deployment
-        const deployMessage = `Deployed ${this.deployedRecordCount} records${this.failedRecordCount ? `, failed ${this.failedRecordCount}` : ' without errors'}`;
+        const deployMessage = `Deployed ${this.deployedRecordCount}/${this.totalRecordCount} records`;
 
         if (this.options.deltaCheck) {
             const skippedRecords = this.skippedRecordCount;

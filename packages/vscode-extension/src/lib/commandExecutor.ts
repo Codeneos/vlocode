@@ -29,8 +29,8 @@ export class CommandExecutor implements Command {
             await this.command.execute(...args);
             this.logger.verbose(`Execution of command ${this.name} done`);
         } catch (err) {
-            console.error(err);            
-            this.logger.error(`Command error: ${err.message || err}`);
+            console.error(err);
+            this.logger.error(`${this.name}:`, err);
             this.logger.focus();
             void vscode.window.showErrorMessage(err.message || err);
         }

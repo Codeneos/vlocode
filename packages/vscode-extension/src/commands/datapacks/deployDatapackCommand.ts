@@ -1,17 +1,18 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { randomUUID } from 'crypto';
 
 import { forEachAsyncParallel } from '@vlocode/util';
 import { DatapackUtil } from '@vlocode/vlocity-deploy';
+import { container } from '@vlocode/core';
+
 import { DatapackCommand } from './datapackCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
-import { container } from '@vlocode/core';
-import { VlocityToolsDeployment } from '../../lib/vlocity/vlocodeDirectDeploy';
-import { VlocodeDirectDeployment } from '../../lib/vlocity/vlocityToolsDeploy';
 import { VlocityDeploy } from '../../lib/vlocity/vlocityDeploy';
 import { getContext } from '../../lib/vlocodeContext';
-import { randomUUID } from 'crypto';
+import { VlocodeDirectDeployment } from '../../lib/vlocity/vlocodeDirectDeploy';
+import { VlocityToolsDeployment } from '../../lib/vlocity/vlocityToolsDeploy';
 
 const deployModeSuggestionKey: string = 'deploymodeSuggestion-0.17.0';
 const suggestionInterval: number = 9 * 24 * 3600 * 1000;
