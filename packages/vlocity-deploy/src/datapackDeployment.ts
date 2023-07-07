@@ -1,4 +1,4 @@
-import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
+import { Logger, LifecyclePolicy, injectable, LogLevel } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
@@ -285,7 +285,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 return true;
             }
 
-            if (this.options.strictDependencies) {
+            if (this.options.strictOrder) {
                 const isExternalDependency = dependentRecord.datapackKey !== record.datapackKey;
                 if (isExternalDependency) {
                     const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
@@ -342,7 +342,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
             if (!this.options.lookupFailedDependencies) {
-                throw new Error(`Dependency failed to deploy: ${lookupKey} -- fix the dependency or ignore this error by setting "lookupFailedDependencies" to true`);
+                throw new Error(`cascade error due to failed dependency ${lookupKey}. Enable "lookupFailedDependencies" to attempt to resolve the failed dependency from the org instead`);
             }
 
             this.logger.warn(`Looking up dependency which should have been deployed: ${lookupKey}`);
@@ -443,11 +443,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         for (const datapack of Iterable.filter(datapacks.values(), datapack => datapack.hasUnresolvedDependencies)) {
             const unresolvedDependenciesKeys = datapack.getUnresolvedDependencies().map(({ dependency }) => dependency.VlocityMatchingRecordSourceKey || dependency.VlocityLookupRecordSourceKey);
-            this.logger.warn(`Record ${datapack.sourceKey} has ${unresolvedDependenciesKeys.length} unresolvable dependencies: ${unresolvedDependenciesKeys.join(', ')}`);
+            const logSeverity = this.options.allowUnresolvedDependencies ? LogLevel.warn : LogLevel.error;
+            this.logger.write(logSeverity, `Record ${datapack.sourceKey} has ${unresolvedDependenciesKeys.length} resolvable dependencies: ${unresolvedDependenciesKeys.join(', ')}`);
+
             for (const { field, dependency } of datapack.getUnresolvedDependencies()) {
-                datapack.addWarning(`Unresolved dependency "${dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey}" (field: ${field})`);
+                const error = `Unresolved dependency "${dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey}" (field: ${field})`;
+                if (this.options.allowUnresolvedDependencies) {
+                    datapack.addWarning(error);
+                } else {
+                    // Remove records when allowUnresolvedDependencies is false
+                    datapacks.delete(datapack.sourceKey);
+                    datapack.setFailed(error);
+                }
             }
         }
+
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
@@ -476,9 +486,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         // prepare batch
         await this.resolveDatapackDependencies(datapackRecords, cancelToken);
-        if (datapackRecords.size == 0) {
-            // After dependency resolution no datapacks left to deploy; move on to next chunk
-            // but it's likely already over from here on..
+        if (!datapackRecords.size) {
             return;
         }
 
