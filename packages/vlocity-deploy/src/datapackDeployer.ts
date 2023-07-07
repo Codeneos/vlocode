@@ -86,13 +86,24 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      */
     continueOnError?: boolean;
     /**
-     * When strict dependencies are enabled the deployment will wait for a records in a datapack to complete before proceeding with deploying
-     * the dependent record. This ensures that a datapack and all it's records an dependencies are deployed before deploying the dependent datapack.
+     * When strict order is enabled the deployment will wait for all records in a datapack to complete before proceeding with deploying
+     * any dependent datapacks. By default Vlocode determines deployment order based on record level dependencies this allows for optimal 
+     * chunking improving the overall speed of the deployment. By setting `strictOrder` to `true` Vlocode also enforces that any datapack 
+     * that is dependent on another datapack is deployed after the datapack it depends on.
      *
      * Enabling this reduces deployment performance as the deployment will be split in smaller chunks increasing the number of API calls to Salesforce.
      * @default false;
      */
-    strictDependencies?: boolean;
+    strictOrder?: boolean;
+    /**
+     * When enabled the deployment will not fail when a dependency cannot be resolved. If a record has a dependency that cannot be resolved the 
+     * record will normally be skipped  as deploying the record would fail or cause a corrupted state in the org.
+     *
+     * When this option is enabled records the deployment will try to deploy the record wihtout resolving the dependency. Only enable this if you are
+     * sure that all records can be deployed without all dependencies resolved.
+     * @default false;
+     */
+    allowUnresolvedDependencies?: boolean;
     /**
      * When enabled LWC enabled OmniScripts will not get compiled into native LWC components and be deployed to the target org during deployment.
      *

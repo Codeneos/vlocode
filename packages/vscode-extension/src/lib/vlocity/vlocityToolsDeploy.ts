@@ -19,7 +19,7 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
         const deployment = await this.datapackDeployer.createDeployment(datapacks, {
             // TODO: allow user to override these from options
-            strictDependencies: true,
+            strictOrder: true,
             purgeMatchingDependencies: false,
             lookupFailedDependencies: true,
             continueOnError: true,

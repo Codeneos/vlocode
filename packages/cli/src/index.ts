@@ -23,7 +23,7 @@ class CLI {
     private logger = LogManager.get(CLI);
 
     static options = [
-        new Option('-v, --verbose', 'enable verbose logging').default(false),
+        new Option('-v, --verbose', 'enable more detailed verbose logging').default(false),
         new Option('--debug', 'print call stack when an unhandled error occurs').default(false)
     ];
 
