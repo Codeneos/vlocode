@@ -9,20 +9,19 @@ export class ProductChildItem implements DatapackDeploymentSpec {
     private readonly uniqueFields =  [
         'ParentProductId__c',
         'ChildProductId__c',
-        'IsOverride__c',
         'RelationshipType__c'
     ];
 
     public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         const uniqueChildItems = new Map<string, DatapackDeploymentRecord>();
-        for (const record of records) {
+        for (const record of records.filter(item => item.value('IsOverride__c') !== true)) {
             if (this.isRootChildItem(record)) {
                 record.upsertFields = [
-                    'IsOverride__c',
                     'IsRootProductChildItem__c',
                     'Name'
                 ];
             }
+
             const itemUniqueId = objectHash(this.uniqueFields.map(field => record.value(field) ?? record.getLookup(field)));
             const currentItem = uniqueChildItems.get(itemUniqueId);
             if (currentItem) {
