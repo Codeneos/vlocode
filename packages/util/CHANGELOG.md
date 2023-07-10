@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.14](https://github.com/Codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
+
+### Bug Fixes
+
+* "add to profile" command command does not work properly ([2e27e1e](https://github.com/Codeneos/vlocode/commit/2e27e1e55f46b807b9bb8545c1135715e5d18c77))
+* when the access token fails to update in SFDX retry up to 3 times before failing ([da71552](https://github.com/Codeneos/vlocode/commit/da71552cc94915bc3082e50405647ce0662cdda6))
+
+### Features
+
+* add new object property sort to util library ([e313b5f](https://github.com/Codeneos/vlocode/commit/e313b5fb8ccaa2be1a6556fe2aa65ccd645c206a))
+* add retryable decorator to retry async operations x times before failing ([2fb2242](https://github.com/Codeneos/vlocode/commit/2fb22423ba4c7986ad2a9a6ec4f481cb0799ac06))
+
 ## [0.19.13](https://github.com/Codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
 
 **Note:** Version bump only for package @vlocode/util

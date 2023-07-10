@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.14](https://github.com/Codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
+
+### Bug Fixes
+
+* "add to profile" command command does not work properly ([2e27e1e](https://github.com/Codeneos/vlocode/commit/2e27e1e55f46b807b9bb8545c1135715e5d18c77))
+* HTTP Transport should not log features at info log level ([a58f779](https://github.com/Codeneos/vlocode/commit/a58f779380b788e1708722fd68e5dffa3343ebd9))
+* refresh token is updated twice on due to double refresh event being emitted ([0eefe60](https://github.com/Codeneos/vlocode/commit/0eefe60c7a8a38f1b6e13e077610b4715d7f6029))
+* unable to use openInOrg on MDT fields profiles, roles and certain custom fields. ([75c3060](https://github.com/Codeneos/vlocode/commit/75c3060b28651319c443456880fbbe37a6402369))
+
 ## [0.19.13](https://github.com/Codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
 
 **Note:** Version bump only for package @vlocode/salesforce

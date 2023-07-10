@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.14](https://github.com/Codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
+
+### Bug Fixes
+
+* deployment fails to deploy child item overrides since v0.19.11 ([0125289](https://github.com/Codeneos/vlocode/commit/0125289b9faf9c1134f7df3aa1ea31cb39896fe9))
+
+### Features
+
+* **breaking:** rename `strictDependencies` to `strictOrder` to better explain what the option does ([1de5352](https://github.com/Codeneos/vlocode/commit/1de5352d195d7f6c513d9cc4302ff5660af22e17))
+* do not deploy records for which a dependency did not deploy unless `allowUnresolvedDependencies` is set ([1f52fae](https://github.com/Codeneos/vlocode/commit/1f52fae9424fa258a8028557ee78fa1f358ac855))
+* improve reporting when using direct deploy mode from VSCode ([5f40128](https://github.com/Codeneos/vlocode/commit/5f40128180729898bfa12289d167630939fee7d7))
+
 ## [0.19.13](https://github.com/Codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.14](https://github.com/codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
+
+### Bug Fixes
+
+* "add to profile" command command does not work properly ([2e27e1e](https://github.com/codeneos/vlocode/commit/2e27e1e55f46b807b9bb8545c1135715e5d18c77))
+
+### Features
+
+* **breaking:** rename `strictDependencies` to `strictOrder` to better explain what the option does ([1de5352](https://github.com/codeneos/vlocode/commit/1de5352d195d7f6c513d9cc4302ff5660af22e17))
+* improve reporting when using direct deploy mode from VSCode ([5f40128](https://github.com/codeneos/vlocode/commit/5f40128180729898bfa12289d167630939fee7d7))
+* show warning message when refresh token is expired and open browser to re-authenticate ([bf4859a](https://github.com/codeneos/vlocode/commit/bf4859a25a35f480558f3d9d220f753f8ce3975c))
+
 ## [0.19.13](https://github.com/codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
 
 ### Bug Fixes

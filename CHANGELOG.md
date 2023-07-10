@@ -4,6 +4,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.14](https://github.com/codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
+
+### Bug Fixes
+
+* "add to profile" command command does not work properly ([2e27e1e](https://github.com/codeneos/vlocode/commit/2e27e1e55f46b807b9bb8545c1135715e5d18c77))
+* deployment fails to deploy child item overrides since v0.19.11 ([0125289](https://github.com/codeneos/vlocode/commit/0125289b9faf9c1134f7df3aa1ea31cb39896fe9))
+* HTTP Transport should not log features at info log level ([a58f779](https://github.com/codeneos/vlocode/commit/a58f779380b788e1708722fd68e5dffa3343ebd9))
+* refresh token is updated twice on due to double refresh event being emitted ([0eefe60](https://github.com/codeneos/vlocode/commit/0eefe60c7a8a38f1b6e13e077610b4715d7f6029))
+* unable to use openInOrg on MDT fields profiles, roles and certain custom fields. ([75c3060](https://github.com/codeneos/vlocode/commit/75c3060b28651319c443456880fbbe37a6402369))
+* when the access token fails to update in SFDX retry up to 3 times before failing ([da71552](https://github.com/codeneos/vlocode/commit/da71552cc94915bc3082e50405647ce0662cdda6))
+
+### Features
+
+* add new object property sort to util library ([e313b5f](https://github.com/codeneos/vlocode/commit/e313b5fb8ccaa2be1a6556fe2aa65ccd645c206a))
+* add retryable decorator to retry async operations x times before failing ([2fb2242](https://github.com/codeneos/vlocode/commit/2fb22423ba4c7986ad2a9a6ec4f481cb0799ac06))
+* **breaking:** rename `strictDependencies` to `strictOrder` to better explain what the option does ([1de5352](https://github.com/codeneos/vlocode/commit/1de5352d195d7f6c513d9cc4302ff5660af22e17))
+* do not deploy records for which a dependency did not deploy unless `allowUnresolvedDependencies` is set ([1f52fae](https://github.com/codeneos/vlocode/commit/1f52fae9424fa258a8028557ee78fa1f358ac855))
+* improve reporting when using direct deploy mode from VSCode ([5f40128](https://github.com/codeneos/vlocode/commit/5f40128180729898bfa12289d167630939fee7d7))
+* show warning message when refresh token is expired and open browser to re-authenticate ([bf4859a](https://github.com/codeneos/vlocode/commit/bf4859a25a35f480558f3d9d220f753f8ce3975c))
+
 ## [0.19.13](https://github.com/codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
 
 ### Bug Fixes
