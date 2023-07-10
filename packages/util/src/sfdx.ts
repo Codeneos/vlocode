@@ -1,6 +1,7 @@
 import * as open from 'open';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
+import { makeRetryable, retryable, wait } from './async';
 
 export interface SalesforceAuthResult {
     orgId: string;
@@ -157,13 +158,13 @@ export namespace sfdx {
      * @param usernameOrAlias Salesforce username or SFDX alias
      * @param accessToken New access token to store for the specified username
      */
-    export async function updateAccessToken(usernameOrAlias: string, accessToken: string) : Promise<void> {
+    export const updateAccessToken = makeRetryable(async function(usernameOrAlias: string, accessToken: string): Promise<void> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
         const username = stateAggregator.aliases.getUsername(usernameOrAlias) || usernameOrAlias;
-        const authFields = stateAggregator.orgs.get(username, true)
+        const authFields = stateAggregator.orgs.get(username, true);
         stateAggregator.orgs.update(username, { refreshToken: authFields.refreshToken, accessToken });
         await stateAggregator.orgs.write(username);
-    }
+    });
 
     /**
      * Resolves the username for an SFDX alias, if the specified {@link alias} cannot be mapped back to a valid Salesforce username returns `undefined`.
