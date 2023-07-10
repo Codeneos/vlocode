@@ -97,13 +97,16 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             } else if (err?.message == 'The org cannot be found') {
                 this.logger.error(err?.message);
                 this.showStatus(`$(error) Org not found - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
-            } else if (err?.name === 'invalid_grant' || err?.message == 'RefreshTokenAuthError') {                
-                this.logger.error(`Authorization token expired for ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
+            } else if (err?.name === 'invalid_grant' || err?.message == 'RefreshTokenAuthError') {
                 this.showStatus(`$(key) Authorization expired - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+                if (await this.promptRefreshOAuthToken()) { 
+                    return this.initialize();
+                }
+                this.logger.error(`Authorization token expired for ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
             } else if (err?.code == 'ENOTFOUND') {
                 this.logger.error(`Unable to reach Salesforce; are you connected to the internet?`);
                 this.showStatus(`$(cloud-offline) Unable to reach Salesforce`, VlocodeCommand.selectOrg);
-            } else {                
+            } else {
                 this.logger.error(err);
                 this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
@@ -159,7 +162,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     /**
-     * Thin wrapper around `vscode.window.withProgress` with location `Notification` and cancellable `false`. 
+     * Thin wrapper around `vscode.window.withProgress` with location `Notification` and cancellable `false`.
      * @param title Title of the task
      * @param task task to run
      */
@@ -173,7 +176,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     /**
-     * Thin wrapper around `vscode.window.withProgress` with location `Notification` and cancellable `true`. 
+     * Thin wrapper around `vscode.window.withProgress` with location `Notification` and cancellable `true`.
      * @param title Title of the task
      * @param task task to run
      */
@@ -187,7 +190,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     /**
-     * Thin wrapper around `vscode.window.withProgress` with location `Window` and cancellable `false`. 
+     * Thin wrapper around `vscode.window.withProgress` with location `Window` and cancellable `false`.
      * @param title Title of the task
      * @param task task to run
      */
@@ -245,7 +248,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             }
         });
 
-        const progressInterceptor = (vscodeProgress: vscode.Progress<{ message?: string; increment?: number }>) => {            
+        const progressInterceptor = (vscodeProgress: vscode.Progress<{ message?: string; increment?: number }>) => {
             return {
                 report({message, progress, total, status}) {
                     let relativeIncrement: number | undefined = undefined;
@@ -337,7 +340,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                     }
                 }
             });
-            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, { 
+            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, {
                 version: this.config.salesforce.apiVersion
             }));
         }
@@ -351,11 +354,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 { title: 'Yes', refresh: true },
                 { title: 'No', refresh: false }
             );
-            if (action?.refresh) {
-                const authResult = await this.refreshOAuthTokens();
-                if (authResult.accessToken) {
-                    return connector!.getJsForceConnection();
-                }
+            if (await this.promptRefreshOAuthToken()) {
+                return connector!.getJsForceConnection();
             } else {
                 throw new Error(`Unable to connect to Salesforce, the refresh token for ${this.config.sfdxUsername} has expired`);
             }
@@ -364,13 +364,22 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }
     }
 
+    private async promptRefreshOAuthToken() {
+        const action = await vscode.window.showWarningMessage(
+            `Authorization for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`,
+            { title: 'Refresh', refresh: true },
+            { title: 'Cancel', refresh: false }
+        );
+        return action?.refresh ? !!(await this.refreshOAuthTokens()).accessToken : false;
+    }
+
     public refreshOAuthTokens() {
         return this.withActivity({
-            progressTitle: `Refresh ${this.config.sfdxUsername} org credentials...`,
+            progressTitle: `Refreshing ${this.config.sfdxUsername} org credentials...`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
-        }, (progress, token) => sfdx.refreshOAuthTokens(this.config.sfdxUsername!, token));
+        }, (_, token) => sfdx.refreshOAuthTokens(this.config.sfdxUsername!, token));
     }
 
     private updateNamespaceHook({ args }) {
@@ -444,7 +453,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.showApiVersionStatusItem();
     }
 
-    public async validateSalesforceConnectivity() : Promise<string | undefined> {        
+    public async validateSalesforceConnectivity() : Promise<string | undefined> {
         if (!this.config.sfdxUsername) {
             const message = 'Select a Salesforce instance for this workspace to use Vlocode';
             const selectedAction = await vscode.window.showInformationMessage(message, 'Connect to Salesforce');
@@ -460,9 +469,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
         if (!this._datapackService || !this._salesforceService) {
             // Await service initialization
-            await vscode.window.withProgress({ 
-                title: 'Vlocode: initializing services...',  
-                location: vscode.ProgressLocation.Window  
+            await vscode.window.withProgress({
+                title: 'Vlocode: initializing services...',
+                location: vscode.ProgressLocation.Window
             }, () => poll(() => this._datapackService && this._salesforceService, 60000, 500, { resolveOnTimeout: true }));
         }
 
