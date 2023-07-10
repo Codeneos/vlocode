@@ -1,5 +1,5 @@
 import 'jest';
-import { objectEquals, flattenObject, getObjectProperty, getObjectValues, setObjectProperty } from '../object';
+import { objectEquals, flattenObject, getObjectProperty, getObjectValues, setObjectProperty, sortProperties } from '../object';
 
 describe('util', () => {
     describe('#getValues', () => {
@@ -69,6 +69,31 @@ describe('util', () => {
         it('should return undefined when property not found', () => {
             const obj = { foo: { bar: 'test' } };
             expect(getObjectProperty(obj, 'foo.bar.baz')).toBe(undefined);
+        });
+    });
+    describe('#sortProperties', () => {
+        function strictEqualWithOrder(a: any, b: any) {
+            expect(JSON.stringify(a)).toStrictEqual(JSON.stringify(b));
+        }
+        it('should sort properties', () => {
+            const obj = Object.freeze({ c: '1', b: '2' });
+            const result = sortProperties(obj);
+            strictEqualWithOrder(result, { b: '2', c: '1' });
+        });
+        it('should sort nummeric properties', () => {
+            const obj = Object.freeze({ c: '1', 1: '2', 0: '3', 10: '4' });
+            const result = sortProperties(obj);
+            strictEqualWithOrder(result, { 0: '3', 1: '2', 10: '4', c: '1' });
+        });
+        it('should sort properties of nested objects', () => {
+            const obj = Object.freeze({ c: '1', b: { d: '1', a: '2' } });
+            const result = sortProperties(obj);
+            strictEqualWithOrder(result, { b: { a: '2', d: '1' }, c: '1' });
+        });
+        it('should sort properties of nested objects in array', () => {
+            const obj = Object.freeze({ b: [{ d: '1', a: '2' }, { c: '1', b: '2' }] });
+            const result = sortProperties(obj);
+            strictEqualWithOrder(result, { b: [{ a: '2', d: '1' }, { b: '2', c: '1' }] });
         });
     });
     describe('#compareObject', () => {

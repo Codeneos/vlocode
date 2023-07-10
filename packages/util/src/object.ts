@@ -564,3 +564,31 @@ export function proxySpread<T extends object[]>(...objs: [...T]) {
         }
     })
 }
+
+/**
+ * Deep sort the properties of an object by their key name and return a new object with the sorted properties.
+ * @param obj Object to sort
+ * @param compareFn Optional compare function to use when sorting the properties; defaults to `a.localeCompare(b, 'en')`
+ * @param options Optional options to control the sort order; defaults to `asc`
+ * @returns New object with the sorted properties
+ */
+export function sortProperties(
+    obj: unknown, 
+    compareFn?: (a: [key: string, value: unknown], b: [key: string, value: unknown]) => number,
+    options?: { sortOrder?: 'asc' | 'desc' }
+) {
+    if (!compareFn) {
+        compareFn = ([a], [b]) => a.localeCompare(b, 'en')
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map((ele) => sortProperties(ele, compareFn, options));
+    } else if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+
+    const objectEntries = Object.entries(obj)
+        .map(([k,v]) => [k, sortProperties(v, compareFn, options)])
+        .sort(([a, v1], [b, v2]) => Array.isArray(v1) == Array.isArray(v2) ? a.localeCompare(b, 'en') : (Array.isArray(v1) ? 1 : -1));
+    return Object.fromEntries(objectEntries);
+}
