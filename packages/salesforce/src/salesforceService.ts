@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -332,6 +332,9 @@ export class SalesforceService implements SalesforceConnectionProvider {
         if (metadataInfo.componentType == 'Layout') {
             name = substringAfter(metadataInfo.componentName, '-');
         }
+        if (metadataInfo.componentType == 'CustomField') {
+            name = name.split('.').pop()!;
+        }
 
         const nameParts = name.split('__');
         if (nameParts.length > 2) {
@@ -388,17 +391,19 @@ export class SalesforceService implements SalesforceConnectionProvider {
      */
     public async loadProfilesFromDisk() {
         const profilesFiles = await this.fs.findFiles([ '**/*.profile-meta.xml', '**/*.profile' ]);
-        const profiles: { file: string; profile: SalesforceProfile }[] = [];
-        for (const file of profilesFiles) {
+        const profiles = Promise.all(profilesFiles.map(async file => {
             const name = decodeURIComponent(fileName(file).split('.').shift()!);
-            const data = this.fs.readFileAsString(file, 'utf-8');
             try {
-                profiles.push({ file, profile: await new SalesforceProfile(name).loadProfile(await data) });
+                const data = this.fs.readFileAsString(file, 'utf-8');
+                return { 
+                    file, 
+                    profile: SalesforceProfile.fromXml(name, await data) 
+                };
             } catch(err) {
                 this.logger.error(`Unable load profile ${name} due a parsing of file system error`, err);
             }
-        }
-        return profiles;
+        }));
+        return filterUndefined(await profiles);
     }
 
     /**

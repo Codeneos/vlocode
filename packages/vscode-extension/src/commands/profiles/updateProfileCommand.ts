@@ -61,14 +61,16 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
 
         const updatedProfiles = await this.vlocode.withActivity('Updating profiles...', () => {
             for (const { profile } of selectedProfiles) {
-                if (this.action == 'add') {
+                if (this.action === 'add') {
                     classes.forEach(className => profile.addClass(className, options.apexAccess));
                     pages.forEach(pageName => profile.addPage(pageName, options.apexAccess));
                     addableFields.forEach(({ field }) =>profile.addField(field, options.fieldPermission));
-                } else {
+                } else if (this.action === 'remove') {
                     classes.forEach(className => profile.removeClass(className));
                     pages.forEach(pageName => profile.removePage(pageName));
                     fields.forEach(({ field }) => profile.removeField(field));
+                } else {
+                    throw new Error(`Unsupported action: ${this.action}`);
                 }
             }
             return this.applyProfileChanges(selectedProfiles);
@@ -95,7 +97,7 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
             const profileDoc = await vscode.workspace.openTextDocument(path.resolve(file));
             const fullDocumentRange = new vscode.Range(new vscode.Position(0,0), new vscode.Position(profileDoc.lineCount, 0));
             this.logger.info(`Updating profile ${profile.name}`);
-            profileChanges.replace(profileDoc.uri, fullDocumentRange, profile.toXml());
+            profileChanges.replace(profileDoc.uri, fullDocumentRange, profile.toXml({ sort: true }));
             updatedProfiles.push(profile);
         }
         await vscode.workspace.applyEdit(profileChanges);

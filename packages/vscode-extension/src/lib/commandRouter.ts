@@ -73,7 +73,7 @@ export default class CommandRouter {
     }
 
     public register(name: string, commandFn: CommandFn, options?: CommandOptions) : Command {
-        const command = new CommandExecutor(name, this.createCommand(commandFn), options);
+        const command = new CommandExecutor(name, this.createCommand(commandFn, options), options);
 
         // Store command by Id
         this.commands.set(name, command);
@@ -90,10 +90,10 @@ export default class CommandRouter {
         return command;
     }
 
-    private createCommand(commandCtor: CommandFn): Command {
+    private createCommand(commandCtor: CommandFn, options?: CommandOptions): Command {
         if (typeof commandCtor === 'function' && 'prototype' in commandCtor) {
             // @ts-ignore ctor is a newable type
-            return new lazy(() => new commandCtor());
+            return new lazy(() => new commandCtor(...options?.params ?? []));
         } else if ('execute' in commandCtor) {
             return commandCtor;
         }

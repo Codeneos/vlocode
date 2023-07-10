@@ -7,7 +7,16 @@ export interface XMLParseOptions {
     trimValues?: boolean;
     ignoreAttributes?: boolean;
     ignoreNameSpace?: boolean;
-    arrayMode?: boolean | 'strict';
+    /**
+     * Always put child nodes in an array if true; otherwise an array is created only if there is more than one.
+     */
+    arrayMode?: boolean | 'strict' | ((nodePath: string) => any);
+    /**
+     * Process the value of a node before returning it to the node.
+     * Useful for converting values to a specific type.
+     * If you return undefined the node is ignored.
+     */
+    valueProcessor?: (val: string, nodePath: string) => any;
 }
 
 export interface XMLStringfyOptions {
@@ -72,7 +81,19 @@ export namespace XML {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
-        return visitObject(xmlParser.parse(xml, {...globalParserOptions, ...options} , true), (prop, value, target) => {
+        const parserOptions = { ...globalParserOptions, ...options };
+        if (options.valueProcessor) {
+            parserOptions.tagValueProcessor = (val, nodePath) => {
+                return options.valueProcessor!(
+                    decode(val, { isAttributeValue: true }), 
+                    nodePath
+                );
+            };
+            parserOptions.tagValueProcessor = (val, nodePath) => {
+                return options.valueProcessor!(decode(val), nodePath);
+            };
+        }
+        return visitObject(xmlParser.parse(xml, parserOptions, true), (prop, value, target) => {
             if (typeof value === 'object') {
                 // Parse nil as null as per XML spec
                 if (value['$']?.['nil'] === true) {

@@ -1,5 +1,6 @@
 import * as xml2js from 'xml2js';
-import { stringEquals } from '@vlocode/util';
+import { sortProperties, stringEquals, XML } from '@vlocode/util';
+import { ArrayElement } from './types';
 
 export enum SalesforceFieldPermission {
     editable = 'editable',
@@ -46,16 +47,28 @@ interface ProfileModel {
     objectPermissions: ProfileObjectPermission[];
 }
 
+function createObjectPropertySort(propertyName: string) {
+    return (a: object, b: object) => 
+        (typeof a[propertyName] === 'string' && typeof b[propertyName] === 'string')
+            ? a[propertyName].localeCompare(b[propertyName], 'en') as number : 0;
+}
+
+type ProfileSortConfig = {
+    [P in keyof ProfileModel]?:
+        ((a: ArrayElement<ProfileModel[P]>, b: ArrayElement<ProfileModel[P]>) => number) |
+        keyof ArrayElement<ProfileModel[P]>;
+}
+
 export class SalesforceProfile {
     #hasChanges: boolean = false;
-    #changeTrackHandler = {
-        set: (t, p, v) => {
-            if (t[p] !== v) {
-                t[p] = v;
-                this.#hasChanges = true;
-            }
-            return true;
-        }
+
+    private sortConfig: ProfileSortConfig = {
+        classAccesses: 'apexClass',
+        pageAccess: 'apexPage',
+        fieldPermissions: 'field',
+        objectPermissions: 'object',
+        applicationVisibilities: 'application',
+        recordTypeVisibilities: 'recordType',
     };
 
     private profileModel = {
@@ -65,6 +78,8 @@ export class SalesforceProfile {
         fieldPermissions: [],
         objectPermissions: []
     } as Object & ProfileModel;
+
+    private arrayProperties = Object.keys(this.profileModel);
 
     public get hasChanges() : boolean {
         return this.#hasChanges;
@@ -93,15 +108,26 @@ export class SalesforceProfile {
     }
 
     /**
+     * Load a profile from XML buffer or string that repeats the profile metadata
+     * @param name Name of the profile; for metadata this is the file name without extension.
+     * @param profileXmlBody String or buffer containing the profile XML
+     * @returns A profile object
+     */
+    public static fromXml(name: string, profileXmlBody: string | Buffer) : SalesforceProfile {
+        return new SalesforceProfile(name).load(profileXmlBody);
+    }
+
+    /**
      * Load profile data into the current profile object, profile data is merged with the existing values.
      * @param profileXmlBody XML body string to load
      * @returns this
      */
-    public async loadProfile(profileXmlBody: string) : Promise<this> {
-        this.mergeProfileData(await xml2js.parseStringPromise(profileXmlBody, {
-            explicitRoot: false,
-            explicitArray: false,
-            valueProcessors: [ (value: string) => {
+    public load(profileXmlBody: string | Buffer) : this {
+        const parsedProfileData = XML.parse(profileXmlBody, {
+            arrayMode: (tag) => {
+                return this.arrayProperties.includes(tag);
+            },
+            valueProcessor: (value: string) => {
                 if (/^true|false$/i.test(value)) {
                     return value.toLowerCase() == 'true';
                 } else if (/^[0-9]+$/.test(value)) {
@@ -110,8 +136,9 @@ export class SalesforceProfile {
                     return parseFloat(value);
                 }
                 return value;
-            } ]
-        }));
+            }
+        });
+        this.mergeProfileData(Object.values(parsedProfileData).pop()!);
         return this;
     }
 
@@ -123,9 +150,9 @@ export class SalesforceProfile {
             if (modelProp) {
                 // normalize props
                 if (Array.isArray(value)) {
-                    this.profileModel[modelProp].push(...value.map(v => this.trackChanges(v)));
+                    this.profileModel[modelProp].push(...value);
                 } else {
-                    this.profileModel[modelProp].push(this.trackChanges(value));
+                    this.profileModel[modelProp].push(value);
                 }
             } else {
                 // Make sure we don't lose unmapped props
@@ -152,8 +179,8 @@ export class SalesforceProfile {
     public addField(field: string, access: SalesforceFieldPermission) {
         const existing = this.fields.find(c => stringEquals(c.field, field));
         if (existing) {
-            existing.editable = access == 'editable';
-            existing.readable = access == 'editable' || access == 'readable';
+            this.update(existing, 'editable', access == 'editable');
+            this.update(existing, 'readable', access == 'editable' || access == 'readable');
         } else {
             this.profileModel.fieldPermissions.push({
                 editable: access == 'editable',
@@ -175,7 +202,7 @@ export class SalesforceProfile {
     public addPage(name: string, enabled: boolean) {
         const existing = this.pages.find(c => c.apexPage == name);
         if (existing) {
-            existing.enabled = enabled;
+            this.update(existing, 'enabled', enabled);
         } else {
             this.profileModel.pageAccess.push({
                 apexPage: name,
@@ -200,14 +227,14 @@ export class SalesforceProfile {
 
     public addClass(name: string, enabled: boolean) {
         const existing = this.classes.find(c => c.apexClass == name);
-        if (existing) {
-            existing.enabled = enabled;
-        } else {
+        if (!existing) {
             this.profileModel.classAccesses.push({
                 apexClass: name,
                 enabled
             });
             this.#hasChanges = true;
+        } else if (existing.enabled !== enabled) {
+            this.update(existing, 'enabled', enabled);
         }
     }
 
@@ -215,17 +242,53 @@ export class SalesforceProfile {
         this.removeItem(this.profileModel.classAccesses, c => c.apexClass == name);
     }
 
-    public toXml() {
-        const xmlBuilder = new xml2js.Builder({
-            xmldec: { version: '1.0', encoding: 'UTF-8' },
-            renderOpts: { pretty: true, indent: ' '.repeat(4), 'newline': '\n' }
-        });
-        const sortedProfileModel = Object.entries(this.profileModel)
-            .sort(([a, p1], [b, p2]) => Array.isArray(p1) == Array.isArray(p2) ? a.localeCompare(b, 'en') : (Array.isArray(p1) ? 1 : -1))
-            .reduce((obj, [key, value]) => Object.assign(obj, { [key]: value }), { $: { xmlns : 'http://soap.sforce.com/2006/04/metadata' } });
-        return xmlBuilder.buildObject({
-            Profile: sortedProfileModel
-        });
+    /**
+     * Convert the current profile object to XML metadata
+     * @returns XML metadata representation of the current profile object
+     */
+    public toXml(options?: { sort?: boolean }) {
+        if (options?.sort) {
+            this.sort();
+        }
+        this.profileModel['$'] = { xmlns : 'http://soap.sforce.com/2006/04/metadata' };
+        return XML.stringify({ Profile: this.profileModel }, 4);
+    }
+
+    /**
+     * Sort all the entiries in the profile alphabetically. All profile data is sorted in place.
+     * @returns This instance of the profile.
+     */
+    public sort() {
+        for (const [key, value] of Object.entries(this.profileModel)) {
+            if (Array.isArray(value)) {
+                if (typeof this.sortConfig[key] === 'string') {
+                    this.sortConfig[key] = createObjectPropertySort(this.sortConfig[key]);
+                } else if (!this.sortConfig[key]) {
+                    this.sortConfig[key] = createObjectPropertySort('name');
+                }
+                value.sort(this.sortConfig[key]);
+            }
+        }
+
+        this.profileModel = sortProperties(this.profileModel, 
+            ([a, v1], [b, v2]) => Array.isArray(v1) == Array.isArray(v2) ? a.localeCompare(b, 'en') : (Array.isArray(v1) ? 1 : -1)
+        );
+
+        return this;
+    }
+
+    /**
+     * Update an arbitrary property on the profile object. 
+     * If the new value is different than the current value, the change will be tracked.
+     * @param target The object to update
+     * @param key Property name to update
+     * @param value Value to set the property to
+     */
+    private update<T extends object, K extends keyof T>(target: T, key: K, value: typeof target[K]) {
+        if (target[key] !== value) {
+            this.#hasChanges = true;
+            target[key] = value;
+        }
     }
 
     private removeItem<TElement>(array: TElement[], predicate: (item: TElement) => boolean) {
@@ -238,7 +301,10 @@ export class SalesforceProfile {
         return false;
     }
 
-    private trackChanges<T extends object>(obj: T | undefined): T | undefined {
-        return obj ? new Proxy(obj, this.#changeTrackHandler) : obj;
+    /**
+     * Reset the change tracking on this profile.
+     */
+    public resetChanges(){
+        this.#hasChanges = false;
     }
 }
