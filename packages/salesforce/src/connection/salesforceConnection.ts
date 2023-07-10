@@ -455,8 +455,9 @@ export class SalesforceConnection extends Connection {
         const [userId, organizationId] = tokens.id.split("/");
         this.userInfo = { id: userId, organizationId, url: tokens.id };
 
-        this.logger.debug(`token refresh complete`);
-        this.emit('refresh', this.accessToken);
+        //this.logger.debug(`token refresh complete`);
+        // Note: this event is not currently already emmited by the the base connection
+        //this.emit('refresh', this.accessToken);
 
         return tokens.access_token;
     }
