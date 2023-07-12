@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
+
+### Bug Fixes
+
+* unable to update token if refreshed before loading org details ([778a163](https://github.com/Codeneos/vlocode/commit/778a1630ff8de7817bd40c3ccdabb3b5b529f215))
+
 ## [0.19.14](https://github.com/Codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
 
 ### Bug Fixes

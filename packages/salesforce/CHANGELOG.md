@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
+
+### Features
+
+* support more specific filtering in the batch service to limit the jobs picked up ([acfc3e9](https://github.com/Codeneos/vlocode/commit/acfc3e96a8ff8f5605af213652ce57fc2041fe3f))
+
 ## [0.19.14](https://github.com/Codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
 
 ### Bug Fixes
