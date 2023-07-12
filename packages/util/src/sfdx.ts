@@ -161,7 +161,8 @@ export namespace sfdx {
     export const updateAccessToken = makeRetryable(async function(usernameOrAlias: string, accessToken: string): Promise<void> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
         const username = stateAggregator.aliases.getUsername(usernameOrAlias) || usernameOrAlias;
-        const authFields = stateAggregator.orgs.get(username, true);
+        const authFields = stateAggregator.orgs.get(username, true) ?? 
+            await stateAggregator.orgs.read(username, true, true);
         stateAggregator.orgs.update(username, { refreshToken: authFields.refreshToken, accessToken });
         await stateAggregator.orgs.write(username);
     });
