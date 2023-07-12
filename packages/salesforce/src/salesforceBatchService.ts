@@ -140,10 +140,10 @@ export class SalesforceBatchService {
 
     /**
      * Get all batch jobs optionally applying the specified condition to the tooling query
-     * @param condition optional condition
+     * @param filter Optional filter condition that is applied to the query builder *or* a batch job ID *or* APEX class name of the batch job without namespace prefix
      * @returns List of batch jobs sorted by created data from newest to oldest
      */
-    public async getBatchJobs(condition?: QueryFilterCondition): Promise<Array<SalesforceBatchJob>> {
+    public async getBatchJobs(filter: string | QueryFilterCondition): Promise<Array<SalesforceBatchJob>> {
         const query = new QueryBuilder('AsyncApexJob', [
                 'Id',
                 'ApexClass.Name',
@@ -153,15 +153,19 @@ export class SalesforceBatchService {
                 'TotalJobItems',
                 'CreatedDate',
                 'CompletedDate',
-                'ParentJobId',
+                'ParentJobId',  
                 'CreatedById',
             ])
             .sortBy('CreatedDate')
             .sortDirection('desc')
             .where.equals('JobType', 'BatchApex');
 
-        if (condition) {
-            query.and.fromObject(condition);
+        if (typeof filter === 'object') {
+            query.and.fromObject(filter);
+        } else if (typeof filter === 'string' && filter.startsWith('707')) {
+            query.and.equals('Id', filter);
+        } else if (typeof filter === 'string') {
+            query.and.equals('ApexClass.Name', filter);
         }
 
         return query.executeTooling<SalesforceBatchJob>(this.queryService);
@@ -169,14 +173,13 @@ export class SalesforceBatchService {
 
     /**
      * Get the status of the batch job as status object
-     * @param id ID of the batch job
+     * @param filter ID of the batch job or a filter condition
      * @returns Status of the batch
      */
-    public async getBatchStatus(id: string) : Promise<SalesforceBatchJobStatus | undefined> {
-        const job = (await this.getBatchJobs({ id })).pop();
+    public async getBatchStatus(filter: string | QueryFilterCondition) : Promise<SalesforceBatchJobStatus | undefined> {
+        const job = (await this.getBatchJobs(filter)).pop();
         return (
             job && {
-                id,
                 elapsedTime: moment(job.completedDate ? moment(job.completedDate) : moment()).diff(moment(job.createdDate), 'milliseconds'),
                 apexClass: job.apexClass.name,
                 done: job.status === 'Completed' || job.status === 'Aborted',
@@ -237,15 +240,19 @@ export class SalesforceBatchService {
      * Await the completion of a batch class and optionally log it's progress
      * @param batchId Id of the batch job to await
      */
-    public async awaitBatchJob(batchId: string, options?: BatchAwaitOptions | BatchAwaitOptions['progressReport']) {
+    public async awaitBatchJob(filter: string | QueryFilterCondition, options?: BatchAwaitOptions | BatchAwaitOptions['progressReport']) {
         const start = Date.now();
 
         if (typeof options === 'function') {
             options = { progressReport: options };
         }
 
+        // Find out batch id
+        const batchId = typeof filter === 'string' && filter.startsWith('707') 
+            ? filter : (await this.getBatchJobs(filter)).pop()?.id;
+
         // eslint-disable-next-line no-constant-condition
-        while (true) {
+        while (batchId) {
             const batchStatus = await this.getBatchStatus(batchId);
             if (!batchStatus) {
                 throw new Error(`Batch job with id ${batchId} not found`);
@@ -283,10 +290,19 @@ export class SalesforceBatchService {
     }
 
     /**
-     * Track batches created scheduled from now and allow those batches to be queried and awaited
-     * @returns Object to await or list scheduled batches
+     * Track batches created scheduled from now and allow those batches to be queried and awaited. By default the
+     * tracker will track **all** batches created by the current user. Use the optional @see predicate to narrow the batches to await.
+     * @example
+     * ```typescript
+     * const tracker = await batchService.createBatchTracker(job => job.apexClass === 'MyBatchClass');
+     * salesforceService.executeAnonymous('System.scheduleBatch(new MyBatchClass(), \'MyBatchClass\', 1);');
+     * salesforceService.executeAnonymous('System.scheduleBatch(new MyNonAwaitedBatchClass(), \'MyNonAwaitedBatchClass\', 1);');
+     * await tracker.awaitScheduledBatches();
+     * ```
+     * @param predicate Optional predicate which filters the batches to await; if the predicate returns false the batch is ignored otherwise it is awaited
+     * @returns Object with a `scheduledBatches` property which returns a promise which resolves to an array of scheduled batches and a `awaitScheduledBatches` method which awaits all scheduled batches
      */
-    public async createBatchTracker() {
+    public async createBatchTracker(predicate?: (job: SalesforceBatchJob) => boolean) {
         const activeBatchesBefore = (await this.getActiveBatchJobsByCurrentUser()).map(job => job.id);
         const getScheduledBatches = async () => {
             const activeBatchesAfter = await this.getActiveBatchJobsByCurrentUser();
@@ -298,7 +314,7 @@ export class SalesforceBatchService {
             awaitScheduledBatches: async (options?: BatchAwaitOptions | BatchAwaitOptions['progressReport']) => {
                 // eslint-disable-next-line no-constant-condition
                 while (true) {
-                    const startedBatchJob = await getScheduledBatches();
+                    const startedBatchJob = (await getScheduledBatches()).filter(job => !predicate || predicate(job));
                     if (!startedBatchJob.length) {
                         break;
                     }
