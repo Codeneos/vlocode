@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 
 import * as constants from './constants';
-import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container } from '@vlocode/core';
+import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, FileSystem } from '@vlocode/core';
 import * as vlocityUtil from './lib/vlocity/vlocityLogging';
 import { getContext, initializeContext } from './lib/vlocodeContext';
 import { ConfigurationManager } from './lib/config';
@@ -31,6 +31,8 @@ import OnDatapackRenamed from './events/onDatapackRenamed';
 import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
 import './commands';
+import { VSCodeFileSystemAdapter } from './lib/fs/vscodeFileSystemAdapter';
+import { NamespaceService } from '@vlocode/salesforce';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -137,7 +139,8 @@ class Vlocode {
         LogManager.setLogLevel(Container, LogLevel.verbose);
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
-        container.register(VlocityNamespaceService);
+        container.registerType(VSCodeFileSystemAdapter, [ FileSystem ], { priority: 100, lifecycle: LifecyclePolicy.singleton });
+        container.registerType(VlocityNamespaceService, [ NamespaceService, VlocityNamespaceService ], { lifecycle: LifecyclePolicy.singleton });
 
         this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);

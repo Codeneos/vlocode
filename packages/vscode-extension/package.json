@@ -113,7 +113,8 @@
         "onCommand:vlocode.clearDeploymentQueue",
         "onCommand:vlocode.addToProfile",
         "onCommand:vlocode.removeFromProfile",
-        "onCommand:vlocode.createOmniscriptLwc"
+        "onCommand:vlocode.createOmniscriptLwc",
+        "onCommand:vlocode.generateLwc"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -202,6 +203,10 @@
             {
                 "command": "vlocode.createOmniscriptLwc",
                 "title": "Vlocity: New Omniscript Web Component (LWC)"
+            },
+            {
+                "command": "vlocode.generateLwc",
+                "title": "Vlocity: Generate LWC"
             },
             {
                 "command": "vlocode.buildDatapack",
@@ -429,6 +434,10 @@
                     "group": "v_vlocity"
                 },
                 {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity"
+                },
+                {
                     "command": "vlocode.buildDatapack",
                     "group": "v_vlocity",
                     "when": "false"
@@ -619,6 +628,26 @@
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == folder && resourcePath =~ /.+\\/OmniScript\\/.+/"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == folder && resourcePath =~ /.+\\\\OmniScript\\\\.+/"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+_DataPack.json$/"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+_DataPack.json$/"
+                },
+                {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
@@ -679,6 +708,26 @@
                     "command": "vlocode.cloneDatapack",
                     "group": "v_vlocity",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == folder && resourcePath =~ /.+\\/OmniScript\\/.+/"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == folder && resourcePath =~ /.+\\\\OmniScript\\\\.+/"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+_DataPack.json$/"
+                },
+                {
+                    "command": "vlocode.generateLwc",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+_DataPack.json$/"
                 },
                 {
                     "command": "vlocode.deployMetadata",

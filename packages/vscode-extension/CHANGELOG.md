@@ -1,21 +1,36 @@
 # Change Log
+## Vlocity/Salesforce Integration for VSCode
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
 ## [0.19.15](https://github.com/codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* unable to update token if refreshed before loading org details ([778a163](https://github.com/codeneos/vlocode/commit/778a1630ff8de7817bd40c3ccdabb3b5b529f215))
+
+### Features
+
+* support more specific filtering in the batch service to limit the jobs picked up ([acfc3e9](https://github.com/codeneos/vlocode/commit/acfc3e96a8ff8f5605af213652ce57fc2041fe3f))
 
 ## [0.19.14](https://github.com/codeneos/vlocode/compare/v0.19.13...v0.19.14) (2023-07-10)
 
 ### Bug Fixes
 
 * "add to profile" command command does not work properly ([2e27e1e](https://github.com/codeneos/vlocode/commit/2e27e1e55f46b807b9bb8545c1135715e5d18c77))
+* deployment fails to deploy child item overrides since v0.19.11 ([0125289](https://github.com/codeneos/vlocode/commit/0125289b9faf9c1134f7df3aa1ea31cb39896fe9))
+* HTTP Transport should not log features at info log level ([a58f779](https://github.com/codeneos/vlocode/commit/a58f779380b788e1708722fd68e5dffa3343ebd9))
+* refresh token is updated twice on due to double refresh event being emitted ([0eefe60](https://github.com/codeneos/vlocode/commit/0eefe60c7a8a38f1b6e13e077610b4715d7f6029))
+* unable to use openInOrg on MDT fields profiles, roles and certain custom fields. ([75c3060](https://github.com/codeneos/vlocode/commit/75c3060b28651319c443456880fbbe37a6402369))
+* when the access token fails to update in SFDX retry up to 3 times before failing ([da71552](https://github.com/codeneos/vlocode/commit/da71552cc94915bc3082e50405647ce0662cdda6))
 
 ### Features
 
+* add new object property sort to util library ([e313b5f](https://github.com/codeneos/vlocode/commit/e313b5fb8ccaa2be1a6556fe2aa65ccd645c206a))
+* add retryable decorator to retry async operations x times before failing ([2fb2242](https://github.com/codeneos/vlocode/commit/2fb22423ba4c7986ad2a9a6ec4f481cb0799ac06))
 * **breaking:** rename `strictDependencies` to `strictOrder` to better explain what the option does ([1de5352](https://github.com/codeneos/vlocode/commit/1de5352d195d7f6c513d9cc4302ff5660af22e17))
+* do not deploy records for which a dependency did not deploy unless `allowUnresolvedDependencies` is set ([1f52fae](https://github.com/codeneos/vlocode/commit/1f52fae9424fa258a8028557ee78fa1f358ac855))
 * improve reporting when using direct deploy mode from VSCode ([5f40128](https://github.com/codeneos/vlocode/commit/5f40128180729898bfa12289d167630939fee7d7))
 * show warning message when refresh token is expired and open browser to re-authenticate ([bf4859a](https://github.com/codeneos/vlocode/commit/bf4859a25a35f480558f3d9d220f753f8ce3975c))
 
@@ -29,18 +44,34 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
+* soap client does not log due to null logger being used ([4f0f5f4](https://github.com/codeneos/vlocode/commit/4f0f5f4987cf030f76e86a933c9844ed83b18545))
 * support `getDeltaPackage` with out having to create the strategy from the container, instead the builder will create the strategy ([2d50461](https://github.com/codeneos/vlocode/commit/2d50461b15aaf46446b3800da8922ceae7bb3b5b))
+* support `getDeltaPackage` with out having to create the strategy from the container, instead the builder will create the strategy ([5fbc313](https://github.com/codeneos/vlocode/commit/5fbc313ad36b8979280db860841fbeb2880a3904))
+* update package.json ([652b967](https://github.com/codeneos/vlocode/commit/652b9676ff8c25e445aff5df5d507b44c6e922e6))
 
 ### Features
 
+* add forEach function to iterable ([ffc6bed](https://github.com/codeneos/vlocode/commit/ffc6bed9bf552056e36f3457e748412ef1a5719a))
+* add package builder logging to understand why some data is marked as changed ([8dc215b](https://github.com/codeneos/vlocode/commit/8dc215bd397704ca94333b745f598959f50cb273))
+* add XML text range and node utility functions ([ee80736](https://github.com/codeneos/vlocode/commit/ee80736f3c9855c81f19bfb7d0666b4694c43a1f))
+* added new dedicated ignore case string compare ([822eb02](https://github.com/codeneos/vlocode/commit/822eb020ce62ca7a55f13849bf14675a402b1036))
+* extend object comparison to allow comparing of objects with unequal array element order. ([46a24c7](https://github.com/codeneos/vlocode/commit/46a24c77193a522ed687a789f532df4d1379948a))
 * provide more clear warning when deploying to production instances ([f886216](https://github.com/codeneos/vlocode/commit/f886216776493db4ed78aaf773854754eef98d95))
 * support creation of PackageManifest from XML ([779df29](https://github.com/codeneos/vlocode/commit/779df29bb6e6c4f7fa77c9ab4208080920ca9ca0))
 * support detecting changed in object metadata when using retrieve strategy ([a31d170](https://github.com/codeneos/vlocode/commit/a31d170757108ce76ff7ff7344eff704a294420a))
 
 ## [0.19.11](https://github.com/codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
 
+### Bug Fixes
+
+* soap client does not log due to null logger being used ([3b69d7d](https://github.com/codeneos/vlocode/commit/3b69d7d5af65be0ace2620676d84a0046295a0a6))
+
 ### Features
 
+* add forEach function to iterable ([b7cc28c](https://github.com/codeneos/vlocode/commit/b7cc28c5da9cf6680abdfadf6b96e14fd93ac388))
+* add package builder logging to understand why some data is marked as changed ([7e0eddb](https://github.com/codeneos/vlocode/commit/7e0eddbe136482f81dfb0d077428fe2a7f5fee28))
+* added new dedicated ignore case string compare ([f84ecf0](https://github.com/codeneos/vlocode/commit/f84ecf04042be6d10927b263125d3fb214a0948c))
+* extend object comparison to allow comparing of objects with unequal array element order. ([d28f898](https://github.com/codeneos/vlocode/commit/d28f898fd6dcae70b169651d5dd0b3bf570a657b))
 * support creation of PackageManifest from XML ([eaf7830](https://github.com/codeneos/vlocode/commit/eaf7830b4b69b954bf1fb7229d913be03ac8a3d5))
 * support detecting changed in object metadata when using retrieve strategy ([87aa5d4](https://github.com/codeneos/vlocode/commit/87aa5d42de4545c28ef7e8ed70b7247018ad8781))
 

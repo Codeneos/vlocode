@@ -386,7 +386,7 @@ export class SalesforcePackage {
      * @param componentType Component type to filter by or undefined to get all components
      * @returns Array of components in the package and their respective files
      */
-    public components(componentType?: string): Array<SalesforcePackageComponent & { files: SalesforcePackageFileData[] }> {
+    public components(componentType?: string): Array<SalesforcePackageComponent & { files: SalesforcePackageEntry[] }> {
         const data = groupBy(
             Iterable.filter(this.packageData, ([,entry]) => !componentType || stringEqualsIgnoreCase(entry.componentType, componentType)),
             ([,entry]) => `${entry.componentType}/${entry.componentName}`,

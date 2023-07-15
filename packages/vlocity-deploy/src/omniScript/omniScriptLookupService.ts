@@ -52,9 +52,7 @@ export interface VlocityUITemplateRecord extends VlocityUITemplate {
 @injectable()
 export class OmniScriptLookupService {
 
-    constructor(
-        private readonly lookupService: SalesforceLookupService,
-        private readonly logger: Logger) {
+    constructor(private readonly lookupService: SalesforceLookupService) {
     }
 
     /**

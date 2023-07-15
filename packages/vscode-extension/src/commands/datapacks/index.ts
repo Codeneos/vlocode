@@ -8,3 +8,4 @@ export * from './exportDatapackCommand';
 export * from './openSalesforceCommand';
 export * from './refreshDatapackCommand';
 export * from './renameDatapackCommand';
+export * from './generateLwc';

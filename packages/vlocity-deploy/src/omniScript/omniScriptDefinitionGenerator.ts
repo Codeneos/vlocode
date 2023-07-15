@@ -4,9 +4,12 @@ import { OmniScriptDefinitionFactory } from './omniScriptDefinitionFactory';
 import { OmniScriptDefinitionBuilder } from './omniScriptDefinitionBuilder';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptElementRecord, OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
-import { SalesforceSchemaService } from '@vlocode/salesforce';
-import { groupBy } from '@vlocode/util';
+import { RecordFactory, SalesforceSchemaService } from '@vlocode/salesforce';
+import { calculateHash, groupBy, normalizeSalesforceName, objectHash, sortBy, substringAfter, visitObject } from '@vlocode/util';
 import { VlocityInterfaceInvoker } from '../vlocityInterfaceInvoker';
+import { VlocityDatapack } from '../datapack';
+import { DatapackRecordFactory } from '../datapackRecordFactory';
+import { NAMESPACE_PLACEHOLDER_PATTERN } from '../constants';
 
 @injectable()
 export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvider {
@@ -17,6 +20,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         private readonly lookup: OmniScriptLookupService,
         private readonly genericInvoker: VlocityInterfaceInvoker,
         private readonly schema: SalesforceSchemaService,
+        private readonly recordFactory: DatapackRecordFactory,
         private readonly logger: Logger) {
     }
 
@@ -26,16 +30,58 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         return scriptDef;
     }
 
-    private async buildScriptDefinition(scriptRecord: OmniScriptRecord): Promise<OmniScriptDefinition> {
+    public async getScriptDefinitionFromDatapack(datapack: VlocityDatapack): Promise<OmniScriptDefinition> {
+        if (datapack.datapackType !== 'OmniScript') {
+            throw new Error(`Datapack ${datapack.vlocityDataPackKey} is not an OmniScript`);
+        }
+
+        const records = await this.createRecordsFromDatapack(datapack);
+        return this.buildScriptDefinition(records.scriptRecord, records.elementRecords);
+    }
+
+    private async createRecordsFromDatapack(datapack: VlocityDatapack) {
+        const scriptRecord = this.createRecord(datapack.data);
+        const elementRecords = datapack.Element__c.map(ele => this.createRecord(ele));
+        return { scriptRecord, elementRecords };
+    }
+
+    private createRecord(values: object) {
+        const recordType = values['VlocityRecordSObjectType'];
+        const sourceKey = values['VlocityRecordSourceKey'];
+        const entries = [
+            ...Object.entries(values)
+                .filter(([key]) => !['VlocityDataPackType', 'VlocityRecordSObjectType'].includes(key))
+                .map(([key, entry]) => {
+                    if (typeof entry === 'object' && 
+                        entry.VlocityDataPackType === 'VlocityMatchingKeyObject') {
+                        return [key, entry['VlocityMatchingRecordSourceKey']];
+                    } else if (key === 'VlocityRecordSourceKey') {
+                        return ['id', entry];
+                    } else if (/__PropertySet__c$/i.test(key)) {
+                        return [key, JSON.stringify(entry)];
+                    }
+                    return [key, entry];
+                })
+                .filter(([,entry]) => typeof entry !== 'object' && !(entry instanceof Date)),
+            [ 'attributes', { type: recordType, url: sourceKey } ],
+        ];
+        return RecordFactory.create(Object.fromEntries(entries));
+    }
+
+    private async buildScriptDefinition(
+        scriptRecord: OmniScriptRecord, 
+        elementRecords?: OmniScriptElementRecord[]
+    ) : Promise<OmniScriptDefinition> {
         if (scriptRecord.omniProcessType !== 'OmniScript') {
             throw new Error(
                 `OmniScript ${scriptRecord.id} is not an OmniScript process (${scriptRecord.omniProcessType}). ` +
-                `Only OmniScript process types supported script definition generation.`);
+                `Only OmniScript process types supported script definition generation.`
+            );
         }
 
         const scriptDef = this.generator.createScript(scriptRecord);
         const scriptBuilder = new OmniScriptDefinitionBuilder(scriptDef);
-        await this.addElements(scriptBuilder, scriptRecord.id);
+        await this.addElements(scriptBuilder, elementRecords || scriptRecord.id);
 
         if (scriptBuilder.templateNames.length > 0) {
             const templateRecords = await this.lookup.getActiveTemplates(scriptBuilder.templateNames);
@@ -51,19 +97,32 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
      * Add all elements from the OmniScript specified by spec parameter to the script builder.
      * Skips all inactive elements and loads embedded script elements recursively.
      * @param builder Script builder to add elements to
-     * @param spec OmniScript specification to add elements from or id of the script
-     * @param options Optional additional options to pass to the builders 1addElements1 method
+     * @param elementsOrSpec OmniScript specification to add elements from or id of the script
+     * @param options Optional additional options to pass to the builders `addElements` method
      */
-    private async addElements(builder: OmniScriptDefinitionBuilder, spec: OmniScriptSpecification | string, options?: { scriptElementId?: string }) {
-        const elements = await this.lookup.getScriptElements(spec);
+    private async addElements(
+        builder: OmniScriptDefinitionBuilder, 
+        elementsOrSpec: OmniScriptElementRecord[] | OmniScriptSpecification | string, 
+        options?: { scriptElementId?: string }
+    ) {
+        const scriptElements = Array.isArray(elementsOrSpec) 
+            ? elementsOrSpec : [...(await this.lookup.getScriptElements(elementsOrSpec)).values()];
+
+        const elements = new Map(
+            sortBy(scriptElements, rec => (rec.level << 16) | rec.order, 'asc').map(record => [record.id, record])
+        );
 
         for (const [id, record] of elements) {
             if (!this.isElementActive(record, elements)) {
-                this.logger.debug(`Skipping [${record.type}] ${record.name} ${record.level}/${record.order} (${id})`);
+                this.logger.debug(`Skipping [${record.type}] ${record.name} (${id})`);
                 continue;
             }
 
             const definition = this.generator.createElement(record);
+
+            if (definition.level === undefined) {
+                definition.level = record.parentElementId ? builder.getElementLevel(record.parentElementId) : 0;
+            }
 
             if (isChoiceScriptElement(definition)) {
                 if (builder.realtimePicklistSeed) {
