@@ -1,5 +1,5 @@
 import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptElementType, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
-import { deepClone, escapeHtmlEntity, mapGetOrCreate } from '@vlocode/util';
+import { CustomError, deepClone, escapeHtmlEntity, isCustomError, mapGetOrCreate } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';
 import { randomUUID } from 'crypto';
 
@@ -104,20 +104,23 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
             this.scriptDef.rMap[ele.name] = "";
         }
 
-        if (!options?.parentElementId) {
-            ele.level = 0;
+        if (ele.level === undefined) {
+            ele.level = options?.parentElementId ? this.getElementById(options.parentElementId).level + 1 : 0;
         }
 
         if (options?.scriptElementId && !options?.parentElementId) {
-            const scriptElement = this.elements.get(options.scriptElementId);
-            if (!scriptElement) {
-                throw new Error(`Script element "${ele.name}" (${id}) links to ` +
-                    `none-existing embedded OmniScript element with Id "${options?.scriptElementId}"`);
-            }
+            const scriptElement = this.getElementById(options.scriptElementId, 
+                `Script element "${ele.name}" (${id
+                }) links to none-existing embedded OmniScript element with Id "${options.scriptElementId}"`
+            );
+
             if (scriptElement.type !== 'OmniScript') {
-                throw new Error(`Script element "${ele.name}" (${id}) links to ` +
-                    `element with Id "${options?.scriptElementId}" that is not of type OmniScript (${scriptElement.type})`);
+                throw new Error(
+                    `Script element "${ele.name}" (${id}) links to ` +
+                    `element with Id "${options?.scriptElementId}" that is not of type OmniScript (${scriptElement.type})`
+                );
             }
+
             ele.offSet = this.scriptOffsets.get(options.scriptElementId)!;
             ele.inheritShowProp = scriptElement.propSetMap?.show;
             ele.bEmbed = true;
@@ -127,12 +130,15 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         }
 
         if (options?.parentElementId) {
-            const group = this.getGroup(options?.parentElementId);
-            if (!group) {
-                throw new Error(`Script element "${ele.name}" (${id}) has a ` +
-                    `none-existing parent element with Id "${options?.parentElementId}"`);
+            try {
+                this.getGroup(options.parentElementId).addElement(ele);
+            } catch (err) {
+                if (isCustomError(err) && err.code === 'ELEMENT_NOT_FOUND') {
+                    throw new Error(`Script element "${ele.name}" (${id}) has a ` +
+                        `none-existing parent element with Id "${options?.parentElementId}"`);
+                }
+                throw err;
             }
-            group.addElement(ele);
         } else {
             if (isEmbeddedScriptElement(ele)) {
                 this.scriptOffsets.set(id, this.indexInParent);
@@ -145,13 +151,30 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
 
         this.addElementHandlers[ele.type]?.(id, ele, options);
     }
+
+    /**
+     * Get the level of an existing element in the script definition.
+     * @param id ID of the ekement to get the level
+     */
+    public getElementLevel(id: string) {
+        return this.getElementById(id).level;
+    }
+
+    /**
+     * Get the next order number for an element in the script definition.
+     * @param parentId Optional ID of the parent element to get the next order number for
+     */
+    public getNextElementOrder(parentId?: string) {
+        return parentId ? this.getGroup(parentId).getNextElementOrder() : this.scriptDef.children.length;
+    }
+
     private addInputBlock(id: string, ele: OmniScriptElementDefinition) {
          ele.JSONPath = this.getJsonPath(ele);
     }
 
     private addTypeAheadBlock(id: string, ele: OmniScriptElementDefinition) {
         const typeAheadElement = deepClone(ele);
-        this.getGroup(id)?.addElement(typeAheadElement);
+        this.getGroup(id).addElement(typeAheadElement);
 
         // Update level and root index of inner type ahead
         typeAheadElement.type = 'Type Ahead';
@@ -164,13 +187,21 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
    }
 
     private getGroup(id: string) {
-        const groupDefinition = this.elements.get(id);
-        if (groupDefinition) {
-            return mapGetOrCreate(
-                this.groups, id,
-                () => new OmniScriptElementGroupDefinitionBuilder(groupDefinition)
-            );
+        return mapGetOrCreate(
+            this.groups, id,
+            () => new OmniScriptElementGroupDefinitionBuilder(this.getElementById(id))
+        );
+    }
+
+    private getElementById(id: string, errorIfNotFound?: string) {
+        const elementDefinition = this.elements.get(id);
+        if (!elementDefinition) {
+            throw new CustomError(errorIfNotFound ?? `Unable to find element with id "${id}"`, {
+                code: 'ELEMENT_NOT_FOUND',
+                source: 'OMNI_SCRIPT_DEFINITION_BUILDER'
+            });
         }
+        return elementDefinition
     }
 
     /**
@@ -307,6 +338,10 @@ class OmniScriptElementGroupDefinitionBuilder {
     private indexInParent: number;
     private group: OmniScriptGroupElementDefinition;
 
+    public get level() {
+        return this.group.level;
+    }
+
     constructor(group: OmniScriptElementDefinition) {
         this.indexInParent = group.children?.length ?? 0;
         this.group = group as OmniScriptGroupElementDefinition;
@@ -319,6 +354,14 @@ class OmniScriptElementGroupDefinitionBuilder {
      */
     public hasElement(element: OmniScriptElementDefinition) {
         return this.group.children.some(c => c.eleArray.includes(element));
+    }
+
+    /**
+     * Gets the next element order number in the group.
+     * @returns The next element order number in the group
+     */
+    public getNextElementOrder() { 
+        return this.group.children?.length ?? 0;
     }
 
     /**

@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as globby from 'globby';
 import { injectable, LifecyclePolicy } from '../index';
-import { FileInfo, FileSystem, StatsOptions } from './types';
+import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 
 /**
  * Basic class that can wrap any API implementation the NodeJS FS API into a more reduced FileSystem interface.
@@ -10,11 +10,11 @@ import { FileInfo, FileSystem, StatsOptions } from './types';
 @injectable({ provides: FileSystem, lifecycle: LifecyclePolicy.singleton })
 export class NodeFileSystem extends FileSystem {
 
-    constructor(private readonly innerFs: typeof fs = fs) {
+    constructor(protected readonly innerFs: typeof fs = fs) {
         super();
     }
 
-    public async stat(path: string, options?: StatsOptions): Promise<fs.Stats | undefined> {
+    public stat(path: string, options?: StatsOptions): Promise<FileStat | undefined> {
         return new Promise((resolve, reject) => this.innerFs.stat(path, (err, result) => {
             if (err) {
                 if (options?.throws) {
@@ -23,7 +23,7 @@ export class NodeFileSystem extends FileSystem {
                     resolve(undefined);
                 }
             } else {
-                resolve(result);
+                resolve(new FsStatsAdapter(path, result));
             }
         }));
     }
@@ -48,6 +48,26 @@ export class NodeFileSystem extends FileSystem {
         }));
     }
 
+    public createDirectory(path: string): Promise<void> {
+        return new Promise((resolve, reject) => this.innerFs.mkdir(path, { recursive: true }, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        }));
+    }
+
+    public writeFile(path: string, data?: Buffer | string, options?: WriteOptions): Promise<void> {
+        return new Promise((resolve, reject) => this.innerFs.writeFile(path, data ?? '', { flag: options?.append ? 'a' : 'w' }, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        }));
+    }
+
     public findFiles(patterns: string | string[]): Promise<string[]> {
         return globby(this.normalizeGlobPatterns(patterns), {
             fs: {
@@ -68,3 +88,21 @@ export class NodeFileSystem extends FileSystem {
             patterns.map(this.normalizeGlobPatterns, this);
     }
 }
+
+class FsStatsAdapter implements FileStat {
+    get ctime() { return this.stats.ctimeMs; }
+    get mtime() { return this.stats.mtimeMs; }
+    get size() { return this.stats.size; }
+
+    constructor(readonly name: string, readonly stats: fs.Stats) { 
+    }
+
+    isFile(): boolean {
+        return this.stats.isFile();
+    }
+
+    isDirectory(): boolean {
+        return this.stats.isDirectory();
+    }
+}
+

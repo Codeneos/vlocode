@@ -4,6 +4,12 @@
  * extra detail into the error
  */
 export class CustomError extends Error {
+
+    /**
+     * Optional code of the error
+     */
+    public readonly code?: string;
+
     constructor(message: string, options?: ({ name?: string, code?: string } & object) | Error) {
         super(message);
         if (options) {
@@ -16,4 +22,13 @@ export class CustomError extends Error {
             }
         }
     }
+}
+
+/**
+ * Validate that the specified object is a CustomError
+ * @param error 
+ * @returns 
+ */
+export function isCustomError(error: unknown): error is CustomError {
+    return (error instanceof CustomError);
 }

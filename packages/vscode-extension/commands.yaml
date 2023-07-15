@@ -61,6 +61,19 @@ vlocode.createOmniscriptLwc:
   group: v_vlocity
   menus:
     - menu: commandPalette
+vlocode.generateLwc:
+  title: 'Vlocity: Generate LWC'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
+    - menu: explorer/context
+      when: &generateLwcWhen
+        - resourceScheme == folder && resourcePath =~ /.+\/OmniScript\/.+/
+        - resourceScheme == folder && resourcePath =~ /.+\\OmniScript\\.+/
+        - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+_DataPack.json$/
+        - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+_DataPack.json$/
+    - menu: editor/context
+      when: *generateLwcWhen
 
 # hide commands
 vlocode.buildDatapack:

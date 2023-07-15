@@ -528,7 +528,7 @@ export class Container {
         for (const service of Iterable.asIterable(services)) {
             this.logger.debug(`(${this.containerGuid}) Register service type for: ${this.getServiceName(service)}`);
             arrayMapPush(this.serviceTypes, this.getServiceName(service), { ctor: type, options });
-            this.serviceTypes.get(this.getServiceName(service))?.sort((a, b) => (a.options?.priority ?? 0) - (b.options?.priority ?? 0));
+            this.serviceTypes.get(this.getServiceName(service))?.sort((a, b) => (b.options?.priority ?? 0) - (a.options?.priority ?? 0));
         }
     }
 

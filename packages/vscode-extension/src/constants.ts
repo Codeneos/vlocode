@@ -66,4 +66,5 @@ export enum VlocodeCommand {
     resumeDeploymentQueue = 'vlocode.resumeDeploymentQueue',
     addToProfile = 'vlocode.addToProfile',
     removeFromProfile = 'vlocode.removeFromProfile',
+    generateLwc = 'vlocode.generateLwc',
 }
