@@ -12,16 +12,9 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--disable-extensions",
-                "--trace-deprecation",
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
-            "outFiles": [
-                "packages/vscode-extension/out/**/*.js",
-                "packages/salesforce/lib/**/*.js",
-                "packages/core/lib/**/*.js",
-                "packages/util/lib/**/*.js",
-                "packages/vlocity-deploy/lib/**/*.js"
-            ],
+            "outFiles": ["${workspaceFolder}/packages/vscode-extension/out/**/*.js"],
             "pauseForSourceMap": true,
             "skipFiles": ["<node_internals>/**/*.js", "async_hooks.js", "inspector_async_hook.js"],
             "preLaunchTask": "build-extension",
@@ -117,7 +110,7 @@
         {
             "name": "Debug: Build (extension)",
             "request": "launch",
-            "runtimeArgs": ["run-script", "build:debug"],
+            "runtimeArgs": ["run-script", "build-webpack-dev"],
             "cwd": "${workspaceRoot}/packages/vscode-extension",
             "runtimeExecutable": "npm",
             "skipFiles": ["<node_internals>/**"],
