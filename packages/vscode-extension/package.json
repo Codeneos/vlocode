@@ -13,7 +13,7 @@
     "readme": "README.md",
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.70.0"
+        "vscode": "^1.80.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode/tree/master/packages/vscode-extension",
     "categories": [
@@ -1284,6 +1284,7 @@
     "scripts": {
         "build": "pnpm pre-build && tsc -b",
         "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.ts --env extension",
+        "build-webpack-dev": "pnpm pre-build && webpack --config webpack/webpack.dev.ts --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.ts --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
         "pack": "pnpm vsce package --no-dependencies --allow-star-activation",
@@ -1307,7 +1308,7 @@
         "@types/sinon": "^10.0.2",
         "@types/terser-webpack-plugin": "^5.2.0",
         "@types/vscode": "^1.70.0",
-        "@types/webpack": "^5.28.0",
+        "@types/webpack": "^5.28.1",
         "@types/webpack-env": "^1.16.2",
         "@types/webpack-merge": "^4.1.5",
         "@vlocode/core": "workspace:*",
@@ -1362,10 +1363,10 @@
         "unique-names-generator": "^4.6.0",
         "vlocity": "1.14.18",
         "vsce": "^2.10.0",
-        "vscode-languageclient": "^7.0.0",
+        "vscode-languageclient": "^8.1.0",
         "vscode-test": "^1.6.1",
-        "webpack": "^5.72.1",
-        "webpack-cli": "^4.9.2",
+        "webpack": "^5.85.0",
+        "webpack-cli": "^5.1.1",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^5.8.0",
         "webpack-node-externals": "^3.0.0"

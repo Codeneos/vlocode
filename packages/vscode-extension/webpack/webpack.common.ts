@@ -54,11 +54,6 @@ const common : webpack.Configuration = {
             {
                 test: /\.yaml$/,
                 use: [ path.join(__dirname, './loaders/yaml') ]
-            },
-            {
-                test: /\.js$/,
-                include: path.resolve(contextFolder, 'node_modules'),
-                use: [ path.join(__dirname, './loaders/prefixTransform') ]
             }
         ]
     },
@@ -74,10 +69,14 @@ const common : webpack.Configuration = {
     output: {
         filename: '[name].js',
         chunkFilename: '[id].js',
-        devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+        devtoolModuleFilenameTemplate: (info) => {
+            return path.relative(
+                path.resolve(contextFolder, 'out'), 
+                path.resolve(info.resourcePath)
+            ).replace(/\\/g,'/');
+        },
     },
     plugins: [
-        new WatchMarkersPlugin(),
         new webpack.IgnorePlugin({
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
@@ -141,6 +140,9 @@ const common : webpack.Configuration = {
         }
         // @ts-ignore
         callback();
+    },
+    infrastructureLogging: {
+        level: "log"
     }
 };
 

@@ -34,12 +34,8 @@
                     "severity": "error",
                     "source": "ts",
                     "background": {
-                        "beginsPattern": {
-                            "regexp": "Build starting"
-                        },
-                        "endsPattern": {
-                            "regexp": "Build completed"
-                        }
+                        "beginsPattern": "starting...",
+                        "endsPattern": "finished"
                     }
                 }
             ]
@@ -74,12 +70,8 @@
                     "severity": "error",
                     "source": "ts",
                     "background": {
-                        "beginsPattern": {
-                            "regexp": "Build starting..."
-                        },
-                        "endsPattern": {
-                            "regexp": "Build completed"
-                        }
+                        "beginsPattern": "starting...",
+                        "endsPattern": "finished"
                     }
                 }
             ],
