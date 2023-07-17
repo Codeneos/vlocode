@@ -66,5 +66,7 @@ export enum VlocodeCommand {
     resumeDeploymentQueue = 'vlocode.resumeDeploymentQueue',
     addToProfile = 'vlocode.addToProfile',
     removeFromProfile = 'vlocode.removeFromProfile',
-    generateLwc = 'vlocode.generateLwc',
+    omniScriptGenerateLwc = 'vlocode.omniScript.generateLwc',
+    omniScriptDeployLwc = 'vlocode.omniScript.deployLwc',
+    omniScriptActivate = 'vlocode.omniScript.activate',
 }

@@ -62,7 +62,7 @@ export abstract class DatapackCommand extends CommandBase {
      */
     protected async getSalesforceRecords(datapacks: VlocityDatapack[], options?: { showRecordSelection?: boolean }) {
         const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) =>
-            options?.showRecordSelection  
+            options?.showRecordSelection && matchedRecords.length > 1
                 ? this.showRecordSelection(matchedRecords, datapacks[i].datapackType) 
                 : this.getBestRecord(matchedRecords, datapacks[i].datapackType)
         );
@@ -72,7 +72,7 @@ export abstract class DatapackCommand extends CommandBase {
             sobjectType: datapack.sobjectType,
             datapackType: datapack.datapackType,
             id: matchingRecords[i]?.Id,
-            record: matchingRecords[i]
+            values: matchingRecords[i]
         }));
     }
 

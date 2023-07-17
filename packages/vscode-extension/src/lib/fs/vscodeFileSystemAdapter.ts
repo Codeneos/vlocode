@@ -21,7 +21,13 @@ export class VSCodeFileSystemAdapter extends FileSystem {
     }
 
     public async stat(path: string, options?: StatsOptions): Promise<FileStat | undefined> {
-        return new VSCodeFileStatsAdapter(path, await workspace.fs.stat(this.pathToUri(path)));
+        try {
+            return new VSCodeFileStatsAdapter(path, await workspace.fs.stat(this.pathToUri(path)));
+        } catch (err) {
+            if (options?.throws) {
+                throw err;
+            }
+        }
     }
 
     public async readDirectory(path: string): Promise<FileInfo[]> {

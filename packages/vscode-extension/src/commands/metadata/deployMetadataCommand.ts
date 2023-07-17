@@ -1,17 +1,18 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel ,  fileName, Timer } from '@vlocode/util';
+import { forEachAsyncParallel } from '@vlocode/util';
 import * as open from 'open';
-import { ActivityProgress, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
+import { ActivityProgress } from '../../lib/vlocodeActivity';
 import { VlocodeCommand } from '../../constants';
 import MetadataCommand from './metadataCommand';
-import { DeployResult, DeployStatus, RetrieveDeltaStragey, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, DeployStatus, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
+
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
-@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true  })
+@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true, showProductionWarning: true })
 export default class DeployMetadataCommand extends MetadataCommand {
 
     /** 
@@ -71,13 +72,6 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {
-        // Prevent prod deployment if not intended
-        if (await this.salesforce.isProductionOrg()) {
-            if (!await this.showProductionWarning(false)) {
-                return;
-            }
-        }
-
         // build package
         const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, this.vlocode.getApiVersion());
         const sfPackage = (await packageBuilder.addFiles(selectedFiles)).getPackage();

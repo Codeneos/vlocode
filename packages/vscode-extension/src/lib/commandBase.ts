@@ -25,35 +25,6 @@ export abstract class CommandBase implements Command {
             : undefined;
     }
 
-    /**
-     * Show a warning message about making changes to a production org allowing
-     * the user to cancel the operation in case it was unintended.
-     *
-     * By default this method will throw an exception if the user cancels the operation, use overload with the `throwException` parameter to change this behavior.
-     *
-     * @param throwException Throw an exception if the user cancels the operation
-     */
-    protected async showProductionWarning(throwException?: true) : Promise<never | true>;
-    protected async showProductionWarning(throwException: false) : Promise<boolean>;
-    protected async showProductionWarning(throwException = true) : Promise<never | boolean> {
-        const productionWarning = await vscode.window.showWarningMessage(
-            'Make changes to a Production org?',
-            {
-                detail: 'You are about to make changes to a Production org. It is not recommended to direcly make changes to a Production instance doing so may result in data loss. Are you sure you want to continue?',
-                modal: true,
-            }, 'Yes', 'No'
-        );
-
-        if (productionWarning !== 'Yes') {
-            if (throwException) {
-                throw new Error('Operation cancelled by user due to production warning');
-            }
-            return false;
-        }
-
-        return true;
-    }
-
     private getName() : string {
         return this.constructor?.name || 'Command';
     }

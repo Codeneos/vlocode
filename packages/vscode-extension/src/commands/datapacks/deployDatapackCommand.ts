@@ -17,7 +17,7 @@ import { VlocityToolsDeployment } from '../../lib/vlocity/vlocityToolsDeploy';
 const deployModeSuggestionKey: string = 'deploymodeSuggestion-0.17.0';
 const suggestionInterval: number = 9 * 24 * 3600 * 1000;
 
-@vscodeCommand(VlocodeCommand.deployDatapack, { focusLog: true })
+@vscodeCommand(VlocodeCommand.deployDatapack, { focusLog: true, showProductionWarning: true })
 export class DeployDatapackCommand extends DatapackCommand {
 
     /**
@@ -49,13 +49,6 @@ export class DeployDatapackCommand extends DatapackCommand {
         if (!datapackHeaders.length) {
             // no datapack files found, lets pretend this didn't happen
             return;
-        }
-
-        // Prevent prod deployment if not intended
-        if (await this.vlocode.salesforceService.isProductionOrg()) {
-            if (!await this.showProductionWarning(false)) {
-                return;
-            }
         }
 
         // Suggest vlocode?

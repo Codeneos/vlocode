@@ -40,7 +40,9 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     }
 
     private async createRecordsFromDatapack(datapack: VlocityDatapack) {
-        const scriptRecord = this.createRecord(datapack.data);
+        // OmniScripts do not have version when exported; force them to version 1 so we don't get undefined version errors
+        const scriptData = { ...datapack.data, "%vlocity_namespace%__Version__c": datapack.version ?? 1 };
+        const scriptRecord = this.createRecord(scriptData);
         const elementRecords = datapack.Element__c.map(ele => this.createRecord(ele));
         return { scriptRecord, elementRecords };
     }

@@ -201,7 +201,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         await forEachAsyncParallel(Iterable.filter(event.getDeployedRecords('OmniScript__c'), r => this.lwcEnabledDatapacks.has(r.datapackKey)), async record => {
             try {
                 if (event.deployment.options.useMetadataApi) {
-                    packages.push(await this.activator.getLwcComponentBundle(record.recordId));
+                    packages.push(await this.activator.getMetadataPackage(record.recordId));
                 } else {
                     await this.activator.activateLwc(record.recordId, { toolingApi: true });
                 }
