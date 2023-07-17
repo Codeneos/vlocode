@@ -1,9 +1,9 @@
 import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
 import { CancellationToken, CustomError, wait } from '@vlocode/util';
-import moment = require("moment");
 import { QueryBuilder, QueryFilterCondition } from './queryBuilder';
 import { QueryService } from './queryService';
 import { SalesforceService } from './salesforceService';
+import { DateTime } from 'luxon';
 
 export type SalesforceBatchStatus = 'Processing' | 'Aborted' | 'Queued' | 'Completed';
 
@@ -24,11 +24,26 @@ export interface SalesforceBatchJob {
 }
 
 export interface SalesforceBatchJobStatus {
+    /**
+     * Name of the APEX class executed by the batch
+     */
     apexClass: string;
+    /**
+     * Elapsed time in ms since the batch was started
+     */
     elapsedTime: number;
+    /**
+     * True if the batch is completed otherwise false
+     */
     done: boolean;
     status: SalesforceBatchStatus;
+    /**
+     * Number of batches processed in this job
+     */
     progress: number;
+    /**
+     * Total number of batches in this job
+     */
     total: number;
 }
 
@@ -153,7 +168,7 @@ export class SalesforceBatchService {
                 'TotalJobItems',
                 'CreatedDate',
                 'CompletedDate',
-                'ParentJobId',  
+                'ParentJobId',
                 'CreatedById',
             ])
             .sortBy('CreatedDate')
@@ -180,7 +195,7 @@ export class SalesforceBatchService {
         const job = (await this.getBatchJobs(filter)).pop();
         return (
             job && {
-                elapsedTime: moment(job.completedDate ? moment(job.completedDate) : moment()).diff(moment(job.createdDate), 'milliseconds'),
+                elapsedTime: (job.completedDate ? DateTime.fromISO(job.completedDate) : DateTime.now()).diff(DateTime.fromISO(job.createdDate)).toMillis(),
                 apexClass: job.apexClass.name,
                 done: job.status === 'Completed' || job.status === 'Aborted',
                 status: job.status,
@@ -248,7 +263,7 @@ export class SalesforceBatchService {
         }
 
         // Find out batch id
-        const batchId = typeof filter === 'string' && filter.startsWith('707') 
+        const batchId = typeof filter === 'string' && filter.startsWith('707')
             ? filter : (await this.getBatchJobs(filter)).pop()?.id;
 
         // eslint-disable-next-line no-constant-condition

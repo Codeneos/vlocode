@@ -1,5 +1,4 @@
-import path = require('path');
-import { clearTimeout, setTimeout } from 'timers';
+import * as path from "path";
 import * as constants from '../constants';
 import * as vscode from 'vscode';
 import { Logger, FileSystem, injectable, LifecyclePolicy, FileInfo } from '@vlocode/core';

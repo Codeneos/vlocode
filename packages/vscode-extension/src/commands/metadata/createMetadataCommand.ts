@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
 import * as itemTemplates from '../../newItemTemplates.yaml';
-import globby = require('globby');
+import * as globby from 'globby';
 import { container } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 import MetadataCommand from './metadataCommand';
@@ -95,7 +95,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
 
         const workspaceFolders = vscode.workspace.workspaceFolders.map(ws => sanitizePath(ws.uri.fsPath, path.posix.sep));
         const patterns = workspaceFolders.map(ws => path.posix.join(ws, '**', newItemType.folderName));
-        const targetFolders = await globby(patterns, { onlyDirectories: true });
+        const targetFolders: string[] = await globby(patterns, { onlyDirectories: true, absolute: true });
 
         if (targetFolders.length == 1) {
             return targetFolders[0];
