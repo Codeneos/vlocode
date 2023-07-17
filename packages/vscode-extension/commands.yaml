@@ -61,19 +61,6 @@ vlocode.createOmniscriptLwc:
   group: v_vlocity
   menus:
     - menu: commandPalette
-vlocode.generateLwc:
-  title: 'Vlocity: Generate LWC'
-  group: v_vlocity
-  menus:
-    - menu: commandPalette
-    - menu: explorer/context
-      when: &generateLwcWhen
-        - resourceScheme == folder && resourcePath =~ /.+\/OmniScript\/.+/
-        - resourceScheme == folder && resourcePath =~ /.+\\OmniScript\\.+/
-        - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+_DataPack.json$/
-        - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+_DataPack.json$/
-    - menu: editor/context
-      when: *generateLwcWhen
 
 # hide commands
 vlocode.buildDatapack:
@@ -320,3 +307,29 @@ vlocode.developerLogs.setLogVisibility:
   menus:
     - menu: view/title
       group: navigation
+
+# OmniScript LWC commands
+vlocode.omniScript.generateLwc:
+  title: 'OmniScript: Generate LWC'
+  group: v_vlocity_omniscript
+  menus: &omniScriptCommandMenus
+    - menu: explorer/context
+      when:
+        - resourceScheme == folder && resourcePath =~ /.+\\OmniScript\\[^\\]+$/
+        - resourceScheme == folder && resourcePath =~ /.+\/OmniScript\/[^\/]+$/
+        - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+\.json$/
+        - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+\.json$/
+    - menu: commandPalette
+      when: &whenOmniScript
+        - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+\.json$/
+        - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+\.json$/
+    - menu: editor/context
+      when: *whenOmniScript
+vlocode.omniScript.deployLwc:
+  title: 'OmniScript: Deploy as LWC'
+  group: v_vlocity_omniscript
+  menus: *omniScriptCommandMenus
+vlocode.omniScript.activate:
+  title: 'OmniScript: (Re-)Activate'
+  group: v_vlocity_omniscript
+  menus: *omniScriptCommandMenus

@@ -63,6 +63,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this.commandRouter;
     }
 
+    public get apiVersion() {
+        return this.config.salesforce.apiVersion;
+    }
+
     // Ctor + Methods
     constructor(
         public readonly config: VlocodeConfiguration,
@@ -312,10 +316,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                     activityRecord.status = VlocodeActivityStatus.Failed;
                 }
                 if (options.propagateExceptions !== false) {
+                    this.logger.debug(e);
                     throw e;
-                } else {
-                    this.logger.error(e);
                 }
+                this.logger.error(e);
             } finally {
                 if (cancelTokenSource?.token.isCancellationRequested) {
                     activityRecord.status = VlocodeActivityStatus.Cancelled;
@@ -587,3 +591,20 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 }
 
+/**
+ * Display a scode progress indicator while executing a command
+ * @param options Command options
+ * @returns decorator factory fn
+ */
+export function withProgress(options: { location: vscode.ProgressLocation, title: string }) {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        const originalMethod = descriptor.value;
+        descriptor.value = function(...args: any[]) {
+            return container.get(VlocodeService).withActivity({
+                progressTitle: options.title,
+                ...options
+            }, () => originalMethod.apply(this, args));
+        };
+        return descriptor;
+    }
+}

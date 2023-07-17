@@ -79,7 +79,7 @@ export class OmniScriptActivator {
         // Deploy LWC when required
         if (options?.skipLwcDeployment !== true && script.isLwcEnabled) {
             const definition = await this.definitionProvider.getScriptDefinition(script.id);
-            await this.deployLwcComponent(definition, options);
+            await this.deployLwc(definition, options);
         }
 
         if (options?.reactivateDependentScripts && script.isReusable) {
@@ -225,7 +225,7 @@ export class OmniScriptActivator {
      */
     public async activateLwc(id: string, options?: OmniScriptActivationOptions) {
         const definition = await this.definitionProvider.getScriptDefinition(id);
-        await this.deployLwcComponent(definition, options);
+        await this.deployLwc(definition, options);
     }
 
     /**
@@ -233,12 +233,17 @@ export class OmniScriptActivator {
      * @param id Id of the OmniScript
      * @returns Deployable Metadata package
      */
-    public async getLwcComponentBundle(id: string) {
+    public async getMetadataPackage(id: string) {
         const definition = await this.definitionProvider.getScriptDefinition(id);
         return this.lwcCompiler.compileToPackage(definition);
     }
 
-    private async deployLwcComponent(definition: OmniScriptDefinition, options?: OmniScriptActivationOptions) {
+    /**
+     * Generate the LWC component bundlen for the specified OmniScript definition and deploy it to the org.
+     * @param definition Definition of the OmniScript to deploy
+     * @param options Extra options that control how the script is activated
+     */
+    public async deployLwc(definition: OmniScriptDefinition, options?: OmniScriptActivationOptions) {
         const timer = new Timer();
         const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
         this.logger.info(`Deploying LWC ${definition.bpType}/${definition.bpSubType} (${apiLabel} api)...`);

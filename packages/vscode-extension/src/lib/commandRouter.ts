@@ -12,6 +12,7 @@ export interface CommandOptions {
     params?: any[];
     executeParams?: any[];
     focusLog?: boolean;
+    showProductionWarning?: boolean;
 }
 
 /**
@@ -26,6 +27,9 @@ const commandRegistry: { [id: string]: { command: CommandFn, options?: CommandOp
  */
 export function vscodeCommand(id: string, options?: CommandOptions) {
     return (command: CommandFn) => {
+        if (commandRegistry[id]) {
+            throw new Error(`Command with id "${id}" is already registered; command ids should be unique`);
+        }
         commandRegistry[id] = { command, options };
     };
 }

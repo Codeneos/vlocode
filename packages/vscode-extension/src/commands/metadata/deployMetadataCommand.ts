@@ -10,10 +10,11 @@ import { ActivityProgress } from '../../lib/vlocodeActivity';
 import { vscodeCommand } from '../../lib/commandRouter';
 import MetadataCommand from './metadataCommand';
 
+
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
-@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true })
+@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true, showProductionWarning: true })
 export default class DeployMetadataCommand extends MetadataCommand {
 
     /** 
@@ -73,13 +74,6 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     protected async deployMetadata(selectedFiles: vscode.Uri[]) {
-        // Prevent prod deployment if not intended
-        if (await this.salesforce.isProductionOrg()) {
-            if (!await this.showProductionWarning(false)) {
-                return;
-            }
-        }
-
         // build package
         const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, this.vlocode.getApiVersion());
         const sfPackage = (await packageBuilder.addFiles(selectedFiles)).getPackage();
