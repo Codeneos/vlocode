@@ -1,6 +1,6 @@
 import { container } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
-import assert = require("assert");
+import * as assert from "assert";
 import { NamespaceService } from './namespaceService';
 
 export type QueryUnary = { left?: undefined, operator: string, right: QueryBinary | QueryUnary | string };
