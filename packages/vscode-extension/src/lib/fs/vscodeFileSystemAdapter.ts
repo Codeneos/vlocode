@@ -9,7 +9,7 @@ export class VSCodeFileSystemAdapter extends FileSystem {
         if (doc) {
             return doc.getText();
         }
-        return this.readFileAsString(fileName, encoding);
+        return this.readFile(fileName).then(buffer => buffer.toString(encoding));
     }
 
     public async readFile(fileName: string): Promise<Buffer> {
