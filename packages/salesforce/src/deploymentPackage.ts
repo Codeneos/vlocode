@@ -6,6 +6,7 @@ import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEq
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
 import { MD_XML_OPTIONS } from './constants';
+import { isPromise } from 'util/types';
 
 export interface SalesforcePackageComponent {
     componentType: string; // componentType
@@ -339,30 +340,54 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get a list of all test classes with unit tests from added to the current package.
-     * Uses annotation and testmethod detection on APEX class bodies.
+     * Get a list of all unit test classes that have been added to the current package. 
+     * Detects test classes based on class and test method annotations.
+     *
+     * When a file system is specified the file system is used to read the file contents if the file is not already loaded. In this case the method will return a promise.
+     * Otherwise the method will return a string array with the names of the test classes.
      */
-    public getTestClasses() {
-        const testClasses = new Array<string>();
-        for (const [packagePath, data] of this.packageData.entries()) {
-            if (!packagePath.endsWith('.cls')) {
-                continue;
+    public getTestClasses(): string[];
+    public getTestClasses(options: { fs: FileSystem }): Promise<string[]>;
+    public getTestClasses(options?: { fs?: FileSystem }): Promise<string[]> | string[] {        
+        const testClassFilter = (entry: SalesforcePackageEntry) => {
+            // Get data, buffer assumes UTF-8 encoding.
+            const classBody = typeof entry.data === 'string' 
+                ? entry.data : Buffer.isBuffer(entry.data) 
+                ? entry.data.toString('utf-8') : undefined;
+
+            if (!classBody) {
+                return false;
             }
 
-            // Get data, buffer assumes UTF-8 encoding.
-            const classBody = typeof data === 'string' ? data : data.toString();
-            const testClassName = path.basename(packagePath, '.cls');
-
-            // Cheap test but accurate test for test classes; you can create false posetives but you have to try real hard
+            // Cheap test but accurate test for test classes; you can create false positives but you have to try real hard
             const hasTestAnnotations = (/@IsTest([(\s]+)/ig.exec(classBody)?.length ?? 0) > 1; // atleast 2 annotations are required
             const hasTestMethods = /\s+testMethod\s+/ig.test(classBody); // or atleast one testMethod
 
-            if (hasTestMethods || hasTestAnnotations) {
-                testClasses.push(testClassName);
-            }
+            return hasTestMethods || hasTestAnnotations;
         }
 
-        return testClasses;
+        const packagedClasses = this.filterPackageEntries(entry => entry.componentType === 'ApexClass', options?.fs);
+        if (isPromise(packagedClasses)) {
+            return packagedClasses.then(entries => entries.filter(testClassFilter).map(entry => entry.componentName));
+        }
+        return packagedClasses.filter(testClassFilter).map(entry => entry.componentName);
+    }
+
+    private filterPackageEntries(predicate: (entry: SalesforcePackageEntry) => boolean, fs?: undefined) : SalesforcePackageEntry[];
+    private filterPackageEntries(predicate: (entry: SalesforcePackageEntry) => boolean, fs: FileSystem) : Promise<SalesforcePackageEntry[]>;
+    private filterPackageEntries(predicate: (entry: SalesforcePackageEntry) => boolean, fs: FileSystem | undefined) : Promise<SalesforcePackageEntry[]> | SalesforcePackageEntry[];
+    private filterPackageEntries(predicate: (entry: SalesforcePackageEntry) => boolean, fs?: FileSystem | undefined)
+        : Promise<SalesforcePackageEntry[]> | SalesforcePackageEntry[] 
+    {
+        const packagedClasses = [...this.packageData.entries()].map(([packagePath, data]) => ({packagePath, ...data })).filter(predicate);
+
+        if (fs) {
+            return Promise.all(
+                packagedClasses.map(async entry => Object.assign(entry, { data: await this.getFileData(entry, { fs }) }))
+            );
+        }
+
+        return packagedClasses;
     }
 
     /**
