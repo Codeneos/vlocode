@@ -20,13 +20,6 @@ function buildMetadataXml(rootName: string, apiVersion: string, data?: any) {
     });
 }
 
-function normalizePath(p : string | string[]) {
-    if (typeof p == 'string') {
-        return p.replace(/[\\/]+/g, '/');
-    }
-    return p.map(normalizePath);
-}
-
 describe('SalesforcePackageBuilder', () => {
     const apiVersion = '58.0';
     const mockFs = new MemoryFileSystem({
