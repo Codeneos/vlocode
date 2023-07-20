@@ -152,7 +152,7 @@ export abstract class FileSystem {
     public async outputFile(path: string, body?: Buffer | string, options?: OutputOptions) {
         if (!await this.pathExists(path)) {
             let currentPath = '';
-            for (const folder of path.split(/\//).filter(folder => !!folder)) {
+            for (const folder of path.split(/\//).filter(folder => !!folder).slice(0, -1)) {
                 currentPath = currentPath ? `${currentPath}/${folder}` : folder;
                 await this.createDirectory(currentPath);
             }
