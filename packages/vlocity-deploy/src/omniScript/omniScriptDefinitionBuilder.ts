@@ -1,7 +1,18 @@
-import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptElementType, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
+import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptAllowedRootElementTypes, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptElementType, OmniScriptGroupElementDefinition } from './omniScriptDefinition';
 import { CustomError, deepClone, escapeHtmlEntity, isCustomError, mapGetOrCreate } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';
 import { randomUUID } from 'crypto';
+
+export interface AddElementOptions {
+    /**
+     * ID of the parent element to add the element to.
+     */
+    parentElementId?: string; 
+    /**
+     * ID of the embedded OmniScript element to link the element to.
+     */
+    scriptElementId?: string;
+}
 
 /**
  * Builds a script definition from a list of elements and templates.
@@ -87,7 +98,9 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
      * @param ele Element definition to add
      * @param options Options for adding the element
      */
-    public addElement(id: string, ele: OmniScriptElementDefinition, options?: { parentElementId?: string; scriptElementId?: string; }) {
+    public addElement(id: string, ele: OmniScriptElementDefinition, options?: AddElementOptions) {
+        // Validate if the element can be added
+        this.validateElement(ele, options);
         this.elements.set(id, ele);
 
         if (ele.propSetMap?.HTMLTemplateId) {
@@ -104,23 +117,13 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
             this.scriptDef.rMap[ele.name] = "";
         }
 
-        if (ele.level === undefined) {
-            ele.level = options?.parentElementId ? this.getElementById(options.parentElementId).level + 1 : 0;
+        const elementLevel = options?.parentElementId ? this.getElementById(options.parentElementId).level + 1 : 0;
+        if (ele.level === undefined || elementLevel > 0) {
+            ele.level = elementLevel;
         }
 
         if (options?.scriptElementId && !options?.parentElementId) {
-            const scriptElement = this.getElementById(options.scriptElementId, 
-                `Script element "${ele.name}" (${id
-                }) links to none-existing embedded OmniScript element with Id "${options.scriptElementId}"`
-            );
-
-            if (scriptElement.type !== 'OmniScript') {
-                throw new Error(
-                    `Script element "${ele.name}" (${id}) links to ` +
-                    `element with Id "${options?.scriptElementId}" that is not of type OmniScript (${scriptElement.type})`
-                );
-            }
-
+            const scriptElement = this.getElementById(options.scriptElementId);
             ele.offSet = this.scriptOffsets.get(options.scriptElementId)!;
             ele.inheritShowProp = scriptElement.propSetMap?.show;
             ele.bEmbed = true;
@@ -150,6 +153,53 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         }
 
         this.addElementHandlers[ele.type]?.(id, ele, options);
+    }
+
+    /**
+     * Validates if the specified element can be added to the script definition. 
+     * Throws an error when the element is invalid or not supported.
+     * @param element Element to validate for adding
+     * @param options Options for adding the element
+     */
+    private validateElement(element: OmniScriptElementDefinition, options?: AddElementOptions) : void | never {
+        if (options?.parentElementId) {
+            const scriptElement = this.getElementById(options.parentElementId, { throwsException: false });
+            if (!scriptElement) {
+                throw new Error(
+                    `Element "${element.name}" (${element.type
+                    }) links to none-existing parent element with Id "${options.scriptElementId}"`
+                );
+            }
+        }
+
+        if (options?.scriptElementId) {
+            const scriptElement = this.getElementById(options.scriptElementId, { throwsException: false });
+            if (!scriptElement) {
+                throw new Error(
+                    `Element "${element.name}" (${element.type
+                    }) links to none-existing embedded OmniScript element with Id "${options.scriptElementId}"`
+                );
+            }
+
+            if (scriptElement.type !== 'OmniScript') {
+                throw new Error(
+                    `Element "${element.name}" (${element.type}) links to ` +
+                    `element with Id "${options?.scriptElementId}" that is not of type OmniScript (${scriptElement.type})`
+                );
+            }
+        }
+
+        // Specific for OmniScripts
+        if (!options?.parentElementId) {
+            const isAllowedInRoot = OmniScriptAllowedRootElementTypes.some(
+                type => typeof type === 'string' ? type === element.type : type.test(element.type)
+            );
+            if (!isAllowedInRoot) {
+                throw new Error(`${element.type} elements are not allowed allowed in root of an OmniScript (name: ${element.name})`);
+            }
+        } else if (element.type === 'OmniScript' || element.type === 'Step') {
+            throw new Error(`${element.type} elements are only allowed allowed in root of an OmniScript (name: ${element.name})`);
+        }
     }
 
     /**
@@ -193,10 +243,13 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         );
     }
 
-    private getElementById(id: string, errorIfNotFound?: string) {
+    private getElementById(id: string, options: { errorMessage?: string, throwsException: false }) : OmniScriptElementDefinition | undefined;
+    private getElementById(id: string, options?: { errorMessage?: string, throwsException?: true }): OmniScriptElementDefinition | never;
+    private getElementById(id: string, options?: { errorMessage?: string, throwsException?: boolean }): OmniScriptElementDefinition | undefined;
+    private getElementById(id: string, options?: { errorMessage?: string, throwsException?: boolean }) : OmniScriptElementDefinition | undefined | never {
         const elementDefinition = this.elements.get(id);
-        if (!elementDefinition) {
-            throw new CustomError(errorIfNotFound ?? `Unable to find element with id "${id}"`, {
+        if (!elementDefinition && options?.throwsException) {
+            throw new CustomError(options?.errorMessage ?? `Unable to find element with id "${id}"`, {
                 code: 'ELEMENT_NOT_FOUND',
                 source: 'OMNI_SCRIPT_DEFINITION_BUILDER'
             });

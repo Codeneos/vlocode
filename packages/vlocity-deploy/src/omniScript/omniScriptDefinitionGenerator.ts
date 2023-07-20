@@ -134,11 +134,15 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
                 }
             }
 
-            this.logger.debug(`Adding [${record.type}] ${record.name} ${record.level}/${record.order} (${id})`);
-            builder.addElement(id, definition, {
-                parentElementId: record.parentElementId,
-                ...(options ?? {})
-            });
+            try {
+                this.logger.debug(`Adding ${record.name} (${record.type})`);
+                builder.addElement(id, definition, {
+                    parentElementId: record.parentElementId,
+                    ...(options ?? {})
+                });
+            } catch(error) {
+                this.logger.error(`Failed to add element ${record.name} (${record.type}) to script definition:`, error);
+            }
 
             if (this.isEmbeddedScriptElement(definition)) {
                 const embeddedScript = {
