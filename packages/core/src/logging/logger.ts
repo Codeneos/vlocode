@@ -73,7 +73,7 @@ export class Logger {
             category: this.name,
             level,
             time: new Date(),
-            message: args.map(item => this.formatArg(item)).join(' ')
+            message: args.map((item, i) => this.formatArg(item, i)).join(' ')
         });
     }
 
@@ -90,9 +90,10 @@ export class Logger {
         }
     }
 
-    private formatArg(arg: any) : string | any {
+    private formatArg(arg: any, index: number) : string | any {
         if (arg instanceof Error) {
-            return getErrorMessage(arg);
+            const error = getErrorMessage(arg);
+            return !index ? error : `\n${error}`;
         } else if (arg !== null && typeof arg === 'object') {
             try {
                 return JSON.stringify(arg, undefined, 2);
@@ -101,9 +102,9 @@ export class Logger {
             }
         } else if (typeof arg === 'function') {
             try {
-                return this.formatArg(arg());
+                return this.formatArg(arg(), index);
             } catch(err) {
-                return `(<function error> ${this.formatArg(err)})`;
+                return `(<function error> ${this.formatArg(err, index)})`;
             }
         }
         return arg;
