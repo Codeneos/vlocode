@@ -1,5 +1,5 @@
-import { Logger, LogManager } from '@vlocode/core';
-import { OmniScriptActivator, OmniScriptVersionDetail } from '@vlocode/vlocity-deploy';
+import { Logger, LogManager, FileSystem } from '@vlocode/core';
+import { OmniScriptActivator, OmniScriptVersionDetail, ScriptDefinitionProvider } from '@vlocode/vlocity-deploy';
 import { Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { forEachAsyncParallel, getErrorMessage, groupBy, isSalesforceId, Iterable, sortBy, Timer } from '@vlocode/util';
@@ -40,6 +40,8 @@ export default class extends SalesforceCommand {
         new Option('--remote-activation', 'use anonymous apex to activate OmniScripts.' +
             'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' +
             'Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.').default(false),
+        new Option('--debug-activation', 'save the updated script definitions as JSON file. ' + 
+            'Use this option while debugging to compare scripts activate with `--remote-activation` and local activation').default(false),
     ];
 
     constructor(private logger: Logger = LogManager.get('vlocode-cli')) {
@@ -73,8 +75,13 @@ export default class extends SalesforceCommand {
             }
 
             await forEachAsyncParallel(scriptsToActivate, async info => {
+                if (options.debugActivation) {
+                    // Save scripts before running activator when debugging
+                    await this.saveDefinition(info.script, { preFix: 'before' });
+                }
                 this.logger.info(`Activating ${info.type} (version: ${info.script.version}, id: ${info.script.id})`);
                 try {
+                    // Activation
                     await activator.activate(info.script.id, {
                         toolingApi: !options.useMetadataApi,
                         skipLwcDeployment: options.skipLwc,
@@ -83,6 +90,10 @@ export default class extends SalesforceCommand {
                     });
                     info.status = 'activated';
                     this.logger.info(`${logSymbols.success} Activated: ${info.type} (${info.script.id})`);
+
+                    if (options.debugActivation) {
+                        await this.saveDefinition(info.script, { preFix: 'after' });
+                    }
                 } catch (error) {
                     info.status = 'error';
                     errors.push({ script: info.type, error });
@@ -105,6 +116,26 @@ export default class extends SalesforceCommand {
             for (const { script, error } of errors) {
                 this.logger.error(`${logSymbols.error} Failed: ${script}: ${getErrorMessage(error)}`);
             }
+        }
+    }
+
+
+    private async saveDefinition(script: OmniScriptVersionDetail, options?: { preFix?: string, postFix?: string } ) {
+        const fileNameParts = [ 
+            options?.preFix ?? '', 
+            script.type, 
+            script.subType, 
+            options?.postFix ?? ''
+        ];
+        const fileName = (fileNameParts.filter(f => !!f).join('-').replace(/[\s]+/g, '').replace(/[^a-z0-9_-]+/ig, '') + `.json`).toLowerCase();
+        try {
+            const definition = await this.container.get(ScriptDefinitionProvider).getScriptDefinition(script.id);
+            if (definition) {
+                this.logger.info(`Saving definition for ${script.id} to ${fileName}`);
+                await this.container.get(FileSystem).outputFile(fileName, JSON.stringify(definition, null, 4));
+            }
+        } catch (error) {
+            this.logger.error(`Failed to save definition for ${script.id} to ${fileName}: ${getErrorMessage(error)}`);
         }
     }
 
