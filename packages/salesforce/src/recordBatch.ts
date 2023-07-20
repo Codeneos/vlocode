@@ -202,7 +202,7 @@ export class RecordBatch {
         this.failedCount += failedCount;
         this.processedCount += results.length - failedCount;
 
-        this.logger.info(`Complete ${chunk.sobjectType} ${chunk.operation} ${results.length - failedCount}/${results.length} records (Collections API) [${timer.stop()}]`);
+        this.logger.verbose(`Complete ${chunk.sobjectType} ${chunk.operation} ${results.length - failedCount}/${results.length} records (Collections API) [${timer.stop()}]`);
         return results;
     }
 
