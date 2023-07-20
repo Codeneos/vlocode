@@ -7,7 +7,7 @@ export interface AddElementOptions {
     /**
      * ID of the parent element to add the element to.
      */
-    parentElementId?: string; 
+    parentElementId?: string;
     /**
      * ID of the embedded OmniScript element to link the element to.
      */

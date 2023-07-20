@@ -189,7 +189,7 @@ importers:
         version: 0.5.21
       ts-jest:
         specifier: ^28.0.5
-        version: 28.0.5(@babel/core@7.18.10)(jest@28.1.3)(typescript@4.6.4)
+        version: 28.0.5(@babel/core@7.21.4)(esbuild@0.14.49)(jest@28.1.3)(typescript@4.6.4)
       ts-loader:
         specifier: ^9.3.1
         version: 9.3.1(typescript@4.6.4)(webpack@5.72.1)
@@ -391,14 +391,11 @@ importers:
         specifier: ^0.8.8
         version: 0.8.8
       fast-xml-parser:
-        specifier: ^3.19.0
-        version: 3.21.1
+        specifier: ^4.2.6
+        version: 4.2.6
       fs-extra:
         specifier: '9'
         version: 9.1.0
-      he:
-        specifier: ^1.2.0
-        version: 1.2.0
       open:
         specifier: ^8.2.1
         version: 8.4.0
@@ -432,7 +429,7 @@ importers:
         version: 0.3.4
       ts-jest:
         specifier: ^28.0.5
-        version: 28.0.5(@babel/core@7.21.4)(esbuild@0.14.49)(jest@28.1.3)(typescript@4.6.4)
+        version: 28.0.5(@babel/core@7.18.10)(jest@28.1.3)(typescript@4.6.4)
       tsc-alias:
         specifier: 1.6.7
         version: 1.6.7
@@ -6141,6 +6138,13 @@ packages:
     dependencies:
       strnum: 1.0.5
 
+  /fast-xml-parser@4.2.6:
+    resolution: {integrity: sha512-Xo1qV++h/Y3Ng8dphjahnYe+rGHaaNdsYOBWL9Y9GCPKpNKilJtilvWkLcI9f9X2DoKTLsZsGYAls5+JL5jfLA==}
+    hasBin: true
+    dependencies:
+      strnum: 1.0.5
+    dev: false
+
   /fastest-levenshtein@1.0.12:
     resolution: {integrity: sha512-On2N+BpYJ15xIC974QNVuYGMOlEVt4s0EOI3wwMqOmK1fdDY+FN/zltPV8vosq4ad4c/gJ1KHScUn/6AWIgiow==}
     dev: true
@@ -6849,6 +6853,7 @@ packages:
   /he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
+    dev: true
 
   /header-case@2.0.4:
     resolution: {integrity: sha512-H/vuk5TEEVZwrR0lp2zed9OCo1uAILMlx0JEMgC26rzyJJ3N1v6XkwHHXJQdR2doSjcGPM6OKPYoJgf0plJ11Q==}

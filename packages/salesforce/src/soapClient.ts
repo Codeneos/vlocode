@@ -109,7 +109,7 @@ export class SoapClient {
             handleCookies: false,
             responseDecoders: {
                 xml: (buffer, encoding) => {
-                    return XML.parse(buffer.toString(encoding), { ignoreNameSpace: true });
+                    return XML.parse(buffer.toString(encoding), { ignoreNamespacePrefix: true });
                 }
             }
         }, LogManager.get('SoapTransport'));

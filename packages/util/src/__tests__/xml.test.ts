@@ -29,6 +29,15 @@ describe('xml', () => {
                 }
             }, undefined, { headless: true })).toBe(xmlStr);
         });
+        it('should encode XML special characters', () => {
+            const xmlStr = '<tag attr="&amp;&gt;">I&amp;D &apos;100&apos; &gt; &apos;200&apos;</tag>';
+            expect(XML.stringify({
+                tag: {
+                    $: { attr: '&>' },
+                    '#text': `I&D '100' > '200'`
+                }
+            }, undefined, { headless: true })).toBe(xmlStr);
+        });
     });
     describe('#parse', () => {
         it('should replace tag-value with attribute nil:true by null', () => {
@@ -48,10 +57,44 @@ describe('xml', () => {
             expect(XML.parse(`<test><tag>2.1</tag></test>`).test.tag).toBe(2.1);
         });
         it('should strip namespace prefixes when ignoreNameSpace is true', () => {
-            expect(XML.parse(`<test xmlns:ns='test'><ns:tag>test</ns:tag></test>`, { ignoreNameSpace: true }).test.tag).toBe('test');
+            expect(XML.parse(`<test xmlns:ns='test'><ns:tag>test</ns:tag></test>`, { ignoreNamespacePrefix: true }).test.tag).toBe('test');
         });
         it('should not strip namespace prefixes when ignoreNameSpace is not set', () => {
             expect(XML.parse(`<test xmlns:ns='test'><ns:tag>test</ns:tag></test>`).test['ns:tag']).toBe('test');
+        });
+        it('should not parse strings with leading zero\'s or + as number', () => {
+            expect(XML.parse(`<test><tag>000001</tag></test>`).test.tag).toBe('000001');
+            expect(XML.parse(`<test><tag>+1</tag></test>`).test.tag).toBe('+1');
+        });
+        it('should run node values through parser', () => {
+            const valueProcessor = (val: string, path: string) => path === 'test.tag' ? val + '@' : val;
+            const parsed = XML.parse(`<test><tag>2&amp;</tag></test>`, { valueProcessor });
+            expect(parsed).toEqual({ test: { tag: '2&@' } });
+        });
+        it('should run attribute values through parser', () => {
+            const valueProcessor = (val: string, path: string) => path === 'test.tag@attr' ? val + '@' : val;
+            const parsed = XML.parse(`<test><tag attr="1"></tag></test>`, { valueProcessor });
+            expect(parsed).toEqual({ test: { tag: { $: { attr: '1@' } } }});
+        });
+        it('should parse everything as array when array mode true', () => {
+            const parsed = XML.parse(`<test><tag>test</tag></test>`, { arrayMode: true });
+            expect(parsed).toEqual({ test: [{ tag: [ 'test' ] }] });
+        });
+        it('should parse HTML encoded entities in values', () => {
+            const parsed = XML.parse(`<test><tag>I&amp;D &#39;100&#39; &gt; &#39;200&#39;</tag></test>`);
+            expect(parsed).toEqual({ test: { tag: `I&D '100' > '200'` } });
+        });
+        it('should parse HTML encoded entities in attributes', () => {
+            const parsed = XML.parse(`<test><tag value="I&amp;D &apos;100&#39; &gt; &#39;200&apos;" /></test>`);
+            expect(parsed).toEqual({ test: { tag: { $: { value: `I&D '100' > '200'` } } } });
+        });
+        it('should not trim values trimValues = false', () => {
+            const parsed = XML.parse(`<test><tag>    \ntest\n   </tag></test>`, { trimValues: false });
+            expect(parsed).toEqual({ test: { tag: `    \ntest\n   ` } });
+        });
+        it('should trim values', () => {
+            const parsed = XML.parse(`<test><tag>    \ntest\n   </tag></test>`,);
+            expect(parsed).toEqual({ test: { tag: `test` } });
         });
     });
     describe('#getRootTagName', () => {

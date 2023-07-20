@@ -53,9 +53,8 @@
     "dependencies": {
         "@salesforce/core": "3.31.18",
         "@xmldom/xmldom": "^0.8.8",
-        "fast-xml-parser": "^3.19.0",
+        "fast-xml-parser": "^4.2.6",
         "fs-extra": "^9.0",
-        "he": "^1.2.0",
         "open": "^8.2.1",
         "optional-require": "^1.1.7",
         "reflect-metadata": "^0.1.13"

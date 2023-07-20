@@ -1,22 +1,42 @@
-import * as xmlParser from 'fast-xml-parser';
+import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions } from 'fast-xml-parser';
 import { DOMParser } from '@xmldom/xmldom';
-import { decode, escape } from 'he';
 import { visitObject } from './object';
 
 export interface XMLParseOptions {
-    trimValues?: boolean;
-    ignoreAttributes?: boolean;
-    ignoreNameSpace?: boolean;
     /**
-     * Always put child nodes in an array if true; otherwise an array is created only if there is more than one.
+     * When true the parser will trim white spaces values of text nodes. When not set defaults to true.
+     * When false all whitespace characters from the text node are preserved.
+     *
+     * @remark `\r\n` is normalized to `\n`
+     * @default true
      */
-    arrayMode?: boolean | 'strict' | ((nodePath: string) => any);
+    trimValues?: boolean;
+    /**
+     * When true the parser will ignore attributes and only parse the node name and value.
+     * @default false
+     */
+    ignoreAttributes?: boolean;
+    /**
+     * When true the parser will ignore namespace prefixes in tags and attributes. 
+     * The returned object will not contain any namespace prefixes.
+     * @default false
+     */
+    ignoreNamespacePrefix?: boolean;
+    /**
+     * When true always return arrays for nodes even if there is only one child node.
+     * If false return the node as an object when there is only one child node.
+     * Or use a function to determine if the node should be an array or not.
+     */
+    arrayMode?: boolean | ((nodePath: string) => any);
     /**
      * Process the value of a node before returning it to the node.
      * Useful for converting values to a specific type.
      * If you return undefined the node is ignored.
+     * @param value Value of the node
+     * @param nodePath full path of the node seperated by dots, i.e. `rootTag.innerTag`. 
+     *                 For attributes the path is prefixed with `@`, i.e. `rootTag.innerTag.@attr`
      */
-    valueProcessor?: (val: string, nodePath: string) => any;
+    valueProcessor?: (value: string, nodePath: string) => any;
 }
 
 export interface XMLStringfyOptions {
@@ -37,39 +57,41 @@ export interface TextRange {
 
 export namespace XML {
 
-    const options: Partial<xmlParser.X2jOptions> = {
+    const options: Partial<X2jOptions & XmlBuilderOptions> = {
         attributeNamePrefix : '',
-        attrNodeName: '$',
+        attributesGroupName: '$',
         textNodeName : '#text',
+        cdataPropName: '__cdata', // default is 'false'
         ignoreAttributes : false,
-        ignoreNameSpace : false,
         allowBooleanAttributes : true,
         parseNodeValue : true,
         parseAttributeValue : true,
-        trimValues: true,
-        cdataTagName: '__cdata', // default is 'false'
-        cdataPositionChar: '\\c',
-        parseTrueNumberOnly: false,
+        removeNSPrefix : false,
+        trimValues: true, 
         arrayMode: false, // "strict"
+        ignoreDeclaration: false,
+        ignorePiTags: true,
+        processEntities: true,
+        numberParseOptions: {
+            leadingZeros: false,
+            hex: false,
+            skipLike: /^\+.*/,
+        }
     } as const;
-    
+
     /**
      * Global parser options for XML to JSON; changing the defaults affects all parsing in all packages. Change with care.
      */
-    export const globalParserOptions: Partial<xmlParser.X2jOptions> = {
-        ...options,
-        tagValueProcessor : val => decode(val),
-        attrValueProcessor: val => decode(val, { isAttributeValue: true })
+    export const globalParserOptions: Partial<X2jOptions> = {
+        ...options
     } as const;
 
     /**
      * Global stringify options for converting JSON to XML; changing the defaults affects JSON to XML formatting in all packages. Change with care.
      */
-    export const globalStringifyOptions: Partial<xmlParser.J2xOptions> = {
+    export const globalStringifyOptions: Partial<XmlBuilderOptions> = {
         ...options,
-        supressEmptyNode: false,
-        tagValueProcessor: val => escape(String(val)),
-        attrValueProcessor: val => escape(String(val))
+        supressEmptyNode: false
     } as const;
 
     /**
@@ -81,19 +103,36 @@ export namespace XML {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
-        const parserOptions = { ...globalParserOptions, ...options };
+
+        const parserOptions : Partial<X2jOptions> = { 
+            ...globalParserOptions, 
+            ignoreAttributes: options.ignoreAttributes ?? globalParserOptions.ignoreAttributes,
+            trimValues: options.trimValues ?? globalParserOptions.trimValues,
+            removeNSPrefix: options.ignoreNamespacePrefix ?? globalParserOptions.removeNSPrefix
+        };
+
         if (options.valueProcessor) {
-            parserOptions.tagValueProcessor = (val, nodePath) => {
-                return options.valueProcessor!(
-                    decode(val, { isAttributeValue: true }), 
-                    nodePath
-                );
+            parserOptions.attributeValueProcessor = (attr, value, path) => {
+                return options.valueProcessor!(value, `${path}@${attr}`);
             };
-            parserOptions.tagValueProcessor = (val, nodePath) => {
-                return options.valueProcessor!(decode(val), nodePath);
+            parserOptions.tagValueProcessor = (tag, value, path) => {
+                return options.valueProcessor!(value, path);
             };
         }
-        return visitObject(xmlParser.parse(xml, parserOptions, true), (prop, value, target) => {
+
+        if (options.arrayMode) {
+            parserOptions.isArray = (name, path, leaf, isAttribute) => {
+                if (isAttribute) {
+                    return false;
+                }
+                if (typeof options.arrayMode === 'function') {
+                    return options.arrayMode(path);
+                }
+                return options.arrayMode === true;
+            };
+        }
+
+        return visitObject(new XMLParser(parserOptions).parse(xml), (prop, value, target) => {
             if (typeof value === 'object') {
                 // Parse nil as null as per XML spec
                 if (value['$']?.['nil'] === true) {
@@ -110,12 +149,12 @@ export namespace XML {
      * @returns
      */
     export function stringify(jsonObj: any, indent?: number | string, options: XMLStringfyOptions = {}) : string {
-        const indentOptions = {
+        const indentOptions: Partial<XmlBuilderOptions> = {
             format: indent !== undefined,
             supressEmptyNode: options.stripEmptyNodes,
             indentBy: indent !== undefined ? typeof indent === 'string' ? indent : ' '.repeat(indent) : undefined,
         };
-        const xmlString = new xmlParser.j2xParser({...globalStringifyOptions, ...indentOptions}).parse(jsonObj);
+        const xmlString = new XMLBuilder({ ...globalStringifyOptions, ...indentOptions }).build(jsonObj);
         if (options?.headless !== true) {
             return `<?xml version="1.0" encoding="UTF-8"?>\n${xmlString}`;
         }
