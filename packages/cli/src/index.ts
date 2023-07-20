@@ -1,47 +1,85 @@
-import 'source-map-support/register';
-import { Command as Commander, Option } from 'commander';
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import * as path from 'path';
-import { FancyConsoleWriter, Container, container, Logger, LogLevel, LogManager } from '@vlocode/core';
+
+import { Command as Commander, Option } from 'commander';
+import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
 // @ts-ignore
-const buildInfo = typeof __webpack_build_info__ === 'object' ? __webpack_build_info__ : {};
+const buildInfo: Record<string, string> = typeof __webpack_build_info__ === 'object' ? __webpack_build_info__ : {
+    ...JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8')),
+    buildDate: new Date().toISOString()
+};
 
 /**
  * CLI base class responsible for loading and executing commands
  */
 class CLI {
-    private static programName = 'vlocode-cli';
-    private static description = buildInfo.description ?? 'N/A';
-    private static version = buildInfo.version ?? '0.0.0';
-    private static versionString = `${CLI.programName} version ${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()})`;
+    private static readonly programName = 'vlocode-cli';
+    private static readonly description = buildInfo.description;
+    private static readonly version = buildInfo.version;
 
-    private program = new Commander().name(CLI.programName).description(CLI.description).version(CLI.version, '--version', CLI.versionString);
-    private logger = LogManager.get(CLI);
+    private static readonly isVerbose = process.argv.includes('-v') || process.argv.includes('--verbose');
+    private static readonly isDebug = process.argv.includes('--debug');
 
-    static options = [
+    private readonly program: Commander;
+    private readonly logger = LogManager.get(CLI.programName);
+
+    static readonly options = [
         new Option('-v, --verbose', 'enable more detailed verbose logging').default(false),
         new Option('--debug', 'print call stack when an unhandled error occurs').default(false)
     ];
 
     static {
-        LogManager.registerWriter(new FancyConsoleWriter());
-        LogManager.setLogLevel(Container, LogLevel.verbose);
+        // Init global logging
+        if (CLI.isVerbose || CLI.isDebug) {
+            LogManager.registerWriter(new FancyConsoleWriter());
+            if (CLI.isDebug) {
+                import('source-map-support/register');
+                LogManager.setGlobalLogLevel(LogLevel.debug);
+            } else {
+                LogManager.setGlobalLogLevel(LogLevel.verbose);
+            }
+        } else {
+            LogManager.registerWriter(new ConsoleWriter());
+            LogManager.setGlobalLogLevel(LogLevel.info);
+        }
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
     }
 
+    private get versionString() {
+        return buildInfo ? `${CLI.programName} version ${CLI.version} (${buildInfo.buildDate})`
+            : `${CLI.programName} non-packaged custom build`
+    }
+
     constructor(private commandsFolder: string) {
+        this.logger.verbose(this.versionString);
+        this.program = new Commander()
+            .name(CLI.programName)
+            .description(CLI.description)
+            .version(CLI.version)
+            .configureOutput({
+                writeErr: (str: string) => this.logger.error(str),
+                writeOut: (str: string) => this.logger.info(str)
+            })
+            .addHelpCommand('help [cmd]', 'display help for the specified command')
+            .configureHelp({
+                sortSubcommands: true,
+                sortOptions: true
+            });
     }
 
     public run(argv: any[] = process.argv) {
-        this.program.parse(argv);
+        try {
+            this.program.parse(argv);
+        } catch(err) {
+            this.logger.error(err.message ?? err);
+        }
     }
 
     private init(options: any) {
-        this.logger.info(`${CLI.programName} v${CLI.version} (${buildInfo.buildDate ?? new Date().toISOString()}) - ${CLI.description}`);
         if (options.debug === true) {
             LogManager.setGlobalLogLevel(LogLevel.debug);
             getErrorMessage.defaults.includeStack = true;
@@ -110,7 +148,7 @@ class CLI {
             }
 
         } catch(err) {
-            this.logger.error(err.message ?? err);
+            this.logger.error(`Unable to load command: ${commandFile}\n\n`, err.stack);
         }
     }
 }
