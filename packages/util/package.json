@@ -41,7 +41,7 @@
     "devDependencies": {
         "@types/fs-extra": "^9",
         "@types/jest": "^28.1.6",
-        "@types/node": "^16",
+        "@types/node": "^20.4.2",
         "@types/vscode": "^1.70.0",
         "create-ts-index": "^1.14.0",
         "jest": "^29.6.1",

@@ -55,7 +55,7 @@
     "devDependencies": {
         "@types/fs-extra": "^9",
         "@types/jest": "^28.1.6",
-        "@types/node": "^16",
+        "@types/node": "^20.4.2",
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

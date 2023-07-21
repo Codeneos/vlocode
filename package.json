@@ -23,7 +23,7 @@
         "@lerna-lite/cli": "^1.6.0",
         "@types/fs-extra": "^9",
         "@types/jest": "^28.1.6",
-        "@types/node": "^16",
+        "@types/node": "^20",
         "@typescript-eslint/eslint-plugin": "^5.30.5",
         "@typescript-eslint/parser": "^5.30.5",
         "chalk": "^4.1.2",
@@ -43,10 +43,10 @@
         "log-symbols": "^4.1.0",
         "prettier": "^2.6.2",
         "ts-jest": "^29.1.1",
-        "typedoc": "^0.23.26",
-        "typedoc-plugin-rename-defaults": "^0.6.4",
+        "typedoc": "^0.24.8",
+        "typedoc-plugin-rename-defaults": "^0.6.5",
         "typedoc-plugin-resolve-crossmodule-references": "^0.3.3",
-        "typescript": "4.6.4"
+        "typescript": "5.1.6"
     },
     "pnpm": {
         "patchedDependencies": {
@@ -81,7 +81,7 @@
     "resolutions": {
         "@types/fs-extra": "^9",
         "@oclif/command": "1.8.16",
-        "@types/node": "^16",
+        "@types/node": "^20",
         "fs-extra": "9",
         "js-force": "1.11.0",
         "salesforce-alm": "^52",

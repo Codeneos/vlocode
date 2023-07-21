@@ -40,12 +40,9 @@
             "name": "Debug: CLI-deploy (node)",
             "args": [
                 "deploy",
-                "${workspaceRoot}/.test-deploy/src",
+                "${workspaceRoot}/.test-deploy/activationError/OmniScript",
                 "-u",
-                "dev10pro",
-                "--strict-dependencies",
-                "--debug",
-                "-v"
+                "dev10pro"
             ],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
@@ -64,7 +61,7 @@
             "showAsyncStacks": true,
             "program": "${workspaceRoot}/packages/cli/lib/index.js",
             "name": "Debug: CLI-activate (node)",
-            "args": ["activate", "MACD", "-u", "dev10pro", "--debug", "-v"],
+            "args": ["activate", "KPN SME/KPN Order Complete", "-u", "dev10pro", "--debug", "-v"],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
                 "${workspaceFolder}/packages/salesforce/lib/**/*.js",
