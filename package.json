@@ -45,7 +45,6 @@
         "ts-jest": "^29.1.1",
         "typedoc": "^0.24.8",
         "typedoc-plugin-rename-defaults": "^0.6.5",
-        "typedoc-plugin-resolve-crossmodule-references": "^0.3.3",
         "typescript": "5.1.6"
     },
     "pnpm": {

@@ -124,9 +124,6 @@ importers:
       typedoc-plugin-rename-defaults:
         specifier: ^0.6.5
         version: 0.6.5(typedoc@0.24.8)
-      typedoc-plugin-resolve-crossmodule-references:
-        specifier: ^0.3.3
-        version: 0.3.3(typedoc@0.24.8)
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -12191,15 +12188,6 @@ packages:
     resolution: {integrity: sha512-DwkgwRMxgu3UrDR3VUAdnF9jYzM6p7rw6UcVIh4MD7yjEmFDR8WWyOlk6oYgELmRYHxTDx0f0GK6iSgoxSh/Qw==}
     peerDependencies:
       typedoc: 0.22.x || 0.23.x || 0.24.x
-    dependencies:
-      typedoc: 0.24.8(typescript@5.1.6)
-    dev: true
-
-  /typedoc-plugin-resolve-crossmodule-references@0.3.3(typedoc@0.24.8):
-    resolution: {integrity: sha512-ZWWBy2WR8z9a6iXYGlyB3KrpV+JDdZv1mndYU6Eh6mInrfMCrQJi3Y5K9ihMBfuaBGB//le1nEmQLgzU3IO+dw==}
-    engines: {node: '>=14'}
-    peerDependencies:
-      typedoc: '>=0.22 <=0.23'
     dependencies:
       typedoc: 0.24.8(typescript@5.1.6)
     dev: true
