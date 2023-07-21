@@ -23,7 +23,7 @@ commands:
     steps:
       - run: pnpm jest --ci --verbose -i
       - store_test_results:
-          path: coverage
+          path: coverage/junit.xml
       - store_artifacts:
           path: coverage
   codequality:
