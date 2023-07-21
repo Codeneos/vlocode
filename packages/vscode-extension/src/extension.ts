@@ -119,6 +119,9 @@ class Vlocode {
         });
         developerLogsView.onDidChangeVisibility(e => {
             developerLogDataProvider.pauseAutoRefresh(!e.visible);
+            if (e.visible) {
+                developerLogDataProvider.refreshLogs({ refreshView: true });
+            }
         });
         return developerLogsView;
     }

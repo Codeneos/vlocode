@@ -78,13 +78,13 @@ export class ApexLogSymbolProvider implements vscode.DocumentSymbolProvider {
     }
 
     private getDocumentLineIterator(document: vscode.TextDocument) : IterableIterator<vscode.TextLine> {
+        let index = 0;
         return {
-            index: 0,
             next: function() {
-                if (this.index >= document.lineCount) {
+                if (index >= document.lineCount) {
                     return { value: undefined, done: true };
                 }
-                return { value: document.lineAt(this.index++), done: false };
+                return { value: document.lineAt(index++), done: false };
             },
             [Symbol.iterator]: function() {
                 return this;

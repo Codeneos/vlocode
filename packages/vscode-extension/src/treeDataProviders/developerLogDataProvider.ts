@@ -17,24 +17,33 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     private logs: Array<DeveloperLog> = [];
     private lastRefresh?: Date;
     private autoRefreshScheduledId?: any;
-    private autoRefreshingPaused: boolean = true;
+    private autoRefreshPaused: boolean = true;
+    private autoRefreshEnabled: boolean = false;
     private currentUserOnly: boolean = false;
     private readonly autoRefreshInterval: number = 3000;
 
     constructor(service: VlocodeService, private readonly logger: Logger) {
         super(service);
+        this.registerConfigListener();
+    }
+
+    dispose() {
+        this.setAutoRefresh(false);
+    }
+
+    private registerConfigListener() {
         ConfigurationManager.watchProperties(this.vlocode.config, ['sfdxUsername'], config => {
             this.lastRefresh = undefined;
             this.logs.splice(0);
             if (config.sfdxUsername) {
-                this.refresh();
+                void this.refreshLogs({ refreshView: true });
             }
         });
         ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisible' ], config => {
-            service.enableDeveloperLogsPanel(config.developerLogsVisible);
+            this.vlocode.enableDeveloperLogsPanel(config.developerLogsVisible);
         }, { initial: true });
         ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsAutoRefresh' ], config => {
-            this.enableAutoRefresh(!!config.developerLogsAutoRefresh);
+            this.setAutoRefresh(!!config.developerLogsAutoRefresh);
         }, { initial: true });
         ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisibility' ], config => {
             this.currentUserOnly = config.developerLogsVisibility != 'all';
@@ -42,10 +51,6 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
             this.logs.splice(0);
             this.refresh();
         }, { initial: true });
-    }
-
-    dispose() {
-        this.enableAutoRefresh(false);
     }
 
     protected getCommands() {
@@ -65,11 +70,18 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         };
     }
 
-    public enableAutoRefresh(enabled: boolean) {
+    /**
+     * Enable or disable auto refresh of the logs
+     * @param enabled True to enable auto refresh, false to disable
+     * @param options Options to control the refresh behavior
+     */
+    public setAutoRefresh(enabled: boolean, options?: { timeout?: number }) {
+        this.autoRefreshEnabled = enabled;
         if (enabled) {
-            this.scheduleRefresh(3000);
+            this.scheduleRefresh(options?.timeout ?? 3000);
         } else if (this.autoRefreshScheduledId) {
             clearTimeout(this.autoRefreshScheduledId);
+            this.autoRefreshScheduledId = null;
         }
     }
 
@@ -78,10 +90,10 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
      * @param paused Whether or not the auto refresh loop is running or paused
      */
     public pauseAutoRefresh(paused: boolean) {
-        this.autoRefreshingPaused = paused;
+        this.autoRefreshPaused = paused;
     }
 
-    public scheduleRefresh(timeout: number) {
+    private scheduleRefresh(timeout: number) {
         // Prevent a double refresh schedules
         if (this.autoRefreshScheduledId) {
             clearTimeout(this.autoRefreshScheduledId);
@@ -91,9 +103,12 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
 
     private async refreshTask() {
         this.autoRefreshScheduledId = null;
+        if (!this.autoRefreshEnabled) {
+            return;
+        }
         try {
-            if (!this.autoRefreshingPaused && await this.refreshLogs()) {
-                this.refresh();
+            if (!this.autoRefreshPaused) {
+                this.refreshLogs({ refreshView: true });
             }
         } catch(err) {
             this.logger.error(err);
@@ -147,14 +162,16 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         }
 
         await this.refreshLogs();
-
         return this.logs;
     }
 
     /**
-     * Refreshes the logs from the server and returns true when new logs are available - otherwise false.
+     * Refresh the logs from the server and optionally refresh the view to reflect the changes in the UI.
+     * @param options Options to control the refresh behavior
+     * @param options.refreshView Whether or not to refresh the view after the logs have been refreshed
+     * @throws {CustomError} When the refresh fails
      */
-    private async refreshLogs() {
+    public async refreshLogs(options?: { refreshView?: boolean }) {
         await this.vlocode.validateAll(true);
 
         // Load logs since last refresh
@@ -165,7 +182,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         let newLogs = Array.from(uniqueLogEntries.values());
 
         if (newLogs.length == this.logs.length) {
-            return false;
+            return;
         }
 
         // Remove empty logs and small logs
@@ -174,6 +191,9 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         // Only display last 100 log entries
         this.logs = newLogs.sort((a,b) => b.startTime.getTime() - a.startTime.getTime());
         this.logs.splice(100);
-        return true;
+
+        if (options?.refreshView) {
+            this.refresh();
+        }
     }
 }
