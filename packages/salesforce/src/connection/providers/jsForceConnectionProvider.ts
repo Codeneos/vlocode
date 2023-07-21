@@ -81,6 +81,7 @@ export class JsForceConnectionProvider extends SalesforceConnectionProvider {
             accessToken: jsConnection.accessToken,
             refreshToken: jsConnection.refreshToken,
             signedRequest: jsConnection.signedRequest,
+            // @ts-expect-error userInfo is not a public property in the jsforce typings
             userInfo: jsConnection.userInfo,
             oauth2: jsConnection.oauth2,
             version: jsConnection.version ?? this.#version

@@ -1,4 +1,3 @@
-import * as xml2js from 'xml2js';
 import { sortProperties, stringEquals, XML } from '@vlocode/util';
 import { ArrayElement } from './types';
 
@@ -39,12 +38,24 @@ interface ProfileObjectPermission {
     object: string;
 }
 
+interface ApplicationVisibility {
+    application: string;
+    visible: boolean;
+}
+
+interface RecordVisibility {
+    recordType: string;
+    visible: boolean;
+}
+
 interface ProfileModel {
     classAccesses: ProfileApexClass[];
     pageAccess: ProfilePageAccess[];
     customPermissions: ProfileCustomPermission[];
     fieldPermissions: ProfileFieldPermission[];
     objectPermissions: ProfileObjectPermission[];
+    applicationVisibilities: ApplicationVisibility[];
+    recordTypeVisibilities: RecordVisibility[];
 }
 
 function createObjectPropertySort(propertyName: string) {
@@ -76,8 +87,10 @@ export class SalesforceProfile {
         pageAccess: [],
         customPermissions: [],
         fieldPermissions: [],
-        objectPermissions: []
-    } as Object & ProfileModel;
+        objectPermissions: [],
+        applicationVisibilities: [],
+        recordTypeVisibilities: []
+    } as ProfileModel;
 
     private arrayProperties = Object.keys(this.profileModel);
 

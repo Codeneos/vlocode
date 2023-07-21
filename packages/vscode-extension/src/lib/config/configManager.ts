@@ -135,7 +135,7 @@ export class ConfigurationManager implements VscodeWorkspaceConfigProvider {
     public watchProperties<T extends BaseConfiguration>(config: string | T, properties: Array<keyof T>, watcher: (config: T) => any | Promise<any>, options?: ConfigurationManagerWatchOptions) : vscode.Disposable;
     public watchProperties<T extends BaseConfiguration>(config: string | T, properties: Array<keyof T> | keyof T, watcher: (config: T) => any | Promise<any>, options?: ConfigurationManagerWatchOptions) : vscode.Disposable {
         const sectionName = typeof config === 'string' ? config : config[configurationSection] as string;
-        return this.registerWatcher(asArray(properties).map(property => `${sectionName}.${property}`), watcher, options);
+        return this.registerWatcher(asArray(properties).map(property => `${sectionName}.${String(property)}`), watcher, options);
     }
 
     public watch<T extends BaseConfiguration>(config: string | T, watcher: (config: T) => any | Promise<any>) : vscode.Disposable {

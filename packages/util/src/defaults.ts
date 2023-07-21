@@ -4,8 +4,8 @@
  * @param defaultValues Default values
  * @returns Object with default values when prop is null
  */
-export function withDefaults<T, D extends T>(obj: T, defaultValues: D) : T & D {
-    return new Proxy(obj || {}, {
+export function withDefaults<T extends object, D extends T>(obj: T | undefined, defaultValues: D) : T & D {
+    return new Proxy(obj ?? {}, {
         get(target, prop) {
             let value = target[prop];
             if (value === undefined || value === null) {
@@ -32,9 +32,6 @@ export function withDefaults<T, D extends T>(obj: T, defaultValues: D) : T & D {
             return Object.getPrototypeOf(target);
         },
         ownKeys(target) {
-            return [...new Set([...Object.keys(target), ...Object.keys(defaultValues)])];
-        },
-        enumerate(target) {
             return [...new Set([...Object.keys(target), ...Object.keys(defaultValues)])];
         },
         isExtensible() {

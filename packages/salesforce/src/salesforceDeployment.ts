@@ -224,7 +224,6 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                 void this.emit('progress', {
                     status: status.status,
                     deployed: status.numberComponentsDeployed ?? 0,
-                    progress: (status.numberComponentsDeployed ?? 0),
                     total: status.numberComponentsTotal ?? 0,
                     errors: status.numberComponentErrors ?? 0
                 });

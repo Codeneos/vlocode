@@ -7,14 +7,12 @@ module.exports = {
   coverageReporters: [ 'lcov' ],
   reporters: ['default', 'jest-sonar', ['jest-junit', { outputDirectory: 'coverage' }] ],
   projects: [
-    "packages/util", 
-    "packages/core", 
-    "packages/salesforce", 
+    "packages/util",
+    "packages/core",
+    "packages/salesforce",
     "packages/vlocity-deploy"
   ],
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]
+  }
 };

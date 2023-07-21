@@ -3,9 +3,7 @@ module.exports = {
   roots: [ 'src' ],
   collectCoverage: true,
   coveragePathIgnorePatterns: [ '/node_modules/', 'index.ts' ],
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]
+  }
 };

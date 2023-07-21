@@ -81,7 +81,7 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
             }
         }
 
-        trx.deleteFile(oldFolder, { recursive: true, ignoreIfNotExists: true }, { label: 'Rename', needsConfirmation: true });
+        trx.deleteFile(oldFolder, { recursive: true }, { label: 'Rename', needsConfirmation: true });
     }
 
     private async getDatapackFolder(file: vscode.FileRenameEvent['files'][0]) {

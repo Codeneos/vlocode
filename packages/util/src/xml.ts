@@ -64,11 +64,9 @@ export namespace XML {
         cdataPropName: '__cdata', // default is 'false'
         ignoreAttributes : false,
         allowBooleanAttributes : true,
-        parseNodeValue : true,
         parseAttributeValue : true,
         removeNSPrefix : false,
         trimValues: true, 
-        arrayMode: false, // "strict"
         ignoreDeclaration: false,
         ignorePiTags: true,
         processEntities: true,
@@ -91,7 +89,7 @@ export namespace XML {
      */
     export const globalStringifyOptions: Partial<XmlBuilderOptions> = {
         ...options,
-        supressEmptyNode: false
+        suppressEmptyNode: false
     } as const;
 
     /**
@@ -151,7 +149,7 @@ export namespace XML {
     export function stringify(jsonObj: any, indent?: number | string, options: XMLStringfyOptions = {}) : string {
         const indentOptions: Partial<XmlBuilderOptions> = {
             format: indent !== undefined,
-            supressEmptyNode: options.stripEmptyNodes,
+            suppressEmptyNode: options.stripEmptyNodes,
             indentBy: indent !== undefined ? typeof indent === 'string' ? indent : ' '.repeat(indent) : undefined,
         };
         const xmlString = new XMLBuilder({ ...globalStringifyOptions, ...indentOptions }).build(jsonObj);

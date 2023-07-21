@@ -175,7 +175,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         const traceFlags: any = {};
         for (const [field, info] of Object.entries(this.logLevelOptions)) {
             // Create options list
-            const options = info.options.map(o => ({ label: o, isDefault: info.default === o }));
+            const options = info.options.map<vscode.QuickPickItem & { isDefault: boolean }>(o => ({ label: o, isDefault: info.default === o }));
             const defaultIndex = options.findIndex(o => o.isDefault);
             if (defaultIndex >= 0) {
                 options.unshift(...options.splice(defaultIndex, 1));

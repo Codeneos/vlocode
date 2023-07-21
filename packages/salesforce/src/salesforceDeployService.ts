@@ -118,7 +118,7 @@ export class SalesforceDeployService {
                     if (status.numberComponentsTotal) {
                         progress?.report({
                             message: `${status.numberComponentsDeployed}/${status.numberComponentsTotal}`,
-                            progress: status.numberComponentsDeployed,
+                            deployed: status.numberComponentsDeployed ?? undefined,
                             total: status.numberComponentsTotal
                         });
                     } else {

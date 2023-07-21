@@ -105,7 +105,7 @@ export class HttpTransport implements Transport {
      * HTTP agent used by this {@link HttpTransport} used for connection pooling
      */
     private httpAgent = new https.Agent({
-        defaultPort: 443,
+        port: 443,
         keepAlive: true,
         keepAliveMsecs: 60000,
         maxSockets: 10,

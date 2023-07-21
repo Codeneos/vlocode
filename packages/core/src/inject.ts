@@ -87,7 +87,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
      * @returns 
      */
     param: function (serviceType: ServiceType) {
-        return function(target: Object, propertyKey: string | symbol, parameterIndex: number) {
+        return function(target: Object, propertyKey: undefined, parameterIndex: number) {
             const serviceName = typeof serviceType === 'string' ? serviceType : (serviceType.prototype?.constructor?.name ?? serviceType.name);
             Reflect.defineMetadata(`dependency:inject:${parameterIndex}`, serviceName, target);
         };

@@ -207,7 +207,7 @@ export class SalesforceBatchService {
                 toString() {
                     return `${this.apexClass} (${this.id}) -- ${this.progressString} [${(this.elapsedTime / 1000).toFixed(1)}s]`;
                 }
-            }
+            } as any
         );
     }
 

@@ -35,7 +35,6 @@ export function createRecordProxy<T extends Object>(record: T, writable: boolean
             return key ? { configurable: true, enumerable: true, writable } : undefined;
         },
         has: (target, name) => getPropertyKey(target, name) !== undefined || target[name] !== undefined,
-        enumerate: target => Object.keys(target),
         ownKeys: target => Object.keys(target),
         isExtensible: () => false
     });

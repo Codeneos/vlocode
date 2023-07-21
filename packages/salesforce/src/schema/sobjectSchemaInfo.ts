@@ -56,7 +56,8 @@ export type SObjectFieldType =
     | 'time'
     | 'encryptedstring'
     | 'address'
-    | 'complexvalue';
+    | 'complexvalue'
+    | 'anyType';
 
 export type SObjectFieldDataType =
     | 'string'

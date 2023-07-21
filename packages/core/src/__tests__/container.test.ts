@@ -27,14 +27,14 @@ describe('container', () => {
 
     @injectable()
     class CircularRef {
-        constructor(public parent: ServiceImplCircular) {            
+        constructor(public parent: ServiceImplCircular) {
         }
     }
 
     class InjectableProps {
         @injectable.property public service: ServiceImpl;
     }
-    
+
     beforeAll(() =>  container.registerAs(Logger.null, Logger));
 
     describe('register', () => {

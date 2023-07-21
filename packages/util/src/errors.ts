@@ -1,3 +1,8 @@
+export interface ErrorOptions extends Record<string, string | number | boolean | undefined>{
+    name?: string;
+    code?: string;
+}
+
 /**
  * Custom error object that extends the default Error but has a more versatile constructor that allows setting additional
  * standard error fields such as name while also allowing setting of custom fields through the constructor making it easier to include
@@ -10,7 +15,7 @@ export class CustomError extends Error {
      */
     public readonly code?: string;
 
-    constructor(message: string, options?: ({ name?: string, code?: string } & object) | Error) {
+    constructor(message: string, options?: ErrorOptions | Error) {
         super(message);
         if (options) {
             if (options['code'] && !options['name']) {

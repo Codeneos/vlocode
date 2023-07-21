@@ -4,9 +4,7 @@ module.exports = {
   collectCoverage: true,
   coveragePathIgnorePatterns: [ '/node_modules/', 'index.ts' ],
   testRegex: "(\\.)(test)\\.[jt]sx?$",
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]
+  }
 };

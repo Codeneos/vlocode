@@ -17,7 +17,6 @@
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "noUnusedLocals": false,
-        "suppressExcessPropertyErrors": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true

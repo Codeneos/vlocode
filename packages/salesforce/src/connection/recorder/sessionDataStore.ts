@@ -1,6 +1,7 @@
 import { calculateHash, deepClone, removeUndefinedProperties } from '@vlocode/util';
 import { readJsonSync, writeJsonSync } from 'fs-extra';
 import { HttpRequestInfo, HttpResponse } from '../httpTransport';
+import { IncomingHttpHeaders } from 'http';
 
 export interface SessionLogEntry {
     index: number;
@@ -82,7 +83,7 @@ export class SessionDataStore {
             ...info,
             body: info.body ? this.normalizeBody(info.body) : undefined,
             url: this.normalizeUrl(info.url),
-            headers: this.filterHeaders(info.headers ?? {})
+            headers: this.filterHeaders(info.headers ?? {}),
         });
 
         if (normalized.body && (normalized.method === 'POST' || normalized.method === 'PATCH')) {
@@ -94,10 +95,10 @@ export class SessionDataStore {
         return normalized;
     }
 
-    private filterHeaders<T extends Record<string, string | string[] | number | undefined>>(headers: T | undefined): T {
+    private filterHeaders<T extends Record<string, unknown>>(headers: T): T  {
         return Object.fromEntries(
-            Object.entries<T>(headers ?? {}).filter(([key]) => !this.filterHeaderKeys.includes(key.toLowerCase()))
-        ) as any as T;
+            Object.entries(headers).filter(([key]) => !this.filterHeaderKeys.includes(key.toLowerCase()))
+        ) as T;
     }
 
     private normalizePostBody(body: string): string {

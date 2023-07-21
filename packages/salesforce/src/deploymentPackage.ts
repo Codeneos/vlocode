@@ -1,11 +1,9 @@
 
 import * as path from 'path';
-import * as xml2js from 'xml2js';
 import * as ZipArchive from 'jszip';
 import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEqualsIgnoreCase } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';
-import { MD_XML_OPTIONS } from './constants';
 import { isPromise } from 'util/types';
 
 export interface SalesforcePackageComponent {
@@ -68,7 +66,7 @@ export class SalesforcePackage {
         post: new PackageManifest()
     };
 
-    private readonly packageData = new Map<string, SalesforcePackageFileData>();
+    private readonly packageData = new Map<string, SalesforcePackageEntry>();
 
     /**
      * Maps source files with their FS path to package contents
@@ -141,10 +139,7 @@ export class SalesforcePackage {
         for (const [path, entry] of this.packageData.entries()) {
             if (entry.componentName === component.componentName && 
                 entry.componentType === component.componentType) {
-                yield {
-                    packagePath: path,
-                    ...entry,
-                }
+                yield entry;
             }
         }
     }
@@ -379,7 +374,7 @@ export class SalesforcePackage {
     private filterPackageEntries(predicate: (entry: SalesforcePackageEntry) => boolean, fs?: FileSystem | undefined)
         : Promise<SalesforcePackageEntry[]> | SalesforcePackageEntry[] 
     {
-        const packagedClasses = [...this.packageData.entries()].map(([packagePath, data]) => ({packagePath, ...data })).filter(predicate);
+        const packagedClasses = [...this.packageData.values()].filter(predicate);
 
         if (fs) {
             return Promise.all(
@@ -413,9 +408,8 @@ export class SalesforcePackage {
      */
     public components(componentType?: string): Array<SalesforcePackageComponent & { files: SalesforcePackageEntry[] }> {
         const data = groupBy(
-            Iterable.filter(this.packageData, ([,entry]) => !componentType || stringEqualsIgnoreCase(entry.componentType, componentType)),
-            ([,entry]) => `${entry.componentType}/${entry.componentName}`,
-            ([packagePath, entry]) => ({ packagePath, ...entry })
+            Iterable.filter(this.packageData.values(), (entry) => !componentType || stringEqualsIgnoreCase(entry.componentType, componentType)),
+            (entry) => `${entry.componentType}/${entry.componentName}`
         );
         return Object.values(data).map(files => ({
             componentType: files[0].componentType,
@@ -560,6 +554,7 @@ export class SalesforcePackage {
             if (packagePath.endsWith('.cls')) {
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
                     this.packageData.set(`${packagePath}-meta.xml`, {
+                        packagePath: `${packagePath}-meta.xml`,
                         data: this.buildClassMetadata(this.apiVersion),
                         componentType: entry.componentType,
                         componentName: entry.componentName
@@ -568,6 +563,7 @@ export class SalesforcePackage {
             } else if (packagePath.endsWith('.trigger')) {
                 if (!this.packageData.has(`${packagePath}-meta.xml`)) {
                     this.packageData.set(`${packagePath}-meta.xml`, {
+                        packagePath: `${packagePath}-meta.xml`,
                         data: this.buildTriggerMetadata(this.apiVersion),
                         componentType: entry.componentType,
                         componentName: entry.componentName
@@ -612,8 +608,7 @@ export class SalesforcePackage {
     }
 
     private buildMetadataXml(rootName: string, data?: any) {
-        const xmlBuilder = new xml2js.Builder(MD_XML_OPTIONS);
-        return xmlBuilder.buildObject({
+        return XML.stringify({
             [rootName]: {
                 $: { xmlns: 'http://soap.sforce.com/2006/04/metadata' },
                 ...(data || {})
