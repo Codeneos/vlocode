@@ -1,0 +1,30 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "es2022",
+        "lib": ["es2022", "dom"],
+        "baseUrl": "./",
+        "outDir": "./dist/out-tsc",
+        "strict": true,
+        "noImplicitOverride": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noImplicitReturns": true,
+        "useDefineForClassFields": false,
+        "declaration": false,
+        "downlevelIteration": true,
+        "importHelpers": true
+    },
+    "include": ["src/**/*.ts"],
+    "angularCompilerOptions": {
+        "enableI18nLegacyMessageIdFormat": false,
+        "strictInjectionParameters": true,
+        "strictInputAccessModifiers": true,
+        "strictTemplates": true
+    },
+    "references": [
+        {
+            "path": "../vlocity-deploy"
+        }
+    ]
+}

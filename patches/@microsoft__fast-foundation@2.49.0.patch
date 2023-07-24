@@ -1,0 +1,19 @@
+diff --git a/dist/fast-foundation.d.ts b/dist/fast-foundation.d.ts
+index 21384349e083eb3210b4bc20e429180f513d22da..9895c5a21ab171883f3b8aff110ca364ec257242 100644
+--- a/dist/fast-foundation.d.ts
++++ b/dist/fast-foundation.d.ts
+@@ -2249,11 +2249,11 @@ declare function create<T extends Function>(nameOrConfig: string | DesignTokenCo
+ 
+ declare function create<T extends undefined | void>(nameOrConfig: string | DesignTokenConfiguration): never;
+ 
+-declare function create<T>(nameOrConfig: string): CSSDesignToken<T>;
++declare function create<T extends { createCSS?(): string; } & Record<PropertyKey, any>>(nameOrConfig: string): CSSDesignToken<T>;
+ 
+-declare function create<T>(nameOrConfig: Omit<DesignTokenConfiguration, "cssCustomPropertyName"> | (DesignTokenConfiguration & Record<"cssCustomPropertyName", string>)): CSSDesignToken<T>;
++declare function create<T extends { createCSS?(): string; } & Record<PropertyKey, any>>(nameOrConfig: Omit<DesignTokenConfiguration, "cssCustomPropertyName"> | (DesignTokenConfiguration & Record<"cssCustomPropertyName", string>)): CSSDesignToken<T>;
+ 
+-declare function create<T>(nameOrConfig: DesignTokenConfiguration & Record<"cssCustomPropertyName", null>): DesignToken<T>;
++declare function create<T extends string | number | boolean | symbol | {} | any[] | Uint8Array | null>(nameOrConfig: DesignTokenConfiguration & Record<"cssCustomPropertyName", null>): DesignToken<T>;
+ 
+ /**
+  * A {@link (DesignToken:interface)} that emits a CSS custom property.

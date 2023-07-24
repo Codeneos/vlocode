@@ -1,0 +1,19 @@
+main {
+  display: flex;
+  position: relative;;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+app-script-element-tree {
+  flex-basis: 300px;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+app-script-element-detail {
+  flex-grow: 1;
+  height: 100vh;
+  overflow-y: auto;
+}

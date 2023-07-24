@@ -1,0 +1,51 @@
+{
+    "name": "@vlocode/omniscript-designer",
+    "version": "0.19.15",
+    "private": true,
+    "description": "OmniScript Designer for Vlocode",
+    "keywords": [
+        "Vlocity",
+        "OmniScript"
+    ],
+    "scripts": {
+        "ng": "ng",
+        "start": "ng serve",
+        "build": "ng build --output-hashing=none",
+        "watch": "ng build --watch --configuration development",
+        "test": "ng test",
+        "clean": "",
+        "pack": "pnpm run build && pnpm pack"
+    },
+    "dependencies": {
+        "@angular/animations": "~16.1.6",
+        "@angular/common": "~16.1.6",
+        "@angular/compiler": "~16.1.6",
+        "@angular/core": "~16.1.6",
+        "@angular/forms": "~16.1.6",
+        "@angular/platform-browser": "~16.1.6",
+        "@angular/platform-browser-dynamic": "~16.1.6",
+        "@angular/router": "~16.1.6",
+        "@vlocode/vlocity-deploy": "workspace:*",
+        "@vscode/webview-ui-toolkit": "^1.2.2",
+        "rxjs": "~7.8.1",
+        "tslib": "^2.6.0",
+        "zone.js": "~0.13.1"
+    },
+    "devDependencies": {
+        "@angular-builders/custom-webpack": "^16.0.0",
+        "@angular-devkit/build-angular": "~16.1.5",
+        "@angular/cli": "~16.1.5",
+        "@angular/compiler-cli": "~16.1.6",
+        "@types/jasmine": "~4.3.5",
+        "@types/node": "^20.4.4",
+        "@types/vscode-webview": "^1.57.1",
+        "@types/webpack": "^5.28.1",
+        "jasmine-core": "~5.0.1",
+        "karma": "~6.4.2",
+        "karma-chrome-launcher": "~3.2.0",
+        "karma-coverage": "~2.2.1",
+        "karma-jasmine": "~5.1.0",
+        "karma-jasmine-html-reporter": "~2.1.0",
+        "typescript": "5.1.6"
+    }
+}

@@ -1,0 +1,11 @@
+<div>
+  <div>
+    <h2>Script Elements</h2>
+  </div>
+  <app-script-element 
+    *ngFor="let element of elements"
+    [element]="element"
+    [selected]="element === selectedElement"
+    (onSelected)="selectElement(element)"
+  />
+</div>

@@ -1,0 +1,13 @@
+<div>
+  <div>
+    <h2>{{element.name}}</h2>
+  </div>
+  <div>
+    <ng-template ngFor let-prop [ngForOf]="properties">
+      <div [ngSwitch]="prop.type">
+        <vscode-checkbox *ngSwitchCase="'checkbox'" [checked]="prop.value" >{{prop.path}}</vscode-checkbox>
+        <vscode-text-field *ngSwitchDefault [value]="prop.value">{{prop.label}}</vscode-text-field>
+      </div>
+    </ng-template>
+  </div>
+</div>

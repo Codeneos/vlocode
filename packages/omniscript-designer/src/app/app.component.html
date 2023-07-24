@@ -1,0 +1,9 @@
+<main>
+  <!-- <h1>Hello world!</h1>
+  <vscode-button (click)="handleHowdyClick()">Howdy!</vscode-button>
+  <div>
+    
+  </div> -->
+  <app-script-element-tree [elements]="elements" [(selectedElement)]="selectedElement"></app-script-element-tree>
+  <app-script-element-detail *ngIf="selectedElement" [element]="selectedElement"></app-script-element-detail>
+</main>
