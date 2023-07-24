@@ -1,12 +1,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { forEachAsyncParallel ,  fileName, Timer } from '@vlocode/util';
+import { forEachAsyncParallel } from '@vlocode/util';
 import * as open from 'open';
-import { ActivityProgress, VlocodeActivityStatus } from '../../lib/vlocodeActivity';
+import { ActivityProgress } from '../../lib/vlocodeActivity';
 import { VlocodeCommand } from '../../constants';
 import MetadataCommand from './metadataCommand';
-import { DeployResult, DeployStatus, RetrieveDeltaStragey, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, DeployStatus, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce

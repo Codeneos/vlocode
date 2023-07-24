@@ -1,8 +1,8 @@
 import * as path from 'path';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, directoryName, substringBeforeLast, normalizeSalesforceName, stringEquals, extractNamespaceAndName } from '@vlocode/util';
+import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, stringEquals, extractNamespaceAndName } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
-import { getDatapackManifestKey, getExportProjectFolder } from './datapackUtil';
+import { getExportProjectFolder } from './datapackUtil';
 import { join } from 'path/posix';
 import { DatapackInfoService } from './datapackInfoService';
 

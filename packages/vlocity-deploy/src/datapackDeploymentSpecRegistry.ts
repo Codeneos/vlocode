@@ -1,4 +1,4 @@
-import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor } from "@vlocode/core";
+import { Container, container, injectable, LifecyclePolicy, ServiceCtor } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
 import { DatapackFilter } from './datapackDeployer';
 import { DatapackDeploymentSpec } from './datapackDeploymentSpec';

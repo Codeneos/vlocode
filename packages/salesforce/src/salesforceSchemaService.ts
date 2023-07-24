@@ -3,7 +3,7 @@ import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema';
-import { cache, findField, groupBy, isSalesforceId, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
+import { cache, findField, isSalesforceId, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
 import { PicklistEntry } from 'jsforce';
 
 /**

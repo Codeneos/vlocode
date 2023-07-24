@@ -554,7 +554,6 @@ export function proxySpread<T extends object[]>(...objs: [...T]) {
             return property in target || objs.some(o => property in o);
         },
         getOwnPropertyDescriptor(target, property) {
-            const obj = objs.find(o => property in o);
             return Object.getOwnPropertyDescriptor(target, property) ?? objs.find(o => Object.getOwnPropertyDescriptor(o, property));
         },
         ownKeys(target) {

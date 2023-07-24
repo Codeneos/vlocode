@@ -1,7 +1,7 @@
 import * as open from 'open';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
-import { makeRetryable, retryable, wait } from './async';
+import { makeRetryable } from './async';
 
 export interface SalesforceAuthResult {
     orgId: string;

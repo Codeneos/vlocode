@@ -4,7 +4,7 @@ import { Logger, injectable, container, LifecyclePolicy, Container } from '@vloc
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
-import { DatapackDeploymentRecord, DeploymentStatus } from './datapackDeploymentRecord';
+import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';

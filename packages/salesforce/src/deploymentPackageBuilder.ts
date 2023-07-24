@@ -2,14 +2,12 @@ import * as path from 'path';
 import * as chalk from 'chalk';
 import * as ZipArchive from 'jszip';
 
-import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, container, Container } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, intersect, except, primitiveCompare, deepCompare, filterObject } from '@vlocode/util';
+import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container } from '@vlocode/core';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage, SalesforcePackageComponent } from './deploymentPackage';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
-import { SalesforceDeployService } from './salesforceDeployService';
-import { RetrieveResultComponent } from './deploy/retrieveResultPackage';
 
 export enum SalesforcePackageType {
     /**

@@ -3,7 +3,7 @@ import * as ZipArchive from 'jszip';
 
 import { Logger, injectable } from '@vlocode/core';
 import { Timer, removeAll, stringEqualsIgnoreCase, Iterable } from '@vlocode/util';
-import { CancellationToken, mapAsyncParallel, wait, chunkArray } from '@vlocode/util';
+import { CancellationToken, mapAsyncParallel, wait } from '@vlocode/util';
 import { DeployOptions, SalesforceConnectionProvider, DeployResult } from './connection';
 import { DeploymentProgress, PackageManifest, RetrieveResultPackage } from './deploy';
 import { SalesforcePackage } from './deploymentPackage';

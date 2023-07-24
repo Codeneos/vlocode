@@ -12,7 +12,7 @@ describe('datapackLoader', () => {
         container.registerAs(Logger.null, Logger);
         container.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
         container.registerAs({
-            getDatapackType: async (objectType: string) => {
+            getDatapackType: async () => {
                 return 'Target';
             },
             getDatapackInfo: async (datapackType: string) => {

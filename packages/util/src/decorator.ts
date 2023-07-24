@@ -3,14 +3,14 @@ type Constructor = new (...args: any[]) => object;
 
 /**
  * Runs before execution of a function and can manipulate the arguments passed to the function.
- * 
+ *
  * Errors that occur in the before hook and not handled by the optional error handler.
  */
 export const beforeHook = Symbol('beforeHook');
 
 /**
  * Runs after a function has executed and can manipulate the result by returning the new value.
- * 
+ *
  * Errors that occur in the before hook will also be passed to the optional error handler when defined.
  */
 export const afterHook = Symbol('afterHook');
@@ -24,9 +24,9 @@ export const errorHook = Symbol('errorHook');
 
 const hookedFn = Symbol('hookedFn');
 
-export abstract class Decorator<T extends Constructor>{ 
+export abstract class Decorator<T extends Constructor>{
     protected inner: InstanceType<T>;
-    
+
     protected [beforeHook]?(name: string | symbol, args: any[]): void;
     protected [afterHook]?(name: string | symbol, args: any[], returnValue: any | undefined): any;
     protected [errorHook]?(name: string | symbol, args: any[], error: any): any;
@@ -59,29 +59,29 @@ function getHookedFn<T extends Constructor>(target: Decorator<T>, name: symbol |
  * Extend a class with a decorate(ClassName) to create a decorator class that accepts any original target of T and returns
  * a decorated class that by default redirects all calls to the target of the decorator (called inner) and allows the decorator itself to
  * extend the original class overriding any function.
- * 
+ *
  * The benefit of this is that you don't need ot manually redirect all calls not decorated to the decorator and that you don't need to define an
  * interface.
- * 
+ *
  * This class is fully TS compatible and will provided valid TypeScript type hinting about the decorated class, the inner class property as well as
- * 
+ *
  * Sample:
  * ```js
- * class Foo { 
+ * class Foo {
  *   constructor(public name: string) { }
  *   getName() { return `Foo's name: ${this.name}` }
  * }
- * 
+ *
  * class FooDecorator extends decorate(Foo) {
  *   getName() { return `Foo's Decorated name: ${this.name?.toUpperCase()}` }
  * }
- * 
+ *
  * const foo = new FooDecorator(new Foo('bar'));
  * foo.getName();
  * ```
- * 
+ *
  * @param classProto Class prototype to decorate
- * @returns 
+ * @returns
  */
 export function decorate<T extends Constructor>(classProto: T): new (inner: InstanceType<T>) => InstanceType<T> & Decorator<T> {
 
@@ -89,7 +89,7 @@ export function decorate<T extends Constructor>(classProto: T): new (inner: Inst
         constructor(protected inner: InstanceType<T>) {
 
             /**
-             * Only wrap functions in hooks when either of the hook symbols is set on the 
+             * Only wrap functions in hooks when either of the hook symbols is set on the
              * prototype class; avoid generating hook functions when they are not required
              */
             const injectFunctionHooks = !!(this[beforeHook] || this[afterHook] || this[errorHook]);
@@ -108,14 +108,14 @@ export function decorate<T extends Constructor>(classProto: T): new (inner: Inst
                     if (p === 'inner') {
                         return inner;
                     }
-                    
+
                     // Handle property access
-                    const targetProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), p) 
+                    const targetProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), p)
                         ?? Object.getOwnPropertyDescriptor(target, p);
-                    const innerProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(inner), p) 
+                    const innerProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(inner), p)
                         ?? Object.getOwnPropertyDescriptor(inner, p);
                     const prop = targetProp ?? innerProp;
-                        
+
                     if (typeof prop?.get === 'function') {
                         return prop.get.apply(proxy);
                     }
@@ -128,9 +128,9 @@ export function decorate<T extends Constructor>(classProto: T): new (inner: Inst
                 },
                 set: (target, p, value) => {
                     // Handle property access
-                    const targetProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), p) 
+                    const targetProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), p)
                         ?? Object.getOwnPropertyDescriptor(target, p);
-                    const innerProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(inner), p) 
+                    const innerProp = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(inner), p)
                         ?? Object.getOwnPropertyDescriptor(inner, p);
                     const prop = targetProp ?? innerProp;
 
@@ -148,10 +148,10 @@ export function decorate<T extends Constructor>(classProto: T): new (inner: Inst
 
                     return true;
                 },
-                deleteProperty: (target, p) => { 
+                deleteProperty: (target, p) => {
                     if (p in target) {
                         delete target[p];
-                    } 
+                    }
                     if (p in (inner as object)) {
                         delete inner[p];
                     }
@@ -169,7 +169,7 @@ export function decorate<T extends Constructor>(classProto: T): new (inner: Inst
 
             return proxy;
         }
-    };    
+    };
 
     // @ts-ignore
     return decorated;

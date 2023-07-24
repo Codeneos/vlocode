@@ -33,7 +33,6 @@ describe('QueryParser', () => {
             });
         });
         it('should parse nested conditions as binary', () => {
-            const x = QueryParser.parseQueryCondition(`( Id = '1' or Id = '2' )  and   (Name = 'a' or  Name = 'b'  )`);
             expect(QueryParser.parseQueryCondition(`( Id = '1' or Id = '2' )  and   (Name = 'a' or  Name = 'b'  )`)).toStrictEqual({
                 left: {
                     left: `Id = '1'`,

@@ -2,7 +2,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 
 import { CachedFileSystemAdapter, container, Logger, LogWriter, NodeFileSystem, FileSystem } from "@vlocode/core";
-import { Connection, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
+import { Connection, SalesforceConnectionProvider, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
 
 import { DatapackDeployer, DatapackDeploymentOptions } from './datapackDeployer';
 import { ForkedSassCompiler } from './scss';

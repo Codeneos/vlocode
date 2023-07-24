@@ -5,7 +5,7 @@ import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
 import { DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
-import { ILogger, Logger, LogManager } from '@vlocode/core';
+import { ILogger, LogManager } from '@vlocode/core';
 import { randomUUID } from 'crypto';
 
 export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE' | 'PUT';

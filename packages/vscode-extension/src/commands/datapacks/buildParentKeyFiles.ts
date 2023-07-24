@@ -21,7 +21,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         super();
     }
 
-    public execute(...args: any[]) : Promise<void> {
+    public execute() : Promise<void> {
         return this.buildParentKeyFiles();
     }
 

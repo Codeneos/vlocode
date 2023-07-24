@@ -34,7 +34,7 @@ class Compiler {
                         ? Reflect.getOwnPropertyDescriptor(sandboxValues, prop) 
                         : Reflect.getOwnPropertyDescriptor(context, prop) 
                 },
-                ownKeys(_target) {
+                ownKeys() {
                     return contextMutable ? Reflect.ownKeys(context) 
                         : [...unique([...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)])];
                 }

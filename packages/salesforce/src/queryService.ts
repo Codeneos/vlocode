@@ -3,7 +3,7 @@ import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { CancellationToken } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
-import { PropertyAccessor, SObjectRecord, Field, FieldType } from './types';
+import { PropertyAccessor, SObjectRecord, FieldType } from './types';
 import { NamespaceService } from './namespaceService';
 import { QueryCache } from './queryCache';
 import { RecordFactory } from './queryRecordFactory';

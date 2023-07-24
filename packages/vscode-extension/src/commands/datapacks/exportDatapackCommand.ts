@@ -24,7 +24,7 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return this.exportWizard();
     }
 
-    protected isExportableObjectEntry(obj: any) : boolean {
+    protected isExportableObjectEntry(this: void, obj: any) : boolean {
         return 'sobjectType' in obj &&
                'datapackType' in obj &&
                'id' in obj;

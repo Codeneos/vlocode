@@ -1,5 +1,5 @@
 import { SalesforceLookupService } from '@vlocode/salesforce';
-import { injectable, Logger } from '@vlocode/core';
+import { injectable } from '@vlocode/core';
 import { OmniScriptSpecification } from './omniScriptDefinition';
 import { removeUndefinedProperties, sortBy } from '@vlocode/util';
 import { VlocityUITemplate } from './vlocityUITemplate';

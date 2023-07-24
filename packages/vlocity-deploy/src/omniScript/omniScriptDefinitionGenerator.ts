@@ -5,11 +5,10 @@ import { OmniScriptDefinitionBuilder } from './omniScriptDefinitionBuilder';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptElementRecord, OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
 import { RecordFactory, SalesforceSchemaService } from '@vlocode/salesforce';
-import { calculateHash, groupBy, normalizeSalesforceName, objectHash, sortBy, substringAfter, visitObject } from '@vlocode/util';
+import { groupBy, sortBy } from '@vlocode/util';
 import { VlocityInterfaceInvoker } from '../vlocityInterfaceInvoker';
 import { VlocityDatapack } from '../datapack';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
-import { NAMESPACE_PLACEHOLDER_PATTERN } from '../constants';
 
 @injectable()
 export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvider {

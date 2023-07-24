@@ -1,6 +1,6 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
-import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count } from '@vlocode/util';
+import { last, isSalesforceId, CancellationToken, filterKeys, groupBy, unique, count } from '@vlocode/util';
 import { DateTime } from 'luxon';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
