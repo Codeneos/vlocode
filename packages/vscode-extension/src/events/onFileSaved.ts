@@ -49,8 +49,8 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
         // check for Aura/LWC bundle
         const folderParts = fileName.split(/[\\/]+/g);
         if (folderParts.length > 3) {
-            const bundleCollectionPath = folderParts.slice(-3).shift();
-            if (bundleCollectionPath == 'lwc' || bundleCollectionPath == 'aura') {
+            const [ bundleCollectionPath ] = folderParts.slice(-3);
+            if (bundleCollectionPath === 'lwc' || bundleCollectionPath === 'aura') {
                 return true;
             }
         }

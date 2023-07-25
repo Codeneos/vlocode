@@ -37,8 +37,8 @@ export default class DeployLwcCommand extends DatapackCommand {
     }
 
     protected async deployLwc(datapacks: VlocityDatapack[], progress: ActivityProgress) : Promise<void> {
-        for (const datapack of datapacks) {
-            progress.report({ message: `Generating ${datapack.name} definitions...`, total: datapacks.length, increment: 1 });
+        for (const [i, datapack] of datapacks.entries()) {
+            progress.report({ message: `Generating ${datapack.name} definitions...`, total: datapacks.length, progress: i });
             const definition = await container.get(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
 
             progress.report({ message: `Deploying ${datapack.name} LWC...` });
