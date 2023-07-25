@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import * as vlocode from '@vlocode/vlocity-deploy';
+import type * as vlocode from '@vlocode/vlocity-deploy';
 
 @Component({
     selector: 'app-script-element-tree',

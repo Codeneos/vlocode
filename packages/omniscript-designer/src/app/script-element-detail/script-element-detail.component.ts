@@ -1,5 +1,5 @@
 import { Attribute, Component, Input } from '@angular/core';
-import { OmniScriptElementDefinition } from '@vlocode/vlocity-deploy';
+import type { OmniScriptElementDefinition } from '@vlocode/vlocity-deploy';
 
 interface PropSetMapProperty {
   name: string;

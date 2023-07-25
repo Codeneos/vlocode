@@ -12,19 +12,15 @@
         "noImplicitReturns": true,
         "useDefineForClassFields": false,
         "declaration": false,
+        "sourceMap": true,
         "downlevelIteration": true,
-        "importHelpers": true
+        "importHelpers": true,
+        "types": ["@vlocode/vlocity-deploy"]
     },
-    "include": ["src/**/*.ts"],
     "angularCompilerOptions": {
         "enableI18nLegacyMessageIdFormat": false,
         "strictInjectionParameters": true,
         "strictInputAccessModifiers": true,
         "strictTemplates": true
-    },
-    "references": [
-        {
-            "path": "../vlocity-deploy"
-        }
-    ]
+    }
 }

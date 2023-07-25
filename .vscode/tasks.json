@@ -75,14 +75,19 @@
                     }
                 }
             ],
-            "dependsOn": ["watch-vlocity-deploy"]
+            "dependsOn": [
+                "watch-vlocity-deploy"
+            ]
         },
         {
             "label": "watch-cli",
             "type": "shell",
             "problemMatcher": {
                 "base": "$tsc-watch",
-                "fileLocation": ["relative", "${workspaceFolder}/packages/cli"]
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/packages/cli"
+                ]
             },
             "command": "pnpm --filter @vlocode/cli watch",
             "isBackground": true,
@@ -92,14 +97,19 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": ["watch-vlocity-deploy"]
+            "dependsOn": [
+                "watch-vlocity-deploy"
+            ]
         },
         {
             "label": "watch-vlocity-deploy",
             "type": "shell",
             "problemMatcher": {
                 "base": "$tsc-watch",
-                "fileLocation": ["relative", "${workspaceFolder}/packages/vlocity-deploy"]
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/packages/vlocity-deploy"
+                ]
             },
             "command": "pnpm --filter @vlocode/vlocity-deploy watch",
             "isBackground": true,
@@ -109,14 +119,19 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": ["watch-salesforce"]
+            "dependsOn": [
+                "watch-salesforce"
+            ]
         },
         {
             "label": "watch-salesforce",
             "type": "shell",
             "problemMatcher": {
                 "base": "$tsc-watch",
-                "fileLocation": ["relative", "${workspaceFolder}/packages/salesforce"]
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/packages/salesforce"
+                ]
             },
             "command": "pnpm --filter @vlocode/salesforce watch",
             "isBackground": true,
@@ -126,14 +141,19 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": ["watch-core"]
+            "dependsOn": [
+                "watch-core"
+            ]
         },
         {
             "label": "watch-core",
             "type": "shell",
             "problemMatcher": {
                 "base": "$tsc-watch",
-                "fileLocation": ["relative", "${workspaceFolder}/packages/core"]
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/packages/core"
+                ]
             },
             "command": "pnpm --filter @vlocode/core watch",
             "isBackground": true,
@@ -143,14 +163,19 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": ["watch-util"]
+            "dependsOn": [
+                "watch-util"
+            ]
         },
         {
             "label": "watch-util",
             "type": "shell",
             "problemMatcher": {
                 "base": "$tsc-watch",
-                "fileLocation": ["relative", "${workspaceFolder}/packages/vlocity-util"]
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/packages/vlocity-util"
+                ]
             },
             "command": "pnpm --filter @vlocode/util watch",
             "isBackground": true,
@@ -160,6 +185,28 @@
             "group": {
                 "kind": "build"
             }
+        },
+        {
+            "type": "shell",
+            "label": "start-omniscript-designer",
+            "command": "pnpm --filter @vlocode/omniscript-designer start",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "typescript",
+                "pattern": "$tsc",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": {
+                        "regexp": "(.*?)"
+                    },
+                    "endsPattern": {
+                        "regexp": "Compiled successfully.$"
+                    }
+                }
+            },
+            "dependsOn": [
+                "watch-vlocity-deploy"
+            ]
         }
     ]
 }

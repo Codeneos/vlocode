@@ -9,7 +9,7 @@
     ],
     "scripts": {
         "ng": "ng",
-        "start": "ng serve",
+        "start": "ng serve --watch -c development --live-reload",
         "build": "ng build --output-hashing=none",
         "watch": "ng build --watch --configuration development",
         "test": "ng test",

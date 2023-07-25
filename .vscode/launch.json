@@ -22,6 +22,19 @@
             "sourceMaps": true
         },
         {
+            "name": "Debug: script-designer",
+            "type": "chrome",
+            "request": "launch",
+            "outFiles": ["${workspaceRoot}/packages/omniscript-designer/build/**/*.js"],
+            "preLaunchTask": "start-omniscript-designer",
+            "sourceMaps": true,
+            "url": "http://localhost:4200/",
+            "sourceMapPathOverrides": {
+                "webpack:/*": "${workspaceRoot}/packages/omniscript-designer/*",
+                "/*": "${workspaceRoot}/packages/omniscript-designer/build/*",
+            }
+        },
+        {
             "type": "node",
             "request": "launch",
             "program": "${workspaceRoot}/packages/cli/dist/cli.js",
