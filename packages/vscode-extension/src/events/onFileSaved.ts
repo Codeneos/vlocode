@@ -7,9 +7,9 @@ import { MetadataDetector } from '../lib/salesforce/metadataDetector';
 
 export default class extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [
-        '\\.vscode',
-        '\\.sfdx',
-        '\\.git'
+        /(\\|\/)\.vscode(\\|\/)/i,
+        /(\\|\/)\.sfdx(\\|\/)/i,
+        /(\\|\/)\.git(\\|\/)/i
     ];
     private readonly metadataDetector = container.get(MetadataDetector);
 
@@ -27,9 +27,8 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
         }
 
         if (!vscode.workspace.getWorkspaceFolder(document.uri) ||
-            this.ignoredPaths.some(path => new RegExp(path).test(document.fileName))) {
-            this.logger.debug(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
-            return; // ignore these
+            this.ignoredPaths.some(path => path.test(document.fileName))) {
+            return;
         }
 
         if (await this.vloService.salesforceService?.isProductionOrg()) {
@@ -52,8 +51,8 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
         // check for Aura/LWC bundle
         const folderParts = fileName.split(/[\\/]+/g);
         if (folderParts.length > 3) {
-            const bundleCollectionPath = folderParts.slice(-3).shift();
-            if (bundleCollectionPath == 'lwc' || bundleCollectionPath == 'aura') {
+            const [ bundleCollectionPath ] = folderParts.slice(-3);
+            if (bundleCollectionPath === 'lwc' || bundleCollectionPath === 'aura') {
                 return true;
             }
         }
