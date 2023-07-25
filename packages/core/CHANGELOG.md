@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.16](https://github.com/Codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
+
+### Bug Fixes
+
+* errors duplicate the word "Error" when printing to the console ([367d404](https://github.com/Codeneos/vlocode/commit/367d40412835c8c57315fe855c195a616ef2f219))
+* fileSystem outputFile creates folders instead of file causing error ([e2a04d7](https://github.com/Codeneos/vlocode/commit/e2a04d71cbf959aede981ca660fe2a7566bc9851))
+
+### Features
+
+* support LWC geneation ([5f0107e](https://github.com/Codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
+* update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
+
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
 
 **Note:** Version bump only for package @vlocode/core

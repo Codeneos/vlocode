@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.16](https://github.com/Codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
+
+### Bug Fixes
+
+* CLI exits with 1 instead of printing the error when passing an unknown flag or command ([f756e3c](https://github.com/Codeneos/vlocode/commit/f756e3ce1e658b6b1e2cc0303d7127f4365e3b79))
+
+### Features
+
+* add option to dump before and after script definition for debugging purpose using the `debug-activation` flag ([aaa95c1](https://github.com/Codeneos/vlocode/commit/aaa95c11eefef1b276adb38cf8966051305512b2))
+* update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
+
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
 
 **Note:** Version bump only for package @vlocode/cli

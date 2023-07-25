@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.16](https://github.com/Codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
+
+### Features
+
+* check script element validity to avoid activation of fault scripts ([692583a](https://github.com/Codeneos/vlocode/commit/692583af5cf40d2c121480b87dc0066e09318f85))
+* support LWC geneation ([5f0107e](https://github.com/Codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
+* update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
+* upgrade XML functions to use FXPv4 ([63c0ba9](https://github.com/Codeneos/vlocode/commit/63c0ba91989e7a87fbad5b64ee40c6672260509d))
+
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

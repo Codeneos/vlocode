@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.16](https://github.com/Codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
+
+### Bug Fixes
+
+* getTestClasses doesn't return test classes due to new data structure of Salesforce package ([db526dc](https://github.com/Codeneos/vlocode/commit/db526dc6080dbceae9ca5f7a1f98dd2649deedf2))
+* recordBatch is verbose about it's actions when logging level is set to info ([f77b887](https://github.com/Codeneos/vlocode/commit/f77b887be925221c46241bd1dfa300c8a72d4e94))
+
+### Features
+
+* support LWC geneation ([5f0107e](https://github.com/Codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
+* update output type for extension to es2022 modules ([75fbca5](https://github.com/Codeneos/vlocode/commit/75fbca5370f912ef21d2035d0cef196ce0340aec))
+* update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
+* upgrade XML functions to use FXPv4 ([63c0ba9](https://github.com/Codeneos/vlocode/commit/63c0ba91989e7a87fbad5b64ee40c6672260509d))
+
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
 
 ### Features
