@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.17](https://github.com/Codeneos/vlocode/compare/v0.19.16...v0.19.17) (2023-07-26)
+
+**Note:** Version bump only for package @vlocode/salesforce
+
 ## [0.19.16](https://github.com/Codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
 
 ### Bug Fixes

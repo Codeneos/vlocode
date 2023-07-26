@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.17](https://github.com/codeneos/vlocode/compare/v0.19.16...v0.19.17) (2023-07-26)
+
+### Features
+
+* allow switching between VSCode file system methods and NodeJS native's fs-module ([7baa139](https://github.com/codeneos/vlocode/commit/7baa1394b336dbb9b1ece215746aafdd6bef68bd))
+
 ## [0.19.16](https://github.com/codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
 
 ### Features
