@@ -1,9 +1,8 @@
 import 'reflect-metadata';
-import { EventEmitter } from 'stream';
 import { singleton, Iterable, arrayMapPush, asArray, getParameterTypes, getPropertyType } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
-import { InjectableDecorated, InjectableIdentity, InjectableOriginalCtor } from './inject';
+import { createServiceProxy, serviceIsResolved, proxyTarget, isServiceProxy, ProxyTarget } from './serviceProxy';
 
 export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
 export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
@@ -51,22 +50,12 @@ export interface ServiceOptions {
  * is used to resolve the container instance. 
  */
 export const ContainerSymbol = Symbol('Container');
-
-const lazyMarker = Symbol('Container:Lazy');
-const lazyTarget = Symbol('Container:LazyTarget');
-const lazyIsResolved = Symbol('Container:LazyIsResolved');
-const serviceGuidSymbol = Symbol('Container:ServiceGuid');
+export const serviceGuidSymbol = Symbol('Container:ServiceGuid');
 
 const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({
     lifecycle: LifecyclePolicy.singleton,
     priority: 0
 });
-
-interface LazyProxy<T extends object = object> {
-    [lazyMarker]: boolean;
-    [lazyIsResolved]: boolean;
-    [lazyTarget]: ProxyTarget<T>;
-}
 
 const uniqueNameConfig: uniqueNamesGeneratorConfig = {
     dictionaries: [adjectives, animals],
@@ -223,7 +212,7 @@ export class Container {
         if (type) {
             // Circular reference check
             const circularReference = this.resolveStack.includes(type.ctor.name);
-            const instance = this.createLazyProxy<T>(() => this.resolve<T>(service, overrideLifecycle, receiver, resolver) as any, type.ctor.prototype);
+            const instance = createServiceProxy<T>(() => this.resolve<T>(service, overrideLifecycle, receiver, resolver) as any, type.ctor.prototype);
             if (circularReference) {
                 this.logger.verbose(`(${resolver.containerGuid}) Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${type.ctor.name}`);
                 return instance;
@@ -232,7 +221,7 @@ export class Container {
             this.resolveStack.push(type.ctor.name);
             let serviceInstance = resolver.createInstance(type.ctor) as T;
             if (this.useInstanceProxies) {
-                instance[lazyTarget].setInstance(serviceInstance);
+                instance[proxyTarget].setInstance(serviceInstance);
                 serviceInstance = instance;
             }
             this.resolveStack.pop();
@@ -400,8 +389,8 @@ export class Container {
      */
     private trackServiceDependencies(serviceGuid: string, dependsOn: Object) {
         const dependencyGuid = dependsOn[serviceGuidSymbol];
-        if (this.isLazyProxy(dependsOn) && !dependsOn[lazyIsResolved]) {
-            dependsOn[lazyTarget].once('resolved', instance => this.trackServiceDependencies(serviceGuid, instance));
+        if (isServiceProxy(dependsOn) && !dependsOn[serviceIsResolved]) {
+            dependsOn[proxyTarget].once('resolved', instance => this.trackServiceDependencies(serviceGuid, instance));
         } else if (dependencyGuid) {
             arrayMapPush(this.serviceDependencies, dependencyGuid, serviceGuid);
         }
@@ -412,7 +401,7 @@ export class Container {
      * using the injectable decorator then those services will be made available in the container.
      * @param instance
      */
-     public register<T extends object | object[]>(instances: T) {
+    public register<T extends object | object[]>(instances: T) {
         for (const instance of asArray(instances)) {
             for (const prototype of this.getPrototypes(instance)) {
                 const provides = Reflect.getMetadata('service:provides', prototype.constructor) as Array<ServiceType>;
@@ -532,6 +521,31 @@ export class Container {
         }
     }
 
+    /**
+     * Register a service proxy that can be manually set with a concrete instance later on.
+     * Any instance that request a service of type T will receive the proxy instance.
+     * 
+     * The proxy is not registered as a factory type.
+     * 
+     * The proxy instance can be set using the `setInstance` method on the ProxyTarget returned by this method.
+     * 
+     * @param type Service type to register
+     * @returns ProxyTarget instance that can be used to set the concrete instance
+     */
+    public registerProxyService<T extends Object>(type: { name: string; prototype: T }): ProxyTarget<T> {
+        const serviceName = this.getServiceName(type);
+        const instance = createServiceProxy<T>(() => {
+                if (!instance[proxyTarget].instance) {
+                    throw new Error(
+                        'Proxy service accessed before explicitly set; assign an instance to the proxy service before accessing it.'
+                    );
+                }
+                return instance[proxyTarget].instance;
+            }, type.prototype);
+        this.factories.set(serviceName, { new: () => instance, lifecycle: LifecyclePolicy.transient });
+        return instance[proxyTarget];
+    }
+
     public registerProvider<T extends Object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I| Promise<I> | undefined) {
         this.logger.debug(`(${this.containerGuid}) Register provider for: ${this.getServiceName(service)}`);
         this.providers.set(this.getServiceName(service), provider);
@@ -542,105 +556,6 @@ export class Container {
             return service;
         }
         return service.name;
-    }
-
-    private isLazyProxy(obj: any) : obj is LazyProxy {
-        return obj[lazyMarker] === true;
-    }
-
-    private createLazyProxy<T extends Object>(factory: () => T, prototype: any) : LazyProxy & T {
-        return new Proxy(new ProxyTarget(factory), {
-            get(target, prop) {
-                if (prop === lazyMarker) {
-                    return true;
-                } else if (prop === lazyIsResolved) {
-                    return !!target.instance;
-                } else if (prop === lazyTarget) {
-                    return target;
-                } else if (prop === serviceGuidSymbol) {
-                    return target.instance?.[serviceGuidSymbol];
-                }
-
-                if (!target.instance && typeof prototype[prop] === 'function') {
-                    return function(...args: any[]) {
-                        return prototype[prop].apply(this, args);
-                    };
-                }
-                return target.getInstance()[prop];
-            },
-            set(target, prop, value) {
-                if (prop === lazyMarker || prop === lazyTarget || prop === lazyIsResolved) {
-                    return false;
-                } else {
-                    if (typeof prototype[prop] === 'function') {
-                        return false;
-                    }
-                    target.getInstance()[prop] = value;
-                }
-                return true;
-            },
-            has(target, prop) { return (prop in prototype) || (prop in target.getInstance()); },
-            getOwnPropertyDescriptor(target, prop) {
-                if (target.instance) {
-                    return Object.getOwnPropertyDescriptor(prototype, prop);
-                }
-                return undefined;
-            },
-            getPrototypeOf() {
-                return prototype;
-            },
-            ownKeys(target) {
-                return target.instance ? Reflect.ownKeys(target.instance) : [];
-            }
-        }) as any;
-    }
-}
-
-class ProxyTarget<T extends Object> extends EventEmitter {
-    public instance?: T & Object;
-    private static supportedEvents: (symbol | string)[] = [ 'resolved' ];
-
-    constructor(private readonly factory: () => T) {
-        super();
-    }
-
-    public on(eventName: string | symbol, listener: (...args: any[]) => void): this {
-        return this.listen('on', eventName, listener);
-    }
-
-    public once(eventName: string | symbol, listener: (...args: any[]) => void): this {
-        return this.listen('once', eventName, listener);
-    }
-
-    public listen(type: 'on' | 'once', eventName: string | symbol, listener: (...args: any[]) => void): this {
-        if (!ProxyTarget.supportedEvents.includes(eventName)) {
-            throw new Error(`Unsupported event: ${String(eventName)}`);
-        }
-
-        if (eventName === 'resolved' && this.instance) {
-            listener(this.instance);
-        } else {
-            super[type](eventName, listener);
-        }
-
-        return this;
-    }
-
-    public setInstance(instance: T): T {
-        const shouldEmit = !this.instance;
-        this.instance = instance
-        if (shouldEmit) {
-            this.emit('resolved', instance);
-            this.removeAllListeners();
-        }
-        return instance;
-    }
-
-    public getInstance(): T {
-        if (!this.instance) {
-            return this.setInstance(this.factory());
-        }
-        return this.instance;
     }
 }
 

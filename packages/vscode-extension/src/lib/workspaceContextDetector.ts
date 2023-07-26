@@ -36,6 +36,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private workspaceFileWatcher: vscode.FileSystemWatcher;
     private scheduledContextUpdate?: NodeJS.Timeout;
     private detectionCounter: number = 0;
+    private readonly ignorePattern = /[\\/]+\.[^\\/]+[\\/]+/;
 
     /**
      * Create a new WorkspaceContextDetector with the specified configuration.
@@ -73,6 +74,7 @@ export class WorkspaceContextDetector implements vscode.Disposable {
 
         this.workspaceFileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, true, false);
         this.workspaceFileWatcher.onDidCreate(async newFile => this.onDidCreateHandler(newFile.fsPath));
+        this.workspaceFileWatcher.onDidDelete(async newFile => this.onDidDeleteHandler(newFile.fsPath));
 
         this.add(await this.getApplicableFilesInWorkspace());
         this.scheduleContextUpdate();
@@ -81,7 +83,19 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         return this;
     }
 
-    private async onDidCreateHandler(filePath: string) {        
+    private async onDidDeleteHandler(filePath: string) {
+        if (this.ignorePattern.test(filePath)) {
+            return;
+        }
+        this.removeAll(filePath);
+        this.scheduleContextUpdate();
+    }
+
+    private async onDidCreateHandler(filePath: string) {
+        if (this.ignorePattern.test(filePath)) {
+            return;
+        }
+
         const entry = await this.fs.stat(filePath);
 
         if (!entry) {
@@ -109,8 +123,15 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     }
 
     private remove(filePath: string) {
-        // eslint-disable-next-line @typescript-eslint/tslint/config
         delete this.contextFiles[filePath];
+    }
+
+    private removeAll(filePath: string) {
+        for (const key of Object.keys(this.contextFiles)) {
+            if (key.startsWith(filePath)) {
+                delete this.contextFiles[key];
+            }
+        }
     }
 
     private scheduleContextUpdate() {

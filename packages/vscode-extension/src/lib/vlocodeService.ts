@@ -432,7 +432,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     public registerDisposable<T extends {dispose() : any}>(disposable: Promise<T>) : Promise<T>
     public registerDisposable<T extends {dispose() : any}>(disposable: T | Promise<T>) : T | Promise<T> {
         if (isPromise(disposable)) {
-            return disposable.then(result => this.registerDisposable(result));
+            return disposable.then(result => this.registerDisposable(result)).catch(err => {
+                this.logger.error(err);
+                throw err;
+            });
         }
         this.disposables.push(disposable);
         return disposable;

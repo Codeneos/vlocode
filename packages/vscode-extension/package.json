@@ -874,6 +874,19 @@
                         "type": "string",
                         "description": "Optional HTTP proxy for connecting to Salesforce"
                     },
+                    "vlocity.fsInterface": {
+                        "type": "string",
+                        "enum": [
+                            "vscode",
+                            "native"
+                        ],
+                        "default": "native",
+                        "enumDescriptions": [
+                            "VSCode's built-in file system interface; this is the default and recommended option",
+                            "Native file system interface through NodeJS's fs-module"
+                        ],
+                        "markdownDescription": "Change how the file system is accessed; the native file system interface is faster but might not work correctly on all platforms."
+                    },
                     "vlocity.logLevel": {
                         "type": "string",
                         "default": "info",

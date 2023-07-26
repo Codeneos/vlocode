@@ -34,4 +34,5 @@ export default abstract class VlocodeConfiguration extends BaseConfiguration {
     salesforce: VlocodeSalesforceConfiguration;
     suggestRefactoringOnRename: boolean;
     applyRefactoringWithoutPreview: boolean;
+    fsInterface: 'vscode' | 'native';
 }

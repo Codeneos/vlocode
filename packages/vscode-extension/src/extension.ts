@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import * as vlocityPackageManifest from 'vlocity/package.json';
 
 import * as constants from './constants';
-import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, FileSystem } from '@vlocode/core';
+import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, FileSystem, NodeFileSystem } from '@vlocode/core';
 import * as vlocityUtil from './lib/vlocity/vlocityLogging';
 import { getContext, initializeContext } from './lib/vlocodeContext';
 import { ConfigurationManager } from './lib/config';
@@ -160,6 +160,15 @@ class Vlocode {
         if (this.service.config.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
+
+        // Register switchable FS interface
+        const fsProxy = container.registerProxyService(FileSystem);
+        ConfigurationManager.watchProperties(this.service.config, 'fsInterface', config => {
+            this.logger.verbose(`Setting FS interface to ${config.fsInterface}`);
+            config.fsInterface === 'vscode'
+                ? fsProxy.setInstance(container.create(VSCodeFileSystemAdapter))
+                : fsProxy.setInstance(container.create(NodeFileSystem));
+        }, { initial: true, noInitialTimeout: true });
 
         // register commands and windows
         //this.service.commands.registerAll(Commands);

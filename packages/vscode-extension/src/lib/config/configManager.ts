@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { CONFIG_FILE } from '../../constants';
 import { LogManager, Logger } from '@vlocode/core';
-import { arrayMapPush, asArray, groupBy, lazy } from '@vlocode/util';
+import { arrayMapPush, asArray, groupBy, isPromise, lazy } from '@vlocode/util';
 import { WorkspaceOverrideConfiguration } from './overrideConfiguration';
 import { VscodeWorkspaceConfigProvider } from './workspaceConfigProvider';
 import { ConfigProxyHandler } from './proxyHandler';
@@ -13,6 +13,10 @@ export interface ConfigurationManagerWatchOptions {
      * Trigger watcher on initial value
      */
     initial?: boolean;
+    /**
+     * Do not use set-timeout for triggering the watchers
+     */
+    noInitialTimeout?: boolean;
 }
 
 export class ConfigurationManager implements VscodeWorkspaceConfigProvider {
@@ -155,7 +159,8 @@ export class ConfigurationManager implements VscodeWorkspaceConfigProvider {
             for (const section of sections) {
                 const properties = watchKeys.filter(prop => prop.startsWith(`${section}.`));
                 if (properties.length) {
-                    setTimeout(() => this.invokeWatchers(this.load(section), properties), 0);
+                    options.noInitialTimeout ? this.invokeWatchers(this.load(section), properties)
+                        : setImmediate(() => this.invokeWatchers(this.load(section), properties));
                 }
             }
         }

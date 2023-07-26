@@ -7,9 +7,7 @@ import { MetadataDetector } from '../lib/salesforce/metadataDetector';
 
 export default class extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [
-        '\\.vscode',
-        '\\.sfdx',
-        '\\.git'
+        /[\\/]+\.[^\\/]+[\\/]+/
     ];
     private readonly metadataDetector = container.get(MetadataDetector);
 
@@ -27,8 +25,7 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
         }
 
         if (!vscode.workspace.getWorkspaceFolder(document.uri) ||
-            this.ignoredPaths.some(path => new RegExp(path).test(document.fileName))) {
-            this.logger.debug(`File not in workspace or in ignored directory: ${document.uri.fsPath}`);
+            this.ignoredPaths.some(path => path.test(document.fileName))) {
             return; // ignore these
         }
 
