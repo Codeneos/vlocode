@@ -53,7 +53,7 @@ describe('SalesforcePackageBuilder', () => {
         'src/triggers/myTrigger.trigger-meta.xml': buildMetadataXml('ApexTrigger'),
         // Destructive changes
         'src/destructiveChangesPost.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'a', 'b' ] } ] }),
-        'src/destructiveChangesPost2.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'a', 'b' ] } ] }),
+        'src/destructiveChangesPost2.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'x', 'y' ] } ] }),
         'src/destructiveChangesPre.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'c', 'd' ] } ] }),
         'src/destructiveChanges.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'g', 'h' ] } ] }),
         'src/destructiveChangesSingle.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: 'a' } ] }),
@@ -296,7 +296,27 @@ describe('SalesforcePackageBuilder', () => {
 
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                const destructedClasses = packageBuilder.getPackage().getDestructiveChanges();
 
+                expect(destructedClasses).toEqual([
+                    {
+                        componentName: 'a',
+                        componentType: 'ApexClass',
+                        type: 'post'
+                    },{
+                        componentName: 'b',
+                        componentType: 'ApexClass',
+                        type: 'post'
+                    },{
+                        componentName: 'x',
+                        componentType: 'ApexClass',
+                        type: 'post'
+                    },{
+                        componentName: 'y',
+                        componentType: 'ApexClass',
+                        type: 'post'
+                    }
+                ]);
                 expect(filesAdded.length).toEqual(2);
                 expect(filesAdded).toEqual(expect.arrayContaining([ 'destructiveChangesPost.xml' ]));
                 expect(manifest.types.length).toEqual(0);
@@ -309,8 +329,20 @@ describe('SalesforcePackageBuilder', () => {
 
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                const destructedClasses = packageBuilder.getPackage().getDestructiveChanges();
 
                 expect(filesAdded.length).toEqual(2);
+                expect(destructedClasses).toEqual([
+                    {
+                        componentName: 'g',
+                        componentType: 'ApexClass',
+                        type: 'pre'
+                    },{
+                        componentName: 'h',
+                        componentType: 'ApexClass',
+                        type: 'pre'
+                    }
+                ]);
                 expect(filesAdded).toEqual(expect.arrayContaining([ 'destructiveChangesPre.xml' ]));
                 expect(manifest.types.length).toEqual(0);
             });
@@ -340,7 +372,14 @@ describe('SalesforcePackageBuilder', () => {
 
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
-
+                const destructedClasses = packageBuilder.getPackage().getDestructiveChanges();
+                expect(destructedClasses).toEqual([
+                    {
+                        componentName: 'a',
+                        componentType: 'ApexClass',
+                        type: 'pre'
+                    }
+                ]);
                 expect(filesAdded.length).toEqual(2);
                 expect(filesAdded).toEqual(expect.arrayContaining([
                     'destructiveChangesPre.xml'

@@ -309,7 +309,7 @@ export class SalesforcePackage {
     public mergeDestructiveChanges(manifestSource: string | Buffer, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
         const items = XML.parse(manifestSource).Package;
         for (const packageType of asArray(items.types)) {
-            const xmlName = packageType.name[0];
+            const xmlName = packageType.name;
             for (const member of asArray(packageType.members)) {
                 this.addDestructiveChange(xmlName, member, type);
             }
