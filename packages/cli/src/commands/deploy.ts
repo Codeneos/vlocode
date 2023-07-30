@@ -5,7 +5,7 @@ import { Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join } from 'path';
 import * as chalk from 'chalk';
-import { count, countDistinct, groupBy, Timer } from '@vlocode/util';
+import { count, countDistinct, groupBy, mapAsync, Timer } from '@vlocode/util';
 import { SalesforceCommand } from '../salesforceCommand';
 
 export default class extends SalesforceCommand {
@@ -13,11 +13,11 @@ export default class extends SalesforceCommand {
     static description = 'Deploy datapacks to Salesforce';
 
     static args = [
-        new Argument('folder', 'path to a folder containing the datapacks to be deployed').argParser(value => {
+        new Argument('<folders...>', 'path to a folder containing the datapacks to be deployed').argParser((value, previous: string[] | undefined) => {
             if (!existsSync(value)) {
                 throw new Error('No such folder exists');
             }
-            return value;
+            return (previous ?? []).concat([ value ]);
         })
     ];
 
@@ -74,16 +74,12 @@ export default class extends SalesforceCommand {
         super();
     }
 
-    public async run(folder: string, options: any) {
+    public async run(folders: string[], options: any) {
         // Load datapacks
-        this.logger.info(`Load datapacks from "${folder}"`);
-        const datapackLoadTimer = new Timer();
-        const datapacks = await this.container.create(DatapackLoader).loadDatapacksFromFolder(folder);
-        if (datapacks.length == 0) {
-            this.logger.error(`No datapacks found in specified folder: ${folder}`);
+        const datapacks = await this.loadDatapacksFromFolders(folders);
+        if (!datapacks.length) {
             return;
         }
-        this.logger.info(`Loaded ${datapacks.length} datapacks in [${datapackLoadTimer.stop()}]`);
 
         // get options from command line
         const deployOptions: DatapackDeploymentOptions = {
@@ -131,6 +127,22 @@ export default class extends SalesforceCommand {
                 }
             }
         }
+    }
+
+    private async loadDatapacksFromFolders(folders: string[]) {
+        this.logger.info(`Load datapacks from: "${folders.join('", "')}"`);
+
+        const datapackLoadTimer = new Timer();
+        const loader = this.container.get(DatapackLoader);
+        const datapacks = (await mapAsync(folders, folder => loader.loadDatapacksFromFolder(folder))).flat();
+
+        if (datapacks.length == 0) {
+            this.logger.error(`No datapacks found in specified folders: "${folders.join('", "')}"`);
+        } else {
+            this.logger.info(`Loaded ${datapacks.length} datapacks in [${datapackLoadTimer.stop()}]`);
+        }
+
+        return datapacks;
     }
 
     protected async init(options: any) {
