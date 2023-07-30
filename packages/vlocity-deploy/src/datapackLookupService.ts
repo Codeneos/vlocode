@@ -1,6 +1,6 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
-import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count } from '@vlocode/util';
+import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count, removeAll, remove } from '@vlocode/util';
 import { DateTime } from 'luxon';
 import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
@@ -52,16 +52,17 @@ export class DatapackLookupService implements DependencyResolver {
     public async resolveDependencies(dependencies: DatapackRecordDependency[]): Promise<Array<string | undefined>> {
         const lookupResults = new Array<string | undefined>();
         const lookupRequests = dependencies.map((dependency, index) => ({
-                index, lookupKey: this.getLookupKey(dependency),
+                index,
+                sourceKey: this.getSourceKey(dependency),
                 sobjectType: dependency.VlocityRecordSObjectType,
                 filter: this.normalizeFilter(filterKeys(dependency, field => !constants.DATAPACK_RESERVED_FIELDS.includes(field))),
             }))
-            .filter(({ sobjectType, lookupKey, index }) => {
-                return !(lookupResults[index] = this.getCachedEntry(sobjectType, lookupKey));
+            .filter(({ sobjectType, sourceKey, index }) => {
+                return !(lookupResults[index] = this.getCachedEntry(sobjectType, sourceKey));
             })
-            .filter(({ filter, lookupKey }) => {
+            .filter(({ filter, sourceKey }) => {
                 if (!Object.keys(filter).length) {
-                    this.logger.warn(`None of the dependency's lookup fields have values (${lookupKey})`);
+                    this.logger.warn(`None of the dependency's lookup fields have values (${sourceKey})`);
                     return false;
                 }
                 return true;
@@ -75,10 +76,10 @@ export class DatapackLookupService implements DependencyResolver {
             if (!matchedRecords?.length) {
                 continue;
             } else if (matchedRecords.length > 1) {
-                this.logger.warn(`Dependency with lookup key [${lookupRequest.lookupKey}] matches more than 1 record in target org: [${matchedRecords.join(', ')}]`);
+                this.logger.warn(`Dependency with lookup key [${lookupRequest.sourceKey}] matches more than 1 record in target org: [${matchedRecords.join(', ')}]`);
             }
 
-            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.lookupKey, matchedRecords[0]);
+            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.sourceKey, matchedRecords[0]);
             lookupResults[lookupRequest.index] = matchedRecords[0];
         }
 
@@ -95,24 +96,21 @@ export class DatapackLookupService implements DependencyResolver {
 
         // Determine matching keys per object
         const lookupRequests = datapackRecords.map((record, index) => ({
-                index, record, sobjectType: record.sobjectType,
-                lookupKey: this.buildLookupKey(record.sobjectType, record.upsertFields ?? [], record.values)!,
-                filter: this.buildFilter(record, record.upsertFields ?? []),
+                index,
+                record,
+                sobjectType: record.sobjectType,
+                filter: this.buildFilter(record, record.upsertFields),
                 reportWarning: (message: string) => {
                     record.addWarning(message);
                     this.distinctLogger.warn(`Datapack ${record.sourceKey} -- ${message}`);
                 }
             }))
-            .filter(({ sobjectType, record, lookupKey, index }) => {
-                return !(lookupResults[index] = this.getCachedEntry(sobjectType, lookupKey) ?? this.getCachedEntry(sobjectType, record.sourceKey));
+            .filter(({ sobjectType, record, index }) => {
+                return !record.sourceKey || !(lookupResults[index] = this.getCachedEntry(sobjectType, record.sourceKey));
             })
-            .filter(({ record, lookupKey, reportWarning }) => {
-                if (!lookupKey) {
-                    if (!record.upsertFields?.length) {
-                        this.distinctLogger.warn(`No matching key configuration found for ${record.sobjectType}`);
-                    } else {
-                        reportWarning(`None of the matching key fields is set, make sure at least one of the matching key field has a value: ${record.upsertFields.join(',')}`);
-                    }
+            .filter(({ filter, sobjectType }) => {
+                if (Object.keys(filter).length === 0) {
+                    this.distinctLogger.warn(`No matching key configuration found for ${sobjectType}`);
                     return false;
                 }
                 return true;
@@ -129,6 +127,22 @@ export class DatapackLookupService implements DependencyResolver {
             }
         }
 
+        // If there are multiple lookup requests for the same record
+        // it could indicate a bug in in the matching key configuration
+        const duplicateLookups = Object.values(
+                groupBy(lookupRequests, ({ filter }) => JSON.stringify(filter))
+            ).filter((requests) => requests.length > 1);
+        if (duplicateLookups.length) {
+            duplicateLookups.flat().forEach(lookup => {
+                lookup.reportWarning(
+                    `Matching key configuration for ${lookup.sobjectType} fields do not uniquely identify a record;` + 
+                    `delete the DRMatchingKey record for ${lookup.sobjectType} or update it so that the fields uniquely target records in the target org`
+                );
+                // Do not do a lookup for this record
+                remove(lookupRequests, l => l.index === lookup.index);
+            });
+        }
+
         // execute lookup
         const records = await this.lookupMultiple(lookupRequests);
 
@@ -138,16 +152,22 @@ export class DatapackLookupService implements DependencyResolver {
             if (!matchedRecords?.length) {
                 continue;
             } else if (matchedRecords.length > 1) {
-                lookupRequest.reportWarning(`Matches more than 1 existing record in target org: [${matchedRecords.join(', ')}]`);
+                lookupRequest.reportWarning(`Matches more than 1 record in target org: [${matchedRecords.join(', ')}]`);
             }
 
             const matchedRecord = matchedRecords[0];
 
-            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.lookupKey, matchedRecord);
-            if (lookupRequest.record.sourceKey && lookupRequest.lookupKey !== lookupRequest.record.sourceKey) {
-                this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.record.sourceKey, matchedRecord);
+            // Validate that the matched record is not already matched by another lookup request
+            const otherMatches = Object.entries(lookupResults).filter(([,id]) => id === matchedRecord);
+            if (otherMatches.length) {
+                lookupRequest.reportWarning(
+                    `Record with ID (${matchedRecord}) matches multiple source keys: [${
+                        [ lookupRequest.record.sourceKey ].concat(otherMatches.map(([i]) => datapackRecords[i].sourceKey)).join(', ')
+                    }]`
+                );
             }
 
+            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.record.sourceKey, matchedRecord);
             lookupResults[lookupRequest.index] = matchedRecord;
         }
 
@@ -430,23 +450,19 @@ export class DatapackLookupService implements DependencyResolver {
         return /^[a-z0-9_.]+$/ig.test(formula);
     }
 
-    private getLookupKey(obj: any): string {
-        return obj.VlocityLookupRecordSourceKey || obj.VlocityMatchingRecordSourceKey;
+    private getSourceKey<T extends ({ VlocityLookupRecordSourceKey: string } | { VlocityMatchingRecordSourceKey: string })>(obj: T): string {
+        if ('VlocityLookupRecordSourceKey' in obj) {
+            return obj.VlocityLookupRecordSourceKey;
+        }
+        return obj.VlocityMatchingRecordSourceKey;
     }
 
     private getCachedEntry(sobjectType: string, key: string | undefined): string | undefined;
-    //private getCachedEntry(sobjectType: string, key: object): Promise<string | undefined>;
     private getCachedEntry(sobjectType: string, key: string | undefined, resolver?: (key: string) => string | Promise<string | undefined> | undefined): Promise<string>;
     private getCachedEntry(sobjectType: string, key: string | undefined, resolver?: (key: string) => string | Promise<string | undefined> | undefined): Promise<string | undefined> | string | undefined {
         if (!key) {
             return undefined;
         }
-
-        // if (typeof key === 'object') {
-        //     return this.getMatchingFields(sobjectType, key).then(matchingKeyFields =>
-        //         this.getCachedEntry(sobjectType, this.buildLookupKey(sobjectType, matchingKeyFields, key), resolver)
-        //     );
-        // }
 
         const hasEntry = this.getCache(sobjectType).entries.has(key.toLowerCase());
         if (!hasEntry && resolver) {
@@ -457,20 +473,7 @@ export class DatapackLookupService implements DependencyResolver {
         return this.getCache(sobjectType).entries.get(key.toLowerCase());
     }
 
-    private updateCachedEntry(sobjectType: string, key: string, id: string) : string;
-    private updateCachedEntry(sobjectType: string, key: string, id: undefined) : undefined;
-    //private updateCachedEntry(sobjectType: string, key: object, id: string) : Promise<string>;
-    //private updateCachedEntry(sobjectType: string, key: object, id: string | undefined) : Promise<string | undefined>;
-    private updateCachedEntry(sobjectType: string, key: string, id: string | undefined) : Promise<string | undefined> | (string | undefined) {
-        // if (typeof key === 'object') {
-        //     return this.getMatchingFields(sobjectType, key).then(matchingKeyFields => {
-        //         const lookupKey = this.buildLookupKey(sobjectType, matchingKeyFields, key);
-        //         if (!lookupKey) {
-        //             return undefined;
-        //         }
-        //         return this.updateCachedEntry(sobjectType, lookupKey, id);
-        //     });
-        // }
+    private updateCachedEntry<T extends string | undefined>(sobjectType: string, key: string, id: T) : T {
         this.getCache(sobjectType).entries.set(key.toLowerCase(), id);
         return id;
     }

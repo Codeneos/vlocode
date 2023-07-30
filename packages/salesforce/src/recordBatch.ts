@@ -1,5 +1,5 @@
 import { LogManager } from '@vlocode/core';
-import { Timer, arrayMapPush, CancellationToken } from '@vlocode/util';
+import { Timer, arrayMapPush, CancellationToken, groupBy } from '@vlocode/util';
 import { RecordResult, BatchInfo } from 'jsforce';
 
 import { AwaitReturnType } from './types';
@@ -279,6 +279,14 @@ export class RecordBatch {
     public addUpdate(type: string, data: any, id: string, ref?: string): this {
         data.Id = id;
         arrayMapPush(this.update, type, { ref, data });
+        for (const [sobjectType, records] of this.update) {
+            const unique = groupBy(records, record => record.data.Id);
+            for (const [id, records] of Object.entries(unique)) {
+                if (records.length > 1) {
+                    throw new Error(`Cannot update record ${id} multiple times in the same batch`);
+                }
+            }
+        }
         this.recordCount++;
         return this;
     }
