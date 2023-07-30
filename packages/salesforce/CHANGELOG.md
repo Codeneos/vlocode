@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.19](https://github.com/Codeneos/vlocode/compare/v0.19.18...v0.19.19) (2023-07-30)
+
+### Features
+
+* report invalid matching key configuration and fail deployment when trying to update the same record twice in the same batch ([c0c0031](https://github.com/Codeneos/vlocode/commit/c0c00316ed56312a4d9b5fda57256ec5fa620391))
+
 ## [0.19.18](https://github.com/Codeneos/vlocode/compare/v0.19.17...v0.19.18) (2023-07-27)
 
 ### Bug Fixes

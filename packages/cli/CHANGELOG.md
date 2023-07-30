@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.19](https://github.com/Codeneos/vlocode/compare/v0.19.18...v0.19.19) (2023-07-30)
+
+### Features
+
+* support passing list of folders for deployment instead of a single folder ([cdc6e43](https://github.com/Codeneos/vlocode/commit/cdc6e430801118740fbe296160d2b7f8e1427ec9))
+
 ## [0.19.18](https://github.com/Codeneos/vlocode/compare/v0.19.17...v0.19.18) (2023-07-27)
 
 **Note:** Version bump only for package @vlocode/cli
