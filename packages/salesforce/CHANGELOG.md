@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.20](https://github.com/Codeneos/vlocode/compare/v0.19.19...v0.19.20) (2023-08-01)
+
+### Bug Fixes
+
+* XML metadata with boolean attributes is not deployed correctly ([7389674](https://github.com/Codeneos/vlocode/commit/738967418225ff1abcd02cedebb88fc611bbd66b))
+
 ## [0.19.19](https://github.com/Codeneos/vlocode/compare/v0.19.18...v0.19.19) (2023-07-30)
 
 ### Features
