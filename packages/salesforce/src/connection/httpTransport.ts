@@ -4,7 +4,7 @@ import * as zlib from 'zlib';
 import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
-import { DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
+import { CustomError, DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
 import { ILogger, Logger, LogManager } from '@vlocode/core';
 import { randomUUID } from 'crypto';
 
@@ -100,6 +100,7 @@ export interface Transport {
 
 export class HttpTransport implements Transport {
     private cookies = new CookieJar();
+    private multiPartBoundary = `--${randomUUID()}`
 
     /**
      * HTTP agent used by this {@link HttpTransport} used for connection pooling
@@ -107,7 +108,7 @@ export class HttpTransport implements Transport {
     private httpAgent = new https.Agent({
         port: 443,
         keepAlive: true,
-        keepAliveMsecs: 60000,
+        keepAliveMsecs: 5000,
         maxSockets: 10,
         scheduling: 'lifo',
         timeout: 120000 // Time out connections after 120 seconds
@@ -153,7 +154,7 @@ export class HttpTransport implements Transport {
         this.logger.verbose(`Transport options: ${this.getFeatureList().map(v => v.toUpperCase()).join(' ') || 'NONE'}`);
     }
 
-    public getFeatureList() {
+    private getFeatureList() {
         const features = new Array<string>();
         this.options.useGzipEncoding && features.push('gzip');
         this.options.handleCookies && features.push('cookies');
@@ -161,15 +162,60 @@ export class HttpTransport implements Transport {
         return features;
     }
 
+    /**
+     * Make a HTTP request to the specified URL
+     * @param info Request information
+     * @param options deprecated
+     * @returns Promise with the response
+     */
     public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse> {
         const url = this.parseUrl(info.url);
+        const request = this.prepareRequest(info);
+
+        this.logger.debug('%s %s', info.method, url.pathname);
+
+        const timer = new Timer();
         const requestPromise = new DeferredPromise<HttpResponse>();
+
+        // Handle error and response
+        request.once('error', (err) => requestPromise.reject(err));
+        request.once('timeout', () => requestPromise.reject(
+            new CustomError(
+                `Socket timeout when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
+                { code: 'ETIMEOUT' }
+            )
+        ));
+        request.on('response', (response) => {
+            requestPromise.bind(this.handleResponse(info, response).then(response => {
+                this.logger.debug('%s %s (%ims)', info.method, url.pathname, timer.elapsed);
+                return response;
+            }));
+        });
+
+        // Send body
+        const body = this.prepareRequestBody(info);
+        if (body) {
+            this.sendRequestBody(request, body)
+                .then((req) => new Promise((resolve) => req.end(() => resolve(req))))
+                .catch((err) => requestPromise.reject(err));
+        } else {
+            request.end();
+        }
+
+        if (this.options.recorder) {
+            return this.options.recorder.record(info, requestPromise);
+        }
+
+        return requestPromise;
+    }
+
+    private prepareRequest(info: HttpRequestInfo) {
+        const url = this.parseUrl(info.url);
 
         if (url.protocol === 'http') {
             url.protocol = 'https';
         }
 
-        const startTime = Date.now();
         const request = https.request({
             agent: this.httpAgent,
             host: url.host,
@@ -196,92 +242,64 @@ export class HttpTransport implements Transport {
             request.setHeader('cookie', this.cookies.getCookieStringSync(url.href));
         }
 
-        request.once('error', (err) => requestPromise.reject(err));
-
-        request.on('response', (response) => {
-            this.logger.debug(`${url.pathname}, status=${response.statusCode} (${Date.now() - startTime}ms)`);
-
-            const setCookiesHeader = response.headers['set-cookie'];
-            if (this.options.handleCookies && setCookiesHeader?.length) {
-                setCookiesHeader.forEach(cookie => this.cookies.setCookieSync(cookie, url.href));
-            }
-
-            if (this.isRedirect(response)) {
-                const redirectRequestInfo = this.getRedirectRequest(response, info);
-                response.destroy();
-                return requestPromise.resolve(this.httpRequest(redirectRequestInfo, options));
-            }
-
-            const timer = new Timer();
-            const responseData = new Array<Buffer>();
-            response.on('data', (chunk) => responseData.push(chunk));
-            response.once('end', () => {
-                this.decodeResponseBody(response, Buffer.concat(responseData))
-                    .then(body => {
-                        if (HttpTransport.enableResponseLogging) {
-                            this.logger.debug(`${info.method} ${url.pathname} (${timer.stop()})`);
-                            this.logger.debug(`<headers>`, JSON.stringify(response.headers, undefined, 4));
-                            this.logger.debug(`<response>`, body.toString(this.bodyEncoding));
-                        }
-                        const parsed = this.parseResponseBody(response, body);
-                        if (typeof parsed !== 'string') {
-                            response.headers['content-type'] = 'no-parse';
-                        }
-                        return parsed;
-                    })
-                    .then(body => requestPromise.resolve(Object.assign(response, {
-                        time: Date.now() - startTime, body
-                    })))
-                    .catch(err => requestPromise.reject(err));
-            });
-        });
-
-        const body = info.parts ? this.encodeMultipartBody(request, info.parts) : info.body;
-
-        if (HttpTransport.enableResponseLogging) {
-            this.logger.debug(`${info.method} ${url.pathname}`);
-            this.logger.debug('<headers>', JSON.stringify(info.headers ?? {}, undefined, 2));
+        if (info.parts) {
+            request.setHeader('content-type', `multipart/form-data; boundary=${this.multiPartBoundary}`);
         }
 
-        if (body) {
-            this.sendRequestBody(request, body)
-                .then((req) => new Promise((resolve) => req.end(() => resolve(req))))
-                .catch((err) => requestPromise.reject(err));
-        } else {
-            request.end();
-        }
-
-        if (this.options.recorder) {
-            return this.options.recorder.record(info, requestPromise);
-        }
-
-        return requestPromise;
+        return request;
     }
 
-    private encodeMultipartBody(request: http.ClientRequest, parts: Array<HttpRequestPart>) : Buffer {
-        const boundary = `--${randomUUID()}`;
-        request.setHeader('content-type', `multipart/form-data; boundary=${boundary}`);
+    private prepareRequestBody(info: HttpRequestInfo) {
+        if (info.parts) {
+            return this.encodeMultipartBody(info.parts);
+        }
+        const contentType = info.headers
+            ? Object.entries(info.headers).find(([key]) => key.toLowerCase() === 'content-type')?.[0]
+            : undefined;
+        return this.encodeBody(info.body, contentType);
+    }
 
-       const bodyParts = parts.flatMap(part => {
-            // write part headers
-            const headers = Object.entries(part.headers ?? {})
-                .map(([key, value]) => `${key.toLowerCase()}: ${value}`).join('\r\n');
-            return [
-                `--${boundary}\r\n${headers}\r\n\r\n`,
-                part.body,
-                `\r\n`
-            ];
-       });
+    private encodeBody(body: unknown, contentType: string | undefined) : string | Buffer | undefined {
+        if (body === undefined || body === null) {
+            return undefined;
+        }
 
+        if (Buffer.isBuffer(body)) {
+            return body;
+        }
+
+        if (typeof body !== 'object') {
+            return typeof body === 'string' ? body : String(body);
+        }
+
+        if (contentType?.endsWith('/x-www-form-urlencoded')) {
+            return this.toQueryString(body);
+        }
+
+        return JSON.stringify(body);
+    }
+
+    private encodeMultipartBody(parts: Array<HttpRequestPart>) : Buffer {
+        const bodyParts = parts.flatMap(part => {
+             // write part headers
+             const headers = Object.entries(part.headers ?? {})
+                 .map(([key, value]) => `${key.toLowerCase()}: ${value}`).join('\r\n');
+             return [
+                 `--${this.multiPartBoundary}\r\n${headers}\r\n\r\n`,
+                 part.body,
+                 `\r\n`
+             ];
+        });
+ 
         return Buffer.concat([
             ...bodyParts.map(item => typeof item === 'string' ? Buffer.from(item) : item),
-            Buffer.from(`--${boundary}--`, 'ascii')
+            Buffer.from(`--${this.multiPartBoundary}--`, 'ascii')
         ]);
     }
 
     private sendRequestBody(request: http.ClientRequest, body: string | Buffer) : Promise<http.ClientRequest> {
         if (HttpTransport.enableResponseLogging) {
-            this.logger.debug('<body>', typeof body === 'string' ? body : body.toString(this.bodyEncoding));
+            this.logger.debug('<request>', typeof body === 'string' ? body : body.toString(this.bodyEncoding));
         }
 
         if (body.length > this.options.gzipThreshold && this.options.useGzipEncoding) {
@@ -302,6 +320,45 @@ export class HttpTransport implements Transport {
                 err ? reject(err) : resolve(request)
             )
         );
+    }
+
+    private handleResponse(request: HttpRequestInfo, response: http.IncomingMessage): Promise<HttpResponse> {
+        const url = this.parseUrl(request.url);
+        const setCookiesHeader = response.headers['set-cookie'];
+
+        if (this.options.handleCookies && setCookiesHeader?.length) {
+            setCookiesHeader.forEach(cookie => this.cookies.setCookieSync(cookie, url.href));
+        }
+
+        if (this.isRedirect(response)) {
+            const redirectRequestInfo = this.getRedirectRequest(response, request);
+            response.destroy();
+            return this.httpRequest(redirectRequestInfo);
+        }
+
+        const responsePromise = new DeferredPromise<HttpResponse>();
+        const responseData = new Array<Buffer>();
+
+        response.on('data', (chunk) => responseData.push(chunk));
+        response.once('timeout', () => responsePromise.reject(
+            new CustomError(`Socket timeout while reading response (${request.method} ${url.pathname})`, { code: 'ETIMEOUT' })
+        ));
+        response.once('end', () => {
+            responsePromise.bind(this.decodeResponseBody(response, Buffer.concat(responseData))
+                .then(body => {
+                    if (HttpTransport.enableResponseLogging) {
+                        this.logger.debug(`<headers>`, response.headers);
+                        this.logger.debug(`<response>`, body.toString(this.bodyEncoding));
+                    }
+                    const parsed = this.parseResponseBody(response, body);
+                    if (typeof parsed !== 'string') {
+                        response.headers['content-type'] = 'no-parse';
+                    }
+                    return Object.assign(response, { body: parsed });
+                }));
+        });
+
+        return responsePromise;
     }
 
     private decodeResponseBody(response: http.IncomingMessage, responseBuffer: Buffer): Promise<Buffer> {
@@ -396,5 +453,16 @@ export class HttpTransport implements Transport {
             return new URL(this.options.baseUrl + url);
         }
         return new URL(url);
+    }
+
+    /**
+     * Encode an object to a query string escaped for use in a URL
+     * @param params Object with key value pairs to encode
+     * @returns Encoded query string
+     */
+    public toQueryString(this: void, params: object): string {
+        return Object.entries(params)
+            .map(([v,k]) => k !== undefined ? `${v}=${encodeURIComponent(String(k))}` : k)
+            .join('&');
     }
 }
