@@ -42,6 +42,7 @@ export interface XMLParseOptions {
 export interface XMLStringfyOptions {
     trimValues?: boolean;
     headless?: boolean;
+    indent?: string | number;
     stripEmptyNodes?: boolean;
 }
 
@@ -58,14 +59,15 @@ export interface TextRange {
 export namespace XML {
 
     const options: Partial<X2jOptions & XmlBuilderOptions> = {
-        attributeNamePrefix : '',
+        attributeNamePrefix: '',
         attributesGroupName: '$',
-        textNodeName : '#text',
+        textNodeName: '#text',
         cdataPropName: '__cdata', // default is 'false'
         ignoreAttributes : false,
-        allowBooleanAttributes : true,
-        parseAttributeValue : true,
-        removeNSPrefix : false,
+        allowBooleanAttributes: true,
+        suppressBooleanAttributes: false,
+        parseAttributeValue: true,
+        removeNSPrefix: false,
         trimValues: true, 
         ignoreDeclaration: false,
         ignorePiTags: true,
@@ -146,15 +148,24 @@ export namespace XML {
      * @param indent Indent level; if set pretty prints the XML otherwise omits pretty prtining
      * @returns
      */
-    export function stringify(jsonObj: any, indent?: number | string, options: XMLStringfyOptions = {}) : string {
-        const indentOptions: Partial<XmlBuilderOptions> = {
-            format: indent !== undefined,
-            suppressEmptyNode: options.stripEmptyNodes,
-            indentBy: indent !== undefined ? typeof indent === 'string' ? indent : ' '.repeat(indent) : undefined,
+    export function stringify(jsonObj: any, options?: XMLStringfyOptions) : string;
+    export function stringify(jsonObj: any, indent?: number | string, options?: XMLStringfyOptions) : string;
+    export function stringify(jsonObj: any, indent?: number | string | XMLStringfyOptions, options?: XMLStringfyOptions) : string {        
+        options = typeof indent === 'object' ? indent : options;
+        indent = typeof indent === 'object' ? undefined : (options?.indent ?? indent);
+        const indentBy = (indent && typeof indent !== 'object')
+            ? (typeof indent === 'string' ? indent : ' '.repeat(indent))
+            : undefined;
+
+        const builderOptions: Partial<XmlBuilderOptions> = {
+            format: !!indentBy,
+            suppressEmptyNode: options?.stripEmptyNodes === true,
+            indentBy
         };
-        const xmlString = new XMLBuilder({ ...globalStringifyOptions, ...indentOptions }).build(jsonObj);
+
+        const xmlString = new XMLBuilder({ ...globalStringifyOptions, ...builderOptions }).build(jsonObj);
         if (options?.headless !== true) {
-            return `<?xml version="1.0" encoding="UTF-8"?>\n${xmlString}`;
+            return `<?xml version="1.0" encoding="UTF-8"?>${builderOptions.format ? '\n' : ''}${xmlString}`;
         }
         return xmlString;
     }
@@ -193,8 +204,8 @@ export namespace XML {
      * @param xml XML string or buffer
      * @returns normalized XML string without comments or line-breaks.
      */
-    export function normalize(xml: string | Buffer) {
-        return stringify(parse(xml, { trimValues: true }));
+    export function normalize(xml: string | Buffer, options?: XMLStringfyOptions) {
+        return stringify(parse(xml, { trimValues: true }), 0, options);
     }
 
     /**

@@ -541,7 +541,7 @@ export class SalesforcePackage {
     private normalizeDataForPackage(packagePath: string, data: Buffer | string) {
         if (XML.isXml(data)) {
             // Normalize all XML data to avoid SF deployment errors due to excess spaces
-            return XML.normalize(data);
+            return XML.normalize(data, { indent: 4, headless: false });
         }
         return data;
     }

@@ -36,7 +36,7 @@ describe('xml', () => {
                     $: { attr: '&>' },
                     '#text': `I&D '100' > '200'`
                 }
-            }, undefined, { headless: true })).toBe(xmlStr);
+            }, { headless: true })).toBe(xmlStr);
         });
     });
     describe('#parse', () => {
@@ -130,6 +130,14 @@ describe('xml', () => {
                  'test.tag.bar|2'))).toEqual('<bar>bar2</bar>');
         });
     });
+    describe('#normalize', () => {
+        it('should retain boolean attributes', () => {
+            const xml = `<value xsi:nil="true"/>`
+            const expected = `<value xsi:nil="true"></value>`;
+            const actual = XML.normalize(xml, { headless: true });
+            expect(actual).toEqual(expected);
+        });
+    });
     describe('#getNodeTextRange', () => {
         it('should get node text range on multiple lines', () => {
             const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
@@ -157,7 +165,7 @@ describe('xml', () => {
         it('should get node text range of root node', () => {
             const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
             <test><tag><bar>bar</bar></tag><bar>bar</bar></test>`
-            expect(XML.getNodeTextRange(xml, 'test')).toEqual( {
+            expect(XML.getNodeTextRange(xml, 'test')).toEqual({
                 start: { line: 2, column: 13 },
                 end: { line: 2, column: 65 }
             });
