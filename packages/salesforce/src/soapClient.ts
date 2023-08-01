@@ -44,7 +44,7 @@ interface SoapRequestOptions {
 }
 
 interface SoapClientRequest extends SoapRequestOptions {
-    soapMethod: string; 
+    soapMethod: string;
     message: object;
     clientName?: string;
     defaultNamespace?: string;
@@ -56,7 +56,7 @@ interface SoapClientRequest extends SoapRequestOptions {
 }
 
 interface SoapClientResponse<T = object> {
-    body: T; 
+    body: T;
     debugLog?: string;
 }
 
@@ -158,9 +158,9 @@ export class SoapClient {
         }
 
         if (soapResponse.Envelope.Body?.Fault) {
-            throw new CustomError(soapResponse.Envelope.Body?.Fault.faultstring, { 
-                name: 'SOAP_ERROR', 
-                code: soapResponse.Envelope.Body?.Fault.faultcode 
+            throw new CustomError(soapResponse.Envelope.Body?.Fault.faultstring, {
+                name: 'SOAP_ERROR',
+                code: soapResponse.Envelope.Body?.Fault.faultcode
             });
         }
 
@@ -230,17 +230,17 @@ export class SoapClient {
         }
 
         const soapFault = this.getFaultCode(soapResponse);
-        
-        if (soapFault === 'UNABLE_TO_LOCK_ROW' || 
-            soapFault === 'TOO_MANY_APEX_REQUESTS' || 
-            soapFault === 'TERRITORY_REALIGN_IN_PROGRESS' || 
-            soapFault === 'RECORD_IN_USE_BY_WORKFLOW' || 
-            soapFault === 'PROCESSING_HALTED' || 
-            soapFault === 'PLATFORM_EVENT_PUBLISHING_UNAVAILABLE' || 
+
+        if (soapFault === 'UNABLE_TO_LOCK_ROW' ||
+            soapFault === 'TOO_MANY_APEX_REQUESTS' ||
+            soapFault === 'TERRITORY_REALIGN_IN_PROGRESS' ||
+            soapFault === 'RECORD_IN_USE_BY_WORKFLOW' ||
+            soapFault === 'PROCESSING_HALTED' ||
+            soapFault === 'PLATFORM_EVENT_PUBLISHING_UNAVAILABLE' ||
             soapFault === 'PLATFORM_EVENT_PUBLISH_FAILED') {
             return true;
         }
-        
+
         return false;
     }
 }

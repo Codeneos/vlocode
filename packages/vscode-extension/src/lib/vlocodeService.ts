@@ -1,16 +1,17 @@
 import * as vscode from 'vscode';
-import * as jsforce from 'jsforce';
+import * as chalk from 'chalk';
+
+import { Logger, injectable ,container } from '@vlocode/core';
+import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';
+import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
+import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity-deploy';
+
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '../lib/vlocodeActivity';
-import { observeArray, ObservableArray, observeObject, Observable , HookManager , sfdx , isPromise , intersect, options, poll, getErrorMessage } from '@vlocode/util';
-import * as chalk from 'chalk';
-import { Logger , injectable , container } from '@vlocode/core';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
-import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 
 @injectable({ provides: [SalesforceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, SalesforceConnectionProvider {
@@ -19,8 +20,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private disposables: { dispose() : any }[] = [];
     private statusItems: { [id: string] : vscode.StatusBarItem } = {};
     private connector?: SalesforceConnectionProvider;
+    private initializePromise?: Promise<void>;
+    private refreshOAuthTokensPromise?: Promise<boolean>;
+    private errorHandlerMarker = Symbol('errorHandlerAttached');
 
-    private readonly connectionHooks = new HookManager<jsforce.Connection>();
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly activitiesChangedEmitter = new vscode.EventEmitter<VlocodeActivity[]>();
     @injectable.property private readonly nsService: VlocityNamespaceService;
@@ -48,6 +51,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this._salesforceService;
     }
 
+    /**
+     * Validate that the Vlocode primary services are initailized.
+     */
+    public get isInitialized() {
+        return this._datapackService !== undefined && 
+            this._salesforceService !== undefined;
+    }
+
     public get commands() : CommandRouter {
         return this.commandRouter;
     }
@@ -58,7 +69,6 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         private readonly commandRouter: CommandRouter,
         private readonly logger: Logger) {
         this.createConfigWatcher();
-        this.connectionHooks.registerHook({ pre: this.updateNamespaceHook.bind(this) });
     }
 
     public dispose() {
@@ -71,16 +81,11 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }
     }
 
-    public async initialize() {
-        this.showStatus('$(sync~spin) Connecting to Salesforce...');
+    @preventParallel('initializePromise')
+    public async initialize() : Promise<void> {
         try {
-            delete this.connector;
-            if (this._salesforceService) {
-                container.unregister(this._salesforceService);
-            }
-            if (this._datapackService) {
-                container.unregister(this._datapackService);
-            }
+            this.resetConnection();
+            this.showStatus('$(sync~spin) Connecting to Salesforce...');
             if (this.config.sfdxUsername) {
                 this._salesforceService = container.get(SalesforceService);
                 this.showStatus('$(sync~spin) Initializing datapack services...');
@@ -97,12 +102,13 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             } else if (err?.message == 'The org cannot be found') {
                 this.logger.error(err?.message);
                 this.showStatus(`$(error) Org not found - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
-            } else if (err?.name === 'invalid_grant' || err?.message == 'RefreshTokenAuthError') {
-                this.showStatus(`$(key) Authorization expired - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
-                if (await this.promptRefreshOAuthToken()) { 
+            } else if (this.isTokenExpiredError(err)) {
+                if (await this.handleAuthTokenExpiredError()) {
+                    this.initializePromise = undefined;
                     return this.initialize();
+                } else {
+                    debugger;
                 }
-                this.logger.error(`Authorization token expired for ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
             } else if (err?.code == 'ENOTFOUND') {
                 this.logger.error(`Unable to reach Salesforce; are you connected to the internet?`);
                 this.showStatus(`$(cloud-offline) Unable to reach Salesforce`, VlocodeCommand.selectOrg);
@@ -111,6 +117,22 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
         }
+    }
+
+    private resetConnection(): void {
+        if (this._salesforceService) {
+            container.removeInstance(this._salesforceService);
+        }
+
+        if (this._datapackService) {
+            container.removeInstance(this._datapackService);
+        }
+
+        this.connector = undefined;
+        this._datapackService = undefined;
+        this._salesforceService = undefined;
+
+        this.updateExtensionStatus(this.config);
     }
 
     public getDiagnostics(name : string): vscode.DiagnosticCollection {
@@ -314,8 +336,56 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }, taskRunner) as Promise<T>;
     }
 
-    public getJsForceConnection() {
-        return this.getConnector().getJsForceConnection();
+    public async getJsForceConnection() {
+        if (this.refreshOAuthTokensPromise) {
+            const refreshed = await this.refreshOAuthTokensPromise;
+            if (!refreshed) {
+                throw new Error('Unable to refresh OAuth refresh tokens; re-authenticate with the target org or select a different org');
+            }
+        }
+
+        const connection = await this.getConnector().getJsForceConnection();
+
+        if (connection[this.errorHandlerMarker] !== true) {
+            Object.defineProperty(connection,
+                this.errorHandlerMarker, {
+                    value: true,
+                    writable: false,
+                    enumerable: false
+            });
+            connection.on('error', err => this.handleConnectionError(err));
+        }
+
+        return connection;
+    }
+
+    private handleConnectionError(err: Error | undefined) {
+        if (err === undefined) {
+            return;
+        }
+
+        if (this.isTokenExpiredError(err)) {
+            return this.handleAuthTokenExpiredError();
+        }
+    }
+
+    private isTokenExpiredError(err: Error | undefined) {
+        return err?.name === 'invalid_grant' || err?.message === 'RefreshTokenAuthError';
+    }
+
+    @preventParallel('refreshOAuthTokensPromise')
+    private async handleAuthTokenExpiredError() {
+        const refreshed = await this.promptRefreshOAuthToken();
+
+        if (!refreshed) {
+            void vscode.window.showErrorMessage(
+                `Unable to connect to Salesforce, the refresh token for ${this.config.sfdxUsername} expired`
+            );
+            this.logger.error(`Authorization token expired for ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
+            this.showStatus(`$(key) Authorization expired - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+        }
+
+        return refreshed;
     }
 
     public isProductionOrg() {
@@ -327,67 +397,54 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     private getConnector() {
-        if (!this.connector) {
-            if (!this.config.sfdxUsername) {
-                throw new Error('Cannot connect to Salesforce; no username specified in configuration');
-            }
-            const connectorHooks = new HookManager<SfdxConnectionProvider>().registerHook({
-                post: args => {
-                    if (args.name === 'getJsForceConnection') {
-                        args.returnValue = Promise.resolve(args.returnValue)
-                            .catch(err =>  this.handleGetConnectionError(args.target, err))
-                            .then(connection => this.connectionHooks.attach(connection));
-                    }
-                }
-            });
-            this.connector = connectorHooks.attach(new SfdxConnectionProvider(this.config.sfdxUsername, {
+        if (this.connector) {
+            return this.connector;
+        }
+
+        if (!this.config.sfdxUsername) {
+            throw new Error('Cannot connect to Salesforce; no username specified in configuration');
+        }
+
+        this.connector = new SfdxConnectionProvider(
+            this.config.sfdxUsername, {
                 version: this.config.salesforce.apiVersion
-            }));
-        }
-        return this.connector!;
-    }
-
-    private async handleGetConnectionError(connector: SalesforceConnectionProvider, err: Error | undefined) {
-        if (err?.message == 'RefreshTokenAuthError') {
-            const action = await vscode.window.showWarningMessage(
-                `Your refresh token for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`,
-                { title: 'Yes', refresh: true },
-                { title: 'No', refresh: false }
-            );
-            if (await this.promptRefreshOAuthToken()) {
-                return connector!.getJsForceConnection();
-            } else {
-                throw new Error(`Unable to connect to Salesforce, the refresh token for ${this.config.sfdxUsername} has expired`);
             }
-        } else {
-            throw err;
-        }
+        );
+
+        return this.connector;
     }
 
-    private async promptRefreshOAuthToken() {
+    private async promptRefreshOAuthToken(): Promise<boolean> {
         const action = await vscode.window.showWarningMessage(
             `Authorization for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`,
             { title: 'Refresh', refresh: true },
             { title: 'Cancel', refresh: false }
         );
-        return action?.refresh ? !!(await this.refreshOAuthTokens()).accessToken : false;
+
+        if (action?.refresh) {
+            try {
+                await this.refreshOAuthTokens();
+                return true;
+            } catch (err) {
+                this.logger.error(err);
+            }
+        }
+
+        return false;
     }
 
-    public refreshOAuthTokens() {
+    @preventParallel()
+    public refreshOAuthTokens() : Promise<void> {
         return this.withActivity({
             progressTitle: `Refreshing ${this.config.sfdxUsername} org credentials...`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
-        }, (_, token) => sfdx.refreshOAuthTokens(this.config.sfdxUsername!, token));
-    }
-
-    private updateNamespaceHook({ args }) {
-        for (let i = 0; i < args.length; i++) {
-            if (typeof args[i] === 'string') {
-                args[i] = this.nsService.updateNamespace(args[i]);
-            }
-        }
+        }, async (_, cancelationToken) => {
+            await sfdx.refreshOAuthTokens(this.config.sfdxUsername!, cancelationToken);
+            this.resetConnection();
+            vscode.window.showInformationMessage(`Successfully refreshed ${this.config.sfdxUsername} org credentials`);
+        });
     }
 
     /**
@@ -456,6 +513,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.showApiVersionStatusItem();
     }
 
+    @preventParallel()
     public async validateSalesforceConnectivity() : Promise<string | undefined> {
         if (!this.config.sfdxUsername) {
             const message = 'Select a Salesforce instance for this workspace to use Vlocode';
@@ -470,15 +528,15 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             }
         }
 
-        if (!this._datapackService || !this._salesforceService) {
+        if (!this.isInitialized) {
             // Await service initialization
             await vscode.window.withProgress({
-                title: 'Vlocode: initializing services...',
+                title: 'Vlocode: waiting for initialization...',
                 location: vscode.ProgressLocation.Window
-            }, () => poll(() => this._datapackService && this._salesforceService, 60000, 500, { resolveOnTimeout: true }));
+            }, () => this.initialize());
         }
 
-        if (!this._salesforceService) {
+        if (!this.isInitialized) {
             return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
         }
 
@@ -499,6 +557,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             if (throwException) {
                 throw Error(validationResult);
             }
+            this.logger.error(validationResult);
             return validationResult;
         }
     }

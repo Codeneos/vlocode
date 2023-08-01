@@ -456,10 +456,11 @@ export class Container {
     }
 
     /**
-     * Unregister an instance in the container; removes all the services
-     * @param instance the instance to unregister
+     * Drops an active singleton service instance from the container causing subsequent resolutions to 
+     * create a new instances instead of reusing the existing one.
+     * @param instance the instance to remove
      */
-    public unregister(instance: Object) {
+    public removeInstance(instance: Object) {
         const instanceGuid = instance[serviceGuidSymbol];
         if (!instanceGuid) {
             // Prevent double unregister
@@ -483,7 +484,7 @@ export class Container {
         for (const dependentServiceGuid of dependentServices ?? []) {
             const dependentInstance = activeInstanceByGuid.get(dependentServiceGuid);
             if (dependentInstance) {
-                this.unregister(dependentInstance);
+                this.removeInstance(dependentInstance);
             }
         }
 

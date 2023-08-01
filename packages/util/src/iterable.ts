@@ -64,7 +64,7 @@ export namespace Iterable {
     }
 
     /**
-     * Returns true if the predicate has a true-ish value for any of the items in the Iterable, otherwise false. Also see @see Array.prototype.some
+     * Returns true if the predicate has a true-ish value for any of the items in the Iterable, otherwise false. Also see {@link Array.prototype.some}
      * @param itr Iterator
      * @param predicate Predicate function
      */

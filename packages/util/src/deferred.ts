@@ -27,6 +27,17 @@ export class DeferredPromise<T> implements Promise<T> {
         }
     }
 
+    /**
+     * Bind the current promise to another promise, resolving or rejecting the current promise when the other promise is resolved or rejected.
+     * @param other The other promise to bind to.
+     * @returns The current promise.
+     */
+    public bind(other: Promise<T>) {
+        other.then(this.resolve.bind(this))
+            .catch(this.reject.bind(this));
+        return this;
+    }
+
     public reset() {
         this.#innerPromise = new Promise((resolve, reject) => {
             this.#reject = reject;

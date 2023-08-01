@@ -1,25 +1,49 @@
 import { randomUUID } from 'crypto';
 import { isPromise } from 'util/types';
 
-interface CallHookOptions<T = any> {
-    target: T;
-    name: symbol | string;
+export interface PreCallHookArguments<T> {
+    /**
+     * The target object of the hook
+     */
+    readonly target: T;
+    /**
+     * The name of the function being called
+     */
+    readonly name: symbol | string;
+    /**
+     * Thr arguments passed to the function being called
+     */
     args: any[];
+}
+
+
+export interface PostCallHookArguments<T> extends PreCallHookArguments<T> {
+    /**
+     * Thr arguments passed to the function being called
+     */
+    readonly args: any[];
+    /**
+     * When a post hook, the return value of the function being called
+     */
     returnValue?: any;
 }
 
-export interface CallHook<T = any> {
-    pre?(options: CallHookOptions<T>): void;
-    post?(options: CallHookOptions<T>): void;
+export interface CallHook<T> {
+    pre?(args: PreCallHookArguments<T>): void;
+    post?(args: PostCallHookArguments<T>): void;
 }
 
-const hookManagerSymbol = Symbol('[[HookManager]]');
+const hookManagerSymbol = Symbol('HookManager');
 
 export class HookManager<T extends object> {
     private readonly hooks: Array<CallHook<T>> = [];
     private enabled: boolean = true;
     private readonly identity = randomUUID();
     private readonly cacheSymbol = Symbol();
+
+    constructor(...hooks: CallHook<T>[]) {
+        this.hooks.push(...hooks);
+    }
 
     /**
      * Enables or disables running of hooks
@@ -30,7 +54,10 @@ export class HookManager<T extends object> {
     }
 
     /**
-     * Attach hooks to the target,
+     * Attaches the hook manager to a target object. All of the target's functions will be 
+     * wrapped in a proxy that will execute the hooks before and after any function is called.
+     * @param hookTarget 
+     * @returns 
      */
     public attach<A extends T>(hookTarget: A): A {
         if (hookTarget[hookManagerSymbol] === this.identity) {
@@ -41,6 +68,15 @@ export class HookManager<T extends object> {
         return new Proxy(hookTarget, {
             get: this.proxyGetHandler.bind(this)
         });
+    }
+
+    /**
+     * Returns true if this hook manager is attached to the target object otherwise false
+     * @param hookTarget The target object to check
+     * @returns true if this hook manager is attached to the target object otherwise false
+     */
+    public isAttached(hookTarget: T): boolean {
+        return hookTarget[hookManagerSymbol] === this.identity;
     }
 
     /**
@@ -80,13 +116,13 @@ export class HookManager<T extends object> {
                     return options.returnValue;
                 });
             }
-            
+
             this.executeHooks('post', options);
             return options.returnValue;
         };
     }
 
-    private executeHooks(type: 'pre' | 'post', options: CallHookOptions): CallHookOptions {
+    private executeHooks(type: 'pre' | 'post', options: PostCallHookArguments<T>): PostCallHookArguments<T> {
         const execute = (hook: CallHook<T>) => {
             const hookFunction = hook[type];
             if (typeof hookFunction !== 'function') {

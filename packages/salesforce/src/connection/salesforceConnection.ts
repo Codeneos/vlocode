@@ -167,7 +167,7 @@ export class SalesforceConnection extends Connection {
         );
 
         if (this.oauth2) {
-            this.oauth2 = new SalesforceOAuth2(this.oauth2, this);
+            this.oauth2 = new SalesforceOAuth2(this.oauth2);
         }
 
         // Replace metadata API
@@ -302,10 +302,11 @@ export class SalesforceConnection extends Connection {
                 // Await response so errors can be handled
                 return await this.executeRequest<T>(request, { ...options });
             } catch(err) {
-                const canRetry = attempts++ < SalesforceConnection.maxRetries || SalesforceConnection.maxRetries < 0
+                const canRetry = attempts++ < SalesforceConnection.maxRetries || SalesforceConnection.maxRetries < 0;
 
                 if (!canRetry || !this.isRetryableError(err)) {
                     //callback?.(err, undefined as any);
+                    this.emit('error', err);
                     this.logger.error(err);
                     throw err;
                 }

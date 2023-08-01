@@ -209,3 +209,41 @@ export function makeRetryable<T extends (...args: Parameters<T>) => Promise<Awai
         );
     }
 }
+
+/**
+ * Prevent a method from being executed in parallel by returning the same
+ * promise when the method is already executing.
+ *
+ * This can be useful when you have a method that is called multiple times
+ * in parallel and you want to prevent the method from being executed multiple times.
+ * 
+ * @param variableName Name of the variable to store the promise in. When not specified a unique variable name is generated.
+ *
+ * @remarks This decorator is not meant for methods that are called in parallel with different arguments.
+ * @returns MethodDecorator
+ */
+export function preventParallel<T extends (...args: TArgs[]) => Promise<TReturn>, TArgs = any, TReturn = any>(variableName?: string | symbol): MethodDecorator {
+    return function<K = T>(target: any, name: string | symbol, descriptor: TypedPropertyDescriptor<K>): TypedPropertyDescriptor<K> | void {
+        const value = descriptor.value;
+        if (typeof value !== 'function') {
+            return;
+        }
+
+        const variableStore = variableName ?? Symbol(`preventParallel-${String(name)}`);
+        const decoratedMethod = function(...args: TArgs[]) {
+            if (this[variableStore] !== undefined) {
+                return this[variableStore];
+            }
+            const result = value.apply(this, args).finally(() => {
+                this[variableStore] = undefined;
+            });
+            this[variableStore] = result;
+            return result;
+        }
+
+        return {
+            ...descriptor,
+            value: decoratedMethod as K
+        };
+    };
+}

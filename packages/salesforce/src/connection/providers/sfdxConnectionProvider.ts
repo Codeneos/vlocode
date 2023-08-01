@@ -25,7 +25,7 @@ export class SfdxConnectionProvider extends SalesforceConnectionProvider {
         if (conn[refreshListenerSymbol] !== true) {
             conn[refreshListenerSymbol] = true;
             conn.on('refresh', (accessToken) => {
-                sfdx.updateAccessToken(this.usernameOrAlias, accessToken)
+                sfdx.updateTokens(this.usernameOrAlias, accessToken)
                     .then(() => this.logger.verbose(`Updated SFDX access token for user ${this.usernameOrAlias}`))
                     .catch((err) => this.logger.warn(`Unable store updated SFDX access token ${this.usernameOrAlias}`, err));
             });
