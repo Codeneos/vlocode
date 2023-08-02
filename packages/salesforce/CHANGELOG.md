@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.21](https://github.com/Codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
+
+### Bug Fixes
+
+* HTTP transport does not handle timeout properly ([ac36631](https://github.com/Codeneos/vlocode/commit/ac3663147e105d1bdb2efa6e55b280fffec217cb))
+
+### Features
+
+* handle expired refresh tokens properly and reset the connection when the Access token updates; should also address issues [#405](https://github.com/Codeneos/vlocode/issues/405) and [#401](https://github.com/Codeneos/vlocode/issues/401) ([f3184c3](https://github.com/Codeneos/vlocode/commit/f3184c3961dfc627921f2f4d9db699c075be751a))
+* re-implement OAuth2 authentication ([a344767](https://github.com/Codeneos/vlocode/commit/a344767d341641c10b2e6964a9193a812db714f4))
+
 ## [0.19.20](https://github.com/Codeneos/vlocode/compare/v0.19.19...v0.19.20) (2023-08-01)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.21](https://github.com/codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
+
+### Features
+
+* handle expired refresh tokens properly and reset the connection when the Access token updates; should also address issues [#405](https://github.com/codeneos/vlocode/issues/405) and [#401](https://github.com/codeneos/vlocode/issues/401) ([f3184c3](https://github.com/codeneos/vlocode/commit/f3184c3961dfc627921f2f4d9db699c075be751a))
+
 ## [0.19.20](https://github.com/codeneos/vlocode/compare/v0.19.19...v0.19.20) (2023-08-01)
 
 **Note:** Version bump only for package vlocode
