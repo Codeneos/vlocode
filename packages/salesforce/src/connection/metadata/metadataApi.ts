@@ -51,11 +51,16 @@ export class MetadataApi implements DeploymentApi {
 
     private invoke<K extends keyof MetadataResponses>(method: K, message: object, responsePath?: string) : Promise<MetadataResponses[K]>;
     private async invoke<T>(method: string, message: object, responsePath?: string) : Promise<T> {
-        const response = await this.soap.request(method, message, {
-            requestSchema: Operations[method]?.request,
-            responseSchema: Operations[method]?.response
-        });
-        return (responsePath ? getObjectProperty(response.body, responsePath) : response.body) as T;
+        try {
+            const response = await this.soap.request(method, message, {
+                requestSchema: Operations[method]?.request,
+                responseSchema: Operations[method]?.response
+            });
+            return (responsePath ? getObjectProperty(response.body, responsePath) : response.body) as T;
+        } catch(err) {
+            this.connection.emit('error', err);
+            throw err;
+        }
     }
 
     private convertArray<T>(value: T | T[], asArray: true): T[];
