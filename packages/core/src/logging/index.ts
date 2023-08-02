@@ -25,7 +25,8 @@ export interface ILogger {
     debug(...args: any[]): void;
 }
 
-export * from './logger';
+export { Logger, LogFilter, LogWriter } from './logger';
+export { LogEntry } from './logEntry';
 export * from './distinctLogger';
 export * from './logManager';
 
