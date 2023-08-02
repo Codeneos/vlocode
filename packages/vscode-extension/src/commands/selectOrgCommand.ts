@@ -119,7 +119,7 @@ export default class SelectOrgCommand extends CommandBase {
 
         if (authInfo) {
             if (alias) {
-                await sfdx.updateAlias(alias, authInfo.username);
+                await sfdx.setAlias(authInfo.username, alias);
             }
             const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
             this.logger.log(successMessage);

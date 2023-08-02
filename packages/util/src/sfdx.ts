@@ -1,7 +1,6 @@
 import * as open from 'open';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
-import { makeRetryable, retryable, wait } from './async';
 
 export interface SalesforceAuthResult {
     orgId: string;
@@ -45,6 +44,12 @@ export namespace sfdx {
         info(...args: any[]): any;
     } = console;
 
+    /**
+     * Login to Salesforce using the web based OAuth2 flow.
+     * @param options Options for the login flow
+     * @param cancelToken Cancellation token to cancel the login flow
+     * @returns The authentication result
+     */
     export async function webLogin(options: { instanceUrl?: string; alias?: string, loginHint?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
         const oauthServer = await salesforce.WebOAuthServer.create({
             oauthConfig: {
@@ -65,16 +70,17 @@ export namespace sfdx {
                 throw 'Operation cancelled';
             }
 
-            cancelToken.onCancellationRequested(() => {
-                // @ts-ignore oauthServer.webServer is private but we need to read it in order to close
-                // the server if the oath request is cancelled
-                oauthServer.webServer.close();
+            return new Promise<SalesforceAuthResult>((resolve, reject) => {
+                cancelToken.onCancellationRequested(() => {
+                    // @ts-ignore oauthServer.webServer is private but we need to read it in order to close
+                    // the server if the oath request is cancelled
+                    oauthServer.webServer.close();
+                    reject('Operation cancelled');
+                });
+                result.then(details =>
+                        saveOrg(details).then(() => resolve(details))
+                    ).catch(reject);
             });
-
-            const canceledPromise = new Promise<SalesforceAuthResult>((_, reject) => cancelToken.onCancellationRequested(() => reject('Operation cancelled')));
-
-            // return race between cancel token
-            return Promise.race([ canceledPromise, result ]);
         }
 
         return result;
@@ -85,7 +91,6 @@ export namespace sfdx {
         if (!orgDetails) {
             throw new Error(`(sfdx.refreshOAuthTokens) No such org with username or alias ${usernameOrAlias}`);
         }
-
         return webLogin({
             instanceUrl: orgDetails.instanceUrl,
             alias: orgDetails.alias ?? orgDetails.username,
@@ -106,10 +111,16 @@ export namespace sfdx {
             // Wrap in try catch as both AuthInfo and Aliases can throw exceptions when SFDX is not initialized
             // this avoid that and returns an yields an empty array instead
             const stateAggregator = await salesforce.StateAggregator.getInstance();
-            const authFiles = await stateAggregator.orgs.readAll(true);
+            const authFiles = await stateAggregator.orgs.list()
 
-            for (const authFields of authFiles) {
+            for (const username of authFiles.map(f => f.replace(/\.json$/i, ''))) {
                 try {
+                    const authFields = await stateAggregator.orgs.read(username, true, true);
+
+                    if (!authFields) {
+                        continue;
+                    }
+
                     if (!authFields.username) {
                         continue;
                     }
@@ -136,7 +147,7 @@ export namespace sfdx {
                         alias: stateAggregator.aliases.get(authFields.username) || undefined
                     };
                 } catch(err) {
-                    logger.warn(`Error while parsing SFDX authinfo: ${err.message || err}`);
+                    logger.warn(`Error while reading SFDX auth for "${username}"`, err);
                 }
             }
         } catch(err) {
@@ -158,14 +169,45 @@ export namespace sfdx {
      * @param usernameOrAlias Salesforce username or SFDX alias
      * @param accessToken New access token to store for the specified username
      */
-    export const updateAccessToken = makeRetryable(async function(usernameOrAlias: string, accessToken: string): Promise<void> {
+    export async function updateTokens(usernameOrAlias: string, tokens: { accessToken?: string, refreshToken?: string }): Promise<void> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
         const username = stateAggregator.aliases.getUsername(usernameOrAlias) || usernameOrAlias;
-        const authFields = stateAggregator.orgs.get(username, true) ?? 
-            await stateAggregator.orgs.read(username, true, true);
-        stateAggregator.orgs.update(username, { refreshToken: authFields.refreshToken, accessToken });
+        const authFields = await stateAggregator.orgs.read(username, true, true);
+
+        if (!authFields) {
+            throw new Error(`No SFDX credentials found for alias or user: ${usernameOrAlias}`)
+        }
+
+        stateAggregator.orgs.update(username, {
+            refreshToken: tokens.refreshToken ?? authFields.refreshToken,
+            accessToken: tokens.accessToken ?? authFields.accessToken,
+        });
         await stateAggregator.orgs.write(username);
-    });
+    }
+
+    /**
+     * Save the specified org details to the local SFDX configuration store.
+     * 
+     * If the specified {@link details} contains a username that is already known to SFDX the details will be merged.
+     * 
+     * @param details details to save
+     * @param options additional options
+     */
+    export async function saveOrg(details: SalesforceAuthResult, options?: { alias?: string | string[] }): Promise<void> {
+        const stateAggregator = await salesforce.StateAggregator.getInstance();
+        const authFields = await stateAggregator.orgs.read(details.username, true, true) ?? undefined;
+
+        if (authFields) {
+            stateAggregator.orgs.update(details.username, { ...authFields, ...details });
+        } else {
+            stateAggregator.orgs.set(details.username, details);
+        }
+
+        if (options?.alias) {
+            await setAlias(details.username, options.alias);
+        }
+        await stateAggregator.orgs.write(details.username);
+    }
 
     /**
      * Resolves the username for an SFDX alias, if the specified {@link alias} cannot be mapped back to a valid Salesforce username returns `undefined`.
@@ -180,14 +222,20 @@ export namespace sfdx {
      * Returns the alias for a username, if no alias is set returns the username.
      * @param userName username to resolve the alias for
      */
-    export async function resolveAlias(userName: string) : Promise<string> {
+    export async function resolveAlias(username: string) : Promise<string> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        return stateAggregator.aliases.resolveAlias(userName) ?? userName;
+        return stateAggregator.aliases.resolveAlias(username) ?? username;
     }
 
-    export async function updateAlias(alias: string, userName: string) : Promise<void> {
+    /**
+     * Set one or more aliases for the specified username
+     * @param username Username to update the alias for
+     * @param alias Alias to set for the username
+     */
+    export async function setAlias(username: string, alias: string | string[]) : Promise<void> {
+        Array.isArray(alias) || (alias = [ alias ]);
         const stateAggregator = await salesforce.StateAggregator.getInstance();
-        stateAggregator.aliases.set(alias, userName);
+        alias.forEach(alias => stateAggregator.aliases.set(alias, username));
         await stateAggregator.aliases.write();
     }
 
