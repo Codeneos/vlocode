@@ -186,7 +186,7 @@ export class RetrieveResultPackage {
      * Returns true if the retrieve was successful and an archive with the retriebe result is available.
      */
     public get success(): boolean {
-        return !!this.result.zipFile;
+        return this.archives !== undefined;
     }
 
     /**

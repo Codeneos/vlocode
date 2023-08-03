@@ -118,12 +118,13 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
                 throw new Error('No metadata retrieved from target org.');
             }
 
+            if (this.vlocode.config.salesforce.exportFormat === 'sfdx') {
+                void vscode.window.showWarningMessage('Decomposing metadata into SFDX format is currently not supported.');
+            }
+
             const unpackedFiles = new Array<string>();
             for (const file of result.getFiles()) {
                 try {
-                    if (this.vlocode.config.salesforce.exportFormat === 'sfdx') {
-                        void vscode.window.showWarningMessage('Decomposing metadata into SFDX format is currently not supported.');
-                    }
                     const unpackTarget = path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.', this.vlocode.config.salesforce.exportFolder);
                     await file.writeFile(unpackTarget);
                     this.logger.log(`Exported ${file.archivePath}`);
