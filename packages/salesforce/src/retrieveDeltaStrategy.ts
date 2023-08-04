@@ -100,7 +100,7 @@ export class RetrieveDeltaStragey  {
             return this.isXmlChanged(a, b);
         }
 
-        if (!type.metaFile && type.suffix && packagePath.endsWith(type.suffix)) {
+        if (type.suffix && packagePath.endsWith(type.suffix)) {
             try {
                 return this.isXmlChanged(a, b);
             } catch {
@@ -110,8 +110,7 @@ export class RetrieveDeltaStragey  {
 
         if (type.name === 'StaticResource' ||
             type.name === 'ContentAsset' ||
-            type.name === 'Document' ||
-            type.contentIsBinary)
+            type.name === 'Document')
         {
             // binary comparison
             const bufferA = typeof a === 'string' ? Buffer.from(a) : a;

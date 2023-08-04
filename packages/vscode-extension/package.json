@@ -1302,10 +1302,10 @@
         "watch-prod": "webpack --watch --config webpack/webpack.prod.ts --env extension",
         "pack": "pnpm vsce package --no-dependencies --allow-star-activation",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
-        "clean": "shx rm -rf ./out ./.ts-temp ./*.vsix ./src/**/*.d.ts ./src/**/*.d.ts.map",
+        "clean": "shx rm -rf ./out ./.ts-temp './src/**/*.d.ts' './src/**/*.d.ts.map'",
         "publish": "vsce publish --no-dependencies --allow-star-activation",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
-        "vscode:prepublish": "pnpm clean && pnpm cp-changelog && pnpm build-webpack"
+        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build-webpack"
     },
     "devDependencies": {
         "@types/chai": "^4.2.21",
@@ -1333,7 +1333,6 @@
         "chalk": "^4.1.1",
         "cli-ux": "^5.6.3",
         "copy-webpack-plugin": "^9.1.0",
-        "create-ts-index": "^1.14.0",
         "esbuild": "^0.14.49",
         "escape-string-regexp": "^4.0.0",
         "fs-extra": "^9.0",

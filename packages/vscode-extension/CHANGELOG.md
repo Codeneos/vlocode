@@ -1,25 +1,39 @@
 # Change Log
+## Vlocity/Salesforce Integration for VSCode
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
 ## [0.19.21](https://github.com/codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
 
+### Bug Fixes
+
+* HTTP transport does not handle timeout properly ([ac36631](https://github.com/codeneos/vlocode/commit/ac3663147e105d1bdb2efa6e55b280fffec217cb))
+
 ### Features
 
 * handle expired refresh tokens properly and reset the connection when the Access token updates; should also address issues [#405](https://github.com/codeneos/vlocode/issues/405) and [#401](https://github.com/codeneos/vlocode/issues/401) ([f3184c3](https://github.com/codeneos/vlocode/commit/f3184c3961dfc627921f2f4d9db699c075be751a))
+* re-implement OAuth2 authentication ([a344767](https://github.com/codeneos/vlocode/commit/a344767d341641c10b2e6964a9193a812db714f4))
+* support sprintf style logging when the a string contains %s, %i or %d tokens ([a431d8d](https://github.com/codeneos/vlocode/commit/a431d8d70b144d80378d4f41010c305eeace0085))
 
 ## [0.19.20](https://github.com/codeneos/vlocode/compare/v0.19.19...v0.19.20) (2023-08-01)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* XML metadata with boolean attributes is not deployed correctly ([7389674](https://github.com/codeneos/vlocode/commit/738967418225ff1abcd02cedebb88fc611bbd66b))
 
 ## [0.19.19](https://github.com/codeneos/vlocode/compare/v0.19.18...v0.19.19) (2023-07-30)
 
-**Note:** Version bump only for package vlocode
+### Features
+
+* report invalid matching key configuration and fail deployment when trying to update the same record twice in the same batch ([c0c0031](https://github.com/codeneos/vlocode/commit/c0c00316ed56312a4d9b5fda57256ec5fa620391))
+* support passing list of folders for deployment instead of a single folder ([cdc6e43](https://github.com/codeneos/vlocode/commit/cdc6e430801118740fbe296160d2b7f8e1427ec9))
 
 ## [0.19.18](https://github.com/codeneos/vlocode/compare/v0.19.17...v0.19.18) (2023-07-27)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* destructive changes do not get added to deployment package ([5bf3603](https://github.com/codeneos/vlocode/commit/5bf3603a6fe8f47da3091c99cd2ac153e1d40593))
 
 ## [0.19.17](https://github.com/codeneos/vlocode/compare/v0.19.16...v0.19.17) (2023-07-26)
 
@@ -29,13 +43,24 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [0.19.16](https://github.com/codeneos/vlocode/compare/v0.19.15...v0.19.16) (2023-07-25)
 
+### Bug Fixes
+
+* CLI exits with 1 instead of printing the error when passing an unknown flag or command ([f756e3c](https://github.com/codeneos/vlocode/commit/f756e3ce1e658b6b1e2cc0303d7127f4365e3b79))
+* errors duplicate the word "Error" when printing to the console ([367d404](https://github.com/codeneos/vlocode/commit/367d40412835c8c57315fe855c195a616ef2f219))
+* fileSystem outputFile creates folders instead of file causing error ([e2a04d7](https://github.com/codeneos/vlocode/commit/e2a04d71cbf959aede981ca660fe2a7566bc9851))
+* getTestClasses doesn't return test classes due to new data structure of Salesforce package ([db526dc](https://github.com/codeneos/vlocode/commit/db526dc6080dbceae9ca5f7a1f98dd2649deedf2))
+* recordBatch is verbose about it's actions when logging level is set to info ([f77b887](https://github.com/codeneos/vlocode/commit/f77b887be925221c46241bd1dfa300c8a72d4e94))
+
 ### Features
 
+* add option to dump before and after script definition for debugging purpose using the `debug-activation` flag ([aaa95c1](https://github.com/codeneos/vlocode/commit/aaa95c11eefef1b276adb38cf8966051305512b2))
+* check script element validity to avoid activation of fault scripts ([692583a](https://github.com/codeneos/vlocode/commit/692583af5cf40d2c121480b87dc0066e09318f85))
 * improve Salesforce log view to more accurately refresh ([3b0d708](https://github.com/codeneos/vlocode/commit/3b0d708d39aa2a4288de9e43bf56c32a18da2d0b))
 * support LWC geneation ([5f0107e](https://github.com/codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
 * update output type for extension to es2022 modules ([75fbca5](https://github.com/codeneos/vlocode/commit/75fbca5370f912ef21d2035d0cef196ce0340aec))
 * update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
 * upgrade vscode dependency to 1.80 and fix breakpoints not binding under vscode 1.74+ ([5c359aa](https://github.com/codeneos/vlocode/commit/5c359aa90335e4c56514df411f814e369d250c22))
+* upgrade XML functions to use FXPv4 ([63c0ba9](https://github.com/codeneos/vlocode/commit/63c0ba91989e7a87fbad5b64ee40c6672260509d))
 
 ## [0.19.15](https://github.com/codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
 

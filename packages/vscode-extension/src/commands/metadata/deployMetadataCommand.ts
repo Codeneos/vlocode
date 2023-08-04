@@ -145,6 +145,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
                     });
                 }
             });
+
             token.onCancellationRequested(() => {
                 progress.report({ message: 'Cancellation in progress' });
                 progressReporter.dispose();

@@ -24,7 +24,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }
 
         // query available records
-        const components = await this.vlocode.withProgress(`Query ${metadataType.nameForMsgsPlural}...`, this.getExportableComponents(metadataType));
+        const components = await this.vlocode.withProgress(`Query ${metadataType.name}...`, this.getExportableComponents(metadataType));
         if (components.length == 0) {
             void vscode.window.showWarningMessage(`No exportable records for ${metadataType.name}`);
             return;
@@ -72,7 +72,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
     protected async showMetadataTypeSelection() : Promise<MetadataType | undefined> {
         const metadataTypes = this.salesforce.getMetadataTypes()
             .map(type => ({
-                label: type.nameForMsgsPlural ?? type.xmlName,
+                label: type.xmlName,
                 description: type.xmlName,
                 type: type
             })).sort((a,b) => a.label.localeCompare(b.label));

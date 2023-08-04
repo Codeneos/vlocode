@@ -1,8 +1,5 @@
-// node_modules\@salesforce\source-deploy-retrieve\lib\src\metadata-registry\data\registry.json
-import { registry as registryData, MetadataType as SfdxMetadataType } from '@salesforce/source-deploy-retrieve';
-import { typeDefs } from 'salesforce-alm/metadata/metadataTypeInfos.json';
-import { metadataObjects } from 'salesforce-alm/metadata/describe.json';
-import { MetadataObject } from 'jsforce';
+import * as registryData from './registry/metadataRegistry.json';
+import { MetadataType as RegistryMetadataType } from './registry/types';
 import { singletonMixin } from '@vlocode/util';
 import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
 import * as urlFormats from './metadataUrls.json';
@@ -46,27 +43,22 @@ export interface MetadataUrlFormat {
 //     },
 //     "hasVirtualSubtypes": false
 //   }'
-export interface MetadataType extends Partial<SfdxMetadataType>, MetadataObject {
+export interface MetadataType extends RegistryMetadataType {
     isBundle: boolean;
+    /**
+     * True when the metadata has a separate content file(s) this implies that
+     * any -meta.xml file is a meta file and not a content file and should not be renamed.
+     */
     hasContent: boolean;
-    contentIsBinary?: boolean;
-    metaFile?: boolean;
-    nameForMsgs?: string;
-    nameForMsgsPlural?: string;
-    decompositionConfig?: {
-        useSparseComposition: boolean;
-        strategy: 'nonDecomposed' | 'describeMetadata';
-        decompositions: Array<{
-            isAddressable: boolean;
-            metadataName: string;
-            xmlFragmentName: string;
-        }>;
-    };
-    strategies: {
-        adapter: string;
-        decomposition: string;
-        transformer: string;
-    };
+    /**
+     * Name of the XML tag used for this metadata type
+     * @deprecated Use {@link MetadataType.name} instead
+     */
+    xmlName: string;
+    /**
+     * Array with the list of child XML fragments that match this metadata type
+     */
+    childXmlNames: string[];
 }
 
 @singletonMixin
@@ -80,24 +72,14 @@ export class MetadataRegistry {
 
     constructor(private readonly logger: Logger) {
         // Init metadata
-        for (const metadataObject of metadataObjects.map(md => Object.assign({}, md) as MetadataType)) {
-            const sfdxRegistryData = registryData.types[metadataObject.xmlName.toLocaleLowerCase()];
-            if (sfdxRegistryData) {
-                Object.assign(metadataObject, sfdxRegistryData);
-                metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle';
-            } else {
-                metadataObject.isBundle = metadataObject.xmlName.endsWith('Bundle');
-            }
+        for (const [xmlName, registryEntry] of Object.entries(registryData.types)) {
+            const metadataObject = registryEntry as MetadataType;
 
-            // Merge type def data
-            const metadataTypeDef = typeDefs[metadataObject.xmlName];
-            if (metadataTypeDef) {
-                Object.assign(metadataObject, metadataTypeDef);
-            }
-
-            if (typeof metadataObject.metaFile === 'string') {
-                metadataObject.metaFile = metadataObject.metaFile == 'true';
-            }
+            metadataObject.xmlName = metadataObject.name;
+            metadataObject.childXmlNames = Object.values(metadataObject.children?.types ?? []).map(({ name }) => name);
+            metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle' ||  metadataObject.name.endsWith('Bundle');
+            metadataObject.hasContent = metadataObject.strategies?.adapter == 'matchingContentFile' ||
+                metadataObject.strategies?.adapter == 'mixedContent';
 
             // Store in registry
             this.registry.push(metadataObject);

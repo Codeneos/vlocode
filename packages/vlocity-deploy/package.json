@@ -18,16 +18,15 @@
         "lib": "./lib"
     },
     "engines": {
-        "node": ">=12.0.0",
+        "node": ">=16.0.0",
         "npm": ">=6.0.0"
     },
     "scripts": {
-        "build": "pnpm run pre-build && tsc",
-        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo ./*.tgz ./src/**/*.d.ts ./src/**/*.d.ts.map",
-        "watch": "pnpm run pre-build && tsc -w",
+        "build": "tsc",
+        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.d.ts' './src/**/*.d.ts.map'",
+        "watch": "tsc -w",
         "pack": "pnpm run build && pnpm pack",
-        "prepublish": "pnpm run build",
-        "pre-build": "cti -w -b  ./src/deploymentSpecs ./src/types -i constants -e sass"
+        "prepublish": "pnpm run build"
     },
     "repository": {
         "type": "git",
@@ -53,7 +52,6 @@
         "@types/jest": "^28.1.6",
         "@types/luxon": "^3.1.0",
         "@types/node": "^20.4.2",
-        "create-ts-index": "^1.14.0",
         "jest": "^29.6.1",
         "shx": "^0.3.4",
         "ts-jest": "^29.1.1",
