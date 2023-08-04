@@ -247,3 +247,34 @@ export function preventParallel<T extends (...args: TArgs[]) => Promise<TReturn>
         };
     };
 }
+
+/**
+ * Make any Async function that returns a promise support the old NodeJS callback style.
+ * And return the promise that supports `thenCall` method.
+ * @returns 
+ */
+export function thenablePromise<T extends (...args: TArgs[]) => Promise<TReturn>, TArgs = any, TReturn = any>(): MethodDecorator {
+    return function<K = T>(target: any, name: string | symbol, descriptor: TypedPropertyDescriptor<K>): TypedPropertyDescriptor<K> | void {
+        const value = descriptor.value;
+        if (typeof value !== 'function') {
+            return;
+        }
+
+        const decoratedMethod = function(...args: TArgs[]) {
+            const callback = args.length && typeof args[args.length - 1] === 'function' 
+                ? args.pop() as (...args: any[]) => any
+                : undefined;
+
+            const result = Object.assign(value.apply(this, args), { thenCall: cb => thenCall(result, cb) }) ;
+            if (callback) {
+                return result.thenCall(result);
+            }
+            return result;
+        }
+
+        return {
+            ...descriptor,
+            value: decoratedMethod as K
+        };
+    };
+}

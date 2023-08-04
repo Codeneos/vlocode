@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer, encodeRFC3986URI } from '@vlocode/util';
+import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer, encodeRFC3986URI, thenablePromise } from '@vlocode/util';
 import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
@@ -284,14 +284,11 @@ export class SalesforceConnection extends Connection {
         request: HttpRequestInfo,
         options: RequestOptions & { responseType: 'raw' }): Promise<HttpResponse>;
 
+    @thenablePromise()
     public async request<T = any>(
         info: string | HttpRequestInfo,
         options?: RequestOptions | any,
         callback?: any): Promise<T> {
-
-        if (callback || typeof options === 'function') {
-            throw new Error('Use promises instead of using a callback parameter');
-        }
 
         const request = this.prepareRequest(info);
         let attempts = 0;
@@ -305,7 +302,6 @@ export class SalesforceConnection extends Connection {
                 const canRetry = attempts++ < SalesforceConnection.maxRetries || SalesforceConnection.maxRetries < 0;
 
                 if (!canRetry || !this.isRetryableError(err)) {
-                    //callback?.(err, undefined as any);
                     this.emit('error', err);
                     this.logger.error(err);
                     throw err;
