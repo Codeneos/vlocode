@@ -24,6 +24,13 @@ export class Timer {
         return `${this.elapsed}ms`;
     }
 
+    public [Symbol.toPrimitive](hint: string) {
+        if (hint === 'number') {
+            return this.elapsed;
+        }
+        return this.toString();
+    }
+
     public stop(): this {
         if (!this.#stop) {
             this.#stop = Date.now();

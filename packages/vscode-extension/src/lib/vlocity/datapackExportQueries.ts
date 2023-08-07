@@ -1,7 +1,6 @@
 import { injectable, Logger } from "@vlocode/core";
-import { QueryBinary, QueryBuilder, QueryFormatter, QueryParser, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
+import {  QueryBuilder, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
 import { VlocityMatchingKeyService } from "@vlocode/vlocity-deploy";
-import { throws } from "assert";
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { ObjectEntry } from './vlocityDatapackService';
 

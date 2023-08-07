@@ -10,7 +10,8 @@ module.exports = {
     "packages/util",
     "packages/core",
     "packages/salesforce",
-    "packages/vlocity-deploy"
+    "packages/vlocity-deploy",
+    "packages/vscode-extension"
   ],
   transform: {
     '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]

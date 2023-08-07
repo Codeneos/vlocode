@@ -8,5 +8,6 @@
         "rootDirs": ["../../", "../../../"],
         "typeRoots": ["../node_modules/@types", "../types"]
     },
-    "include": ["../src/**/*.ts", "../types/*.d.ts"]
+    "include": ["../src/**/*.ts", "../types/*.d.ts"],
+    "exclude": ["../src/__tests__/**/*.ts"]
 }

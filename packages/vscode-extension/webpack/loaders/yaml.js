@@ -16,7 +16,7 @@ function loadYaml(loader, file) {
     return loadedYml;
 }
 
-module.exports = function (source) {
+function webpackTransformer(source) {
     if (this.cacheable) {
         this.cacheable(true);
     }
@@ -28,3 +28,18 @@ module.exports = function (source) {
 
     return `module.exports = Object.freeze(${value});`;
 };
+
+function jestTransformer(sourceText, sourcePath, options) {
+    const loader = {
+        fs: require('fs'),
+        addDependency: (file) => {}
+    };
+    const value = JSON.stringify(loadYaml(loader, sourcePath))
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+    return {
+        code: `module.exports = Object.freeze(${value});`,
+    };
+}
+
+module.exports = Object.assign(webpackTransformer, { process: jestTransformer });

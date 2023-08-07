@@ -32,6 +32,16 @@ export interface QueryOptions {
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class QueryService {
 
+    /**
+     * Number formatter for Salesforce numbers used by the query service.
+     * Change this to change the default number formatting behavior.
+     */
+    public static numberFormat = new Intl.NumberFormat('en-US', {
+        useGrouping: false,
+        style: 'decimal',
+        maximumFractionDigits: 20
+    });
+
     private readonly cache = {
         tooling: new QueryCache(),
         data: new QueryCache()
@@ -156,7 +166,9 @@ export class QueryService {
 
         if (['double', 'int', 'currency', 'percent'].includes(field.type)) {
             if (typeof value === 'string') {
-                if (value.includes('.') && value.includes(',') && value.indexOf(',') > value.indexOf('.')) {
+                if (!value) {
+                    return 'null';
+                } else if (value.includes('.') && value.includes(',') && value.indexOf(',') > value.indexOf('.')) {
                     // EU format
                     value = value.replace(/\./g, '').replace(/,/g, '.');
                 } else {
@@ -164,7 +176,7 @@ export class QueryService {
                 }
                 return value.replace(/[^0-9.]/g, '');
             } else if (typeof value === 'number') {
-                return value.toString(10);
+                return this.numberFormat.format(value);
             }
         }
 
