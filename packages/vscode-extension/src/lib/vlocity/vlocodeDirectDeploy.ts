@@ -15,7 +15,11 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
         private readonly logger: Logger) {
     }
 
-    async deploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
+    async deploy(
+        datapackHeaders: vscode.Uri[], 
+        progress: vscode.Progress<{ progress?: number; total?: number }>, 
+        cancellationToken: vscode.CancellationToken
+    ) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
         const deployment = await this.datapackDeployer.createDeployment(datapacks, {
             // TODO: allow user to override these from options
@@ -25,6 +29,9 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
             continueOnError: true,
             maxRetries: 1,
         }, cancellationToken);
+        deployment.on('progress', result => {
+            progress.report({ progress: result.progress, total: result.total });
+        });
         await deployment?.start(cancellationToken);
 
         if (cancellationToken.isCancellationRequested) {
@@ -45,9 +52,9 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
                     this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatError(messages[i].message)}`);
                 }
             }
-            void vscode.window.showWarningMessage(`Datapack deployment completed with errors: unable to update/insert ${deployment.failedRecordCount} records`);
+            void vscode.window.showWarningMessage(`Deployed ${datapacks.length} datapacks with ${deployment.failedRecordCount} errors`);
         } else {
-            void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
+            void vscode.window.showInformationMessage(`Deployed ${datapacks.length} datapacks`);
         }
     }
 

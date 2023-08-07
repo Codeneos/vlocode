@@ -14,12 +14,18 @@ export interface DatapackDeploymentEvents {
     afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
     onError: DatapackDeploymentRecord;
     onCancel: DatapackDeployment;
+    progress: DatapackDeploymentProgress;
 }
 
 export interface DatapackDeploymentRecordMessage {
     record: DatapackDeploymentRecord;
     type: 'error' | 'warn' | 'info';
     message: string;
+}
+
+export interface DatapackDeploymentProgress {
+    readonly progress: number;
+    readonly total: number;
 }
 
 type RecordPurgePredicate = (item: {
@@ -76,6 +82,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     public get deployedRecordCount() {
         return this.deployed.length;
+    }
+
+    public get pendingRecordCount() {
+        return this.totalRecordCount -
+            (
+                this.deployedRecordCount +
+                this.skippedRecordCount +
+                this.failedRecordCount
+            );
     }
 
     public get skippedRecordCount() {
@@ -509,7 +524,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
 
         try {
-            for await (const result of batch.execute(connection, this.handleProgressReport.bind(this), cancelToken)) {
+            for await (const result of batch.execute(connection, (progress) => this.handleProgressReport(progress), cancelToken)) {
                 const datapackRecord = datapackRecords.get(result.ref);
 
                 if (!datapackRecord) {
@@ -575,6 +590,12 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private handleProgressReport({ processed, total }) {
+        const progress = {
+            // Currently deployed + records deployed in current batch
+            progress:  this.deployedRecordCount + this.failedRecordCount + this.skippedRecordCount,
+            total: this.totalRecordCount
+        }
+        void this.emit('progress', progress, { hideExceptions: true, async: true });
         this.logger.verbose(`Deployment in progress ${processed}/${total}...`);
     }
 

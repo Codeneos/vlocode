@@ -5,7 +5,8 @@ import * as vscode from 'vscode';
  */
 export interface VlocityDeploy {
     deploy(
-        datapackHeaders: vscode.Uri[], 
+        datapackHeaders: vscode.Uri[],
+        progress?: vscode.Progress<{message?: string, progress?: number; total?: number }>,
         cancellationToken?: vscode.CancellationToken
     ): Promise<void> | void
 }

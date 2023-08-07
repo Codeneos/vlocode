@@ -8,10 +8,13 @@ interface EventEmitOptions {
     /**
      * Propagate exceptions to the emitting class, only works the handler is not-async. Whne async is passed as true exceptions are always hidden.
      * _Note: even when exceptions are hidden they will still be logged using console.error log for debugging purposes._
+     * @default false
      */
     hideExceptions?: boolean;
     /**
-     * Queues handler execution util after the next event loop processing using `setImmediatePromise`. Async processing of the event forces `hideExceptions` to `true`. 
+     * Queues handler execution util after the next event loop processing using `setImmediatePromise`.
+     * Async processing of the event forces `hideExceptions` to `true`.
+     * @default false
      */
     async?: boolean;
 }

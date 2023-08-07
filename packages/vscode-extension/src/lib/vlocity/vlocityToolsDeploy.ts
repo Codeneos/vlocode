@@ -12,7 +12,11 @@ export class VlocityToolsDeployment implements VlocityDeploy {
         private readonly logger: Logger) {
     }
 
-    public async deploy(datapackHeaders: vscode.Uri[], cancellationToken: vscode.CancellationToken) {
+    async deploy(
+        datapackHeaders: vscode.Uri[], 
+        progress: vscode.Progress<{ progress?: number; total?: number }>, 
+        cancellationToken: vscode.CancellationToken
+    ) {
         const results = await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), cancellationToken);
         if (!cancellationToken.isCancellationRequested) {
             this.printDatapackDeployResults(results);

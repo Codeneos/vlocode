@@ -100,12 +100,12 @@ export class SalesforcePackageBuilder {
                 const isInStaticResourceFolder = file.split(/\/|\\/).includes('staticresources');
                 if (!isInStaticResourceFolder) {
                     // This is just here to avoid complaining on static resources that are part of an extracted zip file
-                    this.logger.warn(`Adding ${file} (xmlName: ${xmlName ?? '?'}) is not a known Salesforce metadata type`);
+                    this.logger.warn(`${file} (xmlName: ${xmlName ?? '?'}) is not a known Salesforce metadata type`);
                 }
                 continue;
             }
 
-            if (metadataType.xmlName != xmlName) {
+            if (metadataType.name != xmlName) {
                 // Support for SFDX formatted source code
                 childMetadataFiles.push([ file, xmlName, metadataType]);
                 continue;
@@ -139,7 +139,7 @@ export class SalesforcePackageBuilder {
 
     private sortXmlFragments(fragments: Array<[string, string, MetadataType]>) : Array<[string, string, MetadataType]> {
         return fragments.sort(([, fragmentTypeA, parentTypeA], [, fragmentTypeB, parentTypeB]) => {
-            const metaTypeCompare = parentTypeA.xmlName.localeCompare(parentTypeB.xmlName);
+            const metaTypeCompare = parentTypeA.name.localeCompare(parentTypeB.name);
             if (metaTypeCompare != 0) {
                 return metaTypeCompare;
             }
@@ -238,11 +238,11 @@ export class SalesforcePackageBuilder {
         }
 
         if (this.type === SalesforcePackageType.destruct) {
-            this.mdPackage.addDestructiveChange(metadataType.xmlName, componentName);
+            this.mdPackage.addDestructiveChange(metadataType.name, componentName);
         } else {
             const packagePath = await this.getPackagePath(file, metadataType);
             this.mdPackage.add({
-                componentType: metadataType.xmlName,
+                componentType: metadataType.name,
                 componentName,
                 packagePath,
                 data: await this.fs.readFile(file),
@@ -250,7 +250,7 @@ export class SalesforcePackageBuilder {
             });
         }
 
-        this.logger.verbose(`Added ${path.basename(file)} (${componentName}) as [${chalk.green(metadataType.xmlName)}]`);
+        this.logger.verbose(`Added %s (%s) as [%s]`, path.basename(file), componentName, chalk.green(metadataType.name));
     }
 
     /**
@@ -334,12 +334,12 @@ export class SalesforcePackageBuilder {
             if (fragmentType.isAddressable) {
                 this.mdPackage.addManifestEntry(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
             } else {
-                this.mdPackage.addManifestEntry(parentType.xmlName, parentComponentName);
+                this.mdPackage.addManifestEntry(parentType.name, parentComponentName);
             }
             this.mdPackage.addSourceMap(sourceFile, { componentType: fragmentTypeName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
         }
 
-        this.logger.verbose(`Adding ${path.basename(sourceFile)} as ${parentComponentName}.${childComponentName}`);
+        this.logger.verbose(`Added %s (%s.%s) as [%s]`, path.basename(sourceFile), parentComponentName, childComponentName, chalk.green(fragmentTypeName));
     }
 
     /**
@@ -370,7 +370,7 @@ export class SalesforcePackageBuilder {
 
         // Merge child metadata into parent metadata
         const metadata = await this.readComposedMetadata(packagePath, fragmentFile, metadataType);
-        this.mergeMetadata(metadata[metadataType.xmlName], { [decomposition.directoryName]: fragmentMetadata });
+        this.mergeMetadata(metadata[metadataType.name], { [decomposition.directoryName]: fragmentMetadata });
     }
 
     private async readComposedMetadata(packagePath: string, fragmentFile: string, metadataType: MetadataType): Promise<any> {
@@ -391,7 +391,7 @@ export class SalesforcePackageBuilder {
 
         const existingMetadata = existingPackageData
             ? XML.parse(existingPackageData, { trimValues: true }) 
-            : { [metadataType.xmlName]: {} };
+            : { [metadataType.name]: {} };
         this.composedData.set(packagePath, { data: existingMetadata, type: metadataType });
         return existingMetadata;
     }
@@ -399,8 +399,8 @@ export class SalesforcePackageBuilder {
     private async persistComposedMetadata() {
         for (const [ packagePath, { data, type } ] of this.composedData.entries()) {
             this.mdPackage.setPackageData(packagePath, {
-                data: this.buildMetadataXml(type.xmlName, data[type.xmlName]),
-                componentType: type.xmlName,
+                data: this.buildMetadataXml(type.name, data[type.name]),
+                componentType: type.name,
                 componentName: path.basename(packagePath, `.${type.suffix}`)
             });
         }
@@ -487,7 +487,7 @@ export class SalesforcePackageBuilder {
 
     private getMetadataType(xmlName: string) {
         const metadataTypes = this.metadataRegistry.getMetadataTypes();
-        return metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName));
+        return metadataTypes.find(type => type.name == xmlName || type.childXmlNames?.includes(xmlName));
     }
 
     private async getComponentType(file: string) : Promise<string| undefined> {
@@ -506,10 +506,10 @@ export class SalesforcePackageBuilder {
                 if (type.isBundle) {
                     // match parent folder only for bundles
                     if (parentFolder == type.directoryName){
-                        return type.xmlName;
+                        return type.name;
                     }
                 } else if (folder == type.directoryName) {
-                    return type.xmlName;
+                    return type.name;
                 }
             }
         }
@@ -517,7 +517,7 @@ export class SalesforcePackageBuilder {
         // Suffix check
         const fileSuffix = this.getFileSuffix(file)?.toLocaleLowerCase();
         if (fileSuffix) {
-            return this.metadataRegistry.getMetadataTypeBySuffix(fileSuffix)?.xmlName;
+            return this.metadataRegistry.getMetadataTypeBySuffix(fileSuffix)?.name;
         }
     }
 
@@ -555,7 +555,7 @@ export class SalesforcePackageBuilder {
             return xmlName;
         }
 
-        const metadataType = xmlName && metadataTypes.find(type => type.xmlName == xmlName || type.childXmlNames?.includes(xmlName!));
+        const metadataType = xmlName && metadataTypes.find(type => type.name == xmlName || type.childXmlNames?.includes(xmlName!));
         if (metadataType) {
             return xmlName;
         }
