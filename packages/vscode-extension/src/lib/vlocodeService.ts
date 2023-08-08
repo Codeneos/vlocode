@@ -502,8 +502,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.updateExtensionStatus(this.config);
         this.showApiVersionStatusItem();
         this.disposables.push(
-            ConfigurationManager.watchProperties(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
-            ConfigurationManager.watchProperties(this.config.salesforce, [ 'apiVersion' ], this.processConfigurationChange.bind(this))
+            ConfigurationManager.onConfigChange(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
+            ConfigurationManager.onConfigChange(this.config.salesforce, [ 'apiVersion' ], this.processConfigurationChange.bind(this))
         );
     }
 

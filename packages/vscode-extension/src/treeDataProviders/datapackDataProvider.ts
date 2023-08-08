@@ -31,7 +31,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
     protected initialize() {
-        ConfigurationManager.watchProperties(this.vlocode.config, [ 'sfdxUsername' ], () => this.refresh());
+        ConfigurationManager.onConfigChange(this.vlocode.config, [ 'sfdxUsername' ], () => this.refresh());
     }
 
     private async onExport(node: DatapackNode) {

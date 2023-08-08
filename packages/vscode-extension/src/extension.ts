@@ -33,6 +33,7 @@ import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
 import './commands';
 import { VSCodeFileSystemAdapter } from './lib/fs/vscodeFileSystemAdapter';
 import { NamespaceService } from '@vlocode/salesforce';
+import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -101,8 +102,8 @@ class Vlocode {
         }
 
         // set logging level
-        ConfigurationManager.watchProperties(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(LogLevel[config.logLevel]), { initial: true });
-        ConfigurationManager.watchProperties(this.service.config, [ 'logInTerminal' ], config => logInTerminal = config.logInTerminal, { initial: true });
+        ConfigurationManager.onConfigChange(this.service.config, [ 'logLevel' ], config => LogManager.setGlobalLogLevel(LogLevel[config.logLevel]), { initial: true });
+        ConfigurationManager.onConfigChange(this.service.config, [ 'logInTerminal' ], config => logInTerminal = config.logInTerminal, { initial: true });
 
         // setup Vlocity logger and filters
         LogManager.registerFilter(LogManager.get('vlocity'), new VlocityLogFilter());
@@ -156,14 +157,14 @@ class Vlocode {
         this.logger.verbose('Verbose logging enabled');
 
         // Salesforce support
-        ConfigurationManager.watchProperties(this.service.config.salesforce, 'enabled', c => this.service.enableSalesforceSupport(c.enabled));
+        ConfigurationManager.onConfigChange(this.service.config.salesforce, 'enabled', c => this.service.enableSalesforceSupport(c.enabled));
         if (this.service.config.salesforce.enabled) {
             this.service.enableSalesforceSupport(true);
         }
 
         // Register switchable FS interface
         const fsProxy = container.registerProxyService(FileSystem);
-        ConfigurationManager.watchProperties(this.service.config, 'fsInterface', config => {
+        ConfigurationManager.onConfigChange(this.service.config, 'fsInterface', config => {
             this.logger.verbose(`Setting FS interface to ${config.fsInterface}`);
             config.fsInterface === 'vscode'
                 ? fsProxy.setInstance(container.create(VSCodeFileSystemAdapter))
@@ -207,12 +208,13 @@ class Vlocode {
         }
 
         // Watch conditionalContextMenus for changes
-        ConfigurationManager.watchProperties(this.service.config, 'conditionalContextMenus',
+        ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',
             config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
 
         // watch for changes 
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
+        void this.service.registerDisposable(container.create(SfdxConfigWatcher).initialize());
 
         // track activation time
         this.logger.focus();

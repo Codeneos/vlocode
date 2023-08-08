@@ -32,20 +32,20 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     private registerConfigListener() {
-        ConfigurationManager.watchProperties(this.vlocode.config, ['sfdxUsername'], config => {
+        ConfigurationManager.onConfigChange(this.vlocode.config, ['sfdxUsername'], config => {
             this.lastRefresh = undefined;
             this.logs.splice(0);
             if (config.sfdxUsername) {
                 void this.refreshLogs({ refreshView: true });
             }
         });
-        ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisible' ], config => {
+        ConfigurationManager.onConfigChange(this.vlocode.config.salesforce, [ 'developerLogsVisible' ], config => {
             this.vlocode.enableDeveloperLogsPanel(config.developerLogsVisible);
         }, { initial: true });
-        ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsAutoRefresh' ], config => {
+        ConfigurationManager.onConfigChange(this.vlocode.config.salesforce, [ 'developerLogsAutoRefresh' ], config => {
             this.setAutoRefresh(!!config.developerLogsAutoRefresh);
         }, { initial: true });
-        ConfigurationManager.watchProperties(this.vlocode.config.salesforce, [ 'developerLogsVisibility' ], config => {
+        ConfigurationManager.onConfigChange(this.vlocode.config.salesforce, [ 'developerLogsVisibility' ], config => {
             this.currentUserOnly = config.developerLogsVisibility != 'all';
             this.lastRefresh = undefined;
             this.logs.splice(0);

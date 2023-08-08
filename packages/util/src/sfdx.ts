@@ -1,4 +1,5 @@
 import * as open from 'open';
+import * as fs from 'node:fs/promises';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
 
@@ -15,6 +16,15 @@ export interface SalesforceAuthResult {
 
 export interface SalesforceOrgInfo extends SalesforceAuthResult {
     alias?: string;
+}
+
+interface FileSystem {
+    readFile(path: string): Promise<Buffer>;
+    writeFile(path: string, data: Buffer): Promise<void>;
+}
+
+export interface SfdxConfig {
+    defaultusername?: string;
 }
 
 /**
@@ -36,6 +46,11 @@ try {
  * A shim for accessing SFDX functionality
  */
 export namespace sfdx {
+
+    /**
+     * Default path to the SFDX config file relative to the workspace root folder.
+     */
+    export const defaultConfigPath = `.sfdx/sfdx-config.json`;
 
     export const logger: {
         debug(...args: any[]): any;
@@ -270,5 +285,76 @@ export namespace sfdx {
             }
             throw err;
         }
+    }
+
+    /**
+     * Get the SFDX config data for the specified folder path by traversing down the folder tree until an SFDX config 
+     * file is found that contains a default username. Returns the default username and the path to the config file.
+     * 
+     * By default the search is limited to 2 levels down from the initial folder path specified, this can be changed by
+     * specifying a different limit in the options.
+     * 
+     * Returns `undefined` if no config file with a default username is found.
+     * 
+     * @param folderPath Folder path to start the search from
+     * @param options Options for the search
+     * @returns The default username and the path to the config file from which it was loaded
+     */
+    export async function getConfig(folderPath: string, options: { fs: FileSystem, limit?: number } = { fs: fs, limit: 2 })
+        : Promise<{ config: SfdxConfig, path: string } | undefined>
+    {
+        let config: SfdxConfig | undefined;
+        let configPath: string | undefined;
+        let limit = options.limit ?? 2;
+
+        if (folderPath.endsWith(defaultConfigPath)) { 
+            folderPath = folderPath.substring(0, -defaultConfigPath.length);
+        }
+
+        while(limit-- > 0) {
+            try {
+                configPath = `${folderPath}/${defaultConfigPath}`
+                config = JSON.parse((await options.fs.readFile(configPath)).toString('utf8'));
+            } catch (err) {
+                if (err.code !== 'ENOENT') {
+                    throw err;
+                }
+            }
+
+            if (config) {
+                return { config, path: configPath! };
+            } else if (folderPath.lastIndexOf('/')) {
+                folderPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
+            }
+        }
+    }
+
+    /**
+     * Update the SFDX configuration for the specified folder path or in the specified config file.
+     *
+     * If no config file is specified the default config file name `.sfdx/sfdx-config.json` is used.
+     *
+     * @param config Update configuration with the username to set and the config file to update
+     * @param options Options to set the FS implementation to use
+     * @returns Promise that resolves when the default username is updated
+     */
+    export async function setConfig(
+        folderPath: string, 
+        config: Partial<SfdxConfig>, 
+        options: { fs: FileSystem, replace?: boolean } = { fs: fs }
+    ) : Promise<void> {
+        const currentConfig = await getConfig(folderPath, { fs: options.fs });
+
+        if (currentConfig) {
+            const changed = Object.keys(config).some(key => currentConfig.config[key] !== config[key]);
+            if (!changed) {
+                // existing config is the same as the new config, nothing to do
+                return;
+            }
+        }
+
+        const configPath = currentConfig?.path ?? `${folderPath}/${defaultConfigPath}`;
+        const newConfig = options.replace ? config : { ...currentConfig?.config, ...config };
+        await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(newConfig, undefined, 2)));
     }
 }
