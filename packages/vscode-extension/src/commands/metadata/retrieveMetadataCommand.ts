@@ -1,8 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { unique} from '@vlocode/util';
-import { DescribeGlobalSObjectResult, MetadataType, PackageManifest } from '@vlocode/salesforce';
-import { FileProperties } from 'jsforce';
+import { DescribeGlobalSObjectResult, FileProperties, MetadataType, PackageManifest } from '@vlocode/salesforce';
 import MetadataCommand from './metadataCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
@@ -37,8 +36,8 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         }
 
         return this.retrieveMetadata(componentToExport.map(item => ({ 
-            fullname: item.fullName, 
-            componentType: metadataType.xmlName
+            fullname: this.getManifestName(item), 
+            componentType: metadataType.name
         })));
     }
 
@@ -83,6 +82,14 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
             placeHolder: 'Select metadata type to export'
         });
         return metadataToExport?.type;
+    }
+
+    private getManifestName(component: FileProperties): string {
+        if (component.type === 'Layout' && component.namespacePrefix) {
+            const [ objectType, ...layout ] = component.fullName.split('-');
+            return `${objectType}-${component.namespacePrefix}__${layout.join('-')}`;
+        }
+        return component.fullName;
     }
 
     protected async retrieveMetadata(components: { fullname: string; componentType: string }[]) {
