@@ -13,7 +13,7 @@ import MetadataCommand from './metadataCommand';
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
-@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true  })
+@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true })
 export default class DeployMetadataCommand extends MetadataCommand {
 
     /** 
@@ -54,7 +54,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         });
 
         if (state && this.deploymentTaskRef === undefined && this.filesPendingDeployment.size > 0) {
-            void this.deployMetadata([]);
+            this.startDeploymentTask();
         }
     }
 
@@ -106,11 +106,18 @@ export default class DeployMetadataCommand extends MetadataCommand {
                     this.pendingPackages.splice(this.pendingPackages.indexOf(sfPackage), 1);
                 }
             });
+        } else {
+            // Start deployment
+            this.startDeploymentTask();
+        }
+    }
+
+    private startDeploymentTask() {
+        if (this.deploymentTaskRef) {
             return;
         }
 
-        // Start deployment
-        this.deploymentTaskRef = this.deploymentTaskRef = setImmediate(async () => {
+        this.deploymentTaskRef = setImmediate(async () => {
             try {
                 while (this.pendingPackages.length && this.enabled) {
                     const deployPackage = this.getNextPackage();
