@@ -251,7 +251,7 @@ export function preventParallel<T extends (...args: TArgs[]) => Promise<TReturn>
 /**
  * Make any Async function that returns a promise support the old NodeJS callback style.
  * And return the promise that supports `thenCall` method.
- * @returns 
+ * @returns Decorated method
  */
 export function thenablePromise<T extends (...args: TArgs[]) => Promise<TReturn>, TArgs = any, TReturn = any>(): MethodDecorator {
     return function<K = T>(target: any, name: string | symbol, descriptor: TypedPropertyDescriptor<K>): TypedPropertyDescriptor<K> | void {
@@ -264,12 +264,7 @@ export function thenablePromise<T extends (...args: TArgs[]) => Promise<TReturn>
             const callback = args.length && typeof args[args.length - 1] === 'function' 
                 ? args.pop() as (...args: any[]) => any
                 : undefined;
-
-            const result = Object.assign(value.apply(this, args), { thenCall: cb => thenCall(result, cb) }) ;
-            if (callback) {
-                return result.thenCall(result);
-            }
-            return result;
+            return new ThenablePromise(value.apply(this, args)).thenCall(callback);
         }
 
         return {
@@ -277,4 +272,41 @@ export function thenablePromise<T extends (...args: TArgs[]) => Promise<TReturn>
             value: decoratedMethod as K
         };
     };
+}
+
+/**
+ * A promise wrapper that supports the old NodeJS callback style with `thenCall` method.
+ * Used by `thenablePromise` decorator to make any Async function that 
+ * returns a promise support the old NodeJS callback style and return the promise that supports `thenCall` method.
+ */
+export class ThenablePromise<T> implements Promise<T> {
+    readonly [Symbol.toStringTag] = 'ThenablePromise';
+
+    public constructor(private promise: Promise<T>) {
+    }
+
+    public then<TResult1 = T, TResult2 = never>(
+        onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined, 
+        onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined
+    ): ThenablePromise<TResult1 | TResult2> {
+        return new ThenablePromise(this.promise.then(onfulfilled, onrejected));
+    }
+
+    public catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined): Promise<T | TResult> {
+        return new ThenablePromise(this.promise.catch(onrejected));
+    }
+
+    public finally(onfinally?: (() => void) | null | undefined): Promise<T> {
+        return new ThenablePromise(this.promise.finally(onfinally));
+    }
+
+    public thenCall(callback?: (err: any | undefined, value: T | undefined) => any) : ThenablePromise<T> {
+        if (!callback) {
+            return this;
+        }
+        return this.then((value) => {
+            callback(undefined, value);
+            return value;
+        }, (err) => callback(err, undefined));
+    }
 }
