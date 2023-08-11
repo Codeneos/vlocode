@@ -406,7 +406,8 @@ export class SalesforceConnection extends Connection {
     private getResponseError(response: HttpResponse) {
         if (typeof response.body === 'object') {
             const error = asArray<any>(asArray(response.body)[0])[0];
-            return new CustomError(error.message, { ...error, name: error.code });
+            const errorCode = error?.errorCode ?? error?.code;
+            return new CustomError(error.message, { ...error, code: errorCode });
         }
 
         return new CustomError(String(response.body), {
