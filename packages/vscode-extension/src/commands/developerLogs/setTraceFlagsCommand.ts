@@ -90,8 +90,8 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
     ];
 
     private readonly clearDebugOptions : Array<vscode.QuickPickItem & { clear: string }> = [
-        { label: 'Clear current user trace flags', description: 'Clear trace flags and disable debug logging for the current user', clear: 'user' },
-        { label: 'Clear current users trace flags (org)', description: 'Delete **all** active and expired trace flags from the org', clear: 'all' },
+        { label: 'Clear current user trace flags', description: 'Disable logging and trace flags for the current user', clear: 'user' },
+        { label: 'Clear ALL user trace flags', description: 'Disable logging and trace flags for all users', clear: 'all' },
     ];
 
     private readonly clearCustomFlagsOption : vscode.QuickPickItem & { clear: string } = { 
@@ -101,6 +101,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
     private traceFlagsWatcherId: any;
     private currentTraceFlagsId: string;
     private currentDebugLevel: SalesforceDebugLevel;
+    private currentDebugLevelName: string;
     private readonly traceFlagsDuration = 300;
 
     /**
@@ -153,21 +154,13 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
                 clearInterval(this.traceFlagsWatcherId);
             }
 
-            // Clear trace old flags
-            await this.salesforce.logs.clearUserTraceFlags();
-
             // Set debug level
-            const debugLevelName = debugLevelFlags.name ?? `Vlocode: ${traceFlagsSelection.label}`;
-            const developerName = debugLevelName.replace(/[^0-9a-z_]+/ig, '_').replace(/^_+|_+$/, '');
-            const debugLevel = await this.salesforce.logs.createDebugLevel(developerName, debugLevelFlags!);
-
-            this.currentDebugLevel = debugLevelFlags;
-            this.currentTraceFlagsId = await this.salesforce.logs.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
-
+            const name = debugLevelFlags.name ?? `Vlocode: ${traceFlagsSelection.label}`;
+            await this.createAndSetTraceFlags(name, debugLevelFlags);
             void vscode.window.showInformationMessage(`Successfully updated Salesforce log levels to: ${traceFlagsSelection.label}`);
 
             // Keep trace flags active extend with 5 min each time; this esnures trace flags are removed once vscode is closed
-            this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher.bind(this), (this.traceFlagsDuration - 60) * 1000);            
+            this.traceFlagsWatcherId = setInterval(this.traceFlagsWatcher.bind(this), (this.traceFlagsDuration - 60) * 1000);
         });
     }
 
@@ -219,9 +212,32 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
     }
 
     public async traceFlagsWatcher() {
-        if (this.currentTraceFlagsId) {
-            this.logger.debug(`Extending active trace flags (${this.currentTraceFlagsId}) with ${this.traceFlagsDuration} seconds`);
-            await this.salesforce.logs.extendTraceFlags(this.currentTraceFlagsId, this.traceFlagsDuration);
+        if (!this.currentTraceFlagsId) {
+            return;
         }
+
+        this.logger.debug(`Extending active trace flags (${this.currentTraceFlagsId}) with ${this.traceFlagsDuration} seconds`);
+
+        try {
+            await this.salesforce.logs.extendTraceFlags(this.currentTraceFlagsId, this.traceFlagsDuration);
+        } catch(err) {
+            // If deleted
+            if (err.name === 'INVALID_ID_FIELD') {
+                await this.createAndSetTraceFlags(this.currentDebugLevelName, this.currentDebugLevel);
+            }
+        }
+    }
+
+    private async createAndSetTraceFlags(name: string, flags: SalesforceDebugLevel) {
+        // Clear trace old flags
+        await this.salesforce.logs.clearUserTraceFlags();
+
+        // Set debug level
+        const developerName = name.replace(/[^0-9a-z_]+/ig, '_').replace(/^_+|_+$/, '');
+        const debugLevel = await this.salesforce.logs.createDebugLevel(developerName, flags);
+
+        this.currentDebugLevel = debugLevel;
+        this.currentDebugLevelName = name;
+        this.currentTraceFlagsId = await this.salesforce.logs.setTraceFlags(debugLevel, 'USER_DEBUG', undefined, this.traceFlagsDuration);
     }
 }

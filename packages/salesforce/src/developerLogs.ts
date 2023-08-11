@@ -6,7 +6,7 @@ import { SalesforceConnectionProvider } from './connection';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import { QueryBuilder } from './queryBuilder';
 import { QueryService } from './queryService';
-import { SalesforceDebugLevel } from './salesforceDebugLevel';
+import { SalesforceDebugLevel, SalesforceDebugLevelRecord } from './salesforceDebugLevel';
 
 @injectable()
 export class DeveloperLogs {
@@ -87,11 +87,15 @@ export class DeveloperLogs {
         return entries;
     }
 
-    public async createDebugLevel(name: string, debugLevel: SalesforceDebugLevel) {
+    public async createDebugLevel(developerName: string, debugLevel: SalesforceDebugLevel): Promise<SalesforceDebugLevelRecord> {
+        if (developerName !== developerName.replace(/[^0-9a-z_]+/ig, '_').replace(/^_+|_+$/, '')) {
+            throw new Error(`Developer name "${developerName}" is invalid; only alphanumeric characters and underscores are allowed`);
+        }
+
         // Create base trace flag object
         const debugLevelObject = {
-            DeveloperName: name,
-            MasterLabel: name
+            DeveloperName: developerName,
+            MasterLabel: developerName
         } as any;
 
         // Set log levels per category based on the specified log levels
@@ -100,25 +104,23 @@ export class DeveloperLogs {
         for (const field of traceFlagFields) {
             debugLevelObject[field] = normalizedDebugLevels.get(field.toLocaleLowerCase());
         }
-        debugLevel.developerName = name;
 
         // get existing levels object and update that
         const connection = await this.getJsForceConnection();
-        const existing = await connection.tooling.query<{ Id: string}>(`Select Id From DebugLevel where DeveloperName = '${name}' limit 1`);
+        const existing = await connection.tooling.query<{ Id: string}>(`Select Id From DebugLevel where DeveloperName = '${developerName}' limit 1`);
         if (existing.totalSize > 0) {
             debugLevelObject.Id = existing.records[0].Id;
-            debugLevel.id = debugLevelObject.Id;
         }
 
         // Save log levels
         if (!debugLevelObject.Id) {
             const result = await connection.tooling.create('DebugLevel', debugLevelObject) as SuccessResult;
-            debugLevel.id = result.id;
+            debugLevelObject.Id = result.id;
         } else {
             await connection.tooling.update('DebugLevel', debugLevelObject);
         }
 
-        return debugLevel;
+        return { ...debugLevel, developerName, id: debugLevelObject.Id };
     }
 
     /**
@@ -129,12 +131,12 @@ export class DeveloperLogs {
      * @param durationInSeconds Duration of the logging sessions; default is 1 hour or 3600 seconds
      * @returns Trace flag instance id which can be used to extend or clear
      */
-    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'DEVELOPER_LOG' | 'USER_DEBUG', trackedEntityId?: undefined, durationInSeconds?: number): Promise<string>;
-    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'CLASS_TRACING', trackedEntityId: string, durationInSeconds?: number): Promise<string>;
-    public async setTraceFlags(debugLevel: SalesforceDebugLevel, type: 'USER_DEBUG' | 'DEVELOPER_LOG' | 'CLASS_TRACING', trackedEntityId?: string, durationInSeconds: number = 3600): Promise<string> {
+    public async setTraceFlags(debugLevel: string | { id: string }, type: 'DEVELOPER_LOG' | 'USER_DEBUG', trackedEntityId?: undefined, durationInSeconds?: number): Promise<string>;
+    public async setTraceFlags(debugLevel: string | { id: string }, type: 'USER_DEBUG' | 'CLASS_TRACING', trackedEntityId: string, durationInSeconds?: number): Promise<string>;
+    public async setTraceFlags(debugLevel: string | { id: string }, type: 'USER_DEBUG' | 'DEVELOPER_LOG' | 'CLASS_TRACING', trackedEntityId?: string, durationInSeconds: number = 3600): Promise<string> {
         // Create base trace flag object
         const traceFlag = {
-            DebugLevelId: debugLevel.id,
+            DebugLevelId: typeof debugLevel === 'string' ? debugLevel : debugLevel.id,
             LogType: type,
             TracedEntityId: trackedEntityId,
             StartDate: new Date(),
