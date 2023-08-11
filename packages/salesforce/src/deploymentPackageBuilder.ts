@@ -451,11 +451,11 @@ export class SalesforcePackageBuilder {
      * @returns A SalesforcePackage containing only the changed components
      */
     public async getDeltaPackage<S extends DeltaPackageStrategy<T>, T extends object>(
-        strategy: new(...args: any[]) => S,
+        strategy: S | (new(...args: any[]) => S),
         options?: Parameters<S['getChangedComponents']>[1]
     ) {
         const mdPackage = this.getPackage();
-        const deltaStrategy = Container.get(this).create(strategy);
+        const deltaStrategy = typeof strategy === 'function' ? Container.get(this).create(strategy) : strategy;
         const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
 
         if (!changedComponents.length) {
