@@ -59,6 +59,7 @@
         "shx": "^0.3.4",
         "ts-jest": "^29.1.1",
         "ts-node": "^10.4.0",
+        "ts-xor": "^1.1.0",
         "tsc-alias": "^1.6.7",
         "typescript": "5.1.6",
         "webpack-env": "^0.8.0"

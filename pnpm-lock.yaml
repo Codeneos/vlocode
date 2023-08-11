@@ -357,6 +357,9 @@ importers:
       ts-node:
         specifier: ^10.4.0
         version: 10.7.0(@types/node@20.4.2)(typescript@5.1.6)
+      ts-xor:
+        specifier: ^1.1.0
+        version: 1.1.0
       tsc-alias:
         specifier: ^1.6.7
         version: 1.6.7
@@ -641,9 +644,6 @@ importers:
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.13
-      salesforce-alm:
-        specifier: ^52
-        version: 52.7.0
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -12209,6 +12209,10 @@ packages:
   /ts-retry-promise@0.7.0:
     resolution: {integrity: sha512-x6yWZXC4BfXy4UyMweOFvbS1yJ/Y5biSz/mEPiILtJZLrqD3ZxIpzVOGGgifHHdaSe3WxzFRtsRbychI6zofOg==}
     engines: {node: '>=6'}
+
+  /ts-xor@1.1.0:
+    resolution: {integrity: sha512-9vtspo9gVrmJR0XQyuNySpr6DhZztCDWS8LT5CO4gSeifILDRi4e8QZ0ixnvCyob9hMYRaOeo+OyW3ovhngjuA==}
+    dev: true
 
   /tsc-alias@1.6.7:
     resolution: {integrity: sha512-GRbZx/zTee01JtrHB7hkddgxn+aQqYDmRaFv/MTYIqBbk/L8Zf0nA/T60wXOr/Q7002YXppUFXsqsu5ViWB4vQ==}

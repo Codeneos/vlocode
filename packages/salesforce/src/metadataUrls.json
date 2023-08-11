@@ -102,6 +102,7 @@
         "url": "/lightning/setup/${name}Settings/home"
     },
     "Layout": {
+        "url": "/lightning/setup/ObjectManager/${fullName.split('-').shift()}/PageLayouts/${id}/view",
         "nameField": "Name"
     },
     "LeadConvertSettings": {
