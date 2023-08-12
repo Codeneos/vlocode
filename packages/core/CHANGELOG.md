@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0-alpha.0](https://github.com/Codeneos/vlocode/compare/v0.19.21...v0.20.0-alpha.0) (2023-08-12)
+
+### Features
+
+* support new metadata types for deployment ([f5a7139](https://github.com/Codeneos/vlocode/commit/f5a7139b30e4bd43d2d2423150c41eb6ed38429e))
+
 ## [0.19.21](https://github.com/Codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
 
 ### Features

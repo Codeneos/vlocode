@@ -4,6 +4,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0-alpha.0](https://github.com/codeneos/vlocode/compare/v0.19.21...v0.20.0-alpha.0) (2023-08-12)
+
+### Bug Fixes
+
+* access token is not updated on refresh on SFDX store due to syntax mismatch ([a017ad6](https://github.com/codeneos/vlocode/commit/a017ad6cc940e61f7a3e9252f527a3ceca2d56ab))
+* connection.request is not backward compatible with JSForce ([600aeaa](https://github.com/codeneos/vlocode/commit/600aeaab5a7a87181cc804d0958e71500a22d83a))
+* deploy metadata does not resume when resume button is clicked ([49481a5](https://github.com/codeneos/vlocode/commit/49481a568dcdf007d38a5e4502cbaa276b7fed15))
+* error code not mapped correctly in transport layer ([9cf22f0](https://github.com/codeneos/vlocode/commit/9cf22f03816866383db146a8edb12c2004a32d46))
+* managed package layouts do not export ([6cad8d4](https://github.com/codeneos/vlocode/commit/6cad8d406908cdee59866345b3a1ce098190ab3c))
+* open in org does not work for Vlocity Cards without a version ([738b2c9](https://github.com/codeneos/vlocode/commit/738b2c9a3006a5615071272d6ee5680af28324e7))
+* retrieve metadata command does work ([4e57901](https://github.com/codeneos/vlocode/commit/4e57901898fdc254c6bfbcbcd309e4dfa046987b))
+* support thenCall on promise returned by request for backward compatibility ([9cd3afc](https://github.com/codeneos/vlocode/commit/9cd3afcd3ff761dabef38a5578f92bad88a33583))
+* when trace flags are remove outside of VSCode an error is thrown during trace flags refresh ([6cd7abc](https://github.com/codeneos/vlocode/commit/6cd7abcc2b952e5c7a0295049d6c3e223124e341))
+
+### Features
+
+* report progress when deploying datapacks in direct deploy mode for datapacks ([3890ec1](https://github.com/codeneos/vlocode/commit/3890ec19d2514820502efc013fb4fc45f8d8b5bc))
+* support instances of delta strategy ([414e328](https://github.com/codeneos/vlocode/commit/414e328eaf3c3c01162975a692c9e3f1a4882e8d))
+* support new metadata types for deployment ([f5a7139](https://github.com/codeneos/vlocode/commit/f5a7139b30e4bd43d2d2423150c41eb6ed38429e))
+* sync selected SFDX username to Vlocode and vice-versa. ([095386d](https://github.com/codeneos/vlocode/commit/095386dd6dced940e558602677dfd68f512165a8))
+
 ## [0.19.21](https://github.com/codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
 
 ### Bug Fixes
