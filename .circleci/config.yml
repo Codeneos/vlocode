@@ -65,7 +65,8 @@ jobs:
           name: "Publish extension on VSCode Marketplace"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            pnpx vsce publish -p "$VSCE_TOKEN" --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
+            [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE = "--pre-release"
+            pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix" --githubBranch "$CIRCLE_BRANCH"
   publish-npm-packages:
     docker:
       - image: cimg/node:18.4-browsers
