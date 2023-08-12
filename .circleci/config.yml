@@ -50,7 +50,7 @@ jobs:
       - checkout_install
       - run: pnpm pack-extension
       - run: echo $(node -p "require('./lerna.json').version") > .version
-      - run: node -p "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(## \[(.*?))## \[/s)[1])"
+      - run: node -p "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
       - persist_to_workspace:
           root: .
           paths: [ ".version", "release-notes.md", "packages/vscode-extension/*.vsix" ]
@@ -65,7 +65,7 @@ jobs:
           name: "Publish extension on VSCode Marketplace"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE = "--pre-release"
+            [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE="--pre-release"
             pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix" --githubBranch "$CIRCLE_BRANCH"
   publish-npm-packages:
     docker:
@@ -85,8 +85,9 @@ jobs:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(cat ./artifacts/.version)
+            [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE="--prerelease"
             NOTES=$(cat ./artifacts/release-notes.md)
-            ghr -t ${GITHUB_TOKEN} -b "${NOTES}" -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
+            ghr $PRERELEASE -t ${GITHUB_TOKEN} -b "${NOTES}" -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
 
 workflows:
   validate:
