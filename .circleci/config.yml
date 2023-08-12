@@ -66,7 +66,7 @@ jobs:
           command: |
             VERSION=$(cat ./artifacts/.version)
             [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE="--pre-release"
-            pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix" --githubBranch "$CIRCLE_BRANCH"
+            pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
       - image: cimg/node:18.4-browsers
