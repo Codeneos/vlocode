@@ -1371,7 +1371,7 @@
         "typescript": "5.1.6",
         "unique-names-generator": "^4.6.0",
         "vlocity": "1.14.18",
-        "vsce": "^2.10.0",
+        "vsce": "^2.15.0",
         "vscode-languageclient": "^8.1.0",
         "vscode-test": "^1.6.1",
         "webpack": "^5.85.0",
