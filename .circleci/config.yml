@@ -25,7 +25,9 @@ commands:
       - store_test_results:
           path: coverage/junit.xml
       - store_artifacts:
-          path: coverage
+          path: coverage/sonar-report.xml
+      - store_artifacts:
+          path: coverage/lcov.info
   codequality:
     steps:
       - run: pnpm lint -o eslint-report.json --format json || true
@@ -48,12 +50,22 @@ jobs:
       - image: cimg/node:18.4-browsers
     steps:
       - checkout_install
-      - run: pnpm pack-extension
-      - run: echo $(node -p "require('./lerna.json').version") > .version
+      - run:
+          name: "Pack extension"
+          command: |
+            echo $(node -p "require('./lerna.json').version") > .version
+            [[ ! $(cat .version) =~ "^[.0-9]+$" ]] && export PRERELEASE="--pre-release"
+            pnpm pack-extension $PRERELEASE
       - run: node -e "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
       - persist_to_workspace:
           root: .
           paths: [ ".version", "release-notes.md", "packages/vscode-extension/*.vsix" ]
+      - store_artifacts:
+          path: packages/vscode-extension/*.vsix
+      - store_artifacts:
+          path: release-notes.md
+      - store_artifacts:
+          path: .version
   publish-vsc-extension:
     docker:
       - image: cimg/node:18.4-browsers
