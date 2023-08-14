@@ -1,3 +1,7 @@
+/**
+ * @packageDocumentation
+ * @module @vlocode/omniscript
+ */
 export * from './types';
 export * from './scriptDefinitionProvider';
 export * from './omniScriptActivator';

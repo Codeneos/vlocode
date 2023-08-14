@@ -43,7 +43,7 @@ export class RecordFactory {
     /**
      * Normalize the field names to the correct casing for making queried records accessible by both the API name and the normalized name.
      *
-     * When using the proxy transformation (see {@link useRecordProxy} or {@link options.useRecordProxy}) fields access is case insensitive.
+     * When using the proxy transformation (see {@link useRecordProxy} or `options.useRecordProxy`) fields access is case insensitive.
      *
      * @param queryResultRecord The raw salesforce record returned by the API
      * @param options Transformation options that override the default behavior of the factory

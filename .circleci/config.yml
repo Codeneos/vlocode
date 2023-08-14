@@ -50,7 +50,7 @@ jobs:
       - checkout_install
       - run: pnpm pack-extension
       - run: echo $(node -p "require('./lerna.json').version") > .version
-      - run: node -p "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
+      - run: node -e "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
       - persist_to_workspace:
           root: .
           paths: [ ".version", "release-notes.md", "packages/vscode-extension/*.vsix" ]

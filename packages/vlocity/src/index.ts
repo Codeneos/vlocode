@@ -1,3 +1,7 @@
+/**
+ * @packageDocumentation
+ * @module @vlocode/omniscript
+ */
 export * from './constants';
 export * from './datapack';
 export * from './types';

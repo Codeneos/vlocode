@@ -3,7 +3,9 @@
         "packages/core/src/index.ts",
         "packages/util/src/index.ts",
         "packages/salesforce/src/index.ts",
-        "packages/vlocity-deploy/src/index.ts"
+        "packages/vlocity-deploy/src/index.ts",
+        "packages/vlocity/src/index.ts",
+        "packages/omniscript/src/index.ts"
     ],
     "plugin": ["typedoc-plugin-rename-defaults"],
     "externalPattern": ["packages/vscode-extension/**/*", "packages/cli/**/*"],
