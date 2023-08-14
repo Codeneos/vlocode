@@ -5,7 +5,11 @@
     "keywords": [
         "Salesforce"
     ],
-    "main": "lib/index.js",
+    "main": "src/index.ts",
+    "publishConfig": {
+        "main": "lib/index.js",
+        "typings": "lib/index.d.ts"
+    },
     "readme": "../SITE.md",
     "directories": {
         "lib": "./lib"
@@ -17,9 +21,9 @@
         "metadata": "https://raw.githubusercontent.com/forcedotcom/source-deploy-retrieve/main/src/registry"
     },
     "scripts": {
-        "build": "pnpm run pre-build && tsc && tsc-alias",
+        "build": "pnpm run pre-build && tsc",
         "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.d.ts' './src/**/*.d.ts.map'",
-        "watch": "pnpm run pre-build && tsc -w & tsc-alias -w",
+        "watch": "pnpm run pre-build && tsc -w",
         "pack": "pnpm run build && pnpm pack",
         "prepublish": "pnpm run build",
         "update-registry": "nugget $npm_package_config_metadata/metadataRegistry.json $npm_package_config_metadata/stdValueSetRegistry.json $npm_package_config_metadata/types.ts -q -d ./src/registry",
@@ -67,19 +71,14 @@
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
-        "axios": "^0.25.0",
         "chalk": "^4.1.1",
         "csv-parse": "^5.3.3",
         "fs-extra": "^9.0",
-        "glob": "^7.1.7",
-        "js-yaml": "^4.1.0",
         "jsforce": "1.11.0",
         "jszip": "^3.7.0",
-        "log-symbols": "^4.0.0",
         "luxon": "^3.1.0",
         "moment": "^2.29.1",
-        "tough-cookie": "^4.1.2",
-        "xml2js": "^0.5.0"
+        "tough-cookie": "^4.1.2"
     },
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"

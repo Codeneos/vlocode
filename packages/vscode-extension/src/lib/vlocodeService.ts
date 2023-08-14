@@ -4,7 +4,7 @@ import * as chalk from 'chalk';
 import { Logger, injectable ,container } from '@vlocode/core';
 import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity-deploy';
+import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
 import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '../lib/vlocodeActivity';

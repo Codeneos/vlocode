@@ -1,0 +1,2657 @@
+{
+    "userTimeZone": null,
+    "userProfile": "",
+    "userName": "",
+    "userId": "",
+    "userCurrencyCode": "",
+    "timeStamp": "",
+    "testTemplates": "",
+    "templateList": [],
+    "sOmniScriptId": "a2C0E00000604rnUAA",
+    "sobjPL": {},
+    "RPBundle": "",
+    "rMap": {
+        "Text2": "",
+        "Radio1": "",
+        "Multi-select1": "",
+        "Radio3": "",
+        "Radio2": "",
+        "RadioGroup1": "",
+        "EditBlock1": ""
+    },
+    "response": null,
+    "propSetMap": {
+        "currentLanguage": "en_US",
+        "scrollBehavior": "auto",
+        "stepChartPlacement": "right",
+        "mergeSavedData": false,
+        "stylesheet": {
+            "lightningRtl": "",
+            "newportRtl": "",
+            "lightning": "",
+            "newport": ""
+        },
+        "disableUnloadWarn": true,
+        "errorMessage": {
+            "custom": [
+                {
+                    "message": "CustomErrorMessage",
+                    "value": "CustomErrorValue",
+                    "path": "CustomErrorMessage"
+                }
+            ]
+        },
+        "consoleTabIcon": "custom:custom18",
+        "consoleTabTitle": null,
+        "rtpSeed": false,
+        "showInputWidth": false,
+        "currencyCode": "EUR",
+        "autoFocus": false,
+        "pubsub": false,
+        "message": {
+            "MsgFw": "MsgFwValue"
+        },
+        "ssm": false,
+        "wpm": false,
+        "consoleTabLabel": "New",
+        "cancelRedirectTemplateUrl": "vlcCancelled.html",
+        "cancelRedirectPageName": "OmniScriptCancelled",
+        "cancelSource": "%ContextId%",
+        "allowCancel": true,
+        "cancelType": "SObject",
+        "visualforcePagesAvailableInPreview": {},
+        "hideStepChart": false,
+        "timeTracking": true,
+        "knowledgeArticleTypeQueryFieldsMap": {
+            "Article/Record Type API Name": "Field API Name"
+        },
+        "lkObjName": null,
+        "bLK": false,
+        "enableKnowledge": true,
+        "trackingCustomData": {
+            "TrackingKey": "TrackingValue"
+        },
+        "seedDataJSON": {
+            "SeedKey": "SeedValue"
+        },
+        "elementTypeToHTMLTemplateMapping": {},
+        "autoSaveOnStepNext": false,
+        "saveURLPatterns": {},
+        "saveObjectId": "%ContextId%",
+        "saveContentEncoded": false,
+        "saveForLaterRedirectTemplateUrl": "vlcSaveForLaterAcknowledge.html",
+        "saveForLaterRedirectPageName": "sflRedirect",
+        "saveExpireInDays": null,
+        "saveNameTemplate": null,
+        "allowSaveForLater": true,
+        "persistentComponent": [
+            {
+                "modalConfigurationSetting": {
+                    "modalSize": "lg",
+                    "modalController": "ModalProductCtrl",
+                    "modalHTMLTemplateId": "vlcProductConfig.html"
+                },
+                "itemsKey": "cartItems",
+                "id": "vlcCart",
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "sendJSONNode": "",
+                "sendJSONPath": "",
+                "postTransformBundle": "",
+                "preTransformBundle": "",
+                "remoteOptions": {
+                    "postTransformBundle": "",
+                    "preTransformBundle": ""
+                },
+                "remoteTimeout": 30000,
+                "remoteMethod": "",
+                "remoteClass": "",
+                "label": "",
+                "render": false
+            },
+            {
+                "modalConfigurationSetting": {
+                    "modalSize": "lg",
+                    "modalController": "",
+                    "modalHTMLTemplateId": ""
+                },
+                "itemsKey": "knowledgeItems",
+                "id": "vlcKnowledge",
+                "postTransformBundle": "",
+                "preTransformBundle": "",
+                "remoteOptions": {
+                    "postTransformBundle": "",
+                    "preTransformBundle": ""
+                },
+                "remoteTimeout": 30000,
+                "remoteMethod": "",
+                "remoteClass": "",
+                "label": "",
+                "dispOutsideOmni": false,
+                "render": false
+            }
+        ]
+    },
+    "prefillJSON": "{}",
+    "lwcId": "xxx",
+    "labelMap": {
+        "TextBlock3": "TextBlock3",
+        "Block3": "Block3",
+        "TextBlock5": "TextBlock5",
+        "Block4": "Block4",
+        "Block5": "Block5",
+        "Text2": "Text2",
+        "Time1": "Time1",
+        "URL1": "URL1",
+        "TextArea1": "TextArea1",
+        "Text1": "Text1",
+        "Radio1": "Radio1",
+        "Select1": "Select1",
+        "Multi-select1": "Multi-select1",
+        "Lookup1": "Lookup1",
+        "File1": "File1",
+        "Email1": "Email1",
+        "Disclosure1": "Disclosure1",
+        "Date/Time1": "Date/Time1",
+        "Date1": "Date1",
+        "CustomLWC2": "CustomLWC2",
+        "Currency1": "Currency1",
+        "Checkbox1": "Checkbox1",
+        "Geolocation1": "Geolocation1",
+        "Formula1": "Formula1",
+        "Aggregate1": "Aggregate1",
+        "TextBlock2": "TextBlock2",
+        "TextBlockInDataJson": "TextBlockInDataJsonlabel",
+        "Headline1": "<p>Headline1</p>",
+        "Radio3": "Radio2",
+        "Radio2": "Radio2",
+        "RadioGroup1": "RadioGroup1",
+        "TypeAhead1-Block": "TypeAhead1",
+        "InputBlock1": "InputBlock1",
+        "FilterBlock1": "FilterBlock1",
+        "EditBlock1": "EditBlock1",
+        "ActionBlock1": "ActionBlock1",
+        "Block2": "Block2",
+        "Block1": "Block Label",
+        "DoneAction1": "DoneAction1",
+        "NavigateAction1": "NavigateAction1",
+        "MatrixAction1": "MatrixAction1",
+        "PDFAction1": "PDFAction1",
+        "PosttoObjectAction1": "PosttoObjectAction1",
+        "HTTPAction1": "HTTPAction1",
+        "ReviewAction1": "ReviewAction1",
+        "IntegrationProcedureAction1": "IntegrationProcedureAction1",
+        "DeleteAction1": "DeleteAction1",
+        "DocuSignEnvelopeAction1": "DocuSignEnvelopeAction1",
+        "EmailAction1": "EmailAction1",
+        "DataRaptorExtractAction2": "DataRaptorExtractAction2",
+        "SetErrors1": "SetErrors1",
+        "SetValues1": "SetValues1",
+        "Step2": "Step2",
+        "Step1": "Step Label",
+        "SetValues2": "SetValues2"
+    },
+    "labelKeyMap": {},
+    "errorMsg": "",
+    "error": "OK",
+    "dMap": {},
+    "depSOPL": {},
+    "depCusPL": {},
+    "customJS": "",
+    "cusPL": {},
+    "children": [
+        {
+            "type": "Set Values",
+            "propSetMap": {
+                "disOnTplt": false,
+                "label": "SetValues2",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "elementValueMap": {
+                    "Value": "Name"
+                },
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "SetValues2",
+            "level": 0,
+            "indexInParent": 0,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Step",
+            "propSetMap": {
+                "businessEvent": "",
+                "businessCategory": "",
+                "message": {
+                    "MessageKey": "MessageValue"
+                },
+                "pubsub": false,
+                "ssm": true,
+                "wpm": true,
+                "errorMessage": {
+                    "default": "DefaultErrorMessage",
+                    "custom": [
+                        {
+                            "message": "ErrorMessage",
+                            "value": "ErrorValue",
+                            "path": "ErrorPath"
+                        }
+                    ]
+                },
+                "allowSaveForLater": true,
+                "label": "Step Label",
+                "chartLabel": "Step Chart Label",
+                "instructionKey": "",
+                "HTMLTemplateId": "",
+                "conditionType": "Hide if False",
+                "show": null,
+                "knowledgeOptions": {
+                    "typeFilter": "Record Type",
+                    "remoteTimeout": 30000,
+                    "dataCategoryCriteria": "Data Category Criteria",
+                    "keyword": "Knowledge Keyword",
+                    "publishStatus": "Online",
+                    "language": "English"
+                },
+                "remoteOptions": {},
+                "remoteTimeout": 30000,
+                "remoteMethod": "",
+                "remoteClass": "",
+                "showPersistentComponent": [true, true],
+                "instruction": "<p>Step Instruction</p>",
+                "completeMessage": "Are you sure you want to complete the script?",
+                "completeLabel": "Complete",
+                "saveMessage": "Are you sure you want to save it for later?",
+                "saveLabel": "Save for later",
+                "cancelMessage": "Are you sure?",
+                "cancelLabel": "Cancel",
+                "nextWidth": 3,
+                "nextLabel": "Next",
+                "previousWidth": 3,
+                "previousLabel": "Previous",
+                "validationRequired": true
+            },
+            "offSet": 0,
+            "name": "Step1",
+            "level": 0,
+            "indexInParent": 1,
+            "bHasAttachment": false,
+            "bEmbed": false,
+            "response": null,
+            "inheritShowProp": null,
+            "children": [
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 0,
+                    "eleArray": [
+                        {
+                            "type": "Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "bus": true,
+                                "disOnTplt": false,
+                                "label": "Block Label",
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "repeatLimit": 10,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "collapse": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Block1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 0,
+                            "index": 0,
+                            "children": [
+                                {
+                                    "response": null,
+                                    "level": 2,
+                                    "indexInParent": 0,
+                                    "eleArray": [
+                                        {
+                                            "type": "Text",
+                                            "rootIndex": 1,
+                                            "response": null,
+                                            "propSetMap": {
+                                                "label": "Text2",
+                                                "disOnTplt": false,
+                                                "hide": false,
+                                                "HTMLTemplateId": "",
+                                                "debounceValue": 0,
+                                                "accessibleInFutureSteps": false,
+                                                "conditionType": "Hide if False",
+                                                "show": null,
+                                                "maxLength": 255,
+                                                "minLength": 0,
+                                                "ptrnErrText": "",
+                                                "pattern": "",
+                                                "mask": "",
+                                                "helpText": "",
+                                                "help": false,
+                                                "defaultValue": null,
+                                                "readOnly": false,
+                                                "repeatLimit": 10,
+                                                "repeatClone": true,
+                                                "repeat": true,
+                                                "required": false,
+                                                "inputWidth": 12,
+                                                "showInputWidth": false,
+                                                "controlWidth": 12
+                                            },
+                                            "name": "Text2",
+                                            "level": 2,
+                                            "JSONPath": "",
+                                            "indexInParent": 0,
+                                            "index": 0,
+                                            "children": [],
+                                            "bHasAttachment": false
+                                        }
+                                    ],
+                                    "bHasAttachment": false
+                                }
+                            ],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 1,
+                    "eleArray": [
+                        {
+                            "type": "Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "bus": true,
+                                "disOnTplt": false,
+                                "label": "Block2",
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "collapse": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Block2",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 1,
+                            "index": 0,
+                            "children": [
+                                {
+                                    "response": null,
+                                    "level": 2,
+                                    "indexInParent": 0,
+                                    "eleArray": [
+                                        {
+                                            "type": "Block",
+                                            "rootIndex": 1,
+                                            "response": null,
+                                            "propSetMap": {
+                                                "disOnTplt": false,
+                                                "label": "Block5",
+                                                "hide": false,
+                                                "HTMLTemplateId": "",
+                                                "accessibleInFutureSteps": false,
+                                                "conditionType": "Hide if False",
+                                                "show": null,
+                                                "repeatLimit": null,
+                                                "repeatClone": false,
+                                                "repeat": false,
+                                                "collapse": false,
+                                                "controlWidth": 12
+                                            },
+                                            "name": "Block5",
+                                            "level": 2,
+                                            "JSONPath": "",
+                                            "indexInParent": 0,
+                                            "index": 0,
+                                            "children": [
+                                                {
+                                                    "response": null,
+                                                    "level": 3,
+                                                    "indexInParent": 0,
+                                                    "eleArray": [
+                                                        {
+                                                            "type": "Text Block",
+                                                            "rootIndex": 1,
+                                                            "response": null,
+                                                            "propSetMap": {
+                                                                "disOnTplt": false,
+                                                                "sanitize": false,
+                                                                "label": "TextBlock5",
+                                                                "textKey": "",
+                                                                "HTMLTemplateId": "",
+                                                                "dataJSON": false,
+                                                                "show": null,
+                                                                "text": "",
+                                                                "controlWidth": 12
+                                                            },
+                                                            "name": "TextBlock5",
+                                                            "level": 3,
+                                                            "JSONPath": "",
+                                                            "indexInParent": 0,
+                                                            "index": 0,
+                                                            "children": [],
+                                                            "bHasAttachment": false
+                                                        }
+                                                    ],
+                                                    "bHasAttachment": false
+                                                },
+                                                {
+                                                    "response": null,
+                                                    "level": 3,
+                                                    "indexInParent": 1,
+                                                    "eleArray": [
+                                                        {
+                                                            "type": "Block",
+                                                            "rootIndex": 1,
+                                                            "response": null,
+                                                            "propSetMap": {
+                                                                "disOnTplt": false,
+                                                                "label": "Block3",
+                                                                "hide": false,
+                                                                "HTMLTemplateId": "",
+                                                                "accessibleInFutureSteps": false,
+                                                                "conditionType": "Hide if False",
+                                                                "show": null,
+                                                                "repeatLimit": null,
+                                                                "repeatClone": false,
+                                                                "repeat": false,
+                                                                "collapse": false,
+                                                                "controlWidth": 12
+                                                            },
+                                                            "name": "Block3",
+                                                            "level": 3,
+                                                            "JSONPath": "",
+                                                            "indexInParent": 1,
+                                                            "index": 0,
+                                                            "children": [
+                                                                {
+                                                                    "response": null,
+                                                                    "level": 4,
+                                                                    "indexInParent": 0,
+                                                                    "eleArray": [
+                                                                        {
+                                                                            "type": "Text Block",
+                                                                            "rootIndex": 1,
+                                                                            "response": null,
+                                                                            "propSetMap": {
+                                                                                "disOnTplt": false,
+                                                                                "sanitize": false,
+                                                                                "label": "TextBlock3",
+                                                                                "textKey": "",
+                                                                                "HTMLTemplateId": "",
+                                                                                "dataJSON": false,
+                                                                                "show": null,
+                                                                                "text": "",
+                                                                                "controlWidth": 12
+                                                                            },
+                                                                            "name": "TextBlock3",
+                                                                            "level": 4,
+                                                                            "JSONPath": "",
+                                                                            "indexInParent": 0,
+                                                                            "index": 0,
+                                                                            "children": [],
+                                                                            "bHasAttachment": false
+                                                                        }
+                                                                    ],
+                                                                    "bHasAttachment": false
+                                                                }
+                                                            ],
+                                                            "bHasAttachment": false
+                                                        }
+                                                    ],
+                                                    "bHasAttachment": false
+                                                }
+                                            ],
+                                            "bHasAttachment": false
+                                        }
+                                    ],
+                                    "bHasAttachment": false
+                                },
+                                {
+                                    "response": null,
+                                    "level": 2,
+                                    "indexInParent": 1,
+                                    "eleArray": [
+                                        {
+                                            "type": "Block",
+                                            "rootIndex": 1,
+                                            "response": null,
+                                            "propSetMap": {
+                                                "disOnTplt": false,
+                                                "label": "Block4",
+                                                "hide": false,
+                                                "HTMLTemplateId": "",
+                                                "accessibleInFutureSteps": false,
+                                                "conditionType": "Hide if False",
+                                                "show": null,
+                                                "repeatLimit": null,
+                                                "repeatClone": false,
+                                                "repeat": false,
+                                                "collapse": false,
+                                                "controlWidth": 12
+                                            },
+                                            "name": "Block4",
+                                            "level": 2,
+                                            "JSONPath": "",
+                                            "indexInParent": 1,
+                                            "index": 0,
+                                            "children": [],
+                                            "bHasAttachment": false
+                                        }
+                                    ],
+                                    "bHasAttachment": false
+                                }
+                            ],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 2,
+                    "eleArray": [
+                        {
+                            "type": "Action Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "validationRequired": "Step",
+                                "applyIfError": false,
+                                "enableActionMessage": false,
+                                "failureNextLabel": "Continue",
+                                "failureGoBackLabel": "Go Back",
+                                "label": "ActionBlock1",
+                                "hide": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controlWidth": 12
+                            },
+                            "name": "ActionBlock1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 2,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 3,
+                    "eleArray": [
+                        {
+                            "type": "Edit Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "rpe": true,
+                                "disOnTplt": false,
+                                "maxDisplay": 3,
+                                "mode": "Inline",
+                                "label": "EditBlock1",
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "sumElement": "",
+                                "sobjectMapping": [],
+                                "selectSobject": "",
+                                "valueSvgMap": [],
+                                "elementName": "",
+                                "svgIcon": "user",
+                                "svgSprite": "utility",
+                                "selectCheckBox": "",
+                                "selectMode": "Multi",
+                                "deleteLabel": "Delete",
+                                "editLabel": "Edit",
+                                "newLabel": "New",
+                                "allowDelete": true,
+                                "allowNew": true,
+                                "allowEdit": true,
+                                "controlWidth": 12
+                            },
+                            "name": "EditBlock1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 3,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 4,
+                    "eleArray": [
+                        {
+                            "type": "Filter Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "label": "FilterBlock1",
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "show": null,
+                                "buttonLabel": "Fetch",
+                                "responseJSONNode": "",
+                                "responseJSONPath": "",
+                                "sendJSONNode": "",
+                                "sendJSONPath": "",
+                                "postTransformBundle": "",
+                                "preTransformBundle": "",
+                                "remoteTimeout": 30000,
+                                "remoteOptions": {
+                                    "postTransformBundle": "",
+                                    "preTransformBundle": ""
+                                },
+                                "remoteMethod": "",
+                                "remoteClass": ""
+                            },
+                            "name": "FilterBlock1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 4,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 5,
+                    "eleArray": [
+                        {
+                            "type": "Input Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "label": "InputBlock1",
+                                "accessibleInFutureSteps": false,
+                                "show": null,
+                                "HTMLTemplateId": "vlcTableSample.html",
+                                "responseJSONNode": "",
+                                "responseJSONPath": "",
+                                "sendJSONNode": "",
+                                "sendJSONPath": "",
+                                "postTransformBundle": "",
+                                "preTransformBundle": "",
+                                "remoteTimeout": 30000,
+                                "remoteOptions": {
+                                    "postTransformBundle": "",
+                                    "preTransformBundle": ""
+                                },
+                                "remoteMethod": "",
+                                "remoteClass": ""
+                            },
+                            "name": "InputBlock1",
+                            "level": 1,
+                            "JSONPath": "Step1:InputBlock1",
+                            "indexInParent": 5,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 6,
+                    "eleArray": [
+                        {
+                            "type": "Type Ahead Block",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "label": "TypeAhead1",
+                                "HTMLTemplateId": "",
+                                "dataJsonPath": "DJP",
+                                "useDataJson": true,
+                                "googleAddressCountry": "all",
+                                "hideMap": true,
+                                "googleMapsAPIKey": "",
+                                "disableDataFilter": false,
+                                "enableLookup": false,
+                                "enableGoogleMapsAutocomplete": false,
+                                "hideEditButton": false,
+                                "newItemLabel": "New",
+                                "editMode": true,
+                                "callFrequency": 300,
+                                "dataProcessorFunction": "",
+                                "typeAheadKey": "",
+                                "debounceValue": 0,
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "maxLength": 255,
+                                "minLength": 0,
+                                "helpText": "",
+                                "help": false,
+                                "readOnly": false,
+                                "required": false,
+                                "googleTransformation": {
+                                    "postal_code": "",
+                                    "country": "",
+                                    "administrative_area_level_2": "",
+                                    "administrative_area_level_1": "",
+                                    "locality": "",
+                                    "street": ""
+                                },
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "TypeAhead1-Block",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 6,
+                            "index": 0,
+                            "children": [
+                                {
+                                    "response": null,
+                                    "level": 2,
+                                    "indexInParent": 0,
+                                    "eleArray": [
+                                        {
+                                            "type": "Type Ahead",
+                                            "rootIndex": 6,
+                                            "response": null,
+                                            "propSetMap": {
+                                                "disOnTplt": false,
+                                                "label": "TypeAhead1",
+                                                "HTMLTemplateId": "",
+                                                "dataJsonPath": "DJP",
+                                                "useDataJson": true,
+                                                "googleAddressCountry": "all",
+                                                "hideMap": true,
+                                                "googleMapsAPIKey": "",
+                                                "disableDataFilter": false,
+                                                "enableLookup": false,
+                                                "enableGoogleMapsAutocomplete": false,
+                                                "hideEditButton": false,
+                                                "newItemLabel": "New",
+                                                "editMode": true,
+                                                "callFrequency": 300,
+                                                "dataProcessorFunction": "",
+                                                "typeAheadKey": "",
+                                                "debounceValue": 0,
+                                                "accessibleInFutureSteps": false,
+                                                "conditionType": "Hide if False",
+                                                "show": null,
+                                                "maxLength": 255,
+                                                "minLength": 0,
+                                                "helpText": "",
+                                                "help": false,
+                                                "readOnly": false,
+                                                "required": false,
+                                                "googleTransformation": {
+                                                    "postal_code": "",
+                                                    "country": "",
+                                                    "administrative_area_level_2": "",
+                                                    "administrative_area_level_1": "",
+                                                    "locality": "",
+                                                    "street": ""
+                                                },
+                                                "inputWidth": 12,
+                                                "showInputWidth": false,
+                                                "controlWidth": 12
+                                            },
+                                            "name": "TypeAhead1",
+                                            "level": 2,
+                                            "JSONPath": "",
+                                            "indexInParent": 0,
+                                            "index": 0,
+                                            "children": [],
+                                            "bHasAttachment": false
+                                        }
+                                    ],
+                                    "bHasAttachment": false
+                                }
+                            ],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 7,
+                    "eleArray": [
+                        {
+                            "type": "Radio Group",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "RadioGroup1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": true,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controllingField": {
+                                    "source": "",
+                                    "type": "",
+                                    "element": ""
+                                },
+                                "optionSource": {
+                                    "source": "",
+                                    "type": ""
+                                },
+                                "options": [
+                                    {
+                                        "setAll": true,
+                                        "value": "Label1",
+                                        "name": "Value1"
+                                    },
+                                    {
+                                        "value": "Label2",
+                                        "name": "Value2"
+                                    }
+                                ],
+                                "radioLabels": [
+                                    {
+                                        "value": "GroupLabel",
+                                        "name": "GroupValue"
+                                    }
+                                ],
+                                "radioLabelsWidth": 6,
+                                "helpText": "Help",
+                                "help": false,
+                                "readOnly": false,
+                                "required": false,
+                                "controlWidth": 12
+                            },
+                            "name": "RadioGroup1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 7,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 8,
+                    "eleArray": [
+                        {
+                            "type": "Radio",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Radio2",
+                                "disOnTplt": false,
+                                "enableCaption": true,
+                                "imageCountInRow": 3,
+                                "optionHeight": 100,
+                                "optionWidth": 100,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controllingField": {
+                                    "source": "",
+                                    "type": "",
+                                    "element": ""
+                                },
+                                "optionSource": {
+                                    "source": "",
+                                    "type": ""
+                                },
+                                "options": [
+                                    {
+                                        "value": "Radio 2 Label Key Long String",
+                                        "name": "Radio2Value"
+                                    },
+                                    {
+                                        "value": "Show Radio 3",
+                                        "name": "ShowRadio3"
+                                    }
+                                ],
+                                "helpText": "Select",
+                                "help": false,
+                                "defaultValue": null,
+                                "horizontalMode": false,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": true,
+                                "controlWidth": 12
+                            },
+                            "name": "Radio2",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 8,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 9,
+                    "eleArray": [
+                        {
+                            "type": "Radio",
+                            "rootIndex": 1,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Radio2",
+                                "disOnTplt": false,
+                                "enableCaption": true,
+                                "imageCountInRow": 3,
+                                "optionHeight": 100,
+                                "optionWidth": 100,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": {
+                                    "group": {
+                                        "rules": [
+                                            {
+                                                "data": "ShowRadio3",
+                                                "field": "Radio2",
+                                                "condition": "="
+                                            }
+                                        ],
+                                        "operator": "AND"
+                                    }
+                                },
+                                "controllingField": {
+                                    "source": "",
+                                    "type": "",
+                                    "element": ""
+                                },
+                                "optionSource": {
+                                    "source": "",
+                                    "type": ""
+                                },
+                                "options": [
+                                    {
+                                        "value": "Radio 3 Label Key Long String",
+                                        "name": "Radio3Value"
+                                    },
+                                    {
+                                        "autoAdv": "next",
+                                        "value": "Radio 3 Label Key Long String 2",
+                                        "name": "Radio3Value2"
+                                    }
+                                ],
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": "Radio3Value",
+                                "horizontalMode": true,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Radio3",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 9,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                }
+            ],
+            "bAccordionOpen": false,
+            "bAccordionActive": false
+        },
+        {
+            "type": "Step",
+            "propSetMap": {
+                "disOnTplt": false,
+                "message": {},
+                "pubsub": false,
+                "ssm": false,
+                "wpm": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "allowSaveForLater": true,
+                "label": "Step2",
+                "chartLabel": null,
+                "instructionKey": "",
+                "HTMLTemplateId": "",
+                "conditionType": "Hide if False",
+                "show": null,
+                "knowledgeOptions": {
+                    "typeFilter": "",
+                    "remoteTimeout": 30000,
+                    "dataCategoryCriteria": "",
+                    "keyword": "",
+                    "publishStatus": "Online",
+                    "language": "English"
+                },
+                "remoteOptions": {},
+                "remoteTimeout": 30000,
+                "remoteMethod": "",
+                "remoteClass": "",
+                "showPersistentComponent": [false, false],
+                "instruction": "",
+                "completeMessage": "Are you sure you want to complete the script?",
+                "completeLabel": "Complete",
+                "saveMessage": "Are you sure you want to save it for later?",
+                "saveLabel": "Save for later",
+                "cancelMessage": "Are you sure?",
+                "cancelLabel": "Cancel",
+                "nextWidth": 3,
+                "nextLabel": "Next",
+                "previousWidth": 3,
+                "previousLabel": "Previous",
+                "validationRequired": true
+            },
+            "offSet": 0,
+            "name": "Step2",
+            "level": 0,
+            "indexInParent": 2,
+            "bHasAttachment": false,
+            "bEmbed": false,
+            "response": null,
+            "inheritShowProp": null,
+            "children": [
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 0,
+                    "eleArray": [
+                        {
+                            "type": "Headline",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "sanitize": false,
+                                "label": "<p>Headline1</p>",
+                                "labelKey": "",
+                                "HTMLTemplateId": "",
+                                "show": null,
+                                "controlWidth": 12
+                            },
+                            "name": "Headline1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 0,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 1,
+                    "eleArray": [
+                        {
+                            "type": "Text Block",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "sanitize": false,
+                                "label": "TextBlockInDataJsonlabel",
+                                "textKey": "",
+                                "HTMLTemplateId": "",
+                                "dataJSON": true,
+                                "show": null,
+                                "text": "",
+                                "controlWidth": 12
+                            },
+                            "name": "TextBlockInDataJson",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 1,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 2,
+                    "eleArray": [
+                        {
+                            "type": "Text Block",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "sanitize": false,
+                                "label": "TextBlock2",
+                                "textKey": "",
+                                "HTMLTemplateId": "",
+                                "dataJSON": false,
+                                "show": null,
+                                "text": "",
+                                "controlWidth": 12
+                            },
+                            "name": "TextBlock2",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 2,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 3,
+                    "eleArray": [
+                        {
+                            "type": "Aggregate",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Aggregate1",
+                                "disOnTplt": false,
+                                "HTMLTemplateId": "",
+                                "dateFormat": "MM-dd-yyyy",
+                                "hideGroupSep": false,
+                                "dataType": null,
+                                "mask": null,
+                                "show": null,
+                                "hide": false,
+                                "expression": "",
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Aggregate1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 3,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 4,
+                    "eleArray": [
+                        {
+                            "type": "Formula",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Formula1",
+                                "disOnTplt": false,
+                                "HTMLTemplateId": "",
+                                "dateFormat": "MM-dd-yyyy",
+                                "hideGroupSep": false,
+                                "dataType": null,
+                                "mask": null,
+                                "show": null,
+                                "hide": false,
+                                "expression": "",
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Formula1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 4,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 5,
+                    "eleArray": [
+                        {
+                            "type": "Geolocation",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "label": "Geolocation1",
+                                "HTMLTemplateId": "",
+                                "show": null
+                            },
+                            "name": "Geolocation1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 5,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 6,
+                    "eleArray": [
+                        {
+                            "type": "Checkbox",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Checkbox1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "checkLabel": "Checkbox1",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": false,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Checkbox1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 6,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 7,
+                    "eleArray": [
+                        {
+                            "type": "Currency",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Currency1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "debounceValue": 0,
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "hideGroupSep": false,
+                                "allowNegative": false,
+                                "max": null,
+                                "min": null,
+                                "mask": null,
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Currency1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 7,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 8,
+                    "eleArray": [
+                        {
+                            "type": "Custom Lightning Web Component",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "label": "CustomLWC2",
+                                "customAttributes": [],
+                                "bStandalone": false,
+                                "lwcName": null,
+                                "hide": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controlWidth": 12
+                            },
+                            "name": "CustomLWC2",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 8,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 9,
+                    "eleArray": [
+                        {
+                            "type": "Date",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Date1",
+                                "maxDate": "",
+                                "minDate": "",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "dateFormat": "MM-dd-yyyy",
+                                "modelDateFormat": "yyyy-MM-dd",
+                                "dateType": "string",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Date1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 9,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 10,
+                    "eleArray": [
+                        {
+                            "type": "Date/Time (Local)",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Date/Time1",
+                                "maxDate": "",
+                                "minDate": "",
+                                "timezone": "Local",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "timeFormat": "hh:mm a",
+                                "dateFormat": "MM-dd-yyyy",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Date/Time1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 10,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 11,
+                    "eleArray": [
+                        {
+                            "type": "Disclosure",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "label": "Disclosure1",
+                                "textKey": "",
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "checkLabel": "",
+                                "readOnly": false,
+                                "required": false,
+                                "text": "",
+                                "controlWidth": 12
+                            },
+                            "name": "Disclosure1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 11,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 12,
+                    "eleArray": [
+                        {
+                            "type": "Email",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Email1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "debounceValue": 0,
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "ptrnErrText": "",
+                                "pattern": "",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Email1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 12,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 13,
+                    "eleArray": [
+                        {
+                            "type": "File",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "disOnTplt": false,
+                                "errorMessage": {
+                                    "default": null,
+                                    "custom": []
+                                },
+                                "label": "File1",
+                                "remoteOptions": {},
+                                "remoteMethod": "",
+                                "remoteClass": "",
+                                "extraPayload": {},
+                                "contentParentId": [],
+                                "uploadContDoc": false,
+                                "HTMLTemplateId": "",
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "helpText": "",
+                                "help": false,
+                                "controlWidth": 12
+                            },
+                            "name": "File1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 13,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": true
+                        }
+                    ],
+                    "bHasAttachment": true
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 14,
+                    "eleArray": [
+                        {
+                            "type": "Lookup",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "errorMessage": {
+                                    "default": null,
+                                    "custom": []
+                                },
+                                "label": "Lookup1",
+                                "clearValue": true,
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "placeholder": "",
+                                "dataSource": {},
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Lookup1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 14,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 15,
+                    "eleArray": [
+                        {
+                            "type": "Multi-select",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Multi-select1",
+                                "disOnTplt": false,
+                                "enableCaption": true,
+                                "imageCountInRow": 3,
+                                "optionHeight": 100,
+                                "optionWidth": 100,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controllingField": {
+                                    "source": "",
+                                    "type": "",
+                                    "element": ""
+                                },
+                                "optionSource": {
+                                    "source": "",
+                                    "type": ""
+                                },
+                                "options": [{}],
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "horizontalMode": false,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Multi-select1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 15,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 16,
+                    "eleArray": [
+                        {
+                            "type": "Select",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Select1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controllingField": {
+                                    "source": "",
+                                    "type": "",
+                                    "element": ""
+                                },
+                                "optionSource": {
+                                    "source": "vlocity_cmt__OmniScript__c.vlocity_cmt__OmniProcessType__c",
+                                    "type": "SObject"
+                                },
+                                "options": [
+                                    {
+                                        "name": "OmniScript",
+                                        "value": "OmniScript"
+                                    },
+                                    {
+                                        "name": "Integration Procedure",
+                                        "value": "Integration Procedure"
+                                    },
+                                    {
+                                        "name": "Test Procedure",
+                                        "value": "Test Procedure"
+                                    }
+                                ],
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Select1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 16,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 17,
+                    "eleArray": [
+                        {
+                            "type": "Radio",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Radio1",
+                                "disOnTplt": false,
+                                "enableCaption": true,
+                                "imageCountInRow": 3,
+                                "optionHeight": 100,
+                                "optionWidth": 100,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": true,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "controllingField": {
+                                    "source": "",
+                                    "type": "",
+                                    "element": ""
+                                },
+                                "optionSource": {
+                                    "source": "",
+                                    "type": ""
+                                },
+                                "options": [
+                                    {
+                                        "autoAdv": null,
+                                        "value": "Radio1Label",
+                                        "name": "Radio1Value"
+                                    },
+                                    {
+                                        "autoAdv": "next",
+                                        "value": "RadioAutoAdvance",
+                                        "name": "Radio2Value"
+                                    }
+                                ],
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": "Radio1Value",
+                                "horizontalMode": false,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Radio1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 17,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 18,
+                    "eleArray": [
+                        {
+                            "type": "Text",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Text1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "debounceValue": 0,
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "maxLength": 255,
+                                "minLength": 0,
+                                "ptrnErrText": "",
+                                "pattern": "",
+                                "mask": "",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Text1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 18,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 19,
+                    "eleArray": [
+                        {
+                            "type": "Text Area",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "TextArea1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "debounceValue": 0,
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "maxLength": 255,
+                                "minLength": 0,
+                                "ptrnErrText": "",
+                                "pattern": "",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "TextArea1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 19,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 20,
+                    "eleArray": [
+                        {
+                            "type": "URL",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "URL1",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "debounceValue": 0,
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "ptrnErrText": "",
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "URL1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 20,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                },
+                {
+                    "response": null,
+                    "level": 1,
+                    "indexInParent": 21,
+                    "eleArray": [
+                        {
+                            "type": "Time",
+                            "rootIndex": 2,
+                            "response": null,
+                            "propSetMap": {
+                                "label": "Time1",
+                                "maxTime": "",
+                                "minTime": "",
+                                "timeFormat": "hh:mm a",
+                                "modelTimeFormat": "HH:mm:ss.sss'Z'",
+                                "timeType": "string",
+                                "disOnTplt": false,
+                                "hide": false,
+                                "HTMLTemplateId": "",
+                                "accessibleInFutureSteps": false,
+                                "conditionType": "Hide if False",
+                                "show": null,
+                                "helpText": "",
+                                "help": false,
+                                "defaultValue": null,
+                                "readOnly": false,
+                                "repeatLimit": null,
+                                "repeatClone": false,
+                                "repeat": false,
+                                "required": false,
+                                "inputWidth": 12,
+                                "showInputWidth": false,
+                                "controlWidth": 12
+                            },
+                            "name": "Time1",
+                            "level": 1,
+                            "JSONPath": "",
+                            "indexInParent": 21,
+                            "index": 0,
+                            "children": [],
+                            "bHasAttachment": false
+                        }
+                    ],
+                    "bHasAttachment": false
+                }
+            ],
+            "bAccordionOpen": false,
+            "bAccordionActive": false
+        },
+        {
+            "type": "Set Values",
+            "propSetMap": {
+                "disOnTplt": false,
+                "label": "SetValues1",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "elementValueMap": {},
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "SetValues1",
+            "level": 0,
+            "indexInParent": 3,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Set Errors",
+            "propSetMap": {
+                "disOnTplt": false,
+                "label": "SetErrors1",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "elementErrorMap": {},
+                "validationRequired": "Step",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "SetErrors1",
+            "level": 0,
+            "indexInParent": 4,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "DataRaptor Extract Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "ignoreCache": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "DataRaptorExtractAction2",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "remoteTimeout": 30000,
+                "dataRaptor Input Parameters": [],
+                "bundle": "ContractInfo",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "DataRaptorExtractAction2",
+            "level": 0,
+            "indexInParent": 5,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Email Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "EmailAction1",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "remoteTimeout": 30000,
+                "docList": "",
+                "staticDocList": [],
+                "contentVersionList": "",
+                "attachmentList": "",
+                "fileAttachments": "",
+                "OrgWideEmailAddress": "",
+                "emailInformation": {
+                    "setHtmlBody": false,
+                    "emailBody": "",
+                    "emailSubject": "",
+                    "bccAddressList": [],
+                    "ccAddressList": [],
+                    "toAddressList": []
+                },
+                "emailTemplateInformation": {
+                    "whatId": "",
+                    "saveAsActivity": false,
+                    "emailTargetObjectId": "",
+                    "emailTemplateName": ""
+                },
+                "useTemplate": true,
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "EmailAction1",
+            "level": 0,
+            "indexInParent": 6,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "DocuSign Envelope Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "DocuSignEnvelopeAction1",
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "remoteTimeout": 30000,
+                "timeFormat": "",
+                "dateTimeFormat": "",
+                "dateFormat": "",
+                "emailBody": "",
+                "emailSubject": "",
+                "docuSignTemplatesGroup": [],
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "DocuSignEnvelopeAction1",
+            "level": 0,
+            "indexInParent": 7,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Delete Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "label": "DeleteAction1",
+                "cancelLabel": "Cancel",
+                "remoteConfirmMsg": "Are you sure? This action cannot be undone.",
+                "subLabel": "Delete",
+                "confirm": true,
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "remoteTimeout": 30000,
+                "remoteOptions": {},
+                "configurationErrorMessage": "",
+                "invalidIdMessage": "",
+                "entityIsDeletedMessage": "",
+                "deleteFailedMessage": "",
+                "allOrNone": false,
+                "deleteSObject": [],
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "DeleteAction1",
+            "level": 0,
+            "indexInParent": 8,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Integration Procedure Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "IntegrationProcedureAction1",
+                "svgIcon": "",
+                "svgSprite": "",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "extraPayload": {},
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "sendJSONNode": "",
+                "sendJSONPath": "",
+                "postTransformBundle": "",
+                "preTransformBundle": "",
+                "remoteTimeout": 30000,
+                "remoteOptions": {
+                    "chainable": false,
+                    "useFuture": false,
+                    "postTransformBundle": "",
+                    "preTransformBundle": ""
+                },
+                "useContinuation": false,
+                "integrationProcedureKey": "",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "IntegrationProcedureAction1",
+            "level": 0,
+            "indexInParent": 9,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Review Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "ReviewAction1",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "skipElements": [],
+                "previousWidth": 3,
+                "previousLabel": "Previous",
+                "nextWidth": 3,
+                "nextLabel": "Next",
+                "sendJSONNode": "",
+                "sendJSONPath": "",
+                "redirectTemplateUrl": "vlcApplicationConfirmationV2.html",
+                "redirectPageName": "reviewRedirect",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "ReviewAction1",
+            "level": 0,
+            "indexInParent": 10,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Rest Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "HTTPAction1",
+                "svgIcon": "",
+                "svgSprite": "",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "namedCredential": "",
+                "restOptions": {
+                    "URIEncode": false,
+                    "sendBody": true,
+                    "withCredentials": false,
+                    "timeout": 0,
+                    "cache": false,
+                    "params": {},
+                    "headers": {}
+                },
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "sendJSONNode": "",
+                "sendJSONPath": "",
+                "type": "Apex",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "extraPayload": {},
+                "xmlPostTransformBundle": "",
+                "xmlPreTransformBundle": "",
+                "postTransformBundle": "",
+                "preTransformBundle": "",
+                "restMethod": "",
+                "restPath": "",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "HTTPAction1",
+            "level": 0,
+            "indexInParent": 11,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Post to Object Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "PosttoObjectAction1",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcApplicationAcknowledgeV2.html",
+                "redirectPageName": "postToObjRedirect",
+                "validationRequired": "Submit",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "postTransformBundle": "",
+                "postNameTemplate": "",
+                "remoteMethod": "SubmitApp",
+                "remoteClass": "DefaultOmniScriptApplicationService",
+                "restMethod": "POST",
+                "restPath": "/NS/v1/application/",
+                "useRest": false,
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "PosttoObjectAction1",
+            "level": 0,
+            "indexInParent": 12,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "PDF Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "PDFAction1",
+                "showPopup": true,
+                "attachmentParentId": "",
+                "attachmentName": "",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcPDF.html",
+                "redirectPageName": "",
+                "validationRequired": "Submit",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "remoteTimeout": 30000,
+                "readOnly": false,
+                "timeFormat": "",
+                "dateTimeFormat": "",
+                "dateFormat": "",
+                "displayWidth": 600,
+                "displayHeight": 700,
+                "sendJSONNode": "",
+                "sendJSONPath": "",
+                "preTransformBundle": "",
+                "templateName": "",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "PDFAction1",
+            "level": 0,
+            "indexInParent": 13,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Matrix Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "enableActionMessage": false,
+                "enableDefaultAbort": false,
+                "errorMessage": {
+                    "default": null,
+                    "custom": []
+                },
+                "label": "MatrixAction1",
+                "svgIcon": "",
+                "svgSprite": "",
+                "defaultMatrixResult": {},
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "showPersistentComponent": [null, null],
+                "redirectPreviousWidth": 3,
+                "redirectPreviousLabel": "Previous",
+                "redirectNextWidth": 3,
+                "redirectNextLabel": "Next",
+                "redirectTemplateUrl": "vlcAcknowledge.html",
+                "redirectPageName": "",
+                "validationRequired": "Step",
+                "failureAbortMessage": "Are you sure?",
+                "failureGoBackLabel": "Go Back",
+                "failureAbortLabel": "Abort",
+                "failureNextLabel": "Continue",
+                "postMessage": "Done",
+                "inProgressMessage": "In Progress",
+                "responseJSONNode": "",
+                "responseJSONPath": "",
+                "postTransformBundle": "",
+                "remoteTimeout": 30000,
+                "executionDateTime": null,
+                "remoteOptions": {
+                    "postTransformBundle": "",
+                    "matrixName": ""
+                },
+                "matrix Input Parameters": [],
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "MatrixAction1",
+            "level": 0,
+            "indexInParent": 14,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Navigate Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "targetLWCLayout": "lightning",
+                "replace": false,
+                "iconPosition": "left",
+                "iconVariant": "",
+                "iconName": "",
+                "variant": "brand",
+                "targetId": "%ContextId%",
+                "targetFilter": "Recent",
+                "loginAction": "login",
+                "recordAction": "view",
+                "objectAction": "home",
+                "label": "NavigateAction1",
+                "message": {},
+                "pubsub": false,
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "validationRequired": "none",
+                "targetType": "Component",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "NavigateAction1",
+            "level": 0,
+            "indexInParent": 15,
+            "bHasAttachment": false,
+            "bEmbed": false
+        },
+        {
+            "type": "Done Action",
+            "propSetMap": {
+                "disOnTplt": false,
+                "label": "DoneAction1",
+                "Outcome": "",
+                "pubsub": false,
+                "message": {},
+                "ssm": false,
+                "wpm": false,
+                "HTMLTemplateId": "",
+                "show": null,
+                "redirectTemplateUrl": "vlcMobileConfirmation.html",
+                "redirectPageName": "mobileDone",
+                "validationRequired": "Submit",
+                "consoleTabLabel": "New",
+                "source": "%ContextId%",
+                "type": "SObject",
+                "controlWidth": 12
+            },
+            "offSet": 0,
+            "name": "DoneAction1",
+            "level": 0,
+            "indexInParent": 16,
+            "bHasAttachment": false,
+            "bEmbed": false
+        }
+    ],
+    "bReusable": false,
+    "bpVersion": 5,
+    "bpType": "Vlocode",
+    "bpSubType": "test",
+    "bpLang": "English",
+    "bHasAttachment": false
+}

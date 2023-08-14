@@ -1,0 +1,11 @@
+{
+    "extends": "../tsconfig",
+    "compilerOptions": {
+        "outDir": "../lib/build",
+        "sourceMap": false,
+        "declaration": false,
+        "baseUrl": "",
+        "types": ["node"]
+    },
+    "include": ["**/*.ts"]
+}

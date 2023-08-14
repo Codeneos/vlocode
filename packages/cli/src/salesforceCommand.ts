@@ -1,6 +1,6 @@
 import { CachedFileSystemAdapter, container, NodeFileSystem, FileSystem } from '@vlocode/core';
 import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider, SalesforceConnection, ReplayTransport, SessionDataStore, HttpTransport, TransportRecorder } from '@vlocode/salesforce';
-import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
+import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { Command, Option } from './command';
 
 /**

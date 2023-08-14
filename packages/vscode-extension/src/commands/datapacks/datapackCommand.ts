@@ -5,7 +5,7 @@ import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import VlocityDatapackService, { ManifestEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { CommandBase } from '../../lib/commandBase';
 import { evalExpr, mapAsync, mapAsyncParallel } from '@vlocode/util';
-import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackUtil } from '@vlocode/vlocity-deploy';
+import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackUtil } from '@vlocode/vlocity';
 import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 
 

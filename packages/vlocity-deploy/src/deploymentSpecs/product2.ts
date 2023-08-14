@@ -1,6 +1,6 @@
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import * as moment from 'moment';
-import { VlocityDatapack } from '../datapack';
+import { VlocityDatapack } from '@vlocode/vlocity';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 

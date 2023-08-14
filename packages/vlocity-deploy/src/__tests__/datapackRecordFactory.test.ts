@@ -5,11 +5,9 @@ import * as path from 'path';
 import * as datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore } from '@vlocode/salesforce';
-import { VlocityNamespaceService } from '../vlocityNamespaceService';
+import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore,  } from '@vlocode/salesforce';
+import { VlocityDatapack, VlocityNamespaceService, VlocityMatchingKeyService, VlocityMatchingKey } from '@vlocode/vlocity';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
-import { VlocityDatapack } from '../datapack';
-import { VlocityMatchingKeyService, VlocityMatchingKey } from '../vlocityMatchingKeyService';
 
 describe('datapackRecordFactory', () => {
     function mockConnectionProvider(results: any[]) {

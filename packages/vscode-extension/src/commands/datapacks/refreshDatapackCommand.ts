@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { groupBy, mapAsync } from '@vlocode/util';
 import ExportDatapackCommand from './exportDatapackCommand';
-import { DatapackUtil } from '@vlocode/vlocity-deploy';
+import { DatapackUtil } from '@vlocode/vlocity';
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 

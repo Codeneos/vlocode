@@ -28,12 +28,12 @@ import OnSavedEventHandler from './events/onFileSaved';
 import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
 import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
-import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
-
-import './commands';
 import { VSCodeFileSystemAdapter } from './lib/fs/vscodeFileSystemAdapter';
 import { NamespaceService } from '@vlocode/salesforce';
+import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
+
+import './commands';
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [

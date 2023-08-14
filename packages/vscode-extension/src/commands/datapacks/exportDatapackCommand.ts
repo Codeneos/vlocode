@@ -6,9 +6,9 @@ import { groupBy , createRecordProxy, evalExpr } from '@vlocode/util';
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { DatapackCommand } from './datapackCommand';
 import { SObjectRecord } from '@vlocode/salesforce';
-import { ObjectEntry } from '@vlocode/vlocity-deploy';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackResultCollection } from '../../lib/vlocity/vlocityDatapackService';
+import { ObjectEntry } from '@vlocode/vlocity';
 
 @vscodeCommand(constants.VlocodeCommand.exportDatapack, { focusLog: true  })
 export default class ExportDatapackCommand extends DatapackCommand {

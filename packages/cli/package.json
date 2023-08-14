@@ -8,7 +8,7 @@
         "Datapacks",
         "Deployment"
     ],
-    "main": "lib/index.js",
+    "main": "src/index.ts",
     "bin": {
         "vlocode": "bin/run"
     },
@@ -59,6 +59,8 @@
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",
+        "@vlocode/vlocity": "workspace:*",
+        "@vlocode/omniscript": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "chalk": "^4.1.1",
         "commander": "^9.2.0",

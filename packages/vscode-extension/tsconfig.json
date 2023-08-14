@@ -12,6 +12,8 @@
         { "path": "../util" },
         { "path": "../core" },
         { "path": "../salesforce" },
+        { "path": "../vlocity" },
+        { "path": "../omniscript" },
         { "path": "../vlocity-deploy" }
     ]
 }

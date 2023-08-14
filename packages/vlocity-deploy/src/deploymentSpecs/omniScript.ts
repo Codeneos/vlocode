@@ -2,10 +2,10 @@ import { Container, Logger } from '@vlocode/core';
 import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
 import { forEachAsyncParallel, getErrorMessage, groupBy, Iterable, mapGetOrCreate, substringAfter, Timer } from '@vlocode/util';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
-import { VlocityDatapack } from '../datapack';
+import { VlocityDatapack } from '@vlocode/vlocity';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
-import { OmniScriptActivator } from '../omniScript/omniScriptActivator';
+import { OmniScriptActivator } from '@vlocode/omniscript';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 
 interface ScriptElement {

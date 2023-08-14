@@ -1327,6 +1327,8 @@
         "@vlocode/core": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",
+        "@vlocode/vlocity": "workspace:*",
+        "@vlocode/omniscript": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "axios": "^0.25.0",
         "chai": "^4.3.4",

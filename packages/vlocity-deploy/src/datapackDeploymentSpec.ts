@@ -1,5 +1,5 @@
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
-import { VlocityDatapack } from './datapack';
+import { VlocityDatapack } from '@vlocode/vlocity';
 import { isPromise } from 'util/types';
 import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
 

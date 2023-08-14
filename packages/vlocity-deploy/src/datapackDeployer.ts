@@ -6,11 +6,11 @@ import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
 import { DatapackDeploymentRecord, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
-import { VlocityDatapack } from './datapack';
 import { DatapackRecordFactory } from './datapackRecordFactory';
 import { DatapackDeploymentSpec, DeploymentSpecExecuteOptions } from './datapackDeploymentSpec';
 import { DatapackDeploymentSpecRegistry } from './datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from './datapackDeploymentEvent';
+import { VlocityDatapack } from '@vlocode/vlocity';
 
 /**
  * Import all default deployment specs and trigger the decorators to register each sepc
@@ -354,8 +354,8 @@ export class DatapackDeployer {
                     continue;
                 }
                 specParams[0] = records;
-            } else if (specParams[0] instanceof VlocityDatapack) {
-                if (!this.evalFilter(filter, specParams[0])) {
+            } else if ((specParams[0] as any) instanceof VlocityDatapack) {
+                if (!this.evalFilter(filter, specParams[0] as VlocityDatapack)) {
                     continue;
                 }
             } else {

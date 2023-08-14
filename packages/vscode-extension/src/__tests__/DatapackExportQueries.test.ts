@@ -1,7 +1,7 @@
 import 'jest';
 
 import { SalesforceSchemaService } from '@vlocode/salesforce';
-import { VlocityMatchingKey, VlocityMatchingKeyService } from '@vlocode/vlocity-deploy';
+import { VlocityMatchingKey, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import { Logger } from '@vlocode/core';
 import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
 

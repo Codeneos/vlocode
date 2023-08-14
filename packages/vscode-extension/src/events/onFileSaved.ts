@@ -2,7 +2,7 @@ import { EventHandlerBase } from './eventHandlerBase';
 import * as vscode from 'vscode';
 import { VlocodeCommand } from '../constants';
 import { container } from '@vlocode/core';
-import { isPartOfDatapack } from '@vlocode/vlocity-deploy';
+import { isPartOfDatapack } from '@vlocode/vlocity';
 import { MetadataDetector } from '../lib/salesforce/metadataDetector';
 
 export default class extends EventHandlerBase<vscode.TextDocument> {

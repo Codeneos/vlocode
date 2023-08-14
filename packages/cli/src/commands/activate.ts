@@ -1,9 +1,8 @@
 import { Logger, LogManager, FileSystem } from '@vlocode/core';
-import { OmniScriptActivator, OmniScriptVersionDetail, ScriptDefinitionProvider } from '@vlocode/vlocity-deploy';
+import { OmniScriptActivator, OmniScriptVersionDetail, ScriptDefinitionProvider, OmniScriptLookupService } from '@vlocode/omniscript';
 import { Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { forEachAsyncParallel, getErrorMessage, groupBy, isSalesforceId, Iterable, sortBy, Timer } from '@vlocode/util';
-import { OmniScriptLookupService } from '@vlocode/vlocity-deploy';
 import { SalesforceCommand } from '../salesforceCommand';
 
 interface ScriptActivationInfo {

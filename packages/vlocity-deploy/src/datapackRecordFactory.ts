@@ -5,8 +5,7 @@ import { isSalesforceId } from '@vlocode/util';
 import { DateTime } from 'luxon';
 import { DATAPACK_RESERVED_FIELDS } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
-import { VlocityDatapack } from './datapack';
-import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
+import { VlocityDatapack, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import { randomUUID } from 'crypto';
 
 @injectable()

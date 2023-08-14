@@ -19,6 +19,14 @@
         "noUnusedLocals": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "paths": {
+            "@vlocode/core": ["./packages/core"],
+            "@vlocode/util": ["./packages/util"],
+            "@vlocode/salesforce": ["./packages/salesforce"],
+            "@vlocode/vlocity": ["./packages/vlocity"],
+            "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy"],
+            "@vlocode/omniscript": ["./packages/omniscript"]
+        }
     }
 }

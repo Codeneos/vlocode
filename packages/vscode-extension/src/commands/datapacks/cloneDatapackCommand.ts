@@ -2,7 +2,7 @@ import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackExportQueries } from '../../lib/vlocity/datapackExportQueries';
 import { container } from '@vlocode/core';
-import { VlocityDatapack } from '@vlocode/vlocity-deploy';
+import { VlocityDatapack } from '@vlocode/vlocity';
 
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';

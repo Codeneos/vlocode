@@ -5,7 +5,7 @@ import * as fs from 'fs-extra';
 import * as itemTemplates from '../../newItemTemplates.yaml';
 import * as globby from 'globby';
 import { container } from '@vlocode/core';
-import { VlocityNamespaceService } from '@vlocode/vlocity-deploy';
+import { VlocityNamespaceService } from '@vlocode/vlocity';
 import MetadataCommand from './metadataCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';

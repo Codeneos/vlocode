@@ -7,13 +7,17 @@
             "@vlocode/core": ["packages/core/src"],
             "@vlocode/salesforce": ["packages/salesforce/src"],
             "@vlocode/util": ["packages/util/src"],
-            "@vlocode/vlocity-deploy": ["packages/vlocity-deploy/src"]
+            "@vlocode/vlocity": ["packages/vlocity/src"],
+            "@vlocode/vlocity-deploy": ["packages/vlocity-deploy/src"],
+            "@vlocode/omniscript": ["packages/omniscript/src"]
         }
     },
     "include": [
         "packages/core/src",
         "packages/util/src",
         "packages/salesforce/src",
-        "packages/vlocity-deploy/src"
+        "packages/vlocity/src",
+        "packages/vlocity-deploy/src",
+        "packages/omniscript/src"
     ]
 }

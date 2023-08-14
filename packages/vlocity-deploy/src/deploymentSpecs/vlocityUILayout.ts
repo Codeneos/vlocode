@@ -1,5 +1,5 @@
+import { VlocityDatapack } from '@vlocode/vlocity';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
-import { VlocityDatapack } from '../datapack';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';

@@ -2,10 +2,9 @@ import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocod
 import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
 import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count, removeAll, remove } from '@vlocode/util';
 import { DateTime } from 'luxon';
-import { VlocityMatchingKeyService } from './vlocityMatchingKeyService';
 import * as constants from './constants';
 import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
-import { VlocityNamespaceService } from './vlocityNamespaceService';
+import { VlocityNamespaceService, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 
 /**

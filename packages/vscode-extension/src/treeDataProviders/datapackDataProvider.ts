@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as constants from '../constants';
 import { LogManager, injectable, container } from '@vlocode/core';
-import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity-deploy';
+import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity';
 import { evalExpr, groupBy, normalizeSalesforceName, clearCache, lazy, Iterable } from '@vlocode/util';
 
 import * as exportQueryDefinitions from '../exportQueryDefinitions.yaml';

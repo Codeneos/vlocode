@@ -6,8 +6,7 @@ import { Connection, SalesforceConnectionProvider, NamespaceService, SfdxConnect
 
 import { DatapackDeployer, DatapackDeploymentOptions } from './datapackDeployer';
 import { ForkedSassCompiler } from './scss';
-import { VlocityNamespaceService } from './vlocityNamespaceService';
-import DatapackLoader from './datapackLoader';
+import { DatapackLoader, VlocityNamespaceService } from '@vlocode/vlocity';
 
 interface DatapackDeployOptions extends DatapackDeploymentOptions {
     /**

@@ -1,11 +1,14 @@
-import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { DatapackDeployer, DatapackLoader, ForkedSassCompiler, DatapackDeploymentOptions, DeploymentStatus } from '@vlocode/vlocity-deploy';
-import { existsSync } from 'fs';
-import { Argument, Option } from '../command';
 import * as logSymbols from 'log-symbols';
 import { join } from 'path';
 import * as chalk from 'chalk';
-import { count, countDistinct, groupBy, mapAsync, Timer } from '@vlocode/util';
+import { existsSync } from 'fs';
+
+import { Logger, LogLevel, LogManager } from '@vlocode/core';
+import { DatapackDeployer, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
+import { DatapackLoader } from '@vlocode/vlocity';
+import { countDistinct, groupBy, mapAsync, Timer } from '@vlocode/util';
+
+import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 
 export default class extends SalesforceCommand {

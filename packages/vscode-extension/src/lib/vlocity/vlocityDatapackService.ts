@@ -6,7 +6,7 @@ import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
 
 import { Logger, injectable } from '@vlocode/core';
-import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity-deploy';
+import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';

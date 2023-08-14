@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { randomUUID } from 'crypto';
 
 import { forEachAsyncParallel } from '@vlocode/util';
-import { DatapackUtil } from '@vlocode/vlocity-deploy';
+import { DatapackUtil } from '@vlocode/vlocity';
 import { container } from '@vlocode/core';
 
 import { DatapackCommand } from './datapackCommand';
