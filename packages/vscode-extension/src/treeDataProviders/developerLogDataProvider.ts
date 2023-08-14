@@ -108,7 +108,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         }
         try {
             if (!this.autoRefreshPaused) {
-                this.refreshLogs({ refreshView: true });
+                await this.refreshLogs({ refreshView: true });
             }
         } catch(err) {
             this.logger.error(err);
