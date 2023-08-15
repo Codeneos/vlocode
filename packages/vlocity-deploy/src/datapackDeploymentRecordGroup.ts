@@ -41,11 +41,15 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
         if (stats[DeploymentStatus.InProgress] || stats[DeploymentStatus.Retry]) {
             return DeploymentGroupStatus.InProgress;
         } else if (!stats[DeploymentStatus.Pending]) {
-            if (stats[DeploymentStatus.Deployed] && !stats[DeploymentStatus.Failed]) {
+            // Record Statuses [Skipped, Failed, Deployed]
+            if (!stats[DeploymentStatus.Failed]) {
+                // Record Statuses [Skipped, Deployed]
                 return DeploymentGroupStatus.Success;
             } else if (stats[DeploymentStatus.Deployed]) {
+                // Record Statuses [Skipped, Failed, Deployed]
                 return DeploymentGroupStatus.PartialSuccess;
             }
+            // Record Statuses [Skipped, Failed]
             return DeploymentGroupStatus.Error;
         }
         return DeploymentGroupStatus.Pending;
