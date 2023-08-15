@@ -8,7 +8,7 @@
         "Datapacks",
         "Deployment"
     ],
-    "main": "src/index.ts",
+    "main": "lib/index.js",
     "bin": {
         "vlocode": "bin/run"
     },
@@ -32,7 +32,7 @@
         "pack": "pnpm run prepublish && pnpm run pack-only",
         "prepublish": "pnpm run clean && pnpm run build-webpack && tsc",
         "pack-only": "pnpm pack",
-        "clean": "shx rm -rf ./dist ./lib ./.ts-temp './*.tgz' './src/**/*.d.ts' './src/**/*.d.ts.map'"
+        "clean": "shx rm -rf ./dist ./lib ./.ts-temp './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'"
     },
     "repository": {
         "type": "git",

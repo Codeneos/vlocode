@@ -109,6 +109,40 @@
             "group": {
                 "kind": "build"
             },
+            "dependsOn": ["watch-salesforce", "watch-vlocity", "watch-omniscript"]
+        },
+        {
+            "label": "watch-omniscript",
+            "type": "shell",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/omniscript"]
+            },
+            "command": "pnpm --filter @vlocode/omniscript watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": ["watch-vlocity"]
+        },
+        {
+            "label": "watch-vlocity",
+            "type": "shell",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/vlocity"]
+            },
+            "command": "pnpm --filter @vlocode/vlocity watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
             "dependsOn": ["watch-salesforce"]
         },
         {

@@ -21,12 +21,12 @@
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true,
         "paths": {
-            "@vlocode/core": ["./packages/core"],
-            "@vlocode/util": ["./packages/util"],
-            "@vlocode/salesforce": ["./packages/salesforce"],
-            "@vlocode/vlocity": ["./packages/vlocity"],
-            "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy"],
-            "@vlocode/omniscript": ["./packages/omniscript"]
+            "@vlocode/core": ["./packages/core/src"],
+            "@vlocode/util": ["./packages/util/src"],
+            "@vlocode/salesforce": ["./packages/salesforce/src"],
+            "@vlocode/vlocity": ["./packages/vlocity/src"],
+            "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy/src"],
+            "@vlocode/omniscript": ["./packages/omniscript/src"]
         }
     }
 }

@@ -2,7 +2,7 @@
     "name": "@vlocode/core",
     "version": "0.20.0-alpha.1",
     "description": "Vlocode core IoC container framework library",
-    "main": "src/index.ts",
+    "main": "lib/index.js",
     "publishConfig": {
         "main": "lib/index.js",
         "typings": "lib/index.d.ts"
@@ -17,7 +17,7 @@
     },
     "scripts": {
         "build": "tsc",
-        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './src/**/*.d.ts' './src/**/*.d.ts.map'",
+        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './src/**/*.{d.ts,ts.map,js.map,js}'",
         "watch": "tsc -w",
         "pack": "pnpm pack",
         "prepublish": "pnpm run build"

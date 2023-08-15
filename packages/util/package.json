@@ -2,7 +2,7 @@
     "name": "@vlocode/util",
     "version": "0.20.0-alpha.1",
     "description": "Vlocode utility library",
-    "main": "src/index.ts",
+    "main": "lib/index.js",
     "publishConfig": {
         "main": "lib/index.js",
         "typings": "lib/index.d.ts"
@@ -15,7 +15,7 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './src/**/*.d.ts' './src/**/*.d.ts.map'",
+        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './src/**/*.{d.ts,ts.map,js.map,js}'",
         "build": "tsc",
         "watch": "tsc -w",
         "pack": "pnpm run build && pnpm pack",
