@@ -51,6 +51,10 @@ describe('SalesforcePackageBuilder', () => {
         // Trigger
         'src/triggers/myTrigger.trigger': 'trigger MyTrigger on Account (before insert, before update, after insert, after update) { }',
         'src/triggers/myTrigger.trigger-meta.xml': buildMetadataXml('ApexTrigger'),
+        // decomposd object
+        'src/objects/PetersCustomObject__c/fields/PetersField__c.field-meta.xml': buildXml('CustomField', { fullName: 'PetersField__c' }),
+        'src/objects/PetersCustomObject__c/listViews/What_A_View.listview-meta.xml': buildXml('ListView', { fullName: 'What_A_View' }),
+        'src/objects/PetersCustomObject__c/PetersCustomObject__c.object-meta.xml': buildXml('CustomObject', { fullName: 'PetersCustomObject__c' }),
         // Destructive changes
         'src/destructiveChangesPost.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'a', 'b' ] } ] }),
         'src/destructiveChangesPost2.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'x', 'y' ] } ] }),
@@ -240,6 +244,74 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('myClass');
             });
         });
+        describe('#customObject', () => {
+            it('should add all fragments of an object as separate entries in manifest', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c']);
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+
+                expect(manifest.types).toStrictEqual([
+                    { name:'CustomObject', members: [ 'PetersCustomObject__c' ] },
+                    { name:'CustomField', members: [ 'PetersCustomObject__c.PetersField__c' ] },
+                    { name:'ListView', members: [ 'PetersCustomObject__c.What_A_View' ] }
+                ]);
+            });
+            it('should merge source from fragments into parent', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c']);
+
+                const sfPackage = await packageBuilder.getPackage().generateArchive();
+                const packageFiles = Object.keys(sfPackage.files);
+                const metadata = await sfPackage.file('objects/PetersCustomObject__c.object')?.async('string');
+                const parsedMetadata = metadata && XML.parse(metadata, { ignoreAttributes: true, ignoreNamespacePrefix: true });
+
+                expect(packageFiles).toStrictEqual([
+                    'package.xml',
+                    'objects/',
+                    'objects/PetersCustomObject__c.object'
+                ]);
+
+                expect(parsedMetadata).toStrictEqual({
+                    CustomObject: {
+                        fullName: 'PetersCustomObject__c',
+                        fields: {
+                            fullName: 'PetersField__c',
+                        },
+                        listViews: {
+                            fullName: 'What_A_View',
+                        }
+                    }
+                });
+            });
+            it('should add parent tag without content when deploying fragment', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c/fields']);
+
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                const sfPackage = await packageBuilder.getPackage().generateArchive();
+                const packageFiles = Object.keys(sfPackage.files);
+                const metadata = await sfPackage.file('objects/PetersCustomObject__c.object')?.async('string');
+                const parsedMetadata = metadata && XML.parse(metadata, { ignoreAttributes: true, ignoreNamespacePrefix: true });
+
+                expect(manifest.types).toStrictEqual([
+                    { name:'CustomField', members: [ 'PetersCustomObject__c.PetersField__c' ] }
+                ]);
+
+                expect(packageFiles).toStrictEqual([
+                    'package.xml',
+                    'objects/',
+                    'objects/PetersCustomObject__c.object'
+                ]);
+
+                expect(parsedMetadata).toStrictEqual({
+                    CustomObject: {
+                        fields: {
+                            fullName: 'PetersField__c',
+                        }
+                    }
+                });
+            });
+        });
         describe('#settings', () => {
             it('should add all settings as Setting metadata type', async () => {
                 const settingsFsMock = new MemoryFileSystem({
@@ -401,11 +473,14 @@ describe('SalesforcePackageBuilder', () => {
                     'src/classes/myClass.cls-meta.xml',
                     'src/triggers/myTrigger.trigger-meta.xml',
                 ]));
-                expect(manifest.list().length).toEqual(4);
+                expect(manifest.list().length).toEqual(7);
                 expect(manifest.list('AuraDefinitionBundle').length).toEqual(1);
                 expect(manifest.list('LightningComponentBundle').length).toEqual(1);
                 expect(manifest.list('ApexClass').length).toEqual(1);
                 expect(manifest.list('ApexTrigger').length).toEqual(1);
+                expect(manifest.list('CustomObject').length).toEqual(1);
+                expect(manifest.list('CustomField').length).toEqual(1);
+                expect(manifest.list('ListView').length).toEqual(1);
             });
         });
     });

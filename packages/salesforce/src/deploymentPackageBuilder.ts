@@ -323,19 +323,15 @@ export class SalesforcePackageBuilder {
         const parentPackagePath = await this.getPackagePath(parentComponentMetaFile, parentType);
 
         // Merge child metadata into parent metadata
-        if (this.type == SalesforcePackageType.deploy) {
+        if (this.type === SalesforcePackageType.deploy) {
             await this.mergeMetadataFragment(parentPackagePath, sourceFile, parentType);
         }
 
         // Add as member to the package when not yet mentioned
-        if (this.type == SalesforcePackageType.destruct) {
+        if (this.type === SalesforcePackageType.destruct) {
             this.mdPackage.addDestructiveChange(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
         } else {
-            if (fragmentType.isAddressable) {
-                this.mdPackage.addManifestEntry(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
-            } else {
-                this.mdPackage.addManifestEntry(parentType.name, parentComponentName);
-            }
+            this.mdPackage.addManifestEntry(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
             this.mdPackage.addSourceMap(sourceFile, { componentType: fragmentTypeName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
         }
 
@@ -357,17 +353,6 @@ export class SalesforcePackageBuilder {
             return;
         }
 
-        // Load existing XML
-        let existingPackageData = await this.readPackageData(packagePath);
-        if (!existingPackageData) {
-            // ensure parent files are included
-            const parentBaseName =  path.posix.basename(packagePath);
-            const parentSourceFile = path.posix.join(fragmentFile, '..', '..', `${parentBaseName}-meta.xml`);
-            if (await this.fs.pathExists(parentSourceFile)) {
-                existingPackageData = await this.fs.readFileAsString(parentSourceFile);
-            }
-        }
-
         // Merge child metadata into parent metadata
         const metadata = await this.readComposedMetadata(packagePath, fragmentFile, metadataType);
         this.mergeMetadata(metadata[metadataType.name], { [decomposition.directoryName]: fragmentMetadata });
@@ -379,15 +364,15 @@ export class SalesforcePackageBuilder {
             return composedData.data;
         }
 
-        let existingPackageData = await this.readPackageData(packagePath);
-        if (!existingPackageData) {
-            // ensure parent files are included
-            const parentBaseName =  path.posix.basename(packagePath);
-            const parentSourceFile = path.posix.join(fragmentFile, '..', '..', `${parentBaseName}-meta.xml`);
-            if (await this.fs.pathExists(parentSourceFile)) {
-                existingPackageData = await this.fs.readFileAsString(parentSourceFile);
-            }
-        }
+        const existingPackageData = await this.readPackageData(packagePath);
+        // if (!existingPackageData) {
+        //     // ensure parent files are included
+        //     const parentBaseName = path.basename(packagePath);
+        //     const parentSourceFile = path.join(fragmentFile, '..', '..', `${parentBaseName}-meta.xml`);
+        //     if (await this.fs.pathExists(parentSourceFile)) {
+        //         existingPackageData = await this.fs.readFileAsString(parentSourceFile);
+        //     }
+        // }
 
         const existingMetadata = existingPackageData
             ? XML.parse(existingPackageData, { trimValues: true }) 
