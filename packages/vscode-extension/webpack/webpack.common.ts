@@ -59,12 +59,12 @@ const common : webpack.Configuration = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
-        alias: {
-            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src'),
-            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src'),
-            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src'),
-        }
+        alias: Object.fromEntries(
+            workspacePackages.map(({ dir, packageJson }) => ([
+                packageJson.name,
+                path.join(dir, 'src')
+            ]))
+        )
     },
     output: {
         filename: '[name].js',
@@ -80,17 +80,7 @@ const common : webpack.Configuration = {
         new webpack.IgnorePlugin({
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
-        }),
-        // new webpack.SourceMapDevToolPlugin({
-        //     filename: '[file].map[query]',
-        //     exclude: ['vendor.js', 'lib-sass.js'],
-        //     noSources: true,
-        //     module: true,
-        //     columns: true,
-        //     moduleFilenameTemplate: (info: { absoluteResourcePath: string }) => {
-        //         return info.absoluteResourcePath;
-        //     }
-        // })
+        })
     ],
     node: {
         __dirname: false,
