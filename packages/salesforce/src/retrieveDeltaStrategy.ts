@@ -10,7 +10,7 @@ import { RetrieveResultComponent } from "./deploy";
  * Returns a list of components that have changed which can be used to create a new deployment package.
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class RetrieveDeltaStragey  {
+export class RetrieveDeltaStrategy  {
 
     constructor(
         private readonly deployService: SalesforceDeployService,

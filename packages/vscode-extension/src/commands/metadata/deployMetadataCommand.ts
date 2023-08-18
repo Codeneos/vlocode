@@ -3,18 +3,19 @@ import * as vscode from 'vscode';
 import * as open from 'open';
 
 import { forEachAsyncParallel } from '@vlocode/util';
-import { DeployResult, DeployStatus, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, DeployStatus, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 import { VlocodeCommand } from '../../constants';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
 import { vscodeCommand } from '../../lib/commandRouter';
 import MetadataCommand from './metadataCommand';
-
+import { container } from '@vlocode/core';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
  */
-@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true, showProductionWarning: true })
+@vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true, showProductionWarning: true, executeParams: [ VlocodeCommand.deployMetadata ] })
+@vscodeCommand(VlocodeCommand.deployDeltaMetadata, { focusLog: true, showProductionWarning: true, executeParams: [ VlocodeCommand.deployDeltaMetadata ] })
 export default class DeployMetadataCommand extends MetadataCommand {
 
     /** 
@@ -30,8 +31,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
         return this.filesPendingDeployment.size;
     }
 
-    public execute(...args: any[]): Promise<void> {
-        return this.deployMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
+    public execute(command: VlocodeCommand, ...args: any[]): Promise<void> {
+        return this.deployMetadata.apply(this, [
+            args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2), 
+            { delta: command === VlocodeCommand.deployDeltaMetadata }
+        ]);
     }
 
     public initialize() {
@@ -73,13 +77,21 @@ export default class DeployMetadataCommand extends MetadataCommand {
         return forEachAsyncParallel(openDocuments, doc => doc.save());
     }
 
-    protected async deployMetadata(selectedFiles: vscode.Uri[]) {
+    protected async deployMetadata(selectedFiles: vscode.Uri[], options?: { delta?: boolean }) {
         // build package
-        const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, this.vlocode.getApiVersion());
-        const sfPackage = (await packageBuilder.addFiles(selectedFiles)).getPackage();
+        const packageBuilder = container.create(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
+        await packageBuilder.addFiles(selectedFiles);
+        const sfPackage = await (options?.delta
+            ? packageBuilder.getDeltaPackage(RetrieveDeltaStrategy)
+            : packageBuilder.getPackage()
+        );
 
         if (sfPackage.isEmpty) {
-            void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
+            if (options?.delta) {
+                void vscode.window.showInformationMessage('Selected files are already up-to-date');
+            } else {
+                void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
+            }
             return;
         }
 
