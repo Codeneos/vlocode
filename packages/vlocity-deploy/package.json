@@ -70,8 +70,8 @@
         "glob": "^7.1.7",
         "js-yaml": "^4.1.0",
         "jsdom": "^20.0.0",
-        "luxon": "^3.1.0",
-        "moment": "^2.29.1",
+        "luxon": "^3.4.0",
+        "moment": "^2.29.4",
         "sass": "^1.59.3"
     },
     "publisher": "curlybracket",

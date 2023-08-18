@@ -123,18 +123,34 @@ export function mergeCommandContributions(packageJson: PackageJson, commands: Co
         // Build menus
         for (const menuInfo of command.menus || []) {
             const menu = contributes.menus[menuInfo.menu] || (contributes.menus[menuInfo.menu] = []);
-            const when = menuInfo.when ?? command.when;
+            const commandWhen = command.when ? Array.isArray(command.when) ? command.when : [command.when] : undefined;
+            const menuEntryWhen = menuInfo.when ? Array.isArray(menuInfo.when) ? menuInfo.when : [menuInfo.when] : undefined;
+            const when: string[] = [];
+
+            if (menuEntryWhen && commandWhen) {
+                for (let mWhen of menuEntryWhen) {
+                    mWhen = mWhen.includes('||') ? `(${mWhen})` : mWhen;
+                    for (let cWhen of commandWhen) {
+                        cWhen = cWhen.includes('||') ? `(${cWhen})` : cWhen;
+                        if (mWhen == 'false' || cWhen == 'false') {
+                            when.push(`false`);
+                        }
+                        when.push(`${cWhen} && ${mWhen}`);
+                    }
+                }
+            } else if (menuEntryWhen) {
+                when.push(...menuEntryWhen)
+            } else if (commandWhen) {
+                when.push(...commandWhen)
+            }
+
             const newMenuEntry = stripUndefined({
                 command: name,
                 group: command.group || menuInfo.group
             });
 
             if (when) {
-                if (Array.isArray(when)) {
-                    menu.push(...when.map( when => ({ ...newMenuEntry, when: when.toString() }) ));
-                } else {
-                    menu.push({ ...newMenuEntry, when: when.toString() });
-                }
+                menu.push(...when.map( when => ({ ...newMenuEntry, when: when.toString() }) ));
             } else {
                 menu.push(newMenuEntry);
             }

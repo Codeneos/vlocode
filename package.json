@@ -82,6 +82,7 @@
         "@types/fs-extra": "^9",
         "@oclif/command": "1.8.16",
         "@types/node": "^20",
+        "moment": ">=2.29.4",
         "fs-extra": "9",
         "js-force": "1.11.0",
         "salesforce-alm": "^52",

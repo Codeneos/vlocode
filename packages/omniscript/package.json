@@ -61,7 +61,9 @@
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
-        "jsdom": "^20.0.0"
+        "jsdom": "^20.0.0",
+        "bufferutil": "^4.0.7",
+        "utf-8-validate": "^6.0.3"
     },
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"

@@ -114,7 +114,8 @@
         "onCommand:vlocode.addToProfile",
         "onCommand:vlocode.removeFromProfile",
         "onCommand:vlocode.createOmniscriptLwc",
-        "onCommand:vlocode.generateLwc"
+        "onCommand:vlocode.generateLwc",
+        "onCommand:vlocode.deployDeltaMetadata"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -243,6 +244,10 @@
             {
                 "command": "vlocode.deployMetadata",
                 "title": "Salesforce: Deploy to Org"
+            },
+            {
+                "command": "vlocode.deployDeltaMetadata",
+                "title": "Salesforce: Deploy differences to Org"
             },
             {
                 "command": "vlocode.refreshMetadata",
@@ -392,10 +397,6 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "vlocode.selectOrg",
-                    "group": "v_vlocity"
-                },
-                {
                     "command": "vlocode.refreshDatapack",
                     "group": "v_vlocity",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
@@ -421,21 +422,9 @@
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
-                    "command": "vlocode.exportDatapack",
-                    "group": "v_vlocity"
-                },
-                {
                     "command": "vlocode.buildParentKeyFiles",
                     "group": "v_vlocity",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
-                },
-                {
-                    "command": "vlocode.createOmniscriptLwc",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity"
                 },
                 {
                     "command": "vlocode.buildDatapack",
@@ -448,31 +437,12 @@
                     "when": "false"
                 },
                 {
-                    "command": "vlocode.adminCommands",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocode.admin.refreshPriceBook",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocode.admin.refreshProductHierarchy",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocode.admin.refreshPriceBookAndProductHierarchy",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocode.admin.updateAllProdAttribCommand",
-                    "group": "v_vlocity"
-                },
-                {
-                    "command": "vlocode.admin.clearPlatformCache",
-                    "group": "v_vlocity"
-                },
-                {
                     "command": "vlocode.deployMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                },
+                {
+                    "command": "vlocode.deployDeltaMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
@@ -489,7 +459,7 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "(vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata) && resourceSet"
                 },
                 {
                     "command": "vlocode.selectApiVersion",
@@ -557,48 +527,108 @@
                     "when": "config.vlocity.salesforce.enabled"
                 },
                 {
-                    "command": "vlocode.addToProfile",
-                    "group": "v_salesforce_profile"
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "false"
                 },
                 {
-                    "command": "vlocode.removeFromProfile",
-                    "group": "v_salesforce_profile"
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "viewItem == vlocode:datapack:object && false"
                 },
                 {
                     "command": "vlocode.datapackExplorer.export",
                     "when": "false"
                 },
                 {
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "viewItem == vlocode:datapack:category && false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "viewItem == vlocode:datapack:sobject && false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.export",
+                    "when": "viewItem == vlocode:datapack:sobjectType && false"
+                },
+                {
                     "command": "vlocode.datapackExplorer.refresh",
                     "when": "false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.refresh",
+                    "when": "view == datapackExplorer && false"
                 },
                 {
                     "command": "vlocode.datapackExplorer.openSalesforce",
                     "when": "false"
                 },
                 {
+                    "command": "vlocode.datapackExplorer.openSalesforce",
+                    "when": "viewItem == vlocode:datapack:object && false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.openSalesforce",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.openSalesforce",
+                    "when": "viewItem == vlocode:datapack:sobject && false"
+                },
+                {
                     "command": "vlocode.jobExplorer.refresh",
                     "when": "false"
+                },
+                {
+                    "command": "vlocode.jobExplorer.refresh",
+                    "when": "view == jobExplorer && false"
                 },
                 {
                     "command": "vlocode.jobExplorer.run",
                     "when": "false"
                 },
                 {
+                    "command": "vlocode.jobExplorer.run",
+                    "when": "viewItem == vlocode:jobYaml && false"
+                },
+                {
                     "command": "vlocode.developerLogs.setLogLevel",
                     "when": "false"
+                },
+                {
+                    "command": "vlocode.developerLogs.setLogLevel",
+                    "when": "view == developerLogsView && false"
                 },
                 {
                     "command": "vlocode.developerLogs.deleteAll",
                     "when": "false"
                 },
                 {
+                    "command": "vlocode.developerLogs.deleteAll",
+                    "when": "view == developerLogsView && false"
+                },
+                {
                     "command": "vlocode.developerLogs.refresh",
                     "when": "false"
                 },
                 {
+                    "command": "vlocode.developerLogs.refresh",
+                    "when": "view == developerLogsView && false"
+                },
+                {
                     "command": "vlocode.developerLogs.setLogVisibility",
                     "when": "false"
+                },
+                {
+                    "command": "vlocode.developerLogs.setLogVisibility",
+                    "when": "view == developerLogsView && false"
                 }
             ],
             "explorer/context": [
@@ -653,6 +683,11 @@
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
                 {
+                    "command": "vlocode.deployDeltaMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                },
+                {
                     "command": "vlocode.refreshMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
@@ -665,7 +700,32 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                    "when": "(vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata) && resourceScheme == file"
+                },
+                {
+                    "command": "vlocode.execAnonymousCommand",
+                    "group": "v_salesforce",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == file && resourceExtname == .apex"
+                },
+                {
+                    "command": "vlocode.createLwc",
+                    "group": "v_salesforce",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\/lwc\\/.+/"
+                },
+                {
+                    "command": "vlocode.createLwc",
+                    "group": "v_salesforce",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\\\lwc\\\\.+/"
+                },
+                {
+                    "command": "vlocode.createApexClass",
+                    "group": "v_salesforce",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\/classes\\/.+/"
+                },
+                {
+                    "command": "vlocode.createApexClass",
+                    "group": "v_salesforce",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\\\classes\\\\.+/"
                 },
                 {
                     "command": "vlocode.addToProfile",
@@ -731,6 +791,11 @@
                 },
                 {
                     "command": "vlocode.deployMetadata",
+                    "group": "v_salesforce",
+                    "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
+                },
+                {
+                    "command": "vlocode.deployDeltaMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
                 },
@@ -1347,7 +1412,7 @@
         "json-loader": "^0.5.7",
         "jszip": "^3.7.0",
         "log-symbols": "^4.0.0",
-        "luxon": "^3.1.0",
+        "luxon": "^3.4.0",
         "memfs": "^3.2.2",
         "mocha": "^9.0.3",
         "mocha-html-reporter": "0.0.1",
@@ -1356,7 +1421,7 @@
         "mocha-simple-html-reporter": "^2.0.0",
         "mocha-sonarqube-reporter": "^1.0.2",
         "mock-fs": "^5.0.0",
-        "moment": "^2.29.1",
+        "moment": "^2.29.4",
         "open": "^8.2.1",
         "reflect-metadata": "^0.1.13",
         "shx": "^0.3.4",
@@ -1376,10 +1441,10 @@
         "vsce": "^2.15.0",
         "vscode-languageclient": "^8.1.0",
         "vscode-test": "^1.6.1",
-        "webpack": "^5.85.0",
-        "webpack-cli": "^5.1.1",
+        "webpack": "^5.88.2",
+        "webpack-cli": "^5.1.4",
         "webpack-glob-entry": "^2.1.1",
-        "webpack-merge": "^5.8.0",
+        "webpack-merge": "^5.9.0",
         "webpack-node-externals": "^3.0.0"
     }
 }
