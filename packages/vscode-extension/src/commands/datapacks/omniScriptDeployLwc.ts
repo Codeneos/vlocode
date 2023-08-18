@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 
-import { OmniScriptActivator, OmniScriptDefinitionGenerator, VlocityDatapack } from '@vlocode/vlocity-deploy';
+import { OmniScriptDefinitionGenerator, OmniScriptActivator } from '@vlocode/omniscript';
+import { VlocityDatapack } from '@vlocode/vlocity';
+
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackCommand } from './datapackCommand';

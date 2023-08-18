@@ -294,12 +294,9 @@ importers:
       '@vlocode/vlocity':
         specifier: workspace:*
         version: link:../vlocity
-      bufferutil:
-        specifier: ^4.0.7
-        version: 4.0.7
       jsdom:
         specifier: ^20.0.0
-        version: 20.0.0(bufferutil@4.0.7)
+        version: 20.0.0
     devDependencies:
       '@types/jest':
         specifier: ^28.1.6
@@ -525,7 +522,7 @@ importers:
         version: 4.1.0
       jsdom:
         specifier: ^20.0.0
-        version: 20.0.0(bufferutil@4.0.7)
+        version: 20.0.0
       luxon:
         specifier: ^3.4.0
         version: 3.4.0
@@ -3870,14 +3867,6 @@ packages:
     resolution: {integrity: sha512-9q/rDEGSb/Qsvv2qvzIzdluL5k7AaJOTrw23z9reQthrbF7is4CtlT0DXyO1oei2DCp4uojjzQ7igaSHp1kAEQ==}
     engines: {node: '>=0.2.0'}
     dev: true
-
-  /bufferutil@4.0.7:
-    resolution: {integrity: sha512-kukuqc39WOHtdxtw4UScxF/WVnMFVSQVKhtx3AjZJzhd0RGZZldcrfSEbVsWWe6KNH253574cq5F+wpv0G9pJw==}
-    engines: {node: '>=6.14.2'}
-    requiresBuild: true
-    dependencies:
-      node-gyp-build: 4.6.0
-    dev: false
 
   /builtin-status-codes@3.0.0:
     resolution: {integrity: sha1-hZgoeOIbmOHGZCXgPQF0eI9Wnug=}
@@ -8105,7 +8094,7 @@ packages:
     engines: {node: '>=12.0.0'}
     dev: true
 
-  /jsdom@20.0.0(bufferutil@4.0.7):
+  /jsdom@20.0.0:
     resolution: {integrity: sha512-x4a6CKCgx00uCmP+QakBDFXwjAJ69IkkIWHmtmjd3wvXPcdOS44hfX2vqkOQrVrq8l9DhNNADZRXaCEWvgXtVA==}
     engines: {node: '>=14'}
     peerDependencies:
@@ -8139,7 +8128,7 @@ packages:
       whatwg-encoding: 2.0.0
       whatwg-mimetype: 3.0.0
       whatwg-url: 11.0.0
-      ws: 8.8.1(bufferutil@4.0.7)
+      ws: 8.8.1
       xml-name-validator: 4.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -9426,11 +9415,6 @@ packages:
         optional: true
     dependencies:
       whatwg-url: 5.0.0
-
-  /node-gyp-build@4.6.0:
-    resolution: {integrity: sha512-NTZVKn9IylLwUzaKjkas1e4u2DLNcV4rdYagA4PWdPwW87Bi7z+BznyKSRwS/761tV/lzCGXplWsiaMjLqP2zQ==}
-    hasBin: true
-    dev: false
 
   /node-gyp@9.0.0:
     resolution: {integrity: sha512-Ma6p4s+XCTPxCuAMrOA/IJRmVy16R8Sdhtwl4PrCr7IBlj4cPawF0vg/l7nOT1jPbuNS7lIRJpBSvVsXwEZuzw==}
@@ -13282,7 +13266,7 @@ packages:
         optional: true
     dev: true
 
-  /ws@8.8.1(bufferutil@4.0.7):
+  /ws@8.8.1:
     resolution: {integrity: sha512-bGy2JzvzkPowEJV++hF07hAD6niYSr0JzBNo/J29WsB57A2r7Wlc1UFcTR9IzrPvuNVO4B8LGqF8qcpsVOhJCA==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
@@ -13293,8 +13277,6 @@ packages:
         optional: true
       utf-8-validate:
         optional: true
-    dependencies:
-      bufferutil: 4.0.7
     dev: false
 
   /xml-escape@1.1.0:

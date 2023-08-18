@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 
-import { OmniScriptActivationOptions, OmniScriptActivator, OmniScriptDefinitionGenerator, OmniScriptSpecification, VlocityDatapack } from '@vlocode/vlocity-deploy';
+import { OmniScriptActivationOptions, OmniScriptActivator, OmniScriptSpecification } from '@vlocode/omniscript';
+import { VlocityDatapack } from '@vlocode/vlocity';
+import { container } from '@vlocode/core';
+
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackCommand } from './datapackCommand';
-import { container } from '@vlocode/core';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
 
 @vscodeCommand(VlocodeCommand.omniScriptActivate, { focusLog: true, showProductionWarning: true })

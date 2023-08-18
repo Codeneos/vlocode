@@ -14,6 +14,7 @@ module.exports = {
         "node_modules/**/*",
         ".vscode/**/*",
         ".vscode-test/**/*",
+        "packages/vscode-extension/build",
         "jest.config.ts"
     ],
     extends: [

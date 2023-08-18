@@ -107,34 +107,37 @@ vlocode.deployMetadata:
   title: 'Salesforce: Deploy to Org'
   group: v_salesforce
   when: &salesforceFileActionWhen 'vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata'
-  menus:
+  menus: &salesforceFileActionMenus
     - menu: commandPalette
     - menu: editor/context
     - menu: explorer/context
+vlocode.deployDeltaMetadata:
+  title: 'Salesforce: Deploy differences to Org'
+  group: v_salesforce
+  when: *salesforceFileActionWhen
+  menus: *salesforceFileActionMenus
 vlocode.refreshMetadata:
   title: 'Salesforce: Refresh from Org'
   group: v_salesforce
   when: *salesforceFileActionWhen
-  menus:
-    - menu: commandPalette
-    - menu: editor/context
-    - menu: explorer/context
+  menus: *salesforceFileActionMenus
 vlocode.destroyMetadata:
   title: 'Salesforce: Delete from Org'
   group: v_salesforce
   when: *salesforceFileActionWhen
-  menus:
-    - menu: commandPalette
-    - menu: editor/context
-    - menu: explorer/context
+  menus: *salesforceFileActionMenus
 vlocode.viewInSalesforce:
   title: 'Salesforce: Open in Org'
   group: v_salesforce
   when: *salesforceFileActionWhen
   menus:
     - menu: commandPalette
+      when:
+        - resourceSet
     - menu: editor/context
     - menu: explorer/context
+      when:
+        - '!explorerResourceIsFolder'
 vlocode.selectApiVersion:
   title: 'Salesforce: Select API Version'
   group: v_salesforce
@@ -153,6 +156,9 @@ vlocode.execAnonymousCommand:
   when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
+    - menu: explorer/context
+      when:
+        - resourceScheme == file && resourceExtname == .apex
 vlocode.createLwc:
   title: 'Salesforce: New Lightning Web Component (LWC)'
   group: v_salesforce
@@ -315,8 +321,8 @@ vlocode.omniScript.generateLwc:
   menus: &omniScriptCommandMenus
     - menu: explorer/context
       when:
-        - resourceScheme == folder && resourcePath =~ /.+\\OmniScript\\[^\\]+$/
-        - resourceScheme == folder && resourcePath =~ /.+\/OmniScript\/[^\/]+$/
+        - explorerResourceIsFolder && resourcePath =~ /.+\\OmniScript\\[^\\]+$/
+        - explorerResourceIsFolder && resourcePath =~ /.+\/OmniScript\/[^\/]+$/
         - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+\.json$/
         - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+\.json$/
     - menu: commandPalette

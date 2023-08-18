@@ -58,7 +58,7 @@ export class VlocityAdminCommand extends CommandBase {
     }
 
     public async execute(...commands: string[]) : Promise<void> {
-        for (const command of commands) {
+        for (const command of commands.length ? commands : [ undefined ]) {
             await this.executeCommand(command);
         }
     }

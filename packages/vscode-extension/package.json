@@ -115,7 +115,10 @@
         "onCommand:vlocode.removeFromProfile",
         "onCommand:vlocode.createOmniscriptLwc",
         "onCommand:vlocode.generateLwc",
-        "onCommand:vlocode.deployDeltaMetadata"
+        "onCommand:vlocode.deployDeltaMetadata",
+        "onCommand:vlocode.omniScript.generateLwc",
+        "onCommand:vlocode.omniScript.deployLwc",
+        "onCommand:vlocode.omniScript.activate"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -204,10 +207,6 @@
             {
                 "command": "vlocode.createOmniscriptLwc",
                 "title": "Vlocity: New Omniscript Web Component (LWC)"
-            },
-            {
-                "command": "vlocode.generateLwc",
-                "title": "Vlocity: Generate LWC"
             },
             {
                 "command": "vlocode.buildDatapack",
@@ -392,6 +391,18 @@
                     "light": "resources/light/visibility.svg",
                     "dark": "resources/dark/visibility.svg"
                 }
+            },
+            {
+                "command": "vlocode.omniScript.generateLwc",
+                "title": "OmniScript: Generate LWC"
+            },
+            {
+                "command": "vlocode.omniScript.deployLwc",
+                "title": "OmniScript: Deploy as LWC"
+            },
+            {
+                "command": "vlocode.omniScript.activate",
+                "title": "OmniScript: (Re-)Activate"
             }
         ],
         "menus": {
@@ -629,6 +640,36 @@
                 {
                     "command": "vlocode.developerLogs.setLogVisibility",
                     "when": "view == developerLogsView && false"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
                 }
             ],
             "explorer/context": [
@@ -658,26 +699,6 @@
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == folder && resourcePath =~ /.+\\/OmniScript\\/.+/"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == folder && resourcePath =~ /.+\\\\OmniScript\\\\.+/"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+_DataPack.json$/"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+_DataPack.json$/"
-                },
-                {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
@@ -700,7 +721,7 @@
                 {
                     "command": "vlocode.viewInSalesforce",
                     "group": "v_salesforce",
-                    "when": "(vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata) && resourceScheme == file"
+                    "when": "(vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata) && !explorerResourceIsFolder"
                 },
                 {
                     "command": "vlocode.execAnonymousCommand",
@@ -708,26 +729,6 @@
                     "when": "config.vlocity.salesforce.enabled && resourceScheme == file && resourceExtname == .apex"
                 },
                 {
-                    "command": "vlocode.createLwc",
-                    "group": "v_salesforce",
-                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\/lwc\\/.+/"
-                },
-                {
-                    "command": "vlocode.createLwc",
-                    "group": "v_salesforce",
-                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\\\lwc\\\\.+/"
-                },
-                {
-                    "command": "vlocode.createApexClass",
-                    "group": "v_salesforce",
-                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\/classes\\/.+/"
-                },
-                {
-                    "command": "vlocode.createApexClass",
-                    "group": "v_salesforce",
-                    "when": "config.vlocity.salesforce.enabled && resourceScheme == folder && resourcePath =~ /.+\\\\classes\\\\.+/"
-                },
-                {
                     "command": "vlocode.addToProfile",
                     "group": "v_salesforce_profile",
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
@@ -746,6 +747,66 @@
                     "command": "vlocode.removeFromProfile",
                     "group": "v_salesforce_profile",
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && explorerResourceIsFolder && resourceDirname =~ /(objects|classes)/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
                 }
             ],
             "editor/context": [
@@ -770,26 +831,6 @@
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks"
                 },
                 {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == folder && resourcePath =~ /.+\\/OmniScript\\/.+/"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == folder && resourcePath =~ /.+\\\\OmniScript\\\\.+/"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+_DataPack.json$/"
-                },
-                {
-                    "command": "vlocode.generateLwc",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+_DataPack.json$/"
-                },
-                {
                     "command": "vlocode.deployMetadata",
                     "group": "v_salesforce",
                     "when": "vlocode.conditionalContextMenus == false || resourcePath in vlocode.metadata"
@@ -823,6 +864,36 @@
                     "command": "vlocode.removeFromProfile",
                     "group": "v_salesforce_profile",
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.generateLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.deployLwc",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.activate",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
                 }
             ],
             "view/item/context": [

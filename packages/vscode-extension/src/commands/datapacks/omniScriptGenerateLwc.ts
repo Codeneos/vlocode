@@ -1,14 +1,16 @@
 import * as vscode from 'vscode';
 import { join, relative } from 'path';
 
-import { OmniScriptDefinitionGenerator, OmniScriptLwcCompiler, VlocityDatapack } from '@vlocode/vlocity-deploy';
+import { OmniScriptDefinitionGenerator, OmniScriptLwcCompiler } from '@vlocode/omniscript';
+import { VlocityDatapack } from '@vlocode/vlocity';
+import { container, FileSystem, FindOptions } from '@vlocode/core';
+import { spreadAsync } from '@vlocode/util';
+import { SalesforcePackage } from '@vlocode/salesforce';
+
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { withProgress } from '../../lib/vlocodeService';
 import { DatapackCommand } from './datapackCommand';
-import { container, FileSystem, FindOptions } from '@vlocode/core';
-import { spreadAsync } from '@vlocode/util';
-import { SalesforcePackage } from '@vlocode/salesforce';
 
 @vscodeCommand(VlocodeCommand.omniScriptGenerateLwc, { focusLog: true })
 export default class GenerateLwcCommand extends DatapackCommand {
