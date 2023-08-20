@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/core",
-    "version": "0.20.0-alpha.1",
+    "version": "0.20.1-next.0",
     "description": "Vlocode core IoC container framework library",
     "main": "lib/index.js",
     "publishConfig": {

@@ -4,6 +4,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.1-next.0](https://github.com/codeneos/vlocode/compare/v0.20.0-alpha.1...v0.20.1-next.0) (2023-08-20)
+
+### Bug Fixes
+
+* datapack rename and close causes name duplication when the old name is present in the old name; rename and clone now also take into account other global keys such on product2 datapacks. ([fbd723d](https://github.com/codeneos/vlocode/commit/fbd723da3fcdae3625808e31cf62f70ef10cde39))
+* decomposed metadata fragments do are not deploy without a parent ([a2e187c](https://github.com/codeneos/vlocode/commit/a2e187cd0bd451dc4c71ce6023ff8c52d7148d3f))
+* readFileAsString causes circular reference in VSCodeFileSystemAdapter ([dadd47f](https://github.com/codeneos/vlocode/commit/dadd47f90013bcdcd04519e83eea2a6e4ffe8ce6))
+* refreshing developer logs does not await refresh causing errors to not be reported back if any occurred ([376f6ef](https://github.com/codeneos/vlocode/commit/376f6ef84d86dd76b1d89648414f2bd8f9418409))
+* salesforce core tries to load messages that do not exists in a bundled context ([852893f](https://github.com/codeneos/vlocode/commit/852893ff52183989056954198551026f700defce))
+* when a record groups only has skipped records it is incorrectly reported as failed ([dba71f4](https://github.com/codeneos/vlocode/commit/dba71f4421c4fd2c5b7cc15bb19afa13e37cbfbb))
+
+### Features
+
+* accurately measure extension startup performance ([87d7e88](https://github.com/codeneos/vlocode/commit/87d7e88ef290660da24301c387fd97e9c9f19fea))
+* add deploy difference command which only pushes changed metadata files to the org ([ed21dad](https://github.com/codeneos/vlocode/commit/ed21dad82f93f822ddb6f6c72d397cd35b15a36e))
+* determining the differences between the deployed and retrieved data used to depend on the order of the elements in the XML; now the order is only considered relevant for layouts and flexipages which use the order of the elements in the XML as order of the elements on the screen. ([0dd7048](https://github.com/codeneos/vlocode/commit/0dd70482e36b9e70e19c75c8ff0a30dbd8572ebe))
+* improve build system and reduce load time of extension on startup by 40% ([692de00](https://github.com/codeneos/vlocode/commit/692de003c677516ed13064fb4d7011be2f090225))
+* support generation of LWCs components from OmniScripts ([a885d52](https://github.com/codeneos/vlocode/commit/a885d52079721417677034371f839be5f161c06f))
+
 # [0.20.0-alpha.1](https://github.com/codeneos/vlocode/compare/v0.20.0-alpha.0...v0.20.0-alpha.1) (2023-08-14)
 
 **Note:** Version bump only for package vlocode-project

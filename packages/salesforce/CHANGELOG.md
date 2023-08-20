@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.1-next.0](https://github.com/Codeneos/vlocode/compare/v0.20.0-alpha.1...v0.20.1-next.0) (2023-08-20)
+
+### Bug Fixes
+
+* decomposed metadata fragments do are not deploy without a parent ([a2e187c](https://github.com/Codeneos/vlocode/commit/a2e187cd0bd451dc4c71ce6023ff8c52d7148d3f))
+
+### Features
+
+* add deploy difference command which only pushes changed metadata files to the org ([ed21dad](https://github.com/Codeneos/vlocode/commit/ed21dad82f93f822ddb6f6c72d397cd35b15a36e))
+* determining the differences between the deployed and retrieved data used to depend on the order of the elements in the XML; now the order is only considered relevant for layouts and flexipages which use the order of the elements in the XML as order of the elements on the screen. ([0dd7048](https://github.com/Codeneos/vlocode/commit/0dd70482e36b9e70e19c75c8ff0a30dbd8572ebe))
+* improve build system and reduce load time of extension on startup by 40% ([692de00](https://github.com/Codeneos/vlocode/commit/692de003c677516ed13064fb4d7011be2f090225))
+
 # [0.20.0-alpha.1](https://github.com/Codeneos/vlocode/compare/v0.20.0-alpha.0...v0.20.0-alpha.1) (2023-08-14)
 
 **Note:** Version bump only for package @vlocode/salesforce
