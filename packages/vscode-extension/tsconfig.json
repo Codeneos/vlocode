@@ -4,6 +4,7 @@
         "outDir": "lib",
         "sourceMap": true,
         "declaration": false,
+        "allowArbitraryExtensions": true,
         "baseUrl": "src",
         "types": ["node", "webpack-env", "jest"]
     },

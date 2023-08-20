@@ -1,10 +1,15 @@
 {
-    "extends": "../tsconfig",
+    "extends": "../../../tsconfig",
     "compilerOptions": {
+        "module": "ES2022",
+        "moduleResolution": "bundler",
         "outDir": "lib",
         "sourceMap": true,
-        "baseUrl": ".",
-        "forceConsistentCasingInFileNames": true,
-        "types": ["node"]
-    }
+        "declaration": false,
+        "allowArbitraryExtensions": true,
+        "rootDirs": ["../../", "../../../"],
+        "typeRoots": ["../node_modules/@types", "../types"]
+    },
+    "include": ["../src/**/*.ts", "../types/*.d.ts"],
+    "exclude": ["../src/__tests__/**/*.ts"]
 }
