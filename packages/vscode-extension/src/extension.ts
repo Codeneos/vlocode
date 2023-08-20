@@ -1,9 +1,6 @@
-const startTime = Date.now(); // Track start up performance
-
 // Easier debugging with source maps
-//import 'source-map-support/register';
 import * as vscode from 'vscode';
-import * as vlocityPackageManifest from 'vlocity/package.json';
+import vlocityPackageManifest from 'vlocity/package.json';
 
 import * as constants from './constants';
 import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, FileSystem, NodeFileSystem } from '@vlocode/core';
@@ -34,6 +31,12 @@ import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 
 import './commands';
+
+/**
+ * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
+ * by VSCode. This is used to determine the startup time of the extension.
+ */
+declare const __vlocodeStartTime: number | undefined;
 
 class VlocityLogFilter {
     private readonly vlocityLogFilterRegex = [
@@ -218,7 +221,7 @@ class Vlocode {
 
         // track activation time
         this.logger.focus();
-        this.logger.info(`Vlocode activated in ${Date.now() - startTime}ms`);
+        __vlocodeStartTime && this.logger.info(`Vlocode activated in ${Date.now() - __vlocodeStartTime}ms`);
 
         // Connect to SF
         void this.service.initialize();
