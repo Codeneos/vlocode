@@ -453,14 +453,24 @@ export function except<T>(source: ReadonlyArray<T>, target: ReadonlyArray<T>): A
 }
 
 /**
- * Segregate an Array into a true-ish and false-ish Array. The first element of the result will contain the all elements where the filter returns a
- * true-ish value the second element of the result of the result will contain all items for which the filter returned a false-ish value
- * @param array Array
+ * Segregate the elements of the source array into two distinct arrays the first array holding the values for which the predicate returned true
+ * and the second array holding the values for which the predicate returned false.
+ * @param array Array to segregate
+ * @param predicate Predicate to segregate the array
+ * @returns A tuple with two arrays the first array holding the values for which the predicate returned true and the second array 
+ * holding the values for which the predicate returned false.
+ * @example
+ * ```typescript
+ * // Segregate even and odd numbers
+ * const [ even, odd ] = segregate([ 1, 2, 3, 4, 5 ], i => i % 2 == 0);
+ * console.log(even); // [ 2, 4 ]
+ * console.log(odd); // [ 1, 3, 5 ]
+ * ```
  */
-export function segregate<T>(array: Array<T>, filter: (item: T) => any) : [ Array<T>, Array<T> ] {
+export function segregate<T>(array: Array<T>, predicate: (item: T, index: number) => any) : [ Array<T>, Array<T> ] {
     const result: [ Array<T>, Array<T> ] = [ new Array<T>(), new Array<T>() ];
-    array.forEach(item => {
-        result[filter(item) ? 0 : 1].push(item)
+    array.forEach((item, index) => {
+        result[predicate(item, index) ? 0 : 1].push(item)
     });
     return result;
 }

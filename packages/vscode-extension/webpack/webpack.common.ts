@@ -1,10 +1,10 @@
 import * as path from 'path';
 import * as webpack from 'webpack';
 import { merge } from 'webpack-merge';
-import * as glob from 'glob';
-import * as CopyPlugin from 'copy-webpack-plugin';
-import WatchMarkersPlugin from './plugins/watchMarkers';
+import CopyPlugin from 'copy-webpack-plugin';
 import { existsSync, readdirSync, readFileSync } from 'fs';
+import { EsbuildPlugin } from 'esbuild-loader';
+import packageJson from '../package.json';
 
 const packageExternals = [
     // In order to run tests the main test frameworks need to be marked
@@ -118,7 +118,15 @@ const common : webpack.Configuration = {
                 }
             },
         },
-        minimize: false
+        minimize: true,
+        minimizer: [
+            new EsbuildPlugin({
+                target: 'es2020',
+                keepNames: true,
+                minify: true,
+                legalComments: 'external'
+            })
+        ]
     },
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
@@ -152,29 +160,29 @@ const extension : webpack.Configuration = {
                 { context: 'node_modules/vlocity/apex', from: '**/*.cls', to: 'apex' }
             ]
         }),
+        new webpack.BannerPlugin({
+            banner: `vlocode v${require('../package.json').version} - ${new Date().toISOString()}\nCopyright P. van Gulik <peter@curlybracket.nl>\n[fullhash] ([file])`,
+            include: [ 'vlocode.js' ]
+        }),
+        new webpack.BannerPlugin({
+            banner: `vlocode v${require('../package.json').version} - ${new Date().toISOString()} ([fullhash])`,
+            exclude: [ 'vlocode.js' ]
+        }),
+        new webpack.BannerPlugin({
+            banner: `"use strict";\nvar __vlocodeStartTime = Date.now();`,
+            include: [ 'vlocode.js' ],
+            raw: true
+        }),
+        new webpack.DefinePlugin({
+            __webpackBuildInfo: JSON.stringify({
+                version: packageJson.version,
+                buildDate: new Date().toISOString() 
+            })
+        })
     ]
 };
 
-const tests : webpack.Configuration = {
-    entry:
-        glob.sync('./src/test/**/*.test.ts').reduce((map, file) => Object.assign(map, {
-            [file.replace(/^.*?test\/(.*\.test)\.ts$/i, '$1')]: file
-        }),
-        {
-            index: './src/test/index.ts',
-            runTest: './src/test/runTest.ts'
-        }),
-    optimization: {
-        splitChunks: false,
-    },
-    name: 'tests',
-    output: {
-        libraryTarget: 'commonjs2',
-        path: path.resolve(contextFolder, 'out', 'test')
-    }
-};
-
-const configVariations = { extension, tests };
+const configVariations = { extension };
 
 export default (env, extraConfig) => {
     return Object.keys(configVariations)

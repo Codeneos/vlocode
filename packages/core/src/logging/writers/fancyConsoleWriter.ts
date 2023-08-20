@@ -1,5 +1,5 @@
 import { LogWriter, LogEntry, LogLevel } from '..';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { DateTime } from 'luxon';
 
 export class FancyConsoleWriterOptions { 

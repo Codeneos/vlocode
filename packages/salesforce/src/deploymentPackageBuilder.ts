@@ -1,6 +1,6 @@
 import * as path from 'path';
-import * as chalk from 'chalk';
-import * as ZipArchive from 'jszip';
+import chalk from 'chalk';
+import ZipArchive from 'jszip';
 
 import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri } from '@vlocode/util';

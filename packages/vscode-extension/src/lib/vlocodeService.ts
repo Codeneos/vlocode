@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 
 import { Logger, injectable ,container } from '@vlocode/core';
 import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';

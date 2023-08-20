@@ -2,7 +2,7 @@ import 'jest';
 import * as path from 'path';
 
 // Test data
-import * as datapackData from './data/datapack.json'
+import datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
 import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore,  } from '@vlocode/salesforce';

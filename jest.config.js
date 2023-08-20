@@ -14,6 +14,6 @@ module.exports = {
     "packages/vscode-extension"
   ],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }]
   }
 };

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as open from 'open';
+import open from 'open';
 
 import { forEachAsyncParallel } from '@vlocode/util';
 import { DeployResult, DeployStatus, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';

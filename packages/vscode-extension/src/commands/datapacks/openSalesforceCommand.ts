@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as open from 'open';
+import open from 'open';
 
 import { proxySpread, evalExpr } from '@vlocode/util';
 import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';

@@ -8,6 +8,6 @@ module.exports = {
   ],
   testRegex: "(\\.)(test)\\.[jt]sx?$",
   transform: {
-    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }]
   }
 };

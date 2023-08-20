@@ -377,6 +377,25 @@ export const getErrorMessage: GetErrorMessage = Object.assign(
 });
 
 /**
+ * Describe options for the {@link objectEquals} function
+ */
+export interface ObjectEqualsOptions {
+    /**
+     * Function to compare 2 primitives for equality, defaults to `===`-comparison; the function should return true if the 2 primitives are equal otherwise false.
+     */
+    primitiveCompare?: (a: Exclude<unknown, object>, b: Exclude<unknown, object>) => boolean;
+    /**
+     * Function to compare 2 objects for equality, defaults to `objectEquals`-comparison; the function should return true if the 2 objects are equal otherwise false.
+     * If the function is not specified the `objectEquals`-function is used to compare the objects; 
+     */
+    objectCompare?: (a: object, b: object) => boolean;
+    /**
+     * Ignore the order of the elements in an array when comparing arrays for equality. 
+     */
+    ignoreArrayOrder?: boolean;
+}
+
+/**
  * Compare 2 objects for quality by comparing the values of the properties of the objects instead of only reference-equality.
  * For none-object (primitives such as string, integer, etc) a `primitiveCompare` can be specified; it no `primitiveCompare` is specified
  * equality for primtices defaults a `===`-comparison.
@@ -393,21 +412,7 @@ export const getErrorMessage: GetErrorMessage = Object.assign(
 export function objectEquals(
     a?: unknown, 
     b?: unknown, 
-    options?: {
-        /**
-         * Function to compare 2 primitives for equality, defaults to `===`-comparison; the function should return true if the 2 primitives are equal otherwise false.
-         */
-        primitiveCompare?: (a: Exclude<unknown, object>, b: Exclude<unknown, object>) => boolean;
-        /**
-         * Function to compare 2 objects for equality, defaults to `objectEquals`-comparison; the function should return true if the 2 objects are equal otherwise false.
-         * If the function is not specified the `objectEquals`-function is used to compare the objects; 
-         */
-        objectCompare?: (a: object, b: object) => boolean;
-        /**
-         * Ignore the order of the elements in an array when comparing arrays for equality. 
-         */
-        ignoreArrayOrder?: boolean;
-    }
+    options?: ObjectEqualsOptions
 ): boolean {
     if (typeof a !== 'object' || typeof b !== 'object' || a === null || b == null) {
         return options?.primitiveCompare?.(a, b) ?? a === b;
@@ -423,14 +428,14 @@ export function objectEquals(
         return false;
     }
 
-    const objectEqualtyFn: typeof objectEquals = options?.objectCompare ?? objectEquals;
+    const objectEqualityFn: typeof objectEquals = options?.objectCompare ?? objectEquals;
 
     // If both A and B are arrays and the ignoreArrayOrder option is set, then check if all elements of A are in B
     // but ignore the order of the elements in B
     if (options?.ignoreArrayOrder && Array.isArray(a) && Array.isArray(b)) {
         const validElements = [...b];
-        for (const key of a) {
-            const index = validElements.findIndex(a => objectEqualtyFn(a[key], b[key], options));
+        for (const element of a) {
+            const index = validElements.findIndex(otherElement => objectEqualityFn(otherElement, element, options));
             if (index === -1) {
                 return false;
             }
@@ -441,7 +446,7 @@ export function objectEquals(
 
     // Check if all keys of A are equal to the keys in B
     for (const key of Object.keys(a)) {
-        if (!objectEqualtyFn(a[key], b[key], options)) {
+        if (!objectEqualityFn(a[key], b[key], options)) {
             return false;
         }
     }

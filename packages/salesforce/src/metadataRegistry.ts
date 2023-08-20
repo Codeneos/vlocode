@@ -1,8 +1,8 @@
-import * as registryData from './registry/metadataRegistry.json';
+import registryData from './registry/metadataRegistry.json';
 import { MetadataType as RegistryMetadataType } from './registry/types';
 import { singletonMixin } from '@vlocode/util';
 import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import * as urlFormats from './metadataUrls.json';
+import urlFormats from './metadataUrls.json';
 
 export interface MetadataUrlFormat {
     query: string;

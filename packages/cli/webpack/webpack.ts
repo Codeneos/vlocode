@@ -1,19 +1,27 @@
 import * as path from 'path';
-import * as glob from 'glob';
+import glob from 'glob';
 import * as webpack from 'webpack';
-import WatchMarkersPlugin from './plugins/watchMarkers';
-import { TsconfigPathsPlugin } from 'tsconfig-paths-webpack-plugin';
-import type { Options } from 'ts-loader';
-import * as packageJson from '../package.json';
+import packageJson from '../package.json';
+import { existsSync, readFileSync, readdirSync } from 'fs';
+import { EsbuildPlugin } from 'esbuild-loader';
 
 const packageExternals = [
     'vscode',
     'vscode-languageclient',
-    'electron'
+    'electron',
+    'utf-8-validate',
+    'bufferutil'
 ];
 
 const contextFolder = path.resolve(__dirname, '..');
 const workspaceFolder = path.resolve(contextFolder, '..');
+const workspacePackages = readdirSync(workspaceFolder, { withFileTypes: true })
+    .filter(p => p.isDirectory() && existsSync(path.join(workspaceFolder, p.name, 'package.json')))
+    .map(p => ({
+        name: p.name,
+        dir: path.join(workspaceFolder, p.name),
+        packageJson: JSON.parse(readFileSync(path.join(workspaceFolder, p.name, 'package.json')).toString())
+    }));
 
 const common : webpack.Configuration = {
     name: 'vlocode-cli',
@@ -36,33 +44,25 @@ const common : webpack.Configuration = {
         rules: [
             {
                 test: /\.ts$/,
+                exclude: /node_modules/,
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        onlyCompileBundledFiles: true,
-                        compilerOptions: {
-                            sourceMap: false,
-                            rootDir: undefined,
-                            outDir: path.resolve(contextFolder, '.ts-temp')
-                        },
-                        transpileOnly: true,
-                        configFile: 'tsconfig.json'
-                    } as Options
+                        configFile: path.resolve(__dirname, 'tsconfig.json'),
+                        transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
+                    }
                 }],
             }
         ]
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
-        alias: {
-            '@vlocode/core': path.resolve(workspaceFolder, 'core', 'src', 'index.ts'),
-            '@vlocode/salesforce': path.resolve(workspaceFolder, 'salesforce', 'src', 'index.ts'),
-            '@vlocode/util': path.resolve(workspaceFolder, 'util', 'src', 'index.ts'),
-            '@vlocode/vlocity-deploy': path.resolve(workspaceFolder, 'vlocity-deploy', 'src', 'index.ts')
-        },
-        plugins: [ 
-            new TsconfigPathsPlugin()
-        ]
+        extensions: ['.ts', '.js', '.json', '.yaml'],
+        alias: Object.fromEntries(
+            workspacePackages.map(({ dir, packageJson }) => ([
+                packageJson.name,
+                path.join(dir, 'src')
+            ]))
+        )
     },
     output: {
         filename: '[name].js',
@@ -76,7 +76,6 @@ const common : webpack.Configuration = {
         __filename: false
     },
     optimization: {
-        minimize: false,
         runtimeChunk: false,
         concatenateModules: true,
         mergeDuplicateChunks: true,
@@ -87,32 +86,41 @@ const common : webpack.Configuration = {
         usedExports: false,
         portableRecords: true,
         splitChunks: false,
+        minimize: true,
+        minimizer: [
+            new EsbuildPlugin({
+                target: 'es2020',
+                keepNames: true,
+                minify: true,
+                legalComments: 'external'
+            })
+        ]
     },
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
             moduleName => request && new RegExp(`^${moduleName}(/|$)`, 'i').test(request)
         );
         if (isExternal){
-            // @ts-ignore
             return callback(undefined, `commonjs ${request}`);
         }
-        // @ts-ignore
         callback();
     },
     plugins: [
-        new WatchMarkersPlugin(),
         new webpack.IgnorePlugin({
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
         }),
         new webpack.DefinePlugin({
-            __webpack_build_info__: JSON.stringify({ 
-                version: packageJson.version, 
-                description: packageJson.description, 
-                buildDate: new Date().toISOString() 
+            __webpack_build_info__: JSON.stringify({
+                version: packageJson.version,
+                description: packageJson.description,
+                buildDate: new Date().toISOString()
             })
         })
-    ]
+    ],
+    infrastructureLogging: {
+        level: "log"
+    }
 };
 
 export default common;

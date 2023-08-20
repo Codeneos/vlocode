@@ -8,7 +8,7 @@ module.exports = {
   ],
   testRegex: "(\\.)(test)\\.[jt]sx?$",
   transform: {
-    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }],
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }],
     '\\.yaml$': '<rootDir>/webpack/loaders/yaml.js'
   },
   moduleNameMapper: {

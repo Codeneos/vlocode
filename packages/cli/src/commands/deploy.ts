@@ -1,6 +1,6 @@
-import * as logSymbols from 'log-symbols';
+import logSymbols from 'log-symbols';
 import { join } from 'path';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { existsSync } from 'fs';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';

@@ -1,5 +1,5 @@
 import { Stream } from 'stream';
-import * as ZipArchive from 'jszip';
+import ZipArchive from 'jszip';
 
 import { Logger, injectable } from '@vlocode/core';
 import { Timer, removeAll, stringEqualsIgnoreCase, Iterable } from '@vlocode/util';

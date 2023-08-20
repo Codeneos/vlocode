@@ -1,4 +1,4 @@
-import * as open from 'open';
+import open from 'open';
 import * as fs from 'node:fs/promises';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';

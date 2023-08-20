@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
+import exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import VlocityDatapackService, { ManifestEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { CommandBase } from '../../lib/commandBase';
 import { evalExpr, mapAsync, mapAsyncParallel } from '@vlocode/util';

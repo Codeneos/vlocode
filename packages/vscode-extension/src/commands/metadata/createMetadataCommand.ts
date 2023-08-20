@@ -2,8 +2,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
-import * as itemTemplates from '../../newItemTemplates.yaml';
-import * as globby from 'globby';
+import itemTemplates, { NewItemTemplate } from '../../newItemTemplates.yaml';
+import globby from 'globby';
 import { container } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import MetadataCommand from './metadataCommand';
@@ -69,7 +69,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
         void vscode.window.showInformationMessage(newItemType.successNotification || 'Successfully created new item');
     }
 
-    protected async getItemTemplate() : Promise<typeof itemTemplates[0] | undefined> {
+    protected async getItemTemplate() : Promise<NewItemTemplate | undefined> {
         if (this.typeName) {
             if (itemTemplates[this.typeName]) {
                 return itemTemplates[this.typeName];

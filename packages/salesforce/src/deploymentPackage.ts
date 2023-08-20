@@ -1,6 +1,6 @@
 
 import * as path from 'path';
-import * as ZipArchive from 'jszip';
+import ZipArchive from 'jszip';
 import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEqualsIgnoreCase } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './deploy/packageXml';

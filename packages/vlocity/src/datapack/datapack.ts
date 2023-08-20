@@ -14,6 +14,8 @@ export type VlocityDatapackReference = {
     VlocityMatchingRecordSourceKey: string;
 });
 
+const DATAPACK_GLOBAL_KEY_FIELD = '%vlocity_namespace%__GlobalKey__c';
+
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
  */
@@ -55,9 +57,9 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }
 
         this.#dataProxy = VlocityDatapackDataProxy.create(this.data);
-        
+
         // Proxies allow us to intercept all property calls
-        // allowing us to simulate an indexer ([]) overload 
+        // allowing us to simulate an indexer ([]) overload
         return new Proxy(this, {
             get: (target, name) => target.getProperty(name),
             set: (target, name, value) => target.setProperty(name, value),
@@ -77,13 +79,13 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }
 
         for (const [property, value, owner] of this.getProperties()) {
-            if (typeof value === 'string' && value.includes(currentName)) {
+            if (property !== 'Name' && typeof value === 'string' && value.includes(currentName)) {
                 owner[property] = value.replaceAll(currentName, newName);
             }
         }
     }
 
-    public updateField(fieldName: string, newValue: string) {
+    public updateField(fieldName: string, newValue: string | number | boolean) {
         const currentValue = this[fieldName];
         this[fieldName] = newValue;
 
@@ -92,12 +94,12 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             if (newSourceKey !== this.sourceKey) {
                 this.updateSourceKey(newSourceKey);
             }
-        }        
+        }
 
-        for (const [property, value, owner] of this.getProperties()) {                        
+        for (const [property, value, owner] of this.getProperties()) {
             const isMatchingKey = owner['VlocityDataPackType'] == 'VlocityMatchingKeyObject';
             const isParentReference = isMatchingKey && owner['VlocityRecordSObjectType'] == this.sobjectType;
-            
+
             if (!isParentReference) {
                 continue;
             }
@@ -120,31 +122,65 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }
     }
 
-    public regenerateGlobalKey() {
+    /**
+     * Updates the global key of this datapack in-place and all of it's child datapacks. Use with caution as 
+     * this will change the global key causing the datapack to be re-inserted on the next deployment.
+     * @param fieldName Field name to use as global key. If not specified, all global key fields are updated.
+     */
+    public updateGlobalKeyField(fieldName?: string) {
+        if (fieldName === undefined) {
+            // When no field name is specified, update all global key fields
+            for (const field of this.getGlobalKeyFields()) {
+                this.updateGlobalKeyField(field);
+            }
+            return;
+        }
+
         // Regenerate main objects global key
-        this.updateGlobalKey(this.data, generateGuid());
+        this.replaceGlobalKey(this.data, fieldName);
 
         // Update include child records that have global keys
         for (const child of this.getChildObjects()) {
-            if (child.VlocityDataPackType == 'SObject' && child['%vlocity_namespace%__GlobalKey__c']) {
-                this.updateGlobalKey(child, generateGuid());
+            if (child.VlocityDataPackType == 'SObject' && child[fieldName]) {
+                this.replaceGlobalKey(child, fieldName);
             }
         }
     }
 
-    private updateGlobalKey(object: object, newGlobalKey: string) {
-        const oldGlobalKey = object['%vlocity_namespace%__GlobalKey__c'];
-        object['%vlocity_namespace%__GlobalKey__c'] = newGlobalKey;
+    /**
+     * Returns a list of fields in this datapack that are considered global keys. Tries 
+     * to match the standard GlobalKey__c format as well as group and version global keys.
+     * @returns List of global key fields in this datapack
+     */
+    private getGlobalKeyFields() {
+        return Object.keys(this.data).filter(key => /__Global[a-z]*Key__c$/i.test(key));
+    }
+
+    /**
+     * Replace the global key on the specified object and all of it's child datapacks.
+     * with a new global key. This is useful when you want to clone a datapack.
+     * Optionally, you can provide a new global key to use otherwise a new one will be generated in UUID format.
+     * @param object Datapack to replace global key on
+     * @param keyField Field name of the global key
+     * @param newGlobalKey Optional new global key to use
+     * @returns The new global key
+     */
+    private replaceGlobalKey(object: object, keyField: string, newGlobalKey?: string) {
+        const oldGlobalKey = object[keyField];
+        if (!newGlobalKey) {
+            newGlobalKey = generateGuid();
+        }
+        object[keyField] = newGlobalKey;
 
         if (typeof oldGlobalKey === 'string' && oldGlobalKey.trim()) {
             for (const [property, value, owner] of this.getProperties()) {
-                if (typeof value === 'string' && value.endsWith(oldGlobalKey)) {
+                if (typeof value === 'string' && value.includes(oldGlobalKey)) {
                     owner[property] = value.replace(oldGlobalKey, newGlobalKey);
                 }
             }
         }
 
-        return object;
+        return newGlobalKey;
     }
 
     /**
@@ -272,10 +308,10 @@ class VlocityDatapackDataProxy<T extends object> extends PropertyTransformHandle
         return new Proxy(data, new VlocityDatapackDataProxy<T>());
     }
 
-    private static nameTransformer(name: string) { 
+    private static nameTransformer(name: string) {
         return removeNamespacePrefix(name).replace('_', '').toLowerCase();
     }
-            
+
     private static propertyTransformer(target: object, name: string | number | symbol) {
         if (typeof name !== 'string' && Object.prototype.hasOwnProperty.call(target, name)) {
             return name;

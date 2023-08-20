@@ -15,6 +15,7 @@
         "strict": false,
         "strictNullChecks": true,
         "moduleResolution": "node",
+        "esModuleInterop": true,
         "resolveJsonModule": true,
         "noUnusedLocals": false,
         "emitDecoratorMetadata": true,

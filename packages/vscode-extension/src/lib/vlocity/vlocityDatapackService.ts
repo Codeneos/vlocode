@@ -2,16 +2,16 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
 import * as jsforce from 'jsforce';
-import * as vlocity from 'vlocity';
 import * as vscode from 'vscode';
+import vlocity from 'vlocity';
 
 import { Logger, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
-import * as exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
+import exportQueryDefinitions, { DatapackQueryDefinitions } from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
-import * as DataPacksExpand from 'vlocity/lib/datapacksexpand';
+import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
 
@@ -29,8 +29,6 @@ export interface ObjectEntry {
 }
 
 type ObjectEntryWithId = ObjectEntry & { id: string };
-
-type QueryDefinitions = typeof import('exportQueryDefinitions.yaml');
 
 export interface DatapackResult {
     key: string;
@@ -245,7 +243,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
     /**
      * Get all known query definitions.
      */
-    public async getQueryDefinitions() : Promise<QueryDefinitions> {
+    public async getQueryDefinitions() : Promise<DatapackQueryDefinitions> {
         const customJobOptions = await this.getCustomJobOptions();
         if (customJobOptions && customJobOptions.customQueries) {
             const customQueries = customJobOptions.customQueries.reduce((map, val) =>
@@ -260,6 +258,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
      * @param datapack Datapack type
      */
     public async getQueryDefinition(datapack: string) {
+        const q = await this.getQueryDefinitions();
         return Object.entries(await this.getQueryDefinitions()).find(([type]) => stringEquals(type, datapack))?.[1];
     }
 
