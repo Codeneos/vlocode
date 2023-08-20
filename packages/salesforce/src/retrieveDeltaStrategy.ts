@@ -1,9 +1,17 @@
 import { injectable, LifecyclePolicy, Logger } from "@vlocode/core";
-import { CancellationToken, deepCompare, remove, XML } from "@vlocode/util";
+import { CancellationToken, deepCompare, ObjectEqualsOptions, remove, XML } from "@vlocode/util";
 import { RetrieveManifestOptions, SalesforceDeployService } from "./salesforceDeployService";
 import { SalesforcePackage, SalesforcePackageComponent } from "./deploymentPackage";
 import { MetadataRegistry, MetadataType } from "./metadataRegistry";
 import { RetrieveResultComponent } from "./deploy";
+
+/**
+ * Interface for a strategy to determine if two objects are equal. Used in the delta strategy to determine if a component has changed.
+ * Based on the object type and or file name the strategy can be different.
+ */
+interface CompareStrategy {
+    (a: Buffer | string, b: Buffer | string): boolean
+}
 
 /**
  * Interface for a strategy to determine which components in the packages have changed and need to be deployed.
@@ -11,6 +19,13 @@ import { RetrieveResultComponent } from "./deploy";
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class RetrieveDeltaStrategy  {
+
+    private readonly compareStrategies : Record<string, CompareStrategy> = {
+        'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),
+        'xml': (a, b) => this.isXmlEqual(a, b, { strictOrder: false }),
+        'binary': this.isBinaryEqual,
+        'default': this.isStringEqual,
+    }
 
     constructor(
         private readonly deployService: SalesforceDeployService,
@@ -36,6 +51,7 @@ export class RetrieveDeltaStrategy  {
 
         const packageComponents = mdPackage.components().map(({ componentName, componentType }) => ({ componentName, componentType }));
         const retrieveResult = await this.deployService.retrieveManifest(retrievalManifest, { apiVersion: mdPackage.apiVersion, ...options });
+        const manifest2 = await retrieveResult.getManifest();
 
         for (const component of retrieveResult.components()) {
             if (!await this.isComponentChanged(mdPackage, component)) {
@@ -88,6 +104,11 @@ export class RetrieveDeltaStrategy  {
         b: Buffer | string | undefined, 
         type: MetadataType): boolean 
     {
+        if (Buffer.isBuffer(a) && Buffer.isBuffer(b) && a.compare(b) === 0) {
+            // If both are buffers first do a quick buffer comparison
+            return false;
+        }
+
         if (a === b) {
             return false;
         }
@@ -96,35 +117,47 @@ export class RetrieveDeltaStrategy  {
             return true;
         }
 
+        try {
+            return !this.getComparer(packagePath, type)(a, b);
+        } catch {
+            return !this.compareStrategies.default(a, b);
+        }
+    }
+
+    private getComparer(packagePath: string, type: MetadataType): CompareStrategy {
         if (packagePath.endsWith('.xml')) {
-            return this.isXmlChanged(a, b);
+            return this.compareStrategies.xml;
+        }
+
+        if (type.name === 'FlexiPage' ||
+            type.name === 'Layout')
+        {
+            return this.compareStrategies.xmlStrictOrder;
         }
 
         if (type.suffix && packagePath.endsWith(type.suffix)) {
-            try {
-                return this.isXmlChanged(a, b);
-            } catch {
-                // Fallback to binary comparison when XML parsing fails
-            }
+            // this covers most of the metadata files
+            return this.compareStrategies.xml;
         }
 
         if (type.name === 'StaticResource' ||
             type.name === 'ContentAsset' ||
             type.name === 'Document')
         {
-            // binary comparison
-            const bufferA = typeof a === 'string' ? Buffer.from(a) : a;
-            const bufferB = typeof b === 'string' ? Buffer.from(b) : b;
-            return bufferA.compare(bufferB) !== 0;
+            return this.compareStrategies.binary;
         }
 
-        a = (typeof a === 'string' ? a : a.toString('utf8')).trim();
-        b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
-
-        return a !== b;
+        return this.compareStrategies.default;
     }
 
-    private isXmlChanged(a: Buffer | string, b: Buffer | string) {
+    private isBinaryEqual(this: void, a: Buffer | string, b: Buffer | string): boolean {
+        // binary comparison
+        const bufferA = typeof a === 'string' ? Buffer.from(a) : a;
+        const bufferB = typeof b === 'string' ? Buffer.from(b) : b;
+        return bufferA.compare(bufferB) === 0;
+    }
+
+    private isXmlEqual(this: void, a: Buffer | string, b: Buffer | string, options?: { strictOrder?: boolean }): boolean {
         // Note: this function does not yet properly deal with changes in the order of XML elements in an array
         // Parse XML and filter out attributes as they are not important for comparison of metadata
         const parsedA = XML.parse(a, { arrayMode: true, ignoreAttributes: true });
@@ -133,11 +166,16 @@ export class RetrieveDeltaStrategy  {
         // Compare parsed XML
         return deepCompare(parsedA, parsedB, {
                 primitiveCompare: (a, b) => {
-                    // treated empty strings, nulls and undefineds as equals
+                    // treated empty strings, nulls and undefined as equals
                     return a === b || (!a && !b);
                 },
-                // Should we ignore element order or artay elements or not?
-                // ignoreArrayOrder: true,
-            }) === false;
+                ignoreArrayOrder: !options?.strictOrder
+            });
+    }
+
+    private isStringEqual(this: void, a: Buffer | string, b: Buffer | string): boolean {
+        a = (typeof a === 'string' ? a : a.toString('utf8')).trim();
+        b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
+        return a.localeCompare(b) === 0;
     }
 }
