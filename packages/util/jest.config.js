@@ -7,6 +7,6 @@ module.exports = {
     '!**/node_modules/**'
   ],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { isolatedModules: true }]
+    '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }]
   }
 };
