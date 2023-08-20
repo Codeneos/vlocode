@@ -1,8 +1,16 @@
 diff --git a/lib/messages.js b/lib/messages.js
-index ee3934c08862c35c86e32f4bc2c6f10a097fae74..e04dc10ad24fb7b2ef2f1c15cfe9dadc8c68bb1d 100644
+index ee3934c08862c35c86e32f4bc2c6f10a097fae74..66bdb0e492e2f815f66043a7c00d509050d9dbc9 100644
 --- a/lib/messages.js
 +++ b/lib/messages.js
-@@ -254,6 +254,7 @@ class Messages {
+@@ -200,6 +200,7 @@ class Messages {
+             throw new Error(`Only json, js and md message files are allowed, not ${ext}: ${filePath}`);
+         }
+         return (locale) => {
++            return new Messages(bundleName, locale, new Map());
+             let fileContents;
+             let parser;
+             if (ext === '.md') {
+@@ -254,6 +255,7 @@ class Messages {
       * @param packageName The npm package name. Figured out from the root directory's package.json.
       */
      static importMessagesDirectory(moduleDirectoryPath, truncateToProjectPath = true, packageName) {
@@ -10,7 +18,7 @@ index ee3934c08862c35c86e32f4bc2c6f10a097fae74..e04dc10ad24fb7b2ef2f1c15cfe9dadc
          let moduleMessagesDirPath = moduleDirectoryPath;
          let projectRoot = moduleDirectoryPath;
          if (!path.isAbsolute(moduleDirectoryPath)) {
-@@ -332,7 +333,7 @@ class Messages {
+@@ -332,7 +334,7 @@ class Messages {
              return messages;
          }
          // Don't use messages inside messages
@@ -19,7 +27,7 @@ index ee3934c08862c35c86e32f4bc2c6f10a097fae74..e04dc10ad24fb7b2ef2f1c15cfe9dadc
      }
      /**
       * Load messages for a given package and bundle. If the bundle is not already cached, use the loader function
-@@ -380,7 +381,7 @@ class Messages {
+@@ -380,7 +382,7 @@ class Messages {
              return messages;
          }
          // Don't use messages inside messages
@@ -28,7 +36,7 @@ index ee3934c08862c35c86e32f4bc2c6f10a097fae74..e04dc10ad24fb7b2ef2f1c15cfe9dadc
      }
      /**
       * Check if a bundle already been loaded.
-@@ -515,7 +516,7 @@ class Messages {
+@@ -515,7 +517,7 @@ class Messages {
          }
          if (!map.has(key)) {
              // Don't use messages inside messages
@@ -37,3 +45,13 @@ index ee3934c08862c35c86e32f4bc2c6f10a097fae74..e04dc10ad24fb7b2ef2f1c15cfe9dadc
          }
          const msg = map.get(key);
          const messages = ((0, ts_types_1.isArray)(msg) ? msg : [msg]);
+@@ -540,5 +542,8 @@ Messages.bundles = new Map();
+  * @ignore
+  */
+ // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+-Messages.readFile = (filePath) => require(filePath);
++Messages.readFile = (filePath) => {
++    console.warn('Messages.readFile is not supported in bundled mode:', filePath);
++    return {};
++}
+ //# sourceMappingURL=messages.js.map
