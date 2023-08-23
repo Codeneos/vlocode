@@ -1,4 +1,4 @@
-import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions } from 'fast-xml-parser';
+import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions, XMLValidator } from 'fast-xml-parser';
 import { DOMParser } from '@xmldom/xmldom';
 import { visitObject } from './object';
 
@@ -37,6 +37,13 @@ export interface XMLParseOptions {
      *                 For attributes the path is prefixed with `@`, i.e. `rootTag.innerTag.@attr`
      */
     valueProcessor?: (value: string, nodePath: string) => any;
+    /**
+     * When true the passed string will not be checked if it is a valid XML string.
+     * Set to true when you know the string is valid XML and you want to skip the validation.
+     * allowing for faster parsing of the XML.
+     * @default false
+     */
+    skipValidation?: boolean;
 }
 
 export interface XMLStringfyOptions {
@@ -56,6 +63,12 @@ export interface TextRange {
     end: TextPosition;
 }
 
+/**
+ * This namespaces contains normalized XML functions for parsing and stringifying XML.
+ * This namespace provides a normalized interface for the `fast-xml-parser` package allowing
+ * for a consistent interface across all Vlocode packages and making switching to a different
+ * XML parser easier abstracting away the differences between the different XML parsers.
+ */
 export namespace XML {
 
     const options: Partial<X2jOptions & XmlBuilderOptions> = {
@@ -132,7 +145,7 @@ export namespace XML {
             };
         }
 
-        return visitObject(new XMLParser(parserOptions).parse(xml), (prop, value, target) => {
+        return visitObject(new XMLParser(parserOptions).parse(xml, !options.skipValidation), (prop, value, target) => {
             if (typeof value === 'object') {
                 // Parse nil as null as per XML spec
                 if (value['$']?.['nil'] === true) {
@@ -179,15 +192,17 @@ export namespace XML {
      * </rootTag
      * ```
      * @param xml XML string or buffer
+     * @param options.requireDeclaration When true the function will return undefined when the XML string does not start with a XML declaration
      * @returns Name of the root tag in the XML file
      */
-    export function getRootTagName(xml: string | Buffer) {
+    export function getRootTagName(xml: string | Buffer, options?: { requireDeclaration?: boolean }) {
         if (typeof xml !== 'string') {
             xml = xml.toString();
         }
-        if (xml.trimStart().startsWith('<?xml ')) {
-            return xml.match(/<([^-?!][\w\d]*)/im)?.[1];
+        if (options?.requireDeclaration && !xml.trimStart().startsWith('<?xml ')) {
+            return undefined;
         }
+        return xml.match(/<([^-?!][\w\d]*)/im)?.[1];
     }
 
     /**
@@ -196,7 +211,22 @@ export namespace XML {
      * @returns true when this the buffer has a valid XML declaration and root tag otherwise false
      */
     export function isXml(xml: string | Buffer) {
-        return !!getRootTagName(xml);
+        if (typeof xml !== 'string') {
+            xml = xml.toString();
+        }
+        return XMLValidator.validate(xml) === true;
+    }
+
+    /**
+     * Validates if the specified string has a valid XML syntax structure.
+     * @param xml String or Buffer to validate, when a buffer is passed it iis converted to a string before parsing.
+     * @returns True if the string is valid XML otherwise false.
+     */
+    export function isValid(xml: string | Buffer) {
+        if (typeof xml !== 'string') {
+            xml = xml.toString();
+        }
+        return XMLValidator.validate(xml) === true;
     }
 
     /**
@@ -205,7 +235,7 @@ export namespace XML {
      * @returns normalized XML string without comments or line-breaks.
      */
     export function normalize(xml: string | Buffer, options?: XMLStringfyOptions) {
-        return stringify(parse(xml, { trimValues: true }), 0, options);
+        return stringify(parse(xml, { arrayMode: true, trimValues: true }), 0, options);
     }
 
     /**

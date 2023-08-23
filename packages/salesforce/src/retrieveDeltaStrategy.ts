@@ -99,10 +99,10 @@ export class RetrieveDeltaStrategy  {
     }
 
     private isDataChanged(
-        packagePath: string, 
-        localData: Buffer | string | undefined, 
-        orgData: Buffer | string | undefined, 
-        type: MetadataType): boolean 
+        packagePath: string,
+        localData: Buffer | string | undefined,
+        orgData: Buffer | string | undefined,
+        type: MetadataType): boolean
     {
         if (Buffer.isBuffer(localData) && Buffer.isBuffer(orgData) && localData.compare(orgData) === 0) {
             // If both are buffers first do a quick buffer comparison
@@ -118,19 +118,15 @@ export class RetrieveDeltaStrategy  {
         }
 
         try {
-            return !this.getComparer(packagePath, type)(localData, orgData);
+            return !this.getComparer(packagePath, localData, type)(localData, orgData);
         } catch {
             return !this.compareStrategies.default(localData, orgData);
         }
     }
 
-    private getComparer(packagePath: string, type: MetadataType): CompareStrategy {
+    private getComparer(packagePath: string, data: string | Buffer, type: MetadataType): CompareStrategy {
         if (/\.(cls|trigger)-meta\.xml$/i.test(packagePath)) {
             return this.compareStrategies.metaXml;
-        }
-
-        if (/\.xml$/i.test(packagePath)) {
-            return this.compareStrategies.xml;
         }
 
         if (type.name === 'FlexiPage' ||
@@ -139,16 +135,15 @@ export class RetrieveDeltaStrategy  {
             return this.compareStrategies.xmlStrictOrder;
         }
 
-        if (type.suffix && packagePath.endsWith(type.suffix)) {
-            // this covers most of the metadata files
-            return this.compareStrategies.xml;
-        }
-
         if (type.name === 'StaticResource' ||
             type.name === 'ContentAsset' ||
             type.name === 'Document')
         {
             return this.compareStrategies.binary;
+        }
+
+        if (/\.xml$/i.test(packagePath) || XML.isXml(data)) {
+            return this.compareStrategies.xml;
         }
 
         return this.compareStrategies.default;

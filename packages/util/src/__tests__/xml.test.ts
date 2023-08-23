@@ -115,6 +115,23 @@ describe('xml', () => {
                  <!-- test -->
                  <test><tag>test</tag></test>`)).toBe('test');
         });
+        it('should return first tag for XML snippets without declaration', () => {
+            expect(XML.getRootTagName(
+                `<!-- Returns name of first none-comment root tag: rootTag -->
+                <rootTag>
+                    <inner />
+                </rootTag`)).toBe('rootTag');
+        });
+        it('should return first tag for XML snippets prefixed with a comment', () => {
+            expect(XML.getRootTagName(
+                `\n\n<!-- test -->   \n\n  <test><tag>test</tag></test>`)).toBe('test');
+        });
+        it('should return undefined for XML snippet when requireDeclaration = true', () => {
+            expect(XML.getRootTagName(
+                `<test><tag>test</tag></test>`, {
+                    requireDeclaration: true
+                })).toBe(undefined);
+        });
     });
     describe('#getNode', () => {
         it('should get node based on property path', () => {
