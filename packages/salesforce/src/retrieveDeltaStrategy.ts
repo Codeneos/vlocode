@@ -23,6 +23,7 @@ export class RetrieveDeltaStrategy  {
     private readonly compareStrategies : Record<string, CompareStrategy> = {
         'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),
         'xml': (a, b) => this.isXmlEqual(a, b, { strictOrder: false }),
+        'metaXml': (a, b) => this.isMetaXmlEqual(a, b),
         'binary': this.isBinaryEqual,
         'default': this.isStringEqual,
     }
@@ -51,7 +52,6 @@ export class RetrieveDeltaStrategy  {
 
         const packageComponents = mdPackage.components().map(({ componentName, componentType }) => ({ componentName, componentType }));
         const retrieveResult = await this.deployService.retrieveManifest(retrievalManifest, { apiVersion: mdPackage.apiVersion, ...options });
-        const manifest2 = await retrieveResult.getManifest();
 
         for (const component of retrieveResult.components()) {
             if (!await this.isComponentChanged(mdPackage, component)) {
@@ -86,10 +86,10 @@ export class RetrieveDeltaStrategy  {
         }
 
         for (const componentFile of component.files) {
-            const packageData = mdPackage.getPackageData(componentFile.packagePath)?.data
+            const localData = mdPackage.getPackageData(componentFile.packagePath)?.data
             const orgData = await componentFile.getBuffer();
 
-            if (this.isDataChanged(componentFile.packagePath, packageData, orgData, metadataType)) {
+            if (this.isDataChanged(componentFile.packagePath, localData, orgData, metadataType)) {
                 this.logger.debug(`component ${component.componentType}\\${component.componentName} changed due to data mismatch in ${componentFile.packagePath}`);
                 return true;
             }
@@ -100,32 +100,36 @@ export class RetrieveDeltaStrategy  {
 
     private isDataChanged(
         packagePath: string, 
-        a: Buffer | string | undefined, 
-        b: Buffer | string | undefined, 
+        localData: Buffer | string | undefined, 
+        orgData: Buffer | string | undefined, 
         type: MetadataType): boolean 
     {
-        if (Buffer.isBuffer(a) && Buffer.isBuffer(b) && a.compare(b) === 0) {
+        if (Buffer.isBuffer(localData) && Buffer.isBuffer(orgData) && localData.compare(orgData) === 0) {
             // If both are buffers first do a quick buffer comparison
             return false;
         }
 
-        if (a === b) {
+        if (localData === orgData) {
             return false;
         }
 
-        if (a === undefined || b === undefined) {
+        if (localData === undefined || orgData === undefined) {
             return true;
         }
 
         try {
-            return !this.getComparer(packagePath, type)(a, b);
+            return !this.getComparer(packagePath, type)(localData, orgData);
         } catch {
-            return !this.compareStrategies.default(a, b);
+            return !this.compareStrategies.default(localData, orgData);
         }
     }
 
     private getComparer(packagePath: string, type: MetadataType): CompareStrategy {
-        if (packagePath.endsWith('.xml')) {
+        if (/\.(cls|trigger)-meta\.xml$/i.test(packagePath)) {
+            return this.compareStrategies.metaXml;
+        }
+
+        if (/\.xml$/i.test(packagePath)) {
             return this.compareStrategies.xml;
         }
 
@@ -157,25 +161,46 @@ export class RetrieveDeltaStrategy  {
         return bufferA.compare(bufferB) === 0;
     }
 
-    private isXmlEqual(this: void, a: Buffer | string, b: Buffer | string, options?: { strictOrder?: boolean }): boolean {
+    private isXmlEqual(a: Buffer | string, b: Buffer | string, options?: { arrayMode?: boolean, strictOrder?: boolean, ignoreMissing?: boolean }): boolean {
         // Note: this function does not yet properly deal with changes in the order of XML elements in an array
         // Parse XML and filter out attributes as they are not important for comparison of metadata
-        const parsedA = XML.parse(a, { arrayMode: true, ignoreAttributes: true });
-        const parsedB = XML.parse(b, { arrayMode: true, ignoreAttributes: true });
+        const parsedA = XML.parse(a, { arrayMode: options?.arrayMode, ignoreAttributes: true });
+        const parsedB = XML.parse(b, { arrayMode: options?.arrayMode, ignoreAttributes: true });
 
         // Compare parsed XML
         return deepCompare(parsedA, parsedB, {
-                primitiveCompare: (a, b) => {
-                    // treated empty strings, nulls and undefined as equals
-                    return a === b || (!a && !b);
-                },
-                ignoreArrayOrder: !options?.strictOrder
+                primitiveCompare: this.primitiveCompare,
+                ignoreArrayOrder: !options?.strictOrder,
+                ignoreMissingProperties: !!options?.ignoreMissing
             });
     }
 
-    private isStringEqual(this: void, a: Buffer | string, b: Buffer | string): boolean {
+    private isMetaXmlEqual(a: Buffer | string, b: Buffer | string): boolean {
+        // Note: this function does not yet properly deal with changes in the order of XML elements in an array
+        // Parse XML and filter out attributes as they are not important for comparison of metadata
+        const localMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
+        const orgMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
+
+        if (orgMeta.packageVersions && !localMeta.packageVersions) {
+            // If the org data has package versions details but the local data does not, copy the package versions details;
+            localMeta.packageVersions = orgMeta.packageVersions;
+        }
+
+        // Compare parsed XML
+        return deepCompare(localMeta, orgMeta, {
+                primitiveCompare: this.primitiveCompare,
+                ignoreArrayOrder: false
+            });
+    }
+
+    private isStringEqual(a: Buffer | string, b: Buffer | string): boolean {
         a = (typeof a === 'string' ? a : a.toString('utf8')).trim();
         b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
         return a.localeCompare(b) === 0;
+    }
+
+    private primitiveCompare(this: void, a: unknown, b: unknown): boolean {
+        // treated empty strings, nulls and undefined as equals
+        return a === b || (!a && !b);
     }
 }

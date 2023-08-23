@@ -393,12 +393,18 @@ export interface ObjectEqualsOptions {
      * Ignore the order of the elements in an array when comparing arrays for equality. 
      */
     ignoreArrayOrder?: boolean;
+    /**
+     * Ignore missing properties in object `a` when comparing object `b` for equality.
+     * For example when object `b` looks like `{ a: 1, b: 2 }` and object `a` looks like `{ a: 1 }`
+     * the objects are considered equal even though object `a` is missing the `b` property.
+     */
+    ignoreMissingProperties?: boolean;
 }
 
 /**
  * Compare 2 objects for quality by comparing the values of the properties of the objects instead of only reference-equality.
  * For none-object (primitives such as string, integer, etc) a `primitiveCompare` can be specified; it no `primitiveCompare` is specified
- * equality for primtices defaults a `===`-comparison.
+ * equality for primitives defaults a `===`-comparison.
  *
  * When comparing objects a `objectCompare` can be specified; if no `objectCompare` is specified the `objectEquals`-function is used to compare the objects.
  *
@@ -406,7 +412,7 @@ export interface ObjectEqualsOptions {
  *
  * @param a Object to which object `b` is compared
  * @param b Object to which object `a` is compared
- * @param options Additonal options to control the comparison
+ * @param options Additional options to control the comparison
  * @returns `true` if objects a and b are equal otherwise `false`.
  */
 export function objectEquals(
@@ -423,7 +429,7 @@ export function objectEquals(
         return true;
     }
 
-    if (Object.keys(a).length !== Object.keys(b).length) {
+    if (!options?.ignoreMissingProperties && Object.keys(a).length !== Object.keys(b).length) {
         // If A does not have the same amount of keys of B they cannot be equal
         return false;
     }
