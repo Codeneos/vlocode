@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.2](https://github.com/Codeneos/vlocode/compare/v0.20.1...v0.20.2) (2023-08-23)
+
+### Bug Fixes
+
+* delta deploy strategy does not correctly fallback to default comparison when attempting XML compare on none XML file ([d17cf6e](https://github.com/Codeneos/vlocode/commit/d17cf6e557e8d6b7d952d88f14379641698c8c06))
+
+### Features
+
+* when doing a delta deploy do mark a component as changed when the managed package version is missing from the Class meta file ([f9c8cf3](https://github.com/Codeneos/vlocode/commit/f9c8cf3f0b3f48ccbb409ec6bb51d37162f6285b))
+
 ## [0.20.1](https://github.com/Codeneos/vlocode/compare/v0.20.1-next.0...v0.20.1) (2023-08-23)
 
 **Note:** Version bump only for package @vlocode/util
