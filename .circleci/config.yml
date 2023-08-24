@@ -54,7 +54,7 @@ jobs:
           name: "Pack extension"
           command: |
             echo $(node -p "require('./lerna.json').version") > .version
-            [[ ! $(cat .version) =~ "^[.0-9]+$" ]] && export PRERELEASE="--pre-release"
+            [[ $VERSION =~ "-" ]] && export PRERELEASE="--pre-release"
             pnpm pack-extension $PRERELEASE
       - run: node -e "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
       - persist_to_workspace:
@@ -77,7 +77,7 @@ jobs:
           name: "Publish extension on VSCode Marketplace"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE="--pre-release"
+            [[ $VERSION =~ "-" ]] && export PRERELEASE="--pre-release"
             pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
