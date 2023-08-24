@@ -86,11 +86,11 @@ class Vlocode {
         // Simple switch that decides how to log
         const terminalOptions = { 
             iconPath: {
-                light: vscode.Uri.file(getContext().asAbsolutePath('resources/ligth/log-terminal.svg')),
+                light: vscode.Uri.file(getContext().asAbsolutePath('resources/light/log-terminal.svg')),
                 dark: vscode.Uri.file(getContext().asAbsolutePath('resources/dark/log-terminal.svg'))
             }
         };
-        const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode', terminalOptions)));        
+        const terminalWriter = lazy(() => this.service.registerDisposable(new TerminalWriter('Vlocode', terminalOptions)));
         const outputChannelWriter = lazy(() => this.service.registerDisposable(new OutputChannelWriter('Vlocode')));
         let logInTerminal = this.service.config.logInTerminal;
 
