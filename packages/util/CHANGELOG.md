@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.3](https://github.com/Codeneos/vlocode/compare/v0.20.2...v0.20.3) (2023-08-24)
+
+### Bug Fixes
+
+* XML-like metadata header does not deploy ([016cd9d](https://github.com/Codeneos/vlocode/commit/016cd9d54f373141203f62c31b26d5d50d1bf3ae))
+
 ## [0.20.2](https://github.com/Codeneos/vlocode/compare/v0.20.1...v0.20.2) (2023-08-23)
 
 ### Bug Fixes

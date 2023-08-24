@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.3](https://github.com/codeneos/vlocode/compare/v0.20.2...v0.20.3) (2023-08-24)
+
+### Bug Fixes
+
+* switch FS interface to VSCode as it performs better on MacOS compared to the native FS interface ([80498ee](https://github.com/codeneos/vlocode/commit/80498eeadb155e2aba6b7de72c8d100ba6044134))
+
 ## [0.20.2](https://github.com/codeneos/vlocode/compare/v0.20.1...v0.20.2) (2023-08-23)
 
 **Note:** Version bump only for package vlocode
