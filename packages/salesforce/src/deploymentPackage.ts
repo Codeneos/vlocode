@@ -539,7 +539,7 @@ export class SalesforcePackage {
     }
 
     private normalizeDataForPackage(packagePath: string, data: Buffer | string) {
-        if (XML.isXml(data)) {
+        if (XML.isXml(data, { requireDeclaration: true })) {
             // Normalize all XML data to avoid SF deployment errors due to excess spaces
             return XML.normalize(data, { indent: 4, headless: false });
         }

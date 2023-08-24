@@ -210,9 +210,12 @@ export namespace XML {
      * @param xml XML string or buffer
      * @returns true when this the buffer has a valid XML declaration and root tag otherwise false
      */
-    export function isXml(xml: string | Buffer) {
+    export function isXml(xml: string | Buffer, options?: { requireDeclaration?: boolean }) {
         if (typeof xml !== 'string') {
             xml = xml.toString();
+        }
+        if (options?.requireDeclaration && !xml.trimStart().startsWith('<?xml ')) {
+            return false;
         }
         return XMLValidator.validate(xml) === true;
     }
