@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.4](https://github.com/codeneos/vlocode/compare/v0.20.3...v0.20.4) (2023-08-24)
+
+### Bug Fixes
+
+* incorrect icon path for log-terminal ([eed61ab](https://github.com/codeneos/vlocode/commit/eed61ab23ac2365c0a79f008854dca8180214778))
+
 ## [0.20.3](https://github.com/codeneos/vlocode/compare/v0.20.2...v0.20.3) (2023-08-24)
 
 ### Bug Fixes
