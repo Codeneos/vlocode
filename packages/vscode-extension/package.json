@@ -1016,7 +1016,7 @@
                             "vscode",
                             "native"
                         ],
-                        "default": "native",
+                        "default": "vscode",
                         "enumDescriptions": [
                             "VSCode's built-in file system interface; this is the default and recommended option",
                             "Native file system interface through NodeJS's fs-module"
