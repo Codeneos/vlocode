@@ -27,13 +27,13 @@ export class VlocityInterfaceInvoker {
      * // Invoke a method with a string
      * const result = await invoker.invoke('MyClass.myMethod', { input: 'value' });
      */
-    public async invoke<T = any>(methodSpec: string | { className: string, methodName: string }, input?: object | undefined, options?: object | undefined): Promise<T> {
+    public async invoke<T = any>(methodSpec: string | { className: string, methodName: string }, input?: object | string | undefined, options?: object | string | undefined): Promise<T> {
         const classMethod = typeof methodSpec === 'string' ? this.parseMethod(methodSpec) : methodSpec;
         const payload = removeUndefinedProperties({
             sClassName : classMethod.className,
             sMethodName : classMethod.methodName,
-            input,
-            options
+            input: input !== undefined ? (typeof input === 'string' ? input : JSON.stringify(input)) : input,
+            options: options !== undefined ? (typeof options === 'string' ? options : JSON.stringify(options)) : options,
         });
 
         const connection = await this.connectionProvider.getJsForceConnection();
