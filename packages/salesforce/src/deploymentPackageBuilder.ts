@@ -321,6 +321,10 @@ export class SalesforcePackageBuilder {
         const parentComponentMetaFile =  path.join(parentComponentFolder, `${parentComponentName}.${parentType.suffix}-meta.xml`);
         const parentPackagePath = await this.getPackagePath(parentComponentMetaFile, parentType);
 
+        // Whether the component is supported by the Metadata API and therefore should be included within a manifest.
+        // When not set defaults to true in metadata registry.
+        const isAddressable = fragmentType.isAddressable !== false; // defaults to true
+
         // Merge child metadata into parent metadata
         if (this.type === SalesforcePackageType.deploy) {
             await this.mergeMetadataFragment(parentPackagePath, sourceFile, parentType);
@@ -330,7 +334,7 @@ export class SalesforcePackageBuilder {
         if (this.type === SalesforcePackageType.destruct) {
             this.mdPackage.addDestructiveChange(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
         } else {
-            this.mdPackage.addManifestEntry(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
+            isAddressable && this.mdPackage.addManifestEntry(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
             this.mdPackage.addSourceMap(sourceFile, { componentType: fragmentTypeName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
         }
 
