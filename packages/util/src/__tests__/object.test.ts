@@ -107,6 +107,31 @@ describe('util', () => {
             const b = { foo: { foo: 'test' } };
             expect(objectEquals(a, b)).toBe(false);
         });
+        it('should return false for unequal keys when ignoreExtraProperties', () => {
+            const a = { foo: { bar: 'test' } };
+            const b = { foo: { foo: 'test' } };
+            expect(objectEquals(a, b, { ignoreExtraProperties: true })).toBe(false);
+        });
+        it('should return true when b has extra properties and ignoreExtraProperties = true', () => {
+            const a = { foo: { bar: 'test' } };
+            const b = { foo: { bar: 'test' }, bar: 'foo' };
+            expect(objectEquals(a, b, { ignoreExtraProperties: true })).toBe(true);
+        });
+        it('should return false when b has extra properties and ignoreExtraProperties = false', () => {
+            const a = { foo: { bar: 'test' } };
+            const b = { foo: { bar: 'test' }, bar: 'foo' };
+            expect(objectEquals(a, b, { ignoreExtraProperties: false })).toBe(false);
+        });
+        it('should return true when b is missing properties and ignoreMissingProperties = true', () => {
+            const a = { foo: { bar: 'test' }, bar: 'foo' };
+            const b = { foo: { bar: 'test' } };
+            expect(objectEquals(a, b, { ignoreMissingProperties: true })).toBe(true);
+        });
+        it('should return false when b is missing properties and ignoreMissingProperties = false', () => {
+            const a = { foo: { bar: 'test' }, bar: 'foo' };
+            const b = { foo: { bar: 'test' } };
+            expect(objectEquals(a, b, { ignoreMissingProperties: false })).toBe(false);
+        });
         it('should return false for extra properties', () => {
             const a = { foo: { bar: 'test' } };
             const b = { foo: { bar: 'test', foo: 'test' } };
@@ -151,6 +176,11 @@ describe('util', () => {
             const a = { foo: [ { bar: 1 }, { bar: 2 }, { bar: 1 } ] };
             const b = { foo: [ { bar: 2 }, { bar: 1 }, { bar: 1 } ] };
             expect(objectEquals(a, b, { ignoreArrayOrder: false })).toBe(false);
+        });
+        it('should return true for arrays with extra elements and ignoreExtraProperties = true and ignoreArrayOrder = true', () => {
+            const a = { foo: [ { bar: 1 } ] };
+            const b = { foo: [ { bar: 1 }, { bar: 2 } ] };
+            expect(objectEquals(a, b, { ignoreExtraProperties: true, ignoreArrayOrder: true })).toBe(true);
         });
         it('should return true for equal primitives', () => {
             expect(objectEquals('a', 'a')).toBe(true);

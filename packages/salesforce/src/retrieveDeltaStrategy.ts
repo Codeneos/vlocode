@@ -22,7 +22,7 @@ export class RetrieveDeltaStrategy  {
 
     private readonly compareStrategies : Record<string, CompareStrategy> = {
         'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),
-        'xml': (a, b) => this.isXmlEqual(a, b, { strictOrder: false }),
+        'xml': (a, b) => this.isXmlEqual(a, b, { strictOrder: false, ignoreExtra: true }),
         'metaXml': (a, b) => this.isMetaXmlEqual(a, b),
         'binary': this.isBinaryEqual,
         'default': this.isStringEqual,
@@ -156,18 +156,19 @@ export class RetrieveDeltaStrategy  {
         return bufferA.compare(bufferB) === 0;
     }
 
-    private isXmlEqual(a: Buffer | string, b: Buffer | string, options?: { arrayMode?: boolean, strictOrder?: boolean, ignoreMissing?: boolean }): boolean {
+    private isXmlEqual(a: Buffer | string, b: Buffer | string, options?: { arrayMode?: boolean, strictOrder?: boolean, ignoreExtra?: boolean }): boolean {
         // Note: this function does not yet properly deal with changes in the order of XML elements in an array
         // Parse XML and filter out attributes as they are not important for comparison of metadata
         const parsedA = XML.parse(a, { arrayMode: options?.arrayMode, ignoreAttributes: true });
         const parsedB = XML.parse(b, { arrayMode: options?.arrayMode, ignoreAttributes: true });
 
         // Compare parsed XML
-        return deepCompare(parsedA, parsedB, {
+        const diff = deepCompare(parsedA, parsedB, {
                 primitiveCompare: this.primitiveCompare,
                 ignoreArrayOrder: !options?.strictOrder,
-                ignoreMissingProperties: !!options?.ignoreMissing
+                ignoreExtraProperties: !!options?.ignoreExtra
             });
+        return !!diff;
     }
 
     private isMetaXmlEqual(a: Buffer | string, b: Buffer | string): boolean {
@@ -184,7 +185,8 @@ export class RetrieveDeltaStrategy  {
         // Compare parsed XML
         return deepCompare(localMeta, orgMeta, {
                 primitiveCompare: this.primitiveCompare,
-                ignoreArrayOrder: false
+                ignoreArrayOrder: false,
+                ignoreExtraProperties: true
             });
     }
 

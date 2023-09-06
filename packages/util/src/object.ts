@@ -394,11 +394,17 @@ export interface ObjectEqualsOptions {
      */
     ignoreArrayOrder?: boolean;
     /**
-     * Ignore missing properties in object `a` when comparing object `b` for equality.
-     * For example when object `b` looks like `{ a: 1, b: 2 }` and object `a` looks like `{ a: 1 }`
-     * the objects are considered equal even though object `a` is missing the `b` property.
+     * Ignore missing properties in object `b` when comparing object `a` for equality.
+     * For example when object `a` looks like `{ a: 1, b: 2 }` and object `b` looks like `{ a: 1 }`
+     * the objects are considered equal even though object `b` is missing the `b` property.
      */
     ignoreMissingProperties?: boolean;
+    /**
+     * Ignore extra properties in object `b` when comparing object `a` for equality.
+     * For example when object `b` looks like `{ a: 1, b: 2 }` and object `a` looks like `{ a: 1 }`
+     * the objects are considered equal even though object `b` has an extra property
+     */
+    ignoreExtraProperties?: boolean;
 }
 
 /**
@@ -429,8 +435,13 @@ export function objectEquals(
         return true;
     }
 
-    if (!options?.ignoreMissingProperties && Object.keys(a).length !== Object.keys(b).length) {
-        // If A does not have the same amount of keys of B they cannot be equal
+    const missingKeys = Object.keys(a).filter(key => !(key in b));
+    if (missingKeys.length && !options?.ignoreMissingProperties) {
+        return false;
+    }
+
+    const extraKeys = Object.keys(b).filter(key => !(key in a));
+    if (extraKeys.length && !options?.ignoreExtraProperties) {
         return false;
     }
 
@@ -447,11 +458,11 @@ export function objectEquals(
             }
             validElements.splice(index, 1);
         }
-        return validElements.length === 0;
+        return options?.ignoreExtraProperties === true || validElements.length === 0;
     }
 
     // Check if all keys of A are equal to the keys in B
-    for (const key of Object.keys(a)) {
+    for (const key of Object.keys(a).filter(key => key in b)) {
         if (!objectEqualityFn(a[key], b[key], options)) {
             return false;
         }
