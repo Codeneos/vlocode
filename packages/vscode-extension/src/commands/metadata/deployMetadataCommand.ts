@@ -21,15 +21,12 @@ export default class DeployMetadataCommand extends MetadataCommand {
     /** 
      * In order to prevent double deployment keep a list of pending deploy ops
      */
-    private readonly filesPendingDeployment = new Set<vscode.Uri>();
     private readonly pendingPackages = new Array<SalesforcePackage>();
 
-    private deploymentTaskRef?: NodeJS.Immediate;
+    private deploymentTaskRef?: NodeJS.Timeout;
+    private deploymentRunning = false;
     private enabled = true;
 
-    public get pendingFiles() {
-        return this.filesPendingDeployment.size;
-    }
 
     public execute(command: VlocodeCommand, ...args: any[]): Promise<void> {
         return this.deployMetadata.apply(this, [
@@ -58,13 +55,13 @@ export default class DeployMetadataCommand extends MetadataCommand {
             command: state ? VlocodeCommand.pauseDeploymentQueue : VlocodeCommand.resumeDeploymentQueue
         });
 
-        if (state && this.deploymentTaskRef === undefined && this.filesPendingDeployment.size > 0) {
+        if (state && this.deploymentTaskRef === undefined && this.pendingPackages.length > 0) {
             this.startDeploymentTask();
         }
     }
 
     public clearQueue() {
-        this.filesPendingDeployment.clear();
+        this.pendingPackages.splice(0, this.pendingPackages.length);
     }
 
     /**
@@ -101,17 +98,22 @@ export default class DeployMetadataCommand extends MetadataCommand {
             }
         }
 
+        return this.queueDeployment(sfPackage);
+    }
+
+    private async queueDeployment(sfPackage: SalesforcePackage) {
+        // Save all open files
         await this.saveOpenFiles(sfPackage);
         this.pendingPackages.push(sfPackage);
+        const components = sfPackage.getComponentNames()
 
         if (!this.enabled || this.deploymentTaskRef !== undefined) {
-            const fileNameText = selectedFiles.length === 1 ? path.basename(selectedFiles[0].fsPath) : `${selectedFiles.length} files`;
-            this.logger.info(`Adding ${fileNameText} to deployment queue`);
-            void vscode.window.showInformationMessage(`Add ${fileNameText} to deployment queue...`, ...(this.enabled ? ['Cancel'] : [])).then(cancel => {
-                if (cancel) {
-                    this.pendingPackages.splice(this.pendingPackages.indexOf(sfPackage), 1);
-                }
-            });
+            if (this.enabled && !this.deploymentRunning) {
+                return;
+            }
+            const componentInfo = components.length === 1 ? components[0] : `${components.length} components`;
+            this.logger.info(`Adding ${componentInfo} to deployment queue`);
+            void vscode.window.showInformationMessage(`Add ${componentInfo} to deployment queue...`);
         } else {
             // Start deployment
             this.startDeploymentTask();
@@ -123,23 +125,26 @@ export default class DeployMetadataCommand extends MetadataCommand {
             return;
         }
 
-        this.deploymentTaskRef = setImmediate(async () => {
+        this.deploymentTaskRef = setTimeout(async () => {
+            this.deploymentRunning = true;
             try {
                 while (this.pendingPackages.length && this.enabled) {
                     const deployPackage = this.getNextPackage();
-                    if (deployPackage) {
-                        await this.vlocode.withActivity({
-                            progressTitle: `Deploy ${deployPackage.componentsDescription}`,
-                            location: vscode.ProgressLocation.Notification,
-                            propagateExceptions: false,
-                            cancellable: true
-                        }, this.getDeploymentActivity(deployPackage));
+                    if (!deployPackage) {
+                        break;
                     }
+                    await this.vlocode.withActivity({
+                        progressTitle: `Deploy ${deployPackage.componentsDescription}`,
+                        location: vscode.ProgressLocation.Notification,
+                        propagateExceptions: false,
+                        cancellable: true
+                    }, this.getDeploymentActivity(deployPackage));
                 }
             } finally {
+                this.deploymentRunning = false;
                 this.deploymentTaskRef = undefined;
             }
-        });
+        }, 250);
     }
 
     private getDeploymentActivity(sfPackage: SalesforcePackage) {
@@ -193,22 +198,28 @@ export default class DeployMetadataCommand extends MetadataCommand {
         this.clearPreviousErrors(deployment.deploymentPackage.files());
         void this.logDeployResult(deployment.deploymentPackage, result);
 
-        if (!result.success) {
-            void vscode.window.showErrorMessage(`Deployment ${result?.id} ${result.status}`, 'See details').then(async selected =>
-                selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
-            );
-        }
-
         // success will be `true` even when not all components are successfully deployed
         // so check if we had any errors
         const partialSuccess = !!result.details?.componentFailures?.length;
 
-        if (partialSuccess) {
+        if (partialSuccess || !result.success) {
             // Partial success
-            this.logger.warn(`Deployment ${result?.id} -- partially completed; see log for details`);
-            void vscode.window.showWarningMessage(`Partially deployed ${deployment.deploymentPackage.componentsDescription}`, 'See details').then(async selected =>
-                selected && void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }))
-            );
+            if (partialSuccess) {
+                this.logger.warn(`Deployment ${result?.id} -- partially completed; see log for details`);
+            } else {
+                this.logger.error(`Deployment ${result?.id} -- failed; see log for details`);
+            }
+
+            void vscode.window.showWarningMessage(
+                partialSuccess  ? `Partially deployed ${deployment.deploymentPackage.componentsDescription}` : `Deployment failed`, 
+                'Retry', 'See details'
+            ).then(async selected => {
+                if (selected === 'Retry') {
+                    this.queueDeployment(deployment.deploymentPackage);
+                } else if (selected === 'See details') {
+                    void open(await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl, { useFrontdoor: true }));
+                }
+            });
         } else {
             this.logger.info(`Deployment ${result?.id} -- successfully deployed ${deployment.deploymentPackage.componentsDescription}`);
             void vscode.window.showInformationMessage(`Successfully deployed ${deployment.deploymentPackage.componentsDescription}`);
