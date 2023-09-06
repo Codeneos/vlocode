@@ -448,6 +448,9 @@ export class SalesforcePackageBuilder {
             deltaPackage.add([...this.mdPackage.getComponentFiles(component)]);
         }
 
+        // Add destructive changes from original package
+        deltaPackage.addDestructiveChange(mdPackage.getDestructiveChanges());
+
         return deltaPackage;
     }
 

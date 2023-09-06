@@ -292,13 +292,24 @@ export class SalesforcePackage {
     }
 
     /**
+     * Adds one or more a destructive change to the package.
+     * @param destructiveChange Destructive change to add
+     */
+    public addDestructiveChange(destructiveChange: SalesforceDestructiveChange | SalesforceDestructiveChange[]) : void;
+
+    /**
      * By default, deletions are processed before component additions (pre)
-     * @param xmlName XML Name of the component to delete
+     * @param componentType XML Name of the component to delete
      * @param componentName Name of the component to delete; cannot be a wild card
      * @param type Type of change can be pre or post, default is pre.
      */
-    public addDestructiveChange(xmlName: string, componentName: string, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
-        this.destructiveChanges[type].add(xmlName, componentName);
+    public addDestructiveChange(componentType: string, componentName: string, type?: DestructiveChangeType) : void;
+    public addDestructiveChange(...args: [ SalesforceDestructiveChange | SalesforceDestructiveChange[] ] | [ string, string, DestructiveChangeType? ]) {
+        if (args.length === 1) {
+            asArray(args[0]).forEach(({type, componentType, componentName}) => this.destructiveChanges[type].add(componentType, componentName));
+        } else {
+            this.destructiveChanges[args[2] ?? 'pre'].add(args[0], args[1]);
+        }
     }
 
     /**
@@ -306,7 +317,7 @@ export class SalesforcePackage {
      * @param manifestSource Source file
      * @param type Type of changes
      */
-    public mergeDestructiveChanges(manifestSource: string | Buffer, type: keyof SalesforcePackage['destructiveChanges'] = 'pre') {
+    public mergeDestructiveChanges(manifestSource: string | Buffer, type: DestructiveChangeType = 'pre') {
         const items = XML.parse(manifestSource).Package;
         for (const packageType of asArray(items.types)) {
             const xmlName = packageType.name;
