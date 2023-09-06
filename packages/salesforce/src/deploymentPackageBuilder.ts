@@ -322,8 +322,9 @@ export class SalesforcePackageBuilder {
         const parentPackagePath = await this.getPackagePath(parentComponentMetaFile, parentType);
 
         // Whether the component is supported by the Metadata API and therefore should be included within a manifest.
-        // When not set defaults to true in metadata registry.
-        const isAddressable = fragmentType.isAddressable !== false; // defaults to true
+        // When not set defaults to true in metadata registry -
+        // When `isAddressable = false` the parent is added to the manifest instead of the child
+        const isAddressable = fragmentType.isAddressable !== false; 
 
         // Merge child metadata into parent metadata
         if (this.type === SalesforcePackageType.deploy) {
@@ -332,10 +333,14 @@ export class SalesforcePackageBuilder {
 
         // Add as member to the package when not yet mentioned
         if (this.type === SalesforcePackageType.destruct) {
-            this.mdPackage.addDestructiveChange(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
+            this.mdPackage.addDestructiveChange(fragmentType.name, `${parentComponentName}.${childComponentName}`);
         } else {
-            isAddressable && this.mdPackage.addManifestEntry(fragmentTypeName, `${parentComponentName}.${childComponentName}`);
-            this.mdPackage.addSourceMap(sourceFile, { componentType: fragmentTypeName, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
+            if (isAddressable) {
+                this.mdPackage.addManifestEntry(fragmentType.name, `${parentComponentName}.${childComponentName}`);
+            } else {
+                this.mdPackage.addManifestEntry(parentType.name, parentComponentName);
+            }
+            this.mdPackage.addSourceMap(sourceFile, { componentType: fragmentType.name, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
         }
 
         this.logger.verbose(`Added %s (%s.%s) as [%s]`, path.basename(sourceFile), parentComponentName, childComponentName, chalk.green(fragmentTypeName));

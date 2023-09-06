@@ -11,38 +11,6 @@ export interface MetadataUrlFormat {
     strategy: 'tooling' | 'standard';
 }
 
-// '{
-//     "directoryName": "customMetadata",
-//     "inFolder": false,
-//     "metaFile": false,
-//     "suffix": "md",
-//     "xmlName": "CustomMetadata",
-//     "id": "custommetadata",
-//     "name": "CustomMetadata",
-//     "strictDirectoryName": false,
-//     "isBundle": false,
-//     "metadataName": "CustomMetadata",
-//     "isAddressable": true,
-//     "isSourceTracked": true,
-//     "ext": "md",
-//     "hasContent": false,
-//     "defaultDirectory": "customMetadata",
-//     "nameForMsgs": "Custom Metadata",
-//     "nameForMsgsPlural": "Custom Metadatas",
-//     "contentIsBinary": false,
-//     "hasStandardMembers": false,
-//     "deleteSupported": true,
-//     "decompositionConfig": {
-//       "strategy": "nonDecomposed",
-//       "workspaceStrategy": "nonDecomposed",
-//       "commitStrategy": "fineGrainTracking",
-//       "metadataName": "CustomMetadata",
-//       "useSparseComposition": false,
-//       "decompositions": [],
-//       "contentStrategy": "nonDecomposedContent"
-//     },
-//     "hasVirtualSubtypes": false
-//   }'
 export interface MetadataType extends RegistryMetadataType {
     isBundle: boolean;
     /**
