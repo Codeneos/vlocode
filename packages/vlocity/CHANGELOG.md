@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.5](https://github.com/Codeneos/vlocode/compare/v0.20.4...v0.20.5) (2023-09-06)
+
+### Bug Fixes
+
+* VlocityInterfaceInvoker is not serializing input correctly ([8f02b91](https://github.com/Codeneos/vlocode/commit/8f02b914bba3dc0b6b31380cbe425fe9c4307e12))
+
 ## [0.20.3](https://github.com/Codeneos/vlocode/compare/v0.20.2...v0.20.3) (2023-08-24)
 
 **Note:** Version bump only for package @vlocode/vlocity

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.5](https://github.com/Codeneos/vlocode/compare/v0.20.4...v0.20.5) (2023-09-06)
+
+### Bug Fixes
+
+* CustomObjectTranslations are not deployable ([3dbd9ed](https://github.com/Codeneos/vlocode/commit/3dbd9ed2b0c74221e44fcbb4e627ea9b0cfdcc6b))
+* deployment command does not clear errors after they are resolved and fails to save source files before starting a deployment ([02b75c7](https://github.com/Codeneos/vlocode/commit/02b75c7c031cb8db48dde575171957051e027c62))
+* destructive changes are not added during delta deployment ([898fe76](https://github.com/Codeneos/vlocode/commit/898fe76184e1c751a9e8a25202ba25c531b61114))
+* unaddressed child metadata child does not include parent ([1deb30a](https://github.com/Codeneos/vlocode/commit/1deb30a856e5650c26d980b9d12f598ab8ee4d8d))
+
+### Features
+
+* improve detection differences by ignoring extra properties in metadata files retrieved from org ([44b7332](https://github.com/Codeneos/vlocode/commit/44b733223458f0088286870a606b386589b05641))
+
 ## [0.20.3](https://github.com/Codeneos/vlocode/compare/v0.20.2...v0.20.3) (2023-08-24)
 
 ### Bug Fixes

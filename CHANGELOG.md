@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.5](https://github.com/codeneos/vlocode/compare/v0.20.4...v0.20.5) (2023-09-06)
+
+### Bug Fixes
+
+* CustomObjectTranslations are not deployable ([3dbd9ed](https://github.com/codeneos/vlocode/commit/3dbd9ed2b0c74221e44fcbb4e627ea9b0cfdcc6b))
+* deployment command does not clear errors after they are resolved and fails to save source files before starting a deployment ([02b75c7](https://github.com/codeneos/vlocode/commit/02b75c7c031cb8db48dde575171957051e027c62))
+* deployment command does not restart when after pausing and saving multiple files at once can causes multiple parallel deployments ([030c13d](https://github.com/codeneos/vlocode/commit/030c13d539a21127e2c9eba31a9ea8b0a83b4afd))
+* destructive changes are not added during delta deployment ([898fe76](https://github.com/codeneos/vlocode/commit/898fe76184e1c751a9e8a25202ba25c531b61114))
+* unaddressed child metadata child does not include parent ([1deb30a](https://github.com/codeneos/vlocode/commit/1deb30a856e5650c26d980b9d12f598ab8ee4d8d))
+* VlocityInterfaceInvoker is not serializing input correctly ([8f02b91](https://github.com/codeneos/vlocode/commit/8f02b914bba3dc0b6b31380cbe425fe9c4307e12))
+
+### Features
+
+* improve detection differences by ignoring extra properties in metadata files retrieved from org ([44b7332](https://github.com/codeneos/vlocode/commit/44b733223458f0088286870a606b386589b05641))
+
 ## [0.20.4](https://github.com/codeneos/vlocode/compare/v0.20.3...v0.20.4) (2023-08-24)
 
 ### Bug Fixes

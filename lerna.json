@@ -1,6 +1,6 @@
 {
     "useNx": false,
-    "version": "0.20.4",
+    "version": "0.20.5",
     "npmClient": "pnpm",
     "packages": ["packages/*"],
     "command": {

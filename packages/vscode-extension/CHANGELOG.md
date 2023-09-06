@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.5](https://github.com/codeneos/vlocode/compare/v0.20.4...v0.20.5) (2023-09-06)
+
+### Bug Fixes
+
+* deployment command does not restart when after pausing and saving multiple files at once can causes multiple parallel deployments ([030c13d](https://github.com/codeneos/vlocode/commit/030c13d539a21127e2c9eba31a9ea8b0a83b4afd))
+
 ## [0.20.4](https://github.com/codeneos/vlocode/compare/v0.20.3...v0.20.4) (2023-08-24)
 
 ### Bug Fixes

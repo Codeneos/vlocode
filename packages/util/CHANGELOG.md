@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.5](https://github.com/Codeneos/vlocode/compare/v0.20.4...v0.20.5) (2023-09-06)
+
+### Features
+
+* improve detection differences by ignoring extra properties in metadata files retrieved from org ([44b7332](https://github.com/Codeneos/vlocode/commit/44b733223458f0088286870a606b386589b05641))
+
 ## [0.20.3](https://github.com/Codeneos/vlocode/compare/v0.20.2...v0.20.3) (2023-08-24)
 
 ### Bug Fixes
