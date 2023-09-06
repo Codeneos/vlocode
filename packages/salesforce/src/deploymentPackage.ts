@@ -258,15 +258,21 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get a list of paths to files included in this package.
+     * List of paths from the disk from which this package is composed, contains the source files and composed source files.
      * @returns Array of paths to files included in this package
      */
-    public files() {
-        return new Set(Iterable.filter(Iterable.map(this.packageData.values(), value => value.fsPath!), value => !!value));
+    public files(): Set<string> {
+        return new Set(Iterable.join(
+            Iterable.transform(this.packageData.values(), {
+                filter: value => !!value.fsPath,
+                map: value => value.fsPath!
+            }),
+            this.sourceFileMap.keys()
+        ));
     }
 
     /**
-     * Get a list of paths to files included in this packageand the respective files on the file system from which they were generated.
+     * Get a list of paths to files included in this package and the respective files on the file system from which they were generated.
      */
     public *sourceFiles() {
         for (const [packagePath, { fsPath }] of this.packageData) {
