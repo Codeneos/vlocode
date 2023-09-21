@@ -186,7 +186,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     private getStatusLabel(status: DeployStatus) {
         if (status === 'InProgress') {
-            return 'In Pogress';
+            return 'In Progress';
         } else if (status === 'SucceededPartial') {
             return 'Partially Deployed';
         }
