@@ -25,11 +25,16 @@ export class RecordFactory {
     private static readonly fieldMapKey = Symbol('fields');
 
     /**
-     * Create records using a proxy to intercept property access and transform the property name to the correct casing.
+     * Create records using a JS Proxy to intercept property access and transform the property name to the correct casing.
+     * When enabled the property access is case insensitive and upon each property access the property
+     * name is normalized and checked against all normalized field names in the current record. This can be slow due to the
+     * the multiple string comparisons that need to be executed.
      *
-     * If false uses the defineProperty approach to transform the property names which is by design case sensitive.
+     * When `false` the RecordFactory will use `Object.defineProperty` to transform the property
+     * names which causes the normalized property names to always be case sensitive but avoids
+     * the disadvantages of using a Proxy.
      */
-    public static readonly useRecordProxy = false;
+    public static useRecordProxy = false;
 
     private readonly schemaService: SalesforceSchemaService;
 
@@ -153,10 +158,6 @@ export class RecordFactory {
         let fieldMap = target[RecordFactory.fieldMapKey];
         if (fieldMap === undefined) {
             fieldMap = RecordFactory.generateNormalizedFieldMap(Object.keys(target));
-        }
-
-        if (String(name).toLowerCase() === 'id' && target['']) {
-            return 'Id';
         }
 
         return fieldMap.get(String(name).toLowerCase())
