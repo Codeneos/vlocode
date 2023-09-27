@@ -5,11 +5,13 @@ const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
 const proxyTargetSymbol = Symbol('[[proxyTarget]]');
 
 export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol | undefined;
+export type ValueTransformer = (value: string | number | boolean | undefined) => any;
 
 export class PropertyTransformHandler<T extends object> implements ProxyHandler<T> {
 
     constructor(
         private readonly transformProperty: PropertyTransformer<T>,
+        private readonly transformValue: ValueTransformer = (value) => value,
         private readonly proxyIdentity = randomUUID()) {
     }
 
@@ -77,9 +79,9 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
                 // or primitive types that cannot be proxied
                 return value;
             }
-            return new Proxy(value, new PropertyTransformHandler(this.transformProperty, this.proxyIdentity));
+            return new Proxy(value, new PropertyTransformHandler(this.transformProperty, this.transformValue, this.proxyIdentity));
         }
-        return value;
+        return this.transformValue(value);
     }
 
     private wrapArray(array: any[]) : any[] {
