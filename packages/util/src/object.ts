@@ -11,7 +11,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
 
     constructor(
         private readonly transformProperty: PropertyTransformer<T>,
-        private readonly transformValue: ValueTransformer = (value) => value,
+        private readonly transformValue?: ValueTransformer,
         private readonly proxyIdentity = randomUUID()) {
     }
 
@@ -81,7 +81,12 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
             }
             return new Proxy(value, new PropertyTransformHandler(this.transformProperty, this.transformValue, this.proxyIdentity));
         }
-        return this.transformValue(value);
+
+        if (this.transformValue) {
+            return this.transformValue(value);
+        } 
+        
+        return value;
     }
 
     private wrapArray(array: any[]) : any[] {
@@ -112,10 +117,11 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
 /**
  * Transforms properties making them accessible according to the transformer function provided through a proxy.
  * @param target target object
- * @param transformer Key/Property transformer
+ * @param propertyTransformer Key/Property transformer
+ * @param valueTransformer Value transformer
  */
-export function transformPropertyProxy<T extends object>(target: T, transformer: PropertyTransformer<T>) : T {
-    return new Proxy(target, new PropertyTransformHandler(transformer));
+export function transformPropertyProxy<T extends object>(target: T, propertyTransformer: PropertyTransformer<T>, valueTransformer?: ValueTransformer) : T {
+    return new Proxy(target, new PropertyTransformHandler(propertyTransformer, valueTransformer));
 }
 
 /**

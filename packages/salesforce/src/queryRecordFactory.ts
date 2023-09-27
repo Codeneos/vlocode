@@ -92,7 +92,13 @@ export class RecordFactory {
             }
 
             const accessor = {
-                get: () => queryResultRecord[key],
+                get: () => {
+                    const value = queryResultRecord[key];
+                    if(typeof value == 'object') {
+                        return value;
+                    }
+                    return RecordFactory.transformValue(value);
+                },
                 set: (value: any) => queryResultRecord[key] = value,
                 enumerable: false,
                 configurable: false
