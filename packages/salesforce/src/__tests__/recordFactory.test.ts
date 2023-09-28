@@ -6,7 +6,7 @@ import { SObjectRecord } from '../types/sobjectRecord';
 
 describe('recordFactory', () => {
 
-    describe('#transformDateValue', () => {
+    describe('#create', () => {
         const testRecord: SObjectRecord  = {
             "attributes" : {
               "type" : "Contact",
