@@ -4,8 +4,10 @@ import { stringEquals } from './string';
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
 const proxyTargetSymbol = Symbol('[[proxyTarget]]');
 
+type primitiveDataTypes = string | number | boolean | null | undefined;
+
 export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol | undefined;
-export type ValueTransformer = (value: string | number | boolean | undefined) => unknown;
+export type ValueTransformer = (value: primitiveDataTypes) => unknown;
 
 export class PropertyTransformHandler<T extends object> implements ProxyHandler<T> {
 
