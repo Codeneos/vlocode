@@ -2,6 +2,7 @@ import { injectable, LifecyclePolicy } from '@vlocode/core';
 import { cache, extractNamespaceAndName, normalizeSalesforceName, PropertyTransformHandler, removeNamespacePrefix, substringAfterLast, substringBefore } from '@vlocode/util';
 import { QueryResultRecord } from './connection';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+import { DateTime } from 'luxon';
 
 export const RecordAttributes = Symbol('attributes');
 export const RecordId = Symbol('id');
@@ -174,8 +175,11 @@ export class RecordFactory {
         if (typeof value === 'string') {      
             //string matching iso8601Pattern as Date      
             if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(.\d+)?(([+-]\d{2}\d{2})|Z)?)?$/i.test(value)) {
-                return new Date(value);
-            }
+                const dateValue = DateTime.fromISO(value);
+                if (dateValue.isValid) {
+                    return dateValue.toJSDate();
+                }
+           }
         }
         return value;
     }

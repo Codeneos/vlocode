@@ -19,17 +19,20 @@ describe('recordFactory', () => {
         };
 
 
-        it('field with dateTime value should be returned as Date instead of string', async () => {
+        it('field with full ISO string should be returned as Date instead of string', async () => {
             const record = RecordFactory.create<QueryResult<SObjectRecord>>(testRecord);
             expect(record.createdDate).toBeInstanceOf(Date);
             expect(record.createdDate).toEqual(new Date('2023-08-31T13:42:36.000+0000'));
         });
-        it('field with date value should be returned as Date instead of string', async () => {
+        it('field with ISO string without TZ should be returned as UTC in local TZ', async () => {
             const record = RecordFactory.create<QueryResult<SObjectRecord>>(testRecord);
+            const currentOffset = new Date('2000-01-01').getTimezoneOffset() * 60 * 1000;
+            const utcExpected = new Date('2000-01-01T00:00:00.000+0000').getTime();
+            const localeExpected = new Date(utcExpected + currentOffset);
             expect(record.dateOfBirth).toBeInstanceOf(Date);
-            expect(record.dateOfBirth).toEqual(new Date('2000-01-01'));
+            expect(record.dateOfBirth).toEqual(localeExpected);
         });
-        it('field with text other than dates should be returned string without any transformation', async () => {
+        it('field with NON ISO string should be returned as is', async () => {
             const record = RecordFactory.create<QueryResult<SObjectRecord>>(testRecord);
             expect(record.name).toEqual('Maria Meyer');
         });
