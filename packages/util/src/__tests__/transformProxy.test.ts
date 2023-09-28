@@ -53,5 +53,10 @@ describe('util', () => {
             expect(sliced[0]['b']).toEqual('2');
             expect(sut.length).toEqual(3);
         });
+        it('should return transformed value when getting a property value', () => {
+            const obj =  { a: 'foo' };
+            const sut = transformPropertyProxy(obj, (target, prop) => prop, (value) => 'bar');
+            expect(sut.a).toEqual('bar');
+        });
     });
 });

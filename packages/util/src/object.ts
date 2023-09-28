@@ -4,12 +4,16 @@ import { stringEquals } from './string';
 const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
 const proxyTargetSymbol = Symbol('[[proxyTarget]]');
 
+type primitiveDataTypes = string | number | boolean | null | undefined;
+
 export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol | undefined;
+export type ValueTransformer = (value: primitiveDataTypes) => unknown;
 
 export class PropertyTransformHandler<T extends object> implements ProxyHandler<T> {
 
     constructor(
         private readonly transformProperty: PropertyTransformer<T>,
+        private readonly transformValue?: ValueTransformer,
         private readonly proxyIdentity = randomUUID()) {
     }
 
@@ -77,8 +81,13 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
                 // or primitive types that cannot be proxied
                 return value;
             }
-            return new Proxy(value, new PropertyTransformHandler(this.transformProperty, this.proxyIdentity));
+            return new Proxy(value, new PropertyTransformHandler(this.transformProperty, this.transformValue, this.proxyIdentity));
         }
+
+        if (this.transformValue) {
+            return this.transformValue(value);
+        } 
+        
         return value;
     }
 
@@ -110,10 +119,11 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
 /**
  * Transforms properties making them accessible according to the transformer function provided through a proxy.
  * @param target target object
- * @param transformer Key/Property transformer
+ * @param propertyTransformer Key/Property transformer
+ * @param valueTransformer Value transformer
  */
-export function transformPropertyProxy<T extends object>(target: T, transformer: PropertyTransformer<T>) : T {
-    return new Proxy(target, new PropertyTransformHandler(transformer));
+export function transformPropertyProxy<T extends object>(target: T, propertyTransformer: PropertyTransformer<T>, valueTransformer?: ValueTransformer) : T {
+    return new Proxy(target, new PropertyTransformHandler(propertyTransformer, valueTransformer));
 }
 
 /**

@@ -2,11 +2,12 @@ import { injectable, LifecyclePolicy } from '@vlocode/core';
 import { cache, extractNamespaceAndName, normalizeSalesforceName, PropertyTransformHandler, removeNamespacePrefix, substringAfterLast, substringBefore } from '@vlocode/util';
 import { QueryResultRecord } from './connection';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+import { DateTime } from 'luxon';
 
 export const RecordAttributes = Symbol('attributes');
 export const RecordId = Symbol('id');
 export const RecordType = Symbol('type');
-
+type primitiveDataTypes = string | number | boolean | null | undefined;
 interface RecordFactoryCreateOptions {
     /**
      * Create records using a proxy to intercept property access and transform the property name to the correct casing.
@@ -70,7 +71,7 @@ export class RecordFactory {
     }
 
     private createWithProxy<T extends object>(queryResultRecord: QueryResultRecord): T {
-        return new Proxy<T>(queryResultRecord as any, new PropertyTransformHandler(RecordFactory.getPropertyKey));
+        return new Proxy<T>(queryResultRecord as any, new PropertyTransformHandler(RecordFactory.getPropertyKey, RecordFactory.transformValue));
     }
 
     private createWithDefine<T extends object>(queryResultRecord: QueryResultRecord): T {
@@ -97,7 +98,13 @@ export class RecordFactory {
             }
 
             const accessor = {
-                get: () => queryResultRecord[key],
+                get: () => {
+                    const value = queryResultRecord[key];
+                    if(typeof value === 'object') {
+                        return value;
+                    }
+                    return RecordFactory.transformValue(value);
+                },
                 set: (value: any) => queryResultRecord[key] = value,
                 enumerable: false,
                 configurable: false
@@ -115,16 +122,20 @@ export class RecordFactory {
         }
 
         // Remove relationship properties that are also defined as regular properties
+        this.removeDuplicateRelationshipProperties(properties, relationships);
+
+        const newProperties = Object.fromEntries(
+            Object.entries(properties).filter(([key]) => !(key in queryResultRecord)));
+        return Object.defineProperties(queryResultRecord as T, newProperties);
+    }
+
+    private removeDuplicateRelationshipProperties(properties: Record<string, PropertyDescriptor>, relationships: Array<string>): void {
         for (const name of relationships) {
             const commonName = name.slice(0, -3);
             if (!properties[commonName]) {
                 properties[commonName] = properties[name];
             }
         }
-
-        const newProperties = Object.fromEntries(
-            Object.entries(properties).filter(([key]) => !(key in queryResultRecord)));
-        return Object.defineProperties(queryResultRecord as T, newProperties);
     }
 
     @cache({ scope: 'instance', unwrapPromise: true, immutable: false })
@@ -163,6 +174,19 @@ export class RecordFactory {
         return fieldMap.get(String(name).toLowerCase())
             ?? fieldMap.get(normalizeSalesforceName(String(name)).toLowerCase())
             ?? name;
+    }
+
+    private static transformValue(value: primitiveDataTypes): unknown {
+        //string matching iso8601Pattern as Date      
+        if (typeof value === 'string' &&
+            /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(.\d+)?(([+-]\d{2}\d{2})|Z)?)?$/i.test(value)) {
+            const dateValue = DateTime.fromISO(value);
+            if (dateValue.isValid) {
+                return dateValue.toJSDate();
+            }
+        }
+        
+        return value;
     }
 
     private static generateNormalizedFieldMap(this: void, fields: string[]) {
