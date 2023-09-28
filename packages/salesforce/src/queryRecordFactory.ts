@@ -170,17 +170,11 @@ export class RecordFactory {
             ?? name;
     }
 
-    private static transformValue(value: string | number | boolean | undefined): any {
+    private static transformValue(value: string | number | boolean | undefined): unknown {
         if (typeof value === 'string') {      
             //string matching iso8601Pattern as Date      
             if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(.\d+)?(([+-]\d{2}\d{2})|Z)?)?$/i.test(value)) {
                 return new Date(value);
-            }
-            if (['true', 'false'].includes(value.toLowerCase().trim())) {
-                return value.toLowerCase().trim() === 'true';
-            }
-            if (/^[0-9]*(\.[0-9]+)?$/i.test(value) && !value.startsWith('0')) {
-                return parseFloat(value);
             }
         }
         return value;

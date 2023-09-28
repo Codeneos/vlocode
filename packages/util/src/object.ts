@@ -5,7 +5,7 @@ const proxyIdentitySymbol = Symbol('[[proxyIdent]]');
 const proxyTargetSymbol = Symbol('[[proxyTarget]]');
 
 export type PropertyTransformer<T> = (target: T, name: string | number | symbol) => string | number | symbol | undefined;
-export type ValueTransformer = (value: string | number | boolean | undefined) => any;
+export type ValueTransformer = (value: string | number | boolean | undefined) => unknown;
 
 export class PropertyTransformHandler<T extends object> implements ProxyHandler<T> {
 
