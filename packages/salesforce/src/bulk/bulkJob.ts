@@ -175,18 +175,23 @@ export class BulkJob<T extends BulkJobInfo> {
     /**
      * Last known state of the job as returned by the API.
      */
-    public get info() { return this.#info; }
+    public get info() { return this._info; }
 
-    protected readonly delimiterCharacter = ColumnDelimiters[this.columnDelimiter ?? 'COMMA'];
-    protected readonly lineEndingCharacters = this.info.lineEnding === 'LF' ? '\n' : '\r\n';
+    protected readonly delimiterCharacter: string;
+    protected readonly lineEndingCharacters: string;
 
     /**
      * Internal state detail of the job as last returned by the API.
      */
-    #info: Readonly<T>;
+    private _info: Readonly<T>;
 
     constructor(protected client: RestClient, info: T) {
-        this.#info = Object.freeze<T>(info);
+        if (info.columnDelimiter && !ColumnDelimiters[info.columnDelimiter]) {
+            throw new Error(`Invalid column delimiter ${info.columnDelimiter}`);
+        }
+        this._info = Object.freeze<T>({ ...info });
+        this.delimiterCharacter = ColumnDelimiters[info.columnDelimiter || 'COMMA'];
+        this.lineEndingCharacters = info.lineEnding === 'LF' ? '\n' : '\r\n';
     }
 
     /**
@@ -208,7 +213,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * Refresh the job info and state of this job.
      */
     public async refresh() {
-        this.#info = Object.freeze(await this.client.get<T>(this.id));
+        this._info = Object.freeze(await this.client.get<T>(this.id));
         return this;
     }
 
@@ -218,7 +223,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * @returns Instance of this job
      */
     protected async patch(info: Partial<T>) {
-        this.#info = Object.freeze(await this.client.patch<T>(info, this.id));
+        this._info = Object.freeze(await this.client.patch<T>(info, this.id));
         return this;
     }
 
