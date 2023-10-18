@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.8](https://github.com/Codeneos/vlocode/compare/v0.20.7...v0.20.8) (2023-10-18)
+
+### Bug Fixes
+
+* V2 bulk job ctor fails when compiled with ES2019 ([46a1276](https://github.com/Codeneos/vlocode/commit/46a1276bb02a16d2aa91e2fa4e2c8f7ae27dc829))
+
 ## [0.20.7](https://github.com/Codeneos/vlocode/compare/v0.20.6...v0.20.7) (2023-09-29)
 
 **Note:** Version bump only for package @vlocode/salesforce
