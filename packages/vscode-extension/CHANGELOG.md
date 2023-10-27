@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.9](https://github.com/codeneos/vlocode/compare/v0.20.8...v0.20.9) (2023-10-27)
+
+### Features
+
+* add view meta XML command to switch quickly to the related meta file ([6c2e688](https://github.com/codeneos/vlocode/commit/6c2e688f71b146a876cf5b0cc8116d6cecc4885d))
+
 ## [0.20.8](https://github.com/codeneos/vlocode/compare/v0.20.7...v0.20.8) (2023-10-18)
 
 **Note:** Version bump only for package vlocode
