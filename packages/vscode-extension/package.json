@@ -118,7 +118,9 @@
         "onCommand:vlocode.deployDeltaMetadata",
         "onCommand:vlocode.omniScript.generateLwc",
         "onCommand:vlocode.omniScript.deployLwc",
-        "onCommand:vlocode.omniScript.activate"
+        "onCommand:vlocode.omniScript.activate",
+        "onCommand:vlocode.openMetaXml",
+        "onCommand:vlocode.openSourceFile"
     ],
     "main": "./out/vlocode",
     "contributes": {
@@ -403,6 +405,19 @@
             {
                 "command": "vlocode.omniScript.activate",
                 "title": "OmniScript: (Re-)Activate"
+            },
+            {
+                "command": "vlocode.openMetaXml",
+                "title": "Open -meta.xml",
+                "icon": {
+                    "light": "resources/light/meta-xml.svg",
+                    "dark": "resources/dark/meta-xml.svg"
+                }
+            },
+            {
+                "command": "vlocode.openSourceFile",
+                "title": "Open Source",
+                "icon": "$(code)"
             }
         ],
         "menus": {
@@ -670,6 +685,38 @@
                     "command": "vlocode.omniScript.activate",
                     "group": "v_vlocity_omniscript",
                     "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.openMetaXml",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.openMetaXml",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.cls$/ && false"
+                },
+                {
+                    "command": "vlocode.openMetaXml",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.openMetaXml",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.trigger$/ && false"
+                },
+                {
+                    "command": "vlocode.openSourceFile",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.openSourceFile",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.cls-meta\\.xml$/ && false"
+                },
+                {
+                    "command": "vlocode.openSourceFile",
+                    "when": "false"
+                },
+                {
+                    "command": "vlocode.openSourceFile",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.trigger-meta\\.xml$/ && false"
                 }
             ],
             "explorer/context": [
@@ -993,6 +1040,24 @@
                     "command": "vlocode.developerLogs.setLogVisibility",
                     "group": "navigation",
                     "when": "view == developerLogsView"
+                }
+            ],
+            "editor/title/run": [
+                {
+                    "command": "vlocode.openMetaXml",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.cls$/"
+                },
+                {
+                    "command": "vlocode.openMetaXml",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.trigger$/"
+                },
+                {
+                    "command": "vlocode.openSourceFile",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.cls-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.openSourceFile",
+                    "when": "resourceScheme == file && resourcePath =~ /\\.trigger-meta\\.xml$/"
                 }
             ]
         },

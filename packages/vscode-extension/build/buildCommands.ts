@@ -95,6 +95,8 @@ export function mergeCommandContributions(packageJson: PackageJson, commands: Co
         if (command.icon) {
             if (typeof command.icon === 'object') {
                 newCommand.icon = command.icon;
+            } else if (command.icon.startsWith('$(')) {
+                newCommand.icon = command.icon;
             } else {
                 newCommand.icon = {
                     light: command.icon.replace(/{(type|theme)}/ig, 'light'),

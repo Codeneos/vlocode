@@ -9,4 +9,5 @@ export * from './pauseDeploymentsCommand';
 export * from './refreshMetadataCommand';
 export * from './resumeDeploymentsCommand';
 export * from './retrieveMetadataCommand';
+export * from './toggleMetaXmlCommand';
 export * from './viewInSalesforce';

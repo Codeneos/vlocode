@@ -339,3 +339,21 @@ vlocode.omniScript.activate:
   title: 'OmniScript: (Re-)Activate'
   group: v_vlocity_omniscript
   menus: *omniScriptCommandMenus
+
+# editor
+vlocode.openMetaXml:
+  title: Open -meta.xml
+  icon: resources/{type}/meta-xml.svg
+  when:
+    - resourceScheme == file && resourcePath =~ /\.cls$/
+    - resourceScheme == file && resourcePath =~ /\.trigger$/
+  menus:
+    - menu: editor/title/run
+vlocode.openSourceFile:
+  title: Open Source
+  icon: $(code)
+  when:
+    - resourceScheme == file && resourcePath =~ /\.cls-meta\.xml$/
+    - resourceScheme == file && resourcePath =~ /\.trigger-meta\.xml$/
+  menus:
+    - menu: editor/title/run
