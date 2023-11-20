@@ -244,6 +244,35 @@ export default class VlocityDatapackService implements vscode.Disposable {
      * Get all known query definitions.
      */
     public async getQueryDefinitions() : Promise<DatapackQueryDefinitions> {
+        if (await this.isVlocityPackageInstalled()) {
+            return {
+                'OmniScript': {
+                    VlocityDataPackType: 'OmniScript',
+                    name: `Name + ' (v' + VersionNumber + ')'`,
+                    description: `(IsActive ? 'Active' : '') + LastModifiedDate`,
+                    salesforceUrl: `'/lightning/cmp/omnistudio__OmniDesignerAuraWrapper?c__recordId=' + id`,
+                    query: `SELECT Id, Name, Type, SubType, Language, VersionNumber, IsActive, LastModifiedDate FROM OmniProcess WHERE OmniProcessType = 'OmniScript'`,
+                    groupName: `Type+'/'+SubType+' ('+Language+')'`,
+                    groupKey: `Type + SubType + Language`,
+                    matchingKey: {
+                        fields: [ 'SubType', 'Type', 'VersionNumber', 'Language' ],
+                    }
+                },
+                'IntegrationProcedure': {
+                    VlocityDataPackType: 'IntegrationProcedure',
+                    name: `Name + ' (v' + VersionNumber + ')'`,
+                    salesforceUrl: `'/lightning/cmp/omnistudio__OmniDesignerAuraWrapper?c__recordId=' + id`,
+                    query: `SELECT Id, Name, Type, SubType, Language, VersionNumber, IsActive FROM OmniProcess WHERE OmniProcessType = 'Integration Procedure'`,
+                    groupName: `Type+'/'+SubType`,
+                    groupKey: `Type + SubType`,
+                    description: `IsActive ? 'Active' : ''`,
+                    matchingKey: {
+                        fields: [ 'SubType', 'Type', 'VersionNumber' ],
+                    }
+                }
+            }
+        }
+
         const customJobOptions = await this.getCustomJobOptions();
         if (customJobOptions && customJobOptions.customQueries) {
             const customQueries = customJobOptions.customQueries.reduce((map, val) =>
@@ -305,6 +334,10 @@ export default class VlocityDatapackService implements vscode.Disposable {
 
     public async isVlocityPackageInstalled() : Promise<boolean> {
         return (await this.salesforceService.isPackageInstalled(/^vlocity/i)) !== undefined;
+    }
+
+    public async isOmniStudioInstalled() : Promise<boolean> {
+        return (await this.salesforceService.isOmniStudioInstalled()) !== undefined;
     }
 
     private resolvedProjectPath() {

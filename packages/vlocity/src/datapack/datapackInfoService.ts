@@ -44,6 +44,11 @@ interface DatapackConfigurationRecord {
     ValidateType?: string;
 }
 
+const OmniStudioDatapackConfigurations: VlocityDatapackDefinition[] = [
+    { sobjectType: 'OmniProcess', datapackType: 'OmniScript' },
+    { sobjectType: 'OmniProcess', datapackType: 'IntegrationProcedure' }
+]
+
 @injectable()
 export class DatapackInfoService {
 
@@ -58,6 +63,10 @@ export class DatapackInfoService {
      */
     @cache()
     public async getDatapackDefinitions() : Promise<VlocityDatapackDefinition[]> {
+        if (await this.salesforce.isOmniStudioInstalled()) {
+            return OmniStudioDatapackConfigurations;
+        }
+
         this.logger.verbose('Querying DataPack configuration from Salesforce');
         const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('%vlocity_namespace%__VlocityDataPackConfiguration__mdt', undefined, 'all');
         if (configurationRecords.length == 0) {

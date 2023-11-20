@@ -4,7 +4,6 @@ import { LogManager, injectable, container } from '@vlocode/core';
 import { DatapackUtil, DatapackInfoService } from '@vlocode/vlocity';
 import { evalExpr, groupBy, normalizeSalesforceName, clearCache, lazy, Iterable } from '@vlocode/util';
 
-import exportQueryDefinitions from '../exportQueryDefinitions.yaml';
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
@@ -12,6 +11,7 @@ import BaseDataProvider from './baseDataProvider';
 import { ConfigurationManager } from '../lib/config';
 import { QueryBuilder, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { randomUUID } from 'crypto';
+import { DatapackQueryDefinition } from '../exportQueryDefinitions.yaml';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
@@ -106,7 +106,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     private async getNodes(node?: DatapackNode): Promise<DatapackNode[]> {
         if (!node) {
             return [
-                new DatapackRootNode('Datapacks', 'Vlocity datapacks', TreeItemCollapsibleState.Expanded),
+                new DatapackRootNode('Datapacks', 'Datapacks', TreeItemCollapsibleState.Expanded),
                 new DatapackRootNode('SObjects', 'Generic SObjects', TreeItemCollapsibleState.Collapsed)
             ];
         }
@@ -140,7 +140,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         // group results?
         const queryDefinition = await this.datapackService.getQueryDefinition(node.datapackType);
         if (queryDefinition && queryDefinition.groupKey) {
-            return this.createDatapackGroupNodes(records, node.datapackType, queryDefinition.groupKey);
+            return this.createDatapackGroupNodes(records, queryDefinition);
         }
         return this.createDatapackObjectNodes(records, node.datapackType);
     }
@@ -191,16 +191,30 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         return this.createDatapackObjectNodes(records, 'SObject');
     }
 
-    private createDatapackGroupNodes(records: SObjectRecord[], datapackType: string, groupByKey: string) : DatapackNode[] {
-        const groupedRecords = groupBy(records, r => evalExpr(groupByKey, r));
+    private createDatapackGroupNodes(records: SObjectRecord[], definition: DatapackQueryDefinition) : DatapackNode[] {
+        const groupedRecords = groupBy(records, r => evalExpr(definition.groupKey!, r));
         return Object.keys(groupedRecords).map(
-            key => new DatapackObjectGroupNode(groupedRecords[key], datapackType)
+            key => new DatapackObjectGroupNode(groupedRecords[key], definition.VlocityDataPackType, {
+                labelFormat: definition.groupName,
+                descriptionFormat: definition.groupDescription
+            })
         );
     }
 
-    private createDatapackObjectNodes(records: SObjectRecord[], datapackType: string) : DatapackNode[] {
+    private async createDatapackObjectNodes(records: SObjectRecord[], datapackType: string | DatapackQueryDefinition) : Promise<DatapackNode[]> {
+        const queryDefinition = typeof datapackType === 'string'
+            ? await this.datapackService.getQueryDefinition(datapackType)
+            : datapackType;
+
+        if (!queryDefinition) {
+            throw new Error(`Cannot find definition for datapack type: ${datapackType}`);
+        }
+
         return records.map(
-            record => new DatapackObjectNode(record, datapackType)
+            record => new DatapackObjectNode(record, queryDefinition.VlocityDataPackType, {
+                labelFormat: queryDefinition.name,
+                descriptionFormat: queryDefinition.description
+            })
         );
     }
 }
@@ -283,7 +297,11 @@ class DatapackCategoryNode extends DatapackNode {
 }
 
 class DatapackObjectGroupNode extends DatapackNode {
-    constructor(public records: SObjectRecord[], public datapackType: string) {
+    constructor(
+        public records: SObjectRecord[],
+        public datapackType: string,
+        private options: { labelFormat?: string; descriptionFormat?: string; }
+    ) {
         super(DatapackNodeType.ObjectGroup, true, {
             light: 'resources/light/package.svg',
             dark: 'resources/dark/package.svg'
@@ -297,17 +315,18 @@ class DatapackObjectGroupNode extends DatapackNode {
     public getItemTooltip = () => `Found ${this.records.length} versions`;
 
     public getItemDescription() {
-        const nodeConfig = exportQueryDefinitions[this.datapackType];
-        if (nodeConfig && nodeConfig.groupDescription) {
-            return evalExpr(nodeConfig.groupDescription, { ...this.records[0], count: this.records.length });
+        if (this.options?.descriptionFormat) {
+            return evalExpr(this.options.descriptionFormat, {
+                ...this.records[0],
+                count: this.records.length
+            });
         }
         return `${this.records.length} version(s)`;
     }
 
     public getLabelFormat() : string {
-        const nodeConfig = exportQueryDefinitions[this.datapackType];
-        if (nodeConfig && nodeConfig.groupName) {
-            return nodeConfig.groupName;
+        if (this?.options?.labelFormat) {
+            return this.options.labelFormat;
         }
         return '\'<NO_GROUP_NAME>\' + Id';
     }
@@ -323,7 +342,11 @@ class DatapackSObjectTypeNode extends DatapackNode {
 }
 
 class DatapackObjectNode extends DatapackNode implements ObjectEntry {
-    constructor(public record: SObjectRecord, public datapackType: string) {
+    constructor(
+        public record: SObjectRecord,
+        public datapackType: string,
+        private options: { labelFormat?: string; descriptionFormat?: string; }
+    ) {
         super(DatapackNodeType.Object, false, {
             light: 'resources/light/package.svg',
             dark: 'resources/dark/package.svg'
@@ -333,17 +356,15 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     public getId = () => this.id;
 
     public getItemLabel() {
-        const nodeConfig = exportQueryDefinitions[this.datapackType];
-        if (nodeConfig && nodeConfig.name) {
-            return evalExpr(nodeConfig.name, this.record);
+        if (this.options?.labelFormat) {
+            return evalExpr(this.options.labelFormat, this.record);
         }
         return  DatapackUtil.getLabel(this.record);
     }
 
     public getItemDescription() {
-        const nodeConfig = exportQueryDefinitions[this.datapackType];
-        if (nodeConfig && nodeConfig.description) {
-            return evalExpr(nodeConfig.description, this.record);
+        if (this.options?.descriptionFormat) {
+            return evalExpr(this.options.descriptionFormat, this.record);
         }
         return this.id;
     }

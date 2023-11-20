@@ -57,6 +57,12 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return this.connectionProvider.getJsForceConnection();
     }
 
+    @cache({ unwrapPromise: true })
+    public isOmniStudioInstalled() : Promise<boolean> {
+        return this.isPackageInstalled('omnistudio');
+    }
+
+    @cache({ unwrapPromise: true })
     public async isPackageInstalled(packageName: string | RegExp) : Promise<boolean> {
         return (await this.getInstalledPackageDetails(packageName)) !== undefined;
     }
@@ -90,7 +96,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return url;
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public async getInstalledPackageNamespace(packageName: string | RegExp) : Promise<string> {
         const installedPackage = await this.getInstalledPackageDetails(packageName);
         if (!installedPackage) {
@@ -99,21 +105,20 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return installedPackage.fullName!;
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public async getInstalledPackageDetails(packageName: string | RegExp){
         const results = await this.getInstalledPackages();
         return results.find(packageInfo => typeof packageName === 'string' ? packageName === packageInfo.fullName : packageName.test(packageInfo.fullName!));
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public async getInstalledPackages() {
         const con = await this.getJsForceConnection();
-        const x = await con.metadata.readAll('InstalledPackage');
         const packageList = await spreadAsync(con.metadata.readAll('InstalledPackage'));
         return packageList;
     }
 
-    @cache()
+    @cache({ unwrapPromise: true })
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
         const results = await this.query<OrganizationDetails>('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
         return results[0];

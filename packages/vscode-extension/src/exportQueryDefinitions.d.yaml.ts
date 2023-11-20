@@ -2,7 +2,7 @@ export interface DatapackQueryDefinition {
     VlocityDataPackType: string;
     query: string;
     name: string;
-    requiredSetting: string;
+    requiredSetting?: string;
     groupKey?: string;
     groupName?: string;
     groupDescription?: string;
