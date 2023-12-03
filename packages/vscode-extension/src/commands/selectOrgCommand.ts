@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SalesforceOrgInfo, sfdx } from '@vlocode/util';
+import { SalesforceAuthResult, SalesforceOrgInfo, sfdx } from '@vlocode/util';
 import { CommandBase } from '../lib/commandBase';
 import { vscodeCommand } from '../lib/commandRouter';
 import { VlocodeCommand } from '../constants';
@@ -32,6 +32,17 @@ export default class SelectOrgCommand extends CommandBase {
         description: 'Provide a custom instance URL'
     }];
 
+    private readonly authFlows = [{
+        label: '$(key) Web Login Flow',
+        description: 'default',
+        type: 'web',
+        detail: 'You will be redirected to Salesforce to login and authorize the org.'
+    }, {
+        label: '$(shield) Device Login Flow',
+        type: 'device',
+        detail: 'A device code will be generated that can be used to authorize the org manually from the browser.'
+    }];
+
     private readonly salesforceUrlValidator = (url?: string) : string | undefined => {
         const urlRegex = /(^http(s){0,1}:\/\/[^/]+\.[a-z]+(:[0-9]+|)$)|(^\s*$)/i;
         if (url && !urlRegex.test(url)) {
@@ -52,8 +63,8 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     public async execute() : Promise<void> {
-        const selectionOptions = [ 
-            this.newOrgOption, 
+        const selectionOptions = [
+            this.newOrgOption,
             this.refreshTokensOption
         ];
 
@@ -85,6 +96,13 @@ export default class SelectOrgCommand extends CommandBase {
     }
 
     protected async authorizeNewOrg() : Promise<SalesforceOrgInfo | undefined> {
+        const flowType = await vscode.window.showQuickPick(this.authFlows,
+            { placeHolder: 'Select the authorization flows you want use' });
+
+        if (!flowType) {
+            return;
+        }
+
         const newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
             { placeHolder: 'Select the type of org you want to authorize' });
 
@@ -105,31 +123,87 @@ export default class SelectOrgCommand extends CommandBase {
             placeHolder: 'Enter an org alias or use the default alias (Press \'Enter\' to confirm or \'Escape\' to cancel)'
         });
 
-        this.logger.log(`Opening '${instanceUrl}' in a new browser window`);
+        if (flowType.type === 'web') {
+            return this.authorizeWebLogin({ instanceUrl, alias });
+        } else {
+            return this.authorizeDeviceLogin({ instanceUrl, alias });
+        }
+    }
+
+    protected async authorizeDeviceLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceOrgInfo | undefined> {
+        const authInfo = await this.vlocode.withActivity({
+            location: vscode.ProgressLocation.Notification,
+            progressTitle: 'Salesforce Device Login',
+            cancellable: true
+        }, async (progress, token) => {
+            // Request Code and URL 
+            progress.report({ message: 'Requesting device login...' });
+            const deviceLogin = await sfdx.deviceLogin(options);
+            if (token?.isCancellationRequested) {
+                return;
+            }
+
+            // Show user code and verification URL adn ask
+            // the user to open the verification URL or just copy the code
+            this.logger.log(`Enter user code [${deviceLogin.userCode}] (without brackets) to confirm login at: ${deviceLogin.verificationUrl}`);
+            progress.report({ message: `Waiting for approval of user code: ${deviceLogin.userCode}` });
+
+            const action = await vscode.window.showInformationMessage(
+                `Open verrification URL?`,
+                {
+                    modal: true,
+                    detail: `Click 'Open in Browser' to open the verification URL in your browser or 'Copy Code' ` +
+                        `to copy the code to your clipboard and open the URL manually.\n\nVerification URL: ${
+                            deviceLogin.verificationUrl}\nUser Code: ${deviceLogin.userCode}`
+                },
+                { title: 'Open in Browser', code: 'open' },
+                { title: 'Copy Code', code: 'copy' },
+                { title: 'Copy URL', code: 'copy_url' },
+                { title: 'Cancel', code: 'cancel', isCloseAffordance: true }
+            );
+
+            if (token?.isCancellationRequested || !action || action?.code === 'cancel') {
+                return;
+            }
+
+            if (action?.code === 'copy') {
+                vscode.env.clipboard.writeText(deviceLogin.userCode);
+            } else if (action?.code === 'copy_url') {
+                vscode.env.clipboard.writeText(deviceLogin.verificationUrlWithCode || deviceLogin.verificationUrl);
+            }
+
+            progress.report({ message: 'Waiting for device approval...' });
+            return await deviceLogin.awaitDeviceApproval({
+                openVerificationUrl: action.code === 'open'
+            }, token);
+        });
+
+        return this.processAuthinfo(authInfo, options);
+    }
+
+    protected async authorizeWebLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceOrgInfo | undefined> {
+        this.logger.log(`Opening '${options.instanceUrl}' in a new browser window`);
         const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Notification,
             progressTitle: 'Opening browser to authorize new org...',
             cancellable: true
         }, async (_, token) => {
-            const loginResult = await sfdx.webLogin({ instanceUrl }, token);
-            if (loginResult && loginResult.accessToken) {
-                return loginResult;
-            }
+            return await sfdx.webLogin(options, token);
         });
 
-        if (authInfo) {
-            if (alias) {
-                await sfdx.setAlias(authInfo.username, alias);
-            }
-            const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
-            this.logger.log(successMessage);
-            void vscode.window.showInformationMessage(successMessage);
-            return authInfo;
-        }
+        return this.processAuthinfo(authInfo, options);
+    }
 
-        this.logger.error(`Unable to authorize at '${instanceUrl}'`);
-        void vscode.window.showErrorMessage('Failed to authorize new org, see the log for more details');
-        return;
+    private async processAuthinfo(authInfo: SalesforceAuthResult | undefined, options: { instanceUrl: string, alias?: string }): Promise<SalesforceOrgInfo | undefined>{
+        if (!authInfo || !authInfo.accessToken) {
+            this.logger.error(`Unable to authorize at '${options.instanceUrl}'`);
+            void vscode.window.showErrorMessage('Failed to authorize new org, see the log for more details');
+            return;
+        }
+        const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
+        this.logger.log(successMessage);
+        void vscode.window.showInformationMessage(successMessage);
+        return authInfo;
     }
 }
 

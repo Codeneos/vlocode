@@ -41,6 +41,48 @@ try {
     // Ignore errors while updating SFDX logger
 }
 
+export interface SalesforceOAuth2LoginOptions {
+    /**
+     * Login URL to use for the login request, defaults to {@link defaultLoginUrl} when not specified.
+     */
+    instanceUrl?: string;
+    /**
+     * When specified the alias is used to store the org details in the SFDX configuration store. Otherwise the new login is only
+     * stored under the username in the SFDX configuration store.
+     */
+    alias?: string;
+    /**
+     * OAuth2 client ID to use for the login request, defaults to the SFDX default client ID when not specified.
+     */
+    clientId?: string;
+}
+
+export interface DeviceLoginFlow {
+    /**
+     * User code to display to the user that must be entered on the device login page ({@link verificationUrl}) to approve the login request.
+     * The device login page {@link verificationUrl} can be opened automatically by setting the `openVerificationUrl` option to `true` when calling {@link awaitDeviceApproval}.
+     * @readonly
+     */
+    readonly userCode: string;
+    /**
+     * URL to open in the browser to approve the device login request.
+     * @readonly
+     */
+    readonly verificationUrl: string;
+    /**
+     * Optional the verification URL with the user code appended as query parameter.
+     * @readonly
+     */
+    readonly verificationUrlWithCode?: string | undefined;
+    /**
+     * Await the user to approve the device login request.
+     * @param options Options for the device login flow
+     * @param options.openVerificationUrl Open the verification URL in the default browser; defaults to `true` when not specified
+     * @param cancelToken Cancellation token to cancel the login flow
+     * @returns A promise that resolves when the user has approved the device login request
+     */
+    awaitDeviceApproval(options?: { openVerificationUrl?: boolean }, cancelToken?: CancellationToken): Promise<SalesforceAuthResult>;
+}
 
 /**
  * A shim for accessing SFDX functionality
@@ -52,6 +94,12 @@ export namespace sfdx {
      */
     export const defaultConfigPath = `.sfdx/sfdx-config.json`;
 
+    /**
+     * Default login URL to use when no login URL is specified.
+     * Defaults to the test login URL used to login to sandboxes.
+     */
+    export const defaultLoginUrl = 'https://test.salesforce.com';
+
     export const logger: {
         debug(...args: any[]): any;
         error(...args: any[]): any;
@@ -60,15 +108,37 @@ export namespace sfdx {
     } = console;
 
     /**
-     * Login to Salesforce using the web based OAuth2 flow.
+     * Login to Salesforce using the OAuth2 Device Flow. In this flow a user code is
+     * displayed to the user that must be entered on the device login page.
+     *
+     * If o options are specified the default login URL is used {@link defaultLoginUrl}.
+     *
+     * @param options Options for the login flow
+     * @returns The authentication result
+     * @example
+     * ```typescript
+     * const loginFlow = await sfdx.deviceLogin();
+     * console.log(`Please login to Salesforce using the code ${loginFlow.userCode} on ${loginFlow.verificationUrl}`);
+     * // Ser the openVerificationUrl option to false to prevent opening the verification URL in the browser
+     * const authResult = await loginFlow.awaitDeviceApproval({ openVerificationUrl: true });
+     * console.log(`Successfully logged in to Salesforce as ${authResult.username}`);
+     * ```
+     */
+    export async function deviceLogin(options?: SalesforceOAuth2LoginOptions) : Promise<DeviceLoginFlow> {
+        return SalesforceDeviceLoginFlow.start(options);
+    }
+
+    /**
+     * Login to Salesforce using the OAuth2 Authentication Code flow.
      * @param options Options for the login flow
      * @param cancelToken Cancellation token to cancel the login flow
      * @returns The authentication result
      */
-    export async function webLogin(options: { instanceUrl?: string; alias?: string, loginHint?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
+    export async function webLogin(options: SalesforceOAuth2LoginOptions & { loginHint?: string }, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {
         const oauthServer = await salesforce.WebOAuthServer.create({
             oauthConfig: {
-                loginUrl: options.instanceUrl ?? 'https://test.salesforce.com'
+                loginUrl: options.instanceUrl ?? defaultLoginUrl,
+                clientId: options.clientId,
             }
         });
 
@@ -356,5 +426,66 @@ export namespace sfdx {
         const configPath = currentConfig?.path ?? `${folderPath}/${defaultConfigPath}`;
         const newConfig = options.replace ? config : { ...currentConfig?.config, ...config };
         await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(newConfig, undefined, 2)));
+    }
+
+    /**
+     * Default implementation of the {@link DeviceLoginFlow} that wraps
+     * the {@link salesforce.DeviceOauthService} and {@link salesforce.DeviceCodeResponse}.
+     */
+    class SalesforceDeviceLoginFlow implements DeviceLoginFlow {
+        public get userCode() : string {
+            return this.loginData.user_code;
+        }
+
+        public get verificationUrl() : string {
+            return this.loginData.verification_uri;
+        }
+
+        public get verificationUrlWithCode() : string {
+            const hasQueryParams = this.loginData.verification_uri.includes('?');
+            return `${this.loginData.verification_uri}${hasQueryParams ? '&' : '?'}${
+                `user_code=${encodeURIComponent(this.userCode)}`
+            }`;
+        }
+
+        private constructor(
+            private readonly oauthService: salesforce.DeviceOauthService,
+            private readonly loginData: salesforce.DeviceCodeResponse,
+            private readonly options?: SalesforceOAuth2LoginOptions
+        ) { }
+
+        /**
+         * Start a new device login flow. Requests a new device code from Salesforce and returns a new {@link SalesforceDeviceLoginFlow} instance
+         * which can be used to await the user to approve the login request.
+         * @param options Options for the device login flow
+         * @returns A promise that resolves when the user has approved the device login request
+         */
+        static async start(options?: SalesforceOAuth2LoginOptions): Promise<SalesforceDeviceLoginFlow> {
+            const deviceOauthService = await salesforce.DeviceOauthService.create({
+                loginUrl: options?.instanceUrl ?? sfdx.defaultLoginUrl,
+                clientId: options?.clientId
+            });
+            const loginData = await deviceOauthService.requestDeviceLogin();
+            return new SalesforceDeviceLoginFlow(deviceOauthService, loginData, options);
+        }
+
+        public async awaitDeviceApproval(options?: { openVerificationUrl?: boolean }, token?: CancellationToken): Promise<SalesforceAuthResult> {
+            if (options?.openVerificationUrl ?? true) {
+                await open(this.verificationUrlWithCode, { wait: false });
+            }
+            const approval = await Promise.race([
+                this.oauthService.awaitDeviceApproval(this.loginData),
+                new Promise<undefined>((resolve) => token?.onCancellationRequested(() => resolve(undefined)))
+            ]);
+
+            if (!approval) {
+                throw 'User did not approve the device login request within the specified timeout';
+            }
+
+            const authInfo = await this.oauthService.authorizeAndSave(approval);
+            const authResult = authInfo.getFields(true) as SalesforceAuthResult;
+            await sfdx.saveOrg(authResult, { alias: this.options?.alias });
+            return authResult;
+        }
     }
 }
