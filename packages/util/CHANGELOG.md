@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.10](https://github.com/Codeneos/vlocode/compare/v0.20.9...v0.20.10) (2023-12-03)
+
+### Features
+
+* add device flow support for authorizing a new org ([57326c1](https://github.com/Codeneos/vlocode/commit/57326c10a53c4aa67390dde12a57a00a2b04a5c4))
+
 ## [0.20.7](https://github.com/Codeneos/vlocode/compare/v0.20.6...v0.20.7) (2023-09-29)
 
 **Note:** Version bump only for package @vlocode/util
