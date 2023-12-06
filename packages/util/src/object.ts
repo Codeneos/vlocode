@@ -185,12 +185,17 @@ export function deepClone<T>(value: T): T {
 }
 
 /**
- * Merge multiple objects recursively into the target object
- * @param {object} object target into which sources are merged
- * @param  {...object} sources source from which to merge
- * @returns
+ * Merge multiple objects recursively into the target object object.
+ *
+ * For arrays the elements of the source array are merged into the target array, elements on the same index are merged.
+ * If the source array is longer than the target array the extra elements are appended to the target array.
+ * If the source array is shorter than the target array the extra elements in the target array are not deleted.
+ * *
+ * @param object target into which sources are merged
+ * @param sources source from which to merge
+ * @returns The target object with the sources merged into it
  */
-export function merge(object: any, ...sources: any[]) {
+export function merge(object: any, ...sources: any[]): any {
     for (const source of sources.filter(s => s)) {
         for (const key of Object.keys(source)) {
             if (isObject(object[key]) && isObject(source[key])) {

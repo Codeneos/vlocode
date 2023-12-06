@@ -1,5 +1,5 @@
 import 'jest';
-import { objectEquals, flattenObject, getObjectProperty, getObjectValues, setObjectProperty, sortProperties } from '../object';
+import { objectEquals, flattenObject, getObjectProperty, getObjectValues, setObjectProperty, sortProperties, merge } from '../object';
 
 describe('util', () => {
     describe('#getValues', () => {
@@ -203,6 +203,48 @@ describe('util', () => {
             expect(objectEquals(0, false)).toBe(false);
             expect(objectEquals(undefined, false)).toBe(false);
             expect(objectEquals('', false)).toBe(false);
+        });
+    });
+    describe('#merge', () => {
+        it('should merge objects in arrays ny index', () => {
+            const object = {
+                'a': [{ 'b': 2 }, { 'd': 4 }]
+            };
+            const other = {
+                'a': [{ 'c': 3 }, { 'e': 5 }]
+            };
+            merge(object, other);
+            expect(object).toStrictEqual({ 'a': [{ 'b': 2, 'c': 3 }, { 'd': 4, 'e': 5 }] });
+        });
+        it('should merge objects and add missing elements', () => {
+            const object = {
+                'a': [{ 'b': 2 }, { 'd': 4 }]
+            };
+            const other = {
+                'a': [{ 'c': 3 }, { 'e': 5 }, { 'f': 6 }]
+            };
+            merge(object, other);
+            expect(object).toStrictEqual({ 'a': [{ 'b': 2, 'c': 3 }, { 'd': 4, 'e': 5 }, { 'f': 6 }] });
+        });
+        it('should replace arguments in unequal in arrays', () => {
+            const object = {
+                'a': { 'b': { 'c': [1,2] } }
+            };
+            const other = {
+                'a': { 'b': { 'c': [2] } }
+            };
+            merge(object, other);
+            expect(object).toStrictEqual({ 'a': { 'b': { 'c': [2,2] } } });
+        });
+        it('should use mergeFn when passed', () => {
+            const object = {
+                'a': { 'b': { 'c': [1,2] } }
+            };
+            const other = {
+                'a': { 'b': { 'c': [2] } }
+            };
+            merge(object, other, merge);
+            expect(object).toStrictEqual({ 'a': { 'b': { 'c': [2,2] } } });
         });
     });
 });
