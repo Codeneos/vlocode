@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.11](https://github.com/Codeneos/vlocode/compare/v0.20.10...v0.20.11) (2023-12-14)
+
+### Bug Fixes
+
+* `IngestJobInfo.getFailedRecords` returns wrong type ([2a27930](https://github.com/Codeneos/vlocode/commit/2a2793080649869d38510a2b77fe8d4b2de86d08))
+* uploadData logs results of `put` to debug console ([3bf8942](https://github.com/Codeneos/vlocode/commit/3bf89428bd820ff0a87470e9a22ca1ef4c4cde10))
+
 ## [0.20.10](https://github.com/Codeneos/vlocode/compare/v0.20.9...v0.20.10) (2023-12-03)
 
 **Note:** Version bump only for package @vlocode/salesforce
