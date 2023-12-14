@@ -80,15 +80,24 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     private encoding: BufferEncoding = 'utf-8';
 
     /**
-     * Uploads data for a job using CSV data you provide.
-     * @param data data in CSV formatter using the correct column delimiter as specified in the
-     *             job or an array of objects which is converted into CSV format
-     *
+     * Uploads records in the current ingest job. The records data is converted into CSV format and split into chunks of 50MB.
+     * By default the job is closed after the data is uploaded but this can be changed by setting the `keepOpen` option to `true` in
+     * the `options` parameter. If the job is not closed it must be closed manually by calling the {@link close} method.
+     * @param data An Array of records to upload, each record must be an object with properties. Only properties that hold primitive values 
+     * are uploaded, functions, arrays and objects are ignored (with the exception of Date and DateTime objects which are converted to ISO strings).
+     * @param options Additional options that can be used to control how the data is uploaded
+     * @param options.keepOpen When `true` the job is not closed after the data is uploaded. Defaults to `false` when not specified.
+     * @example
+     * ```typescript
+     * // Upload data using uploadData
+     * const job = await client.ingest('Account');
+     * await job.uploadData(accounts1, { keepOpen: true });
+     * await job.uploadData(accounts2, { keepOpen: false });
+     * ```
      */
     public async uploadData(data: TRecord[], options?: { keepOpen?: boolean }) {
         for (const chunk of this.encodeData(data)) {
-            const result = await this.client.put(chunk.toString(), `${this.id}/batches`, { contentType: `text/csv; charset=${this.encoding}` });
-            console.debug(result);
+            await this.client.put(chunk.toString(), `${this.id}/batches`, { contentType: `text/csv; charset=${this.encoding}` });
         }
 
         if (!options?.keepOpen) {
