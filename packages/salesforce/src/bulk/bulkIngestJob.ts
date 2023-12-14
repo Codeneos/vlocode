@@ -120,7 +120,7 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
      * Retrieves a list of failed records for a completed insert, delete, update, or upsert job.
      */
     public async getFailedRecords() {
-        return [...this.resultsToRecords<SuccessfulRecord & TRecord>(await this.client.get(`${this.id}/failedResults`))];
+        return [...this.resultsToRecords<FailedRecord & TRecord>(await this.client.get(`${this.id}/failedResults`))];
     }
 
     /**
