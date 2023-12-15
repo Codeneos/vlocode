@@ -177,6 +177,16 @@ export class BulkJob<T extends BulkJobInfo> {
      */
     public get info() { return this._info; }
 
+    /**
+     * Updates the info for this job.
+     */
+    protected set info(value: T) { 
+        if (!value) {
+            throw new Error('Job info cannot be set to null or undefined; use refresh() to refresh the job info or delete() to delete the job if the job is');
+        }
+        this._info = Object.freeze(value);
+    }
+
     protected readonly delimiterCharacter: string;
     protected readonly lineEndingCharacters: string;
 
@@ -213,7 +223,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * Refresh the job info and state of this job.
      */
     public async refresh() {
-        this._info = Object.freeze(await this.client.get<T>(this.id));
+        this.info = await this.client.get<T>(this.id);
         return this;
     }
 
@@ -223,7 +233,17 @@ export class BulkJob<T extends BulkJobInfo> {
      * @returns Instance of this job
      */
     protected async patch(info: Partial<T>) {
-        this._info = Object.freeze(await this.client.patch<T>(info, this.id));
+        this.info = await this.client.patch<T>(info, this.id);
+        return this;
+    }
+
+    /**
+     * Create a new Job in Salesforce and replace the current job id with the new job id.
+     * @param info Job info
+     * @returns Instance of this job
+     */
+    protected async post(info: Partial<T>) {
+        this.info = await this.client.post<T>(info);
         return this;
     }
 
@@ -241,15 +261,16 @@ export class BulkJob<T extends BulkJobInfo> {
         }
 
         while (!cancelToken?.isCancellationRequested) {
-            await this.refresh();
+            const state = await this.refreshJobState();
 
-            if (this.isComplete) {
+            if (state === 'JobComplete' || state === 'Aborted') {
                 return this;
             }
 
-            if (this.isFailed) {
-                if (this.info['errorMessage']) {
-                    throw new Error(this.info['errorMessage']);
+            if (state === 'Failed') {
+                const error = this.getFirstError();
+                if (error) {
+                    throw new Error(error);
                 }
                 throw new Error(`Bulk ${this.info.jobType} job ${this.id} failed to complete; see job details for more information`);
             }
@@ -260,6 +281,19 @@ export class BulkJob<T extends BulkJobInfo> {
         return this;
     }
 
+    /**
+     * Refreshes the job state and returns the current state of the job.
+     * @returns Current state of the job
+     */
+    protected async refreshJobState(): Promise<JobState> {
+        await this.refresh();
+        return this.info.state;
+    }
+
+    protected getFirstError(): string | undefined {
+        return this.info['errorMessage'];
+    }
+
     protected *resultsToRecords<TRecord>(results: any[][]): Generator<TRecord> {
         const header = results.shift()!;
         for (const row of results) {
@@ -267,7 +301,7 @@ export class BulkJob<T extends BulkJobInfo> {
         }
     }
 
-    private convertValue(value: string): boolean | string | number | null {
+    private convertValue(value: boolean | string | number): boolean | string | number | null {
         if (value === 'true') {
             return true;
         } else if (value === 'false') {

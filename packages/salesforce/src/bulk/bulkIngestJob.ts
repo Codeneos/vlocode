@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
-import { BulkJob, BulkJobInfo, IngestJobType, IngestOperationType } from './bulkJob';
+import { BulkJob, BulkJobInfo, IngestJobType, IngestOperationType, JobState } from './bulkJob';
+import { RestClient } from '../restClient';
+import { groupBy } from '@vlocode/util';
 
 export interface IngestJobInfo extends BulkJobInfo {
     /**
@@ -72,12 +74,30 @@ interface SuccessfulRecord {
 export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJobInfo> {
 
     /**
-     * When true always wrap strings in double quotes even when not required.
+     * When `true` always wraps strings in double quotes even when not required. If `false` only strings 
+     * that contain the delimiter character or double quotes are wrapped in double quotes. Defaults to `false` to save space.
      */
     public alwaysQuote: boolean;
 
+    /**
+     * The maximum size of the CSV data in bytes that is uploaded in a single request. Defaults to 100MB.
+     * If the encoded data exceeds this size it is split into multiple jobs.
+     */
+    public chunkDataSize: number = 100 * 1000000;
+
     private numberFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 20 });
     private encoding: BufferEncoding = 'utf-8';
+
+    // Bulk Ingest jobs in the V2Ingest job type support only one chunk
+    // per job, so we keep track of the job id that were created for this job
+    private jobs: Record<string, IngestJobInfo>;
+
+    private pendingRecords: TRecord[] = [];
+
+    constructor(protected client: RestClient, info: IngestJobInfo) {
+        super(client, info);
+        this.jobs = { [info.id]: info };
+    }
 
     /**
      * Uploads records in the current ingest job. The records data is converted into CSV format and split into chunks of 50MB.
@@ -86,24 +106,58 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
      * @param data An Array of records to upload, each record must be an object with properties. Only properties that hold primitive values 
      * are uploaded, functions, arrays and objects are ignored (with the exception of Date and DateTime objects which are converted to ISO strings).
      * @param options Additional options that can be used to control how the data is uploaded
-     * @param options.keepOpen When `true` the job is not closed after the data is uploaded. Defaults to `false` when not specified.
+     * @param options.keepOpen When `false` closes the job after uploading the data, no more data can be added and {@link close} should not be called. 
+     * When `true` the job is not closed after the data is uploaded and more data can be added to the job, {@link close} must be called to close the job.
+     * Defaults to `true` when not specified.
      * @example
      * ```typescript
      * // Upload data using uploadData
      * const job = await client.ingest('Account');
      * await job.uploadData(accounts1, { keepOpen: true });
-     * await job.uploadData(accounts2, { keepOpen: false });
+     * await job.uploadData(accounts2, { keepOpen: false }); // Close job after uploading data
+     * 
+     * // (optionally) wait for the job the job to finish on Salesforce and get the results
+     * await job.poll();
+     * const failedRecords = await job.getFailedRecords();
      * ```
      */
     public async uploadData(data: TRecord[], options?: { keepOpen?: boolean }) {
-        for (const chunk of this.encodeData(data)) {
-            await this.client.put(chunk.toString(), `${this.id}/batches`, { contentType: `text/csv; charset=${this.encoding}` });
+        if (this.state !== 'Open') {
+            throw new Error(`Cannot upload data to a job that is in ${this.state} state.`);
         }
 
-        if (!options?.keepOpen) {
-            await this.close();
+        this.pendingRecords.push(...data);
+
+        if (options?.keepOpen !== false) {
+            return this;
         }
 
+        return this.close();
+    }
+
+    /**
+     * Creates a new Ingest with the same object and operation as the current job.
+     * This is used to cerate a new job when uploading data exceeds the maximum chunk size of 100mb. The Bulk API 2.0
+     * currently only supports a single data upload per job and requires the job to be closed before a new upload can be started.
+     */
+    private async createNewJob() {
+        await this.post({
+            object: this.object,
+            operation: this.operation as IngestOperationType
+        });
+        this.jobs[this.id] = this.info;
+    }
+
+    /**
+     * Refreshes the job information from Salesforce
+     */
+    public async refresh() {
+        for (const info of await this.getAll<IngestJobInfo>(job => job.id)) {
+            if (info.id === this.id) {
+                this.info = info;
+            }
+            this.jobs[info.id] = info;
+        }
         return this;
     }
 
@@ -112,32 +166,105 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
      * and you can’t add any more job data.
      */
     public async close() {
-        this.patch({ state: 'UploadComplete' });
+        if (this.state !== 'Open') {
+            throw new Error(`Cannot close a job that is not in Open state. Current state: ${this.state}`);
+        }
+
+        for (const chunk of this.encodeData(this.pendingRecords.splice(0))) {
+            if (!this.isOpen) {
+                await this.createNewJob();
+            }
+
+            await this.client.put(chunk.toString(), `${this.id}/batches`, { contentType: `text/csv; charset=${this.encoding}` });
+            await this.patch({ state: 'UploadComplete' });
+        }
+
         return this;
+    }
+
+    /**
+     * Abort a job, the job doesn’t get queued or processed.
+     */
+    public async abort() {
+        for (const job of Object.values(this.jobs)) {
+            await this.client.patch({ state: 'Aborted' }, job.id);
+        }
+        return this.refresh();
+    }
+
+    /**
+     * Deletes a job. To be deleted, a job must have a state of `UploadComplete`, `JobComplete`, `Aborted`, or `Failed`.
+     */
+    public async delete() {
+        for (const job of Object.values(this.jobs)) {
+            await this.client.delete(job.id);
+        }
+        return this;
+    }
+
+    /**
+     * Override to refresh the fn to return the aggregate state of all jobs that are part of this ingest.
+     */
+    protected async refreshJobState() {
+        await this.refresh();
+        return this.aggregateJobState();
+    }
+
+    /**
+     * Get the aggregate state of all jobs that were created for this ingest job.
+     * Returns the least progressed state of all Salesforce jobs that were created for this ingest job.
+     */
+    private aggregateJobState() {
+        const jobStateOrder: JobState[] = [ 'Open', 'UploadComplete', 'InProgress', 'Failed', 'JobComplete' ];
+        const aggregateState: Record<JobState, IngestJobInfo[]> = groupBy(Object.values(this.jobs), job => job.state);
+
+        for (const state of jobStateOrder) {
+            if (aggregateState[state]?.length) {
+                return state;
+            }
+        }
+
+        return 'Aborted';
     }
 
     /**
      * Retrieves a list of failed records for a completed insert, delete, update, or upsert job.
      */
-    public async getFailedRecords() {
-        return [...this.resultsToRecords<FailedRecord & TRecord>(await this.client.get(`${this.id}/failedResults`))];
+    public getFailedRecords() {
+        return this.getRecords<FailedRecord>('failedResults');
     }
 
     /**
      * Retrieves a list of unprocessed records for failed or aborted jobs.
      */
-    public async getUnprocessedRecords() {
-        return [...this.resultsToRecords<TRecord>(await this.client.get(`${this.id}/unprocessedrecords`))];
+    public getUnprocessedRecords() {
+        return this.getRecords('unprocessedrecords');
     }
 
     /**
      * Retrieves a list of unprocessed records for failed or aborted jobs.
      */
-    public async getSuccessfulRecords() {
-        return [...this.resultsToRecords<SuccessfulRecord & TRecord>(await this.client.get(`${this.id}/successfulResults`))];
+    public getSuccessfulRecords() {
+        return this.getRecords<SuccessfulRecord>('successfulResults');
     }
 
-    private *encodeData(data: TRecord[], batchSizeBytes = 50 * 1000000) {
+    private async getRecords<T = TRecord>(type: string) : Promise<(T & TRecord)[]> {
+        const aggregateRecords: (T & TRecord)[] = [];
+        for (const records of await this.getAll<any[]>(job => `${job.id}/${type}`)) {
+            aggregateRecords.push(...this.resultsToRecords<T & TRecord>(records));
+        }
+        return aggregateRecords;
+    }
+
+    private async getAll<T>(valueProvider: (value: IngestJobInfo) => string): Promise<T[]> {
+        const resources: T[] = [];
+        for (const job of Object.values(this.jobs)) {
+            resources.push(await this.client.get<T>(valueProvider(job)));
+        }
+        return resources;
+    }
+
+    private *encodeData(data: TRecord[]) {
         // Detect columns
         const columns = this.detectColumns(data);
         const csvStart = columns.map(c => this.encodeValue(c)).join(this.delimiterCharacter) + this.lineEndingCharacters;
@@ -151,7 +278,7 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
             const encodedRow = Buffer.from(row, this.encoding);
             encodedData.push(encodedRow);
 
-            if (encodedDataSize + encodedRow.byteLength > batchSizeBytes) {
+            if (encodedDataSize + encodedRow.byteLength > this.chunkDataSize) {
                 const chunk = Buffer.concat(encodedData);
                 encodedData = [ encodedHeader ];
                 encodedDataSize = encodedHeader.byteLength;
