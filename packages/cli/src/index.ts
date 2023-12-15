@@ -59,7 +59,7 @@ class CLI {
         this.program = new Commander()
             .name(CLI.programName)
             .description(CLI.description)
-            .version(CLI.version)
+            .version(`${CLI.version} (${buildInfo.buildDate})`)
             .configureOutput({
                 writeErr: (str: string) => this.logger.error(str),
                 writeOut: (str: string) => this.logger.info(str)
