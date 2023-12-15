@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * @module @vlocode/omniscript
+ * @module @vlocode/vlocity
  */
 export * from './constants';
 export * from './datapack';
