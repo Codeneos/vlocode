@@ -4,6 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.12](https://github.com/codeneos/vlocode/compare/v0.20.11...v0.20.12) (2023-12-15)
+
+### Bug Fixes
+
+* include build date in vlocode version command ([fdf4ed8](https://github.com/codeneos/vlocode/commit/fdf4ed8b0ebb5e93f6deb49dd1abb8ddd58e74b3))
+
+### Features
+
+* update bulk API v2 ingest job to support large imports (100mb+) ([c6846bb](https://github.com/codeneos/vlocode/commit/c6846bb0f150cebb56be80657ca5491118b1b01d))
+
 ## [0.20.11](https://github.com/codeneos/vlocode/compare/v0.20.10...v0.20.11) (2023-12-14)
 
 ### Bug Fixes
