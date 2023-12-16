@@ -1,0 +1,36 @@
+{
+    "name": "Salesforce http API",
+    "scopeName": "source.sfhttp",
+    "patterns": [{ "include": "#method-and-headers" }],
+    "repository": {
+        "method-and-headers": {
+            "patterns": [{ "include": "#method-and-url" }, { "include": "#header" }],
+            "end": "\\r?\\n\\r?\\n"
+        },
+        "method-and-url": {
+            "captures": {
+                "1": { "name": "http.sf.method" },
+                "2": { "name": "http.sf.url" }
+            },
+            "match": "(?i)^(GET|POST|PUT|DELETE|PATCH) (.*)$\\n?",
+            "name": "meta.http.sf.method-url"
+        },
+        "header": {
+            "captures": {
+                "1": { "name": "http.sf.header.name" },
+                "2": { "name": "http.sf.header.value" }
+            },
+            "match": "(?i)^([a-z]+)[ ]*:[ ]*([a-z]+)$\\n?",
+            "name": "meta.http.sf.header"
+        },
+        "comment": {
+            "captures": {
+                "1": {
+                    "name": "http.sf.method.comment"
+                }
+            },
+            "match": "(//).*$\\n?",
+            "name": "comment.line.double-slash"
+        }
+    }
+}

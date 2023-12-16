@@ -1275,6 +1275,11 @@
                 "language": "vldp",
                 "scopeName": "source.json",
                 "path": "./syntax/datapack.tmLanguage.json"
+            },
+            {
+                "language": "sfhttp",
+                "scopeName": "source.sfhttp",
+                "path": "./syntax/sfhttp.tmLanguage.json"
             }
         ],
         "languages": [
@@ -1289,6 +1294,16 @@
                     "*_ParentKeys.json"
                 ],
                 "configuration": "./syntax/datapack-language.json"
+            },
+            {
+                "id": "sfhttp",
+                "aliases": [
+                    "Salesforce HTTP API"
+                ],
+                "extensions": [
+                    ".sfhttp",
+                    ".http"
+                ]
             },
             {
                 "id": "xml",
@@ -1578,6 +1593,7 @@
         "vsce": "^2.15.0",
         "vscode-languageclient": "^8.1.0",
         "vscode-test": "^1.6.1",
+        "vscode-tmgrammar-test": "^0.1.2",
         "webpack": "^5.88.2",
         "webpack-cli": "^5.1.4",
         "webpack-glob-entry": "^2.1.1",
