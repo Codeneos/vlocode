@@ -137,7 +137,11 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
         });
 
         if (responseDocument) {
-            void vscode.window.showTextDocument(responseDocument);
+            void vscode.window.showTextDocument(responseDocument, {
+                preview: true,
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside
+            });
         }
     }
 }

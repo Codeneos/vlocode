@@ -73,7 +73,12 @@ export default class GenerateLwcCommand extends DatapackCommand {
             const metaFile = components[0].files.find(file => file.packagePath.endsWith('.js-meta.xml'))!;
             const componentPath = join(outputFolder, metaFile.packagePath.slice(0, -'-meta.xml'.length));
             void vscode.window.showTextDocument(
-                await vscode.workspace.openTextDocument (vscode.Uri.file(componentPath))
+                await vscode.workspace.openTextDocument(vscode.Uri.file(componentPath)),
+                {
+                    preview: true,
+                    preserveFocus: true,
+                    viewColumn: vscode.ViewColumn.Beside
+                }
             );
         } else {
             void vscode.window.showInformationMessage(`Generated LWC components for ${components.length} components from ${datapacks.length} DataPacks`);
