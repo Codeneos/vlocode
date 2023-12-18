@@ -195,6 +195,12 @@ vlocode.execRestApi:
   when: config.vlocity.salesforce.enabled
   menus:
     - menu: commandPalette
+    - menu: explorer/context
+      when:
+        - resourceExtname == .sfhttp || resourceExtname == .http || editorLangId == sfhttp
+    - menu: explorer/context
+      when:
+        - resourceExtname == .sfhttp || resourceExtname == .http || editorLangId == sfhttp
 vlocode.retrieveMetadata:
   title: 'Salesforce: Export/Retrieve metadata from Org'
   group: v_salesforce
