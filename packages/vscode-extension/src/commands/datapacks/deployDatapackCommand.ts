@@ -10,7 +10,6 @@ import { DatapackCommand } from './datapackCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
 import { VlocityDeploy } from '../../lib/vlocity/vlocityDeploy';
-import { getContext } from '../../lib/vlocodeContext';
 import { VlocodeDirectDeployment } from '../../lib/vlocity/vlocodeDirectDeploy';
 import { VlocityToolsDeployment } from '../../lib/vlocity/vlocityToolsDeploy';
 
@@ -140,7 +139,7 @@ export class DeployDatapackCommand extends DatapackCommand {
      * If the users closes the question without anwsering it it will re-popup on the next deployment.
      */
     private async suggestDeploymentModeChange() {
-        const suggestionState = getContext().globalState;
+        const suggestionState = this.context.globalState;
         const usingDirectMode = this.vlocode.config.deploymentMode === 'direct';
         const currentSuggestionState = suggestionState.get<number>(deployModeSuggestionKey);
         const allowSuggest = !currentSuggestionState || (currentSuggestionState + suggestionInterval < Date.now());

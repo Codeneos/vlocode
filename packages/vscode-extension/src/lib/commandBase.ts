@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import VlocodeService from '../lib/vlocodeService';
 import { container, LogManager } from '@vlocode/core';
 import { Command } from '../lib/command';
-import { getContext } from '../lib/vlocodeContext';
+import { getContext, VlocodeContext } from '../lib/vlocodeContext';
 import { lazy } from '@vlocode/util';
 
 export abstract class CommandBase implements Command {
@@ -14,6 +14,10 @@ export abstract class CommandBase implements Command {
     public abstract execute(...args: any[]): any | Promise<any>;
 
     public validate?(...args: any[]): any | Promise<any>;
+
+    public get context(): VlocodeContext {
+        return getContext();
+    }
 
     protected get currentOpenDocument() : vscode.Uri | undefined {
         return vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
