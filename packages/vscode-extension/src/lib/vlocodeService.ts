@@ -110,8 +110,6 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 if (await this.handleAuthTokenExpiredError()) {
                     this.initializePromise = undefined;
                     return this.initialize();
-                } else {
-                    debugger;
                 }
             } else if (err?.code == 'ENOTFOUND') {
                 this.logger.error(`Unable to reach Salesforce; are you connected to the internet?`);
@@ -535,7 +533,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         if (!this.isInitialized) {
             // Await service initialization
             await vscode.window.withProgress({
-                title: 'Vlocode: waiting for initialization...',
+                title: 'Vlocode: Initializing...',
                 location: vscode.ProgressLocation.Window
             }, () => this.initialize());
         }

@@ -31,6 +31,7 @@ import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 
 import './commands';
+import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -205,16 +206,18 @@ class Vlocode {
 
         // Add apex LOG symbol provider
         try {
-            this.service.registerDisposable(vscode.languages.registerDocumentSymbolProvider({ language: 'apexlog' }, new ApexLogSymbolProvider()));
+            ApexLogSymbolProvider.register(this.service);
         } catch(err) {
             this.logger.warn(`Unable to register symbol provider for APEX logs: ${err}`);
         }
+
+        ExecuteApiLensProvider.register(this.service);
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',
             config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
 
-        // watch for changes 
+        // watch for changes
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(SfdxConfigWatcher).initialize());

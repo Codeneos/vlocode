@@ -37,13 +37,13 @@ export class DebugLogViewer {
             const debugLog = await vscode.workspace.openTextDocument(fullLogPath);
             if (debugLog) {
                 void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
-                void vscode.window.showTextDocument(debugLog);
+                void vscode.window.showTextDocument(debugLog, { preview: true });
             }
         } else {
             const debugLog = await vscode.workspace.openTextDocument({ content: logBody });
             if (debugLog) {
                 void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
-                void vscode.window.showTextDocument(debugLog);
+                void vscode.window.showTextDocument(debugLog, { preview: true });
             }
         }
     }

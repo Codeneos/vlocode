@@ -3,7 +3,6 @@ import { vscodeCommand } from '../../lib/commandRouter';
 import { SalesforceDebugLevel } from '@vlocode/salesforce';
 import { DateTime } from 'luxon';
 import * as vscode from 'vscode';
-import { getContext } from '../../lib/vlocodeContext';
 import MetadataCommand from '../metadata/metadataCommand';
 
 @vscodeCommand(VlocodeCommand.setTraceFlags)
@@ -198,17 +197,17 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         const customDebugLevels = this.getCustomDebugLevels();
         const customDebugLevel = Object.assign(debugLevel, { name, created: Date.now() });
         const updatedDebugLevels = [ ...(customDebugLevels?.slice(0, this.customDebugLevelMax - 1) ?? []), customDebugLevel ];
-        getContext().globalState.update(this.customDebugLevelKey, updatedDebugLevels);
+        this.context.globalState.update(this.customDebugLevelKey, updatedDebugLevels);
         return customDebugLevel;
     }
 
     private getCustomDebugLevels() {
-        const customLevels = getContext().globalState.get<Array<SalesforceDebugLevel & {name: string, created: number }>>(this.customDebugLevelKey);
+        const customLevels = this.context.globalState.get<Array<SalesforceDebugLevel & {name: string, created: number }>>(this.customDebugLevelKey);
         return customLevels?.sort((a,b) => b.created - a.created);
     }
 
     private deleteAllCustomDebugLevels() {
-        getContext().globalState.update(this.customDebugLevelKey, undefined);
+        this.context.globalState.update(this.customDebugLevelKey, undefined);
     }
 
     public async traceFlagsWatcher() {

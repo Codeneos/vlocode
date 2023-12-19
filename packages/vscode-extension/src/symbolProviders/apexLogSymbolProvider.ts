@@ -1,24 +1,23 @@
 import * as vscode from 'vscode';
 
-/**
- * 
-09:41:19.369 (369138479)|METHOD_ENTRY|[1]|01p0Y00000O9SLP|OrderRepository.OrderRepository()
-09:41:19.369 (369244047)|METHOD_EXIT|[1]|OrderRepository
-09:41:19.369 (369309631)|CONSTRUCTOR_ENTRY|[17]|01p0Y00000O9SLP|<init>()|OrderRepository
-09:41:19.369 (369582949)|CONSTRUCTOR_EXIT|[17]|01p0Y00000O9SLP|<init>()|OrderRepository
-09:41:19.369 (369616240)|CONSTRUCTOR_ENTRY|[17]|01p5E000001BvvA|<init>(IOrderRepository)|OrderItemsController
-09:41:19.369 (369653962)|METHOD_ENTRY|[4]|01p5E000001FJwa|VlocityController.VlocityController()
-09:41:19.369 (369667080)|METHOD_EXIT|[4]|VlocityController
-09:41:19.369 (369616240)|CONSTRUCTOR_EXIT|[17]|01p5E000001BvvA|<init>(IOrderRepository)|OrderItemsController
- */
+import { container, injectable } from '@vlocode/core';
+import VlocodeService from '../lib/vlocodeService';
 
 /**
  * Provides Symbol and Outline information for Salesforce APEX logs
  */
+@injectable()
 export class ApexLogSymbolProvider implements vscode.DocumentSymbolProvider {
 
     readonly functionPattern = /^(?<time>[\d+:.]+) \(\d+\)\|(?<type>CONSTRUCTOR|METHOD|SYSTEM_METHOD)_(?<mode>ENTRY|EXIT)\|\[\d+\]\|(?<name>.*)$/;
     readonly assignmentPattern = /^(?<time>[\d+:.]+) \(\d+\)\|VARIABLE_ASSIGNMENT\|\[\d+\]\|(?<name>.*)$/;
+
+    public static register(service: VlocodeService) {
+        const symbolProvider = container.get(ApexLogSymbolProvider);
+        service.registerDisposable(
+            vscode.languages.registerDocumentSymbolProvider({ language: 'apexlog' }, symbolProvider)
+        );
+    }
 
     public provideDocumentSymbols(document: vscode.TextDocument): vscode.DocumentSymbol[] {
         const symbols = this.parseSymbols(this.getDocumentLineIterator(document));
