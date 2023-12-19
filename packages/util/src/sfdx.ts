@@ -15,7 +15,11 @@ export interface SalesforceAuthResult {
 }
 
 export interface SalesforceOrgInfo extends SalesforceAuthResult {
+    isSandbox: boolean;
+    lastAccessed?: Date;
+    orgName: string;
     alias?: string;
+    aliases: string[];
 }
 
 interface FileSystem {
@@ -220,8 +224,20 @@ export namespace sfdx {
                         continue;
                     }
 
+                    const allAliases = stateAggregator.aliases.getAll(authFields.username);
+
+                    // Find org name from instance URL
+                    const orgNameFromUrl = authFields.instanceUrl
+                        .replace(/^https?:\/\//i, '')
+                        .replace(/(\.sandbox)?(\.my)?.salesforce\.com$/i, '');
+                    const isSandbox = /\.sandbox\./i.test(authFields.instanceUrl) || /test\.salesforce\.com/i.test(authFields.loginUrl ?? '');
+                    const lastAccessed = authFields.instanceApiVersionLastRetrieved ? new Date(authFields.instanceApiVersionLastRetrieved) : undefined;
+
                     yield {
                         orgId: authFields.accessToken.split('!').shift()!,
+                        orgName: orgNameFromUrl,
+                        isSandbox: isSandbox,
+                        lastAccessed: lastAccessed,
                         accessToken: authFields.accessToken,
                         instanceUrl: authFields.instanceUrl,
                         loginUrl: authFields.loginUrl ?? authFields.instanceUrl,
@@ -229,7 +245,8 @@ export namespace sfdx {
                         clientId: authFields.clientId!,
                         clientSecret: authFields.clientSecret,
                         refreshToken: authFields.refreshToken!,
-                        alias: stateAggregator.aliases.get(authFields.username) || undefined
+                        alias: allAliases[0] || undefined,
+                        aliases: allAliases
                     };
                 } catch(err) {
                     logger.warn(`Error while reading SFDX auth for "${username}"`, err);

@@ -1,6 +1,5 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable, mapKeys, unique } from '@vlocode/util';
-import { PropertyAccessor } from './types';
+import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable, mapKeys, PropertyAccessor } from '@vlocode/util';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { NamespaceService } from './namespaceService';

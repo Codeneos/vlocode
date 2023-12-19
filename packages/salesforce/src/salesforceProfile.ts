@@ -1,5 +1,4 @@
-import { sortProperties, stringEquals, XML } from '@vlocode/util';
-import { ArrayElement } from './types';
+import { ArrayElement, sortProperties, stringEquals, XML } from '@vlocode/util';
 
 export enum SalesforceFieldPermission {
     editable = 'editable',

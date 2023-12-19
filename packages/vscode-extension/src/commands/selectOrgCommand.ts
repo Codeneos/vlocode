@@ -57,9 +57,26 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async getAuthorizedOrgs() : Promise<SelectOrgQuickPickItem[]> {
+    private async getAuthorizedOrgs() : Promise<SelectOrgQuickPickItem[]> {
         const orgList = await sfdx.getAllKnownOrgDetails();
-        return orgList.map(orgInfo => ({ label: orgInfo.alias ? `${orgInfo.alias} - ${orgInfo.username}` : orgInfo.username, description: orgInfo.instanceUrl, orgInfo }));
+        return orgList.map(orgInfo => ({
+            label: this.getOrgLabel(orgInfo),
+            description: this.getOrgDescription(orgInfo),
+            orgInfo
+        }));
+    }
+
+    private getOrgDescription(org: SalesforceOrgInfo) {
+        return `${org.orgName} (${org.orgId})`;
+    }
+
+    private getOrgLabel(org: SalesforceOrgInfo) {
+        const prefix = !org.refreshToken ? '$(warning) ' : '';
+        if (org.aliases?.length) {
+            const aliases = [...org.aliases].sort().join(', ');
+            return `${prefix}${aliases} - ${org.username}`;
+        }
+        return `${prefix}${org.username}`;
     }
 
     public async execute() : Promise<void> {
@@ -95,7 +112,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async authorizeNewOrg() : Promise<SalesforceOrgInfo | undefined> {
+    protected async authorizeNewOrg() : Promise<SalesforceAuthResult | undefined> {
         const flowType = await vscode.window.showQuickPick(this.authFlows,
             { placeHolder: 'Select the authorization flows you want use' });
 
@@ -130,7 +147,7 @@ export default class SelectOrgCommand extends CommandBase {
         }
     }
 
-    protected async authorizeDeviceLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceOrgInfo | undefined> {
+    protected async authorizeDeviceLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceAuthResult | undefined> {
         const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Notification,
             progressTitle: 'Salesforce Device Login',
@@ -181,7 +198,7 @@ export default class SelectOrgCommand extends CommandBase {
         return this.processAuthinfo(authInfo, options);
     }
 
-    protected async authorizeWebLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceOrgInfo | undefined> {
+    protected async authorizeWebLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceAuthResult | undefined> {
         this.logger.log(`Opening '${options.instanceUrl}' in a new browser window`);
         const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Notification,
@@ -194,7 +211,7 @@ export default class SelectOrgCommand extends CommandBase {
         return this.processAuthinfo(authInfo, options);
     }
 
-    private async processAuthinfo(authInfo: SalesforceAuthResult | undefined, options: { instanceUrl: string, alias?: string }): Promise<SalesforceOrgInfo | undefined>{
+    private async processAuthinfo(authInfo: SalesforceAuthResult | undefined, options: { instanceUrl: string, alias?: string }): Promise<SalesforceAuthResult | undefined>{
         if (!authInfo || !authInfo.accessToken) {
             this.logger.error(`Unable to authorize at '${options.instanceUrl}'`);
             void vscode.window.showErrorMessage('Failed to authorize new org, see the log for more details');

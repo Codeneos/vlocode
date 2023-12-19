@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon';
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { CancellationToken } from '@vlocode/util';
+import { CancellationToken, PropertyAccessor } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
-import { PropertyAccessor, SObjectRecord, Field, FieldType } from './types';
+import { SObjectRecord, FieldType } from './types';
 import { NamespaceService } from './namespaceService';
 import { QueryCache } from './queryCache';
 import { RecordFactory } from './queryRecordFactory';

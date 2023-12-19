@@ -27,6 +27,7 @@ export * from './sfdx';
 export * from './singleton';
 export * from './string';
 export * from './task';
+export * from './types';
 export * from './timer';
 export * from './transactionalMap';
 export * from './validate';
