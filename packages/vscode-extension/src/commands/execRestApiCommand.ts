@@ -7,6 +7,7 @@ import { VlocodeCommand } from '../constants';
 import { vscodeCommand } from '../lib/commandRouter';
 import { ApiRequestDocumentParser } from '../lib/salesforce/apiRequestDocumentParser';
 import MetadataCommand from './metadata/metadataCommand';
+import { QuickPick } from '../lib/ui/quickPick';
 
 @vscodeCommand(VlocodeCommand.execRestApi)
 export default class ExecuteRestApiCommand extends MetadataCommand {
@@ -78,7 +79,13 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
         }
 
         const options = [
-            ...recent.map(r => ({ label: `${r.method} ${r.url}`, request: r })),
+            ...recent.map(r => ({ 
+                label: `${r.method} ${r.url}`, 
+                request: r,
+                buttons: [
+                    { iconPath: new vscode.ThemeIcon('trash'), tooltip: 'Delete request' },
+                ]
+            })),
             ...[{
                 label: '',
                 kind: vscode.QuickPickItemKind.Separator
@@ -91,10 +98,25 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             }]
         ];
 
-        const selected = await vscode.window.showQuickPick(options, {
+        const quickPickMenu = QuickPick.create(options, {
             placeHolder: 'Select recent request',
             ignoreFocusOut: true
         });
+
+        quickPickMenu.onTriggerItemButtom(async ({ item, button }) => {
+            if (!(button.iconPath instanceof vscode.ThemeIcon)) {
+                return
+            }
+            if (button.iconPath?.id === 'trash') {
+                this.context.recent.remove('apiRequests', item.request);
+                quickPickMenu.removeItem(item);
+                if (quickPickMenu.items.length === 3) {
+                    quickPickMenu.close();
+                }
+            }
+        });
+
+        const selected = await quickPickMenu.onAccept();
 
         if (selected) {
             if ('request' in selected) {
