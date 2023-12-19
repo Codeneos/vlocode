@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions, Metadata } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer, encodeRFC3986URI, thenablePromise } from '@vlocode/util';
+import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer, encodeRFC3986URI, thenablePromise, cache } from '@vlocode/util';
 import { HttpMethod, HttpRequestInfo, HttpResponse, HttpTransport, Transport } from './httpTransport';
 import { EventEmitter } from 'events';
 import { SalesforceOAuth2 } from './oath2';
@@ -478,6 +478,30 @@ export class SalesforceConnection extends Connection {
             `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${encodeRFC3986URI(soql)}`,
             options?.queryMore
         ).once('done', (records) => this.logger.debug(`[SIZE=${records.length}] SOQL=${soql} (${timer})`));
+    }
+
+    /**
+     * Retrieves the maximum API version supported by the Salesforce instance to which you’re connected.
+     * @returns Maximum API version as number
+     */
+    @cache()
+    public async getMaxApiVersion(): Promise<number> {
+        const versions = await this.request<{ version: string }[]>('/services/data');
+        const sortedVersions = versions.map(v => parseFloat(v.version)).sort((a, b) => b - a);
+        if (!sortedVersions?.length) {
+            throw new Error('Unable to determine maximum API version of the current Salesforce instance');
+        }
+        return sortedVersions[0];
+    }
+
+    /**
+     * Sets the API version to the latest version supported by the Salesforce instance to which you’re connected.
+     * @returns Maximum API that is set as String
+     */
+    public async useLatestApiVersion(): Promise<string> {
+        const version = await this.getMaxApiVersion();
+        this.version = `${version}.0`;
+        return this.version;
     }
 }
 

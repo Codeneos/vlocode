@@ -48,10 +48,17 @@ export default class SelectApiVersionCommand extends CommandBase {
     private async getApiVersions() {
         const currentApiVersion = this.vlocode.config.salesforce.apiVersion;
         const versions = await this.vlocode.salesforceService.getApiVersions(7);
+        if (!versions.includes(currentApiVersion)) {
+            versions.push(currentApiVersion);
+        }
         const mapVersion = (version: string) => ({
             label: `${currentApiVersion == version ? '$(primitive-dot) ' : ''  }Salesforce API Version ${version}`,
             version
         });
-        return [ ...versions.map(mapVersion), { label: 'Enter version manually', version: undefined } ];
+        return [ 
+            ...versions.map(mapVersion), 
+            { label: '', kind: -1, version: undefined },
+            { label: 'Enter version manually', version: undefined } 
+        ];
     }
 }
