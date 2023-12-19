@@ -102,6 +102,20 @@ class RecentItems {
             }
         }
     }
+
+    /**
+     * Remove an item from the recent items list for the specified key. When no key is specified all recent items
+     * are cleared.
+     * @param key Key to remove the recent item from
+     * @param item Item to remove from the recent items list
+     * @param options.equals Function to compare two items, when not specified the default matcher is used
+     */
+    public remove<T>(key: string, itemFn: T | ((item: T) => boolean)) {
+        const predicate = typeof itemFn === 'function' ? itemFn as ((item: T) => boolean) : ((i: T) => i === itemFn);
+        const currentValues = this.globalState.get<T[]>(`${this.recentsPrefix}:${key}`, []);
+        const newValues = currentValues.filter(item => !predicate(item));
+        this.globalState.update(`${this.recentsPrefix}:${key}`, newValues);
+    }
 }
 
 /**
