@@ -260,7 +260,7 @@ export namespace sfdx {
     export async function getOrgDetails(usernameOrAlias: string) : Promise<SalesforceOrgInfo | undefined> {
         for await (const config of getAllValidatedConfigs()) {
             if (config.username?.toLowerCase() === usernameOrAlias?.toLowerCase() || 
-                config.alias?.toLowerCase() === usernameOrAlias?.toLowerCase()) {
+                config.aliases.some(alias => alias.toLowerCase() === usernameOrAlias?.toLowerCase())) {
                 return config;
             }
         }
