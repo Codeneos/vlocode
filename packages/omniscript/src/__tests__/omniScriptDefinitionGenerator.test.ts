@@ -1,6 +1,6 @@
 import 'jest';
 import * as path from 'path';
-import { readJsonSync } from 'fs-extra';
+import { readFileSync } from 'fs';
 
 import { Logger, container } from '@vlocode/core';
 import { filterObject } from '@vlocode/util';
@@ -12,6 +12,10 @@ import { OmniScriptDefinitionBuilder } from '../omniScriptDefinitionBuilder';
 import { OmniScriptDefinitionGenerator } from '../omniScriptDefinitionGenerator';
 
 describe('OmniScriptDefinitionGenerator', () => {
+
+    function readJsonSync(path: string) {
+        return JSON.parse(readFileSync(path).toString());
+    }
 
     const scriptId = 'a2C0E00000604rnUAA';
     const scriptRecord = readJsonSync(path.join(__dirname, './data/omniscript-record.json'));

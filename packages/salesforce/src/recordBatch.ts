@@ -1,8 +1,7 @@
 import { LogManager } from '@vlocode/core';
-import { Timer, arrayMapPush, CancellationToken, groupBy } from '@vlocode/util';
+import { Timer, arrayMapPush, CancellationToken, groupBy, AwaitReturnType } from '@vlocode/util';
 import { RecordResult, BatchInfo } from 'jsforce';
 
-import { AwaitReturnType } from './types';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { SalesforceConnection } from './connection';
 

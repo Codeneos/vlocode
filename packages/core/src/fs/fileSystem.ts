@@ -190,12 +190,12 @@ export abstract class FileSystem {
         if (Array.isArray(inputCwd)) {
             // When multiple cwd's are specified, search each of them
             for (const cwd of inputCwd) {
-                yield* this.find(globPatterns, { ...options, cwd: this.normalizeSeperators(cwd) });
+                yield* this.find(globPatterns, { ...options, cwd: this.normalizeSeparators(cwd) });
             }
             return;
         }
 
-        const cwd = this.normalizeSeperators(inputCwd ?? process.cwd());
+        const cwd = this.normalizeSeparators(inputCwd ?? process.cwd());
         const patterns = this.compilePatterns(globPatterns);
         const excludePatterns = options?.exclude ? this.compilePatterns(options?.exclude) : undefined;
         const findType = typeof options?.findType === 'string'
@@ -252,7 +252,7 @@ export abstract class FileSystem {
         });
     }
 
-    private normalizeSeperators(path: string): string {
+    private normalizeSeparators(path: string): string {
         // Normalize windows path separator to posix for globby
         return path.replace(/[/\\]+/g, '/');
     }

@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { FileSystem, injectable, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined, PropertyAccessor } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -10,7 +10,7 @@ import { SalesforceDeployService } from './salesforceDeployService';
 import { SalesforceLookupService } from './salesforceLookupService';
 import { SalesforceProfile } from './salesforceProfile';
 import { SalesforceSchemaService } from './salesforceSchemaService';
-import { SObjectRecord, PropertyAccessor } from './types';
+import { SObjectRecord } from './types';
 import { MetadataRegistry, MetadataType } from './metadataRegistry';
 import { NamespaceService } from './namespaceService';
 import { SoapClient, SoapDebuggingHeader } from './soapClient';
@@ -173,7 +173,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         }
         yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
     }
-    
+
     /**
      * Delete one or more records based on a SOQL filter condition. Returns array of deleted record-ids
      * @param type SObject type to delete
@@ -424,12 +424,13 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return this.connectionProvider.getApiVersion();
     }
 
+
     /**
      * Get a list of available API version on the connected server
      */
     public async getApiVersions(count: number = 10) {
         const connection = await this.getJsForceConnection();
-        const version = parseFloat(connection.version);
+        const version = await connection.getMaxApiVersion();
         const versions: string[] = [];
         for (let i = 0; i < count; i++) {
             versions.push((version - i).toFixed(1));

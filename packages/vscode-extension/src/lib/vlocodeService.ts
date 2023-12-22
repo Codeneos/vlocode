@@ -148,7 +148,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.createUpdateStatusBarItem(
             'connection', {
                 text, command,
-                tooltip: command ? 'Click to select a different Salesforce org for Vlocode' : undefined
+                tooltip: command ? 'Salesforce org for Vlocode' : undefined
             }
         );
     }
@@ -156,8 +156,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private showApiVersionStatusItem() : void {
         this.createUpdateStatusBarItem(
             'apiVersion', {
-                text: this.config.salesforce.apiVersion ?? 'Select Salesforce API Version',
-                tooltip: `Currently using API version ${this.config.salesforce.apiVersion}, click to select a different API version`,
+                text: this.config.salesforce.apiVersion ?? 'Vlocode Salesforce API Version',
+                tooltip: `Using SF API ${this.config.salesforce.apiVersion}`,
                 command: VlocodeCommand.selectApiVersion
             }
         );

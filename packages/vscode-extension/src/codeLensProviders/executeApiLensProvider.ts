@@ -1,18 +1,18 @@
 import * as vscode from 'vscode';
 
-import VlocodeService from "../lib/vlocodeService";
-import { container, injectable } from "@vlocode/core";
+import VlocodeService from '../lib/vlocodeService';
+import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
 
 @injectable()
 export class ExecuteApiLensProvider implements vscode.CodeLensProvider {
 
-    private documentFilter : Array<vscode.DocumentFilter> = [
+    private readonly documentFilter : Array<vscode.DocumentFilter> = [
         { pattern: '**/*.{api,http,sfhttp,sfapi}' },
         { language: 'sfhttp' }
     ];
 
-    private regex = /^(GET|POST|PUT|DELETE|PATCH) (.*)$/i
+    private readonly regex = /^(GET|POST|PUT|DELETE|PATCH) (.*)$/i;
 
     public static register(service: VlocodeService) {
         const lens = container.get(ExecuteApiLensProvider);

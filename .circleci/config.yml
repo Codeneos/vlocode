@@ -3,7 +3,7 @@
 version: 2.1
 
 orbs:
-  sonarcloud: sonarsource/sonarcloud@1.0.2
+  sonarcloud: sonarsource/sonarcloud@2.0.0
 
 commands: 
   checkout_install:
@@ -12,8 +12,12 @@ commands:
       - restore_cache:
           keys: 
           - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-      - run: corepack enable && corepack prepare $(node -p "require('./package.json').packageManager") --activate
       - run: pnpm config set store-dir ~/.pnpm-store
+      - run:
+          name: Install deps
+          command: |
+            sudo apt update
+            sudo apt-get install -y libsecret-1-dev
       - run: pnpm install --frozen-lockfile
       - save_cache:
           key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
@@ -39,7 +43,7 @@ commands:
 jobs:
   build-and-test:
     docker:
-      - image: cimg/node:18.4-browsers
+      - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
       - build
@@ -47,7 +51,7 @@ jobs:
       - codequality
   package:
     docker:
-      - image: cimg/node:18.4-browsers
+      - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
       - run:
@@ -68,7 +72,7 @@ jobs:
           path: .version
   publish-vsc-extension:
     docker:
-      - image: cimg/node:18.4-browsers
+      - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
       - attach_workspace:
@@ -81,7 +85,7 @@ jobs:
             pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
-      - image: cimg/node:18.4-browsers
+      - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc

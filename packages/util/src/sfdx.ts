@@ -15,7 +15,11 @@ export interface SalesforceAuthResult {
 }
 
 export interface SalesforceOrgInfo extends SalesforceAuthResult {
+    isSandbox: boolean;
+    lastAccessed?: Date;
+    orgName: string;
     alias?: string;
+    aliases: string[];
 }
 
 interface FileSystem {
@@ -73,7 +77,7 @@ export interface DeviceLoginFlow {
      * Optional the verification URL with the user code appended as query parameter.
      * @readonly
      */
-    readonly verificationUrlWithCode?: string | undefined;
+    readonly verificationUrlWithCode?: string;
     /**
      * Await the user to approve the device login request.
      * @param options Options for the device login flow
@@ -220,8 +224,20 @@ export namespace sfdx {
                         continue;
                     }
 
+                    const allAliases = stateAggregator.aliases.getAll(authFields.username);
+
+                    // Find org name from instance URL
+                    const orgNameFromUrl = authFields.instanceUrl
+                        .replace(/^https?:\/\//i, '')
+                        .replace(/(\.sandbox)?(\.my)?.salesforce\.com$/i, '');
+                    const isSandbox = /\.sandbox\./i.test(authFields.instanceUrl) || /test\.salesforce\.com/i.test(authFields.loginUrl ?? '');
+                    const lastAccessed = authFields.instanceApiVersionLastRetrieved ? new Date(authFields.instanceApiVersionLastRetrieved) : undefined;
+
                     yield {
                         orgId: authFields.accessToken.split('!').shift()!,
+                        orgName: orgNameFromUrl,
+                        isSandbox,
+                        lastAccessed,
                         accessToken: authFields.accessToken,
                         instanceUrl: authFields.instanceUrl,
                         loginUrl: authFields.loginUrl ?? authFields.instanceUrl,
@@ -229,7 +245,8 @@ export namespace sfdx {
                         clientId: authFields.clientId!,
                         clientSecret: authFields.clientSecret,
                         refreshToken: authFields.refreshToken!,
-                        alias: stateAggregator.aliases.get(authFields.username) || undefined
+                        alias: allAliases[0] || undefined,
+                        aliases: allAliases
                     };
                 } catch(err) {
                     logger.warn(`Error while reading SFDX auth for "${username}"`, err);
@@ -243,7 +260,7 @@ export namespace sfdx {
     export async function getOrgDetails(usernameOrAlias: string) : Promise<SalesforceOrgInfo | undefined> {
         for await (const config of getAllValidatedConfigs()) {
             if (config.username?.toLowerCase() === usernameOrAlias?.toLowerCase() || 
-                config.alias?.toLowerCase() === usernameOrAlias?.toLowerCase()) {
+                config.aliases.some(alias => alias.toLowerCase() === usernameOrAlias?.toLowerCase())) {
                 return config;
             }
         }
@@ -479,7 +496,7 @@ export namespace sfdx {
             ]);
 
             if (!approval) {
-                throw 'User did not approve the device login request within the specified timeout';
+                throw new Error('User did not approve the device login request within the specified timeout');
             }
 
             const authInfo = await this.oauthService.authorizeAndSave(approval);
