@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { serviceGuidSymbol } from "./container";
+import { ServiceGuidSymbol } from "./container";
 
 export const serviceProxyMarker = Symbol('Container:Lazy');
 export const proxyTarget = Symbol('Container:LazyTarget');
@@ -31,8 +31,8 @@ export function createServiceProxy<T extends Object>(factory: () => T, prototype
                 return !!target.instance;
             } else if (prop === proxyTarget) {
                 return target;
-            } else if (prop === serviceGuidSymbol) {
-                return target.instance?.[serviceGuidSymbol];
+            } else if (prop === ServiceGuidSymbol) {
+                return target.instance?.[ServiceGuidSymbol];
             }
 
             if (!target.instance && typeof prototype[prop] === 'function') {

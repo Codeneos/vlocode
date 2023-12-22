@@ -4,9 +4,9 @@ import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives,
 import { LogManager } from './logging';
 import { createServiceProxy, serviceIsResolved, proxyTarget, isServiceProxy, ProxyTarget } from './serviceProxy';
 
-export interface ServiceCtor<T extends Object = any> { new(...args: any[]): T }
-export type ServiceType<T extends Object = Object> = { name: string; prototype: T } | string;
-export type ServiceFactory<T extends Object = Object> = () => T;
+export interface ServiceCtor<T extends object  = object> { new(...args: any[]): T }
+export type ServiceType<T extends object = object> = { name: string; prototype: T } | string;
+export type ServiceFactory<T extends object = object> = () => T;
 
 export interface ServiceProvider<T> {
     get(): T;
@@ -50,7 +50,12 @@ export interface ServiceOptions {
  * is used to resolve the container instance. 
  */
 export const ContainerSymbol = Symbol('Container');
-export const serviceGuidSymbol = Symbol('Container:ServiceGuid');
+export const ServiceGuidSymbol = Symbol('Container:ServiceGuid');
+
+/**
+ * Symbol used to mark the root container
+ */
+const ContainerRootSymbol = Symbol('Container:IsRoot');
 
 const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({
     lifecycle: LifecyclePolicy.singleton,
@@ -106,6 +111,11 @@ const uniqueNameConfig: uniqueNamesGeneratorConfig = {
  */
 export class Container {
 
+    /**
+     * Global root container; by default all services are contained in there
+     */
+    public static root: Container;
+
     private readonly instances = new Map<string, any>();
     private readonly resolveStack = new Array<string>();
     private readonly serviceDependencies = new Map<string, Array<string>>();
@@ -123,6 +133,14 @@ export class Container {
     private readonly providers = new Map<string, (receiver: any) => any>();
 
     private readonly containerPath: string;
+
+    /**
+     * Returns `true` if this container is the root container of the application. The root container is the container that is created
+     * by default and contains all services by default.
+     */
+    public get isRoot() {
+        return this[ContainerRootSymbol] === true;
+    }
 
     /**
      * Wrap all instance created by this container in Proxies. When set to `true` each service instance created by this container is wrapped in
@@ -202,7 +220,7 @@ export class Container {
             const instance = factory.new() as T;
             const effectiveLifecycle = overrideLifecycle ?? factory.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return resolver.registerAs(resolver.register(instance), service);
+                resolver.register(instance, { additionalServiceTypes: [ service ] });
             }
             return instance;
         }
@@ -228,7 +246,7 @@ export class Container {
 
             const effectiveLifecycle = overrideLifecycle ?? type.options?.lifecycle;
             if (effectiveLifecycle === LifecyclePolicy.singleton) {
-                return resolver.registerAs(resolver.register(serviceInstance), service);
+                resolver.register(serviceInstance, { additionalServiceTypes: [ service ] });
             }
             return serviceInstance;
         }
@@ -243,7 +261,7 @@ export class Container {
     }
 
     /**
-     * Safe version of @see Container.resolve that does not return undefined and throws an exception for services that cannot be resolved.
+     * Safe version of {@link Container.resolve} that **never** returns `undefined` and throws an Error for services that cannot be resolved.
      * @param service Service type for which to resolve the concrete class
      */
     public get<T extends object>(service: ServiceType<T>, overrideLifecycle?: LifecyclePolicy) : T {
@@ -255,13 +273,23 @@ export class Container {
     }
 
     /**
-     * Create a new instance of a type resolving constructor parameters as dependencies using the container
+     * Create a new instance of a type resolving constructor parameters as dependencies using the container. 
+     * The returned class is not registered in the container as dependency.
      * @param ctor Constructor/Type to instantiate
      * @param params Constructor params provided
      * @returns New instance of an object who's dependencies are resolved by the container
      */
-    public create<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>) : InstanceType<T> {
+    public create<T extends { new(...args: any[]): any }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>): InstanceType<T> {
         return this.createInstance(ctor, params);
+    }
+
+    /**
+     * Create a new instance of a type resolving constructor parameters as dependencies using the container and register it as a dependency.
+     * @param ctor Constructor/Type to instantiate
+     * @param params Constructor params provided
+     */
+    public createAndRegister<T extends { new(...args: any[]): any }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>): void {
+        this.register(this.createInstance(ctor, params));
     }
 
     /**
@@ -269,7 +297,7 @@ export class Container {
      * in the container as dependency.
      * @param ctor Constructor type/prototype class definition
      */
-    private createInstance<T extends { new(...args: any[]): InstanceType<T> }>(ctor: T, args: Array<any> = []): InstanceType<T> {
+    private createInstance<T extends { new(...args: any[]): any }>(ctor: T, args: Array<any> = []): InstanceType<T>  {
         // Get argument types
         const instanceGuid = this.generateServiceGuid(ctor);
         //let instanceCtor = ctor;
@@ -364,7 +392,7 @@ export class Container {
             const resolvedPropertyValue = this.resolve(typeInfo, undefined, prototype.constructor);
             if (resolvedPropertyValue) {
                 instance[property] = resolvedPropertyValue;
-                this.trackServiceDependencies(instance[serviceGuidSymbol], resolvedPropertyValue);
+                this.trackServiceDependencies(instance[ServiceGuidSymbol], resolvedPropertyValue);
             }
         }
         return instance;
@@ -376,8 +404,8 @@ export class Container {
     }
 
     private decorateWithServiceGuid<T>(instance: T, guid?: string): T {
-        if (!instance[serviceGuidSymbol]) {
-            instance[serviceGuidSymbol] = guid ?? this.generateServiceGuid(instance);
+        if (!instance[ServiceGuidSymbol]) {
+            instance[ServiceGuidSymbol] = guid ?? this.generateServiceGuid(instance);
         }
         return instance;
     }
@@ -388,7 +416,7 @@ export class Container {
      * @param dependsOn instance of the dependency
      */
     private trackServiceDependencies(serviceGuid: string, dependsOn: Object) {
-        const dependencyGuid = dependsOn[serviceGuidSymbol];
+        const dependencyGuid = dependsOn[ServiceGuidSymbol];
         if (isServiceProxy(dependsOn) && !dependsOn[serviceIsResolved]) {
             dependsOn[proxyTarget].once('resolved', instance => this.trackServiceDependencies(serviceGuid, instance));
         } else if (dependencyGuid) {
@@ -399,22 +427,23 @@ export class Container {
     /**
      * Register an already instantiated service/class in the container, if the instance provides one or more services which are registered
      * using the injectable decorator then those services will be made available in the container.
-     * @param instance
+     * @param instance Instance to register or array of instances to register
+     * @param options.additionalServiceTypes additional service types to register the instance for
      */
-    public register<T extends object | object[]>(instances: T) {
+    public register<T extends object>(instances: T | T[], options?: { additionalServiceTypes?: Array<ServiceType<T>> }) {
         for (const instance of asArray(instances)) {
             for (const prototype of this.getPrototypes(instance)) {
                 const provides = Reflect.getMetadata('service:provides', prototype.constructor) as Array<ServiceType>;
                 if (provides?.length) {
-                    for (const serviceType of provides) {
-                        this.registerAs(instance, serviceType);
-                    }
+                    this.registerAs(instance, provides);
                 } else if (prototype.constructor.name !== 'Object') {
                     this.registerAs(instance, prototype.constructor);
                 }
+                if (options?.additionalServiceTypes?.length) {
+                    this.registerAs(instance, options.additionalServiceTypes);
+                }
             }
         }
-        return instances;
     }
 
     private getPrototypes(instance: any) {
@@ -431,10 +460,10 @@ export class Container {
      * @param services Service or array of service shapes provided
      * @returns the instance
      */
-    public registerAs<T extends Object, I extends T = T>(instance: I, services: ServiceType<T> | Array<ServiceType<T>>) {
+    public registerAs<T extends object, I extends T = T>(instance: I, services: ServiceType<T> | Array<ServiceType<T>>) {
         this.decorateWithServiceGuid(instance);
 
-        for (const service of Iterable.asIterable(services)) {
+        for (const service of Array.isArray(services) ? services : [ services ]) {
             const providedService = this.getServiceName(service);
             const providedServices: Set<string> = instance[this.servicesProvided] || (instance[this.servicesProvided] = new Set());
 
@@ -448,11 +477,10 @@ export class Container {
                 this.logger.warn(`(${this.containerGuid}) Overriding existing service with name "${providedService}" from ${existingInstance.constructor?.name}->${instance.constructor.name}`);
             }
 
-            this.logger.debug(`(${this.containerGuid}) Register: ${instance.constructor.name} as [${providedService}] (${instance[serviceGuidSymbol]}) (container: ${this.containerGuid})`);
+            this.logger.debug(`(${this.containerGuid}) Register: ${instance.constructor.name} as [${providedService}] (${instance[ServiceGuidSymbol]}) (container: ${this.containerGuid})`);
             this.instances.set(providedService, instance);
             providedServices.add(providedService);
         }
-        return instance;
     }
 
     /**
@@ -460,19 +488,19 @@ export class Container {
      * create a new instances instead of reusing the existing one.
      * @param instance the instance to remove
      */
-    public removeInstance(instance: Object) {
-        const instanceGuid = instance[serviceGuidSymbol];
+    public removeInstance(instance: object) {
+        const instanceGuid = instance[ServiceGuidSymbol];
         if (!instanceGuid) {
             // Prevent double unregister
             return;
         }
 
-        this.logger.debug(`(${this.containerGuid}) Unregister: ${instance.constructor.name} (${instance[serviceGuidSymbol]}) (${this.containerGuid})`);
+        this.logger.debug(`(${this.containerGuid}) Unregister: ${instance.constructor.name} (${instance[ServiceGuidSymbol]}) (${this.containerGuid})`);
 
         instance[this.servicesProvided]?.clear();
-        instance[serviceGuidSymbol] = undefined;
+        instance[ServiceGuidSymbol] = undefined;
 
-        const activeInstanceByGuid = new Map([...this.instances.values()].map(i => [ i[serviceGuidSymbol], i ]));
+        const activeInstanceByGuid = new Map([...this.instances.values()].map(i => [ i[ServiceGuidSymbol], i ]));
         const dependentServices = this.serviceDependencies.get(instanceGuid);
 
         for (const [service, activeInstance] of this.instances.entries()) {
@@ -500,7 +528,7 @@ export class Container {
      * @param services list of services to register
      * @param factory factory that produces the an instance
      */
-    public registerFactory<T extends Object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
+    public registerFactory<T extends object, I extends T = T>(services: ServiceType<T> | Array<ServiceType<T>>, factory: ServiceFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
         for (const service of Array.isArray(services) ? services : [ services ]) {
             this.logger.debug(`(${this.containerGuid}) Register factory for: ${this.getServiceName(service)}`);
             this.factories.set(this.getServiceName(service), { new: factory, lifecycle });
@@ -513,7 +541,7 @@ export class Container {
      * @param services list of services to register
      * @param serviceOptions options including lifecycle policy of the service
      */
-    public registerType<T extends Object, I extends T = T>(type: ServiceCtor<I>, services: ServiceType<T> | Array<ServiceType<T>>, serviceOptions?: Partial<ServiceOptions>) {
+    public registerType<T extends object, I extends T = T>(type: ServiceCtor<I>, services: ServiceType<T> | Array<ServiceType<T>>, serviceOptions?: Partial<ServiceOptions>) {
         const options = Object.assign({}, defaultServiceOptions, serviceOptions) as ServiceOptions;
         for (const service of Iterable.asIterable(services)) {
             this.logger.debug(`(${this.containerGuid}) Register service type for: ${this.getServiceName(service)}`);
@@ -533,7 +561,7 @@ export class Container {
      * @param type Service type to register
      * @returns ProxyTarget instance that can be used to set the concrete instance
      */
-    public registerProxyService<T extends Object>(type: { name: string; prototype: T }): ProxyTarget<T> {
+    public registerProxyService<T extends object>(type: { name: string; prototype: T }): ProxyTarget<T> {
         const serviceName = this.getServiceName(type);
         const instance = createServiceProxy<T>(() => {
                 if (!instance[proxyTarget].instance) {
@@ -547,12 +575,12 @@ export class Container {
         return instance[proxyTarget];
     }
 
-    public registerProvider<T extends Object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I| Promise<I> | undefined) {
+    public registerProvider<T extends object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I| Promise<I> | undefined) {
         this.logger.debug(`(${this.containerGuid}) Register provider for: ${this.getServiceName(service)}`);
         this.providers.set(this.getServiceName(service), provider);
     }
 
-    private getServiceName<T extends Object>(service: ServiceType<T>) {
+    private getServiceName<T extends object>(service: ServiceType<T>) {
         if (typeof service === 'string') {
             return service;
         }
@@ -564,3 +592,5 @@ export class Container {
  * Root container; by default all services are contained in there
  */
 export const container = singleton(Container);
+container[ContainerRootSymbol] = true;
+Container.root = container;
