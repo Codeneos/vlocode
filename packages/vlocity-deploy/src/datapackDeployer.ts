@@ -125,6 +125,15 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
     remoteScriptActivation?: boolean;
 }
 
+/**
+ * Filter that determines if a datapack is applicable for the given spec. The filter can be either a regular expression or a string.
+ * When a string is passed the filter will match if the datapack type or record type matches the string. When a regular expression is passed
+ * the filter will match if the datapack type or record type matches the regular expression.
+ *
+ * Record filters (`recordFilter`) are only applicable when the spec is executed for a single record and should be preferred over datapack
+ * filters as they are more specific and thus reduce the number of records that need to be processed by the spec. Another advantage of record
+ * filters is that they do not rely on the datapack type being set which is derived from the folder structure of the datapack.
+ */
 export type DatapackFilter =
     { recordFilter?: RegExp | string, datapackFilter: RegExp | string } |
     { recordFilter: RegExp | string, datapackFilter?: RegExp | string };
