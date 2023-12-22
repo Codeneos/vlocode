@@ -52,7 +52,7 @@
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "devDependencies": {
         "@types/csv-parse": "^1.2.2",
-        "@types/fs-extra": "^9",
+        "@types/fs-extra": "^11",
         "@types/jest": "^28.1.6",
         "@types/jsforce": "^1.9.41",
         "@types/luxon": "^3.3.0",
@@ -62,22 +62,17 @@
         "nugget": "^2.2.0",
         "shx": "^0.3.4",
         "ts-jest": "^29.1.1",
-        "ts-node": "^10.4.0",
-        "ts-xor": "^1.1.0",
-        "tsc-alias": "^1.6.7",
-        "typescript": "5.1.6",
-        "webpack-env": "^0.8.0"
+        "typescript": "5.1.6"
     },
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
         "chalk": "^4.1.1",
         "csv-parse": "^5.3.3",
-        "fs-extra": "^9.0",
+        "fs-extra": "^11.0",
         "jsforce": "1.11.0",
         "jszip": "^3.7.0",
         "luxon": "^3.4.0",
-        "moment": "^2.29.1",
         "tough-cookie": "^4.1.2"
     },
     "publisher": "curlybracket",

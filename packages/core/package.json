@@ -42,7 +42,6 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode#readme",
     "devDependencies": {
-        "@types/fs-extra": "^9",
         "@types/jest": "^28.1.6",
         "@types/luxon": "^3.3.0",
         "@types/node": "^20.4.2",
@@ -58,7 +57,6 @@
         "luxon": "^3.4.0",
         "memfs": "^3.2.2",
         "minimatch": "^9.0.3",
-        "moment": "^2.29.4",
         "reflect-metadata": "^0.1.13",
         "unique-names-generator": "^4.6.0"
     },

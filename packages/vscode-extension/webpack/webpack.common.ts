@@ -7,11 +7,6 @@ import { EsbuildPlugin } from 'esbuild-loader';
 import packageJson from '../package.json';
 
 const packageExternals = [
-    // In order to run tests the main test frameworks need to be marked
-    // as external to avoid conflicts when loaded by the VSCode test runner
-    'mocha',
-    'chai',
-    'sinon',
     // VSCode is an external that we do not want to package
     'vscode',
     'vscode-languageclient',
