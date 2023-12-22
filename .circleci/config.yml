@@ -13,6 +13,11 @@ commands:
           keys: 
           - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
       - run: pnpm config set store-dir ~/.pnpm-store
+      - run:
+          name: Install deps
+          command: |
+            sudo apt update
+            sudo apt-get install -y libsecret-1-dev
       - run: pnpm install --frozen-lockfile
       - save_cache:
           key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
