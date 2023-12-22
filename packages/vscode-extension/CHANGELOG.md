@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/codeneos/vlocode/compare/v0.20.12...v0.21.0) (2023-12-22)
+
+### Bug Fixes
+
+* debugger statement in wrong place ([80fe6e5](https://github.com/codeneos/vlocode/commit/80fe6e5e06c41498e1d2557eb7f7a8f6ee045348))
+* SF API version selection does not display latest org supported API versions ([7e7463d](https://github.com/codeneos/vlocode/commit/7e7463d9909e4f14fb6aa7ecea5a1a92bac0a192))
+
+### Features
+
+* add context menu in editor and explorer for executing API requests ([4edace6](https://github.com/codeneos/vlocode/commit/4edace6cb1436171669d9bce903f97ef6f53e7d2))
+* enhance existing Execute REST API command to remember last used APIs ([e24bdf5](https://github.com/codeneos/vlocode/commit/e24bdf503fe02860af5b37124fdfb669e686f75e))
+* enhance org selection and displaying all more org details ([cfab40e](https://github.com/codeneos/vlocode/commit/cfab40e7a81c482947d793f9dcf5d92cec43ec5e))
+* expose context to commands and introduce new recent items store ([d20a722](https://github.com/codeneos/vlocode/commit/d20a7229bf426b0820c1434ce14f638bc82e675b))
+* open documents in side columns without focus when applicable ([c44fc1e](https://github.com/codeneos/vlocode/commit/c44fc1e154e781c286c223a6a70ee63dc2fd32c4))
+* support extended quick pick item buttons for API requests ([c5dee89](https://github.com/codeneos/vlocode/commit/c5dee896ffa7ab2c745ac80c80146ec3a8bac482))
+* support new execute API from codelens ([2deeaff](https://github.com/codeneos/vlocode/commit/2deeaffb47751043f3e60211bc27765679cc90ee))
+* update status bar item tooltips to be more clear ([b8210b4](https://github.com/codeneos/vlocode/commit/b8210b44248190d059a13f0861011347eafbe794))
+
 ## [0.20.12](https://github.com/codeneos/vlocode/compare/v0.20.11...v0.20.12) (2023-12-15)
 
 **Note:** Version bump only for package vlocode

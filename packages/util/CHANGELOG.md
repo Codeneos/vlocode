@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/Codeneos/vlocode/compare/v0.20.12...v0.21.0) (2023-12-22)
+
+### Bug Fixes
+
+* sfdx.getOrgDetails does only matches the first alias of an org ([3c6a3d6](https://github.com/Codeneos/vlocode/commit/3c6a3d64396f7cbe1d2d8baa7c3b70f594c198b1))
+
+### Features
+
+* enhance org selection and displaying all more org details ([cfab40e](https://github.com/Codeneos/vlocode/commit/cfab40e7a81c482947d793f9dcf5d92cec43ec5e))
+* support extended quick pick item buttons for API requests ([c5dee89](https://github.com/Codeneos/vlocode/commit/c5dee896ffa7ab2c745ac80c80146ec3a8bac482))
+
 ## [0.20.11](https://github.com/Codeneos/vlocode/compare/v0.20.10...v0.20.11) (2023-12-14)
 
 **Note:** Version bump only for package @vlocode/util
