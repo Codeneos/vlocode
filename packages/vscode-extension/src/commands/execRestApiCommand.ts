@@ -12,7 +12,7 @@ import { QuickPick } from '../lib/ui/quickPick';
 @vscodeCommand(VlocodeCommand.execRestApi)
 export default class ExecuteRestApiCommand extends MetadataCommand {
 
-    private httpMethodOptions: Array<{ label: string, method: HttpMethod, allowsBody?: boolean }> = [
+    private readonly httpMethodOptions: Array<{ label: string, method: HttpMethod, allowsBody?: boolean }> = [
         { label: 'GET', method: 'GET' },
         { label: 'POST', method: 'POST', allowsBody: true },
         { label: 'PATCH', method: 'PATCH', allowsBody: true },
@@ -105,7 +105,7 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
 
         quickPickMenu.onTriggerItemButtom(async ({ item, button }) => {
             if (!(button.iconPath instanceof vscode.ThemeIcon)) {
-                return
+                return;
             }
             if (button.iconPath?.id === 'trash') {
                 this.context.recent.remove('apiRequests', item.request);
@@ -149,7 +149,7 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             cancellable: false
         }, async () => {
             const connection = await this.salesforce.getJsForceConnection();
-            return await connection.request(request);
+            return connection.request(request);
         });
         this.logger.info(`${request.method} ${request.url} [${timer.stop()}]`);
 

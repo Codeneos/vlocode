@@ -73,7 +73,7 @@ export default class SelectOrgCommand extends CommandBase {
     private getOrgLabel(org: SalesforceOrgInfo) {
         const prefix = !org.refreshToken ? '$(warning) ' : '';
         if (org.aliases?.length) {
-            const aliases = [...org.aliases].sort().join(', ');
+            const aliases = [...org.aliases].sort((a, b) => a.localeCompare(b)).join(', ');
             return `${prefix}${aliases} - ${org.username}`;
         }
         return `${prefix}${org.username}`;
@@ -190,7 +190,7 @@ export default class SelectOrgCommand extends CommandBase {
             }
 
             progress.report({ message: 'Waiting for device approval...' });
-            return await deviceLogin.awaitDeviceApproval({
+            return deviceLogin.awaitDeviceApproval({
                 openVerificationUrl: action.code === 'open'
             }, token);
         });
@@ -204,10 +204,7 @@ export default class SelectOrgCommand extends CommandBase {
             location: vscode.ProgressLocation.Notification,
             progressTitle: 'Opening browser to authorize new org...',
             cancellable: true
-        }, async (_, token) => {
-            return await sfdx.webLogin(options, token);
-        });
-
+        }, (_, token) => sfdx.webLogin(options, token));
         return this.processAuthinfo(authInfo, options);
     }
 

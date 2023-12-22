@@ -77,7 +77,7 @@ export interface DeviceLoginFlow {
      * Optional the verification URL with the user code appended as query parameter.
      * @readonly
      */
-    readonly verificationUrlWithCode?: string | undefined;
+    readonly verificationUrlWithCode?: string;
     /**
      * Await the user to approve the device login request.
      * @param options Options for the device login flow
@@ -236,8 +236,8 @@ export namespace sfdx {
                     yield {
                         orgId: authFields.accessToken.split('!').shift()!,
                         orgName: orgNameFromUrl,
-                        isSandbox: isSandbox,
-                        lastAccessed: lastAccessed,
+                        isSandbox,
+                        lastAccessed,
                         accessToken: authFields.accessToken,
                         instanceUrl: authFields.instanceUrl,
                         loginUrl: authFields.loginUrl ?? authFields.instanceUrl,
@@ -496,7 +496,7 @@ export namespace sfdx {
             ]);
 
             if (!approval) {
-                throw 'User did not approve the device login request within the specified timeout';
+                throw new Error('User did not approve the device login request within the specified timeout');
             }
 
             const authInfo = await this.oauthService.authorizeAndSave(approval);

@@ -90,9 +90,9 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
     // Bulk Ingest jobs in the V2Ingest job type support only one chunk
     // per job, so we keep track of the job id that were created for this job
-    private jobs: Record<string, IngestJobInfo>;
+    private readonly jobs: Record<string, IngestJobInfo>;
 
-    private pendingRecords: TRecord[] = [];
+    private readonly pendingRecords: TRecord[] = [];
 
     constructor(protected client: RestClient, info: IngestJobInfo) {
         super(client, info);

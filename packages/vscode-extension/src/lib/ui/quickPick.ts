@@ -7,8 +7,8 @@ import * as vscode from 'vscode';
  */
 export class QuickPick<T extends vscode.QuickPickItem> implements vscode.Disposable {
 
-    private disposables: vscode.Disposable[];
-    private acceptPromise: Promise<readonly T[] | undefined>;
+    private readonly disposables: vscode.Disposable[];
+    private readonly acceptPromise: Promise<readonly T[] | undefined>;
     private isVisisble = false;
 
     public get items() : readonly T[] {
