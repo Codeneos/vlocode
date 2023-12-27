@@ -76,6 +76,13 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         this.workspaceFileWatcher.onDidCreate(async newFile => this.onDidCreateHandler(newFile.fsPath));
         this.workspaceFileWatcher.onDidDelete(async newFile => this.onDidDeleteHandler(newFile.fsPath));
 
+        // Builtin delay for macOS to allow for file system to settle
+        if (process.platform === 'darwin') {
+            await wait(1000);
+        } else {
+            await wait(200);
+        }
+
         this.add(await this.getApplicableFilesInWorkspace());
         this.scheduleContextUpdate();
         clearCache(this);
