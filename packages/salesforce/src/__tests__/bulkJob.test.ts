@@ -34,6 +34,12 @@ describe('bulkJob', () => {
             expect(bulkJob.isAborted).toEqual(false);
             expect(bulkJob.isFailed).toEqual(false);
             expect(bulkJob.isComplete).toEqual(false);
+            expect(bulkJob['lineEndingCharacters']).toEqual('\r\n');
+        });
+        it('should default line-ending to LF when not set', () => {
+            const bulkJobInfo = {} as unknown as BulkJobInfo;
+            const bulkJob = new BulkJob(undefined as unknown as RestClient, bulkJobInfo);
+            expect(bulkJob['lineEndingCharacters']).toEqual('\n');
         });
     });
 });
