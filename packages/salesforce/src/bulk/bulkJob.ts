@@ -88,7 +88,7 @@ export interface BulkJobInfo {
     /**
      * The line ending used for CSV job data, marking the end of a data row. The default is `LF`.
      */
-    lineEnding: JobLineEndingFormat;
+    lineEnding?: JobLineEndingFormat;
     /**
      * Date and time in the UTC time zone when the job finished.
      */
@@ -201,7 +201,7 @@ export class BulkJob<T extends BulkJobInfo> {
         }
         this._info = Object.freeze<T>({ ...info });
         this.delimiterCharacter = ColumnDelimiters[info.columnDelimiter || 'COMMA'];
-        this.lineEndingCharacters = info.lineEnding === 'LF' ? '\n' : '\r\n';
+        this.lineEndingCharacters = info.lineEnding === 'CRLF' ? '\r\n' : '\n';
     }
 
     /**
