@@ -276,14 +276,16 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
         for (const item of data) {
             const row = columns.map(c => this.encodeValue(item[c])).join(this.delimiterCharacter) + this.lineEndingCharacters;
             const encodedRow = Buffer.from(row, this.encoding);
-            encodedData.push(encodedRow);
 
-            if (encodedDataSize + encodedRow.byteLength > this.chunkDataSize) {
+            if (encodedData.length > 1 && (encodedDataSize + encodedRow.byteLength) > this.chunkDataSize) {
                 const chunk = Buffer.concat(encodedData);
                 encodedData = [ encodedHeader ];
                 encodedDataSize = encodedHeader.byteLength;
                 yield chunk;
             }
+
+            encodedData.push(encodedRow);
+            encodedDataSize += encodedRow.byteLength;
         }
 
         if (encodedData.length > 1) {
