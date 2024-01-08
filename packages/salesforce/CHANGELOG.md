@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.1](https://github.com/Codeneos/vlocode/compare/v0.21.0...v0.21.1) (2024-01-08)
+
+### Bug Fixes
+
+* bulk jobs incorrectly set LineEnding to CRLF instead of LF when not defined ([3703f65](https://github.com/Codeneos/vlocode/commit/3703f657cc6f171e26674659d3bb1c90bf951a57))
+* ingest job doesn't properly validate `chunkDataSize` causing it to exceeds the API limit ([074dfe2](https://github.com/Codeneos/vlocode/commit/074dfe2e7e7a0f2f6e5af7bc79e585a7c610eaf8))
+
 # [0.21.0](https://github.com/Codeneos/vlocode/compare/v0.20.12...v0.21.0) (2023-12-22)
 
 ### Bug Fixes
