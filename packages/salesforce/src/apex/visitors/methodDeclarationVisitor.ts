@@ -2,7 +2,7 @@ import { ApexMethod, ApexMethodModifier } from "../types";
 import { FormalParameterVisitor } from "./formalParameterVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
-import { BlockContext, FormalParametersContext, IdContext, MethodDeclarationContext, ModifierContext, StatementContext } from "../grammar";
+import { AnnotationContext, BlockContext, FormalParametersContext, IdContext, MethodDeclarationContext, ModifierContext, StatementContext } from "../grammar";
 
 export class MethodDeclarationVisitor extends DeclarationVisitor<ApexMethod> {
     constructor(state?: ApexMethod) {
@@ -20,10 +20,27 @@ export class MethodDeclarationVisitor extends DeclarationVisitor<ApexMethod> {
         });
     }
 
+    public visitAnnotation(ctx: AnnotationContext | null): ApexMethod | null {
+        if (ctx?.qualifiedName().getText().toLowerCase() === 'istest') {
+            this.state.isTest = true;
+        }
+        return this.state;
+    }
+
     public visitModifier(ctx: ModifierContext) {
+        if (ctx.TESTMETHOD()) {
+            this.state.isTest = true;
+        }
+        if (ctx.ABSTRACT()) {
+            this.state.isAbstract = true;
+        }
+        if (ctx.VIRTUAL()) {
+            this.state.isVirtual = true;
+        }
         if (!this.visitAccessModifier(ctx)) {
             this.state.modifiers.push(ctx.getText() as ApexMethodModifier);
         }
+        this.visitAnnotation(ctx.annotation());
         return this.state;
     }
 

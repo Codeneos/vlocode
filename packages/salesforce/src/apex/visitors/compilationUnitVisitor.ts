@@ -1,6 +1,6 @@
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { ClassDeclarationVisitor } from "./classDeclarationVisitor";
-import { ApexCompilationUnit } from "../types";
+import { ApexClass, ApexCompilationUnit } from "../types";
 import { TypeDeclarationContext } from "../grammar";
 
 export class CompilationUnitVisitor extends ApexSyntaxTreeVisitor<ApexCompilationUnit> {
@@ -10,7 +10,18 @@ export class CompilationUnitVisitor extends ApexSyntaxTreeVisitor<ApexCompilatio
 
     public visitTypeDeclaration(ctx: TypeDeclarationContext) {
         if (ctx.classDeclaration()) {
-            this.state.classes.push(new ClassDeclarationVisitor().visit(ctx)!);
+            const classInfo = new ClassDeclarationVisitor().visit(ctx)!;
+            this.state.classes.push(classInfo);
+
+            // add nested classes to the top level
+            if (classInfo.nested.length) {
+                this.state.classes.push(
+                    ...classInfo.nested.map(nested => ({
+                        ...nested,
+                        name: `${classInfo.name}.${nested.name}`
+                    }))
+                );
+            }
         }
         return this.state;
     }

@@ -4,26 +4,29 @@ import { ApexCompilationUnit, ApexTypeRef } from "./types";
 import { TypeRefCollector } from "./visitors/typeRefCollector";
 import { CompilationUnitVisitor } from "./visitors/compilationUnitVisitor";
 import { BufferStream, CaseInsensitiveCharStream } from "./streams";
-import { ApexParser, ApexLexer } from "./grammar";
+import { ApexParser, ApexLexer, CompilationUnitContext } from "./grammar";
 
 /**
  * APEX Source code parser and lexer. Provides methods to parse APEX source
  * code into an abstract syntax tree (AST) and to get all referenced types in the source code.
- * 
+ *
  * @example
  * ```typescript
- * const parser = new Parser();
  * // cu will hold an abstract representation of the code structure of the source files
  * // multiple source files can be parsed at once by concatenating them
- * const cu = parser.getCodeStructure('public class MyClass { } public class OtherClass { }');
+ * const cu = new Parser('public class MyClass { } public class OtherClass { }').getCodeStructure();
  * // refs will hold an array of ll external references: [ 'MyClass', 'BaseClass' ];
- * const refs = parser.getReferencedTypes('public class MyClass extends BaseClass { private MyOtherClass other; }');
+ * const refs = new Parser('public class MyClass extends BaseClass { private MyOtherClass other; }').getReferencedTypes();
  * ```
  */
 export class Parser {
 
     private lexer: ApexLexer;
     private parser: ApexParser;
+    private cu: CompilationUnitContext;
+
+    constructor(private input: Buffer | string) {
+    }
 
     /**
      * Parse a piece of Apex code into an abstract representation of the code structure of an APEX source files. 
@@ -32,13 +35,8 @@ export class Parser {
      * @param code Apex code to parse as a string or buffer (or an array of strings or buffers)
      * @returns An {@link ApexCompilationUnit} describing the code structure
      */
-    public getCodeStructure(input: string | Buffer | string[] | Buffer[]): ApexCompilationUnit {
-        const cuVisitor = new CompilationUnitVisitor();
-        return Array.isArray(input)
-            ? this.mergeCompilationUnits(
-                input.map((code: string | Buffer) => this.parseAsCompilationUnit(code).accept(cuVisitor)!)
-            )
-            : this.parseAsCompilationUnit(input).accept(cuVisitor)!;
+    public getCodeStructure(): ApexCompilationUnit {
+        return this.parseAsCompilationUnit().accept(new CompilationUnitVisitor())!;
     }
 
     /**
@@ -47,60 +45,38 @@ export class Parser {
      * @param options Options to control which types are returned
      * @returns An array of unique `ApexTypeRef` objects
      */
-    public getReferencedTypes(code: string | Buffer, options?: { excludeSystemTypes?: boolean }): ApexTypeRef[] {
-        return this.parseAsCompilationUnit(code).accept(new TypeRefCollector(options))!;
+    public getReferencedTypes(options?: { excludeSystemTypes?: boolean }): ApexTypeRef[] {
+        return this.parseAsCompilationUnit().accept(new TypeRefCollector(options))!;
     }
 
-    private parseAsCompilationUnit(code: string | Buffer) {
-        const parser = this.createParser(code);
-        const cu = parser.compilationUnit();
-        if (!cu) {
-            throw new Error('Failed to parse Apex code');
+    private parseAsCompilationUnit() {
+        if (!this.cu) {
+            this.cu = this.getParser().compilationUnit();
         }
-        return cu;
+        return this.cu;
     }
 
-    private createParser(code: string | Buffer): ApexParser {
-        const tokens = new CommonTokenStream(this.getLexer(code));
-
+    private getParser(): ApexParser {
         if (!this.parser) {
+            const tokens = new CommonTokenStream(this.getLexer());
             this.parser = new ApexParser(tokens);
-        } else {
-            this.parser.reset();
-            this.parser.tokenStream = tokens;
         }
-
+        this.parser.reset();
 		return this.parser;
     }
 
-    private getLexer(code: string | Buffer): ApexLexer {
-        const cis = new CaseInsensitiveCharStream(this.getInputStream(code));
-
+    private getLexer(): ApexLexer {
         if (!this.lexer) {
+            const cis = new CaseInsensitiveCharStream(this.createInputStream());
             this.lexer = new ApexLexer(cis);
-        } else {
-            this.lexer.reset();
-            this.lexer._input = cis;
         }
-
         return this.lexer;
     }
 
-    private getInputStream(code: string | Buffer) {
-        if (typeof code === 'string') {
-            return CharStreams.fromString(code);
+    private createInputStream() {
+        if (typeof this.input === 'string') {
+            return CharStreams.fromString(this.input);
         }
-        return new BufferStream(code);
-    }
-
-    private mergeCompilationUnits(cus: ApexCompilationUnit[]): ApexCompilationUnit {
-        return cus.reduce((result, cu) => this.mergeCompilationUnitWith(result, cu));
-    }
-
-    private mergeCompilationUnitWith(a: ApexCompilationUnit, b: ApexCompilationUnit): ApexCompilationUnit {
-        return {
-            classes: a.classes.concat(b.classes),
-            interfaces: a.interfaces.concat(b.interfaces)
-        };
+        return new BufferStream(this.input);
     }
 }
