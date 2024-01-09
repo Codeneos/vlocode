@@ -56,13 +56,13 @@ const common : webpack.Configuration = {
         ]
     },
     resolve: {
-        extensions: ['.ts', '.js', '.json', '.yaml'],
+        extensions: ['.ts', '.js', '.cjs', '.mjs', '.json', '.yaml'],
         alias: Object.fromEntries(
-            workspacePackages.map(({ dir, packageJson }) => ([
-                packageJson.name,
-                path.join(dir, 'src')
-            ]))
-        )
+                workspacePackages.map(({ dir, packageJson }) => ([
+                    packageJson.name,
+                    path.join(dir, 'src')
+                ]))
+            ),
     },
     output: {
         filename: '[name].js',
@@ -109,6 +109,10 @@ const common : webpack.Configuration = {
         new webpack.IgnorePlugin({
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
+        }),
+        new webpack.IgnorePlugin({
+            resourceRegExp: /build$/,
+            contextRegExp: /dtrace-provider$/,
         }),
         new webpack.DefinePlugin({
             __webpack_build_info__: JSON.stringify({
