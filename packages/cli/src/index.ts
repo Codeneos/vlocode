@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'fs';
 import * as path from 'path';
 
-import { Command as Commander, Option } from 'commander';
+import { Command, Option } from 'commander';
 import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
 import { Command as CliCommand } from './command';
@@ -25,7 +25,7 @@ class CLI {
     private static readonly isVerbose = process.argv.includes('-v') || process.argv.includes('--verbose');
     private static readonly isDebug = process.argv.includes('--debug');
 
-    private readonly program: Commander;
+    private readonly program: Command;
     private readonly logger = LogManager.get(CLI.programName);
 
     static readonly options = [
@@ -62,7 +62,7 @@ class CLI {
 
     constructor(private commandsFolder: string) {
         this.logger.verbose(this.versionString);
-        this.program = new Commander()
+        this.program = new Command()
             .name(CLI.programName)
             .description(CLI.description)
             .version(`${CLI.version} (${buildInfo.buildDate})`)
@@ -114,7 +114,7 @@ class CLI {
             .toLowerCase();
     }
 
-    private registerCommand(parentCommand: Commander, commandFile: string) {
+    private registerCommand(parentCommand: Command, commandFile: string) {
         try {
             // @ts-ignore
             const commandModule = nodeRequire(commandFile);
