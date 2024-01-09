@@ -28,7 +28,8 @@
         "prepublish": "pnpm run build",
         "update-registry": "nugget $npm_package_config_metadata/metadataRegistry.json $npm_package_config_metadata/stdValueSetRegistry.json $npm_package_config_metadata/types.ts -q -d ./src/registry",
         "pre-build": "pnpm update-registry",
-        "prepare": "pnpm update-registry"
+        "prepare": "pnpm update-registry",
+        "build-grammar": "antlr4ng -Dlanguage=TypeScript -o src/apex/grammar -visitor -listener ./grammar/ApexLexer.g4 ./grammar/ApexParser.g4"
     },
     "repository": {
         "type": "git",
@@ -67,6 +68,7 @@
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
+        "antlr4ng": "link:c:/repos/antlr4ng",
         "chalk": "^4.1.1",
         "csv-parse": "^5.3.3",
         "fs-extra": "^11.0",
