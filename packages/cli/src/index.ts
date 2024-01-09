@@ -4,6 +4,7 @@ import * as path from 'path';
 import { Command, Option } from 'commander';
 import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
+import { Command as CliCommand } from './command';
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
@@ -46,7 +47,12 @@ class CLI {
             LogManager.registerWriter(new ConsoleWriter());
             LogManager.setGlobalLogLevel(LogLevel.info);
         }
-        container.registerProvider(Logger, LogManager.get.bind(LogManager));
+        container.registerProvider(Logger, (receiver) => {
+            if (receiver?.name === 'default') {
+                return LogManager.get('vlocode-cli');
+            }
+            return LogManager.get(receiver);
+        });
     }
 
     private get versionString() {
