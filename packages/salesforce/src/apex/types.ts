@@ -14,6 +14,9 @@ export interface ApexInterface {
 
 export interface ApexClass {
     name: string;
+    isTest?: boolean;
+    isAbstract?: boolean;
+    isVirtual?: boolean;
     methods: ApexMethod[];
     properties: ApexProperty[];
     fields: ApexField[];
@@ -22,12 +25,15 @@ export interface ApexClass {
     type?: ApexClassModifier;
     sharing?: ApexSharingModifier;
     extends?: ApexTypeRef;
-    nested?: ApexClass[];
+    nested: ApexClass[];
 }
 
 export interface ApexMethod {
     name: string;
     body: string;
+    isTest?: boolean;
+    isAbstract?: boolean;
+    isVirtual?: boolean;
     returnType: ApexTypeRef;
     parameters: ApexMethodParameter[];
     access?: ApexAccessModifier;

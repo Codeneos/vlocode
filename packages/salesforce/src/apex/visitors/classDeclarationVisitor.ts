@@ -3,7 +3,7 @@ import { MethodDeclarationVisitor } from "./methodDeclarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { FieldDeclarationVisitor } from "./fieldDeclarationVisitor";
-import { ClassBodyDeclarationContext, ClassDeclarationContext, FieldDeclarationContext, MethodDeclarationContext, ModifierContext } from "../grammar";
+import { AnnotationContext, ClassBodyDeclarationContext, ClassDeclarationContext, FieldDeclarationContext, MemberDeclarationContext, MethodDeclarationContext, ModifierContext, TypeDeclarationContext } from "../grammar";
 
 export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     constructor(state?: ApexClass) {
@@ -13,11 +13,26 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
             properties: [],
             fields: [],
             implements: [],
-            extends: undefined
+            extends: undefined,
+            nested: [],
         });
     }
 
+    public visitAnnotation(ctx: AnnotationContext | null): ApexClass | null {
+        if (ctx?.qualifiedName().getText().toLocaleLowerCase() === 'istest') {
+            this.state.isTest = true;
+        }
+        return this.state;
+    }
+
     public visitModifier(ctx: ModifierContext) {
+        if (ctx.ABSTRACT()) {
+            this.state.isAbstract = true;
+        }
+        if (ctx.VIRTUAL()) {
+            this.state.isVirtual = true;
+        }
+        this.visitAnnotation(ctx.annotation());
         this.visitAccessModifier(ctx) || this.visitSharingModifier(ctx);
         return this.state;
     }
@@ -53,6 +68,15 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
             memberDeclaration.accept(this);
         }
         return this.state;
+    }
+
+    public visitMemberDeclaration(ctx: MemberDeclarationContext) {
+        const classDeclaration = ctx.classDeclaration();
+        if (classDeclaration) {
+            this.state.nested.push(new ClassDeclarationVisitor().visit(classDeclaration)!);
+            return this.state;
+        }
+        return this.visitChildren(ctx);
     }
 
     public visitMethodDeclaration(ctx: MethodDeclarationContext) {
