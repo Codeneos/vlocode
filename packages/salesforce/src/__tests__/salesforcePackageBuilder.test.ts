@@ -493,7 +493,8 @@ describe('SalesforcePackageBuilder', () => {
                 await packageBuilder.addFiles([ 'src/dashboards' ]);
 
                 const manifest = packageBuilder.getManifest();
-                const [ folder, dashBoard ] = [...packageBuilder.getPackage().sourceFiles()];
+                const [ folder, dashBoard ] = [...packageBuilder.getPackage().sourceFiles()]
+                    .sort((a,b) => a.packagePath.localeCompare(b.packagePath));
 
                 expect(folder.packagePath).toEqual('dashboards/MyFolder-meta.xml');
                 expect(dashBoard.packagePath).toEqual('dashboards/MyFolder/Board.dashboard');
