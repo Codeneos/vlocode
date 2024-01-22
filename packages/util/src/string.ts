@@ -7,7 +7,7 @@ import { getObjectProperty } from './object';
  * @param b String b
  * @param caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
  */
-export function stringEquals(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
+export function stringEquals(a : string | undefined | null, b: string | undefined | null, options?: { caseInsensitive: boolean } | boolean) : boolean {
     if (a === b) {
         return true;
     }
@@ -17,7 +17,7 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
     if (b === null || b === undefined) {
         return false;
     }
-    if (caseInsensitive) {
+    if (options === undefined || options === true || (options && options.caseInsensitive)) {
         return b.toLowerCase() === a.toLowerCase();
     }
     return false;
@@ -45,22 +45,25 @@ export function stringEqualsIgnoreCase(a : string | undefined | null, b: string 
 }
 
 /**
- * Determines if the string spcified ends with the other string, caseInsensitive by default
+ * Checks if the specified string {@link a} ends with the specified string {@link based}.
+ * By default the comparison is case sensitive unless specified otherwise by setting the `caseInsensitive` option to `true`.
+ * If either string is null or undefined returns `false`.
  * @param a String a
  * @param b String b
- * @param caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
+ * @param options Options
+ * @param options.caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
  */
-export function endsWith(a : string | undefined | null, b: string | undefined | null, caseInsensitive: boolean = true) : boolean {
+export function endsWith(a: string | undefined | null, b: string | undefined | null, options?: { caseInsensitive: boolean }): boolean {
     if (a === null || a === undefined) {
         return false;
     }
     if (b === null || b === undefined) {
         return false;
     }
-    if (caseInsensitive) {
-        return b.toLowerCase().endsWith(a.toLowerCase());
+    if (options?.caseInsensitive) {
+        return a.toLowerCase().endsWith(b.toLowerCase());
     }
-    return b.endsWith(a);
+    return a.endsWith(b);
 }
 
 export function format(formatStr: string, ...args: any[]) {
