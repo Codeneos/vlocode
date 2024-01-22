@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.2](https://github.com/Codeneos/vlocode/compare/v0.21.1...v0.21.2) (2024-01-22)
+
+### Bug Fixes
+
+* metadata folder types get packaged incorrectly ([e2ac4f6](https://github.com/Codeneos/vlocode/commit/e2ac4f649ebe9aac6243bcf3d64d5a17700b5111))
+
 # [0.21.0](https://github.com/Codeneos/vlocode/compare/v0.20.12...v0.21.0) (2023-12-22)
 
 ### Bug Fixes

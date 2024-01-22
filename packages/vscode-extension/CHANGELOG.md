@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.2](https://github.com/codeneos/vlocode/compare/v0.21.1...v0.21.2) (2024-01-22)
+
+**Note:** Version bump only for package vlocode
+
 ## [0.21.1](https://github.com/codeneos/vlocode/compare/v0.21.0...v0.21.1) (2024-01-08)
 
 ### Bug Fixes
