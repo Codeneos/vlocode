@@ -61,6 +61,9 @@ describe('SalesforcePackageBuilder', () => {
         'src/destructiveChangesPre.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'c', 'd' ] } ] }),
         'src/destructiveChanges.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: [ 'g', 'h' ] } ] }),
         'src/destructiveChangesSingle.xml': buildXml('Package', { types: [ { name: 'ApexClass', members: 'a' } ] }),
+        // Dashboards
+        'src/dashboards/MyFolder.dashboardFolder-meta.xml': buildXml('DashboardFolder', { name: 'MyFolder', accessType: 'Public', publicFolderAccess: 'ReadWrite' }),
+        'src/dashboards/MyFolder/Board.dashboard-meta.xml': buildXml('Dashboard', { name: 'Board' }),
     });
 
     beforeAll(() =>  container.registerAs(Logger.null, Logger));
@@ -473,7 +476,7 @@ describe('SalesforcePackageBuilder', () => {
                     'src/classes/myClass.cls-meta.xml',
                     'src/triggers/myTrigger.trigger-meta.xml',
                 ]));
-                expect(manifest.list().length).toEqual(7);
+                expect(manifest.list().length).toEqual(9);
                 expect(manifest.list('AuraDefinitionBundle').length).toEqual(1);
                 expect(manifest.list('LightningComponentBundle').length).toEqual(1);
                 expect(manifest.list('ApexClass').length).toEqual(1);
@@ -481,6 +484,21 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.list('CustomObject').length).toEqual(1);
                 expect(manifest.list('CustomField').length).toEqual(1);
                 expect(manifest.list('ListView').length).toEqual(1);
+                expect(manifest.list('Dashboard').length).toEqual(2);
+            });
+        });
+        describe('#dashboards', () => {
+            it('should add dashboards folders with -meta.xml suffix', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                await packageBuilder.addFiles([ 'src/dashboards' ]);
+
+                const manifest = packageBuilder.getManifest();
+                const [ folder, dashBoard ] = [...packageBuilder.getPackage().sourceFiles()];
+
+                expect(folder.packagePath).toEqual('dashboards/MyFolder-meta.xml');
+                expect(dashBoard.packagePath).toEqual('dashboards/MyFolder/Board.dashboard');
+                expect(manifest.list().length).toEqual(2);
+                expect(manifest.list('Dashboard').length).toEqual(2);
             });
         });
     });

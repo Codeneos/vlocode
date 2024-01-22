@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
 import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri } from '@vlocode/util';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, endsWith, substringBeforeLast, stringEqualsIgnoreCase, stringEquals } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage, SalesforcePackageComponent } from './deploymentPackage';
@@ -88,9 +88,14 @@ export class SalesforcePackageBuilder {
 
             // get metadata type
             const xmlName = await this.getComponentType(file);
-            if (xmlName == 'Package' && path.basename(file).includes('destructive')) {
-                const destructiveChangeType = file.toLocaleLowerCase().includes('post') ? 'post' : 'pre';
-                this.mdPackage.mergeDestructiveChanges(await this.fs.readFile(file), destructiveChangeType);
+            if (xmlName == 'Package') {
+                const lowercasePath = file.toLocaleLowerCase();
+                if (!path.basename(lowercasePath).includes('destructive')) {
+                    this.logger.warn(`${file} is a Package manifest which is not supported by the package builder`);
+                } else {
+                    const destructiveChangeType = lowercasePath.includes('post') ? 'post' : 'pre';
+                    this.mdPackage.mergeDestructiveChanges(await this.fs.readFile(file), destructiveChangeType);
+                }
                 continue;
             }
 
@@ -104,13 +109,14 @@ export class SalesforcePackageBuilder {
                 continue;
             }
 
-            if (metadataType.name != xmlName) {
+            const isFolderMetadata = stringEquals(metadataType.folderType, xmlName, { caseInsensitive: true });
+            if (metadataType.name != xmlName && !isFolderMetadata) {
                 // Support for SFDX formatted source code
                 childMetadataFiles.push([ file, xmlName, metadataType]);
                 continue;
             }
 
-            if (metadataType.id == 'staticresource' && file.endsWith('-meta.xml')) {
+            if (metadataType.id === 'staticresource' && file.endsWith('-meta.xml')) {
                 const folder = this.stripFileExtension(file, 2);
                 const isFolder = await this.fs.isDirectory(folder);
                 if (isFolder) {
@@ -236,12 +242,14 @@ export class SalesforcePackageBuilder {
             componentName = this.getPackageComponentName(file, metadataType);
         }
 
+        const componentType = await this.getPackageComponentType(file, metadataType);
+
         if (this.type === SalesforcePackageType.destruct) {
-            this.mdPackage.addDestructiveChange(metadataType.name, componentName);
+            this.mdPackage.addDestructiveChange(componentType, componentName);
         } else {
             const packagePath = await this.getPackagePath(file, metadataType);
             this.mdPackage.add({
-                componentType: metadataType.name,
+                componentType,
                 componentName,
                 packagePath,
                 data: await this.fs.readFile(file),
@@ -523,7 +531,7 @@ export class SalesforcePackageBuilder {
         return suffix?.toLowerCase() != 'xml' ? suffix : undefined;
     }
 
-    private async getComponentTypeFromSource(file: string) {
+    private async getComponentTypeFromSource(file: string) : Promise<string| undefined>{
         const isMetaFile = file.endsWith('-meta.xml');
 
         if (!isMetaFile) {
@@ -535,20 +543,19 @@ export class SalesforcePackageBuilder {
         }
 
         const metadataTypes = this.metadataRegistry.getMetadataTypes();
-        let xmlName = await this.getRootElementName(file);
+        const xmlName = await this.getRootElementName(file);
 
         // Cannot detect certain metadata types properly so instead manually set the type
-        if (xmlName == 'EmailFolder') {
-            xmlName = 'EmailTemplate';
-        } else if (xmlName && xmlName.endsWith('Folder')) {
-            // Handles document Folder and other folder cases
-            xmlName = xmlName.substr(0, xmlName.length - 6);
-        } else if (xmlName == 'Package') {
+        if (xmlName == 'Package') {
             // Package are considered valid types for destructive changes
             return xmlName;
         }
 
-        const metadataType = xmlName && metadataTypes.find(type => type.name == xmlName || type.childXmlNames?.includes(xmlName!));
+        const metadataType = xmlName ? metadataTypes.find(type =>
+            type.name == xmlName ||
+            type.childXmlNames?.includes(xmlName!)
+        ) : undefined
+
         if (metadataType) {
             return xmlName;
         }
@@ -614,6 +621,11 @@ export class SalesforcePackageBuilder {
         const packageFolder = this.getPackageFolder(file, metadataType);
         const expectedSuffix = isMetaFile ? `${metadataType.suffix}-meta.xml` : `${metadataType.suffix}`;
 
+        if (metadataType.folderContentType) {
+            // For folder metadata the meta file name should match the folder name
+            return path.posix.join(packageFolder, `${substringBeforeLast(contentName,'.')}-meta.xml`);
+        }
+
         if (isMetaFile && !metadataType.hasContent && !metadataType.isBundle) {
             // SFDX adds a '-meta.xml' to each file, when deploying we need to strip these
             // when the source does not have a meta data file
@@ -634,6 +646,13 @@ export class SalesforcePackageBuilder {
         }
 
         return path.posix.join(packageFolder, baseName);
+    }
+
+    private async getPackageComponentType(file: string, metadataType: MetadataType) {
+        if (metadataType.folderContentType) {
+            return this.metadataRegistry.getMetadataType(metadataType.folderContentType)!.name;
+        }
+        return metadataType.name;
     }
 
     @cache({ unwrapPromise: true })
