@@ -1,5 +1,6 @@
 // created from 'create-ts-index'
 
+export * from './apex';
 export * from './datapacks';
 export * from './developerLogs';
 export * from './metadata';

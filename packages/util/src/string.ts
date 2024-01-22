@@ -175,6 +175,28 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
 }
 
 /**
+ * Get the substring between the first occurrence of the specified start and end string. 
+ * If the end string is not found the substring after the start string is returned.
+ * If the start string is not found but the end of the string is found the substring before the end string is returned.
+ * @param value value to search in
+ * @param start start string
+ * @param end end string
+ * @returns 
+ */
+export function substringBetweenLast(value: string, start: string, end: string): string {
+    const indexOfEnd = value.lastIndexOf(end);
+    if (indexOfEnd < 0) {
+        return substringAfterLast(value, start);
+    }
+    value = value.substring(0, indexOfEnd);
+    const indexOfStart = value.lastIndexOf(start);
+    if (indexOfStart >= 0) {
+        return value.substring(indexOfStart + start.length);
+    }
+    return value;
+}
+
+/**
  * Joins array parts together in one or more strings based on the max size of the string
  * @param parts
  * @param delimiter

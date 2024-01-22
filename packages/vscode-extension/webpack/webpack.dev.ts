@@ -7,6 +7,9 @@ const development : webpack.Configuration = {
     mode: 'development',
     output: {
         pathinfo: true,
+    },
+    optimization: {
+        minimize: false
     }
 };
 

@@ -72,4 +72,5 @@ export enum VlocodeCommand {
     omniScriptGenerateLwc = 'vlocode.omniScript.generateLwc',
     omniScriptDeployLwc = 'vlocode.omniScript.deployLwc',
     omniScriptActivate = 'vlocode.omniScript.activate',
+    apexToggleCoverage = 'vlocode.apex.toggleCoverage',
 }

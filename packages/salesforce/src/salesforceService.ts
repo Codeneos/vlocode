@@ -29,6 +29,11 @@ export interface OrganizationDetails {
     namespacePrefix: string;
 }
 
+export interface ApexTestCoverage {
+    coveredLines: number[];
+    uncoveredLines: number[];
+}
+
 interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string }
 
 @injectable()
@@ -314,8 +319,11 @@ export class SalesforceService implements SalesforceConnectionProvider {
         const infos = await mapAsyncParallel(files, async file => {
             const info = sfPackage.getSourceFileInfo(file);
             if (info) {
-                const metadataInfoFile = [...sfPackage.sourceFiles()].find(f => f.fsPath?.endsWith('.xml'))?.fsPath ?? file;
-                const metadata = metadataInfoFile ? XML.parse(await this.fs.readFileAsString(metadataInfoFile), { ignoreAttributes: true }) : undefined;
+                const metadataInfo = this.metadataRegistry.getMetadataType(info.componentType)!;
+                const metadataFile = !file.endsWith('.xml') && metadataInfo.hasContent && metadataInfo.suffix
+                    ? [...sfPackage.getComponentFiles(info)].find(f => f.packagePath.endsWith(metadataInfo.suffix!))?.packagePath
+                    : file;
+                const metadata = metadataFile ? XML.parse(await this.fs.readFileAsString(metadataFile), { ignoreAttributes: true }) : undefined;
                 return {
                     ...this.getNameInfo(info),
                     type: info.componentType,
@@ -524,5 +532,35 @@ export class SalesforceService implements SalesforceConnectionProvider {
         } finally {
             this.logger.verbose(`APEX remote request ${page}->${method} [${timer.stop()}]`);
         }
+    }
+
+    public async getApexCodeCoverage(apexClassName: string) : Promise<ApexTestCoverage>
+    public async getApexCodeCoverage(apexClassName: string[]) : Promise<ApexTestCoverage[]>
+    public async getApexCodeCoverage(apexClassName: string | string[]) : Promise<ApexTestCoverage | ApexTestCoverage[]> {
+        const query = new QueryBuilder('ApexCodeCoverageAggregate', [ 'Coverage', 'ApexClassOrTrigger.Name' ]);
+        if (Array.isArray(apexClassName)) {
+            if (apexClassName.length == 0) {
+                return [];
+            }
+            query.where.in('ApexClassOrTrigger.Name', apexClassName);
+        } else {
+            query.where.equals('ApexClassOrTrigger.Name', apexClassName);
+        }
+
+        const records = await this.queryService.execute<{ Coverage: ApexTestCoverage }>(
+            query.getQuery(), {
+                toolingApi: true,
+                cache: false,
+            }
+        );
+        const results = new Map<string, ApexTestCoverage>(records.map(record => [ 
+            record.ApexClassOrTrigger.Name.toLowerCase(), 
+            record.Coverage
+        ]));
+
+        if (!Array.isArray(apexClassName)) {
+            return results.get(apexClassName.toLowerCase())!;
+        }
+        return apexClassName.map(name => results.get(name.toLowerCase())!);
     }
 }
