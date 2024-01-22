@@ -348,18 +348,28 @@ vlocode.omniScript.activate:
 
 # editor
 vlocode.openMetaXml:
-  title: Open -meta.xml
+  title: 'Salesforce: Open -meta.xml'
   icon: resources/{type}/meta-xml.svg
   when:
     - resourceScheme == file && resourcePath =~ /\.cls$/
     - resourceScheme == file && resourcePath =~ /\.trigger$/
   menus:
     - menu: editor/title/run
+    - menu: commandPalette
 vlocode.openSourceFile:
-  title: Open Source
+  title: 'Salesforce: Open Source'
   icon: $(code)
   when:
     - resourceScheme == file && resourcePath =~ /\.cls-meta\.xml$/
     - resourceScheme == file && resourcePath =~ /\.trigger-meta\.xml$/
   menus:
     - menu: editor/title/run
+    - menu: commandPalette
+vlocode.apex.toggleCoverage:
+  title: 'APEX: Toggle Test Coverage'
+  icon: $(test-view-icon)
+  when:
+    - resourceScheme == file && resourcePath =~ /\.cls$/
+  menus:
+    - menu: commandPalette
+    - menu: editor/context

@@ -152,4 +152,27 @@ describe('util', () => {
             expect(string.stringEqualsIgnoreCase(undefined, null)).toStrictEqual(false);
         });
     });
+
+    describe('#substringBetweenLast', () => {
+        it('should return the substring between the last occurrence of start and end', () => {
+            const input = 'test__substring__between__last__value';
+            const result = string.substringBetweenLast(input, '__', '__');
+            expect(result).toEqual('last');
+        });
+        it('should return the substring after last start if end not found', () => {
+            const input = 'test__substring__between__last__value';
+            const result = string.substringBetweenLast(input, '__', '___');
+            expect(result).toEqual('value');
+        });
+        it('should return the substring before last start if start not found', () => {
+            const input = 'test__substring__between__last__value';
+            const result = string.substringBetweenLast(input, '___', '__');
+            expect(result).toEqual('test__substring__between__last');
+        });
+        it('should return the original value if start not found', () => {
+            const input = 'test__substring__between__last__value';
+            const result = string.substringBetweenLast(input, '___', '___');
+            expect(result).toEqual(input);
+        });
+    });
 });

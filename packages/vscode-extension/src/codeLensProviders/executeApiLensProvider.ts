@@ -4,6 +4,13 @@ import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
 
+/**
+ * Provides a code lens to execute the current file as a Salesforce API request
+ * @example
+ * ```http
+ * GET /services/data/v50.0/sobjects HTTP/1.1
+ *```
+ */
 @injectable()
 export class ExecuteApiLensProvider implements vscode.CodeLensProvider {
 

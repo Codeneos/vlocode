@@ -32,6 +32,7 @@ import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 
 import './commands';
 import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
+import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -212,6 +213,7 @@ class Vlocode {
         }
 
         ExecuteApiLensProvider.register(this.service);
+        TestCoverageLensProvider.register(this.service);
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',
