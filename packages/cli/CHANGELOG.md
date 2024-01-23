@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.3](https://github.com/Codeneos/vlocode/compare/v0.21.2...v0.21.3) (2024-01-23)
+
+### Bug Fixes
+
+* logging is not injected with correct name for injected commands ([b2f665c](https://github.com/Codeneos/vlocode/commit/b2f665c5a812cf961d2ec0f2913ea96dd652a571))
+
 ## [0.21.2](https://github.com/Codeneos/vlocode/compare/v0.21.1...v0.21.2) (2024-01-22)
 
 **Note:** Version bump only for package @vlocode/cli

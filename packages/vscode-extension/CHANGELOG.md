@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.3](https://github.com/codeneos/vlocode/compare/v0.21.2...v0.21.3) (2024-01-23)
+
+### Bug Fixes
+
+* code coverage it checked on every file change ([354589d](https://github.com/codeneos/vlocode/commit/354589de458139be3e8a4925298c85839d0f9cb0))
+
+### Features
+
+* option for showing test coverage in VSCode using lens ([eb90406](https://github.com/codeneos/vlocode/commit/eb9040601ab551168881683488ce86564a80e20f))
+
 ## [0.21.2](https://github.com/codeneos/vlocode/compare/v0.21.1...v0.21.2) (2024-01-22)
 
 **Note:** Version bump only for package vlocode
