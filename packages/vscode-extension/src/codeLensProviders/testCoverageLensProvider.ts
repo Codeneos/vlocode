@@ -4,7 +4,7 @@ import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
 import { ApexTestCoverage } from '@vlocode/salesforce';
-import { TimedMap, cache } from '@vlocode/util';
+import { cache } from '@vlocode/util';
 
 /**
  * Provides a code lens to show the test coverage for the current class
