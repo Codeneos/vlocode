@@ -1,5 +1,5 @@
 import { ModifierContext, TypeRefContext, VariableDeclaratorContext } from "../grammar";
-import { ApexField, ApexAccessModifier } from "../types";
+import { ApexField, ApexAccessModifier, ApexFieldModifier } from "../types";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 
@@ -11,7 +11,6 @@ export class FieldDeclarationVisitor extends DeclarationVisitor<ApexField> {
     constructor(state?: ApexField) {
         super(state ?? {
             name: '',
-            modifiers: [],
             type: {
                 name: '',
                 isSystemType: false
@@ -20,10 +19,21 @@ export class FieldDeclarationVisitor extends DeclarationVisitor<ApexField> {
     }
 
     public visitModifier(ctx: ModifierContext) {
-        if (this.visitAccessModifier(ctx)) {
-            this.state.access = ctx.getText() as ApexAccessModifier;
-        }
+        this.visitAccessModifier(ctx) || this.visitFieldModifiers(ctx);
         return this.state;
+    }
+
+    public visitFieldModifiers(ctx: ModifierContext) {
+        if (ctx.STATIC()) {
+            this.state.isStatic = true;
+        } else if (ctx.FINAL()) {
+            this.state.isFinal = true;
+        } else if (ctx.TRANSIENT()) {
+            this.state.isTransient = true;
+        } else {
+            return false;
+        }
+        return true;
     }
 
     public visitVariableDeclarator(ctx: VariableDeclaratorContext) {

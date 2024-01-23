@@ -28,6 +28,7 @@ export * from './singleton';
 export * from './string';
 export * from './task';
 export * from './types';
+export * from './timedMap';
 export * from './timer';
 export * from './transactionalMap';
 export * from './validate';

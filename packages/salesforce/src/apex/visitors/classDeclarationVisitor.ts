@@ -15,6 +15,7 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
             implements: [],
             extends: undefined,
             nested: [],
+            refs: [],
         });
     }
 
@@ -73,7 +74,10 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     public visitMemberDeclaration(ctx: MemberDeclarationContext) {
         const classDeclaration = ctx.classDeclaration();
         if (classDeclaration) {
-            this.state.nested.push(new ClassDeclarationVisitor().visit(classDeclaration)!);
+            const nestedClass = new ClassDeclarationVisitor().visit(classDeclaration);
+            if (nestedClass) {
+                this.state.nested.push(nestedClass);
+            }
             return this.state;
         }
         return this.visitChildren(ctx);
@@ -82,7 +86,10 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     public visitMethodDeclaration(ctx: MethodDeclarationContext) {
         const memberContext = ctx.parent?.parent;
         if (memberContext) {
-            this.state.methods.push(new MethodDeclarationVisitor().visit(memberContext)!);
+            const method = new MethodDeclarationVisitor().visit(memberContext);
+            if (method) {
+                this.state.methods.push(method);
+            }
         }
         return this.state;
     }
@@ -97,7 +104,11 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     public visitFieldDeclaration(ctx: FieldDeclarationContext) {
         const memberContext = ctx.parent?.parent;
         if (memberContext) {
-            this.state.fields.push(new FieldDeclarationVisitor().visit(memberContext)!);
+            const field = new FieldDeclarationVisitor().visit(memberContext);
+            if (field) {
+                this.state.refs.push(field.type);
+                this.state.fields.push(field);
+            }
         }
         return this.state;
     }

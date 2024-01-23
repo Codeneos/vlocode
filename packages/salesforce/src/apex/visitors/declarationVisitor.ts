@@ -16,7 +16,7 @@ export abstract class DeclarationVisitor<T extends { access?: ApexAccessModifier
         if (ctx.PUBLIC()) {
             this.state.access = 'public';
         } else if (ctx.PROTECTED()) {
-            this.state.access = 'public';
+            this.state.access = 'protected';
         } else if (ctx.GLOBAL()) {
             this.state.access = 'global';
         } else if (ctx.PRIVATE()) {

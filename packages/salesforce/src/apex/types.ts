@@ -2,7 +2,7 @@ export type ApexAccessModifier = 'global' | 'public' | 'protected' | 'private';
 export type ApexClassModifier = 'virtual' | 'abstract';
 export type ApexSharingModifier = 'without' | 'with' | 'inherited';
 export type ApexMethodModifier = 'static' | 'final' | 'webservice' | 'override' | 'testmethod';
-export type ApexFieldModifier = 'transient';
+export type ApexFieldModifier = 'transient' | 'final' | 'static';
 export type ApexModifier = ApexAccessModifier | ApexClassModifier | ApexSharingModifier | ApexMethodModifier | ApexFieldModifier;
 
 export interface ApexInterface {
@@ -26,6 +26,7 @@ export interface ApexClass {
     sharing?: ApexSharingModifier;
     extends?: ApexTypeRef;
     nested: ApexClass[];
+    refs: ApexTypeRef[];
 }
 
 export interface ApexMethod {
@@ -39,7 +40,8 @@ export interface ApexMethod {
     access?: ApexAccessModifier;
     modifiers: ApexMethodModifier[];
     decorators: string[];
-    refs: ApexTypeRef[];
+    localVariables: { name: string, type: ApexTypeRef }[];
+    refs: ApexTypeRef[]; // References to other things
 }
 
 export interface ApexProperty {
@@ -52,8 +54,11 @@ export interface ApexProperty {
 export interface ApexField {
     name: string | string[];
     type: ApexTypeRef;
+    isStatic?: boolean;
+    isFinal?: boolean;
+    isTransient?: boolean;
     access?: ApexAccessModifier;
-    modifiers: ApexFieldModifier[];
+    modifiers?: ApexFieldModifier[];
 }
 
 export interface ApexTypeRef {

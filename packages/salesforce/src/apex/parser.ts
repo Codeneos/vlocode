@@ -1,4 +1,4 @@
-import { CommonTokenStream, CharStreams }  from 'antlr4ng';
+import { CommonTokenStream, CharStreams, ParserATNSimulator, LexerATNSimulator }  from 'antlr4ng';
 
 import { ApexCompilationUnit, ApexTypeRef } from "./types";
 import { TypeRefCollector } from "./visitors/typeRefCollector";

@@ -1,4 +1,4 @@
-import { CreatedNameContext, IdCreatedNamePairContext, NewExpressionContext, TypeNameContext } from "../grammar";
+import { CreatedNameContext, IdCreatedNamePairContext, IdPrimaryContext, NewExpressionContext, TypeNameContext } from "../grammar";
 import { ApexTypeRef } from "../types";
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { TypeListVisitor } from "./typeListVisitor";
@@ -24,6 +24,12 @@ export class TypeRefCollector extends ApexSyntaxTreeVisitor<ApexTypeRef[]> {
         };
         this.addDistinct(typeRef);
         return this.state;
+    }
+
+    public visitIdPrimary(ctx: IdPrimaryContext) {
+        const name = ctx.getText();
+        this.addDistinct({ name, isSystemType: TypeRefVisitor.isSystemType(name) });
+        return this.visitChildren(ctx);
     }
 
     public visitTypeName(ctx: TypeNameContext) {
