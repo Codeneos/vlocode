@@ -2,7 +2,7 @@ import { VlocodeCommand } from '../../constants';
 import * as vscode from 'vscode';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { CommandBase } from '../../lib/commandBase';
-import { substringBetweenLast } from '@vlocode/util';
+import { cache, substringBetweenLast } from '@vlocode/util';
 
 @vscodeCommand(VlocodeCommand.apexToggleCoverage)
 export default class PauseMetadataDeploymentsCommand extends CommandBase {
@@ -36,7 +36,10 @@ export default class PauseMetadataDeploymentsCommand extends CommandBase {
         return substringBetweenLast(this.activeDocument.uri.path, '/', '.');
     }
 
-    initialize() {
+    /**
+     * Initializes the toggleTestCoverage feature.
+     */
+    public initialize() {
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (!editor?.document) {
                 return;
@@ -48,6 +51,12 @@ export default class PauseMetadataDeploymentsCommand extends CommandBase {
         });
     }
 
+    /**
+     * Executes the command to toggle test coverage.
+     * If the active document class name is not available, the function returns.
+     * If the coverage is already showing for the active document class, the coverage decorations are cleared.
+     * Otherwise, the coverage decorations are shown for the active document class.
+     */
     public execute() {
         if (!this.activeDocumentClassName) {
             return;
@@ -63,14 +72,19 @@ export default class PauseMetadataDeploymentsCommand extends CommandBase {
         this.uncoveredDecoration?.dispose();
     }
 
-    public async showCoverageDecorations(apexClassName: string) {
+    /**
+     * Shows coverage decorations for the specified Apex class.
+     * @param apexClassName - The name of the Apex class.
+     * @returns A promise that resolves when the coverage decorations are shown.
+     */
+    private async showCoverageDecorations(apexClassName: string) {
         const editor = vscode.window.activeTextEditor;
         const document = editor?.document;
         if (!document) {
             return;
         }
 
-        const coverageDetails = await this.vlocode.salesforceService.getApexCodeCoverage(apexClassName);
+        const coverageDetails = await this.getCoverage(apexClassName);
         if (!coverageDetails) {
             void vscode.window.showWarningMessage(`No test coverage collected for ${apexClassName}.`);
             return;
@@ -93,9 +107,19 @@ export default class PauseMetadataDeploymentsCommand extends CommandBase {
         }
     }
 
-    public clearCoverageDecorations(apexClassName: string) {
+    private clearCoverageDecorations(apexClassName: string) {
         vscode.window.activeTextEditor?.setDecorations(this.coveredDecoration, []);
         vscode.window.activeTextEditor?.setDecorations(this.uncoveredDecoration, []);
         this.coverageShowingFor.delete(apexClassName.toLowerCase());
+    }
+
+    /**
+     * Retrieves the code coverage for a given Apex class.
+     * @param className - The name of the Apex class.
+     * @returns A Promise that resolves to the code coverage information.
+     */
+    @cache({ ttl: 60 * 5 })
+    private getCoverage(className: string) {
+        return this.vlocode.salesforceService.getApexCodeCoverage(className)
     }
 }

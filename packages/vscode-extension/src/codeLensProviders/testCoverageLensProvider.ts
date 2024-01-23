@@ -4,6 +4,7 @@ import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
 import { ApexTestCoverage } from '@vlocode/salesforce';
+import { TimedMap, cache } from '@vlocode/util';
 
 /**
  * Provides a code lens to show the test coverage for the current class
@@ -23,7 +24,9 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
 
     public static register(service: VlocodeService) {
         const lens = container.get(TestCoverageLensProvider);
-        vscode.languages.registerCodeLensProvider(lens.documentFilter, lens);
+        service.registerDisposable(
+            vscode.languages.registerCodeLensProvider(lens.documentFilter, lens)
+        );
     }
 
     private getClassName(document: vscode.TextDocument) {
@@ -46,12 +49,17 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
             return;
         }
 
-        const coverageDetails = await this.vlocode.salesforceService.getApexCodeCoverage(details.className);
+        const coverageDetails = await this.getCoverage(details.className);
         if (coverageDetails) {
             return [
                 new TestCoverageCodeLens(details.range, details.className, coverageDetails)
             ];
         }
+    }
+
+    @cache({ ttl: 60 * 5 })
+    private getCoverage(className: string) {
+        return this.vlocode.salesforceService.getApexCodeCoverage(className)
     }
 
     public async resolveCodeLens(codeLens: TestCoverageCodeLens) {
