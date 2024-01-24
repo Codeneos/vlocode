@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.4](https://github.com/codeneos/vlocode/compare/v0.21.3...v0.21.4) (2024-01-24)
+
+### Features
+
+* include coverage % in toggle coverage code lems ([7c8b5a2](https://github.com/codeneos/vlocode/commit/7c8b5a2a6a0b395338bff3da7c0dfe7405361bf8))
+
 ## [0.21.3](https://github.com/codeneos/vlocode/compare/v0.21.2...v0.21.3) (2024-01-23)
 
 ### Bug Fixes
