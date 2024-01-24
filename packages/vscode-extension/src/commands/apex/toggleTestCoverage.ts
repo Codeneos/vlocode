@@ -89,7 +89,7 @@ export default class ToggleApexTestCoverage extends CommandBase {
         }
 
         const coverageDetails = await this.getCoverage(apexClassName);
-        if (!coverageDetails) {
+        if (!coverageDetails || !coverageDetails.coveredLines.length && !coverageDetails.uncoveredLines.length) {
             void vscode.window.showWarningMessage(`No test coverage collected for ${apexClassName}.`);
             return;
         }
