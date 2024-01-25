@@ -41,6 +41,7 @@ export class QuickPick<T extends vscode.QuickPickItem> implements vscode.Disposa
         this.acceptPromise = new Promise(resolve => {
             this.disposables.unshift(quickPick.onDidAccept(() => {
                 resolve(quickPick.selectedItems);
+                this.dispose();
             }));
             this.disposables.unshift(quickPick.onDidHide(() => {
                 this.dispose();
