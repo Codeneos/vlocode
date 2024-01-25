@@ -70,12 +70,18 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
 class TestCoverageCodeLens extends vscode.CodeLens {
     constructor(range: vscode.Range, public readonly className: string, coverageDetails: ApexTestCoverage) {
         super(range, {
-            title: `Test Coverage (${TestCoverageCodeLens.getCoveragePercentage(coverageDetails)}%)`,
+            title: `${TestCoverageCodeLens.getCoveragePercentage(coverageDetails)}% Test Coverage`,
             command: VlocodeCommand.apexToggleCoverage,
             arguments: [ coverageDetails ]
         });
     }
 
+    /**
+     * Get the coverage percentage for the specified coverage details in the format of 0.0 - 100.0.
+     * 100.0 means all lines are covered and 0.0 means no lines are covered.
+     * @param coverageDetails 
+     * @returns 
+     */
     static getCoveragePercentage(coverageDetails: ApexTestCoverage) {
         return Math.round(
             coverageDetails.coveredLines.length /

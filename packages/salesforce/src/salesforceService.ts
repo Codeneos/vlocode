@@ -553,10 +553,20 @@ export class SalesforceService implements SalesforceConnectionProvider {
                 cache: false,
             }
         );
-        const results = new Map<string, ApexTestCoverage>(records.map(record => [ 
-            record.ApexClassOrTrigger.Name.toLowerCase(), 
-            record.Coverage
-        ]));
+
+        // Map the results to to class name and remove
+        // any records that do not have any coverage details
+        const results = new Map<string, ApexTestCoverage>(
+            records
+                .filter(record =>
+                    record.Coverage.coveredLines?.length &&
+                    record.Coverage.uncoveredLines?.length
+                )
+                .map(record => [
+                    record.ApexClassOrTrigger.Name.toLowerCase(), 
+                    record.Coverage as ApexTestCoverage
+                ])
+        );
 
         if (!Array.isArray(apexClassName)) {
             return results.get(apexClassName.toLowerCase())!;

@@ -90,13 +90,13 @@ export default class ToggleApexTestCoverage extends CommandBase {
 
         const coverageDetails = await this.getCoverage(apexClassName);
         if (!coverageDetails || !coverageDetails.coveredLines.length && !coverageDetails.uncoveredLines.length) {
-            void vscode.window.showWarningMessage(`No test coverage collected for ${apexClassName}.`);
+            void vscode.window.showWarningMessage(`No test coverage data available for ${apexClassName}.`);
             return;
         }
 
         const maxLine = Math.max(...coverageDetails.coveredLines, ...coverageDetails.uncoveredLines) - 1;
         if (maxLine > document.lineCount) {
-            void vscode.window.showWarningMessage(`Coverage data for ${apexClassName} is out of sync with the current file.`);
+            void vscode.window.showWarningMessage(`Coverage data for ${apexClassName} is out of sync.`);
             return;
         }
 
