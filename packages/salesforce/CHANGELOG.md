@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.5](https://github.com/Codeneos/vlocode/compare/v0.21.4...v0.21.5) (2024-01-25)
+
+### Bug Fixes
+
+* test coverage lens shows "NaN%" ([67e229d](https://github.com/Codeneos/vlocode/commit/67e229da792574380c6dd5c262644fcda8e5fdb9))
+
 ## [0.21.3](https://github.com/Codeneos/vlocode/compare/v0.21.2...v0.21.3) (2024-01-23)
 
 ### Features

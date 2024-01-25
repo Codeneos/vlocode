@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.5](https://github.com/codeneos/vlocode/compare/v0.21.4...v0.21.5) (2024-01-25)
+
+### Bug Fixes
+
+* quickPick does not close when an item is selected ([af4be29](https://github.com/codeneos/vlocode/commit/af4be29a663b13170ffb91ac9f6927ee989179c4))
+* test coverage lens shows "NaN%" ([67e229d](https://github.com/codeneos/vlocode/commit/67e229da792574380c6dd5c262644fcda8e5fdb9))
+
 ## [0.21.4](https://github.com/codeneos/vlocode/compare/v0.21.3...v0.21.4) (2024-01-24)
 
 ### Features
