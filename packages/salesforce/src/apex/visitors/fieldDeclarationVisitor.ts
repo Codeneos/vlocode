@@ -1,5 +1,5 @@
 import { ModifierContext, TypeRefContext, VariableDeclaratorContext } from "../grammar";
-import { ApexField, ApexAccessModifier, ApexFieldModifier } from "../types";
+import { ApexField, ApexAccessModifier, ApexFieldModifier, ApexSourceRange } from "../types";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 
@@ -14,7 +14,8 @@ export class FieldDeclarationVisitor extends DeclarationVisitor<ApexField> {
             type: {
                 name: '',
                 isSystemType: false
-            }
+            },
+            sourceRange: ApexSourceRange.empty,
         });
     }
 

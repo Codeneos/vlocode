@@ -1,9 +1,11 @@
-import { ApexClass } from "../types";
+import { ApexClass, ApexSourceRange, ApexTypeRef } from "../types";
 import { MethodDeclarationVisitor } from "./methodDeclarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { FieldDeclarationVisitor } from "./fieldDeclarationVisitor";
-import { AnnotationContext, ClassBodyDeclarationContext, ClassDeclarationContext, FieldDeclarationContext, MemberDeclarationContext, MethodDeclarationContext, ModifierContext, TypeDeclarationContext } from "../grammar";
+import { AnnotationContext, ClassBodyDeclarationContext, ClassDeclarationContext, FieldDeclarationContext, MemberDeclarationContext, MethodDeclarationContext, ModifierContext, PropertyDeclarationContext, TypeDeclarationContext } from "../grammar";
+import { stringEquals } from "@vlocode/util";
+import { PropertyDeclarationVisitor } from "./propertyDeclarationVisitor";
 
 export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     constructor(state?: ApexClass) {
@@ -16,6 +18,7 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
             extends: undefined,
             nested: [],
             refs: [],
+            sourceRange: ApexSourceRange.empty,
         });
     }
 
@@ -53,12 +56,21 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
 
     public visitClassDeclaration(ctx: ClassDeclarationContext): ApexClass {
         this.state.name = ctx.id().getText();
+
         if (ctx.EXTENDS()) {
-            this.state.extends = ctx.typeRef()?.accept(new TypeRefVisitor()) ?? undefined;
+            // Parse `extends XXX`
+            const extendedType = ctx.typeRef()?.accept(new TypeRefVisitor());
+            if (extendedType) {
+                this.state.extends = extendedType;
+                this.addRef(extendedType);
+            }
         }
+
         if (ctx.IMPLEMENTS()) {
+            // Parse `implements XXX, YYY`
             this.state.implements = ctx.typeList()?.typeRef().map(typeRef => new TypeRefVisitor().visit(typeRef)!) ?? [];
         }
+
         ctx.classBody().accept(this);
         return this.state;
     }
@@ -76,6 +88,8 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         if (classDeclaration) {
             const nestedClass = new ClassDeclarationVisitor().visit(classDeclaration);
             if (nestedClass) {
+                nestedClass.sourceRange = ApexSourceRange.fromToken(classDeclaration);
+                this.addRef(nestedClass.refs);
                 this.state.nested.push(nestedClass);
             }
             return this.state;
@@ -83,11 +97,29 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         return this.visitChildren(ctx);
     }
 
+    public visitPropertyDeclaration(ctx: PropertyDeclarationContext): ApexClass | null {
+        const memberContext = ctx.parent?.parent;
+        if (memberContext) {
+            const property = new PropertyDeclarationVisitor().visit(memberContext);
+            if (property) {
+                property.sourceRange = ApexSourceRange.fromToken(memberContext);
+                this.addRef(property.type);
+                this.addRef(property.getter?.refs);
+                this.addRef(property.setter?.refs);
+                this.state.properties.push(property);
+            }
+        }
+        return this.state;
+    }
+
     public visitMethodDeclaration(ctx: MethodDeclarationContext) {
         const memberContext = ctx.parent?.parent;
         if (memberContext) {
             const method = new MethodDeclarationVisitor().visit(memberContext);
             if (method) {
+                method.sourceRange = ApexSourceRange.fromToken(memberContext);
+                this.addRef(method.returnType);
+                this.addRef(method.refs);
                 this.state.methods.push(method);
             }
         }
@@ -106,7 +138,7 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         if (memberContext) {
             const field = new FieldDeclarationVisitor().visit(memberContext);
             if (field) {
-                this.state.refs.push(field.type);
+                this.addRef(field.type);
                 this.state.fields.push(field);
             }
         }

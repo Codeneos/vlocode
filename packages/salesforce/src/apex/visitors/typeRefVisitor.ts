@@ -5,29 +5,6 @@ import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { TypeListVisitor } from "./typeListVisitor";
 
 export class TypeRefVisitor extends ApexSyntaxTreeVisitor<ApexTypeRef> {
-    public static PRIMITIVE_TYPES: readonly string[] = [
-        'string',
-        'boolean',
-        'integer',
-        'decimal',
-        'long',
-        'double',
-        'date',
-        'datetime',
-        'time',
-        'id'
-    ];
-
-    public static SYSTEM_TYPES: readonly string[] = [
-        'map',
-        'set',
-        'list',
-        'void',
-        'object',
-        'sobject',
-        'blob'
-    ];
-
     constructor(state?: ApexTypeRef) {
         super(state ?? {
             name: '',
@@ -40,14 +17,9 @@ export class TypeRefVisitor extends ApexSyntaxTreeVisitor<ApexTypeRef> {
         return this.state;
     }
 
-    public static isSystemType(typeName: string): boolean {
-        return TypeRefVisitor.SYSTEM_TYPES.includes(typeName.toLowerCase()) ||
-            TypeRefVisitor.PRIMITIVE_TYPES.includes(typeName.toLowerCase());
-    }
-
     public visitTerminal(node: TerminalNode) {
         this.state.name = node.getText();
-        this.state.isSystemType = TypeRefVisitor.isSystemType(this.state.name);
+        this.state.isSystemType = ApexTypeRef.isSystemType(this.state.name);
         return this.state;
     }
 }

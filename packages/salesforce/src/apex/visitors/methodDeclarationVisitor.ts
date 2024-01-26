@@ -1,12 +1,13 @@
-import { ApexMethod, ApexMethodModifier } from "../types";
+import { ApexMethod, ApexMethodModifier, ApexSourceRange, ApexTypeRef } from "../types";
 import { FormalParameterVisitor } from "./formalParameterVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { AnnotationContext, BlockContext, FormalParametersContext, IdContext, IdCreatedNamePairContext, IdPrimaryContext, LocalVariableDeclarationContext, MethodDeclarationContext, ModifierContext, StatementContext } from "../grammar";
 import { TypeRefCollector } from "./typeRefCollector";
 import { TypeListVisitor } from "./typeListVisitor";
+import { BlockVisitor } from "./blockVisitor";
 
-export class MethodDeclarationVisitor extends DeclarationVisitor<ApexMethod> {
+export class MethodDeclarationVisitor extends BlockVisitor<ApexMethod> {
     constructor(state?: ApexMethod) {
         super(state ?? {
             name: '',
@@ -16,10 +17,10 @@ export class MethodDeclarationVisitor extends DeclarationVisitor<ApexMethod> {
             },
             modifiers: [],
             parameters: [],
-            body: '',
             decorators: [],
             localVariables: [],
-            refs: []
+            refs: [],
+            sourceRange: ApexSourceRange.empty,
         });
     }
 
@@ -72,41 +73,4 @@ export class MethodDeclarationVisitor extends DeclarationVisitor<ApexMethod> {
         });
         return this.state;
     }
-
-    public visitBlock(ctx: BlockContext) {
-        ctx.statement().forEach(statement => {
-            statement.accept(this);
-        });
-        return this.state;
-    }
-
-    public visitLocalVariableDeclaration(ctx: LocalVariableDeclarationContext) {
-        const variablesNames = ctx.variableDeclarators()?.variableDeclarator().map(variableDeclarator => variableDeclarator.id().getText());
-        if (variablesNames.length) {
-            const variableType = ctx.typeRef()?.accept(new TypeRefVisitor());
-            this.state.localVariables.push(...variablesNames.map(name => ({ name, type: variableType! })));
-        }
-        return this.visitChildren(ctx);
-    }
-
-    public visitIdPrimary(ctx: IdPrimaryContext) {
-        const name = ctx.getText();
-        this.state.refs.push({ name, isSystemType: TypeRefVisitor.isSystemType(name) });
-        return this.visitChildren(ctx);
-    }
-
-    public visitIdCreatedNamePair(ctx: IdCreatedNamePairContext) {
-        const typeList = ctx.typeList();
-        this.state.refs.push({
-            name: ctx.anyId().getText(),
-            isSystemType: TypeRefVisitor.isSystemType(ctx.getText()),
-            genericArguments: (typeList && new TypeListVisitor().visit(typeList)) ?? undefined
-        });
-        return this.visitChildren(ctx);
-    }
-
-    // public visitStatement(ctx: StatementContext) {
-    //     this.state.refs.push(...(new TypeRefCollector().visit(ctx) ?? []));
-    //     return this.state;
-    // }
 }
