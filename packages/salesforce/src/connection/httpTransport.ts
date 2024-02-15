@@ -17,12 +17,34 @@ export interface HttpResponse {
     body?: any;
 }
 
+/**
+ * Represents the information required to make an HTTP request.
+ */
 export interface HttpRequestInfo {
+    /**
+     * URL to make the request to
+     */
     url: string;
+    /**
+     * HTTP method to use for the request (GET, POST, PATCH, DELETE, PUT)
+     */
     method: HttpMethod;
+    /**
+     * Extra headers to include in the request on top of the standard headers
+     */
     headers?: http.OutgoingHttpHeaders;
+    /**
+     * Body of the request in case of a POST, PATCH or PUT request
+     */
     body?: string | undefined;
+    /**
+     * Parts of the request in case of a multipart request
+     */
     parts?: HttpRequestPart[] | undefined;
+    /**
+     * Timeout in milliseconds for the request
+     */
+    timeout?: number;
 }
 
 export interface HttpRequestPart {
@@ -66,12 +88,6 @@ interface HttpTransportOptions {
     useGzipEncoding: boolean;
 
     /**
-     * Include a keep-alive header in all requests to re-use the HTTP connection and socket.
-     * @default true
-     */
-    shouldKeepAlive: boolean;
-
-    /**
      * Parse set-cookies header and store cookies to be included in the request header on subsequent requests.
      *
      * Note: handling of cookies is not required but avoids Salesforce from sending the full set-cookie header on each request
@@ -92,6 +108,12 @@ interface HttpTransportOptions {
      * @default undefined
      */
     recorder?: { record<T extends HttpResponse>(info: HttpRequestInfo, responsePromise: Promise<T>): Promise<T> };
+
+    /**
+     * Optional HTTP agent used by the transport for connection pooling
+     * @default HttpTransport.httpAgent
+     */
+    agent?: https.Agent;
 }
 
 export interface Transport {
@@ -103,15 +125,14 @@ export class HttpTransport implements Transport {
     private multiPartBoundary = `--${randomUUID()}`
 
     /**
-     * HTTP agent used by this {@link HttpTransport} used for connection pooling
+     * Default shared HTTP agent used by this {@link HttpTransport} used for connection pooling
      */
-    private httpAgent = new https.Agent({
-        port: 443,
+    public static httpAgent = new https.Agent({
         keepAlive: true,
         keepAliveMsecs: 5000,
-        maxSockets: 10,
+        maxSockets: 5,
         scheduling: 'lifo',
-        timeout: 120000 // Time out connections after 120 seconds
+        timeout: 5 * 60 * 1000 // Time out connections after 5 minutes
     });
 
     /**
@@ -131,7 +152,6 @@ export class HttpTransport implements Transport {
     static options: HttpTransportOptions = {
         gzipThreshold: 128,
         useGzipEncoding: true,
-        shouldKeepAlive: true,
         handleCookies: true,
         responseDecoders: {
             json: (buffer, encoding) => JSON.parse(buffer.toString(encoding)),
@@ -158,7 +178,6 @@ export class HttpTransport implements Transport {
         const features = new Array<string>();
         this.options.useGzipEncoding && features.push('gzip');
         this.options.handleCookies && features.push('cookies');
-        this.options.shouldKeepAlive && features.push('keepAlive');
         return features;
     }
 
@@ -216,8 +235,9 @@ export class HttpTransport implements Transport {
             url.protocol = 'https';
         }
 
+        const httpAgent = this.options.agent || HttpTransport.httpAgent;
         const request = https.request({
-            agent: this.httpAgent,
+            agent: httpAgent,
             host: url.host,
             path: url.pathname + url.search,
             port: url.port,
@@ -226,12 +246,12 @@ export class HttpTransport implements Transport {
             method: info.method
         });
 
-        if (this.options.shouldKeepAlive) {
-            request.shouldKeepAlive = true;
+        if (info.timeout) {
+            request.setTimeout(info.timeout);
         }
 
-        if (this.httpAgent.options.keepAlive !== this.options.shouldKeepAlive) {
-            this.httpAgent.options.keepAlive = this.options.shouldKeepAlive;
+        if (httpAgent.options.keepAlive) {
+            request.setSocketKeepAlive(true);
         }
 
         if (this.options.useGzipEncoding) {

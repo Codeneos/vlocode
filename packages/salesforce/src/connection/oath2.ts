@@ -52,7 +52,6 @@ export class SalesforceOAuth2 {
             handleCookies: false,
             // OAuth endpoints do not support gzip encoding
             useGzipEncoding: false,
-            shouldKeepAlive: false,
             instanceUrl: options.loginUrl,
             baseUrl: options.loginUrl
         }, LogManager.get(SalesforceOAuth2));
