@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.6](https://github.com/Codeneos/vlocode/compare/v0.21.5...v0.21.6) (2024-02-15)
+
+### Bug Fixes
+
+* view-in-org command does not work for most metadata types ([d892590](https://github.com/Codeneos/vlocode/commit/d89259046161e0a37a83ae70d0c3b254f3a14732))
+
+### Features
+
+* use shared agent and for all SF connections for more efficient socket pooling Increase timeout values so that larger deploy requests using POST REST do not cause a timeout, allow changing and overwriting the shared agent to increase socket pool or strategy ([a2961ff](https://github.com/Codeneos/vlocode/commit/a2961ff9bb34fea78c7959b2fe60d072166c7ed1))
+
 ## [0.21.5](https://github.com/Codeneos/vlocode/compare/v0.21.4...v0.21.5) (2024-01-25)
 
 ### Bug Fixes
