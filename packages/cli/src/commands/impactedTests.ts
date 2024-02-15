@@ -1,5 +1,5 @@
 import { Logger, LogManager, FileSystem, injectable } from '@vlocode/core';
-import { Timer, stringEquals, stringEqualsIgnoreCase } from '@vlocode/util';
+import { Timer, stringEquals, stringEqualsIgnoreCase, unique } from '@vlocode/util';
 import { existsSync} from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
@@ -99,13 +99,13 @@ export default class extends Command {
                 const struct = parser.getCodeStructure();
 
                 for (const classInfo of struct.classes) {
-                    const refs = parser.getReferencedTypes({ excludeSystemTypes: true });
+                    //const refs = parser.getReferencedTypes({ excludeSystemTypes: true });
                     data[classInfo.name.toLowerCase()] = {
                         name: classInfo.name,
                         file,
                         isAbstract: !!classInfo.isAbstract,
                         isTest: !!classInfo.isTest,
-                        refs: refs.map(ref => ref.name),
+                        refs: [...unique(classInfo.refs, ref => ref.name.toLowerCase(), ref => ref.name)]
                     };
                 }
 

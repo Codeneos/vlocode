@@ -1,4 +1,4 @@
-import { stringEquals } from "../../../../util/src";
+import { stringEquals } from "@vlocode/util";
 import { ModifierContext } from "../grammar";
 import { ApexAccessModifier, ApexTypeRef } from "../types";
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";

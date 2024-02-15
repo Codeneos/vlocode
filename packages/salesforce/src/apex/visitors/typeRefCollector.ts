@@ -19,7 +19,7 @@ export class TypeRefCollector extends ApexSyntaxTreeVisitor<ApexTypeRef[]> {
     public visitIdCreatedNamePair(ctx: IdCreatedNamePairContext) {
         const typeRef = {
             name: ctx.anyId().getText(),
-            isSystemType: TypeRefVisitor.isSystemType(ctx.getText()),
+            isSystemType: ApexTypeRef.isSystemType(ctx.getText()),
             genericArguments: (ctx.typeList() && new TypeListVisitor().visit(ctx.typeList()!)) ?? undefined
         };
         this.addDistinct(typeRef);
@@ -28,7 +28,7 @@ export class TypeRefCollector extends ApexSyntaxTreeVisitor<ApexTypeRef[]> {
 
     public visitIdPrimary(ctx: IdPrimaryContext) {
         const name = ctx.getText();
-        this.addDistinct({ name, isSystemType: TypeRefVisitor.isSystemType(name) });
+        this.addDistinct({ name, isSystemType: ApexTypeRef.isSystemType(name) });
         return this.visitChildren(ctx);
     }
 
