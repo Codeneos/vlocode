@@ -321,7 +321,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
             if (info) {
                 const metadataInfo = this.metadataRegistry.getMetadataType(info.componentType)!;
                 const metadataFile = !file.endsWith('.xml') && metadataInfo.hasContent && metadataInfo.suffix
-                    ? [...sfPackage.getComponentFiles(info)].find(f => f.packagePath.endsWith(metadataInfo.suffix!))?.packagePath
+                    ? [...sfPackage.getComponentFiles(info)].find(f => f.packagePath.endsWith(`.${metadataInfo.suffix}-meta.xml`))?.fsPath
                     : file;
                 const metadata = metadataFile ? XML.parse(await this.fs.readFileAsString(metadataFile), { ignoreAttributes: true }) : undefined;
                 return {

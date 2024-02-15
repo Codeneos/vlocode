@@ -135,7 +135,7 @@ export class SalesforcePackage {
      * Get all files related to the specified component in the package
      * @param component Component specification for which to get the files
      */
-    public *getComponentFiles(component: SalesforcePackageComponent) : Generator<SalesforcePackageComponentFile> {
+    public *getComponentFiles(component: SalesforcePackageComponent) : Generator<SalesforcePackageEntry> {
         for (const [path, entry] of this.packageData.entries()) {
             if (entry.componentName === component.componentName && 
                 entry.componentType === component.componentType) {
