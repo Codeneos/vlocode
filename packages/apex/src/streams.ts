@@ -17,6 +17,12 @@ export class BufferStream implements CharStream {
     ) {
         this.size = this.data.length;
     }
+    getTextFromRange(start: number, stop: number): string {
+        throw new Error('Method not implemented.');
+    }
+    getTextFromInterval(interval: Interval): string {
+        throw new Error('Method not implemented.');
+    }
 
     getSourceName(): string {
         return this.name;
@@ -123,18 +129,19 @@ export class CaseInsensitiveCharStream implements CharStream {
         return (c >= 65 && c <= 90) ? c+32 : c;
     }
 
+    public getTextFromRange(start: number, stop: number): string {
+        return this.stream.getTextFromRange(start, stop);
+    }
+
+    public getTextFromInterval(interval: Interval): string {
+        return this.stream.getTextFromInterval(interval);
+    }
+
     public reset(): void { this.stream.reset(); }
     public consume(): void { this.stream.consume(); }
     public mark(): number { return this.stream.mark(); }
     public release(marker: number): void { this.stream.release(marker);  }
     public seek(index: number): void { this.stream.seek(index); }
-    public getText(interval: Interval): string;
-    public getText(start: number, stop: number): string;
-    public getText(start: number | Interval, stop?: number): string {
-        return typeof start === 'object'
-            ? this.stream.getText(start)
-            : this.stream.getText(start, stop ?? this.size);
-    }
     public toString(): string { return this.stream.toString(); }
-    getSourceName(): string { return this.stream.getSourceName(); }
+    public getSourceName(): string { return this.stream.getSourceName(); }
 }

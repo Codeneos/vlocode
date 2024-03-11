@@ -1,4 +1,4 @@
-import { CommonTokenStream, CharStreams, ParserATNSimulator, LexerATNSimulator }  from 'antlr4ng';
+import { CommonTokenStream, CharStream, ParserATNSimulator, LexerATNSimulator }  from 'antlr4ng';
 
 import { ApexCompilationUnit, ApexTypeRef } from "./types";
 import { TypeRefCollector } from "./visitors/typeRefCollector";
@@ -75,7 +75,7 @@ export class Parser {
 
     private createInputStream() {
         if (typeof this.input === 'string') {
-            return CharStreams.fromString(this.input);
+            return CharStream.fromString(this.input);
         }
         return new BufferStream(this.input);
     }

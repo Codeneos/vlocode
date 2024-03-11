@@ -1,6 +1,6 @@
 // Generated from ./grammar/ApexParser.g4 by ANTLR 4.13.1
 
-import { ParseTreeListener } from "antlr4ng";
+import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";
 
 
 import { TriggerUnitContext } from "./ApexParser.js";
@@ -91,6 +91,7 @@ import { MethodCallExpressionContext } from "./ApexParser.js";
 import { BitNotExpressionContext } from "./ApexParser.js";
 import { Arth2ExpressionContext } from "./ApexParser.js";
 import { LogAndExpressionContext } from "./ApexParser.js";
+import { CoalescingExpressionContext } from "./ApexParser.js";
 import { CastExpressionContext } from "./ApexParser.js";
 import { BitAndExpressionContext } from "./ApexParser.js";
 import { CmpExpressionContext } from "./ApexParser.js";
@@ -186,7 +187,7 @@ import { AnyIdContext } from "./ApexParser.js";
  * This interface defines a complete listener for a parse tree produced by
  * `ApexParser`.
  */
-export interface ApexParserListener extends ParseTreeListener {
+export class ApexParserListener implements ParseTreeListener {
     /**
      * Enter a parse tree produced by `ApexParser.triggerUnit`.
      * @param ctx the parse tree
@@ -1089,6 +1090,18 @@ export interface ApexParserListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     exitLogAndExpression?: (ctx: LogAndExpressionContext) => void;
+    /**
+     * Enter a parse tree produced by the `coalescingExpression`
+     * labeled alternative in `ApexParser.expression`.
+     * @param ctx the parse tree
+     */
+    enterCoalescingExpression?: (ctx: CoalescingExpressionContext) => void;
+    /**
+     * Exit a parse tree produced by the `coalescingExpression`
+     * labeled alternative in `ApexParser.expression`.
+     * @param ctx the parse tree
+     */
+    exitCoalescingExpression?: (ctx: CoalescingExpressionContext) => void;
     /**
      * Enter a parse tree produced by the `castExpression`
      * labeled alternative in `ApexParser.expression`.
@@ -2020,3 +2033,4 @@ export interface ApexParserListener extends ParseTreeListener {
      */
     exitAnyId?: (ctx: AnyIdContext) => void;
 }
+
