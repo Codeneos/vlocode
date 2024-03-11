@@ -248,5 +248,25 @@ describe('ApexParser', () => {
                 'ExternalClass1', 'ExternalClass2', 'ExternalClass3', 'String'
             ]);
         });
+        it('should parse ?? operator', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public Object fn() {
+                        return new BaseClass() ?? new OtherClass();
+                    }
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const [ myClass ] = actualCodeStructure.classes;
+            const [ fn ] = myClass.methods;
+            expect(fn.refs.map(r => r.name).sort()).toEqual([
+                'BaseClass', 'OtherClass'
+            ]);
+        });
     });
 });
