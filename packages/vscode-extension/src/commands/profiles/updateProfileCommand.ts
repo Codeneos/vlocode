@@ -97,7 +97,7 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
             const profileDoc = await vscode.workspace.openTextDocument(path.resolve(file));
             const fullDocumentRange = new vscode.Range(new vscode.Position(0,0), new vscode.Position(profileDoc.lineCount, 0));
             this.logger.info(`Updating profile ${profile.name}`);
-            profileChanges.replace(profileDoc.uri, fullDocumentRange, profile.toXml({ sort: true }));
+            profileChanges.replace(profileDoc.uri, fullDocumentRange, profile.toXml({ sort: false }));
             updatedProfiles.push(profile);
         }
         await vscode.workspace.applyEdit(profileChanges);
