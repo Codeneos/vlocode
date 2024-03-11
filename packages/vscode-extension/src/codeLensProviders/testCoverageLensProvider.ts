@@ -57,7 +57,7 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
         }
     }
 
-    @cache({ ttl: 60 * 5 })
+    @cache({ ttl: 30 })
     private getCoverage(className: string) {
         return this.vlocode.salesforceService.getApexCodeCoverage(className)
     }
