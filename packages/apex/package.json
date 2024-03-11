@@ -27,7 +27,7 @@
         "watch": "tsc -w",
         "pack": "pnpm run build && pnpm pack",
         "prepublish": "pnpm run build",
-        "build-grammar": "antlr4ng -Dlanguage=TypeScript -o ./src/apex/grammar -visitor -listener ./grammar/ApexLexer.g4 ./grammar/ApexParser.g4"
+        "build-grammar": "antlr4ng -Dlanguage=TypeScript -o ./src/grammar -visitor -listener ./grammar/ApexLexer.g4 ./grammar/ApexParser.g4"
     },
     "repository": {
         "type": "git",
@@ -66,7 +66,7 @@
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
-        "antlr4ng": "^2.0.8"
+        "antlr4ng": "^3.0.1"
     },
     "publisher": "curlybracket"
 }
