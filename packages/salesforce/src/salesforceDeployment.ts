@@ -1,6 +1,6 @@
 import { LogManager , container } from '@vlocode/core';
 import { AsyncEventEmitter, CancellationToken } from '@vlocode/util';
-import { DeployOptions, DeployResult, DeployStatus, SalesforceConnection, SalesforceConnectionProvider } from './connection';
+import { DeployOptions, DeployResult, DeployResultDetails, DeployStatus, FailureDeployMessage, SalesforceConnection, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackage } from './deploymentPackage';
 
 export interface SalesforceDeploymentEvents {
@@ -205,7 +205,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
 
     private async checkDeployment() {
         const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
-        this.lastStatus = status;
+        this.lastStatus = this.processDeployResult(status);
 
         // Reduce polling frequency for long running deployments
         if (this.pollCount++ > 10 && this.checkInterval < 5000) {
@@ -232,14 +232,40 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         }
 
         if (status.done) {
-            const details : any = status.details;
-            if (details.componentFailures && !Array.isArray(details.componentFailures)) {
-                details.componentFailures = [ details.componentFailures ];
-            }
             void this.emit('complete', status);
         } else {
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             this.nextProgressTimeoutId = setTimeout(() => this.checkDeployment(), this.checkInterval);
         }
+    }
+
+    private processDeployResult(result: DeployResult) {
+        const details = result.details;
+        if (details) {
+            result.details = this.processDetailedResult(details);
+        }
+        return result;
+    }
+
+    private processDetailedResult(details: DeployResultDetails) {
+        if (details?.componentFailures && !Array.isArray(details.componentFailures)) {
+            details.componentFailures = [ details.componentFailures ];
+        }
+
+        details.componentFailures = details.componentFailures?.filter(failure => !this.isDependentClassError(failure));
+        details.allComponentMessages = details.allComponentMessages?.filter(msg => !('problemType' in msg) || !this.isDependentClassError(msg));
+
+        if (details.runTestResult?.failures) {
+            details.runTestResult.failures = details.runTestResult?.failures?.filter(
+                failure => failure.message.includes('Dependent class is invalid')
+            );
+        }
+
+        return details;
+    }
+
+    private isDependentClassError(failure: FailureDeployMessage) {
+        return failure.lineNumber === -1 && failure.columnNumber === -1 && 
+            failure.problem.includes('Dependent class is invalid');
     }
 }
