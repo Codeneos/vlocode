@@ -14,3 +14,5 @@ packages/*/lib
 *.tsbuildinfo
 /docs
 /packages/*/coverage
+/packages/apex/src/grammar/*.interp
+/packages/apex/src/grammar/*.tokens
