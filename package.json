@@ -3,7 +3,7 @@
     "name": "vlocode-project",
     "packageManager": "pnpm@8.12.1",
     "description": "Vlocode project packages",
-    "version": "0.20.0",
+    "version": "0.21.6",
     "license": "MIT",
     "author": {
         "name": "Peter van Gulik",
@@ -92,7 +92,8 @@
         "chalk": "^4.1.2",
         "js-yaml": "^4.1.0",
         "typescript": "5.1.6",
-        "xml2js": "^0.5.0"
+        "xml2js": "^0.5.0",
+        "esbuild": "^0.20.1"
     },
     "lint-staged": {
         "*.ts": "eslint --fix",
