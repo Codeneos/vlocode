@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.7](https://github.com/codeneos/vlocode/compare/v0.21.6...v0.21.7) (2024-03-12)
+
+### Bug Fixes
+
+* do not sort profiles when adding new fields ([5969851](https://github.com/codeneos/vlocode/commit/5969851ea2b545d37e82bd0858a99519d1578e29))
+* reduce test coverage cache to increase usefulness ([eb630b9](https://github.com/codeneos/vlocode/commit/eb630b9cb3665b863ee15976d6d05c79652c856a))
+
 ## [0.21.6](https://github.com/codeneos/vlocode/compare/v0.21.5...v0.21.6) (2024-02-15)
 
 **Note:** Version bump only for package vlocode

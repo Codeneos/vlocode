@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.7](https://github.com/Codeneos/vlocode/compare/v0.21.6...v0.21.7) (2024-03-12)
+
+**Note:** Version bump only for package @vlocode/omniscript
+
 ## [0.21.6](https://github.com/Codeneos/vlocode/compare/v0.21.5...v0.21.6) (2024-02-15)
 
 **Note:** Version bump only for package @vlocode/omniscript

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.7](https://github.com/Codeneos/vlocode/compare/v0.21.6...v0.21.7) (2024-03-12)
+
+### Features
+
+* avoid logging duplicate "Dependent class is invalid" errors ([0ce1d12](https://github.com/Codeneos/vlocode/commit/0ce1d12c5457a41bac5e5442f7fbb29bee192df4))
+
 ## [0.21.6](https://github.com/Codeneos/vlocode/compare/v0.21.5...v0.21.6) (2024-02-15)
 
 ### Bug Fixes
