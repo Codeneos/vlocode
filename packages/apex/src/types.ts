@@ -1,4 +1,4 @@
-import { ParserRuleContext, Token } from "antlr4ng";
+import { Token } from "antlr4ng";
 
 export type ApexAccessModifier = 'global' | 'public' | 'protected' | 'private';
 export type ApexClassModifier = 'virtual' | 'abstract';
@@ -114,11 +114,23 @@ export interface ApexField extends SourceFragment {
     modifiers?: ApexFieldModifier[];
 }
 
+export type ApexTypeRefSource = 
+    'new' |
+    'extends' |
+    'implements' |
+    'field' |
+    'parameter' |
+    'classVariable' |
+    'localVariable' |
+    'property' |
+    'identifier';
+
 export interface ApexTypeRef {
     namespace?: string;
     name: string;
     genericArguments?: ApexTypeRef[];
     isSystemType: boolean;
+    source?: ApexTypeRefSource;
 }
 
 export namespace ApexTypeRef {
@@ -146,8 +158,8 @@ export namespace ApexTypeRef {
         'blob'
     ];
 
-    export function fromString(name: string): ApexTypeRef {
-        return { name, isSystemType: isSystemType(name) };
+    export function fromString(name: string, source?: ApexTypeRefSource): ApexTypeRef {
+        return { name, isSystemType: isSystemType(name), source };
     }
 
     export function isPrimitiveType(typeName: string): boolean {

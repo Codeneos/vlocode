@@ -10,6 +10,7 @@
     "include": ["src/**/*"],
     "references": [
         { "path": "../util" },
+        { "path": "../apex" },
         { "path": "../core" },
         { "path": "../salesforce" },
         { "path": "../vlocity" },

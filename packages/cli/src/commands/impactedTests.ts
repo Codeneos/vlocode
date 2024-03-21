@@ -1,10 +1,10 @@
 import { Logger, LogManager, FileSystem, injectable } from '@vlocode/core';
-import { Timer, stringEquals, stringEqualsIgnoreCase, unique } from '@vlocode/util';
+import { Timer, stringEqualsIgnoreCase, unique } from '@vlocode/util';
 import { existsSync} from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 
-import { Parser } from '@vlocode/salesforce';
+import { Parser } from '@vlocode/apex';
 import { Argument, Option, Command } from '../command';
 
 interface ApexClassInfo {

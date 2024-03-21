@@ -1,10 +1,7 @@
 import { ApexMethod, ApexMethodModifier, ApexSourceRange, ApexTypeRef } from "../types";
 import { FormalParameterVisitor } from "./formalParameterVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
-import { DeclarationVisitor } from "./declarationVisitor";
-import { AnnotationContext, BlockContext, FormalParametersContext, IdContext, IdCreatedNamePairContext, IdPrimaryContext, LocalVariableDeclarationContext, MethodDeclarationContext, ModifierContext, StatementContext } from "../grammar";
-import { TypeRefCollector } from "./typeRefCollector";
-import { TypeListVisitor } from "./typeListVisitor";
+import { AnnotationContext, BlockContext, FormalParametersContext, MethodDeclarationContext, ModifierContext } from "../grammar";
 import { BlockVisitor } from "./blockVisitor";
 
 export class MethodDeclarationVisitor extends BlockVisitor<ApexMethod> {
@@ -24,7 +21,11 @@ export class MethodDeclarationVisitor extends BlockVisitor<ApexMethod> {
         });
     }
 
-    public visitAnnotation(ctx: AnnotationContext | null): ApexMethod | null {
+    public visitBlock(ctx: BlockContext) {
+        return new BlockVisitor(this.state).visitChildren(ctx);
+    }
+
+    public visitAnnotation(ctx: AnnotationContext | null): ApexMethod {
         if (ctx?.qualifiedName().getText().toLowerCase() === 'istest') {
             this.state.isTest = true;
         }
@@ -49,28 +50,22 @@ export class MethodDeclarationVisitor extends BlockVisitor<ApexMethod> {
     }
 
     public visitMethodDeclaration(ctx: MethodDeclarationContext) {
-        ctx.id().accept(this);
+        this.state.name = ctx.id().getText();
         ctx.formalParameters().accept(this);
         ctx.block()?.accept(this);
         if (ctx.VOID()) {
-            this.state.returnType.name = 'void';
-            this.state.returnType.isSystemType = true;
+            this.state.returnType = ApexTypeRef.fromString('void');
         } else {
             ctx.typeRef()?.accept(new TypeRefVisitor(this.state.returnType));
         }
         return this.state;
     }
 
-    public visitId(ctx: IdContext) {
-        this.state.name = ctx.getText();
-        return this.state;
-    }
-
     public visitFormalParameters(ctx: FormalParametersContext) {
-        //this.state.refs.push(...new TypeRefCollector().visit(ctx));
         ctx.formalParameterList()?.formalParameter().forEach(parameter => {
             this.state.parameters.push(parameter.accept(new FormalParameterVisitor())!);
         });
+        this.addRef(this.state.parameters.map(p => p.type), 'parameter');
         return this.state;
     }
 }

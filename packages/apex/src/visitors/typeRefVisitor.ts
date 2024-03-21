@@ -5,11 +5,8 @@ import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { TypeListVisitor } from "./typeListVisitor";
 
 export class TypeRefVisitor extends ApexSyntaxTreeVisitor<ApexTypeRef> {
-    constructor(state?: ApexTypeRef) {
-        super(state ?? {
-            name: '',
-            isSystemType: false
-        });
+    constructor(state: Partial<ApexTypeRef> = {}) {
+        super(state as ApexTypeRef);
     }
 
     public visitTypeArguments(ctx: TypeArgumentsContext) {

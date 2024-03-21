@@ -1,15 +1,13 @@
-import { ParserRuleContext, RuleContext } from "antlr4ng";
-import { ApexParserVisitor, TypeListContext } from "../grammar";
+import { ParserRuleContext } from "antlr4ng";
+import { ApexParserVisitor } from "../grammar";
 import "../grammar";
-import { TypeRefVisitor } from "./typeRefVisitor";
-import { ApexTypeRef } from "../types";
 
 export abstract class ApexSyntaxTreeVisitor<T> extends ApexParserVisitor<T> {
     constructor(protected state: T) {
         super();
     }
 
-    public visitChildren(node: RuleContext): T {
+    public visitChildren(node: ParserRuleContext): T {
         const result = super.visitChildren(node);
         if (Array.isArray(result)) {
             for (const childResult of result) {
@@ -26,7 +24,7 @@ export abstract class ApexSyntaxTreeVisitor<T> extends ApexParserVisitor<T> {
      * @param nextResult The result of the child node
      * @returns The new state of the visitor
      */
-    protected aggregateResult(aggregate: T, nextResult: T): T {
+    protected aggregateResult(aggregate: T, nextResult: T): T { // eslint-disable-line @typescript-eslint/no-unused-vars
         return this.state;
     }
 
@@ -36,7 +34,7 @@ export abstract class ApexSyntaxTreeVisitor<T> extends ApexParserVisitor<T> {
      * @param type Type of the child to get
      * @returns The first child of the specified type or throws an error if no child of the specified type was found
      */
-    public getFirstChildOfType<TNode extends RuleContext>(node: ParserRuleContext, type: new (...args: any[]) => TNode): TNode {
+    public getFirstChildOfType<TNode extends ParserRuleContext>(node: ParserRuleContext, type: new (...args: any[]) => TNode): TNode {
         for (const child of node.children ?? []) {
             if (child instanceof type) {
                 return child;
@@ -52,7 +50,7 @@ export abstract class ApexSyntaxTreeVisitor<T> extends ApexParserVisitor<T> {
      * @param type Type of the siblings to get
      * @returns All sibling nodes of the specified type or an empty array if no siblings of the specified type were found
      */
-    public getSiblingsOfType<TNode extends RuleContext>(node: ParserRuleContext, type: new (...args: any[]) => TNode): TNode[] {
+    public getSiblingsOfType<TNode extends ParserRuleContext>(node: ParserRuleContext, type: new (...args: any[]) => TNode): TNode[] {
         const siblings: TNode[] = [];
         for (const child of node.parent?.children ?? []) {
             if (child instanceof type) {

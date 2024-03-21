@@ -24,11 +24,19 @@ describe('ApexParser', () => {
 
             // Assert
             const [ myMethod ] = actualCodeStructure.classes[0].methods;
+            const [ ifBlock, elseBlock ] = myMethod.blocks!;
             expect(myMethod.localVariables.sort()).toMatchObject([
                 { name: 'localVar1', type: { name: 'String', isSystemType: true } },
-                { name: 'localVar2', type: { name: 'String', isSystemType: true } },
-                { name: 'nested', type: { name: 'MyClass', isSystemType: false } },
-                { name: 'nested', type: { name: 'OtherClass', isSystemType: false } },
+                { name: 'localVar2', type: { name: 'String', isSystemType: true } }
+            ]);
+            expect(ifBlock.localVariables).toMatchObject([
+                { name: 'nested', type: { name: 'MyClass' } }
+            ]);
+            expect(elseBlock.localVariables).toMatchObject([
+                { name: 'nested', type: { name: 'OtherClass' } }
+            ]);
+            expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
+                'MyClass', 'OtherClass', 'String'
             ]);
         });
         it('should parse class variable declarations', () => {
@@ -268,5 +276,103 @@ describe('ApexParser', () => {
                 'BaseClass', 'OtherClass'
             ]);
         });
+        it('should not parse catch parameters as references', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public void fn(String a) {
+                        AuraHandledException ex = new AuraHandledException(new Class());
+                        try {
+                        } catch(AuraHandledException e) {
+                            ex = e;
+                        }
+                        ex.Asserter.isNotNull(ex);
+                        Assert.isNotNull(ex);
+                    }
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const [ myClass ] = actualCodeStructure.classes;
+            const [ fn ] = myClass.methods;
+            expect(fn.name).toEqual('fn');
+            expect(fn.parameters.length).toEqual(1);
+            expect(fn.refs.map(r => r.name).sort()).toEqual([
+                'Assert', 'AuraHandledException', 'AuraHandledException', 'Class', 'String'
+            ]);
+        });
+        it('should not parse local variables as references', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    Object local1 = null;
+                    public void fn(String a) {
+                        if (local1 != null) {
+                            local2.someProperty.fn();
+                        } else {
+                            local2 = this.local1;
+                            local1 = new ExternalClass();
+                        }
+                    } 
+                    Object local2 = null;
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const [ myClass ] = actualCodeStructure.classes;
+            const [ fn ] = myClass.methods;
+            expect(fn.name).toEqual('fn');
+            expect(fn.parameters.length).toEqual(1);
+            expect(fn.refs.map(r => r.name).sort()).toEqual([
+                'ExternalClass', 'String'
+            ]);
+        });
+        // it('should include namespaces in parsed references', () => {
+        //     // Arrange
+        //     const code = `
+        //         public class MyClass {
+        //             public void myMethod() {
+        //                 System.Assert.isTrue(true, 'true');
+        //                 OtherClass.Value = 1;
+        //             }
+        //         }
+        //     `;
+
+        //     // Act
+        //     const actualCodeStructure = new Parser(code).getCodeStructure();
+
+        //     // Assert
+        //     const [ myMethod ] = actualCodeStructure.classes[0].methods;
+        //     expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
+        //         'OtherClass',
+        //         'System.Assert'
+
+        //     ]);
+        // });
+        // it('should include nested class names in references', () => {
+        //     // Arrange
+        //     const code = `
+        //         public class MyClass {
+        //             public void myMethod() {
+        //                 ns.OtherClass.MyClass.Value = 1;
+        //             }
+        //         }
+        //     `;
+
+        //     // Act
+        //     const actualCodeStructure = new Parser(code).getCodeStructure();
+
+        //     // Assert
+        //     const [ myMethod ] = actualCodeStructure.classes[0].methods;
+        //     expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
+        //         'ns.OtherClass.MyClass'
+        //     ]);
+        // });
     });
 });

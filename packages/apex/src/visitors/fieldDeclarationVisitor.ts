@@ -1,5 +1,5 @@
 import { ModifierContext, TypeRefContext, VariableDeclaratorContext } from "../grammar";
-import { ApexField, ApexAccessModifier, ApexFieldModifier, ApexSourceRange } from "../types";
+import { ApexField, ApexSourceRange } from "../types";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 
@@ -13,7 +13,8 @@ export class FieldDeclarationVisitor extends DeclarationVisitor<ApexField> {
             name: '',
             type: {
                 name: '',
-                isSystemType: false
+                isSystemType: false,
+                source: 'field'
             },
             sourceRange: ApexSourceRange.empty,
         });
@@ -52,7 +53,7 @@ export class FieldDeclarationVisitor extends DeclarationVisitor<ApexField> {
     }
 
     public visitTypeRef(ctx: TypeRefContext) {
-        this.state.type = new TypeRefVisitor().visit(ctx) ?? this.state.type;
+        new TypeRefVisitor(this.state.type).visit(ctx)!;
         return this.state;
     }
 }

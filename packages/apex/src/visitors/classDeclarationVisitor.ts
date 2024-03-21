@@ -1,11 +1,11 @@
-import { ApexClass, ApexSourceRange, ApexTypeRef } from "../types";
+import { ApexClass, ApexSourceRange } from "../types";
 import { MethodDeclarationVisitor } from "./methodDeclarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
 import { FieldDeclarationVisitor } from "./fieldDeclarationVisitor";
-import { AnnotationContext, ClassBodyDeclarationContext, ClassDeclarationContext, FieldDeclarationContext, MemberDeclarationContext, MethodDeclarationContext, ModifierContext, PropertyDeclarationContext, TypeDeclarationContext } from "../grammar";
-import { stringEquals } from "@vlocode/util";
+import { AnnotationContext, ClassBodyContext, ClassBodyDeclarationContext, ClassDeclarationContext, FieldDeclarationContext, MemberDeclarationContext, MethodDeclarationContext, ModifierContext, PropertyDeclarationContext } from "../grammar";
 import { PropertyDeclarationVisitor } from "./propertyDeclarationVisitor";
+import { BlockVisitor } from "./blockVisitor";
 
 export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     constructor(state?: ApexClass) {
@@ -22,7 +22,7 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         });
     }
 
-    public visitAnnotation(ctx: AnnotationContext | null): ApexClass | null {
+    public visitAnnotation(ctx: AnnotationContext | null): ApexClass {
         if (ctx?.qualifiedName().getText().toLocaleLowerCase() === 'istest') {
             this.state.isTest = true;
         }
@@ -62,24 +62,32 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
             const extendedType = ctx.typeRef()?.accept(new TypeRefVisitor());
             if (extendedType) {
                 this.state.extends = extendedType;
-                this.addRef(extendedType);
+                this.addRef(extendedType, 'extends');
             }
         }
 
         if (ctx.IMPLEMENTS()) {
             // Parse `implements XXX, YYY`
             this.state.implements = ctx.typeList()?.typeRef().map(typeRef => new TypeRefVisitor().visit(typeRef)!) ?? [];
+            this.addRef(this.state.implements, 'implements');
         }
 
         ctx.classBody().accept(this);
         return this.state;
     }
 
+    public visitClassBody(ctx: ClassBodyContext): ApexClass {
+        // Parse all the fields and properties first so that we know which are locals
+        new FieldAndPropertyDeclarationVisitor(this.state).visitChildren(ctx);
+        // Now visit all members using this visitor
+        this.visitChildren(ctx);
+        // Update references for all methods and properties
+        this.updateReferences();
+        return this.state;
+    }
+
     public visitClassBodyDeclaration(ctx: ClassBodyDeclarationContext) {
-        const memberDeclaration = ctx.memberDeclaration();
-        if (memberDeclaration) {
-            memberDeclaration.accept(this);
-        }
+        ctx.memberDeclaration()?.accept(this);
         return this.state;
     }
 
@@ -97,26 +105,14 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         return this.visitChildren(ctx);
     }
 
-    public visitPropertyDeclaration(ctx: PropertyDeclarationContext): ApexClass | null {
-        const memberContext = ctx.parent?.parent;
-        if (memberContext) {
-            const property = new PropertyDeclarationVisitor().visit(memberContext);
-            if (property) {
-                property.sourceRange = ApexSourceRange.fromToken(memberContext);
-                this.addRef(property.type);
-                this.addRef(property.getter?.refs);
-                this.addRef(property.setter?.refs);
-                this.state.properties.push(property);
-            }
-        }
-        return this.state;
-    }
-
     public visitMethodDeclaration(ctx: MethodDeclarationContext) {
         const memberContext = ctx.parent?.parent;
         if (memberContext) {
-            const method = new MethodDeclarationVisitor().visit(memberContext);
+            const visitor = new MethodDeclarationVisitor();
+            const method = visitor.visit(memberContext);
             if (method) {
+                // Remove references to local variables and properties
+                visitor.updateReferences(this.state);
                 method.sourceRange = ApexSourceRange.fromToken(memberContext);
                 this.addRef(method.returnType);
                 this.addRef(method.refs);
@@ -126,19 +122,44 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         return this.state;
     }
 
-    // public visitPropertyDeclaration(ctx: PropertyDeclarationContext) {
-    //     const memberContext = ctx.parent?.parent;
-    //     if (memberContext) {
-    //         this.state.methods.push(memberContext.accept(new MethodDeclarationVisitor()));
-    //     }
-    // }
+    public updateReferences() {
+        for (const property of this.state.properties) {
+            if (property.getter) {
+                new BlockVisitor(property.getter).updateReferences(this.state);
+                this.addRef(property.getter?.refs);
+            }
+            if (property.setter) {
+                new BlockVisitor(property.setter).updateReferences(this.state);
+                this.addRef(property.setter?.refs);
+            }
+        }
+    }
+}
+
+class FieldAndPropertyDeclarationVisitor extends DeclarationVisitor<ApexClass> {
+    constructor(state: ApexClass) {
+        super(state);
+    }
+
+    public visitPropertyDeclaration(ctx: PropertyDeclarationContext): ApexClass {
+        const memberContext = ctx.parent?.parent;
+        if (memberContext) {
+            const property = new PropertyDeclarationVisitor().visit(memberContext);
+            if (property) {
+                property.sourceRange = ApexSourceRange.fromToken(memberContext);
+                this.addRef(property.type, 'property');
+                this.state.properties.push(property);
+            }
+        }
+        return this.state;
+    }
 
     public visitFieldDeclaration(ctx: FieldDeclarationContext) {
         const memberContext = ctx.parent?.parent;
         if (memberContext) {
             const field = new FieldDeclarationVisitor().visit(memberContext);
             if (field) {
-                this.addRef(field.type);
+                this.addRef(field.type, 'field');
                 this.state.fields.push(field);
             }
         }

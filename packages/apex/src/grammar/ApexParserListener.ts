@@ -2032,5 +2032,10 @@ export class ApexParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitAnyId?: (ctx: AnyIdContext) => void;
+
+    visitTerminal(node: TerminalNode): void {} // eslint-disable-line
+    visitErrorNode(node: ErrorNode): void {} // eslint-disable-line
+    enterEveryRule(node: ParserRuleContext): void {} // eslint-disable-line
+    exitEveryRule(node: ParserRuleContext): void {} // eslint-disable-line
 }
 

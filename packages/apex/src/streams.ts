@@ -17,12 +17,6 @@ export class BufferStream implements CharStream {
     ) {
         this.size = this.data.length;
     }
-    getTextFromRange(start: number, stop: number): string {
-        throw new Error('Method not implemented.');
-    }
-    getTextFromInterval(interval: Interval): string {
-        throw new Error('Method not implemented.');
-    }
 
     getSourceName(): string {
         return this.name;
@@ -82,6 +76,14 @@ export class BufferStream implements CharStream {
         }
         // seek forward
         this.#index = Math.min(index, this.size);
+    }
+
+    public getTextFromRange(start: number, stop: number): string {
+        return this.getText(Interval.of(start, stop));
+    }
+
+    public getTextFromInterval(interval: Interval): string {
+        return this.getText(interval);
     }
 
     public getText(interval: number | Interval, stop?: number) {

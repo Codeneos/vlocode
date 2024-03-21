@@ -1,8 +1,7 @@
-import { BlockContext, GetterContext, IdPrimaryContext, ModifierContext, PropertyDeclarationContext, SetterContext, TypeRefContext, VariableDeclaratorContext } from "../grammar";
-import { ApexField, ApexAccessModifier, ApexFieldModifier, ApexSourceRange, ApexProperty, ApexPropertyModifier, ApexBlock } from "../types";
+import { GetterContext, ModifierContext, PropertyDeclarationContext, SetterContext, TypeRefContext } from "../grammar";
+import { ApexSourceRange, ApexProperty, ApexPropertyModifier, ApexBlock, ApexTypeRef } from "../types";
 import { BlockVisitor } from "./blockVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
-import { MethodDeclarationVisitor } from "./methodDeclarationVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
 
 /**
@@ -42,7 +41,7 @@ export class PropertyDeclarationVisitor extends DeclarationVisitor<ApexProperty>
         return true;
     }
 
-    public visitPropertyDeclaration(ctx: PropertyDeclarationContext): ApexProperty | null {
+    public visitPropertyDeclaration(ctx: PropertyDeclarationContext): ApexProperty {
         this.state.name = ctx.id().getText();
         return this.visitChildren(ctx);
     }
@@ -52,37 +51,36 @@ export class PropertyDeclarationVisitor extends DeclarationVisitor<ApexProperty>
         return this.state;
     }
 
-    public visitGetter(ctx: GetterContext): ApexProperty | null {
+    public visitGetter(ctx: GetterContext): ApexProperty {
         const getterBlock = ctx.block();
         if (getterBlock) {
-            this.state.getter = getterBlock.accept(new BlockVisitor({
+            const visitor = new BlockVisitor({
                 sourceRange: ApexSourceRange.fromToken(getterBlock),
-            })) ?? undefined;
+            });
+            this.state.getter = visitor.visitChildren(getterBlock);
         }
         return this.state;
     }
 
-    public visitSetter(ctx: SetterContext): ApexProperty | null {
+    public visitSetter(ctx: SetterContext): ApexProperty {
         const setterBlock = ctx.block();
         if (setterBlock) {
-            this.state.setter = setterBlock.accept(new SetterBlockVisitor(setterBlock)) ?? undefined;
+            const visitor = new SetterBlockVisitor(this.state.type, ApexSourceRange.fromToken(setterBlock));
+            this.state.setter = setterBlock.accept(visitor)!;
         }
         return this.state;
     }
 }
 
-class SetterBlockVisitor extends BlockVisitor {
-    constructor(setterBlock: BlockContext ) {
+class SetterBlockVisitor extends BlockVisitor<ApexBlock> {
+    constructor(type: ApexTypeRef, sourceRange: ApexSourceRange) {
         super({ 
-            sourceRange: ApexSourceRange.fromToken(setterBlock)
+            sourceRange,
+            localVariables: [{
+                name: 'value',
+                type, 
+                sourceRange: ApexSourceRange.empty 
+            }]
         });
-    }
-
-    public visitIdPrimary(ctx: IdPrimaryContext) {
-        const idName = ctx.getText().toLowerCase();
-        if (idName === 'value') {
-            return this.state;
-        }
-        return super.visitIdPrimary(ctx);
     }
 }

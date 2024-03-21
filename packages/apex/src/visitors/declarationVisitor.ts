@@ -1,6 +1,6 @@
 import { stringEquals } from "@vlocode/util";
 import { ModifierContext } from "../grammar";
-import { ApexAccessModifier, ApexTypeRef } from "../types";
+import { ApexAccessModifier, ApexTypeRef, ApexTypeRefSource } from "../types";
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 
 export abstract class DeclarationVisitor<T extends { 
@@ -40,13 +40,9 @@ export abstract class DeclarationVisitor<T extends {
         return true;
     }
 
-    protected addRef(refs: ApexTypeRef | ApexTypeRef[] | string | undefined | null) {
+    protected addRef(refs: ApexTypeRef | ApexTypeRef[] | undefined | null, source?: ApexTypeRefSource) {
         if (refs === undefined || refs === null) {
             return;
-        }
-
-        if (typeof refs === 'string') {
-            return this.addRef({ name: refs, isSystemType: false });
         }
 
         if (!this.state.refs) {
@@ -57,8 +53,8 @@ export abstract class DeclarationVisitor<T extends {
             if (ref.name === 'void') {
                 continue;
             }
-            if (!this.state.refs.find(r => stringEquals(r.name, ref.name, { caseInsensitive: true}))) {
-                this.state.refs.push(ref);
+            if (!this.state.refs.find(r => (source === undefined || r.source === source) && stringEquals(r.name, ref.name, { caseInsensitive: true}))) {
+                this.state.refs.push({ ...ref, source: source ?? ref.source });
             }
         }
     }

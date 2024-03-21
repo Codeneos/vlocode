@@ -55,6 +55,7 @@
     "devDependencies": {
         "@types/jest": "^29.5.11",
         "@types/node": "^20.4.2",
+        "@vlocode/apex": "workspace:*",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
         "@vlocode/salesforce": "workspace:*",

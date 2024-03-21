@@ -1,4 +1,4 @@
-import { CreatedNameContext, IdCreatedNamePairContext, IdPrimaryContext, NewExpressionContext, TypeNameContext } from "../grammar";
+import { IdCreatedNamePairContext, IdPrimaryContext, TypeNameContext } from "../grammar";
 import { ApexTypeRef } from "../types";
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { TypeListVisitor } from "./typeListVisitor";
