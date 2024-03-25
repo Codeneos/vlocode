@@ -4,10 +4,7 @@ import { AbstractParseTreeVisitor } from "antlr4ng";
 
 
 import { TriggerUnitContext } from "./ApexParser.js";
-import { TriggerUnit2Context } from "./ApexParser.js";
 import { TriggerCaseContext } from "./ApexParser.js";
-import { TriggerBlockContext } from "./ApexParser.js";
-import { TriggerBlockMemberContext } from "./ApexParser.js";
 import { CompilationUnitContext } from "./ApexParser.js";
 import { TypeDeclarationContext } from "./ApexParser.js";
 import { ClassDeclarationContext } from "./ApexParser.js";
@@ -20,7 +17,6 @@ import { InterfaceBodyContext } from "./ApexParser.js";
 import { ClassBodyDeclarationContext } from "./ApexParser.js";
 import { ModifierContext } from "./ApexParser.js";
 import { MemberDeclarationContext } from "./ApexParser.js";
-import { TriggerMemberDeclarationContext } from "./ApexParser.js";
 import { MethodDeclarationContext } from "./ApexParser.js";
 import { ConstructorDeclarationContext } from "./ApexParser.js";
 import { FieldDeclarationContext } from "./ApexParser.js";
@@ -182,8 +178,8 @@ import { SoslIdContext } from "./ApexParser.js";
 import { IdContext } from "./ApexParser.js";
 import { AnyIdContext } from "./ApexParser.js";
 
-// Regex: (\w+)\?: (\([^\)]+\)) => Result;
-// Replace: $1? $2: Result;
+// Regex: (\w+)\?: (\([^\)]+\)) => (\w+);
+// Replace: $1? $2: $3; \1? \2: \3;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
@@ -192,7 +188,7 @@ import { AnyIdContext } from "./ApexParser.js";
  * @param <Result> The return type of the visit operation. Use `void` for
  * operations with no return type.
  */
-export abstract class ApexParserVisitor<Result> extends AbstractParseTreeVisitor<Result> {
+export class ApexParserVisitor<Result> extends AbstractParseTreeVisitor<Result> {
     /**
      * Visit a parse tree produced by `ApexParser.triggerUnit`.
      * @param ctx the parse tree
@@ -200,29 +196,11 @@ export abstract class ApexParserVisitor<Result> extends AbstractParseTreeVisitor
      */
     visitTriggerUnit? (ctx: TriggerUnitContext): Result;
     /**
-     * Visit a parse tree produced by `ApexParser.triggerUnit2`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTriggerUnit2? (ctx: TriggerUnit2Context): Result;
-    /**
      * Visit a parse tree produced by `ApexParser.triggerCase`.
      * @param ctx the parse tree
      * @return the visitor result
      */
     visitTriggerCase? (ctx: TriggerCaseContext): Result;
-    /**
-     * Visit a parse tree produced by `ApexParser.triggerBlock`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTriggerBlock? (ctx: TriggerBlockContext): Result;
-    /**
-     * Visit a parse tree produced by `ApexParser.triggerBlockMember`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTriggerBlockMember? (ctx: TriggerBlockMemberContext): Result;
     /**
      * Visit a parse tree produced by `ApexParser.compilationUnit`.
      * @param ctx the parse tree
@@ -295,12 +273,6 @@ export abstract class ApexParserVisitor<Result> extends AbstractParseTreeVisitor
      * @return the visitor result
      */
     visitMemberDeclaration? (ctx: MemberDeclarationContext): Result;
-    /**
-     * Visit a parse tree produced by `ApexParser.triggerMemberDeclaration`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTriggerMemberDeclaration? (ctx: TriggerMemberDeclarationContext): Result;
     /**
      * Visit a parse tree produced by `ApexParser.methodDeclaration`.
      * @param ctx the parse tree

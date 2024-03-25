@@ -1,6 +1,9 @@
 // Generated from ./grammar/ApexLexer.g4 by ANTLR 4.13.1
 
 import * as antlr from "antlr4ng";
+import { Token } from "antlr4ng";
+import { CaseInsensitiveCharStream } from "../streams";
+
 
 export class ApexLexer extends antlr.Lexer {
     public static readonly ABSTRACT = 1;
@@ -406,7 +409,7 @@ export class ApexLexer extends antlr.Lexer {
 
 
     public constructor(input: antlr.CharStream) {
-        super(input);
+        super(new CaseInsensitiveCharStream(input));
         this.interpreter = new antlr.LexerATNSimulator(this, ApexLexer._ATN, ApexLexer.decisionsToDFA, new antlr.PredictionContextCache());
     }
 

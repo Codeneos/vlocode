@@ -3,8 +3,8 @@ import { CommonTokenStream, CharStream, ParserATNSimulator, LexerATNSimulator } 
 import { ApexCompilationUnit, ApexTypeRef } from "./types";
 import { TypeRefCollector } from "./visitors/typeRefCollector";
 import { CompilationUnitVisitor } from "./visitors/compilationUnitVisitor";
-import { BufferStream, CaseInsensitiveCharStream } from "./streams";
-import { ApexParser, ApexLexer, CompilationUnitContext } from "./grammar";
+import { BufferStream } from "./streams";
+import { ApexParser, ApexLexer, CompilationUnitContext, TriggerUnitContext } from "./grammar";
 
 /**
  * APEX Source code parser and lexer. Provides methods to parse APEX source
@@ -23,7 +23,7 @@ export class Parser {
 
     private lexer: ApexLexer;
     private parser: ApexParser;
-    private cu: CompilationUnitContext;
+    private cu: CompilationUnitContext | TriggerUnitContext;
 
     constructor(private input: Buffer | string) {
     }
@@ -67,8 +67,7 @@ export class Parser {
 
     private getLexer(): ApexLexer {
         if (!this.lexer) {
-            const cis = new CaseInsensitiveCharStream(this.createInputStream());
-            this.lexer = new ApexLexer(cis);
+            this.lexer = new ApexLexer(this.createInputStream());
         }
         return this.lexer;
     }

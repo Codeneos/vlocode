@@ -333,46 +333,49 @@ describe('ApexParser', () => {
                 'ExternalClass', 'String'
             ]);
         });
-        // it('should include namespaces in parsed references', () => {
-        //     // Arrange
-        //     const code = `
-        //         public class MyClass {
-        //             public void myMethod() {
-        //                 System.Assert.isTrue(true, 'true');
-        //                 OtherClass.Value = 1;
-        //             }
-        //         }
-        //     `;
+        it('should include namespaces in parsed references', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public void myMethod() {
+                        System.Assert.isTrue(true, 'true');
+                        OtherClass.Value = 1;
+                    }
+                }
+            `;
 
-        //     // Act
-        //     const actualCodeStructure = new Parser(code).getCodeStructure();
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
 
-        //     // Assert
-        //     const [ myMethod ] = actualCodeStructure.classes[0].methods;
-        //     expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
-        //         'OtherClass',
-        //         'System.Assert'
+            // Assert
+            const [ myMethod ] = actualCodeStructure.classes[0].methods;
+            expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
+                'OtherClass',
+                'System.Assert'
 
-        //     ]);
-        // });
-        // it('should include nested class names in references', () => {
-        //     // Arrange
-        //     const code = `
-        //         public class MyClass {
-        //             public void myMethod() {
-        //                 ns.OtherClass.MyClass.Value = 1;
-        //             }
-        //         }
-        //     `;
+            ]);
+        });
+        it('should include nested class names in references', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public void myMethod() {
+                        CustomNS.OtherClass.ClassVariable.Value = 1;
+                        CustomNS.OtherClass.ClassVariable.fn() = 1;
+                        OtherClass.Variable = 1;
+                    }
+                }
+            `;
 
-        //     // Act
-        //     const actualCodeStructure = new Parser(code).getCodeStructure();
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
 
-        //     // Assert
-        //     const [ myMethod ] = actualCodeStructure.classes[0].methods;
-        //     expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
-        //         'ns.OtherClass.MyClass'
-        //     ]);
-        // });
+            // Assert
+            const [ myMethod ] = actualCodeStructure.classes[0].methods;
+            expect([...new Set(myMethod.refs.map(r => r.name))].sort()).toEqual([
+                'CustomNS.OtherClass',
+                'OtherClass'
+            ]);
+        });
     });
 });

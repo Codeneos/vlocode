@@ -55,16 +55,16 @@ export class BlockVisitor<T extends ApexBlock> extends DeclarationVisitor<T> {
     }
 
     public visitDotExpression(ctx: DotExpressionContext) {
-        // if (ctx.anyId() &&
-        //     ctx.parent instanceof DotExpressionContext &&
-        //     ctx.expression().getChild(0) instanceof IdPrimaryContext
-        // ) {
-        //     this.addRef(
-        //         ApexTypeRef.fromString(ctx.getText()),
-        //         'identifier'
-        //     )
-        //     return this.state;
-        // }
+        if (ctx.anyId() &&
+            ctx.parent instanceof DotExpressionContext &&
+            ctx.expression().getChild(0) instanceof IdPrimaryContext
+        ) {
+            this.addRef(
+                ApexTypeRef.fromString(ctx.getText()),
+                'identifier'
+            )
+            return this.state;
+        }
         return this.visitChildren(ctx);
     }
 
@@ -114,7 +114,8 @@ export class BlockVisitor<T extends ApexBlock> extends DeclarationVisitor<T> {
                 if (ref.source !== 'identifier') {
                     return true;
                 }
-                return !blockLocalVariables.some(localVar => stringEquals(localVar, ref.name, { caseInsensitive: true }));
+                const localName = ref.name.split('.').shift();
+                return !blockLocalVariables.some(localVar => stringEquals(localVar, localName, { caseInsensitive: true }));
             });
             this.addRef(blockLeaf.refs);
         }

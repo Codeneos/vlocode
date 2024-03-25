@@ -139,8 +139,8 @@ importers:
         specifier: workspace:*
         version: link:../util
       antlr4ng:
-        specifier: ^3.0.1
-        version: 3.0.3(antlr4ng-cli@2.0.0)
+        specifier: ^3.0.4
+        version: 3.0.4(antlr4ng-cli@2.0.0)
     devDependencies:
       '@types/csv-parse':
         specifier: ^1.2.2
@@ -3330,8 +3330,8 @@ packages:
       antlr4ng-cli: 1.0.7
     dev: false
 
-  /antlr4ng@3.0.3(antlr4ng-cli@2.0.0):
-    resolution: {integrity: sha512-LkxS0SADLLZVnSeMIF+ebB5sNAVejpg0LWeEPvI+sGDkmRJdY8MphVEu6/e9J2TNn3nxSP/hr1wERJ0kWC/0Tw==}
+  /antlr4ng@3.0.4(antlr4ng-cli@2.0.0):
+    resolution: {integrity: sha512-u1Ww6wVv9hq70E9AaYe5qW3ba8hvnjJdO3ZsKnb3iJWFV/medLEEhbyWwXCvvD2ef0ptdaiIUgmaazS/WE6uyQ==}
     peerDependencies:
       antlr4ng-cli: ^2.0.0
     dependencies:

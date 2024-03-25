@@ -43,25 +43,11 @@ options {tokenVocab=ApexLexer;}
 
 // entry point for Apex trigger files
 triggerUnit
-    : TRIGGER id ON id LPAREN triggerCase (COMMA triggerCase)* RPAREN block EOF
-    ;
-
-// v2 entry point for Apex trigger files, see README.md for details
-triggerUnit2
-    : TRIGGER id ON id LPAREN triggerCase (COMMA triggerCase)* RPAREN triggerBlock EOF
+    : TRIGGER id ON object=id LPAREN triggerCase (COMMA triggerCase)* RPAREN block EOF
     ;
 
 triggerCase
-    : (BEFORE|AFTER) (INSERT|UPDATE|DELETE|UNDELETE)
-    ;
-
-triggerBlock
-    : LBRACE triggerBlockMember* RBRACE
-    ;
-
-triggerBlockMember
-    : modifier* triggerMemberDeclaration
-    | statement
+    : when=(BEFORE|AFTER) operation=(INSERT|UPDATE|DELETE|UNDELETE)
     ;
 
 // entry point for Apex class files
@@ -143,14 +129,6 @@ memberDeclaration
     | propertyDeclaration
     ;
 
-triggerMemberDeclaration
-    : methodDeclaration
-    | fieldDeclaration
-    | interfaceDeclaration
-    | classDeclaration
-    | enumDeclaration
-    | propertyDeclaration
-    ;
 
 /* We use rule this even for void methods which cannot have [] after parameters.
    This simplifies grammar and we can consider void to be a type, which
