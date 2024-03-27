@@ -21,7 +21,9 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true,
         "paths": {
+            "@vlocode/apex": ["./packages/apex/src"],
             "@vlocode/core": ["./packages/core/src"],
             "@vlocode/util": ["./packages/util/src"],
             "@vlocode/salesforce": ["./packages/salesforce/src"],

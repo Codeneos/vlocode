@@ -4,11 +4,11 @@ import { vscodeCommand } from '../../lib/commandRouter';
 import { CommandBase } from '../../lib/commandBase';
 import { cache, substringBetweenLast } from '@vlocode/util';
 
-@vscodeCommand(VlocodeCommand.apexToggleCoverage)
 /**
  * Represents a command for toggling test coverage
  * highlighting in the editor for the an Apex class.
  */
+@vscodeCommand(VlocodeCommand.apexToggleCoverage)
 export default class ToggleApexTestCoverage extends CommandBase {
 
     private coverageShowingFor = new Set<string>();

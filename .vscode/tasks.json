@@ -92,7 +92,7 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": ["watch-vlocity-deploy"]
+            "dependsOn": ["watch-vlocity-deploy", "watch-apex"]
         },
         {
             "label": "watch-vlocity-deploy",
@@ -160,7 +160,24 @@
             "group": {
                 "kind": "build"
             },
-            "dependsOn": ["watch-core"]
+            "dependsOn": ["watch-util", "watch-core"]
+        },
+        {
+            "label": "watch-apex",
+            "type": "shell",
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "fileLocation": ["relative", "${workspaceFolder}/packages/vlocity-apex"]
+            },
+            "command": "pnpm --filter @vlocode/apex watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": ["watch-util", "watch-core"]
         },
         {
             "label": "watch-core",
