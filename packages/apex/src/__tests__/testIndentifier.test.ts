@@ -1,7 +1,7 @@
 import 'jest';
 
 import { Logger, MemoryFileSystem } from '@vlocode/core';
-import { TestIdentifier } from '../testIndentifier';
+import { TestIdentifier } from '../testIdentifier';
 
 describe('TestIdentifier', () => {
 
