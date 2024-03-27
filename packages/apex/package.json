@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/apex",
-    "version": "0.21.7",
+    "version": "1.22.0",
     "description": "Salesforce APEX Parser and Grammar",
     "keywords": [
         "Salesforce",
