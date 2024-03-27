@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/apex",
-    "version": "0.21.5",
+    "version": "0.21.7",
     "description": "Salesforce APEX Parser and Grammar",
     "keywords": [
         "Salesforce",
@@ -48,7 +48,7 @@
     "bugs": {
         "url": "https://github.com/Codeneos/vlocode/issues"
     },
-    "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "homepage": "https://github.com/Codeneos/vlocode/tree/main/packages/apex#readme",
     "devDependencies": {
         "@types/csv-parse": "^1.2.2",
         "@types/fs-extra": "^11",

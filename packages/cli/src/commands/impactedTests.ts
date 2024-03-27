@@ -32,7 +32,8 @@ export default class extends Command {
     ];
 
     static options = [
-        new Option('--classes <classes...>', 'list of classes to find impacted tests for')
+        new Option('--classes <classes...>', 'list of classes to find impacted tests for'),
+        new Option('--output <file>', 'path to the file to which to write the impacted tested output as JSON').default('impactedTests.json')
     ];
 
     constructor(
@@ -84,7 +85,7 @@ export default class extends Command {
                 this.logger.info(`Test classes: ${classInfo.testClasses.join(', ')}`);
             }
         }
-
+        this.logger.info(`Write impacted tests to impactedTests.json`);
         await this.fileSystem.writeFile('impactedTests.json', Buffer.from(JSON.stringify(data, null, 4)));
         this.logger.info(`Parsed ${Object.keys(data).length} in ${timerAll.toString('ms')}`);
     }

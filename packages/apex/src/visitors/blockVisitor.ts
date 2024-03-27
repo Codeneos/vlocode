@@ -3,9 +3,13 @@ import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
 import {  BlockContext, CatchClauseContext, DotExpressionContext, IdCreatedNamePairContext, IdPrimaryContext, LocalVariableDeclarationContext } from "../grammar";
 import { TypeListVisitor } from "./typeListVisitor";
-import { stringEquals } from "@vlocode/util";
+import { stringEquals, substringBefore } from "@vlocode/util";
+import standardNamespaces from '../standardNamespace.json';
 
 export class BlockVisitor<T extends ApexBlock> extends DeclarationVisitor<T> {
+
+    private static standardNamespaces = standardNamespaces.map((namespace: string) => namespace.toLowerCase());
+
     constructor(state: T) {
         super(state);
     }
@@ -57,7 +61,8 @@ export class BlockVisitor<T extends ApexBlock> extends DeclarationVisitor<T> {
     public visitDotExpression(ctx: DotExpressionContext) {
         if (ctx.anyId() &&
             ctx.parent instanceof DotExpressionContext &&
-            ctx.expression().getChild(0) instanceof IdPrimaryContext
+            ctx.expression().getChild(0) instanceof IdPrimaryContext &&
+            ApexTypeRef.isStandardNamespace(ctx.getText())
         ) {
             this.addRef(
                 ApexTypeRef.fromString(ctx.getText()),

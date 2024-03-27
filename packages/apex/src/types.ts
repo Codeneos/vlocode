@@ -1,4 +1,5 @@
 import { Token } from "antlr4ng";
+import stdNamespaceData from './standardNamespace.json';
 
 export type ApexAccessModifier = 'global' | 'public' | 'protected' | 'private';
 export type ApexClassModifier = 'virtual' | 'abstract';
@@ -158,6 +159,8 @@ export namespace ApexTypeRef {
         'blob'
     ];
 
+    const standardNamespaces: readonly string[] = stdNamespaceData.map((namespace: string) => namespace.toLowerCase());
+
     export function fromString(name: string, source?: ApexTypeRefSource): ApexTypeRef {
         return { name, isSystemType: isSystemType(name), source };
     }
@@ -170,6 +173,10 @@ export namespace ApexTypeRef {
     export function isSystemType(typeName: string): boolean {
         return systemTypes.includes(typeName.toLowerCase()) ||
             primitiveTypes.includes(typeName.toLowerCase());
+    }
+
+    export function isStandardNamespace(ns: string): boolean {
+        return standardNamespaces.includes(ns.split('.').shift()!.toLowerCase());
     }
 }
 
