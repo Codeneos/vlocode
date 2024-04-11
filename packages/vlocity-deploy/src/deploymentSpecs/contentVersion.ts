@@ -16,7 +16,7 @@ export class ContentVersion implements DatapackDeploymentSpec {
         private readonly logger: Logger) {
     }
 
-    public afterDeploy(event: DatapackDeploymentEvent) {        
+    public afterDeploy(event: DatapackDeploymentEvent) {
         return this.createContentDocumentLinks(event);
     }
 
@@ -39,10 +39,10 @@ export class ContentVersion implements DatapackDeploymentSpec {
 
             // Add ContentDocumentLink creation into deployment
             event.deployment.add(DatapackDeploymentRecord.fromValues(
-                'ContentDocumentLink', 
+                'ContentDocumentLink',
                 documentLinkValues,
-                { 
-                    upsertFields: [ 'ContentDocumentId', 'LinkedEntityId' ],                 
+                {
+                    upsertFields: [ 'ContentDocumentId', 'LinkedEntityId' ],
                     recordKey: `ContentDocumentLink/${record.datapackKey}`
                 }
             ));
@@ -66,7 +66,7 @@ export class ContentVersion implements DatapackDeploymentSpec {
 
         // Calculate the md5 hash from the records VersionData; if the same skip updating it
         const recordChecksum = this.calculateVersionDataChecksum(record);
-        
+
         if (recordChecksum === currentContentVersion.Checksum) {
             this.logger.verbose(`Skip update of "${record.datapackKey}" -- content checksum matches: ${recordChecksum}`)
             record.setAction(DeploymentAction.Skip);
@@ -91,7 +91,7 @@ export class ContentVersion implements DatapackDeploymentSpec {
     }
 
     private async getContentDocumentLinkValues(record: DatapackDeploymentRecord) {
-        if (!record.isSkipped || !record.recordId) {
+        if (record.isSkipped || !record.recordId) {
             return;
         }
 
