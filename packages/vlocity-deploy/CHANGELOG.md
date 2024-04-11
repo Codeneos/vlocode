@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.22.2](https://github.com/Codeneos/vlocode/compare/v1.22.1...v1.22.2) (2024-04-11)
+
+### Bug Fixes
+
+* document templates are not shared with all users after deployment ([0ad9f86](https://github.com/Codeneos/vlocode/commit/0ad9f86b09e7ec1e8eb92b4c89cd3d2c431b15b0))
+
 # [1.22.0](https://github.com/Codeneos/vlocode/compare/v0.21.7...v1.22.0) (2024-03-27)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

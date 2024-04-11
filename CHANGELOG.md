@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.22.2](https://github.com/codeneos/vlocode/compare/v1.22.1...v1.22.2) (2024-04-11)
+
+### Bug Fixes
+
+* document templates are not shared with all users after deployment ([0ad9f86](https://github.com/codeneos/vlocode/commit/0ad9f86b09e7ec1e8eb92b4c89cd3d2c431b15b0))
+* unit test build error due to wrong references ([939e2ef](https://github.com/codeneos/vlocode/commit/939e2ef4f9232a82ae37d71e1380b27bd1831d92))
+
 ## [1.22.1](https://github.com/codeneos/vlocode/compare/v1.22.0...v1.22.1) (2024-03-27)
 
 ### Bug Fixes
