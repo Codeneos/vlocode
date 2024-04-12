@@ -301,9 +301,9 @@ export class SalesforceConnection extends Connection {
             } catch(err) {
                 const canRetry = attempts++ < SalesforceConnection.maxRetries || SalesforceConnection.maxRetries < 0;
 
-                if (!canRetry || !this.isRetryableError(err)) {
+                if (!canRetry || !this.isRetryableError(request, err)) {
                     this.emit('error', err);
-                    this.logger.error(err);
+                    this.logger.error(`${request.method} ${request.url}`, err);
                     throw err;
                 }
 
@@ -423,16 +423,20 @@ export class SalesforceConnection extends Connection {
      * @param err Error thrown by the connection
      * @returns `true` if the error is retryable otherwise `false`
      */
-    private isRetryableError(err: unknown) : err is (Error & { code: string | undefined, errorCode: string | undefined }) {
+    private isRetryableError(req: HttpRequestInfo, err: unknown) : err is (Error & { code: string | undefined, errorCode: string | undefined }) {
         return err instanceof Error && (
             err['code'] == 'ECONNRESET' ||
-            err['code'] == 'ENOTFOUND' ||  (
+            err['code'] == 'ECONNREFUSED' ||
+            err['code'] == 'ENOTFOUND' || (
                 (
                     err['code'] == 'REQUEST_LIMIT_EXCEEDED' ||
                     err['errorCode'] == 'REQUEST_LIMIT_EXCEEDED'
                 )
                 &&
                 err.message.indexOf('ConcurrentPerOrgLongTxn') != -1
+            ) || (
+                ['ETIMEDOUT', 'CLIENT_TIMEDOUT', 'CLIENT_CLOSED'].includes(err['code']) && 
+                req.method === 'GET'
             )
         );
     }

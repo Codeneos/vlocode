@@ -129,9 +129,9 @@ export class HttpTransport implements Transport {
      */
     public static httpAgent = new https.Agent({
         keepAlive: true,
-        keepAliveMsecs: 5000,
+        keepAliveMsecs: 2 * 60 * 1000,
         maxSockets: 5,
-        scheduling: 'lifo',
+        scheduling: 'fifo',
         timeout: 5 * 60 * 1000 // Time out connections after 5 minutes
     });
 
@@ -197,13 +197,35 @@ export class HttpTransport implements Transport {
         const requestPromise = new DeferredPromise<HttpResponse>();
 
         // Handle error and response
-        request.once('error', (err) => requestPromise.reject(err));
-        request.once('timeout', () => requestPromise.reject(
-            new CustomError(
-                `Socket timeout when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
-                { code: 'ETIMEOUT' }
-            )
-        ));
+        request.once('error', (err) => {
+            if (requestPromise.isResolved) { 
+                // Prevent race condition when the request is already resolved
+                return;
+            }
+
+            const errorCode = 'code' in err && err.code as string;
+            const syscall = 'syscall' in err && err.syscall as string;
+
+            if (errorCode === 'ECONNRESET' || (errorCode === 'ETIMEDOUT' && syscall === 'connect')) {
+                requestPromise.reject(new CustomError(`Connection reset by peer when requesting ${url.pathname} (${request.method})`, { code: 'ECONNRESET' }));
+            } else if (errorCode === 'ECONNREFUSED') { 
+                requestPromise.reject(new CustomError(`Connection refused when requesting ${url.pathname} (${request.method})`, { code: 'ECONNREFUSED' }));
+            } else if (errorCode === 'ENOTFOUND') {
+                requestPromise.reject(new CustomError(`Host not found when requesting ${url.pathname} (${request.method})`, { code: 'ENOTFOUND' }));
+            } else if (errorCode === 'ETIMEDOUT') {
+                requestPromise.reject(new CustomError(`Socket timeout when connecting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`, { code: 'ETIMEDOUT' }));
+            } else {
+                requestPromise.reject(err);
+            }
+        });
+
+        request.once('timeout', () => {
+            request.destroy(new CustomError(
+                `Client timeout (${info.timeout}ms) expired when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
+                { code: 'CLIENT_TIMEDOUT' }
+            ));
+        });
+
         request.on('response', (response) => {
             requestPromise.bind(this.handleResponse(info, response).then(response => {
                 this.logger.debug('%s %s (%ims)', info.method, url.pathname, timer.elapsed);
@@ -352,18 +374,20 @@ export class HttpTransport implements Transport {
 
         if (this.isRedirect(response)) {
             const redirectRequestInfo = this.getRedirectRequest(response, request);
-            response.destroy();
             return this.httpRequest(redirectRequestInfo);
         }
 
         const responsePromise = new DeferredPromise<HttpResponse>();
         const responseData = new Array<Buffer>();
+        let isComplete = false;
 
         response.on('data', (chunk) => responseData.push(chunk));
-        response.once('timeout', () => responsePromise.reject(
-            new CustomError(`Socket timeout while reading response (${request.method} ${url.pathname})`, { code: 'ETIMEOUT' })
-        ));
         response.once('end', () => {
+            if (responsePromise.isResolved) {
+                // Prevent race condition when the response is already resolved 
+                return;
+            }
+            isComplete = true;
             responsePromise.bind(this.decodeResponseBody(response, Buffer.concat(responseData))
                 .then(body => {
                     if (HttpTransport.enableResponseLogging) {
@@ -376,6 +400,11 @@ export class HttpTransport implements Transport {
                     }
                     return Object.assign(response, { body: parsed });
                 }));
+        });
+        response.once('close', () => {
+            if (!isComplete) {
+                responsePromise.reject(new CustomError(`Connection closed before response was complete`, { code: 'CLIENT_CLOSED' }));
+            }
         });
 
         return responsePromise;
