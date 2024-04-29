@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.23.0](https://github.com/Codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
+
+### Features
+
+* suppress cascade failure reporting during deployment ([6fe07d2](https://github.com/Codeneos/vlocode/commit/6fe07d25e4749917c59458d2f0a7c5794ef62eec))
+
 # [1.22.0](https://github.com/Codeneos/vlocode/compare/v0.21.7...v1.22.0) (2024-03-27)
 
 **Note:** Version bump only for package @vlocode/util

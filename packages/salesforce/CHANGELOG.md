@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.23.0](https://github.com/Codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
+
+### Bug Fixes
+
+* batch service does not correctly include properties to report batch status ([e331d01](https://github.com/Codeneos/vlocode/commit/e331d014b2fac1318dd45d15e925cfa014710532))
+* on certain rare SF errors metadata deployment errors would not be caught expiring the promise ([a473b26](https://github.com/Codeneos/vlocode/commit/a473b26aa84c5f67b6c6fa20b70c6fc31ae1f9b0))
+
+### Features
+
+* improve handling of connection errors ([758de02](https://github.com/Codeneos/vlocode/commit/758de02856e484914d5f207d82ff8033bb585a24))
+* suppress cascade failure reporting during deployment ([6fe07d2](https://github.com/Codeneos/vlocode/commit/6fe07d25e4749917c59458d2f0a7c5794ef62eec))
+
 # [1.22.0](https://github.com/Codeneos/vlocode/compare/v0.21.7...v1.22.0) (2024-03-27)
 
 **Note:** Version bump only for package @vlocode/salesforce

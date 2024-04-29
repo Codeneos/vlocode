@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.23.0](https://github.com/codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
+
+### Bug Fixes
+
+* batch service does not correctly include properties to report batch status ([e331d01](https://github.com/codeneos/vlocode/commit/e331d014b2fac1318dd45d15e925cfa014710532))
+* on certain rare SF errors metadata deployment errors would not be caught expiring the promise ([a473b26](https://github.com/codeneos/vlocode/commit/a473b26aa84c5f67b6c6fa20b70c6fc31ae1f9b0))
+
+### Features
+
+* improve handling of connection errors ([758de02](https://github.com/codeneos/vlocode/commit/758de02856e484914d5f207d82ff8033bb585a24))
+* suppress cascade failure reporting during deployment ([6fe07d2](https://github.com/codeneos/vlocode/commit/6fe07d25e4749917c59458d2f0a7c5794ef62eec))
+* switch to direct mode as standard for all Datapack deployments ([3366aac](https://github.com/codeneos/vlocode/commit/3366aac061aa4fe82a49035f06761b5cf400ab1f))
+
 ## [1.22.2](https://github.com/codeneos/vlocode/compare/v1.22.1...v1.22.2) (2024-04-11)
 
 ### Bug Fixes

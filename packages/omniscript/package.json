@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/omniscript",
-    "version": "1.22.0",
+    "version": "1.23.0",
     "description": "Library for compiling and working with Vlocity OmniScripts",
     "keywords": [
         "Vlocity",
