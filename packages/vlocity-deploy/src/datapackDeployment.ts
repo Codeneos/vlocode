@@ -1,25 +1,30 @@
+import { types } from 'util';
 import { Logger, LifecyclePolicy, injectable, LogLevel } from '@vlocode/core';
-import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService, RecordError } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup, DeploymentGroupStatus } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
+import { DatapackDeploymentError as Error } from './datapackDeploymentError';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
     afterDeployRecord: Iterable<DatapackDeploymentRecord>;
     beforeDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
-    afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;
-    onError: DatapackDeploymentRecord;
-    onCancel: DatapackDeployment;
+    afterDeployGroup: Iterable<DatapackDeploymentRecordGroup>;    
+    beforeRetryRecord: Iterable<DatapackDeploymentRecord>;    
+    beforeResolveDependencies: Iterable<DatapackDeploymentRecord>;
+    recordError: DatapackDeploymentRecord;
+    cancel: DatapackDeployment;
     progress: DatapackDeploymentProgress;
 }
 
 export interface DatapackDeploymentRecordMessage {
     record: DatapackDeploymentRecord;
     type: 'error' | 'warn' | 'info';
+    code?: string;
     message: string;
 }
 
@@ -59,7 +64,8 @@ const datapackDeploymentDefaultOptions = {
     bulkDependencyResolution: true,
     deltaCheck: false,
     skipLwcActivation: false,
-    useMetadataApi: false
+    useMetadataApi: false,
+    reportCascadeFailures: false,
 };
 
 /**
@@ -140,7 +146,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     public add(...records: DatapackDeploymentRecord[]): this {
         for (const record of records) {
             if (this.records.has(record.sourceKey)) {
-                throw new Error(`Datapack record with the same key '${record.sourceKey}' has already been added to the deployment. Remove the duplicate datapack and retry the deployment.`);
+                throw new Error('RECORD_SOURCEKEY_DUPLICATE', `Datapack record with the same key '${record.sourceKey}' has already been added to the deployment. Remove the duplicate datapack and retry the deployment.`);
             }
             this.records.set(record.sourceKey, record);
             mapGetOrCreate(this.recordGroups, record.datapackKey, () => new DatapackDeploymentRecordGroup(record.datapackKey)).push(record);
@@ -154,7 +160,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      */
     public async start(cancelToken?: CancellationToken) {
         if (this.isStarted !== false) {
-            throw new Error('Deploy is already started you cannot start a deployment twice. To run this deployment multiple times create a new deployment object instead.');
+            throw new Error('DEPLOYMENT_ALREADY_STARTED', 'Deploy is already started you cannot start a deployment twice. To run this deployment multiple times create a new deployment object instead.');
         }
 
         this.timer = new Timer();
@@ -185,15 +191,23 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
     }
 
+
     /**
-     * Get all messages from all records in this deployment as a flat array
-     * @returns Array of deployment messages
+     * Retrieves the deployment messages for the datapack deployment.
+     * 
+     * @param options - An optional object that specifies additional options for retrieving the messages.
+     * @param options.includeCascadeFailures - A boolean indicating whether to include cascade failures in the messages. Default is false.
+     * 
+     * @returns An array of `DatapackDeploymentRecordMessage` objects representing the deployment messages.
      */
-    public getMessages() : Array<DatapackDeploymentRecordMessage> {
+    public getMessages(options?: { includeCascadeFailures?: boolean }) : Array<DatapackDeploymentRecordMessage> {
         const messages = new Array<DatapackDeploymentRecordMessage>();
         for (const record of this.records.values()) {
+            if (!options?.includeCascadeFailures && record.isCascadeFailure) {
+                continue;
+            }
             if (record.isFailed && record.statusMessage) {
-                messages.push({ record, type: 'error', message: this.formatDeployError(record.statusMessage) });
+                messages.push({ record, type: 'error', code: record.errorCode, message: this.formatDeployError(record) });
             }
             for (const message of record.warnings) {
                 messages.push({ record, type: 'warn', message });
@@ -202,13 +216,14 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return messages;
     }
 
-    public getMessagesByDatapack() : { [datapackKey: string]: Array<DatapackDeploymentRecordMessage> } {
-        return groupBy(this.getMessages(), msg => msg.record.datapackKey);
+    public getMessagesByDatapack(options?: { includeCascadeFailures?: boolean }) : { [datapackKey: string]: Array<DatapackDeploymentRecordMessage> } {
+        return groupBy(this.getMessages(options), msg => msg.record.datapackKey);
     }
 
-    private formatDeployError(message?: string) {
+    private formatDeployError(record: DatapackDeploymentRecord) {
+        const message = record.errorMessage;
         if (!message) {
-            return 'Salesforce provided no error message';
+            return 'No error message';
         }
 
         if (message.includes('Script-thrown exception')) {
@@ -340,7 +355,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             });
 
             if (results.length) {
-                throw new Error('BUG: unresolved lookup results should not be possible');
+                throw new Error('INVALID_RESOLVE_RESULTS', 'BUG: unresolved lookup results should not be possible');
             }
         }
 
@@ -356,15 +371,18 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 return deployRecord.recordId;
             }
 
+            if (dependency.VlocityMatchingRecordSourceKey) {
+                // Never attempt to lookup inter datapack lookups that failed
+                throw new Error('RECORD_CASCADE_FAILURE', `Parent ${dependency.VlocityRecordSObjectType} record failed to deploy`);
+            }
+
             if (!this.options.lookupFailedDependencies) {
-                throw new Error(`cascade error due to failed dependency ${lookupKey}. Enable "lookupFailedDependencies" to attempt to resolve the failed dependency from the org instead`);
+                throw new Error('RECORD_UNRESOLVED_DEPENDENCY',`Lookup dependency with key "${lookupKey}" failed to deploy`);
             }
 
             this.logger.warn(`Looking up dependency which should have been deployed: ${lookupKey}`);
-        }
-
-        if (dependency.VlocityMatchingRecordSourceKey && !this.options.lookupFailedDependencies) {
-            throw new Error(`Missing dependency: ${lookupKey} -- datapack is likely corrupted, include the missing dependency into this datapack to fix this error`);
+        } else if (dependency.VlocityMatchingRecordSourceKey) {
+            throw new Error('RECORD_MISSING_DEPENDENCY', `Datapack corrupted -- missing datapack record with key "${lookupKey}" in JSON`);
         }
     }
 
@@ -405,11 +423,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param records Records to deploy
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
-    private async createDeploymentBatch(records: Iterable<DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+    private async createDeploymentBatch(records: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.schemaService, this.options);
-        const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records, cancelToken) : undefined;
+        const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records.values(), cancelToken) : undefined;
 
-        for (const record of records) {
+        for (const [ref, record] of records.entries()) {
             if (record.isSkipped) {
                 // Deployment specs can skip records; do not add them to the batch
                 continue;
@@ -424,10 +442,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     this.logger.verbose(`Record out of sync ${record.recordId} (${record.sobjectType})`, status.mismatchedFields)
                 }
                 this.logger.debug('Update', record.sobjectType, ':', record.values);
-                batch.addUpdate(record.sobjectType, record.values, record.recordId, record.sourceKey);
+                batch.addUpdate(record.sobjectType, record.values, record.recordId, ref);
             } else {
                 this.logger.debug('Insert', record.sobjectType, ':', record.values);
-                batch.addInsert(record.sobjectType, record.values, record.sourceKey);
+                batch.addInsert(record.sobjectType, record.values, ref);
             }
         }
 
@@ -449,7 +467,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             filter: datapack => datapack.hasUnresolvedDependencies,
             map: datapack => datapack.resolveDependencies(this).catch(err => {
                 datapacks.delete(datapack.sourceKey);
-                void this.handleError(datapack, err);
+                this.handleError(datapack, err);
             })
         });
 
@@ -462,13 +480,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             this.logger.write(logSeverity, `Record ${datapack.sourceKey} has ${unresolvedDependenciesKeys.length} resolvable dependencies: ${unresolvedDependenciesKeys.join(', ')}`);
 
             for (const { field, dependency } of datapack.getUnresolvedDependencies()) {
-                const error = `Unresolved dependency "${dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey}" (field: ${field})`;
+                const sourceKey = dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey;
+                const error = `Unresolved dependent record "${sourceKey}" (field: ${field})`;
+
                 if (this.options.allowUnresolvedDependencies) {
                     datapack.addWarning(error);
                 } else {
                     // Remove records when allowUnresolvedDependencies is false
                     datapacks.delete(datapack.sourceKey);
-                    datapack.setFailed(error);
+                    this.handleError(datapack, error);
                 }
             }
         }
@@ -476,19 +496,28 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+        // prepare batch
+        await this.resolveDatapackDependencies(datapackRecords, cancelToken);
+        if (!datapackRecords.size) {
+            return;
+        }
+
         // Find out to which record groups the record to be deployed belong record groups
         const recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
         const recordGroupsStarted = new Set<string>();
-        for (const datapackRecord of datapackRecords.values()) {
+        const retriedRecords = new Array<DatapackDeploymentRecord>();
+        const records = [...datapackRecords.values()];
+
+        for (const datapackRecord of records) {
             if (!datapackRecord.isPending) {
-                throw new Error(`Datapack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
+                throw new Error('RECORD_ALREADY_DEPLOYED', `Datapack record is already deployed, failed or started: ${datapackRecord.sourceKey}`);
             }
 
             // Figure out which record-groups are getting deployed; we trigger the post/pre deploy events only
             // when a full record group is deployed
             const recordGroup = this.recordGroups.get(datapackRecord.datapackKey);
             if (!recordGroup) {
-                throw new Error(`Record "${datapackRecord.sourceKey}", requested for deployment is not associated to any record group`);
+                throw new Error('RECORD_UNKNOWN_DATAPACK', `Record "${datapackRecord.sourceKey}", requested for deployment is not part of any Datapack`);
             }
 
             recordGroups.set(datapackRecord.datapackKey, recordGroup);
@@ -496,28 +525,27 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 recordGroupsStarted.add(datapackRecord.datapackKey);
             }
 
+            if (datapackRecord.isPendingRetry) {
+                retriedRecords.push(datapackRecord);
+            }
+
             datapackRecord.updateStatus(DeploymentStatus.InProgress);
         }
 
-        // prepare batch
-        await this.resolveDatapackDependencies(datapackRecords, cancelToken);
-        if (!datapackRecords.size) {
-            return;
-        }
-
         if (cancelToken?.isCancellationRequested) {
-            await this.emit('onCancel', this, { hideExceptions: true, async: true });
+            await this.emit('cancel', this, { hideExceptions: true, async: true });
             return;
         }
 
-        // emit before deploy events; handlers can modify records before deployment is started
-        await this.resolveExistingIds(datapackRecords.values(), cancelToken)
-        await this.emit('beforeDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
+        // 
+        await this.emit('beforeRetryRecord', retriedRecords, { hideExceptions: true });
+        await this.resolveExistingIds(records, cancelToken)
+        await this.emit('beforeDeployRecord', records, { hideExceptions: true });
         await this.emit('beforeDeployGroup', [...Iterable.map(recordGroupsStarted, key => recordGroups.get(key)!)], { hideExceptions: true });
 
         // execute batch
         const connection = await this.connectionProvider.getJsForceConnection();
-        const batch = await this.createDeploymentBatch(datapackRecords.values(), cancelToken);
+        const batch = await this.createDeploymentBatch(datapackRecords, cancelToken);
 
         if (batch.size > 0) {
             this.logger.log(`Deploying ${batch.size} records...`);
@@ -528,7 +556,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 const datapackRecord = datapackRecords.get(result.ref);
 
                 if (!datapackRecord) {
-                    throw new Error(`Deployment for datapack ${result.ref} was never requested`);
+                    throw new Error('INVALID_RECORD', `Deployment for datapack ${result.ref} was never requested`);
                 }
 
                 // Update datapack record statuses
@@ -537,9 +565,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     this.logger.verbose(`Deployed ${datapackRecord.sourceKey}`);
                     this.deployed.push(datapackRecord);
                 } else if (!result.success) {
+                    datapackRecord.setError(result.error);
                     if (this.isRetryable(result.error) && datapackRecord.retryCount < this.options.maxRetries) {
-                        datapackRecord.updateStatus(DeploymentStatus.Retry, result.error);
-                        this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error}`);
+                        datapackRecord.updateStatus(DeploymentStatus.Retry);
+                        this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error.message}`);
                     } else {
                         this.handleError(datapackRecord, result.error);
                     }
@@ -572,19 +601,28 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             }
 
             await this.emit('afterDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
-            await this.emit('afterDeployGroup', completedGroups, { hideExceptions: true, async: false });
+            completedGroups.length && await this.emit('afterDeployGroup', completedGroups, { hideExceptions: true });
         }
     }
 
-    private handleError(datapackRecord: DatapackDeploymentRecord, error: Error | string) {
-        const errorMessage = typeof error === 'string' ? error : error.message;
-        datapackRecord.updateStatus(DeploymentStatus.Failed, errorMessage);
-        this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.statusMessage}`);
-        void this.emit('onError', datapackRecord, { async: true });
+    private handleError(datapackRecord: DatapackDeploymentRecord, error: RecordError | Error | string) {
+        if (datapackRecord.isFailed) {
+            // Do not report multiple errors for the same record
+        }
+
+        datapackRecord.setFailed(error);
+        void this.emit('recordError', datapackRecord, { async: true });
+
+        if (datapackRecord.isCascadeFailure && !this.options.reportCascadeFailures) {
+            this.logger.verbose(`Cascade failure ${datapackRecord.sourceKey} - ${datapackRecord.errorMessage}`);
+            return;
+        }
+
+        this.logger.error(`Failed ${datapackRecord.sourceKey} - ${datapackRecord.errorMessage}`);
         this.errors.push(datapackRecord);
     }
 
-    private isRetryable(error: Error | string) {
+    private isRetryable(error: RecordError) {
         // TODO: check which errors we should retry
         return true;
     }

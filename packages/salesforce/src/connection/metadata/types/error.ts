@@ -1,7 +1,7 @@
 /**
  * Represents an error that occurred during a synchronous CRUD (createMetadata(), updateMetadata(), or deleteMetadata()) operation.
  */
-export interface Error {
+export interface RecordError {
     /**
      * More details about the error, including an extended error code and extra error properties, when available. Reserved for future use.
      * For a description of the ExtendedErrorDetails element, see “ExtendedErrorDetails” in the SOAP API Developer Guide.

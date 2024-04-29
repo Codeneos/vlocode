@@ -8,9 +8,9 @@ import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 export class Product2 implements DatapackDeploymentSpec {
 
     public preprocess(datapack: VlocityDatapack) {
-        this.patchStartDates(datapack);
-        this.patchFulfillmentDate(datapack);
-        this.patchEndDates(datapack);
+        this.fixStartDates(datapack);
+        this.fixFulfillmentDate(datapack);
+        this.fixEndDates(datapack);
     }
 
     /**
@@ -19,7 +19,7 @@ export class Product2 implements DatapackDeploymentSpec {
      * the record post deployment and will cause issues.
      * @param datapack 
      */
-    private patchStartDates(datapack: VlocityDatapack) {
+    private fixStartDates(datapack: VlocityDatapack) {
         if (!datapack.EffectiveDate__c && !datapack.SellingStartDate__c) {
             return;
         }
@@ -39,7 +39,7 @@ export class Product2 implements DatapackDeploymentSpec {
         }
     }
 
-    private patchFulfillmentDate(datapack: VlocityDatapack) {
+    private fixFulfillmentDate(datapack: VlocityDatapack) {
         if (datapack.FulfilmentStartDate__c === undefined) {
             return;
         }
@@ -57,7 +57,7 @@ export class Product2 implements DatapackDeploymentSpec {
         }
     }
 
-    private patchEndDates(datapack: VlocityDatapack) {
+    private fixEndDates(datapack: VlocityDatapack) {
         if (!datapack.EndDate__c && !datapack.SellingEndDate__c) {
             return;
         }

@@ -105,7 +105,7 @@ export class AsyncEventEmitter<T extends EventMap = any> {
     /**
      * Emit an event and await the event completion
      * @param event event type that is emptied
-     * @param params parameters matching the event type     * 
+     * @param params parameters matching the event type
      */
     public async emit<K extends EventKey<T>>(event: K, params: T[K], options?: EventEmitOptions): Promise<boolean> {
         let triggered = 0;
@@ -116,20 +116,28 @@ export class AsyncEventEmitter<T extends EventMap = any> {
             triggered++;
 
             if (options?.async) {
-                setImmediate(listener.callback, params);
+                setImmediate(async () => {
+                    try {
+                        await listener.callback(params)
+                    } catch (err) {
+                        try {
+                            this.onCallbackEmitError(err, event, listener.callback);
+                        } catch (e) {
+                            console.error('Error in error handler', e);
+                        }
+                    }
+                });
             } else {
                 try {
                     await listener.callback(params);
                 } catch(err) {
-                    if (!options?.hideExceptions && !options?.async) {
+                    try {
+                        this.onCallbackEmitError(err, event, listener.callback);
+                    } catch (e) {
+                        console.error('Error in error handler', e);
+                    }
+                    if (!options?.hideExceptions) {
                         throw err;
-                    } else {
-                        // for Debugging: log errors to the console but don't fail
-                        if (err instanceof Error) {
-                            console.error(`Event "${event}" failed with error:`, err.message, '\n', err.stack);
-                        } else {
-                            console.error(`Event "${event}" failed with error:`, err);
-                        }
                     }
                 }
             }
@@ -139,6 +147,20 @@ export class AsyncEventEmitter<T extends EventMap = any> {
             }
         }
         return triggered > 0;
+    }
+
+    /**
+     * Handles the error that occurs when emitting a callback event.
+     * @param err - The error that occurred.
+     * @param event - The name of the event.
+     * @param failedCallback - The failed callback event receiver.
+     */
+    protected onCallbackEmitError(err: unknown, event: string, failedCallback: EventReceiver<any>) {
+        if (err instanceof Error) {
+            console.error(`Event "${event}" failed with error:`, err.message, '\n', err.stack);
+        } else {
+            console.error(`Event "${event}" failed with error:`, err);
+        }
     }
 
     /**

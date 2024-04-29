@@ -162,10 +162,12 @@ export class DatapackDeployer {
         const deployment = this.container.create(DatapackDeployment, options);
         const recordFactory = this.container.create(DatapackRecordFactory);
 
+        // Hook up event handlers
         deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(deployment, group));
         deployment.on('beforeDeployGroup', group => this.beforeDeployRecordGroup(deployment, group));
         deployment.on('afterDeployRecord', records => this.afterDeployRecord(deployment, records));
         deployment.on('beforeDeployRecord', records => this.beforeDeployRecord(deployment, records));
+        deployment.on('beforeRetryRecord', records => this.beforeRetryRecord(deployment, records));
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
@@ -283,6 +285,16 @@ export class DatapackDeployer {
         }
     }
 
+    /**
+     * Executes the necessary actions before deploying a record.
+     * If the `disableTriggers` option is set in the deployment, it will disable triggers.
+     * If the deployment is cancelled, the method will return early.
+     * It then runs the `beforeDeployRecord` spec function with the provided arguments.
+     * 
+     * @param deployment - The DatapackDeployment object.
+     * @param datapackRecords - An iterable of DatapackDeploymentRecord objects.
+     * @returns A Promise that resolves when the actions are completed.
+     */
     private async beforeDeployRecord(deployment: DatapackDeployment, datapackRecords: Iterable<DatapackDeploymentRecord>) {
         if (deployment.options.disableTriggers) {
             await this.setVlocityTriggerState(false);
@@ -297,6 +309,33 @@ export class DatapackDeployer {
         });
     }
 
+    /**
+     * Executes the necessary actions before retrying a record deployment.
+     * 
+     * @param deployment - The DatapackDeployment object.
+     * @param datapackRecords - An iterable of DatapackDeploymentRecord objects.
+     */
+    private async beforeRetryRecord(deployment: DatapackDeployment, datapackRecords: Iterable<DatapackDeploymentRecord>) {
+        if (deployment.isCancelled) {
+            return;
+        }
+        await this.runSpecFunction('beforeRetryRecord', { 
+            args: [ [...datapackRecords] ], 
+            ignoreErrors: true, 
+            errorSeverity: 'error' 
+        });
+    }
+
+    /**
+     * Performs additional tasks after the deployment of a datapack record.
+     * If triggers are disabled in the deployment options, it sets the Vlocity trigger state to true.
+     * Verifies the deployed field data for specific fields.
+     * Runs the 'afterDeployRecord' spec function with the provided arguments.
+     * 
+     * @param deployment - The DatapackDeployment object representing the deployment.
+     * @param datapackRecords - An iterable of DatapackDeploymentRecord objects representing the deployed records.
+     * @returns A Promise that resolves when all the tasks are completed.
+     */
     private async afterDeployRecord(deployment: DatapackDeployment, datapackRecords: Iterable<DatapackDeploymentRecord>) {
         if (deployment.options.disableTriggers) {
             await this.setVlocityTriggerState(true);

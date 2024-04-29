@@ -1,6 +1,7 @@
 import { Timer , Iterable, removeNamespacePrefix } from '@vlocode/util';
 import { randomUUID } from 'crypto';
 import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer';
+import { RecordError } from '@vlocode/salesforce';
 
 export enum DeploymentStatus {
     Pending,
@@ -28,6 +29,7 @@ export class DatapackDeploymentRecord {
     private readonly _deployTimer: Timer = new Timer();
     private _status: DeploymentStatus = DeploymentStatus.Pending;
     private _statusDetail?: string;
+    private _error?: Error | RecordError;
     private _existingId?: string;
     private _retryCount = 0;
     private _datapackAction: DeploymentAction = DeploymentAction.None;
@@ -51,8 +53,16 @@ export class DatapackDeploymentRecord {
         return this._status === DeploymentStatus.Deployed;
     }
 
+    /**
+     * Gets a value indicating whether the deployment is pending or in retry status.
+     * @returns {boolean} True if the deployment is pending or in retry status, otherwise false.
+     */
     public get isPending(): boolean {
         return this._status === DeploymentStatus.Pending || this._status === DeploymentStatus.Retry;
+    }
+
+    public get isPendingRetry(): boolean {
+        return this._status === DeploymentStatus.Retry;
     }
 
     public get isStarted(): boolean {
@@ -75,16 +85,66 @@ export class DatapackDeploymentRecord {
         return this._datapackAction === DeploymentAction.Skip;
     }
 
+    /**
+     * Checks if the deployment record failed due to a cascade failure. A cascade failure occurs when a record
+     * cannot be deployed because it is dependent on another record that failed to deploy.
+     * @returns {boolean} True if the deployment record represents a cascade failure, false otherwise.
+     */
+    public get isCascadeFailure(): boolean {
+        return this.errorCode === 'RECORD_CASCADE_FAILURE';
+    }
+
     public get hasWarnings(): boolean {
         return this._warnings.length > 0;
     }
 
+    /**
+     * Gets the record ID of the deployed record if the record is deployed. 
+     * Otherwise the ID of the record that will be updated.
+     * For new records this will be undefined.
+     * 
+     * To change the record ID of a record use the `setAction` method with the `DeploymentAction.Update` action.
+     */
     public get recordId(): string | undefined {
         return this._status === DeploymentStatus.Deployed ? this._statusDetail : this._existingId;
     }
 
+    /**
+     * When the record is not deployed this property contains the last reported state detail.
+     */
     public get statusMessage(): string | undefined {
+        if (this.isFailed && this._error) {
+            return this._error?.message;
+        }
         return this._status !== DeploymentStatus.Deployed ? this._statusDetail : undefined;
+    }
+
+    /**
+     * Gets the error message associated with the deployment record.
+     * @returns The error message, or undefined if there is no error.
+     */
+    public get errorMessage(): string | undefined {
+        return this._error?.message;
+    }
+
+    public get errorCode(): string | undefined {
+        if (this._error) {
+            if ('errorCode' in this._error) {
+                return String(this._error['errorCode']);
+            } else if ('statusCode' in this._error) {
+                return String(this._error['statusCode']);
+            } else if ('name' in this._error) {
+                return String(this._error['name']);
+            }
+        }
+    }
+
+    /**
+     * Gets the error associated with the deployment record.
+     * @returns The error object or undefined if there is no error.
+     */
+    public get error(): Error | RecordError | undefined {
+        return this._error;
     }
 
     public get warnings(): ReadonlyArray<string> {
@@ -177,20 +237,35 @@ export class DatapackDeploymentRecord {
     }
 
     public updateStatus(status: DeploymentStatus, detail?: string) {
-        if (status === DeploymentStatus.InProgress) {
-            this._deployTimer.reset();
-        } else if (status === DeploymentStatus.Failed || status === DeploymentStatus.Deployed) {
-            this._deployTimer.stop();
-        } else if (status === DeploymentStatus.Retry) {
-            this._deployTimer.stop();
-            this._retryCount++;
+        switch (status) {
+            case DeploymentStatus.InProgress:
+                if (this._status !== DeploymentStatus.InProgress) {
+                    this._deployTimer.reset();
+                }
+                break;
+            case DeploymentStatus.Retry:
+                this._deployTimer.stop();
+                this._retryCount++;
+                break;
+            case DeploymentStatus.Failed:
+                this._deployTimer.stop();
+                break;
+            case DeploymentStatus.Deployed:
+                this._deployTimer.stop();
+                this._error = undefined;
+                break;
         }
         this._status = status;
         this._statusDetail = detail;
     }
 
-    public setFailed(message: string) {
-        this.updateStatus(DeploymentStatus.Failed, message);
+    public setFailed(error: string | Error | RecordError) {
+        this.updateStatus(DeploymentStatus.Failed);
+        this.setError(error);
+    }
+
+    public setError(error: string | Error | RecordError) {
+        this._error = typeof error === 'object' ? error : new Error(error);
     }
 
     public addWarning(message: string) {

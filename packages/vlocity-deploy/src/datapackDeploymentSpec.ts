@@ -63,9 +63,13 @@ export interface DatapackDeploymentSpec {
     beforeDependencyResolution?(records: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
 
     /**
-     * This hook is called before deploying the first record in a datapack, and is only called once very datapack in the deployment. Use this hook to execute and pre-deployment actions. This action is comparable with the `pre-step` job
-     * from the Vlocity tools library. Use the {@link DatapackDeploymentEvent.getRecords} function to get a list of records for a specific SObject type.
-     * The `type` argument passed to {@link DatapackDeploymentEvent.getRecords} should not be prefixed with a namespace. I.e; to get a list of `OmniScript__c` records in the deployment use:
+     * This hook is called before deploying the first record in a datapack, and is only called once very datapack in the deployment. 
+     * - Use this hook to execute and pre-deployment actions. This action is comparable with the `pre-step` job from the Vlocity tools library. 
+     * - Use the {@link DatapackDeploymentEvent.getRecords} function to get a list of records for a specific SObject type.
+     *
+     * The `type` argument passed to {@link DatapackDeploymentEvent.getRecords} should not be prefixed with a namespace. 
+     * I.e; to get a list of `OmniScript__c` records in the deployment use:
+     * 
      * ```js
      * DatapackDeploymentEvent.getRecords('OmniScript__c')
      * ```
@@ -74,16 +78,24 @@ export interface DatapackDeploymentSpec {
      * DatapackDeploymentEvent.getRecords('vlocity_cmt__OmniScript__c')
      * ```
      *
-     * The event object also exposes {@link DatapackDeploymentEvent.getDeployedRecords}; in the {@link beforeDeploy} this will always return an empty array.
+     * The event object also exposes {@link DatapackDeploymentEvent.getDeployedRecords}; in the {@link beforeDeploy} this 
+     * will always return an empty array.
      *
      * @param event event object
      */
     beforeDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
 
     /**
-     * This hook is called after all records of a datapack are deployed and will only be called once for every datapack in the deployment. Use this hook to execute datapack activation logic; it is comparable to `post-step` in Vlocity tools and should also execute any activation logic if required.
-     * Use the {@link DatapackDeploymentEvent.getDeployedRecords} function to get a list of deployed records for a specific SObject type. This excludes any records that didn't get deployed.
-     * The `type` argument passed to {@link DatapackDeploymentEvent.getRecords} should not be prefixed with a namespace even if the object you try to access has a namespace; see also {@link beforeDeploy}.
+     * This hook is called after all records of a datapack are deployed and will only be called once for every datapack in the deployment.
+     * Use this hook to execute datapack activation logic. It is comparable to `post-step` in Vlocity tools
+     * and should also execute any activation logic if required.
+     * 
+     * Use the {@link DatapackDeploymentEvent.getDeployedRecords} function to get a list of deployed records for a specific SObject type.
+     * This excludes any records that didn't get deployed.
+     * 
+     * The `type` argument passed to {@link DatapackDeploymentEvent.getRecords} should not be prefixed with a namespace even if the object
+     * you try to access has a namespace; see also {@link beforeDeploy}.
+     * 
      * @param event event object
      */
     afterDeploy?(event: DatapackDeploymentEvent): Promise<any> | any;
@@ -105,6 +117,16 @@ export interface DatapackDeploymentSpec {
      * @param event  Array of records that got deployed; contains both the failed and success records.
      */
     afterDeployRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
+
+    /**
+     * Executed before a record is retried; this hook point can be used to run any logic that should be executed 
+     * before a record is retried such as updating the record values ot changing the upsert fields.
+     * 
+     * This hook point is called **before** dependency resolution.
+     *
+     * @param event Array of records that is going to be retried
+     */
+    beforeRetryRecord?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<any> | any;
 }
 
 /**

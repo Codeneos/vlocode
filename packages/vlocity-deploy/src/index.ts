@@ -10,6 +10,7 @@ export * from './datapackDeploy';
 export * from './datapackDeployer';
 export * from './datapackDeployment';
 export * from './datapackDeploymentEvent';
+export * from './datapackDeploymentError';
 export * from './datapackDeploymentRecord';
 export * from './datapackDeploymentRecordGroup';
 export * from './datapackRecordFactory';

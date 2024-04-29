@@ -3,20 +3,20 @@ import { Timer, arrayMapPush, CancellationToken, groupBy, AwaitReturnType } from
 import { RecordResult, BatchInfo } from 'jsforce';
 
 import { SalesforceSchemaService } from './salesforceSchemaService';
-import { SalesforceConnection } from './connection';
+import { SalesforceConnection, RecordError } from './connection';
 
 type RecordOperationType = 'update' | 'insert';
 
 export type BatchResultRecord = {
     ref: string;
     success: boolean;
+    error: RecordError | undefined;
     operation: RecordOperationType;
-    error?: string;
-    recordId?: string;
+    recordId: string | undefined;
 } &
 (
     { success: true; recordId: string; error: undefined } |
-    { success: false; error: string; recordId: undefined }
+    { success: false; error: RecordError; recordId: undefined }
 );
 
 /** @private type to @see RecordBatch class */
@@ -120,13 +120,15 @@ export class RecordBatch {
                 // Process and yield results
                 for (let i = 0; i < results.length; i++) {
                     const result = results[i];
-                    // @ts-expect-error ts does not detect mapping of types correctly
+                    const dmlError = result.success === false ? result.errors[0] : undefined;
+
                     yield {
                         ref: chunk.refs[i],
                         success: result.success,
                         operation: chunk.operation,
                         recordId: result.success === true ? result.id : undefined,
-                        error: result.success === false ? result.errors.map(err => (err as any).message || err).join(',') : undefined,
+                        // @ts-expect-error
+                        error: dmlError,
                     };
                 }
 

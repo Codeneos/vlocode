@@ -10,21 +10,29 @@ import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 /**
  * Describes a records status in the target org.
  */
+/**
+ * Represents the status of a record in an org.
+ */
 export interface OrgRecordStatus {
-    recordId: string,
-    inSync: boolean,
+    /**
+     * Record ID in the target org.
+     */
+    recordId: string;
+    /**
+     * True if the record is in sync with the target org and all fields match.
+     */
+    inSync: boolean;
     mismatchedFields?: Array<{
-        field: string,
-        actual: any,
-        expected: any
-    }>
+        field: string;
+        actual: any;
+        expected: any;
+    }>;
 }
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackLookupService implements DependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();
-    private readonly lastRefresh: Date = new Date(0);
     private readonly distinctLogger: Logger;
 
     constructor(

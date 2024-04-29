@@ -2,7 +2,7 @@
 // Designed for use with Vlocode libraries and extension
 // Provides design-time validation of Salesforce metadata types
 import type { AsyncResult } from '../connection/metadata/types/asyncResult';
-import type { Error } from '../connection/metadata/types/error';
+import type { RecordError } from '../connection/metadata/types/error';
 import type { ReadResult, SaveResult, UpsertResult } from '../connection/metadata/types/crudResult';
 import type { DeployMessage, DeployResult, DeployOptions, RunTestsResult } from '../connection/metadata/types/deployResult';
 import type { CancelDeployResult } from '../connection/metadata/types/cancelDeployResult';
