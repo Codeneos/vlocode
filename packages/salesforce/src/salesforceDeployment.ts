@@ -1,5 +1,5 @@
 import { LogManager , container } from '@vlocode/core';
-import { AsyncEventEmitter, CancellationToken } from '@vlocode/util';
+import { AsyncEventEmitter, CancellationToken, getErrorMessage } from '@vlocode/util';
 import { DeployOptions, DeployResult, DeployResultDetails, DeployStatus, FailureDeployMessage, SalesforceConnection, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackage } from './deploymentPackage';
 
@@ -22,6 +22,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     private deploymentId: string;
     private connection: SalesforceConnection;
     private lastStatus: DeployResult;
+    private deployOptions: DeployOptions;
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
     private nextProgressTimeoutId: NodeJS.Timeout;
@@ -154,13 +155,14 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         }
 
         // Start deploy
+        this.deployOptions = deployOptions;
         this.connection = await this.salesforce.getJsForceConnection();
         const zipInput = await this.sfPackage.getBuffer(this.compressionLevel);
         const deployJob = await this.connection.metadata.deploy(zipInput, deployOptions);
         this.deploymentId = deployJob.id;
 
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        setImmediate(() => this.checkDeployment());
+        setImmediate(() => this.checkDeploymentSafe());
 
         return this;
     }
@@ -235,7 +237,22 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
             void this.emit('complete', status);
         } else {
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
-            this.nextProgressTimeoutId = setTimeout(() => this.checkDeployment(), this.checkInterval);
+            this.nextProgressTimeoutId = setTimeout(() => this.checkDeploymentSafe(), this.checkInterval);
+        }
+    }
+
+    private async checkDeploymentSafe() {
+        try {
+            await this.checkDeployment();
+        } catch(err) {
+            if (!this.lastStatus) {
+                this.lastStatus = { id: this.deploymentId } as unknown as DeployResult;
+            } 
+            this.lastStatus.status = 'Failed';
+            this.lastStatus.errorMessage = getErrorMessage(err);
+            this.lastStatus.done = true;
+            this.lastStatus.success = false;
+            void this.emit('complete', this.lastStatus);
         }
     }
 
