@@ -10,8 +10,8 @@ export type SalesforceBatchStatus = 'Processing' | 'Aborted' | 'Queued' | 'Compl
 export interface SalesforceBatchJob {
     id: string;
     createdById: string;
-    createdDate: string;
-    completedDate?: string;
+    createdDate: Date;
+    completedDate: Date | null;
     apexClass: {
         name: string;
         namespacePrefix: string;
@@ -24,6 +24,10 @@ export interface SalesforceBatchJob {
 }
 
 export interface SalesforceBatchJobStatus {
+    /**
+     * ID of the batch job
+     */
+    id: string;
     /**
      * Name of the APEX class executed by the batch
      */
@@ -193,22 +197,27 @@ export class SalesforceBatchService {
      */
     public async getBatchStatus(filter: string | QueryFilterCondition) : Promise<SalesforceBatchJobStatus | undefined> {
         const job = (await this.getBatchJobs(filter)).pop();
-        return (
-            job && {
-                elapsedTime: (job.completedDate ? DateTime.fromISO(job.completedDate) : DateTime.now()).diff(DateTime.fromISO(job.createdDate)).toMillis(),
-                apexClass: job.apexClass.name,
-                done: job.status === 'Completed' || job.status === 'Aborted',
-                status: job.status,
-                progress: job.jobItemsProcessed ?? 0,
-                total: job.totalJobItems ?? 0,
-                progressString: job.totalJobItems && job.jobItemsProcessed
-                    ? `${job.status} (${job.jobItemsProcessed}/${job.totalJobItems})`
-                    : job?.status,
-                toString() {
-                    return `${this.apexClass} (${this.id}) -- ${this.progressString} [${(this.elapsedTime / 1000).toFixed(1)}s]`;
-                }
-            } as any
-        );
+        if (!job) {
+            return;
+        }
+
+        const progressText = job.totalJobItems && job.jobItemsProcessed
+            ? `${job.status} (${job.jobItemsProcessed}/${job.totalJobItems})`
+            : job?.status;
+
+        return {
+            id: job.id,
+            elapsedTime: (job.completedDate ? DateTime.fromJSDate(job.completedDate) : DateTime.now()).diff(DateTime.fromJSDate(job.createdDate)).toMillis(),
+            apexClass: job.apexClass.name,
+            done: job.status === 'Completed' || job.status === 'Aborted',
+            status: job.status,
+            progress: job.jobItemsProcessed ?? 0,
+            total: job.totalJobItems ?? 0,
+            // @ts-ignore ts(2322) -- allow toString to be added to the object
+            toString() {
+                return `${this.apexClass} (${this.id}) -- ${progressText} [${(this.elapsedTime / 1000).toFixed(1)}s]`;
+            }
+        };
     }
 
     /**

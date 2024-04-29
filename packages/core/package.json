@@ -54,7 +54,7 @@
         "@vlocode/util": "workspace:*",
         "chalk": "^4.1.1",
         "globby": "^11.0.4",
-        "luxon": "^3.4.0",
+        "luxon": "^3.4.4",
         "memfs": "^3.2.2",
         "minimatch": "^9.0.3",
         "reflect-metadata": "^0.1.13",

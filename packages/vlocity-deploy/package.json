@@ -64,7 +64,7 @@
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
         "fs-extra": "^11",
-        "luxon": "^3.4.0",
+        "luxon": "^3.4.4",
         "moment": "^2.29.4",
         "sass": "^1.59.3"
     },

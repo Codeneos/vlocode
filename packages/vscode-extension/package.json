@@ -1547,7 +1547,7 @@
         "js-yaml": "^4.1.0",
         "jsforce": "^1.11.0",
         "log-symbols": "^4.0.0",
-        "luxon": "^3.4.0",
+        "luxon": "^3.4.4",
         "open": "^8.2.1",
         "reflect-metadata": "^0.1.13",
         "shx": "^0.3.4",
