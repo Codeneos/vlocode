@@ -1154,27 +1154,17 @@
                             "compatibility",
                             "direct"
                         ],
-                        "default": "compatibility",
+                        "default": "direct",
                         "enumDescriptions": [
-                            "Use Vlocity Deployment library; maximizes compatibility at the cost of deployment speed",
-                            "Directly load records using bulk or collections API; significantly faster then but still beta"
+                            "Use Vlocity Tools library; use this mode when you experience issues with the direct mode",
+                            "Directly loads records in Salesforce using the Vlocode client side deployment library (fast)"
                         ],
-                        "markdownDescription": "Change how Datapacks are deployment by Vlocode; select _direct_ mode for faster deployments (currently this is a beta feature)"
+                        "markdownDescription": "Change how Datapacks are deployment by Vlocode. Vlocode uses *direct* as new default, if you experience issues with the *direct* mode switch to the older tools based _compatibility_ mode."
                     },
                     "vlocity.deploy.chunkSize": {
                         "type": "number",
                         "default": 100,
                         "markdownDescription": "Number of records to deploy in as single operation using the collection API, only affects deployments when *direct* mode is enabled"
-                    },
-                    "vlocity.deploy.bulkApiThreshold": {
-                        "type": "number",
-                        "default": 500,
-                        "markdownDescription": "Record count when to start using the bulk API only has effect when `vlocity.deploy.useBulkApi` is set to true `true`"
-                    },
-                    "vlocity.deploy.useBulkApi": {
-                        "type": "boolean",
-                        "default": false,
-                        "markdownDescription": "When enabled the deployment process will use the bulk API for uploading records when the total record type for a single SObject surpassed the value configured as `bulkApiThreshold`"
                     }
                 }
             },

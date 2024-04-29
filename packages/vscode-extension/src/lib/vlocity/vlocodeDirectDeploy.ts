@@ -25,7 +25,7 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
             // TODO: allow user to override these from options
             strictOrder: true,
             purgeMatchingDependencies: false,
-            lookupFailedDependencies: true,
+            lookupFailedDependencies: false,
             continueOnError: true,
             maxRetries: 1,
         }, cancellationToken);
@@ -41,13 +41,7 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
         if (deployment.hasErrors) {
             for (const [datapackKey, messages] of Object.entries(deployment.getMessagesByDatapack())) {
                 const failedRecords = deployment.getFailedRecords(datapackKey).length;
-                const totalRecords = deployment.getRecords(datapackKey).length;
-
-                if (failedRecords == 0) {
-                    continue;
-                }
-
-                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- ${totalRecords - failedRecords}/${totalRecords}`);
+                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- Failed Records ${failedRecords}`);
                 for (let i = 0; i < messages.length; i++) {
                     this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatError(messages[i].message)}`);
                 }
