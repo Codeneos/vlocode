@@ -3,18 +3,36 @@ import { PropertyTransformHandler, removeNamespacePrefix } from '@vlocode/util';
 import { randomUUID as generateGuid } from 'crypto';
 import { ManifestEntry, ObjectEntry } from '../types';
 
-export type VlocityDatapackReference = {
-    [key: string]: string;
-    VlocityRecordSObjectType: string;
-} & ({
-    VlocityDataPackType: 'VlocityLookupMatchingKeyObject';
-    VlocityLookupRecordSourceKey: string;
-} | {
-    VlocityDataPackType: 'VlocityMatchingKeyObject';
-    VlocityMatchingRecordSourceKey: string;
-});
+/**
+ * Represents the reference type for Vlocity datapacks.
+ * It can be either 'VlocityLookupMatchingKeyObject' or 'VlocityMatchingKeyObject'.
+ * - `VlocityMatchingKeyObject` is used for parent-child relationships where the reference is expected to be part 
+ *   of the same datapack therefore a lookup isn't required.
+ * - `VlocityLookupMatchingKeyObject` is used for external references where the reference is expected to be 1) 
+ *   in a different datapack or not be defined as datapack at all. In both cases a lookup would usually be required.
+ *   These references usually have the lookup fields defined in the reference object.
+ */
+export type VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject' | 'VlocityMatchingKeyObject';
 
-const DATAPACK_GLOBAL_KEY_FIELD = '%vlocity_namespace%__GlobalKey__c';
+/**
+ * Represents a Vlocity datapack reference of a specific type.
+ */
+export type VlocityDatapackReference = VlocityDatapackLookupReference | VlocityDatapackMatchingReference;
+
+export type VlocityDatapackLookupReference = {
+    VlocityDataPackType: 'VlocityLookupMatchingKeyObject';
+    VlocityRecordSObjectType: string;
+    VlocityLookupRecordSourceKey: string;
+    VlocityMatchingRecordSourceKey?: undefined;
+    [key: string]: any;
+}
+
+export type VlocityDatapackMatchingReference = {
+    VlocityDataPackType: 'VlocityMatchingKeyObject';
+    VlocityRecordSObjectType: string;
+    VlocityMatchingRecordSourceKey: string;
+    VlocityLookupRecordSourceKey?: undefined;
+}
 
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
@@ -221,7 +239,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         const sourceKeys = new Set([...this.getSourceKeys()].map(sourceKey => sourceKey.VlocityRecordSourceKey));
 
         for(const reference of this.getReferences()) {
-            const referenceKey = reference.VlocityLookupRecordSourceKey || reference.VlocityMatchingRecordSourceKey;
+            const referenceKey = reference.VlocityLookupRecordSourceKey ?? reference.VlocityMatchingRecordSourceKey;
             if (!sourceKeys.has(referenceKey)) {
                 externalReferences.set(referenceKey, reference);
             }
