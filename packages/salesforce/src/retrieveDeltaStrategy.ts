@@ -1,5 +1,5 @@
 import { injectable, LifecyclePolicy, Logger } from "@vlocode/core";
-import { CancellationToken, deepCompare, ObjectEqualsOptions, remove, XML } from "@vlocode/util";
+import { CancellationToken, deepCompare, remove, XML } from "@vlocode/util";
 import { RetrieveManifestOptions, SalesforceDeployService } from "./salesforceDeployService";
 import { SalesforcePackage, SalesforcePackageComponent } from "./deploymentPackage";
 import { MetadataRegistry, MetadataType } from "./metadataRegistry";
@@ -24,8 +24,8 @@ export class RetrieveDeltaStrategy  {
         'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),
         'xml': (a, b) => this.isXmlEqual(a, b, { strictOrder: false, ignoreExtra: true }),
         'metaXml': (a, b) => this.isMetaXmlEqual(a, b),
-        'binary': this.isBinaryEqual,
-        'default': this.isStringEqual,
+        'binary': this.isBinaryEqual.bind(this),
+        'default': this.isStringEqual.bind(this),
     }
 
     constructor(

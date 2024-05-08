@@ -1,5 +1,5 @@
-import { container, LogManager } from '@vlocode/core';
-import { deepClone, flattenObject, lazy } from '@vlocode/util';
+import { container } from '@vlocode/core';
+import { deepClone, flattenObject } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './connection';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';

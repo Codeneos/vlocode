@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import ZipArchive from 'jszip';
 import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
 import { FileProperties, RetrieveResult } from '../connection';
-import { SalesforcePackageComponent, SalesforcePackageComponentFile } from '../deploymentPackage';
+import { SalesforcePackageComponentFile } from '../deploymentPackage';
 import { PackageManifest } from './packageXml';
 
 /**

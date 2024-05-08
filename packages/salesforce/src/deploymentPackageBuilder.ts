@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
 import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, endsWith, substringBeforeLast, stringEqualsIgnoreCase, stringEquals } from '@vlocode/util';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
 import { SalesforcePackage, SalesforcePackageComponent } from './deploymentPackage';

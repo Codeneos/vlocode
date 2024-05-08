@@ -21,7 +21,7 @@ export class ExecuteApiLensProvider implements vscode.CodeLensProvider {
 
     private readonly regex = /^(GET|POST|PUT|DELETE|PATCH) (.*)$/i;
 
-    public static register(service: VlocodeService) {
+    public static register() {
         const lens = container.get(ExecuteApiLensProvider);
         vscode.languages.registerCodeLensProvider(lens.documentFilter, lens);
     }
@@ -46,7 +46,7 @@ export class ExecuteApiLensProvider implements vscode.CodeLensProvider {
         return [];
     }
 
-    public resolveCodeLens(codeLens: vscode.CodeLens, token: vscode.CancellationToken): vscode.CodeLens | undefined {
+    public resolveCodeLens(codeLens: vscode.CodeLens): vscode.CodeLens | undefined {
         return codeLens;
     }
 }

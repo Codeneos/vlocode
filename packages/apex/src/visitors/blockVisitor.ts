@@ -3,7 +3,7 @@ import { TypeRefVisitor } from "./typeRefVisitor";
 import { DeclarationVisitor } from "./declarationVisitor";
 import {  BlockContext, CatchClauseContext, DotExpressionContext, IdCreatedNamePairContext, IdPrimaryContext, LocalVariableDeclarationContext } from "../grammar";
 import { TypeListVisitor } from "./typeListVisitor";
-import { stringEquals, substringBefore } from "@vlocode/util";
+import { stringEquals } from "@vlocode/util";
 import standardNamespaces from '../standardNamespace.json';
 
 export class BlockVisitor<T extends ApexBlock> extends DeclarationVisitor<T> {

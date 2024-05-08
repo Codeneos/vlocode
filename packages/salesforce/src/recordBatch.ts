@@ -280,7 +280,7 @@ export class RecordBatch {
     public addUpdate(type: string, data: any, id: string, ref?: string): this {
         data.Id = id;
         arrayMapPush(this.update, type, { ref, data });
-        for (const [sobjectType, records] of this.update) {
+        for (const [,records] of this.update) {
             const unique = groupBy(records, record => record.data.Id);
             for (const [id, records] of Object.entries(unique)) {
                 if (records.length > 1) {

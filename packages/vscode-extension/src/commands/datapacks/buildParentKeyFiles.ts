@@ -80,7 +80,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 const missingRefs : VlocityDatapackReference[] = [];
                 const resolvedRefs : VlocityDatapack[] = [];
                 for (const ref of this.getExternalReferences(datapack)) {
-                    const sourceKey = ref.VlocityLookupRecordSourceKey || ref.VlocityMatchingRecordSourceKey;
+                    const sourceKey = ref.VlocityLookupRecordSourceKey ?? ref.VlocityMatchingRecordSourceKey;
                     const resolvedRef = resolvedDatapacks.get(sourceKey);
 
                     if (this.datapackService.isGuaranteedParentKey(sourceKey)) {
@@ -97,7 +97,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
                 // collect parent key references
                 const parentKeyReferences = resolvedRefs.map(dp => this.datapackService.getDatapackReferenceKey(dp));
-                const missingParents = missingRefs.map(ref => ref.VlocityLookupRecordSourceKey || ref.VlocityMatchingRecordSourceKey);
+                const missingParents = missingRefs.map(ref => ref.VlocityLookupRecordSourceKey ?? ref.VlocityMatchingRecordSourceKey);
 
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(

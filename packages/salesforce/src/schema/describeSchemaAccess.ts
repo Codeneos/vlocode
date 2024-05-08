@@ -3,7 +3,6 @@ import { cache, forEachAsyncParallel, getObjectProperty, setObjectProperty, Time
 import { SalesforceConnectionProvider } from '../connection';
 import { DescribeSObjectResult, Field } from '../types';
 import { SchemaDataStore } from './schemaDataStore';
-import { ToolingApiSchemaAccess } from './toolingApiSchemaAccess';
 
 @injectable()
 /**

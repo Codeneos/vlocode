@@ -212,7 +212,7 @@ class Vlocode {
             this.logger.warn(`Unable to register symbol provider for APEX logs: ${err}`);
         }
 
-        ExecuteApiLensProvider.register(this.service);
+        ExecuteApiLensProvider.register();
         TestCoverageLensProvider.register(this.service);
 
         // Watch conditionalContextMenus for changes

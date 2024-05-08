@@ -6,8 +6,6 @@ import { VlocityDatapack } from '@vlocode/vlocity';
 
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
-import { segregate } from '@vlocode/util';
-import { randomUUID } from 'crypto';
 
 @vscodeCommand(VlocodeCommand.cloneDatapack)
 export default class CloneDatapackCommand extends DatapackCommand {

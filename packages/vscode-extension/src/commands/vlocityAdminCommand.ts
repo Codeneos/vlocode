@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { VlocodeCommand, NAMESPACE_PLACEHOLDER_PATTERN } from '../constants';
+import { VlocodeCommand } from '../constants';
 import { CommandBase } from '../lib/commandBase';
 import { SalesforceConnectionProvider } from '@vlocode/salesforce';
 import { vscodeCommand } from '../lib/commandRouter';

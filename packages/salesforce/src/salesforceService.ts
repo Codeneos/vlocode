@@ -112,9 +112,8 @@ export class SalesforceService implements SalesforceConnectionProvider {
 
     @cache()
     public async getInstalledPackages() {
-        const con = await this.getJsForceConnection();
-        const x = await con.metadata.readAll('InstalledPackage');
-        const packageList = await spreadAsync(con.metadata.readAll('InstalledPackage'));
+        const connection = await this.getJsForceConnection();
+        const packageList = await spreadAsync(connection.metadata.readAll('InstalledPackage'));
         return packageList;
     }
 
