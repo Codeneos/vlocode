@@ -1,7 +1,9 @@
 import { Timer , Iterable, removeNamespacePrefix } from '@vlocode/util';
-import { randomUUID } from 'crypto';
-import { DatapackRecordDependency, DependencyResolver } from './datapackDeployer';
 import { RecordError } from '@vlocode/salesforce';
+import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference } from '@vlocode/vlocity';
+
+import { randomUUID } from 'crypto';
+import { DatapackDependencyResolver } from './datapackDependencyResolver';
 
 export enum DeploymentStatus {
     Pending,
@@ -24,7 +26,7 @@ export type DeployedDatapackDeploymentRecord = DatapackDeploymentRecord & { reco
 export class DatapackDeploymentRecord {
 
     private readonly _warnings = new Array<string>();
-    private readonly _dependencies = new Map<string, DatapackRecordDependency>();
+    private readonly _dependencies = new Map<string, VlocityDatapackReference>();
     private readonly _unresolvedDependencies = new Set<string>();
     private readonly _deployTimer: Timer = new Timer();
     private _status: DeploymentStatus = DeploymentStatus.Pending;
@@ -305,29 +307,37 @@ export class DatapackDeploymentRecord {
         return globalKeyFieldIndex >= 0 ? fieldNames[globalKeyFieldIndex] : undefined;
     }
 
-    public addLookup(field: string, dependency: DatapackRecordDependency) {
+    public addLookup(field: string, dependency: VlocityDatapackReference) {
         this._dependencies.set(field, this.validateRecordDependency(dependency));
         if (!this.values[field]) {
             this._unresolvedDependencies.add(field);
         }
     }
 
-    public getLookup(field: string) {
+    public getLookup(field: string) : VlocityDatapackLookupReference | undefined {
         const fieldNames = [...this._dependencies.keys()];
         const matchingField =
             fieldNames.find(name => name.toLowerCase() === field.toLowerCase()) ??
             fieldNames.find(name => removeNamespacePrefix(name.toLowerCase()) === removeNamespacePrefix(field.toLowerCase()));
-        return matchingField ? this._dependencies.get(matchingField) : undefined;
+        const dependency = matchingField ? this._dependencies.get(matchingField) : undefined;
+        return dependency?.VlocityLookupRecordSourceKey ? dependency : undefined;
     }
 
-    public addDependency(dependency: DatapackRecordDependency | DatapackDeploymentRecord) {
+    public addDependency(dependency: VlocityDatapackReference | DatapackDeploymentRecord) {
         if (dependency instanceof DatapackDeploymentRecord) {
-            return this.addDependency({
-                VlocityRecordSObjectType: dependency.sobjectType,
-                VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
-                VlocityMatchingRecordSourceKey: undefined,
-                VlocityLookupRecordSourceKey: dependency.sourceKey
-            });
+            return this.addDependency(
+                dependency.datapackKey !== this.datapackKey ? {
+                    VlocityRecordSObjectType: dependency.sobjectType,
+                    VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                    VlocityMatchingRecordSourceKey: undefined,
+                    VlocityLookupRecordSourceKey: dependency.sourceKey,
+                } : {
+                    VlocityRecordSObjectType: dependency.sobjectType,
+                    VlocityDataPackType: 'VlocityMatchingKeyObject',
+                    VlocityMatchingRecordSourceKey: dependency.sourceKey,
+                    VlocityLookupRecordSourceKey: undefined,
+                }
+            );
         }
 
         const dependencyGuid = `$${dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey}`;
@@ -397,7 +407,7 @@ export class DatapackDeploymentRecord {
      * Validate dependency integrity by checking if mandator fields are set
      * @param dependency Dependency to check
      */
-    private validateRecordDependency(dependency: DatapackRecordDependency) {
+    private validateRecordDependency(dependency: VlocityDatapackReference) {
         if (!dependency.VlocityRecordSObjectType) {
             throw new Error(`Reference missed "VlocityRecordSObjectType" property for: ${JSON.stringify(dependency)}`);
         }
@@ -409,7 +419,7 @@ export class DatapackDeploymentRecord {
      * @param record Record to check
      * @returns The dependency info and lookup field as defined for this record
      */
-    public isDependentOn(record: DatapackDeploymentRecord): { field: string, dependency: DatapackRecordDependency } | undefined {
+    public isDependentOn(record: DatapackDeploymentRecord): { field: string, dependency: VlocityDatapackReference } | undefined {
         for (const [field, dependency] of this._dependencies) {
             const depSourceKey = dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey;
             if (depSourceKey === record.sourceKey) {
@@ -433,12 +443,13 @@ export class DatapackDeploymentRecord {
 
     /**
      * Get embedded dependencies that are **not** resolved through lookup but instead are provided as part of the datapack.
-     * These dependencies of datapack type **VlocityMatchingKeyObject**
+     * These dependencies of datapack type **VlocityMatchingKeyObject**.
+     * Does not included dependencies that are added through the {@link addDependency} function as these are not linked through a field.
      * @returns Array with dependencies
      */
-    public getMatchingDependencies(): { field: string, dependency: DatapackRecordDependency }[] {
+    public getMatchingDependencies(): { field: string, dependency: VlocityDatapackReference }[] {
         return [...Iterable.transform(this._dependencies, {
-            filter: ([,d]) => d.VlocityDataPackType === 'VlocityMatchingKeyObject',
+            filter: ([field ,d]) => !field.startsWith('$') && d.VlocityDataPackType === 'VlocityMatchingKeyObject',
             map: ([field, dependency]) => ({ field, dependency }),
         })];
     }
@@ -455,8 +466,23 @@ export class DatapackDeploymentRecord {
         })];
     }
 
-    public getUnresolvedDependencies() {
-        return [...Iterable.map(this._unresolvedDependencies, field => ({ field, dependency: this._dependencies.get(field)! }))];
+    /**
+     * Retrieves the unresolved dependencies of the datapack deployment record.
+     * @param type - The type of dependencies to retrieve. Can be 'lookup', 'matching', or 'all'. Default is 'all'.
+     * @returns An array of unresolved dependencies.
+     */    
+    public getUnresolvedDependencies(): { field: string; dependency: VlocityDatapackReference; }[]       
+    public getUnresolvedDependencies(type: 'all'): { field: string; dependency: VlocityDatapackReference; }[]       
+    public getUnresolvedDependencies(type: 'lookup') : { field: string; dependency: VlocityDatapackLookupReference; }[]     
+    public getUnresolvedDependencies(type: 'matching') : { field: string; dependency: VlocityDatapackMatchingReference; }[]    
+    public getUnresolvedDependencies(type: 'lookup' | 'matching' | 'all' = 'all') : { field: string; dependency: VlocityDatapackReference; }[] {
+        const dependencyType = type === 'matching' ? 'VlocityMatchingKeyObject' : type === 'lookup' ? 'VlocityLookupMatchingKeyObject' : undefined;
+        return [...Iterable.transform(
+            this._unresolvedDependencies, {
+                map: field => ({ field, dependency: this._dependencies.get(field)! }),
+                filter: field => dependencyType === undefined || this._dependencies.get(field)?.VlocityDataPackType === dependencyType
+            }
+        )];
     }
 
     /**
@@ -468,17 +494,34 @@ export class DatapackDeploymentRecord {
         return !this._unresolvedDependencies.has(field);
     }
 
-    public async resolveDependencies(resolver: DependencyResolver) {
-        return Promise.all(Iterable.map(this._unresolvedDependencies, field =>
-            resolver.resolveDependency(this._dependencies.get(field)!).then(resolution => {
-                if (resolution !== undefined) {
-                    if (!field.startsWith('$')) {
-                        this.values[field] = resolution;
-                    }
-                    this._unresolvedDependencies.delete(field);
+    /**
+     * Resolves the dependencies of the datapack deployment record.
+     * Rethrows any error that occurs during dependency resolution from the resolver.
+     * @param resolver - The datapack dependency resolver.
+     * @returns A promise that resolves to a boolean indicating whether all dependencies have been resolved.
+     */
+    public async resolveDependencies(resolver: DatapackDependencyResolver): Promise<boolean> {
+        const lookupRequests = [...Iterable.map(this._unresolvedDependencies, field => {
+            return {
+                field,
+                dependency: this._dependencies.get(field)!,
+                datapackRecord: this,
+            };
+        })];
+
+        const lookupResults = await resolver.resolveDependencies(lookupRequests);
+
+        for (const [index, { resolution }] of lookupResults.entries()) {
+            if (resolution !== undefined) {
+                const { field } = lookupRequests[index];
+                if (!field.startsWith('$')) {
+                    this.values[field] = resolution;
                 }
-            }))
-        );
+                this._unresolvedDependencies.delete(field);
+            }
+        }
+
+        return this._unresolvedDependencies.size === 0;
     }
 
     /**

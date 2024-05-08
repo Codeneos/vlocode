@@ -75,9 +75,9 @@ export class DeployDatapackCommand extends DatapackCommand {
             // Reading datapack takes a long time, only read datapacks if it is a reasonable count
             const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders);
             const datapackNames = datapacks.map(datapack => DatapackUtil.getLabel(datapack));
-            return `Deploying: ${datapackNames.join(', ')} ...`;
+            return `Deploying ${datapackNames.join(', ')}`;
         }
-        return `Deploying: ${datapackHeaders.length} datapacks ...`;
+        return `Deploying ${datapackHeaders.length} datapacks`;
     }
 
     /**

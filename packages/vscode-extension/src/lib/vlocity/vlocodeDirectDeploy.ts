@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import chalk from 'chalk';
 
 import {  injectable, Logger } from '@vlocode/core';
-import { DatapackDeployer } from '@vlocode/vlocity-deploy';
+import { DatapackDeployer, DatapackDeployment } from '@vlocode/vlocity-deploy';
 import { VlocityDeploy } from './vlocityDeploy';
 import VlocityDatapackService from './vlocityDatapackService';
+import { count, Iterable } from '@vlocode/util';
 
 @injectable()
 export class VlocodeDirectDeployment implements VlocityDeploy {
@@ -17,20 +18,20 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
 
     async deploy(
         datapackHeaders: vscode.Uri[], 
-        progress: vscode.Progress<{ progress?: number; total?: number }>, 
+        progress: vscode.Progress<{ message: string, progress: number; total: number }>, 
         cancellationToken: vscode.CancellationToken
     ) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
         const deployment = await this.datapackDeployer.createDeployment(datapacks, {
-            // TODO: allow user to override these from options
-            strictOrder: true,
-            purgeMatchingDependencies: false,
-            lookupFailedDependencies: false,
-            continueOnError: true,
-            maxRetries: 1,
-        }, cancellationToken);
+                // TODO: allow user to override these from options
+                strictOrder: true,
+                purgeMatchingDependencies: false,
+                lookupFailedDependencies: false,
+                continueOnError: true,
+                maxRetries: 1,
+            }, cancellationToken);
         deployment.on('progress', result => {
-            progress.report({ progress: result.progress, total: result.total });
+            progress.report({ message: `${result.progress}/${result.total}`, progress: result.progress, total: result.total });
         });
         await deployment?.start(cancellationToken);
 
@@ -38,17 +39,67 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
             return;
         }
 
-        if (deployment.hasErrors) {
-            for (const [datapackKey, messages] of Object.entries(deployment.getMessagesByDatapack())) {
-                const failedRecords = deployment.getFailedRecords(datapackKey).length;
-                this.logger.error(`Datapack ${chalk.bold(datapackKey)} -- Failed Records ${failedRecords}`);
-                for (let i = 0; i < messages.length; i++) {
+        if (!deployment.hasErrors) {
+            void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
+        } else {
+            this.showDatapackErrors(deployment);
+        }
+    }
+
+    private showDatapackErrors(deployment: DatapackDeployment) {
+        const totalDatapacks = deployment.totalDatapackCount
+        const failedDatapacks = new Array<string>();
+        const uniqueWarnings = new Set<string>();
+        const casecadeFailedDatapacks = new Array<string>();
+
+        for (const [datapackKey, messages] of Object.entries(deployment.getMessagesByDatapack())) {
+            const records = deployment.getRecords(datapackKey);
+            const totalRecords = records.length;
+            const failedRecords = count(records, record => record.isFailed);
+            const deployedRecords = count(records, record => record.isDeployed);
+            const hasErrors = messages.some(message => message.type === 'error');
+
+            if (failedRecords === 0) {
+                continue;
+            }
+
+            failedDatapacks.push(datapackKey);
+
+            if (deployedRecords === 0) {
+                this.logger.error(`${chalk.bold(datapackKey)} -- Failed`);
+            } else if (hasErrors) {
+                this.logger.error(`${chalk.bold(datapackKey)} -- Deployed Partially (${deployedRecords}/${totalRecords})`);
+            } else {
+                casecadeFailedDatapacks.push(datapackKey);
+            }
+
+            for (let i = 0; i < messages.length; i++) {
+                if (messages[i].type === 'error') {
                     this.logger.error(` ${i + 1}. ${chalk.underline(messages[i].record.sourceKey)} -- ${this.formatError(messages[i].message)}`);
+                } else {
+                    uniqueWarnings.add(messages[i].message);
                 }
             }
-            void vscode.window.showWarningMessage(`Deployed ${datapacks.length} datapacks with ${deployment.failedRecordCount} errors`);
+        }
+
+        if (casecadeFailedDatapacks.length) {
+            this.logger.warn(`Partially deployed due to depedency errors (${casecadeFailedDatapacks.length}):`);
+            Iterable.forEach(casecadeFailedDatapacks, (key, i) => {
+                this.logger.warn(` ${i + 1}. ${key}`);
+            });
+        }
+
+        if (uniqueWarnings.size > 0) {
+            this.logger.warn(`Deployment warnings (${uniqueWarnings.size}):`);
+            Iterable.forEach(uniqueWarnings, (warning, i) => {
+                this.logger.warn(` ${i + 1}. ${chalk.underline(warning)}`);
+            });
+        }
+
+        if (deployment.deployedRecordCount === 0) {
+            void vscode.window.showErrorMessage(`Failed to deploy all (${totalDatapacks}) datapacks`);
         } else {
-            void vscode.window.showInformationMessage(`Deployed ${datapacks.length} datapacks`);
+            void vscode.window.showWarningMessage(`Partially deployed ${totalDatapacks - failedDatapacks.length}/${totalDatapacks} datapacks`);
         }
     }
 

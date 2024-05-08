@@ -246,7 +246,7 @@ export class SalesforceConnection extends Connection {
                 }));
             }
             return responses[i].resolve(res.result);
-        })).catch(err => responses.forEach(req => req.reject(err)));
+        })).catch(err => responses.forEach(req => !req.isResolved && req.reject(err)));
 
         return responses;
     }
@@ -288,7 +288,8 @@ export class SalesforceConnection extends Connection {
     public async request<T = any>(
         info: string | HttpRequestInfo,
         options?: RequestOptions | any,
-        callback?: any): Promise<T> {
+        callback?: any
+    ): Promise<T> {
 
         const request = this.prepareRequest(info);
         let attempts = 0;

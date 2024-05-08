@@ -1,13 +1,14 @@
-import { types } from 'util';
-import { Logger, LifecyclePolicy, injectable, LogLevel } from '@vlocode/core';
+import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService, RecordError } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
-import { DependencyResolver, DatapackRecordDependency, DatapackDeploymentOptions } from './datapackDeployer';
+import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
+import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup, DeploymentGroupStatus } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
 import { DatapackDeploymentError as Error } from './datapackDeploymentError';
+import { VlocityDatapackReference } from '@vlocode/vlocity';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -46,7 +47,7 @@ type RecordPurgePredicate = (item: {
     /**
      * Describes the dependency between the dependent record and the record that is deployed.
      */
-    dependency: DatapackRecordDependency,
+    dependency: VlocityDatapackReference,
     /**
      * Reference to the record that is deployed
      */
@@ -72,7 +73,7 @@ const datapackDeploymentDefaultOptions = {
  * A datapack deployment task/job
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> implements DependencyResolver {
+export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEvents> {
 
     public readonly options: Readonly<DatapackDeploymentOptions & typeof datapackDeploymentDefaultOptions>;
 
@@ -80,7 +81,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly deployed = new Array<DatapackDeploymentRecord>();
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
-    private readonly dependencyResolver: DependencyResolver;
+    private readonly orgDependencyResolver: DatapackDependencyResolver;
 
     private isStarted = false;
     private timer: Timer;
@@ -123,8 +124,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return Iterable.some(this.records.values(), rec => rec.hasWarnings);
     }
 
+    /**
+     * Gets the total record count in this deployment. Each record is a part of a datapack.
+     * @returns The total number of records.
+     */
     public get totalRecordCount() {
         return this.records.size;
+    }
+
+    /**
+     * Gets the total number of datapacks in this deployment. Each datapack can contain multiple records. 
+     * Use {@link totalRecordCount} to get the total number of records.
+     * @returns The total number of datapacks.
+     */
+    public get totalDatapackCount() {
+        return this.recordGroups.size;
     }
 
     public get isCancelled() {
@@ -137,10 +151,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         private readonly lookupService: DatapackLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly salesforceService: SalesforceService,
-        private readonly logger: Logger) {
+        private readonly logger: Logger
+    ) {
         super();
         this.options = { ...withDefaults(options, datapackDeploymentDefaultOptions) };
-        this.dependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
+        this.orgDependencyResolver = this.options.bulkDependencyResolution ? new DeferredDependencyResolver(lookupService) : lookupService;
     }
 
     public add(...records: DatapackDeploymentRecord[]): this {
@@ -253,11 +268,18 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Gets the deployment status of a Datapack by it's source key
+     * Gets the deployment status of a Datapack by it's source key. 
+     * - Returns the summary status of all records in the datapack. 
+     * - Returns `undefined` if the datapack is not part of the deployment.
      * @param datapackKey Datapack key to get the deployment status for
      */
-     public getDatapackStatus(datapackKey: string) : DeploymentStatus {
-        const records = groupBy(this.getRecords(datapackKey), record => `${record.status}`);
+    public getDatapackStatus(datapackKey: string) : DeploymentStatus | undefined {
+        const datapackRecords = this.getRecords(datapackKey);
+        if (datapackRecords.length == 0) {
+            return undefined;
+        }
+
+        const records = groupBy(datapackRecords, record => `${record.status}`);
         if (records[DeploymentStatus.InProgress]?.length) {
             return DeploymentStatus.InProgress;
         } else if (records[DeploymentStatus.Pending]?.length || records[DeploymentStatus.Retry]?.length) {
@@ -266,8 +288,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             return DeploymentStatus.Deployed;
         } else if (records[DeploymentStatus.Skipped]?.length) {
             return DeploymentStatus.Skipped;
+        } else if (records[DeploymentStatus.Failed]?.length) {
+            return DeploymentStatus.Failed;
         }
-        return DeploymentStatus.Failed;
+
+        throw new Error('DEPLOYMENT_UNKNOWN_STATUS', `Unknown deployment status for datapack ${datapackKey}`);
     }
 
     /**
@@ -290,10 +315,21 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
 
         if (records.size == 0) {
-            for (const record of Iterable.filter(this.records.values(), record => record.isPending)) {
-                const unsatisfiedDependencies = record.getUnresolvedDependencies().map(d => d.dependency.VlocityLookupRecordSourceKey ?? d.dependency.VlocityMatchingRecordSourceKey).join(', ');
-                this.logger.error(`Unable to deploy ${record.sourceKey} due to unsatisfied dependencies: ${unsatisfiedDependencies}`);
-                record.updateStatus(DeploymentStatus.Failed, `Missing dependencies: ${unsatisfiedDependencies}`);
+            for (const record of Iterable.filter(this.records.values(), record => record.isPending)) {                
+                const internalDependencies = record.getUnresolvedDependencies('matching')
+                    .map(d => d.dependency.VlocityMatchingRecordSourceKey)
+                    .filter(d => this.getRecordStatus(d) !== DeploymentStatus.Deployed).join(', ');
+                const externalDependencies = record.getUnresolvedDependencies('lookup')
+                    .map(d => d.dependency.VlocityLookupRecordSourceKey)
+                    .filter(d => this.getRecordStatus(d) !== DeploymentStatus.Deployed).join(', ');
+
+                if (internalDependencies) {
+                    this.logger.warn(`Skipped ${record.sourceKey} due to unresolved internal dependencies: ${internalDependencies}`);
+                    record.updateStatus(DeploymentStatus.Skipped, internalDependencies);                    
+                } else {
+                    this.logger.error(`Unable to deploy ${record.sourceKey} due to unresolved external dependencies: ${externalDependencies}`);
+                    record.updateStatus(DeploymentStatus.Failed, `Missing external dependencies: ${externalDependencies}`);
+                }
             }
         }
 
@@ -311,16 +347,66 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 continue;
             }
 
-            if (dependentRecord.isPending) {
+            if (dependentRecord.status < DeploymentStatus.Deployed) {
                 return true;
             }
 
-            if (this.options.strictOrder) {
-                const isExternalDependency = dependentRecord.datapackKey !== record.datapackKey;
-                if (isExternalDependency) {
-                    const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
-                    return dependencyStatus < DeploymentStatus.Deployed;
+            const isExternalDependency = dependentRecord.datapackKey !== record.datapackKey;
+            if (this.options.strictOrder && isExternalDependency) {
+                const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
+                if (dependencyStatus !== undefined && dependencyStatus < DeploymentStatus.Deployed) {
+                    if (this.isCircularDatapackDependency(record.datapackKey, dependentRecord.datapackKey)) {
+                        this.reportWarning(record, `Circular datapack dependency: ${record.datapackKey}->${dependentRecord.datapackKey}->${record.datapackKey}`);
+                        continue;
+                    }
+                    return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if there is a circular dependency between two datapacks.
+     * @param datapackKeyA - The key of the first datapack.
+     * @param datapackKeyB - The key of the second datapack.
+     * @returns True if there is a circular dependency, false otherwise.
+     */
+    private isCircularDatapackDependency(datapackKeyA: string, datapackKeyB: string, visited = new Set<string>()): boolean {
+        if (visited.has(datapackKeyB)) {
+            // Prevent a circular dependency check from going into an infinite loop
+            return false;
+        } else {
+            visited.add(datapackKeyB);
+        }
+        
+        for(const record of this.getRecords(datapackKeyB)) {
+            for (const dependency of record.getDependencies()) {
+                const dependentRecord = this.records.get(dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey);
+                if (!dependentRecord || dependentRecord.datapackKey === datapackKeyB) {
+                    continue;
+                }
+                if (dependentRecord.datapackKey === datapackKeyA) {
+                    return true;
+                } else if (this.isCircularDatapackDependency(datapackKeyA, dependentRecord.datapackKey, visited)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private isCircularDependencies(record: DatapackDeploymentRecord, dependentRecord: DatapackDeploymentRecord) {
+        for(const key of dependentRecord.getDependencySourceKeys()) {
+            const depedency = this.records.get(key);
+            if (!depedency) {
+                continue;
+            }
+
+            if (record.sourceKey === depedency.sourceKey) {
+                return true;
+            } else if (this.isCircularDependencies(record, depedency)) {
+                return true;
             }
         }
         return false;
@@ -330,57 +416,58 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * Resolve a dependency either based on the records we are deploying -or- pass it on to the lookup resolver.
      * @param dependency Dependency
      */
-    public async resolveDependency(dependency: DatapackRecordDependency) {
-        const deploymentDep = this.resolveDeploymentDependency(dependency);
-        if (deploymentDep) {
-            return deploymentDep;
+    public resolveDependency(dependency: VlocityDatapackReference, datapackRecord: DatapackDeploymentRecord) : Promise<string | undefined> {
+        const record = this.resolveDependencyFromDeployment(dependency, datapackRecord);
+        if (record) {
+            return Promise.resolve(record.recordId);
         }
-        return this.dependencyResolver.resolveDependency(dependency);
+        return this.orgDependencyResolver.resolveDependency(dependency, datapackRecord);
     }
 
     /**
      * Resolve a dependency either based on the records we are deploying -or- pass it on to the lookup resolver.
      * @param dependency Dependency
      */
-    public async resolveDependencies(dependencies: DatapackRecordDependency[]) {
-        const lookupResults = dependencies.map(dependency => this.resolveDeploymentDependency(dependency));
-        const unresolvedDependencies = dependencies.filter((dep, i) => !lookupResults[i]);
+    public async resolveDependencies(dependencies: DependencyResolutionRequest[]) {
+        const unresolvedDependencies: (DependencyResolutionRequest & { index: number })[] = [];
+        const lookupResults = dependencies.map<DependencyResolutionResult>(({ datapackRecord, dependency }, index) => {
+            try {
+                const record = this.resolveDependencyFromDeployment(dependency, datapackRecord);
+                if (record) {
+                    return { resolution: record.recordId };
+                } else {                    
+                    unresolvedDependencies.push({ 
+                        datapackRecord, 
+                        dependency, 
+                        index
+                    }); 
+                }                   
+            } catch (error) {
+                return { resolution: undefined, error }
+            }
+            return { resolution: undefined };
+        });
 
         if (unresolvedDependencies.length) {
-            const results = await this.dependencyResolver.resolveDependencies(unresolvedDependencies);
-            lookupResults.forEach((value, index) => {
-                if (!value) {
-                    lookupResults[index] = results.shift();
-                }
+            const results = await this.orgDependencyResolver.resolveDependencies(unresolvedDependencies);
+            unresolvedDependencies.forEach(({ index }, i) => {
+                lookupResults[index] = results[i];
             });
-
-            if (results.length) {
-                throw new Error('INVALID_RESOLVE_RESULTS', 'BUG: unresolved lookup results should not be possible');
-            }
         }
 
         return lookupResults;
     }
 
-    private resolveDeploymentDependency(dependency: DatapackRecordDependency) {
-        const lookupKey = dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey;
+    private resolveDependencyFromDeployment(dependency: VlocityDatapackReference, dependencyOwner: DatapackDeploymentRecord): { recordId: string | undefined } | undefined {
+        const lookupKey = dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey;
         const deployRecord = this.records.get(lookupKey);
-
         if (deployRecord) {
-            if (!deployRecord.isFailed) {
-                return deployRecord.recordId;
+            const isExternalDependency = deployRecord.datapackKey !== dependencyOwner.datapackKey;
+            if (deployRecord.isFailed && isExternalDependency && this.options.lookupFailedDependencies) {
+                this.reportWarning(deployRecord, `Looking up failed external dependency from org: ${deployRecord.sourceKey}`);
+                return;
             }
-
-            if (dependency.VlocityMatchingRecordSourceKey) {
-                // Never attempt to lookup inter datapack lookups that failed
-                throw new Error('RECORD_CASCADE_FAILURE', `Parent ${dependency.VlocityRecordSObjectType} record failed to deploy`);
-            }
-
-            if (!this.options.lookupFailedDependencies) {
-                throw new Error('RECORD_UNRESOLVED_DEPENDENCY',`Lookup dependency with key "${lookupKey}" failed to deploy`);
-            }
-
-            this.logger.warn(`Looking up dependency which should have been deployed: ${lookupKey}`);
+            return deployRecord;
         } else if (dependency.VlocityMatchingRecordSourceKey) {
             throw new Error('RECORD_MISSING_DEPENDENCY', `Datapack corrupted -- missing datapack record with key "${lookupKey}" in JSON`);
         }
@@ -475,24 +562,22 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         await Promise.all(resolutionQueue);
 
         for (const datapack of Iterable.filter(datapacks.values(), datapack => datapack.hasUnresolvedDependencies)) {
-            const unresolvedDependenciesKeys = datapack.getUnresolvedDependencies().map(({ dependency }) => dependency.VlocityMatchingRecordSourceKey || dependency.VlocityLookupRecordSourceKey);
-            const logSeverity = this.options.allowUnresolvedDependencies ? LogLevel.warn : LogLevel.error;
-            this.logger.write(logSeverity, `Record ${datapack.sourceKey} has ${unresolvedDependenciesKeys.length} resolvable dependencies: ${unresolvedDependenciesKeys.join(', ')}`);
+            const unresolvedInternalKeys = datapack.getUnresolvedDependencies('matching').map(({ dependency }) => dependency.VlocityMatchingRecordSourceKey);
+            const unresolvedExternalKeys = datapack.getUnresolvedDependencies('lookup').map(({ dependency }) => dependency.VlocityLookupRecordSourceKey);
+            const casecadeErrors = unresolvedExternalKeys.filter(key => this.records.get(key));
 
-            for (const { field, dependency } of datapack.getUnresolvedDependencies()) {
-                const sourceKey = dependency.VlocityLookupRecordSourceKey ?? dependency.VlocityMatchingRecordSourceKey;
-                const error = `Unresolved dependent record "${sourceKey}" (field: ${field})`;
-
-                if (this.options.allowUnresolvedDependencies) {
-                    datapack.addWarning(error);
-                } else {
-                    // Remove records when allowUnresolvedDependencies is false
-                    datapacks.delete(datapack.sourceKey);
-                    this.handleError(datapack, error);
-                }
+            if (unresolvedInternalKeys.length) {
+                datapacks.delete(datapack.sourceKey);
+                this.handleError(datapack, new Error('RECORD_CASCADE_FAILURE', `Parent record(s) failed: ${unresolvedInternalKeys.join(', ')}`));
+            } else if (casecadeErrors.length) {
+                const distinctDatapacks = [...unique(casecadeErrors.map(key => this.records.get(key)!.datapackKey))]; 
+                datapacks.delete(datapack.sourceKey);
+                this.handleError(datapack, new Error('RECORD_CASCADE_FAILURE', `Parent datapacks(s) failed: ${distinctDatapacks.join(', ')}`));
+            } else {
+                datapacks.delete(datapack.sourceKey);
+                this.handleError(datapack, new Error('RECORD_MISSING_DEPENDENCY', `Failed to resolve external dependencies: ${unresolvedExternalKeys.join(', ')}`));
             }
         }
-
     }
 
     private async deployRecords(datapackRecords: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
@@ -537,7 +622,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             return;
         }
 
-        // 
         await this.emit('beforeRetryRecord', retriedRecords, { hideExceptions: true });
         await this.resolveExistingIds(records, cancelToken)
         await this.emit('beforeDeployRecord', records, { hideExceptions: true });
@@ -584,7 +668,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     if (field.startsWith('$') || dependency.VlocityDataPackType !== 'VlocityMatchingKeyObject') {
                         return false;
                     }
-                    return !dependentRecord.upsertFields?.length || dependency.skipLookup;
+                    return !dependentRecord.upsertFields?.length || dependentRecord.skipLookup;
                 });
             }
         } finally {
@@ -603,6 +687,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             await this.emit('afterDeployRecord', [...datapackRecords.values()], { hideExceptions: true });
             completedGroups.length && await this.emit('afterDeployGroup', completedGroups, { hideExceptions: true });
         }
+    }
+
+    private reportWarning(datapackRecord: DatapackDeploymentRecord, message: string) {
+        this.logger.warn(message);
+        datapackRecord.addWarning(message);
     }
 
     private handleError(datapackRecord: DatapackDeploymentRecord, error: RecordError | Error | string) {

@@ -4,7 +4,8 @@ import { join } from 'path';
 import { CachedFileSystemAdapter, container, Logger, LogWriter, NodeFileSystem, FileSystem } from "@vlocode/core";
 import { Connection, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
 
-import { DatapackDeployer, DatapackDeploymentOptions } from './datapackDeployer';
+import { DatapackDeployer } from './datapackDeployer';
+import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
 import { ForkedSassCompiler } from './scss';
 import { DatapackLoader, VlocityNamespaceService } from '@vlocode/vlocity';
 

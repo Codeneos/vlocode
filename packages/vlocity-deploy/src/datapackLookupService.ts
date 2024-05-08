@@ -1,11 +1,11 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
 import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count, removeAll, remove } from '@vlocode/util';
+import { VlocityNamespaceService, VlocityMatchingKeyService, VlocityDatapackReference } from '@vlocode/vlocity';
 import { DateTime } from 'luxon';
 import * as constants from './constants';
-import { DependencyResolver, DatapackRecordDependency } from './datapackDeployer';
-import { VlocityNamespaceService, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
+import { DatapackDependencyResolver, DependencyResolutionRequest } from './datapackDependencyResolver';
 
 /**
  * Describes a records status in the target org.
@@ -30,7 +30,7 @@ export interface OrgRecordStatus {
 }
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class DatapackLookupService implements DependencyResolver {
+export class DatapackLookupService implements DatapackDependencyResolver {
 
     private readonly lookupCache = new Map<string, { refreshed: number; entries: Map<string, string | undefined> }>();
     private readonly distinctLogger: Logger;
@@ -48,49 +48,52 @@ export class DatapackLookupService implements DependencyResolver {
      * Resolve the record if od a dependency in Salesforce; returns the real record ID of a decency.
      * @param dependency Dependency who's ID to resolve
      */
-    public async resolveDependency(dependency: DatapackRecordDependency): Promise<string | undefined> {
-        return (await this.resolveDependencies([dependency])).pop();
+    public async resolveDependency(dependency: VlocityDatapackReference, datapackRecord: DatapackDeploymentRecord): Promise<string | undefined> {
+        return (await this.resolveDependencies([ { datapackRecord , dependency } ]))[0].resolution;
     }
 
     /**
      * Resolve the record if od a dependency in Salesforce; returns the real record ID of a decency.
      * @param dependency Dependency who's ID to resolve
      */
-    public async resolveDependencies(dependencies: DatapackRecordDependency[]): Promise<Array<string | undefined>> {
+    public async resolveDependencies(dependencies: DependencyResolutionRequest[]): Promise<Array<{ resolution: string | undefined }>> {
         const lookupResults = new Array<string | undefined>();
-        const lookupRequests = dependencies.map((dependency, index) => ({
+        const lookupRequests = dependencies.map(({ dependency, datapackRecord }, index) => ({
                 index,
+                datapackRecord,
                 sourceKey: this.getSourceKey(dependency),
                 sobjectType: dependency.VlocityRecordSObjectType,
                 filter: this.normalizeFilter(filterKeys(dependency, field => !constants.DATAPACK_RESERVED_FIELDS.includes(field))),
             }))
+            // 
             .filter(({ sobjectType, sourceKey, index }) => {
                 return !(lookupResults[index] = this.getCachedEntry(sobjectType, sourceKey));
             })
             .filter(({ filter, sourceKey }) => {
                 if (!Object.keys(filter).length) {
-                    this.logger.warn(`None of the dependency's lookup fields have values (${sourceKey})`);
+                    this.distinctLogger.warn(`None of the dependency's lookup fields have values (${sourceKey})`);
                     return false;
                 }
                 return true;
             });
 
-        const records = await this.lookupMultiple(lookupRequests);
+        const recMnth = lookupRequests.filter(({ sourceKey }) => sourceKey.toLowerCase().includes('rec_mnth'));
+        const matchedIds = await this.lookupMultiple(lookupRequests);
 
         // map record results back to lookup requests
-        for (const [i, matchedRecords] of records.entries()) {
+        for (const [i, matchedId] of matchedIds.entries()) {
             const lookupRequest = lookupRequests[i];
-            if (!matchedRecords?.length) {
+            if (!matchedId?.length) {
                 continue;
-            } else if (matchedRecords.length > 1) {
-                this.logger.warn(`Dependency with lookup key [${lookupRequest.sourceKey}] matches more than 1 record in target org: [${matchedRecords.join(', ')}]`);
+            } else if (matchedId.length > 1) {
+                this.distinctLogger.warn(`Dependency with lookup key [${lookupRequest.sourceKey}] matches more than 1 record in target org: [${matchedId.join(', ')}]`);
             }
 
-            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.sourceKey, matchedRecords[0]);
-            lookupResults[lookupRequest.index] = matchedRecords[0];
+            this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.sourceKey, matchedId[0]);
+            lookupResults[lookupRequest.index] = matchedId[0];
         }
 
-        return lookupResults;
+        return dependencies.map((_,i) => ({ resolution: lookupResults[i] }));
     }
 
     /**
@@ -115,7 +118,7 @@ export class DatapackLookupService implements DependencyResolver {
             .filter(({ sobjectType, record, index }) => {
                 return !record.sourceKey || !(lookupResults[index] = this.getCachedEntry(sobjectType, record.sourceKey));
             })
-            .filter(({ filter, sobjectType }) => {
+            .filter(({ record, filter, sobjectType }) => {
                 if (Object.keys(filter).length === 0) {
                     this.distinctLogger.warn(`No matching key configuration found for ${sobjectType}`);
                     return false;
@@ -142,8 +145,8 @@ export class DatapackLookupService implements DependencyResolver {
         if (duplicateLookups.length) {
             duplicateLookups.flat().forEach(lookup => {
                 lookup.reportWarning(
-                    `Matching key configuration for ${lookup.sobjectType} fields do not uniquely identify a record;` + 
-                    `delete the DRMatchingKey record for ${lookup.sobjectType} or update it so that the fields uniquely target records in the target org`
+                    `Matching key configuration for "${lookup.sobjectType}" does not uniquely identify a record; ` + 
+                    `delete the matching key from the org or update it so that it uniquely indentifies a records`
                 );
                 // Do not do a lookup for this record
                 remove(lookupRequests, l => l.index === lookup.index);
@@ -457,11 +460,8 @@ export class DatapackLookupService implements DependencyResolver {
         return /^[a-z0-9_.]+$/ig.test(formula);
     }
 
-    private getSourceKey<T extends ({ VlocityLookupRecordSourceKey: string } | { VlocityMatchingRecordSourceKey: string })>(obj: T): string {
-        if ('VlocityLookupRecordSourceKey' in obj) {
-            return obj.VlocityLookupRecordSourceKey;
-        }
-        return obj.VlocityMatchingRecordSourceKey;
+    private getSourceKey(obj: { VlocityLookupRecordSourceKey: string } | { VlocityMatchingRecordSourceKey: string }): string {
+        return obj['VlocityLookupRecordSourceKey'] || obj['VlocityMatchingRecordSourceKey'];
     }
 
     private getCachedEntry(sobjectType: string, key: string | undefined): string | undefined;
