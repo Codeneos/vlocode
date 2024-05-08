@@ -1,9 +1,9 @@
 {
     "private": true,
     "name": "vlocode-project",
-    "packageManager": "pnpm@8.15.4+sha256.cea6d0bdf2de3a0549582da3983c70c92ffc577ff4410cbf190817ddc35137c2",
+    "packageManager": "pnpm@9.0.6+sha256.0624e30eff866cdeb363b15061bdb7fd9425b17bc1bb42c22f5f4efdea21f6b3",
     "description": "Vlocode project packages",
-    "version": "0.21.6",
+    "version": "1.23.0",
     "license": "MIT",
     "author": {
         "name": "Peter van Gulik",
