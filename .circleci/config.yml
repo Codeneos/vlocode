@@ -8,8 +8,11 @@ orbs:
 commands: 
   checkout_install:
     steps:
-      - checkout
-      - run: corepack install
+      - checkout      
+      - get_version
+      - run: 
+          name: Install package manager
+          command: corepack enable && corepack install
       - restore_cache:
           keys: 
           - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
@@ -19,11 +22,13 @@ commands:
           command: |
             sudo apt update
             sudo apt-get install -y libsecret-1-dev
+      - run: pnpm --version
       - run: pnpm install --frozen-lockfile
       - save_cache:
           key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
           paths:
             - ~/.pnpm-store
+
   test:
     steps:
       - run: pnpm jest --ci --verbose -i
@@ -33,13 +38,46 @@ commands:
           path: coverage/sonar-report.xml
       - store_artifacts:
           path: coverage/lcov.info
+
   codequality:
     steps:
       - run: pnpm lint -o eslint-report.json --format json || true
       - sonarcloud/scan
+
   build:
     steps:
       - run: pnpm build
+
+  pack_extension:
+    steps:
+      - run:
+          name: "Pack extension"
+          command: pnpm pack-extension $PRERELEASE
+      - persist_to_workspace:
+          root: .
+          paths: [ "packages/vscode-extension/*.vsix" ]
+      - store_artifacts:
+          path: packages/vscode-extension/*.vsix
+
+  get_version:
+    steps:
+      - run:
+          name: Get Version
+          command: |
+            VERSION=$(node -p "require('./lerna.json').version")
+            [[ $VERSION =~ "-" ]] && export PRERELEASE="--pre-release"
+            echo ${PRERELEASE}
+
+  release_notes:
+    steps:
+      - run: 
+          name: Get Release Notes
+          command: |
+            node -e "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
+            NOTES=$(cat ./release-notes.md)
+            echo ${NOTES}
+      - store_artifacts:
+          path: release-notes.md
 
 jobs:
   build-and-test:
@@ -47,42 +85,28 @@ jobs:
       - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
+      - get_version
+      - release_notes
       - build
       - test
-      - codequality
   package:
     docker:
       - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
-      - run:
-          name: "Pack extension"
-          command: |
-            echo $(node -p "require('./lerna.json').version") > .version
-            [[ $VERSION =~ "-" ]] && export PRERELEASE="--pre-release"
-            pnpm pack-extension $PRERELEASE
-      - run: node -e "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
-      - persist_to_workspace:
-          root: .
-          paths: [ ".version", "release-notes.md", "packages/vscode-extension/*.vsix" ]
-      - store_artifacts:
-          path: packages/vscode-extension/*.vsix
-      - store_artifacts:
-          path: release-notes.md
-      - store_artifacts:
-          path: .version
+      - get_version
+      - pack_extension
   publish-vsc-extension:
     docker:
       - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
+      - get_version
       - attach_workspace:
           at: ./artifacts
       - run:
           name: "Publish extension on VSCode Marketplace"
           command: |
-            VERSION=$(cat ./artifacts/.version)
-            [[ $VERSION =~ "-" ]] && export PRERELEASE="--pre-release"
             pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
@@ -96,15 +120,24 @@ jobs:
     docker:
       - image: cibuilds/github:0.13
     steps:
+      - checkout         
+      - get_version
+      - release_notes
       - attach_workspace:
           at: ./artifacts
       - run:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(cat ./artifacts/.version)
-            [[ ! $VERSION =~ "^[.0-9]+$" ]] && export PRERELEASE="--prerelease"
-            NOTES=$(cat ./artifacts/release-notes.md)
-            ghr $PRERELEASE -t ${GITHUB_TOKEN} -b "${NOTES}" -n "Version ${VERSION}" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete v${VERSION} ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
+            ghr ${PRERELEASE} \
+              -t ${GITHUB_TOKEN} \
+              -b "${NOTES}" \ 
+              -n "Version ${VERSION}" \ 
+              -u ${CIRCLE_PROJECT_USERNAME} \
+              -r ${CIRCLE_PROJECT_REPONAME} \
+              -c ${CIRCLE_SHA1} \
+              -delete v${VERSION} \
+              ./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix
 
 workflows:
   validate:
