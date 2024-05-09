@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.24.0](https://github.com/codeneos/vlocode/compare/v1.23.0...v1.24.0) (2024-05-09)
+
+### Bug Fixes
+
+* build error in CLI ([4c3f481](https://github.com/codeneos/vlocode/commit/4c3f481653d60ca309413853bb2927ed93b5d547))
+* sonarqube doesn't run on validate command ([626997c](https://github.com/codeneos/vlocode/commit/626997c1ca995cd8fed1cb080e300693b557126e))
+
+### Features
+
+* document and expect DatapackReference object ([741cf0d](https://github.com/codeneos/vlocode/commit/741cf0dd0f17c41f4c8ad8028a3131cc9010b35b))
+* improve support for datapack deployment in strict mode with circular datapack references ([fce234d](https://github.com/codeneos/vlocode/commit/fce234d4da2ca3bc7880c83d2e30110348b4bc2b))
+
 # [1.23.0](https://github.com/codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
 
 ### Bug Fixes

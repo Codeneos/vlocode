@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.24.0](https://github.com/Codeneos/vlocode/compare/v1.23.0...v1.24.0) (2024-05-09)
+
+### Features
+
+* document and expect DatapackReference object ([741cf0d](https://github.com/Codeneos/vlocode/commit/741cf0dd0f17c41f4c8ad8028a3131cc9010b35b))
+
 # [1.23.0](https://github.com/Codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
 
 **Note:** Version bump only for package @vlocode/vlocity

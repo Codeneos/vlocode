@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.24.0](https://github.com/Codeneos/vlocode/compare/v1.23.0...v1.24.0) (2024-05-09)
+
+### Features
+
+* improve support for datapack deployment in strict mode with circular datapack references ([fce234d](https://github.com/Codeneos/vlocode/commit/fce234d4da2ca3bc7880c83d2e30110348b4bc2b))
+
 # [1.23.0](https://github.com/Codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
 
 ### Bug Fixes
