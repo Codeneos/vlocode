@@ -1,20 +1,19 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine. 
+# Use the latest 2.1 version of CircleCI pipeline process engine.
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
 orbs:
   sonarcloud: sonarsource/sonarcloud@2.0.0
 
-commands: 
+commands:
   checkout_install:
     steps:
-      - checkout      
-      - get_version
-      - run: 
+      - checkout
+      - run:
           name: Install package manager
           command: corepack enable && corepack install
       - restore_cache:
-          keys: 
+          keys:
           - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
       - run: pnpm config set store-dir ~/.pnpm-store
       - run:
@@ -22,7 +21,6 @@ commands:
           command: |
             sudo apt update
             sudo apt-get install -y libsecret-1-dev
-      - run: pnpm --version
       - run: pnpm install --frozen-lockfile
       - save_cache:
           key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
@@ -50,9 +48,10 @@ commands:
 
   pack_extension:
     steps:
+      - get_version
       - run:
           name: "Pack extension"
-          command: pnpm pack-extension $PRERELEASE
+          command: pnpm pack-extension ${PRERELEASE}
       - persist_to_workspace:
           root: .
           paths: [ "packages/vscode-extension/*.vsix" ]
@@ -66,16 +65,15 @@ commands:
           command: |
             VERSION=$(node -p "require('./lerna.json').version")
             [[ $VERSION =~ "-" ]] && export PRERELEASE="--pre-release"
-            echo ${PRERELEASE}
 
   release_notes:
     steps:
-      - run: 
+      - run:
           name: Get Release Notes
           command: |
             node -e "fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
             NOTES=$(cat ./release-notes.md)
-            echo ${NOTES}
+            cat ./release-notes.md
       - store_artifacts:
           path: release-notes.md
 
@@ -85,16 +83,14 @@ jobs:
       - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
-      - get_version
-      - release_notes
       - build
+      - codequality
       - test
   package:
     docker:
       - image: cimg/node:18.19-browsers
     steps:
       - checkout_install
-      - get_version
       - pack_extension
   publish-vsc-extension:
     docker:
@@ -107,7 +103,7 @@ jobs:
       - run:
           name: "Publish extension on VSCode Marketplace"
           command: |
-            pnpx vsce publish -p "$VSCE_TOKEN" $PRERELEASE --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
+            pnpx vsce publish -p "$VSCE_TOKEN" ${PRERELEASE} --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
   publish-npm-packages:
     docker:
       - image: cimg/node:18.19-browsers
@@ -120,7 +116,7 @@ jobs:
     docker:
       - image: cibuilds/github:0.13
     steps:
-      - checkout         
+      - checkout
       - get_version
       - release_notes
       - attach_workspace:
@@ -131,8 +127,8 @@ jobs:
             VERSION=$(cat ./artifacts/.version)
             ghr ${PRERELEASE} \
               -t ${GITHUB_TOKEN} \
-              -b "${NOTES}" \ 
-              -n "Version ${VERSION}" \ 
+              -b "${NOTES}" \
+              -n "Version ${VERSION}" \
               -u ${CIRCLE_PROJECT_USERNAME} \
               -r ${CIRCLE_PROJECT_REPONAME} \
               -c ${CIRCLE_SHA1} \
