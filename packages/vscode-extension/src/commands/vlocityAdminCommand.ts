@@ -17,24 +17,30 @@ export class VlocityAdminCommand extends CommandBase {
 
     private readonly adminCommands = [
         {
-            title: 'Refresh Pricebook',
+            title: 'Refresh Platform Cache (full)',
             icon: 'mirror',
-            detail: 'Runs the refresh pricebook entries command on the currently connected Salesforce org',
-            method: 'refreshPriceBook',
+            detail: 'Refresh the product hierarchy and attribute data in the platform cache',
+            command: { methodName: 'refreshPriceBook' },
             name: VlocodeCommand.refreshPriceBook
         },
         {
-            title: 'Refresh Product Hierarchy',
+            title: 'Refresh Product Hierarchy (delete\'s old data)',
             icon: 'tag',
-            detail: 'Refresh the product hierarchy cache for the Vlocity CPQ',
-            method: 'startProductHierarchyJob',
+            detail: 'This Job will resolve each product\'s hierarchy into the data store',
+            command: { methodName: 'startProductHierarchyJob', deleteOldData: 'true' },
             name: VlocodeCommand.refreshProductHierarchy
-        },
+        },        
+        {
+            title: 'Product catagory data maintenance',
+            icon: 'group-by-ref-type',
+            detail: 'This job will populate product category data for all products.',
+            command: { batchSize: 200, methodName: 'startProductCategoryDataBatchJobs' }
+        },      
         {
             title: 'Clear Managed Platform Cache',
             icon: 'trashcan',
-            detail: 'Clear the Vlocity platform cache partition',
-            method: 'clearPlatformCache',
+            detail: 'This will clear platform cache partion',
+            command: { methodName: 'clearPlatformCache' },
             name: VlocodeCommand.clearPlatformCache
         },
         {
@@ -76,8 +82,8 @@ export class VlocityAdminCommand extends CommandBase {
             if (selectedCommand.batchJob) {
                 await this.executeBatch(selectedCommand.batchJob, progress, token);
             }
-            if (selectedCommand.method) {
-                await this.executeAdminMethod([ selectedCommand.method ], progress, token);
+            if (selectedCommand.command) {
+                await this.executeAdminMethod([ selectedCommand.command ], progress, token);
             }
         });
     }
@@ -87,9 +93,9 @@ export class VlocityAdminCommand extends CommandBase {
         return this.executeAnonymous(apex, progress, token);
     }
 
-    private executeAdminMethod(methodNames: string[], progress: ActivityProgress, token?: CancellationToken) : Promise<void> {
+    private executeAdminMethod(commands: { methodName: string }[], progress: ActivityProgress, token?: CancellationToken) : Promise<void> {
         let apex = '%vlocity_namespace%.TelcoAdminConsoleController ctrl = new %vlocity_namespace%.TelcoAdminConsoleController();\n';
-        apex += methodNames.map(method => `ctrl.setParameters('{"methodName":"${method}"}'); ctrl.invokeMethod();`).join('\n');
+        apex += commands.map(cmd => `ctrl.setParameters('${JSON.stringify(cmd)}'); ctrl.invokeMethod();`).join('\n');
         return this.executeAnonymous(apex, progress, token);
     }
 
