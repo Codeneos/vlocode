@@ -80,8 +80,8 @@ export function isSalesforceId(id : string) : boolean {
  * @param id ID to decode into parts
  */
 export function decodeSalesforceId(id : string) {
-    const match = /^([a-z0-9]{3})([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{8})([a-z0-9]{3})?$/i.exec(id);
-    if (!match || match[3] !== '00') {
+    const match = /^([a-z0-9]{3})([a-z0-9]{3})0([a-z0-9]{8})([a-z0-9]{3})?$/i.exec(id);
+    if (!match) {
         return;
     }
     return {
