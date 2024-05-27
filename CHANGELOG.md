@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.4](https://github.com/codeneos/vlocode/compare/v1.24.3...v1.24.4) (2024-05-27)
+
+### Bug Fixes
+
+* update isSalesforceId to work for new id-format ([990eb5d](https://github.com/codeneos/vlocode/commit/990eb5d926dbcf8133df8536983070b24f4bc27b))
+
 ## [1.24.3](https://github.com/codeneos/vlocode/compare/v1.24.2...v1.24.3) (2024-05-27)
 
 ### Bug Fixes
