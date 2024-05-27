@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.3](https://github.com/Codeneos/vlocode/compare/v1.24.2...v1.24.3) (2024-05-27)
+
+### Bug Fixes
+
+* check reserved bits are equal to 0 for more accurate SF ID matching ([1543d9c](https://github.com/Codeneos/vlocode/commit/1543d9cf8f75ffe79af5a50615ec5eeffb1465b4))
+
 # [1.23.0](https://github.com/Codeneos/vlocode/compare/v1.22.2...v1.23.0) (2024-04-29)
 
 ### Features
