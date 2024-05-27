@@ -227,7 +227,7 @@ export class SalesforceLookupService {
         }
 
         if (typeof filterValue === 'string' && typeof recordValue === 'string') {
-            if (isSalesforceId(recordValue) && recordValue.length != filterValue.length) {
+            if (isSalesforceId(recordValue) && isSalesforceId(filterValue) && recordValue.length != filterValue.length) {
                 // compare 15 to 18 char IDs -- simple compare covering 99% of the cases
                 return recordValue.substring(0, 15) === filterValue.substring(0, 15);
             }
