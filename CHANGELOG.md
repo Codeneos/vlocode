@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.2](https://github.com/codeneos/vlocode/compare/v1.24.1...v1.24.2) (2024-05-27)
+
+### Bug Fixes
+
+* deployments incorrectly match 1 record records ([374461d](https://github.com/codeneos/vlocode/commit/374461d755218da1a25b5c5e1aae440bc22c6ae3))
+
 ## [1.24.1](https://github.com/codeneos/vlocode/compare/v1.24.0...v1.24.1) (2024-05-10)
 
 ### Features
