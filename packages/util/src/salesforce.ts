@@ -72,7 +72,24 @@ export function extractNamespaceAndName(typeName : string) : { name: string; nam
  * @param id ID like string to check
  */
 export function isSalesforceId(id : string) : boolean {
-    return /^([a-z0-9]{15}|[a-z0-9]{18})$/i.test(id);
+    return decodeSalesforceId(id) !== undefined;   
+}
+
+/**
+ * Decodes a salesforce ID into its parts. Returns undefined if the ID is not a valid Salesforce ID.
+ * @param id ID to decode into parts
+ */
+export function decodeSalesforceId(id : string) {
+    const match = /^([a-z0-9]{3})([a-z0-9]{2})([a-z0-9]{2})([a-z0-9]{8})([a-z0-9]{3})?$/i.exec(id);
+    if (!match || match[3] !== '00') {
+        return;
+    }
+    return {
+        objectPrefix: match[1],
+        instanceId: match[2],
+        recordId: match[4],
+        caseChecksum: match[5]
+    };
 }
 
 /**
