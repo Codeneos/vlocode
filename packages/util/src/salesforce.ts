@@ -87,8 +87,8 @@ export function decodeSalesforceId(id : string) {
     return {
         objectPrefix: match[1],
         instanceId: match[2],
-        recordId: match[4],
-        caseChecksum: match[5]
+        recordId: match[3],
+        caseChecksum: match[4]
     };
 }
 
