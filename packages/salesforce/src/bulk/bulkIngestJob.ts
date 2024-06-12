@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { BulkJob, BulkJobInfo, IngestJobType, IngestOperationType, JobState } from './bulkJob';
 import { RestClient } from '../restClient';
-import { groupBy } from '@vlocode/util';
+import { Iterable, groupBy } from '@vlocode/util';
 
 export interface IngestJobInfo extends BulkJobInfo {
     /**
@@ -168,9 +168,9 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
         for (const record of data) {
             this.validateRecord(record);
+            this.pendingRecords.push(record);
         }
 
-        this.pendingRecords.push(...data);
         this.recordsCount += data.length;
 
         if (options?.keepOpen !== false) {
@@ -302,7 +302,10 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     private async getRecords<T = TRecord>(type: string) : Promise<(T & TRecord)[]> {
         const aggregateRecords: (T & TRecord)[] = [];
         for (const records of await this.getAll<any[]>(job => `${job.id}/${type}`)) {
-            aggregateRecords.push(...this.resultsToRecords<T & TRecord>(records));
+            Iterable.forEach(
+                this.resultsToRecords<T & TRecord>(records),
+                record => aggregateRecords.push(record)
+            );
         }
         return aggregateRecords;
     }
