@@ -93,7 +93,8 @@ describe('bulkIngestJob', () => {
             } as unknown as IngestJobInfo;
             const expectedOptions = { contentType: 'text/csv; charset=utf-8' };
             const clientMock = getRestClientMock({
-                post: jest.fn(() => Promise.resolve<object>({ id: '456' }))
+                post: jest.fn((job) => Promise.resolve<object>({ ...(job as object), id: '456' })),
+                patch: jest.fn((job, resource) => Promise.resolve<object>({ id: resource, ...(job as object) }))
             });
             const data = [{ Id: 1 },{ Id: 2 }];
 

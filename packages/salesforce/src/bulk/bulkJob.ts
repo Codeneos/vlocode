@@ -1,5 +1,7 @@
 import { CancellationToken, setObjectProperty, wait } from "@vlocode/util";
 import { RestClient } from '../restClient';
+import EventEmitter from "events";
+import { info } from "console";
 
 export const ColumnDelimiters = {
     'COMMA': ',',
@@ -99,7 +101,7 @@ export interface BulkJobInfo {
     readonly errorMessage?: string;
 }
 
-export class BulkJob<T extends BulkJobInfo> {
+export class BulkJob<T extends BulkJobInfo> extends EventEmitter {
 
     /**
      * Unique ID for this job.
@@ -129,7 +131,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * - `JobComplete` The job was processed by Salesforce.
      * - `Failed` Some records in the job failed. Job data that was successfully processed isn’t rolled back.
      */
-    public get state() { return this.info.state; }
+    public get state() { return this.getJobState(); }
 
     /**
      * Boolean value indicating the job is still processing.
@@ -160,46 +162,26 @@ export class BulkJob<T extends BulkJobInfo> {
     /**
      * Number of records ingested or queried so far
      */
-    public get recordsProcessed() { return this.info.numberRecordsProcessed; }
+    public get recordsProcessed() { return this.getRecordsProcessed(); }
 
     /**
      * Error message when the job is in `Failed` state
      */
-    public get errorMessage() { return this.info.errorMessage; }
+    public get errorMessage() { return this.getFirstError(); }
 
     /**
      * Type of Bulk job
      */
     public get type() { return this.info.jobType; }
 
-    /**
-     * Last known state of the job as returned by the API.
-     */
-    public get info() { return this._info; }
-
-    /**
-     * Updates the info for this job.
-     */
-    protected set info(value: T) { 
-        if (!value) {
-            throw new Error('Job info cannot be set to null or undefined; use refresh() to refresh the job info or delete() to delete the job if the job is');
-        }
-        this._info = Object.freeze(value);
-    }
-
     protected readonly delimiterCharacter: string;
     protected readonly lineEndingCharacters: string;
 
-    /**
-     * Internal state detail of the job as last returned by the API.
-     */
-    private _info: Readonly<T>;
-
-    constructor(protected client: RestClient, info: T) {
+    constructor(protected client: RestClient, public info: T) {
+        super();
         if (info.columnDelimiter && !ColumnDelimiters[info.columnDelimiter]) {
             throw new Error(`Invalid column delimiter ${info.columnDelimiter}`);
         }
-        this._info = Object.freeze<T>({ ...info });
         this.delimiterCharacter = ColumnDelimiters[info.columnDelimiter || 'COMMA'];
         this.lineEndingCharacters = info.lineEnding === 'CRLF' ? '\r\n' : '\n';
     }
@@ -223,7 +205,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * Refresh the job info and state of this job.
      */
     public async refresh() {
-        this.info = await this.client.get<T>(this.id);
+        Object.assign(this.info, await this.client.get<T>(this.id));
         return this;
     }
 
@@ -233,7 +215,7 @@ export class BulkJob<T extends BulkJobInfo> {
      * @returns Instance of this job
      */
     protected async patch(info: Partial<T>) {
-        this.info = await this.client.patch<T>(info, this.id);
+        Object.assign(this.info, await this.client.patch<T>(info, this.id));
         return this;
     }
 
@@ -248,7 +230,8 @@ export class BulkJob<T extends BulkJobInfo> {
     }
 
     /**
-     * Poll the bulk API until the job is processed.
+     * Poll the bulk API until the job is completed. Returns a promise that resolves when the job is completed. 
+     * Optionally registers event listeners for progress, finish and error events. When an error occurs the promise is rejected.
      * @param interval Interval is ms when to refresh job data; when not set defaults to polling for job updates every 5 seconds
      * @param cancelToken Cancellation token to stop the polling process
      * @returns
@@ -261,33 +244,47 @@ export class BulkJob<T extends BulkJobInfo> {
         }
 
         while (!cancelToken?.isCancellationRequested) {
-            const state = await this.refreshJobState();
-
-            if (state === 'JobComplete' || state === 'Aborted') {
-                return this;
-            }
-
-            if (state === 'Failed') {
-                const error = this.getFirstError();
-                if (error) {
-                    throw new Error(error);
-                }
-                throw new Error(`Bulk ${this.info.jobType} job ${this.id} failed to complete; see job details for more information`);
-            }
-
             await wait(interval ?? 5000, cancelToken);
+            await this.refresh();
+
+            switch (this.getJobState()) {
+                case 'JobComplete': {
+                    this.emit('finish', this);
+                } return this;
+                case 'Aborted': {
+                    this.emit('aborted', this);
+                } return this;
+                default: {
+                    this.emit('progress', this);
+                } break;
+                case 'Failed': {
+                    const errorMessage = this.getFirstError();
+                    const error = errorMessage 
+                        ? new Error(errorMessage) 
+                        : new Error(`Bulk ${this.info.jobType} job ${this.id} failed to complete; see job details for more information`);
+                    this.emit('error', error);
+                    throw error;
+                }
+            }
         }
 
         return this;
     }
 
-    /**
-     * Refreshes the job state and returns the current state of the job.
-     * @returns Current state of the job
-     */
-    protected async refreshJobState(): Promise<JobState> {
-        await this.refresh();
+    public on(event: 'progress', listener: (job: this) => void): this;
+    public on(event: 'finish', listener: (job: this) => void): this;
+    public on(event: 'error', listener: (job: Error) => void): this;
+    public on(event: 'aborted', listener: (job: this) => void): this;
+    public on(event: string, listener: (...args: any) => void): this {
+        return super.on(event, listener);
+    }
+
+    protected getJobState() : JobState {
         return this.info.state;
+    }
+
+    protected getRecordsProcessed() {
+        return this.info.numberRecordsProcessed;
     }
 
     protected getFirstError(): string | undefined {

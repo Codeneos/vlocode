@@ -74,16 +74,22 @@ interface SuccessfulRecord {
 export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJobInfo> {
 
     /**
+     * The maximum size of the CSV data in bytes that is uploaded in a single request. Defaults to 100MB.
+     * If the encoded data exceeds this size it is split into multiple jobs.
+     */
+    public static chunkDataSize: number = 100 * 1000000;
+
+    /**
      * When `true` always wraps strings in double quotes even when not required. If `false` only strings 
      * that contain the delimiter character or double quotes are wrapped in double quotes. Defaults to `false` to save space.
      */
     public alwaysQuote: boolean;
 
     /**
-     * The maximum size of the CSV data in bytes that is uploaded in a single request. Defaults to 100MB.
-     * If the encoded data exceeds this size it is split into multiple jobs.
+     * Maximum size in bytes after which the ingest job data is split into multiple chunks. Defaults to 100MB.
+     * @see {@link BulkIngestJob.chunkDataSize}
      */
-    public chunkDataSize: number = 100 * 1000000;
+    public chunkDataSize: number = BulkIngestJob.chunkDataSize;
 
     private numberFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 20 });
     private encoding: BufferEncoding = 'utf-8';
@@ -93,10 +99,44 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     private readonly jobs: Record<string, IngestJobInfo>;
 
     private readonly pendingRecords: TRecord[] = [];
+    private recordsCount: number = 0;
+    private isClosed: boolean = false;
+
+    /**
+     * Gets the external ID field name of the bulk ingest job.
+     * @returns The external ID field name.
+     */
+    public get externalIdFieldName() {
+        return this.info.externalIdFieldName;
+    }
+
+    /**
+     * Gets the total number of records in the job and its associated jobs.
+     */
+    public get recordsTotal() {
+        return this.recordsCount;
+    }
+
+    /**
+     * Gets the total number of failed records across all jobs.
+     * @returns The total number of failed records.
+     */
+    public get recordsFailed() {
+        return Object.values(this.jobs).reduce((total, job) => total + (job.numberRecordsFailed ?? 0), 0);
+    }
+
+    /**
+     * Gets the IDs of all the jobs created for this ingest job. For small data uploads 
+     * this will be a single job for large data uploads this will be multiple jobs.
+     * @returns An array of job IDs.
+     */
+    public get ids() {
+        return Object.keys(this.jobs);
+    }
 
     constructor(protected client: RestClient, info: IngestJobInfo) {
         super(client, info);
-        this.jobs = { [info.id]: info };
+        this.jobs = { [info.id]: this.info };
     }
 
     /**
@@ -122,11 +162,16 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
      * ```
      */
     public async uploadData(data: TRecord[], options?: { keepOpen?: boolean }) {
-        if (this.state !== 'Open') {
-            throw new Error(`Cannot upload data to a job that is in ${this.state} state.`);
+        if (this.isClosed) {
+            throw new Error('Cannot upload additional data to a job that is already closed, create a new job instead.');
+        }
+
+        for (const record of data) {
+            this.validateRecord(record);
         }
 
         this.pendingRecords.push(...data);
+        this.recordsCount += data.length;
 
         if (options?.keepOpen !== false) {
             return this;
@@ -143,7 +188,8 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     private async createNewJob() {
         await this.post({
             object: this.object,
-            operation: this.operation as IngestOperationType
+            operation: this.operation as IngestOperationType,
+            externalIdFieldName: this.externalIdFieldName
         });
         this.jobs[this.id] = this.info;
     }
@@ -166,8 +212,14 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
      * and you can’t add any more job data.
      */
     public async close() {
-        if (this.state !== 'Open') {
-            throw new Error(`Cannot close a job that is not in Open state. Current state: ${this.state}`);
+        if (this.isClosed) {
+            throw new Error('Cannot close a job that is already closed');
+        }
+        this.isClosed = true;
+
+        if (this.pendingRecords.length === 0) {
+            this.abort(job => job.state === 'Open');
+            return this;
         }
 
         for (const chunk of this.encodeData(this.pendingRecords.splice(0))) {
@@ -185,9 +237,12 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     /**
      * Abort a job, the job doesn’t get queued or processed.
      */
-    public async abort() {
-        for (const job of Object.values(this.jobs)) {
-            await this.client.patch({ state: 'Aborted' }, job.id);
+    public async abort(predicate?: (job: IngestJobInfo) => any) {
+        for (const jobId in this.jobs) {
+            if (predicate && !predicate(this.jobs[jobId])) {
+                continue;
+            }
+            await this.client.patch({ state: 'Aborted' }, jobId);
         }
         return this.refresh();
     }
@@ -196,26 +251,22 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
      * Deletes a job. To be deleted, a job must have a state of `UploadComplete`, `JobComplete`, `Aborted`, or `Failed`.
      */
     public async delete() {
-        for (const job of Object.values(this.jobs)) {
-            await this.client.delete(job.id);
+        for (const jobId in this.jobs) {
+            await this.client.delete(jobId);
         }
         return this;
     }
 
-    /**
-     * Override to refresh the fn to return the aggregate state of all jobs that are part of this ingest.
-     */
-    protected async refreshJobState() {
-        await this.refresh();
-        return this.aggregateJobState();
+    protected getRecordsProcessed() {
+        return Object.values(this.jobs).reduce((total, job) => total + (job.numberRecordsProcessed ?? 0), 0);
     }
 
     /**
      * Get the aggregate state of all jobs that were created for this ingest job.
      * Returns the least progressed state of all Salesforce jobs that were created for this ingest job.
      */
-    private aggregateJobState() {
-        const jobStateOrder: JobState[] = [ 'Open', 'UploadComplete', 'InProgress', 'Failed', 'JobComplete' ];
+    protected getJobState() {
+        const jobStateOrder: readonly JobState[] = [ 'Open', 'UploadComplete', 'InProgress', 'Failed', 'JobComplete' ];
         const aggregateState: Record<JobState, IngestJobInfo[]> = groupBy(Object.values(this.jobs), job => job.state);
 
         for (const state of jobStateOrder) {
@@ -262,6 +313,22 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
             resources.push(await this.client.get<T>(valueProvider(job)));
         }
         return resources;
+    }
+
+    private validateRecord(record: TRecord) {
+        if (Object.keys(record).length === 0) {
+            throw new Error('Cannot upload empty records');
+        }
+        if (Object.values(record).some(value => !this.isPrimitiveType(value))) {
+            throw new Error('Only primitive values are supported in records');
+        }
+        if (this.operation === 'upsert') {
+            const idField = this.externalIdFieldName ?? 'id';
+            const idValue = Object.entries(record).find(([key]) => key.toLowerCase() === idField.toLowerCase())?.[1];
+            if (idValue === undefined || idValue === null) {
+                throw new Error(`External ID field (${idField}) must be specified for upsert operations`);
+            }
+        }
     }
 
     private *encodeData(data: TRecord[]) {
