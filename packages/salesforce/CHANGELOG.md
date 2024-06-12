@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.6](https://github.com/Codeneos/vlocode/compare/v1.24.5...v1.24.6) (2024-06-12)
+
+### Bug Fixes
+
+* once method not overloaded with proper event types for bulk job V2 ([458b1e9](https://github.com/Codeneos/vlocode/commit/458b1e9873beb64704968bcd432912dee5345bbc))
+* stack overflow when loading more then 3 million records due to array spreading ([75dba0a](https://github.com/Codeneos/vlocode/commit/75dba0a46273fb13ad544952b4bd3c0e4c721b81))
+
 ## [1.24.5](https://github.com/Codeneos/vlocode/compare/v1.24.4...v1.24.5) (2024-06-12)
 
 ### Features
