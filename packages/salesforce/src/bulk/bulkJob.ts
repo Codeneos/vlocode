@@ -249,7 +249,7 @@ export class BulkJob<T extends BulkJobInfo> extends EventEmitter {
 
             switch (this.getJobState()) {
                 case 'JobComplete': {
-                    this.emit('finish', this);
+                    this.emit('completed', this);
                 } return this;
                 case 'Aborted': {
                     this.emit('aborted', this);
@@ -271,12 +271,16 @@ export class BulkJob<T extends BulkJobInfo> extends EventEmitter {
         return this;
     }
 
-    public on(event: 'progress', listener: (job: this) => void): this;
-    public on(event: 'finish', listener: (job: this) => void): this;
+    public on(event: 'progress' | 'completed' | 'aborted', listener: (job: this) => void): this;
     public on(event: 'error', listener: (job: Error) => void): this;
-    public on(event: 'aborted', listener: (job: this) => void): this;
     public on(event: string, listener: (...args: any) => void): this {
         return super.on(event, listener);
+    }
+
+    public once(event: 'progress' | 'completed' | 'aborted', listener: (job: this) => void): this;
+    public once(event: 'error', listener: (job: Error) => void): this;
+    public once(event: string, listener: (...args: any) => void): this {
+        return super.once(event, listener);
     }
 
     protected getJobState() : JobState {
