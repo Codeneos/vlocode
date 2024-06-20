@@ -159,11 +159,12 @@ export class SalesforceConnection extends Connection {
      */
     private initializeLocalVariables(options?: SalesforceConnectionOptions) {
         // Setup transport
+        this.version = options?.version ?? '60.0';
         this._transport = options?.transport ?? new HttpTransport({
                 instanceUrl: this.instanceUrl,
-                baseUrl: this._baseUrl()
+                baseUrl: `${this.instanceUrl}/services/data/v${this.version}`
             },
-            LogManager.get('HttpTransport')
+            LogManager.get(HttpTransport)
         );
 
         if (this.oauth2) {
@@ -174,7 +175,7 @@ export class SalesforceConnection extends Connection {
         this.metadata = new MetadataApi(this) as any;
 
         // Configure logger
-        this.logger = LogManager.get(SalesforceConnection)
+        this.logger = LogManager.get(SalesforceConnection);
         this['_logger'] = new JsForceLogAdapter(this.logger);
         this.tooling['_logger'] = new JsForceLogAdapter(this.logger);
 
@@ -448,12 +449,19 @@ export class SalesforceConnection extends Connection {
      */
     public async refreshAccessToken(): Promise<string> {
         if (!this.refreshToken) {
-            throw new Error('Unable to refresh token due to missing access token');
+            throw new Error('Unable to refresh access token for connections without a refresh token');
         }
 
         const tokens = await this.oauth2.refreshToken(this.refreshToken);
         this.accessToken = tokens.access_token;
-        this.instanceUrl = tokens.instance_url;
+
+        if (this.instanceUrl !== tokens.instance_url) {
+            this.instanceUrl = tokens.instance_url;
+            if (this._transport instanceof HttpTransport) {
+                this._transport.options.instanceUrl = this.instanceUrl;
+                this._transport.options.baseUrl = this._baseUrl();
+            }
+        }
 
         const [userId, organizationId] = tokens.id.split("/");
         this.userInfo = { id: userId, organizationId, url: tokens.id };
