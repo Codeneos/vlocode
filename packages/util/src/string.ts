@@ -309,3 +309,14 @@ export function encodeRFC3986URI(str: string) {
         c => c === ' ' ? '+' : `%${c.charCodeAt(0).toString(16).toUpperCase()}`
     );
 }
+
+/**
+ * Encode an object to a query string escaped for use in a URL
+ * @param params Object with key value pairs to encode
+ * @returns Encoded query string
+ */
+export function encodeQueryString(params: object): string {
+    return Object.entries(params)
+        .map(([v,k]) => k !== undefined ? `${v}=${encodeURIComponent(String(k))}` : k)
+        .join('&');
+}

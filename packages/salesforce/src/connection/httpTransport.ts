@@ -4,7 +4,7 @@ import * as zlib from 'zlib';
 import * as csv from 'csv-parse/sync';
 import { URL } from 'url';
 import { CookieJar } from 'tough-cookie';
-import { CustomError, DeferredPromise, Timer, withDefaults, XML } from '@vlocode/util';
+import { CustomError, DeferredPromise, encodeQueryString, Timer, withDefaults, XML } from '@vlocode/util';
 import { ILogger, LogManager } from '@vlocode/core';
 import { randomUUID } from 'crypto';
 
@@ -315,7 +315,7 @@ export class HttpTransport implements Transport {
         }
 
         if (contentType?.endsWith('/x-www-form-urlencoded')) {
-            return this.toQueryString(body);
+            return encodeQueryString(body);
         }
 
         return JSON.stringify(body);
@@ -502,16 +502,5 @@ export class HttpTransport implements Transport {
             return new URL(this.options.baseUrl + url);
         }
         return new URL(url);
-    }
-
-    /**
-     * Encode an object to a query string escaped for use in a URL
-     * @param params Object with key value pairs to encode
-     * @returns Encoded query string
-     */
-    public toQueryString(this: void, params: object): string {
-        return Object.entries(params)
-            .map(([v,k]) => k !== undefined ? `${v}=${encodeURIComponent(String(k))}` : k)
-            .join('&');
     }
 }

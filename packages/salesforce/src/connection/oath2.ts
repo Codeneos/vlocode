@@ -1,6 +1,6 @@
 import { LogManager } from "@vlocode/core";
-import { CustomError } from "@vlocode/util";
-import { HttpTransport } from './httpTransport';
+import { CustomError, encodeQueryString } from "@vlocode/util";
+import { HttpTransport, Transport } from './httpTransport';
 
 interface OAuth2TokenResponse  {
     id: string;
@@ -21,7 +21,7 @@ interface SalesforceOAuth2Options {
 
 export class SalesforceOAuth2 {
 
-    private readonly transport: HttpTransport;
+    private readonly transport: Transport;
 
     public readonly loginUrl: string;
     public readonly authzServiceUrl: string;
@@ -53,7 +53,7 @@ export class SalesforceOAuth2 {
             // OAuth endpoints do not support gzip encoding
             useGzipEncoding: false,
             instanceUrl: options.loginUrl,
-            baseUrl: options.loginUrl
+            baseUrl: `${options.loginUrl}/services/oauth2`
         }, LogManager.get(SalesforceOAuth2));
 
         this.clientId = options.clientId;
@@ -68,7 +68,7 @@ export class SalesforceOAuth2 {
             redirect_uri: this.redirectUri,
             ...params
         }
-        const queryString = this.transport.toQueryString(authzParams);
+        const queryString = encodeQueryString(authzParams);
         return `${this.authzServiceUrl}${this.authzServiceUrl.includes('?') ? '&' : '?'}${queryString}`;
     }
 
@@ -84,7 +84,7 @@ export class SalesforceOAuth2 {
         if (this.clientSecret) {
             params.client_secret = this.clientSecret;
         }
-        return this.post(params, { url: this.revokeServiceUrl });
+        return this.post(params, { url: this.tokenServiceUrl });
     }
 
     public authenticate(username: string, password: string): Promise<OAuth2TokenResponse> {
@@ -98,7 +98,7 @@ export class SalesforceOAuth2 {
         if (this.clientSecret) {
             params.client_secret = this.clientSecret;
         }
-        return this.post(params, { url: this.revokeServiceUrl });
+        return this.post(params, { url: this.authzServiceUrl });
     }
 
     revokeToken(token: string): Promise<undefined> {
@@ -123,6 +123,33 @@ export class SalesforceOAuth2 {
     }
 
     /**
+     * Retrieves user information using the provided access token.
+     * @param accessToken The access token to use for authentication.
+     * @returns A promise that resolves to an object containing user information.
+     */
+    public async userInfo(accessToken: string): Promise<Record<string, any>> {
+        const params: Record<string, string> = {
+            access_token: accessToken,
+        };
+        return this.post(params, { url: 'userinfo' });
+    }
+
+    /**
+     * Introspect checks the current state of an OAuth 2.0 access or refresh token.
+     * @param token Token strign to introspect
+     * @param type Type of token to introspect
+     * @returns
+     */
+    public async introspect(token: string, type: 'access_token' | 'refresh_token'): Promise<Record<string, any>> {
+        const params: Record<string, string> = {
+            token,
+            token_type_hint: type,
+            child_sessions: 'all'
+        };
+        return this.post(params, { url: 'introspect' });
+    }
+
+    /**
      * Post a request to token service
      * @param params Params as object send as URL encoded data
      * @returns Response body as JSON object
@@ -134,7 +161,7 @@ export class SalesforceOAuth2 {
             headers: {
                 'content-type': 'application/x-www-form-urlencoded'
             },
-            body: this.transport.toQueryString(params),
+            body: encodeQueryString(params),
         });
 
         if (response.statusCode && response.statusCode >= 400) {
