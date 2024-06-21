@@ -143,8 +143,7 @@ export class SalesforceOAuth2 {
     public async introspect(token: string, type: 'access_token' | 'refresh_token'): Promise<Record<string, any>> {
         const params: Record<string, string> = {
             token,
-            token_type_hint: type,
-            child_sessions: 'all'
+            token_type_hint: type
         };
         return this.post(params, { url: 'introspect' });
     }
