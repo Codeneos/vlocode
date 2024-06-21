@@ -26,6 +26,8 @@ export class RetrieveDeltaStrategy  {
         'metaXml': (a, b) => this.isMetaXmlEqual(a, b),
         'binary': this.isBinaryEqual.bind(this),
         'default': this.isStringEqual.bind(this),
+        // Custom comparers
+        'InstalledPackage': (a, b) => this.isPackageNewer(a, b),
     }
 
     constructor(
@@ -125,20 +127,22 @@ export class RetrieveDeltaStrategy  {
     }
 
     private getComparer(packagePath: string, data: string | Buffer, type: MetadataType): CompareStrategy {
+        if (this.compareStrategies[type.name]) {
+            return this.compareStrategies[type.name];
+        }
+
         if (/\.(cls|trigger)-meta\.xml$/i.test(packagePath)) {
             return this.compareStrategies.metaXml;
         }
 
         if (type.name === 'FlexiPage' ||
-            type.name === 'Layout')
-        {
+            type.name === 'Layout') {
             return this.compareStrategies.xmlStrictOrder;
         }
 
         if (type.name === 'StaticResource' ||
             type.name === 'ContentAsset' ||
-            type.name === 'Document')
-        {
+            type.name === 'Document') {
             return this.compareStrategies.binary;
         }
 
@@ -169,6 +173,15 @@ export class RetrieveDeltaStrategy  {
                 ignoreExtraProperties: !!options?.ignoreExtra
             });
         return !!diff;
+    }
+
+    private isPackageNewer(a: Buffer | string, b: Buffer | string): boolean {
+        const localMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
+        const orgMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
+
+        const localVersion = parseFloat(localMeta.versionNumber);
+        const orgVersion = parseFloat(orgMeta.versionNumber);
+        return isNaN(localVersion) || isNaN(orgVersion) || localVersion > orgVersion;
     }
 
     private isMetaXmlEqual(a: Buffer | string, b: Buffer | string): boolean {
