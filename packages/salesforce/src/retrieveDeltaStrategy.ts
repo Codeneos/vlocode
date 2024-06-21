@@ -131,13 +131,13 @@ export class RetrieveDeltaStrategy  {
             return this.compareStrategies[type.name];
         }
 
-        if (/\.(cls|trigger)-meta\.xml$/i.test(packagePath)) {
-            return this.compareStrategies.metaXml;
-        }
-
         if (type.name === 'FlexiPage' ||
             type.name === 'Layout') {
             return this.compareStrategies.xmlStrictOrder;
+        }
+
+        if (/\.([a-z]+)-meta\.xml$/i.test(packagePath)) {
+            return this.compareStrategies.metaXml;
         }
 
         if (type.name === 'StaticResource' ||
