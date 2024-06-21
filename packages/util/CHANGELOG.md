@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
+
+### Bug Fixes
+
+* OAuath2 incorrect URLs causes token refresh errors ([ab96a3d](https://github.com/Codeneos/vlocode/commit/ab96a3d94f5685e3588c8eed3e864959f3c9f32b))
+
 ## [1.24.5](https://github.com/Codeneos/vlocode/compare/v1.24.4...v1.24.5) (2024-06-12)
 
 **Note:** Version bump only for package @vlocode/util
@@ -50,6 +56,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * enhance org selection and displaying all more org details ([cfab40e](https://github.com/Codeneos/vlocode/commit/cfab40e7a81c482947d793f9dcf5d92cec43ec5e))
+
 * support extended quick pick item buttons for API requests ([c5dee89](https://github.com/Codeneos/vlocode/commit/c5dee896ffa7ab2c745ac80c80146ec3a8bac482))
 
 ## [0.20.11](https://github.com/Codeneos/vlocode/compare/v0.20.10...v0.20.11) (2023-12-14)
@@ -107,13 +114,17 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * connection.request is not backward compatible with JSForce ([600aeaa](https://github.com/Codeneos/vlocode/commit/600aeaab5a7a87181cc804d0958e71500a22d83a))
+
 * open in org does not work for Vlocity Cards without a version ([738b2c9](https://github.com/Codeneos/vlocode/commit/738b2c9a3006a5615071272d6ee5680af28324e7))
+
 * support thenCall on promise returned by request for backward compatibility ([9cd3afc](https://github.com/Codeneos/vlocode/commit/9cd3afcd3ff761dabef38a5578f92bad88a33583))
 
 ### Features
 
 * report progress when deploying datapacks in direct deploy mode for datapacks ([3890ec1](https://github.com/Codeneos/vlocode/commit/3890ec19d2514820502efc013fb4fc45f8d8b5bc))
+
 * support new metadata types for deployment ([f5a7139](https://github.com/Codeneos/vlocode/commit/f5a7139b30e4bd43d2d2423150c41eb6ed38429e))
+
 * sync selected SFDX username to Vlocode and vice-versa. ([095386d](https://github.com/Codeneos/vlocode/commit/095386dd6dced940e558602677dfd68f512165a8))
 
 ## [0.19.21](https://github.com/Codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
@@ -137,7 +148,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * support LWC geneation ([5f0107e](https://github.com/Codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
+
 * update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
+
 * upgrade XML functions to use FXPv4 ([63c0ba9](https://github.com/Codeneos/vlocode/commit/63c0ba91989e7a87fbad5b64ee40c6672260509d))
 
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
@@ -151,11 +164,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * "add to profile" command command does not work properly ([2e27e1e](https://github.com/Codeneos/vlocode/commit/2e27e1e55f46b807b9bb8545c1135715e5d18c77))
+
 * when the access token fails to update in SFDX retry up to 3 times before failing ([da71552](https://github.com/Codeneos/vlocode/commit/da71552cc94915bc3082e50405647ce0662cdda6))
 
 ### Features
 
 * add new object property sort to util library ([e313b5f](https://github.com/Codeneos/vlocode/commit/e313b5fb8ccaa2be1a6556fe2aa65ccd645c206a))
+
 * add retryable decorator to retry async operations x times before failing ([2fb2242](https://github.com/Codeneos/vlocode/commit/2fb22423ba4c7986ad2a9a6ec4f481cb0799ac06))
 
 ## [0.19.13](https://github.com/Codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
@@ -167,9 +182,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add forEach function to iterable ([ffc6bed](https://github.com/Codeneos/vlocode/commit/ffc6bed9bf552056e36f3457e748412ef1a5719a))
+
 * add XML text range and node utility functions ([ee80736](https://github.com/Codeneos/vlocode/commit/ee80736f3c9855c81f19bfb7d0666b4694c43a1f))
+
 * added new dedicated ignore case string compare ([822eb02](https://github.com/Codeneos/vlocode/commit/822eb020ce62ca7a55f13849bf14675a402b1036))
+
 * extend object comparison to allow comparing of objects with unequal array element order. ([46a24c7](https://github.com/Codeneos/vlocode/commit/46a24c77193a522ed687a789f532df4d1379948a))
+
 * support detecting changed in object metadata when using retrieve strategy ([a31d170](https://github.com/Codeneos/vlocode/commit/a31d170757108ce76ff7ff7344eff704a294420a))
 
 ## [0.19.11](https://github.com/Codeneos/vlocode/compare/v0.19.10...v0.19.11) (2023-06-27)
@@ -177,8 +196,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add forEach function to iterable ([b7cc28c](https://github.com/Codeneos/vlocode/commit/b7cc28c5da9cf6680abdfadf6b96e14fd93ac388))
+
 * added new dedicated ignore case string compare ([f84ecf0](https://github.com/Codeneos/vlocode/commit/f84ecf04042be6d10927b263125d3fb214a0948c))
+
 * extend object comparison to allow comparing of objects with unequal array element order. ([d28f898](https://github.com/Codeneos/vlocode/commit/d28f898fd6dcae70b169651d5dd0b3bf570a657b))
+
 * support detecting changed in object metadata when using retrieve strategy ([87aa5d4](https://github.com/Codeneos/vlocode/commit/87aa5d42de4545c28ef7e8ed70b7247018ad8781))
 
 ## [0.19.10](https://github.com/Codeneos/vlocode/compare/v0.19.9...v0.19.10) (2023-06-21)
@@ -218,22 +240,35 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * add unit test for proxy transformer ([4a3d1c9](https://github.com/Codeneos/vlocode/commit/4a3d1c91b2773a02d3f3483e870458ae937cba5a))
+
 * calculateHash does incorrectly references `this` from a static context ([0575fd3](https://github.com/Codeneos/vlocode/commit/0575fd36bdb190010e5346bc5bd4d667562c96f1))
+
 * drop `uuid` package in favor of browser and node native `randomUUID` from `node:ctypto` ([78e954c](https://github.com/Codeneos/vlocode/commit/78e954c8cac5773962f76ea42827ab0475231ad9))
+
 * fix several script generation errors ([eff0ef0](https://github.com/Codeneos/vlocode/commit/eff0ef01e4fc72ff2917f5250e9b879ee8f437ca))
+
 * getErrorMessage does not use defaults when set ([00868ec](https://github.com/Codeneos/vlocode/commit/00868ecbc8be149232a6afc06f63577a6f00f5db))
+
 * lookup service does not report script name/id in lookup error ([8021d97](https://github.com/Codeneos/vlocode/commit/8021d97094b3d3f89c22f19928f5dc552345882f))
+
 * mapGetOrCreate does not play nice with sync-initializers ([d06d5cf](https://github.com/Codeneos/vlocode/commit/d06d5cfb52fdcb3ce3901ff06ad6408d8f79f9f4))
+
 * normalizeSalesforceName transforms uppercase acronyms to `xML` instead of `xml` ([8f3df44](https://github.com/Codeneos/vlocode/commit/8f3df44f8e55bab1a82c93ba1fbc80b1b479d443))
+
 * transform proxy does not transform array methods properly ([e7be106](https://github.com/Codeneos/vlocode/commit/e7be1064c77f93fc0806a9607354ca094693adec))
 
 ### Features
 
 * add new mapBy function to easily map arrays by key ([23083b6](https://github.com/Codeneos/vlocode/commit/23083b683253fb4ab73a20c830b1438f08408878))
+
 * change getErrorMessage signature to accept options and allow default options to be set easily ([f1e8d46](https://github.com/Codeneos/vlocode/commit/f1e8d46132403672c3b3c87ed0bb39106a2c34bf))
+
 * introduce new uniform query API for data and tooling objects; update query service to use new query API. ([775ca10](https://github.com/Codeneos/vlocode/commit/775ca100f41cc72c73387f1b46da3681831a72b3))
+
 * open LWC OmniScripts in LWC editor and classic in Angular designer ([e016d3f](https://github.com/Codeneos/vlocode/commit/e016d3f45ad1ec7ef218ce37d52bc879961c2f8e))
+
 * support local OmniScript definition generation instead of using remote APEX. This speeds up OmniScript activation and avoids govern limit issue when activating large scripts. ([5bbd304](https://github.com/Codeneos/vlocode/commit/5bbd30462101d0918de34dfed7badee88d5e2dd9))
+
 * update calculateHash to also work on strings for convenience ([b5fd2c1](https://github.com/Codeneos/vlocode/commit/b5fd2c1e4e089cf9b63dce40286214f3e7785632))
 
 ## [0.18.17](https://github.com/Codeneos/vlocode/compare/v0.18.16...v0.18.17) (2023-02-23)
@@ -265,7 +300,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * updateAccessToken stores updated access tokens under alias instead of under username ([7410ed4](https://github.com/Codeneos/vlocode/commit/7410ed4844c66fa3edf219c11e3bd082b350433a))
+
 * visitObject does not visit properties that have object values ([a140204](https://github.com/Codeneos/vlocode/commit/a14020413a8d7076298a43ad15d561feb3bada44))
+
 * xml type nill is not parsed as null value ([6617c88](https://github.com/Codeneos/vlocode/commit/6617c8840f2fd3d5b545c76c08a045a3bf9912b7))
 
 ### Features
@@ -295,6 +332,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * improve custom transport so it can be used with OAuth flow and stores refreshed tokens in SFDX to avoid refreshing tokens every time vlocode connects to a SFDX org with an outdated access token ([7bd75e5](https://github.com/Codeneos/vlocode/commit/7bd75e582f5cf196b1d32272ab5c1d3bba81d283))
+
 * support refreshing OAuth tokens and prefilling the username on the refresh tokens action ([b31a419](https://github.com/Codeneos/vlocode/commit/b31a4198044a4dd701adbe0aacdb15c157af75f8))
 
 ## [0.18.7](https://github.com/Codeneos/vlocode/compare/v0.18.6...v0.18.7) (2023-01-24)
@@ -332,17 +370,25 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * do not mark string as iterable to avoid unintended behavior. ([db32e48](https://github.com/Codeneos/vlocode/commit/db32e48be0027203a52b44c0cd1683ec73d5e480))
+
 * improve groupBy and mapGetOrCreate types ([24ff881](https://github.com/Codeneos/vlocode/commit/24ff881f196f241069a3921ee2e734954278d582))
+
 * lazy does not properly return type of initializer ([f960e08](https://github.com/Codeneos/vlocode/commit/f960e08040b124a2ef8e2a535499d9490af7dacf))
+
 * vlocode can hang during initialization or org-switching ([7c95c2c](https://github.com/Codeneos/vlocode/commit/7c95c2c6259e94e8c951e9f069473ddf8ad94fea))
 
 ### Features
 
 * add objectEquals utility method for comparing objects ([819c97f](https://github.com/Codeneos/vlocode/commit/819c97fbae04bab3febf6b9ae512bfc7eb2a9251))
+
 * do not use sfdx connection and upgrade to @salesforce/core@3 ([be6add4](https://github.com/Codeneos/vlocode/commit/be6add401f29131e4769feb8f9b7a59787285edf))
+
 * improve support for cancellation signaling during datapack deploymen ([e356132](https://github.com/Codeneos/vlocode/commit/e3561320f48c2b22c3efd5361e1d13676380a929))
+
 * store global cache as global and improve cache clear command ([ebd0e6d](https://github.com/Codeneos/vlocode/commit/ebd0e6dd62dad1c0301e56615ab97b9a2fa87f3e))
+
 * support printing timer duration in multiple formats ([a010e9d](https://github.com/Codeneos/vlocode/commit/a010e9db35ba7775355063b60e07114c255822e6))
+
 * update Vlocity datapack deployment hooks (specs) to allow them to run on record level and support for changing deployment action from a spec ([06b2500](https://github.com/Codeneos/vlocode/commit/06b25000ad47cdce83bd00468e5ecaabf8bba596))
 
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
@@ -364,6 +410,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add object walk and set properties methods ([69dd5f8](https://github.com/Codeneos/vlocode/commit/69dd5f86ca3df0095c539f07b80994bfec3e26a7))
+
 * integrate omniscript LWC compiler and activation ([8c5bfaf](https://github.com/Codeneos/vlocode/commit/8c5bfaf6755358275997376c9d83ee169be10986))
 
 ## [0.17.6](https://github.com/Codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
@@ -381,6 +428,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * js sandbox compiler class mutation of context fails due to proxy not trapping `getOwnPropertyDescriptor` and `getkeys` properly ([debeed8](https://github.com/Codeneos/vlocode/commit/debeed8db4df22764f228a07ffc4ca86b23d5a55))
+
 * json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
 
 ## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)

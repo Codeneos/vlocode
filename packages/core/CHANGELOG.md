@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
+
+**Note:** Version bump only for package @vlocode/core
+
 ## [1.24.5](https://github.com/Codeneos/vlocode/compare/v1.24.4...v1.24.5) (2024-06-12)
 
 **Note:** Version bump only for package @vlocode/core
@@ -86,6 +90,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * handle expired refresh tokens properly and reset the connection when the Access token updates; should also address issues [#405](https://github.com/Codeneos/vlocode/issues/405) and [#401](https://github.com/Codeneos/vlocode/issues/401) ([f3184c3](https://github.com/Codeneos/vlocode/commit/f3184c3961dfc627921f2f4d9db699c075be751a))
+
 * support sprintf style logging when the a string contains %s, %i or %d tokens ([a431d8d](https://github.com/Codeneos/vlocode/commit/a431d8d70b144d80378d4f41010c305eeace0085))
 
 ## [0.19.20](https://github.com/Codeneos/vlocode/compare/v0.19.19...v0.19.20) (2023-08-01)
@@ -103,11 +108,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * errors duplicate the word "Error" when printing to the console ([367d404](https://github.com/Codeneos/vlocode/commit/367d40412835c8c57315fe855c195a616ef2f219))
+
 * fileSystem outputFile creates folders instead of file causing error ([e2a04d7](https://github.com/Codeneos/vlocode/commit/e2a04d71cbf959aede981ca660fe2a7566bc9851))
 
 ### Features
 
 * support LWC geneation ([5f0107e](https://github.com/Codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
+
 * update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
 
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
@@ -209,6 +216,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * container returned classes do not pass instance-of test due to wrong prototype ([f7554c5](https://github.com/Codeneos/vlocode/commit/f7554c54d1fb071aef7523ce69642c1ccade1670))
+
 * fractions reported as 'SS' due to invalid fraction format in loggers (due to luxon migration) ([2675a46](https://github.com/Codeneos/vlocode/commit/2675a46c4ac72a81d66a61bc7baafbc65be9e2a5))
 
 ## [0.18.6](https://github.com/Codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
@@ -242,15 +250,21 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * allow to pass this argument to work queue improving type detection ([20f095d](https://github.com/Codeneos/vlocode/commit/20f095dcb60402f582e5fcd682a9c376d7d1ca51))
+
 * init command not awaited causing vlocode deploy to create duplicate dependencies ([534b5e1](https://github.com/Codeneos/vlocode/commit/534b5e1891028cb8759e7bc7b6f76eb3845fb211))
+
 * vlocode can hang during initialization or org-switching ([7c95c2c](https://github.com/Codeneos/vlocode/commit/7c95c2c6259e94e8c951e9f069473ddf8ad94fea))
 
 ### Features
 
 * add container name to logs in debug mode ([8f61318](https://github.com/Codeneos/vlocode/commit/8f61318f58ab39219d5a4ca49e78c668ffb3966f))
+
 * await batch classes executed by Vlocity Admin commands and report their progress in vscode ([16453df](https://github.com/Codeneos/vlocode/commit/16453df7eaee34805e63c51a2f101daf2f0296da))
+
 * support checking a class is decorated with `[@injectable](https://github.com/injectable)` ([918639e](https://github.com/Codeneos/vlocode/commit/918639ee37c88f9617cb660d291426db3901029d))
+
 * support IoC container injecting it self as dependency ([70bc709](https://github.com/Codeneos/vlocode/commit/70bc709dc2a77988bb1695f5fc439f587e8b7cc2))
+
 * support queryTooling through queryService ([9f599ef](https://github.com/Codeneos/vlocode/commit/9f599efd62f2123d67ad574efe388b188a3d63c3))
 
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
@@ -270,7 +284,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add options to skip OmniScript LWC deployment ([a86d227](https://github.com/Codeneos/vlocode/commit/a86d2279324e82912b7ab2b259c8b61f6c2feff7))
+
 * expose `deploy` as separate function making it easier to invoke from external libraries ([37312d8](https://github.com/Codeneos/vlocode/commit/37312d8216c301007e17ca6800338e97987e2158))
+
 * integrate omniscript LWC compiler and activation ([8c5bfaf](https://github.com/Codeneos/vlocode/commit/8c5bfaf6755358275997376c9d83ee169be10986))
 
 ## [0.17.6](https://github.com/Codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
@@ -288,14 +304,19 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * build issue due to tsconfig mis configuration for core package ([7956281](https://github.com/Codeneos/vlocode/commit/79562814f341a5f8b8a79db0c13f1735131887e0))
+
 * focus all writers when calling log.focus instead of only the first writer that has a focus method. ([970f5fc](https://github.com/Codeneos/vlocode/commit/970f5fc96228d8aaa815640907eee78130ea7e56))
+
 * improve code coverage of IoC container class. ([9a76f57](https://github.com/Codeneos/vlocode/commit/9a76f5755e7326e51a70aaa1428d1514e8b3f0ba))
+
 * json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
 
 ### Features
 
 * add icon to terminal window ([f4b9466](https://github.com/Codeneos/vlocode/commit/f4b9466e70866eb2737f6d37898760052266fc76))
+
 * core IoC container should also consider shapes inherited from it's parent ([f4f9109](https://github.com/Codeneos/vlocode/commit/f4f9109c525d9dfa2f252234c6b52e578cef1dcb))
+
 * focus terminal log on certain commands ([63aeb61](https://github.com/Codeneos/vlocode/commit/63aeb615a7e5282a90c4cdd768dd2756ee9096d3))
 
 ## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
@@ -303,12 +324,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * build issue due to tsconfig mis configuration for core package ([58b60ea](https://github.com/Codeneos/vlocode/commit/58b60ea499ead676fa489948a675d3e2a5c4eaf4))
+
 * focus all writers when calling log.focus instead of only the first writer that has a focus method. ([e0d0b67](https://github.com/Codeneos/vlocode/commit/e0d0b6775dbd9b60f213a6ae9fdc389a68cb6326))
+
 * improve code coverage of IoC container class. ([b46f2e9](https://github.com/Codeneos/vlocode/commit/b46f2e96afe006cd29159b2202a9eb677b0cfa6d))
 
 ### Features
 
 * add icon to terminal window ([ec46aa3](https://github.com/Codeneos/vlocode/commit/ec46aa339fc021c98b3b38f23fe751be3cf3d9ce))
+
 * focus terminal log on certain commands ([ff25518](https://github.com/Codeneos/vlocode/commit/ff25518c3dc539caa5acc7dee4a6582651015c0f))
 
 # [0.17.0](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.0) (2022-08-01)

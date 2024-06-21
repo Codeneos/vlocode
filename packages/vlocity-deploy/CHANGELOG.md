@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
+
+**Note:** Version bump only for package @vlocode/vlocity-deploy
+
 ## [1.24.6](https://github.com/Codeneos/vlocode/compare/v1.24.5...v1.24.6) (2024-06-12)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy
@@ -140,6 +144,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * report progress when deploying datapacks in direct deploy mode for datapacks ([3890ec1](https://github.com/Codeneos/vlocode/commit/3890ec19d2514820502efc013fb4fc45f8d8b5bc))
+
 * support new metadata types for deployment ([f5a7139](https://github.com/Codeneos/vlocode/commit/f5a7139b30e4bd43d2d2423150c41eb6ed38429e))
 
 ## [0.19.21](https://github.com/Codeneos/vlocode/compare/v0.19.20...v0.19.21) (2023-08-02)
@@ -169,8 +174,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * check script element validity to avoid activation of fault scripts ([692583a](https://github.com/Codeneos/vlocode/commit/692583af5cf40d2c121480b87dc0066e09318f85))
+
 * support LWC geneation ([5f0107e](https://github.com/Codeneos/vlocode/commit/5f0107e6fe4e002809ee3b43245fff5ce7f8e6fe))
+
 * update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
+
 * upgrade XML functions to use FXPv4 ([63c0ba9](https://github.com/Codeneos/vlocode/commit/63c0ba91989e7a87fbad5b64ee40c6672260509d))
 
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
@@ -186,7 +194,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * **breaking:** rename `strictDependencies` to `strictOrder` to better explain what the option does ([1de5352](https://github.com/Codeneos/vlocode/commit/1de5352d195d7f6c513d9cc4302ff5660af22e17))
+
 * do not deploy records for which a dependency did not deploy unless `allowUnresolvedDependencies` is set ([1f52fae](https://github.com/Codeneos/vlocode/commit/1f52fae9424fa258a8028557ee78fa1f358ac855))
+
 * improve reporting when using direct deploy mode from VSCode ([5f40128](https://github.com/Codeneos/vlocode/commit/5f40128180729898bfa12289d167630939fee7d7))
 
 ## [0.19.13](https://github.com/Codeneos/vlocode/compare/v0.19.12...v0.19.13) (2023-07-05)
@@ -210,6 +220,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * datapackLookupService does not allow namespace-less lookup fields ([eed26c4](https://github.com/Codeneos/vlocode/commit/eed26c4c26513208f42ed8223734e5ce2dc979d9))
+
 * when deploying a Product2 datapack for the first time a duplicate Root PCI record is created when running with triggers enabled ([3461618](https://github.com/Codeneos/vlocode/commit/346161840c89e9baa10369b511d22a1a6c47c3fe))
 
 ## [0.19.8](https://github.com/Codeneos/vlocode/compare/v0.19.7...v0.19.8) (2023-05-08)
@@ -247,8 +258,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * binary data (docx etc) not properly exposed in proxy ([e7afe72](https://github.com/Codeneos/vlocode/commit/e7afe72172899ed006e60d8679ee2554287cd600))
+
 * do not use query cache during deployment to avoid issues caused by a stale cache ([cbb45fa](https://github.com/Codeneos/vlocode/commit/cbb45fa59a13f48dd4bfae2bcdb77ed3636484e7))
+
 * script builder does not properly generate options for picklists with custom source ([3e2aeb2](https://github.com/Codeneos/vlocode/commit/3e2aeb22ea4e513fc745da149f3dad839b3f5d34))
+
 * versionable datapacks are not sorted by version when using export command ([757783d](https://github.com/Codeneos/vlocode/commit/757783d9a8ab9aea3a64672c6aee5e2ab2436c23))
 
 ## [0.19.2](https://github.com/Codeneos/vlocode/compare/v0.19.1...v0.19.2) (2023-04-04)
@@ -262,45 +276,81 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * activate integration procedures using remote APEX ([3f79191](https://github.com/Codeneos/vlocode/commit/3f79191d7b6ae2b48b4b5f6eb29fdbd4c1d25e37))
+
 * additional validation on OmniScript templates to avoid linking templates that are not strings ([0d66200](https://github.com/Codeneos/vlocode/commit/0d66200594de340065334a67aae3cd95e8590d07))
+
 * before and after deploy specs do no respect record filter ([299eb4c](https://github.com/Codeneos/vlocode/commit/299eb4c5ea5450bd04914167da6e0b28dd621611))
+
 * datapack deployment tries to delete matching key records that can be updated in exceptional cases ([43b1ce4](https://github.com/Codeneos/vlocode/commit/43b1ce43c94b5646b2e3840ef53d0af8f2476332))
+
 * datapackLookupService does not update the namespace of the filter when comparing field values causing a bugcheck ([826205f](https://github.com/Codeneos/vlocode/commit/826205f277757fbb1f48ac719a3a17bc2cdc8bfb))
+
 * definition builder for OmniScripts concatenates templates in a different order then APEX activation. ([5abf833](https://github.com/Codeneos/vlocode/commit/5abf833fae1e1568837b1f594b32921fe36a7c19))
+
 * deployed OmniScript using local activation does not get updated to activated after deploying the definition and LWC ([4051b81](https://github.com/Codeneos/vlocode/commit/4051b819c869df22fc47d98116481c69e0b37cbf))
+
 * display warning for omniscript datapacks without elements instead of an error ([62f2398](https://github.com/Codeneos/vlocode/commit/62f2398aa2730fe0c838adee29aab12db87aa605))
+
 * do not dump old and new script definitions during activation ([81f9a17](https://github.com/Codeneos/vlocode/commit/81f9a17b83b14753635a7b96bbb062ee78991cfe))
+
 * drop `uuid` package in favor of browser and node native `randomUUID` from `node:ctypto` ([78e954c](https://github.com/Codeneos/vlocode/commit/78e954c8cac5773962f76ea42827ab0475231ad9))
+
 * ensure that script activation does not delete the old definitions before ensuring the new version can be activated (only when activating a new version) ([0e6631a](https://github.com/Codeneos/vlocode/commit/0e6631ad5bddf7f062185fca8f38e46040f7e920))
+
 * exclude datapacks that are not loaded properly due to spec-function errors from the deployment and properly log and attach spec function errors to the respective datapack that causes them ([c4c7fb1](https://github.com/Codeneos/vlocode/commit/c4c7fb10cdfe3129c8ab31543e3925fa0fc053bf))
+
 * fix several script generation errors ([eff0ef0](https://github.com/Codeneos/vlocode/commit/eff0ef01e4fc72ff2917f5250e9b879ee8f437ca))
+
 * incorrectly mapping version to sub type  for script definition generation ([e6ff15a](https://github.com/Codeneos/vlocode/commit/e6ff15acc7ae0a6797a2ee0f3a913276e8429376))
+
 * IPs with single elements crashed updateElementOrder due to that expecting elements to always be an array ([ae66a4a](https://github.com/Codeneos/vlocode/commit/ae66a4a332ac250b0769581b4121cbb3fccb1403))
+
 * lookup service does not report script name/id in lookup error ([8021d97](https://github.com/Codeneos/vlocode/commit/8021d97094b3d3f89c22f19928f5dc552345882f))
+
 * LWC compiler throws error when the tooling record is not updated as Salesforce returns a 204 status code with no body ([64e4eaf](https://github.com/Codeneos/vlocode/commit/64e4eaf319321a39317ca81bf669428827224ade))
+
 * LWC enabled scripts with embedded scripts did not render elements inside of blocks ([d0c9b9c](https://github.com/Codeneos/vlocode/commit/d0c9b9c18e41650771579370adb0842a8b052ce9))
+
 * only run tests for test and spec files in __tests__ folder ([65fb3a9](https://github.com/Codeneos/vlocode/commit/65fb3a975cc291fbb37b4dc04eea9afe97605924))
+
 * only update order and level when not set in the datapack. ([a26f6e3](https://github.com/Codeneos/vlocode/commit/a26f6e3151cbb4409e8afe089c2d4185957b85f5))
+
 * re-ordering of elements should start counting at 1 for element order instead of 0 ([1bdc38c](https://github.com/Codeneos/vlocode/commit/1bdc38c05474571a2991394e6dec6be934da04fa))
+
 * rename sass folder to scss to avoid conflicts with sass nodejs module ([41dd5cf](https://github.com/Codeneos/vlocode/commit/41dd5cf26856ceeeaac2f1bc4d80ba6b0f6c8e0b))
+
 * script gen crashed on invalid picklist configuration for a choice element ([89ec371](https://github.com/Codeneos/vlocode/commit/89ec3715e3337b9c2707ccb07333aa2aa050eade))
+
 * UI layouts are incorrectly linked to UI templates ([7b949fc](https://github.com/Codeneos/vlocode/commit/7b949fc47d4d065185acba18ce36ca577352a691))
+
 * update order and level of OmniScript elements before deployment (issue [#396](https://github.com/Codeneos/vlocode/issues/396)) ([c9c08f1](https://github.com/Codeneos/vlocode/commit/c9c08f1774fec7cda1c157fbf03c8e9e5fba8768))
+
 * when building multiple definitions they re-use the same objects instead of deepCloning them ([24fe045](https://github.com/Codeneos/vlocode/commit/24fe0451221818b321be92ff779a453dcdbd6188))
 
 ### Features
 
 * add support for reactivating dependent scripts ([2a8a42c](https://github.com/Codeneos/vlocode/commit/2a8a42c6725ca83905462e0c0038dc4ed7ee6b42))
+
 * always regenerate the LWC id when building the script definitions ([2f57fc0](https://github.com/Codeneos/vlocode/commit/2f57fc06231be1969b2237150831f83e51b71e89))
+
 * change getErrorMessage signature to accept options and allow default options to be set easily ([f1e8d46](https://github.com/Codeneos/vlocode/commit/f1e8d46132403672c3b3c87ed0bb39106a2c34bf))
+
 * local OmniScript activation now updates the isActive flag to `true` and deactivates the old active version of the same script ([08092e4](https://github.com/Codeneos/vlocode/commit/08092e4f1f51927414a2810590c3a091b17559da))
+
 * open LWC OmniScripts in LWC editor and classic in Angular designer ([e016d3f](https://github.com/Codeneos/vlocode/commit/e016d3f45ad1ec7ef218ce37d52bc879961c2f8e))
+
 * report stack trace for datapack loading errors during datapack deployment while debugging ([b282180](https://github.com/Codeneos/vlocode/commit/b282180dd286116ba5bf7f55f96f8c46459218c5))
+
 * support correctly parsing datapacks that are not in a parent folder ([ae261c2](https://github.com/Codeneos/vlocode/commit/ae261c2727d5fcc40afc78b471929a7162408d1f))
+
 * support local OmniScript definition generation instead of using remote APEX. This speeds up OmniScript activation and avoids govern limit issue when activating large scripts. ([5bbd304](https://github.com/Codeneos/vlocode/commit/5bbd30462101d0918de34dfed7badee88d5e2dd9))
+
 * support more datapack types in datapack explorer ([3a19411](https://github.com/Codeneos/vlocode/commit/3a1941197250a8b747cb1ae8774511ec4c4d22a9))
+
 * support more lookup configurations for OmniScripts ([6ea32b4](https://github.com/Codeneos/vlocode/commit/6ea32b4528f9302b91765b9bba7beb5d6d679501))
+
 * support unlimited re-usable OmniScript embedding; allows more then 1 level deep embedding of scripts ([bb23f67](https://github.com/Codeneos/vlocode/commit/bb23f677ee8e74a0ae43a067e17ed1f0b1d21bdb))
+
 * switch from sass.js to sass-dart for scss compilation; sass.js is not unmaintained and not being updated anymore ([807e45c](https://github.com/Codeneos/vlocode/commit/807e45c593061b509309db849f66dc7188e7238a))
 
 ## [0.18.18](https://github.com/Codeneos/vlocode/compare/v0.18.17...v0.18.18) (2023-03-01)
@@ -356,6 +406,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * ensure correct deployment order for Vlocity cards ([7758438](https://github.com/Codeneos/vlocode/commit/77584386c74375fa870bfa83a4f2acb43937a04c))
+
 * ensure layouts are only activated after templates and cards are deployed and activated ([96ab0ce](https://github.com/Codeneos/vlocode/commit/96ab0cedd60098031d57742ec184b756cdb21f46))
 
 ## [0.18.6](https://github.com/Codeneos/vlocode/compare/v0.18.5...v0.18.6) (2022-12-12)
@@ -375,9 +426,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * crypto module not imported ([370dde6](https://github.com/Codeneos/vlocode/commit/370dde6e90aadcd7c12e6ac5574db1c5fa804494))
+
 * lookup service returns incorrectly matched records in edge case (to strings ending with `-1` are considered equal due to quirks in the js-Date class) ([23fc498](https://github.com/Codeneos/vlocode/commit/23fc498cf9ee3c8ee49ed82d0472aa6df1c40130))
+
 * only a single spec function executes for mixed deployments causing templates, scripts and other components from not being activated ([3a7f8af](https://github.com/Codeneos/vlocode/commit/3a7f8afb7b3626f6cd1bd35a6175784d86cb8c40))
+
 * references returned as boolean values in record factory ([8ac959e](https://github.com/Codeneos/vlocode/commit/8ac959ea9e89d782c377bb83bc163b3c4a93f74c))
+
 * using old moment date formats with luxon ([4f99eb3](https://github.com/Codeneos/vlocode/commit/4f99eb3984fddca44b221b281c72e28312647582))
 
 ### Features
@@ -403,30 +458,51 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * add more unit tests for filterApplicableRecords and evalFilter ([f1d71cb](https://github.com/Codeneos/vlocode/commit/f1d71cb187ee6c3bd2027bcbc3376c56e854744b))
+
 * container injection for vlocode standalone does not always use internal container ([a5e1ce7](https://github.com/Codeneos/vlocode/commit/a5e1ce7f9242b22cd254034316243c6e584b7cfd))
+
 * content versions create new content documents during deployment instead of attaching to the existing content document as new version ([f7bc2b8](https://github.com/Codeneos/vlocode/commit/f7bc2b81ea9f901e41480eded09a563fbfa47323))
+
 * datapackDeploy register queryservice from root container into child container without a valid namespace provider ([f4d11f9](https://github.com/Codeneos/vlocode/commit/f4d11f9b1b5335a6006d5e3bb1486c2f5928077d))
+
 * deployment specs are not re-used but recreated for every spec call causing local state of specs to be lost as well as reducing performance ([866a443](https://github.com/Codeneos/vlocode/commit/866a44337512950c0bb4cba37570fa2abece5e23))
+
 * LWC compiler doesn't work on vlocity Winter '23 release ([d9618d1](https://github.com/Codeneos/vlocode/commit/d9618d1e30db9f68807e81b2a2d41a3fd40efd1e))
+
 * omniscript activator references vlocity_cmt namespace instead of the namespace placeholder ([b99e32e](https://github.com/Codeneos/vlocode/commit/b99e32e03947533323a20e29fc74de154d9dc3f1))
+
 * OmniScript spec doesn't always execute ([97b42c2](https://github.com/Codeneos/vlocode/commit/97b42c2a9ea856be8130cde76618e273fc464997))
+
 * override definitions are not correctly updated causing them to break ([b10e7f0](https://github.com/Codeneos/vlocode/commit/b10e7f0c428efe8ab2f9d5cd62834b4914e7667a))
+
 * update all spec filters to filter on RecordType instead of on Datapack Type; Datapack type is not always reliable and depends on headers being placed in correct folders. As vlocode doesn't require datapacks to be placed in the correct folder structure having specs only trigger on datapack type is unreliable. ([6bf1a04](https://github.com/Codeneos/vlocode/commit/6bf1a0488f1f9f25a6ace6db032c32befea56dde))
+
 * use record defined lookup keys instead of general matching keys to allow specs to modify lookupk keys on a per record level ([8370707](https://github.com/Codeneos/vlocode/commit/8370707d0cabb9aa128b8e798797b2f9ab51ee55))
+
 * validate datapack dependency/reference integrity ([ff98a55](https://github.com/Codeneos/vlocode/commit/ff98a553404f2e066e2929e38b853cd5db9afdc0))
+
 * vlocode crashes on start-up when packed with webpack ([bcd177f](https://github.com/Codeneos/vlocode/commit/bcd177f930b28c300370f97c0e8c53b99cc058f3))
 
 ### Features
 
 * automatically create ContentDocumentLinks post deployment to make document templates available post-deployment without manual actions ([0c7e23c](https://github.com/Codeneos/vlocode/commit/0c7e23cc73c9396452c05827d361c29585b79b0f))
+
 * await batch classes executed by Vlocity Admin commands and report their progress in vscode ([16453df](https://github.com/Codeneos/vlocode/commit/16453df7eaee34805e63c51a2f101daf2f0296da))
+
 * cache Vlocity namespace prefix by org ([3978bff](https://github.com/Codeneos/vlocode/commit/3978bff73727ff90a03c6422603e46db317aa643))
+
 * combine layout and card deployment actions ([b565f6c](https://github.com/Codeneos/vlocode/commit/b565f6c67df47c5d6807b8392d691afabc578dce))
+
 * do not update ContentVersion when the version data is unchanged ([e998a86](https://github.com/Codeneos/vlocode/commit/e998a8648c097bc87e5c71366a1e78a65788be88))
+
 * do not use sfdx connection and upgrade to @salesforce/core@3 ([be6add4](https://github.com/Codeneos/vlocode/commit/be6add401f29131e4769feb8f9b7a59787285edf))
+
 * improve support for cancellation signaling during datapack deploymen ([e356132](https://github.com/Codeneos/vlocode/commit/e3561320f48c2b22c3efd5361e1d13676380a929))
+
 * log deployment object details when running with `debug` log level ([ba7f9b1](https://github.com/Codeneos/vlocode/commit/ba7f9b125f794fd6018a0a9ea1aeff83003b722b))
+
 * update TemplateContentDocumentId__c field when deploying templates with the latest content version ([325ebb6](https://github.com/Codeneos/vlocode/commit/325ebb6c2a43ada18f63e6a6955b9e01b58c524a))
+
 * update Vlocity datapack deployment hooks (specs) to allow them to run on record level and support for changing deployment action from a spec ([06b2500](https://github.com/Codeneos/vlocode/commit/06b25000ad47cdce83bd00468e5ecaabf8bba596))
 
 ## [0.17.11](https://github.com/Codeneos/vlocode/compare/v0.17.10...v0.17.11) (2022-10-11)
@@ -442,6 +518,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * dynamically add OmniScript template and script dependencies to ensure a correct deployment order ([cb8df9f](https://github.com/Codeneos/vlocode/commit/cb8df9fbbcdab8c64ce45d50512817aacb066b09))
+
 * use tooling API instead of metadata API for LWC omniscript deployment by default ([c7ba72c](https://github.com/Codeneos/vlocode/commit/c7ba72c2c69e6d16d3894400a155dd1603b61320))
 
 ## [0.17.9](https://github.com/Codeneos/vlocode/compare/v0.17.8...v0.17.9) (2022-09-29)
@@ -465,7 +542,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add options to skip OmniScript LWC deployment ([a86d227](https://github.com/Codeneos/vlocode/commit/a86d2279324e82912b7ab2b259c8b61f6c2feff7))
+
 * expose `deploy` as separate function making it easier to invoke from external libraries ([37312d8](https://github.com/Codeneos/vlocode/commit/37312d8216c301007e17ca6800338e97987e2158))
+
 * integrate omniscript LWC compiler and activation ([8c5bfaf](https://github.com/Codeneos/vlocode/commit/8c5bfaf6755358275997376c9d83ee169be10986))
 
 ## [0.17.6](https://github.com/Codeneos/vlocode/compare/v0.17.5...v0.17.6) (2022-08-31)
@@ -493,14 +572,19 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * datapacks with binary data are always loaded properly due to an error in the regex detection the external file types ([8d3384f](https://github.com/Codeneos/vlocode/commit/8d3384fc5f41ea9d6b5213409344c0c7003d8b9d))
+
 * issue datapack record factory fails to convert JSON objects into strings ([5570c39](https://github.com/Codeneos/vlocode/commit/5570c3974fca48ce2bc8def9ba9aea7b4dbf87bd))
+
 * json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
+
 * properly report failed records in the log when using the record batch for deployment ([29c1424](https://github.com/Codeneos/vlocode/commit/29c1424d622221cc36942408b6d6dd3c81da7f1f))
 
 ### Features
 
 * add strictDependencies option when deploying datapacks ([d884b1d](https://github.com/Codeneos/vlocode/commit/d884b1d5b9793825c8e1279b08886c08b656c535))
+
 * improve datapack rename and clone commands to look at matching keys ([2d025a1](https://github.com/Codeneos/vlocode/commit/2d025a17ed93e177358de91ac648302e2a4f36d7))
+
 * initialize datapack services when switching org to speed up any Vlocode datapack commands ([107ea6b](https://github.com/Codeneos/vlocode/commit/107ea6bb3df652e3f5bafd854885eb1ebc7e2a98))
 
 ## [0.17.1](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.1) (2022-08-11)
@@ -508,13 +592,17 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * datapacks with binary data are always loaded properly due to an error in the regex detection the external file types ([5486ed1](https://github.com/Codeneos/vlocode/commit/5486ed140436b1c8b2ead506b3b145ebb4802c6a))
+
 * issue datapack record factory fails to convert JSON objects into strings ([9781fd4](https://github.com/Codeneos/vlocode/commit/9781fd4e19c3f83fd0e693e8b6ec398d69abeec6))
+
 * properly report failed records in the log when using the record batch for deployment ([759196b](https://github.com/Codeneos/vlocode/commit/759196b3fc6d8daa34aba86eaff7488b5ea7fcd1))
 
 ### Features
 
 * add strictDependencies option when deploying datapacks ([211d776](https://github.com/Codeneos/vlocode/commit/211d7764e4351560f3addfbee1c4c6ed8a3597e7))
+
 * improve datapack rename and clone commands to look at matching keys ([c895408](https://github.com/Codeneos/vlocode/commit/c895408748348c94c1dba2cb996c70d9722ddf66))
+
 * initialize datapack services when switching org to speed up any Vlocode datapack commands ([210627d](https://github.com/Codeneos/vlocode/commit/210627d0f5eb78316921fdb4242bd7beeff8c479))
 
 # [0.17.0](https://github.com/Codeneos/vlocode/compare/v0.16.36...v0.17.0) (2022-08-01)

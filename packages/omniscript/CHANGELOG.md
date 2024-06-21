@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
+
+**Note:** Version bump only for package @vlocode/omniscript
+
 ## [1.24.6](https://github.com/Codeneos/vlocode/compare/v1.24.5...v1.24.6) (2024-06-12)
 
 **Note:** Version bump only for package @vlocode/omniscript
@@ -108,6 +112,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * improve build system and reduce load time of extension on startup by 40% ([692de00](https://github.com/Codeneos/vlocode/commit/692de003c677516ed13064fb4d7011be2f090225))
+
 * support generation of LWCs components from OmniScripts ([a885d52](https://github.com/Codeneos/vlocode/commit/a885d52079721417677034371f839be5f161c06f))
 
 # [0.20.0-alpha.1](https://github.com/Codeneos/vlocode/compare/v0.20.0-alpha.0...v0.20.0-alpha.1) (2023-08-14)

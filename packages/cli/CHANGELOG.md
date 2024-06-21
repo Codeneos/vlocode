@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
+
+**Note:** Version bump only for package @vlocode/cli
+
 ## [1.24.6](https://github.com/Codeneos/vlocode/compare/v1.24.5...v1.24.6) (2024-06-12)
 
 **Note:** Version bump only for package @vlocode/cli
@@ -162,6 +166,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add option to dump before and after script definition for debugging purpose using the `debug-activation` flag ([aaa95c1](https://github.com/Codeneos/vlocode/commit/aaa95c11eefef1b276adb38cf8966051305512b2))
+
 * update to typescript to version 5 and update required dependencies to match ([ccbda5c](https://github.com/Codeneos/vlocode/commit/ccbda5c228850fc91e7c605de30c202178ef55da))
 
 ## [0.19.15](https://github.com/Codeneos/vlocode/compare/v0.19.14...v0.19.15) (2023-07-12)
@@ -229,16 +234,23 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * deploy command does not await init on super class ([97596a1](https://github.com/Codeneos/vlocode/commit/97596a199ecbc706b9ba88dcf7cd79b9d7aaea30))
+
 * fix several script generation errors ([eff0ef0](https://github.com/Codeneos/vlocode/commit/eff0ef01e4fc72ff2917f5250e9b879ee8f437ca))
+
 * vlocode ignores tooling API flag and always uses Metadata API for uploading LWC OmniScrips ([707b6bf](https://github.com/Codeneos/vlocode/commit/707b6bf6dcba033669a14f8c0ccb28d83dc17574))
 
 ### Features
 
 * activate scripts in accordance to their dependency graph ([1295364](https://github.com/Codeneos/vlocode/commit/129536420f8e5956eeb973654093f370fda48dda))
+
 * add new activation command to activate OmniScripts and deploy LWC components already deployed in the org. ([c045bca](https://github.com/Codeneos/vlocode/commit/c045bca095663400b99e493c8802641d8ad868a6))
+
 * automatically reactivate dependent scripts ([c92c5ea](https://github.com/Codeneos/vlocode/commit/c92c5ea3544f129f44f35e120a11626efab36148))
+
 * change getErrorMessage signature to accept options and allow default options to be set easily ([f1e8d46](https://github.com/Codeneos/vlocode/commit/f1e8d46132403672c3b3c87ed0bb39106a2c34bf))
+
 * expose `--continue-on-error` for vlocode CLI deployment command ([dcc014a](https://github.com/Codeneos/vlocode/commit/dcc014af539d2eff2bd1e55390e858b2456e05c6))
+
 * support local OmniScript definition generation instead of using remote APEX. This speeds up OmniScript activation and avoids govern limit issue when activating large scripts. ([5bbd304](https://github.com/Codeneos/vlocode/commit/5bbd30462101d0918de34dfed7badee88d5e2dd9))
 
 ## [0.18.18](https://github.com/Codeneos/vlocode/compare/v0.18.17...v0.18.18) (2023-03-01)
@@ -316,6 +328,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * init command not awaited causing vlocode deploy to create duplicate dependencies ([534b5e1](https://github.com/Codeneos/vlocode/commit/534b5e1891028cb8759e7bc7b6f76eb3845fb211))
+
 * set log level to debug when running with `--debug` flag as true ([59483c8](https://github.com/Codeneos/vlocode/commit/59483c8d1877eb345f7b4e9d74f88e568b01d742))
 
 ## [0.17.11](https://github.com/Codeneos/vlocode/compare/v0.17.10...v0.17.11) (2022-10-11)
@@ -367,6 +380,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * build issue due to tsconfig mis configuration for core package ([7956281](https://github.com/Codeneos/vlocode/commit/79562814f341a5f8b8a79db0c13f1735131887e0))
+
 * json files are not included NPM packages ([f67a75d](https://github.com/Codeneos/vlocode/commit/f67a75de03a008dd6f6825c948489f375c2ab35c))
 
 ### Features
