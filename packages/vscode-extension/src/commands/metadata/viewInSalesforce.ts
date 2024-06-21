@@ -9,7 +9,7 @@ import { VlocodeCommand } from '../../constants';
 @vscodeCommand(VlocodeCommand.viewInSalesforce)
 export default class ViewInSalesforceCommand extends MetadataCommand {
 
-    public async execute(args) {
+    public async execute(...args: any[]) {
         return this.openFileInSalesforce(args[0] || this.currentOpenDocument);
     }
 
