@@ -181,7 +181,20 @@ export class RetrieveDeltaStrategy  {
 
         const localVersion = parseFloat(localMeta.versionNumber);
         const orgVersion = parseFloat(orgMeta.versionNumber);
-        return isNaN(localVersion) || isNaN(orgVersion) || localVersion > orgVersion;
+        if (isNaN(localVersion) || isNaN(orgVersion)) {
+            return true;
+        }
+
+        if (localVersion > orgVersion) {
+            return true;
+        } else if (localVersion === orgVersion) {
+            return deepCompare(localMeta, orgMeta, {
+                primitiveCompare: this.primitiveCompare,
+                ignoreArrayOrder: false,
+                ignoreExtraProperties: true
+            });
+        }
+        return false;
     }
 
     private isMetaXmlEqual(a: Buffer | string, b: Buffer | string): boolean {
