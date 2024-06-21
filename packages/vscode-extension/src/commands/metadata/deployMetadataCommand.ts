@@ -77,18 +77,18 @@ export default class DeployMetadataCommand extends MetadataCommand {
         // build package
         const packageBuilder = container.create(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
         await packageBuilder.addFiles(selectedFiles);
-        const sfPackage = await (options?.delta
-            ? packageBuilder.getDeltaPackage(RetrieveDeltaStrategy)
-            : packageBuilder.getPackage()
-        );
+        const packageComponents = packageBuilder.getPackageComponents();
+        if (packageComponents.length === 0) {
+            return void vscode.window.showWarningMessage('None of specified files are deployable Salesforce Metadata');
+        }
 
-        if (sfPackage.isEmpty) {
-            if (options?.delta) {
-                void vscode.window.showInformationMessage('Selected files are already up-to-date');
-            } else {
-                void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
-            }
-            return;
+        if (options?.delta) {
+            await packageBuilder.removeUnchanged(RetrieveDeltaStrategy);
+        }
+        const sfPackage = packageBuilder.getPackage();
+
+        if (sfPackage.isEmpty && options?.delta) {
+            return void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
         }
 
         if (sfPackage.hasDestructiveChanges) {
@@ -179,6 +179,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
                 return;
             }
 
+            this.outputDeployResult(sfPackage.components(), result);
             return this.onDeploymentComplete(deployment, result);
         };
     }

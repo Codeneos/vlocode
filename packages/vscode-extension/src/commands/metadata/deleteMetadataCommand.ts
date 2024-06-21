@@ -40,6 +40,7 @@ export default class DeleteMetadataCommand extends MetadataCommand {
             if (!result.success) {
                 if (result.details?.componentFailures) {
                     await this.logDeployResult(sfPackage, result);
+                    this.outputDeployResult(sfPackage.components(), result);
                     const distinctProblems = [...new Set(result.details.componentFailures.map(failure => failure.problem))];
                     if (distinctProblems.length == 1) {
                         throw new Error(distinctProblems[0]);

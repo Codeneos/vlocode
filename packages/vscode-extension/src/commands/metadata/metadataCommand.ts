@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 
-import { getDocumentBodyAsString } from '@vlocode/util';
+import { getDocumentBodyAsString, groupBy, mapBy } from '@vlocode/util';
 import { CommandBase } from '../../lib/commandBase';
-import { DeployResult, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
+import { DeployResult, SalesforcePackage, SalesforcePackageComponent, SalesforceService } from '@vlocode/salesforce';
 
 /**
  * Salesforce metadata base command
  */
 export default abstract class MetadataCommand extends CommandBase {
+
+    protected outputChannelName = 'Salesforce Metadata';
 
     /**
      * Problem matcher functions
@@ -32,6 +34,44 @@ export default abstract class MetadataCommand extends CommandBase {
         }
     }
 
+    protected outputDeployResult(components: SalesforcePackageComponent[], result: DeployResult) {
+        const deployMessages = mapBy(result.details?.allComponentMessages || [], message => `${message.componentType}/${message.fullName}`);
+        const deployComponentStatus = components.map( 
+            component => {
+                const message = deployMessages.get(`${component.componentType}/${component.componentName}`);
+                const deployStatus = message?.deleted
+                    ? 'Deleted' : message?.success === false
+                    ? 'Failed' : (message?.changed ? 'Changed' : 'Unchanged');
+                return {
+                    id: message?.id || undefined,
+                    type: component.componentType,
+                    component: component.componentName,
+                    status: deployStatus
+                };
+            }
+        );
+        const deployErrors = (result.details?.componentFailures || []).map( 
+            component => ({
+                component: component.fullName,
+                error: component.problem
+            })
+        );
+
+        if (!result.success) {
+            this.outputTable(deployErrors, { appendEmptyLine: true, focus: true });
+        } else if (deployComponentStatus.length) {
+            this.outputTable(deployComponentStatus, { appendEmptyLine: true, focus: true });
+            if (deployErrors.length) {
+                this.outputTable(deployErrors, { appendEmptyLine: true, focus: true, maxCellWidth: { error: 60 } });
+            }
+        }
+
+        this.output(
+            `Deployment ${result?.id} -- ${result.status} (${result.numberComponentsDeployed}/${result.numberComponentsTotal})`,
+            { appendEmptyLine: true, focus: true }
+        );
+    }
+
     /**
      * Displays any error in the diagnostics tab of VSCode
      * @param manifest The deployment or destructive changes manifest
@@ -52,6 +92,12 @@ export default abstract class MetadataCommand extends CommandBase {
         // these are not useful to display so we instead filter these out
         const filterFailures = result.details.componentFailures.filter(failure => !failure.problem.startsWith('An unexpected error occurred.'));
 
+        // Log all failures to the console even those that have no file info
+        filterFailures.filter(failure => failure).forEach((failure, i) => {
+            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+            this.logger.warn(` ${i + 1}. ${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
+        });
+
         for (const failure of filterFailures.filter(failure => failure && !!failure.fileName)) {
             const info = sfPackage.getSourceFile(failure.fileName.replace(/^src\//i, ''));
             if (info) {
@@ -59,12 +105,6 @@ export default abstract class MetadataCommand extends CommandBase {
                 await this.reportProblem(vscode.Uri.file(info), failure);
             }
         }
-
-        // Log all failures to the console even those that have no file info
-        filterFailures.filter(failure => failure).forEach((failure, i) => {
-            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-            this.logger.warn(` ${i + 1}. ${failure.fullName} -- ${failure.problemType} -- ${failure.problem}`);
-        });
     }
 
     protected async reportProblem(localPath: vscode.Uri, failure: { problem: string; lineNumber: any; columnNumber: any }) {
