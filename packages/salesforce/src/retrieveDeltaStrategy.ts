@@ -18,7 +18,7 @@ interface CompareStrategy {
  * Returns a list of components that have changed which can be used to create a new deployment package.
  */
 @injectable({ lifecycle: LifecyclePolicy.transient })
-export class RetrieveDeltaStrategy  {
+export class RetrieveDeltaStrategy {
 
     private readonly compareStrategies : Record<string, CompareStrategy> = {
         'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),

@@ -66,17 +66,25 @@ export class SalesforcePackage {
         post: new PackageManifest()
     };
 
+    /**
+     * Defines the structure of the metadata package, where the key is the package path in the package 
+     * zip file and the value contains the info about the component as well as the data.
+     */
     private readonly packageData = new Map<string, SalesforcePackageEntry>();
 
     /**
-     * Maps source files with their FS path to package contents
+     * Maps source files by file system path to the package metadata entries.
+     * * key - source file path
+     * * value - package metadata entry
      */
-    private readonly sourceFileMap = new Map<string, SalesforcePackageSourceMap>();
+    private readonly sourceFileToComponent = new Map<string, SalesforcePackageSourceMap>();
 
     /**
-     * Map each component to package files
+     * Map package components to one or more source files from which they were loaded.
+     * * key - component type and name separated by a dot (e.g. `apexclass.myclass`) to lower case
+     * * value - array of source file paths
      */
-    private readonly packageComponents = new Map<string, string[]>();
+    private readonly componentToSource = new Map<string, string[]>();
 
     /**
      * Get printable name of the package components for use in the UI.
@@ -145,12 +153,12 @@ export class SalesforcePackage {
     }
 
     public addSourceMap(fsPath: string, entry: SalesforcePackageSourceMap) {
-        this.sourceFileMap.set(fsPath, {
+        this.sourceFileToComponent.set(fsPath, {
             packagePath: entry.packagePath,
             componentName: entry.componentName,
             componentType: entry.componentType
         });
-        arrayMapPush(this.packageComponents, `${entry.componentType}.${entry.componentName}`.toLowerCase(), fsPath);
+        arrayMapPush(this.componentToSource, `${entry.componentType}.${entry.componentName}`.toLowerCase(), fsPath);
     }
 
     /**
@@ -213,15 +221,24 @@ export class SalesforcePackage {
     }
 
     /**
-     * Remove metadata file from the package and manifest
-     * @param entry
+     * Removes all package data from the package for the specified component.
+     * 
+     * @param entry - The component to remove.
      */
-    public remove(entry: { xmlName: string; componentName: string; packagePath: string } & SalesforcePackageFileData) {
-        this.manifest.remove(entry.componentType, entry.componentName);
-        this.packageData.delete(entry.packagePath);
+    public remove(entry: SalesforcePackageComponent) {
+        this.manifest.remove(entry.componentType, entry.componentType);
 
-        if (entry.fsPath) {
-            this.sourceFileMap.delete(entry.fsPath);
+        // Clean up source file mappings
+        const packageKey = `${entry.componentType}.${entry.componentName}`.toLowerCase();
+        const sourceFiles = this.componentToSource.get(packageKey);
+        for (const fsPath of sourceFiles ?? []) {
+            this.sourceFileToComponent.delete(fsPath);
+        }
+        this.componentToSource.delete(packageKey);
+
+        // Clean up package data
+        for (const path of this.getPackagePaths(entry)) {
+            this.packageData.delete(path);
         }
     }
 
@@ -232,7 +249,7 @@ export class SalesforcePackage {
      * @returns Source file folder or undefined when not found
      */
     public getSourceFolder(componentType: string, componentName: string) {
-        for (const [fsPath, sourceFileInfo] of this.sourceFileMap.entries()) {
+        for (const [fsPath, sourceFileInfo] of this.sourceFileToComponent.entries()) {
             if (sourceFileInfo.componentType === componentType && 
                 sourceFileInfo.componentName === componentName) {
                 return directoryName(fsPath);
@@ -247,7 +264,7 @@ export class SalesforcePackage {
      * @returns FS path from which the component was loaded or undefined when not loaded or not in the current package
      */
     public getComponentSourceFiles(type: string, name: string) {
-        return this.packageComponents.get(`${type}.${name}`.toLowerCase());
+        return this.componentToSource.get(`${type}.${name}`.toLowerCase());
     }
 
     /**
@@ -267,7 +284,7 @@ export class SalesforcePackage {
                 filter: value => !!value.fsPath,
                 map: value => value.fsPath!
             }),
-            this.sourceFileMap.keys()
+            this.sourceFileToComponent.keys()
         ));
     }
 
@@ -294,7 +311,7 @@ export class SalesforcePackage {
      * @param sourceFile Source file path
      */
     public getSourceFileInfo(sourceFile: string) {
-        return this.sourceFileMap.get(sourceFile);
+        return this.sourceFileToComponent.get(sourceFile);
     }
 
     /**
@@ -400,6 +417,18 @@ export class SalesforcePackage {
         }
 
         return packagedClasses;
+    }
+
+    /**
+     * Get all package paths for the specified component. Use this method to get all files in the package for a specific component. 
+     * Use get {@see getPackageData} to get the actual data for the package path at the specified path.
+     * @param component Component to get package paths for
+     */
+    public getPackagePaths(component: SalesforcePackageComponent): Array<string> {
+        return [...Iterable.transform(this.packageData.entries(), {
+            filter: ([, entry]) => entry.componentType === component.componentType && entry.componentName === component.componentName,
+            map: ([path]) => path
+        })];
     }
 
     /**
@@ -600,7 +629,7 @@ export class SalesforcePackage {
         const fsPaths = this.getComponentSourceFiles(type, name);
         if (fsPaths?.length) {
             const metaFile = fsPaths.length == 1 ? fsPaths[0] : fsPaths.find(f => f.toLowerCase().endsWith('.xml'));
-            const metaFileSourceMap = metaFile && this.sourceFileMap.get(metaFile);
+            const metaFileSourceMap = metaFile && this.sourceFileToComponent.get(metaFile);
             if (metaFileSourceMap) {
                 const packageData = this.getPackageData(metaFileSourceMap.packagePath);
                 if (packageData?.data && XML.isXml(packageData.data)) {

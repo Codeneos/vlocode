@@ -142,6 +142,38 @@ export class SalesforcePackageBuilder {
         return this;
     }
 
+    /**
+     * Removes unchanged components from the package by executing the
+     * provided delta strategy which determines which components have changed.
+     * 
+     * @template S - The type of the DeltaPackageStrategy.
+     * @template T - The type of the object.
+     * @param strategy - The DeltaPackageStrategy instance or constructor.
+     * @param options - The options for getting changed components.
+     * @returns An array of removed SalesforcePackageComponent objects.
+     */
+    public async removeUnchanged<S extends DeltaPackageStrategy<T>, T extends object>(
+        strategy?: S | (new(...args: any[]) => S),
+        options?: Parameters<S['getChangedComponents']>[1]
+    ) : Promise<Array<SalesforcePackageComponent>> {
+        const mdPackage = this.getPackage();
+        const deltaStrategy: DeltaPackageStrategy<T> = typeof strategy === 'function' || !strategy 
+            ? Container.get(this).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
+
+        const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
+        const changedComponentSet = new Set(changedComponents.map(c => `${c.componentType}/${c.componentName}`));
+        const removedComponents = new Array<SalesforcePackageComponent>();
+
+        for (const component of this.mdPackage.components()) {
+            if (!changedComponentSet.has(`${component.componentType}/${component.componentName}`)) {
+                removedComponents.push(component);
+                this.mdPackage.remove(component);
+            }
+        }
+
+        return removedComponents;
+    }
+
     private sortXmlFragments(fragments: Array<[string, string, MetadataType]>) : Array<[string, string, MetadataType]> {
         return fragments.sort(([, fragmentTypeA, parentTypeA], [, fragmentTypeB, parentTypeB]) => {
             const metaTypeCompare = parentTypeA.name.localeCompare(parentTypeB.name);
@@ -469,6 +501,14 @@ export class SalesforcePackageBuilder {
         deltaPackage.addDestructiveChange(mdPackage.getDestructiveChanges());
 
         return deltaPackage;
+    }
+
+    /**
+     * Retrieves the list of components currently in the package.
+     * @returns An array of SalesforcePackageComponent objects.
+     */
+    public getPackageComponents(): Array<SalesforcePackageComponent> {
+        return this.mdPackage.components();
     }
 
     /**
