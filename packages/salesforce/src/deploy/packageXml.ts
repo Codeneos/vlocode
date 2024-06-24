@@ -129,6 +129,10 @@ export class PackageManifest {
         } else {
             Iterable.forEach(member, m => members.delete(m));
         }
+
+        if (members.size === 0) {
+            this.metadataMembers.delete(type);
+        }
     }
 
     /**
