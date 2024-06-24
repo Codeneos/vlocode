@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.9](https://github.com/Codeneos/vlocode/compare/v1.24.8...v1.24.9) (2024-06-24)
+
+**Note:** Version bump only for package @vlocode/cli
+
 ## [1.24.8](https://github.com/Codeneos/vlocode/compare/v1.24.7...v1.24.8) (2024-06-24)
 
 **Note:** Version bump only for package @vlocode/cli

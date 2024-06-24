@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.9](https://github.com/codeneos/vlocode/compare/v1.24.8...v1.24.9) (2024-06-24)
+
+### Bug Fixes
+
+* update deployMetadataCommand to show information message when no changes to deploy ([4f5b5de](https://github.com/codeneos/vlocode/commit/4f5b5de808a79aedd0678113033b17a1b8505abd))
+
 ## [1.24.8](https://github.com/codeneos/vlocode/compare/v1.24.7...v1.24.8) (2024-06-24)
 
 ### Bug Fixes
