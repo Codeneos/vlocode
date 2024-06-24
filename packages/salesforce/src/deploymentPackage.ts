@@ -226,7 +226,7 @@ export class SalesforcePackage {
      * @param entry - The component to remove.
      */
     public remove(entry: SalesforcePackageComponent) {
-        this.manifest.remove(entry.componentType, entry.componentType);
+        this.manifest.remove(entry.componentType, entry.componentName);
 
         // Clean up source file mappings
         const packageKey = `${entry.componentType}.${entry.componentName}`.toLowerCase();

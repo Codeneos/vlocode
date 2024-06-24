@@ -27,7 +27,7 @@ export class RetrieveDeltaStrategy {
         'binary': this.isBinaryEqual.bind(this),
         'default': this.isStringEqual.bind(this),
         // Custom comparers
-        'InstalledPackage': (a, b) => this.isPackageNewer(a, b),
+        'InstalledPackage': (a, b) => !this.isPackageNewer(a, b),
     }
 
     constructor(
@@ -167,20 +167,19 @@ export class RetrieveDeltaStrategy {
         const parsedB = XML.parse(b, { arrayMode: options?.arrayMode, ignoreAttributes: true });
 
         // Compare parsed XML
-        const diff = deepCompare(parsedA, parsedB, {
-                primitiveCompare: this.primitiveCompare,
-                ignoreArrayOrder: !options?.strictOrder,
-                ignoreExtraProperties: !!options?.ignoreExtra
-            });
-        return !!diff;
+        return deepCompare(parsedA, parsedB, {
+            primitiveCompare: this.primitiveCompare,
+            ignoreArrayOrder: !options?.strictOrder,
+            ignoreExtraProperties: !!options?.ignoreExtra
+        });
     }
 
     private isPackageNewer(a: Buffer | string, b: Buffer | string): boolean {
         const localMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
         const orgMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
 
-        const localVersion = parseFloat(localMeta.versionNumber);
-        const orgVersion = parseFloat(orgMeta.versionNumber);
+        const localVersion = parseFloat(localMeta.InstalledPackage?.versionNumber);
+        const orgVersion = parseFloat(orgMeta.InstalledPackage?.versionNumber);
         if (isNaN(localVersion) || isNaN(orgVersion)) {
             return true;
         }
