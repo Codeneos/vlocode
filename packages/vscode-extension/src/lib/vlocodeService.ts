@@ -122,13 +122,12 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     }
 
     private resetConnection(): void {
-        const x = container;
         if (this._salesforceService) {
-            x.removeInstance(this._salesforceService);
+            container.removeInstance(this._salesforceService);
         }
 
         if (this._datapackService) {
-            x.removeInstance(this._datapackService);
+            container.removeInstance(this._datapackService);
         }
 
         this.connector = undefined;
