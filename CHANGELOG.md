@@ -4,12 +4,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.8](https://github.com/codeneos/vlocode/compare/v1.24.7...v1.24.8) (2024-06-24)
+
+### Bug Fixes
+
+* delta deploy doesn't uses binary compare for certain meta.xml files causing it to incorrectly mark objects as changed ([ad3b757](https://github.com/codeneos/vlocode/commit/ad3b757eb504bc8cfaee733ebb6eb44190d15ae4))
+* only consider extra properties of installed package when versions match ([53f1988](https://github.com/codeneos/vlocode/commit/53f19881cc78d80fafdc1c1be1ab9d4dae801b31))
+* view in Salesforce on metadata fails due to incorrect arguments ([2317efc](https://github.com/codeneos/vlocode/commit/2317efc085fb288a2fd887d12d1a67f325b713e4))
+
+### Features
+
+* add support for removing components from metadata package ([789eeee](https://github.com/codeneos/vlocode/commit/789eeee9c547fd8372a9a9316656d57af19e4f9b))
+* log metadata deploy outcome in separate output channel ([79bcfea](https://github.com/codeneos/vlocode/commit/79bcfea7285e0e8456e141f5efb6764d57ddc104))
+* skip deploy installed package if newer is installed in org ([0a8a26c](https://github.com/codeneos/vlocode/commit/0a8a26c5680f159aa1bb3e379178e31950c8cdff))
+
 ## [1.24.7](https://github.com/codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
 
 ### Bug Fixes
 
 * instance URL changes during token refresh do not update transport layer URL ([00e649a](https://github.com/codeneos/vlocode/commit/00e649a092dc0677e5eab1731e96ac613265b3d0))
+
 * OAuath2 incorrect URLs causes token refresh errors ([ab96a3d](https://github.com/codeneos/vlocode/commit/ab96a3d94f5685e3588c8eed3e864959f3c9f32b))
+
 * remove scopes from introspect request ([a35cddb](https://github.com/codeneos/vlocode/commit/a35cddbaef23def3a29dfd480ac8cd2ef9a0435a))
 
 ## [1.24.6](https://github.com/codeneos/vlocode/compare/v1.24.5...v1.24.6) (2024-06-12)

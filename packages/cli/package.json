@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/cli",
-    "version": "1.24.7",
+    "version": "1.24.8",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment CLI",
     "keywords": [
         "Vlocity",

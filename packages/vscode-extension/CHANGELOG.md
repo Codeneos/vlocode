@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.8](https://github.com/codeneos/vlocode/compare/v1.24.7...v1.24.8) (2024-06-24)
+
+### Bug Fixes
+
+* view in Salesforce on metadata fails due to incorrect arguments ([2317efc](https://github.com/codeneos/vlocode/commit/2317efc085fb288a2fd887d12d1a67f325b713e4))
+
+### Features
+
+* log metadata deploy outcome in separate output channel ([79bcfea](https://github.com/codeneos/vlocode/commit/79bcfea7285e0e8456e141f5efb6764d57ddc104))
+
 ## [1.24.7](https://github.com/codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
 
 **Note:** Version bump only for package vlocode
