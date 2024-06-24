@@ -88,7 +88,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
         const sfPackage = packageBuilder.getPackage();
 
         if (sfPackage.isEmpty && options?.delta) {
-            return void vscode.window.showWarningMessage('Selected files are not deployable Salesforce Metadata');
+            return void vscode.window.showInformationMessage('Metadata is already up to date with Salesforce, no changes to deploy');
         }
 
         if (sfPackage.hasDestructiveChanges) {
