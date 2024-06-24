@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.10](https://github.com/Codeneos/vlocode/compare/v1.24.9...v1.24.10) (2024-06-24)
+
+### Bug Fixes
+
+* switching org, API version or user didn't fully reset cached data causing issues during deployment, viewing developer logs, etc ([34d1c06](https://github.com/Codeneos/vlocode/commit/34d1c068f4b0aeb862f5e404002948f7d7674175))
+
 ## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
 
 **Note:** Version bump only for package @vlocode/core
