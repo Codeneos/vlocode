@@ -322,12 +322,8 @@ export class Container {
     /**
      * Get's the container that owns or created the specified instance.
      */
-    public static get(instance: object): Container {
-        const owner = instance[ContainerSymbol];
-        if (!owner) {
-            throw new Error('Unable to determine owner of instance');
-        }
-        return owner;
+    public static get(instance: object): Container | undefined {
+        return instance[ContainerSymbol];
     }
 
     /**
@@ -521,6 +517,9 @@ export class Container {
             // eslint-disable-next-line @typescript-eslint/dot-notation
             instance['dispose']();
         }
+
+        // clear dependencies
+        this.serviceDependencies.delete(instanceGuid);
     }
 
     /**

@@ -2,7 +2,7 @@ import * as path from 'path';
 import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
-import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container } from '@vlocode/core';
+import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
@@ -158,7 +158,7 @@ export class SalesforcePackageBuilder {
     ) : Promise<Array<SalesforcePackageComponent>> {
         const mdPackage = this.getPackage();
         const deltaStrategy: DeltaPackageStrategy<T> = typeof strategy === 'function' || !strategy 
-            ? Container.get(this).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
+            ? (Container.get(this) ?? container).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
 
         const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
         const changedComponentSet = new Set(changedComponents.map(c => `${c.componentType}/${c.componentName}`));
@@ -489,7 +489,7 @@ export class SalesforcePackageBuilder {
     ) {
         const mdPackage = this.getPackage();
         const deltaStrategy = typeof strategy === 'function' || !strategy 
-            ? Container.get(this).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
+            ? (Container.get(this) ?? container).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
         const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
         const deltaPackage = new SalesforcePackage(this.apiVersion);
 

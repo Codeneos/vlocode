@@ -1,4 +1,4 @@
-import { injectable } from '@vlocode/core';
+import { Container, container, injectable } from '@vlocode/core';
 import { cache } from '@vlocode/util';
 import { DescribeSObjectResult, Field } from '../types';
 import { DescribeSchemaAccess } from './describeSchemaAccess';
@@ -14,6 +14,13 @@ export class CompositeSchemaAccess {
         private readonly schemaStore: SchemaDataStore,
         private readonly toolingAccess: ToolingApiSchemaAccess,
         private readonly describeAccess: DescribeSchemaAccess) {
+    }
+
+    public dispose() {
+        const owner = Container.get(this) ?? container;
+        owner.removeInstance(this.toolingAccess);
+        owner.removeInstance(this.describeAccess);
+        owner.removeInstance(this.schemaStore);
     }
 
     public listObjectTypes() {

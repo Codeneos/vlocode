@@ -1,5 +1,5 @@
 import * as jsforce from 'jsforce';
-import { FileSystem, injectable, Logger } from '@vlocode/core';
+import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
 import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined, PropertyAccessor } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
@@ -36,7 +36,7 @@ export interface ApexTestCoverage {
 
 interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string }
 
-@injectable()
+@injectable({ lifecycle: LifecyclePolicy.singleton })
 export class SalesforceService implements SalesforceConnectionProvider {
 
     @injectable.property public readonly metadataRegistry: MetadataRegistry;
@@ -52,6 +52,16 @@ export class SalesforceService implements SalesforceConnectionProvider {
         private readonly queryService: QueryService,
         private readonly logger: Logger,
         private readonly fs: FileSystem) {
+    }
+
+    public dispose() {
+        const owner = Container.get(this) ?? container;
+        owner.removeInstance(this.schema);
+        owner.removeInstance(this.lookupService);
+        owner.removeInstance(this.deploy);
+        owner.removeInstance(this.logs);
+        owner.removeInstance(this.batch);
+        owner.removeInstance(this.queryService);
     }
 
     public async isProductionOrg() : Promise<boolean> {

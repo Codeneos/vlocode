@@ -1,4 +1,4 @@
-import { Logger, injectable } from '@vlocode/core';
+import { Container, Logger, container, injectable } from '@vlocode/core';
 import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
@@ -27,6 +27,11 @@ export class SalesforceSchemaService {
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly schemaAccess: CompositeSchemaAccess) {
+    }
+
+    public dispose() {
+        const owner = Container.get(this) ?? container;
+        owner.removeInstance(this.schemaAccess);
     }
 
     @cache({ unwrapPromise: true, immutable: true })

@@ -40,7 +40,7 @@ export class MetadataRegistry {
 
     constructor(private readonly logger: Logger) {
         // Init metadata
-        for (const [xmlName, registryEntry] of Object.entries(registryData.types)) {
+        for (const registryEntry of Object.values(registryData.types)) {
             const metadataObject = registryEntry as MetadataType;
 
             metadataObject.xmlName = metadataObject.name;
@@ -51,12 +51,12 @@ export class MetadataRegistry {
 
             // Store in registry
             this.registry.push(metadataObject);
-            if (this.types.has(metadataObject.xmlName.toLowerCase())) {
-                this.logger.warn(`XML Name already in-use: ${metadataObject.xmlName.toLowerCase()}`);
+            if (this.types.has(metadataObject.name.toLowerCase())) {
+                this.logger.warn(`XML Name already in-use: ${metadataObject.name.toLowerCase()}`);
                 continue;
             }
 
-            this.types.set(metadataObject.xmlName.toLowerCase(), metadataObject);
+            this.types.set(metadataObject.name.toLowerCase(), metadataObject);
             if (metadataObject.childXmlNames) {
                 metadataObject.childXmlNames.forEach(childType => {
                     if (this.types.has(childType.toLowerCase())) {
