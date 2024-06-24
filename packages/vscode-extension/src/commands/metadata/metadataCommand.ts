@@ -36,7 +36,7 @@ export default abstract class MetadataCommand extends CommandBase {
 
     protected outputDeployResult(components: SalesforcePackageComponent[], result: DeployResult) {
         const deployMessages = mapBy(result.details?.allComponentMessages || [], message => `${message.componentType}/${message.fullName}`);
-        const deployComponentStatus = components.map( 
+        const deployComponentStatus = components.map(
             component => {
                 const message = deployMessages.get(`${component.componentType}/${component.componentName}`);
                 const deployStatus = message?.deleted
@@ -50,7 +50,7 @@ export default abstract class MetadataCommand extends CommandBase {
                 };
             }
         );
-        const deployErrors = (result.details?.componentFailures || []).map( 
+        const deployErrors = (result.details?.componentFailures || []).map(
             component => ({
                 component: component.fullName,
                 error: component.problem
@@ -62,7 +62,14 @@ export default abstract class MetadataCommand extends CommandBase {
         } else if (deployComponentStatus.length) {
             this.outputTable(deployComponentStatus, { appendEmptyLine: true, focus: true });
             if (deployErrors.length) {
-                this.outputTable(deployErrors, { appendEmptyLine: true, focus: true, maxCellWidth: { error: 60 } });
+                this.outputTable(deployErrors, {
+                    appendEmptyLine: true,
+                    focus: true,
+                        maxCellWidth: {
+                        error: 60,
+                        component: 30
+                    }
+                });
             }
         }
 
