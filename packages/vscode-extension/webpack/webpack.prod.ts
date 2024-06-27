@@ -3,7 +3,10 @@ import { default as common } from './webpack.common';
 
 const production: webpack.Configuration = {
     mode: 'production',
-    devtool: false
+    devtool: false,
+    optimization: {
+        minimize: false
+    }
 };
 
 module.exports = env => common(env, production);
