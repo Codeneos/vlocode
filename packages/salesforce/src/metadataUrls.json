@@ -129,6 +129,26 @@
         "nameField": "MasterLabel",
         "query": "select Id from StandardValueSet where MasterLabel = '${name}'"
     },
+    "Flow": {
+        "nameField": "DeveloperName",
+        "query": "select Id from FlowDefinition where ${nameField} = '${name}'",
+        "url": "lightning/setup/Flows/page?address=/${id}"
+    },
+    "ValidationRule": {
+        "nameField": "ValidationName",
+        "query": "select Id from ${type} where ${nameField} = '${metadata.fullName}'"
+    },
+    "RecordType": {
+        "strategy": "standard",
+        "nameField": "DeveloperName",
+        "query": "select Id from ${type} where ${nameField} = '${metadata.fullName}' and SobjectType = '${fullName.split('.').shift()}'",
+        "url": "lightning/setup/ObjectManager/${fullName.split('.').shift()}/RecordTypes/${id}/view"
+    },
+    "CompactLayout": {
+        "nameField": "DeveloperName",
+        "query": "select Id from ${type} where ${nameField} = '${metadata.fullName}' and SobjectType = '${fullName.split('.').shift()}'",
+        "url": "lightning/setup/ObjectManager/${fullName.split('.').shift()}/CompactLayouts/${id}/view"
+    },
     "CustomMetadata": {
         "strategy": "standard",
         "query": "select Id from ${fullName.split('.').shift()}__mdt where DeveloperName = '${fullName.split('.').pop()}'",
