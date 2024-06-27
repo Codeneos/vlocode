@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.24.11](https://github.com/Codeneos/vlocode/compare/v1.24.10...v1.24.11) (2024-06-27)
+
+### Features
+
+* add metadataUrls for Flow, ValidationRule, RecordType, and CompactLayout ([d890a75](https://github.com/Codeneos/vlocode/commit/d890a751ea1d4bbfd2f456d3dd9f8d073d385ce5))
+
 ## [1.24.10](https://github.com/Codeneos/vlocode/compare/v1.24.9...v1.24.10) (2024-06-24)
 
 ### Bug Fixes
