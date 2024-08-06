@@ -172,7 +172,7 @@ class BuildToolsExpandDefinitionProvider implements ExpandDefinitionProvider {
     }
 }
 
-@injectable()
+@injectable.singleton()
 export default class VlocityDatapackService implements vscode.Disposable {
 
     private vlocityBuildTools: vlocity;

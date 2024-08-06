@@ -6006,8 +6006,8 @@ const ExperienceBundleSettingsSchema = {
     }
 }
 
-const ExperiencePropertyTypeBundleSchema = {
-    name: 'ExperiencePropertyTypeBundle',
+const ExperiencePropertyKeyBundleSchema = {
+    name: 'ExperiencePropertyKeyBundle',
     extends: 'Metadata',
     fields: {
         defaultDesignConfigMCTBody: { array: false, nullable: false, optional: true, type: 'string' },
@@ -14624,7 +14624,7 @@ export const Schemas: Record<string, Schema> = {
     'ExperienceResources': ExperienceResourcesSchema,
     'ExperienceResource': ExperienceResourceSchema,
     'ExperienceBundleSettings': ExperienceBundleSettingsSchema,
-    'ExperiencePropertyTypeBundle': ExperiencePropertyTypeBundleSchema,
+    'ExperiencePropertyKeyBundle': ExperiencePropertyKeyBundleSchema,
     'ExplainabilityActionDefinition': ExplainabilityActionDefinitionSchema,
     'ExplainabilityActionVersion': ExplainabilityActionVersionSchema,
     'ExternalClientAppSettings': ExternalClientAppSettingsSchema,

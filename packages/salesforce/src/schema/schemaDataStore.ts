@@ -2,7 +2,7 @@ import { CustomFieldMetadata, CustomObjectMetadata, DescribeSObjectResult, Field
 
 import { ensureDir, readFile, writeJson } from 'fs-extra';
 import { dirname } from 'path';
-import { injectable } from '@vlocode/core';
+import { LifecyclePolicy, injectable } from '@vlocode/core';
 import { EntityDefinition } from './types/entityDefinition';
 import { FieldDefinition } from './types/fieldDefinition';
 import { Iterable } from '@vlocode/util';
@@ -13,7 +13,7 @@ interface SchemaData<M, D, T> {
     tooling?: T;
 }
 
-@injectable()
+@injectable.singleton()
 export class SchemaDataStore {
 
     private readonly storeVersion = 2;

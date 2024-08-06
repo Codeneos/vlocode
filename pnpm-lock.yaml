@@ -187,6 +187,9 @@ importers:
       '@types/jest':
         specifier: ^29.5.11
         version: 29.5.11
+      '@types/js-yaml':
+        specifier: ^4.0.2
+        version: 4.0.5
       '@types/node':
         specifier: ^20
         version: 20.4.2
@@ -226,6 +229,9 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.4.2)(ts-node@10.7.0(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       log-symbols:
         specifier: ^4.0.0
         version: 4.1.0

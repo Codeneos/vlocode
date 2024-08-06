@@ -10,7 +10,7 @@ import { QueryService } from '../queryService';
  * Lazy access to Salesforce schema objects, instead of pre-loading all schema data schema and describe calls are made when needed. This speeds up initial loading time but the total time needed
  * for describing all objects will be significantly higher.
  */
-@injectable()
+@injectable.singleton()
 export class ToolingApiSchemaAccess {
 
     public fieldDefinition = {

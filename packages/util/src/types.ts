@@ -7,8 +7,6 @@ export type ValueType<Type> =
     : Type extends Map<unknown, (infer MapType)> ? MapType
     : Type;
 
-export type PropertyAccessor = string | number | symbol;
-
 export type Await<T> = T extends {
     then(onfulfilled?: (value: infer U) => unknown): unknown;
 } ? U : T;

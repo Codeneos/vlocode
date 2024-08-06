@@ -15,23 +15,43 @@ import { ManifestEntry, ObjectEntry } from '../types';
 export type VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject' | 'VlocityMatchingKeyObject';
 
 /**
+ * Represents the type of a Vlocity datapack.
+ * It can be either a reference type or a standard SObject.
+ */
+export type VlocityDatapackType = VlocityDatapackReferenceType | 'SObject';
+
+/**
+ * Maps the type of a Vlocity datapack to the corresponding source key field.
+ */
+export const VlocityDatapackSourceKey = {
+    VlocityLookupMatchingKeyObject: 'VlocityLookupRecordSourceKey',
+    VlocityMatchingKeyObject: 'VlocityMatchingRecordSourceKey',
+    SObject: 'VlocityRecordSourceKey',
+} as const;
+
+/**
  * Represents a Vlocity datapack reference of a specific type.
  */
 export type VlocityDatapackReference = VlocityDatapackLookupReference | VlocityDatapackMatchingReference;
 
-export type VlocityDatapackLookupReference = {
+export interface VlocityDatapackLookupReference extends Record<string, any> {
     VlocityDataPackType: 'VlocityLookupMatchingKeyObject';
     VlocityRecordSObjectType: string;
     VlocityLookupRecordSourceKey: string;
     VlocityMatchingRecordSourceKey?: undefined;
-    [key: string]: any;
 }
 
-export type VlocityDatapackMatchingReference = {
+export interface VlocityDatapackMatchingReference {
     VlocityDataPackType: 'VlocityMatchingKeyObject';
     VlocityRecordSObjectType: string;
     VlocityMatchingRecordSourceKey: string;
     VlocityLookupRecordSourceKey?: undefined;
+}
+
+export interface VlocityDatapackSObject extends Record<string, any> {
+    VlocityDataPackType: 'SObject';
+    VlocityRecordSObjectType: string;
+    VlocityRecordSourceKey: string;
 }
 
 /**

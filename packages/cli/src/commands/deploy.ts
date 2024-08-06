@@ -2,6 +2,7 @@ import logSymbols from 'log-symbols';
 import { join } from 'path';
 import chalk from 'chalk';
 import { existsSync } from 'fs';
+import { stat } from 'fs/promises';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
 import { DatapackDeployer, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
@@ -16,7 +17,7 @@ export default class extends SalesforceCommand {
     static description = 'Deploy datapacks to Salesforce';
 
     static args = [
-        new Argument('<folders...>', 'path to a folder containing the datapacks to be deployed').argParser((value, previous: string[] | undefined) => {
+        new Argument('<paths..>', 'path of the folders containing the datapacks or datapack files to be deployed').argParser((value, previous: string[] | undefined) => {
             if (!existsSync(value)) {
                 throw new Error('No such folder exists');
             }
@@ -77,9 +78,9 @@ export default class extends SalesforceCommand {
         super();
     }
 
-    public async run(folders: string[], options: any) {
+    public async run(paths: string[], options: any) {
         // Load datapacks
-        const datapacks = await this.loadDatapacksFromFolders(folders);
+        const datapacks = await this.loadDatapacks(paths);
         if (!datapacks.length) {
             return;
         }
@@ -132,15 +133,22 @@ export default class extends SalesforceCommand {
         }
     }
 
-    private async loadDatapacksFromFolders(folders: string[]) {
-        this.logger.info(`Load datapacks from: "${folders.join('", "')}"`);
+    private async loadDatapacks(paths: string[]) {
+        this.logger.info(`Load datapacks: "${paths.join('", "')}"`);
 
         const datapackLoadTimer = new Timer();
         const loader = this.container.get(DatapackLoader);
-        const datapacks = (await mapAsync(folders, folder => loader.loadDatapacksFromFolder(folder))).flat();
+        const datapacks = (await mapAsync(paths, async path => {
+            const fileInfo = await stat(path);
+            if (fileInfo.isDirectory()) {
+                return loader.loadDatapacksFromFolder(path);
+            } else {
+                return [ await loader.loadDatapack(path) ];
+            }
+        })).flat();
 
         if (datapacks.length == 0) {
-            this.logger.error(`No datapacks found in specified folders: "${folders.join('", "')}"`);
+            this.logger.error(`No datapacks found in specified paths: "${paths.join('", "')}"`);
         } else {
             this.logger.info(`Loaded ${datapacks.length} datapacks in [${datapackLoadTimer.stop()}]`);
         }

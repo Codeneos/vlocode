@@ -9,4 +9,4 @@ export type Await<T> = T extends {
 
 export type AwaitReturnType<T extends (...args: any) => any> = Await<ReturnType<T>>;
 
-export type PropertyAccessor = string | number | symbol;
+export type PropertyKey = string | number | symbol;

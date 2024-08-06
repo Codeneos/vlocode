@@ -4,7 +4,7 @@ import { SalesforceConnectionProvider } from '../connection';
 import { DescribeSObjectResult, Field } from '../types';
 import { SchemaDataStore } from './schemaDataStore';
 
-@injectable()
+@injectable.singleton()
 /**
  * Lazy access to Salesforce schema objects, instead of pre-loading all schema data schema and describe calls are made when needed. This speeds up initial loading time but the total time needed 
  * for describing all objects will be significantly higher.

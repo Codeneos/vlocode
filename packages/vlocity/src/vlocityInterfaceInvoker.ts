@@ -5,7 +5,7 @@ import { removeUndefinedProperties } from "@vlocode/util";
 /**
  * Class to invoke methods on APEX classes that implement a VlocityObjectInterface in Salesforce using the Salesforce REST API.
  */
-@injectable({ lifecycle: LifecyclePolicy.singleton })
+@injectable.singleton()
 export class VlocityInterfaceInvoker {
 
     private readonly endPoint = '/services/apexrest/{vlocity_namespace}/v1/invoke';

@@ -30,7 +30,7 @@ export interface MetadataType extends RegistryMetadataType {
 }
 
 @singletonMixin
-@injectable( { lifecycle: LifecyclePolicy.singleton } )
+@injectable.singleton()
 export class MetadataRegistry {
 
     private readonly registry = new Array<MetadataType>();

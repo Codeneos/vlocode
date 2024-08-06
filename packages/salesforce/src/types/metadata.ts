@@ -375,7 +375,7 @@ export type FileType = 'UNKNOWN' | 'PDF' | 'POWER_POINT' | 'POWER_POINT_X' | 'PO
 export type FlexipageEventSourceTypeEnum = 'Component';
 export type FlexipageEventTargetTypeEnum = 'FlexipageServices' | 'LwcServices' | 'InvocableApexServices' | 'InvocableExternalServices' | 'ActionServices' | 'ViewServices';
 export type RegionFlagStatus = 'disabled' | 'enabled';
-export type ComponentInstancePropertyTypeEnum = 'decorator';
+export type ComponentInstancePropertyKeyEnum = 'decorator';
 export type ComponentInstanceType = 'Component' | 'Card';
 export type FlexiPageRegionMode = 'Append' | 'Prepend' | 'Replace';
 export type FlexiPageRegionType = 'Region' | 'Facet' | 'Background';
@@ -5091,7 +5091,7 @@ export interface ExperienceBundleSettingsMetadata extends MetadataInfo {
     enableExperienceBundleMetadata?: boolean;
 }
 
-export interface ExperiencePropertyTypeBundleMetadata extends MetadataInfo {
+export interface ExperiencePropertyKeyBundleMetadata extends MetadataInfo {
     defaultDesignConfigMCTBody?: string; // xsd-type: "base64Binary"
     description?: string;
     developerName: string;
@@ -5338,7 +5338,7 @@ export interface ComponentInstance {
 
 export interface ComponentInstanceProperty {
     name?: string;
-    type?: ComponentInstancePropertyTypeEnum;
+    type?: ComponentInstancePropertyKeyEnum;
     value?: string;
     valueList?: ComponentInstancePropertyList;
 }

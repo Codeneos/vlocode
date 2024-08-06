@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined, PropertyAccessor } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
@@ -151,7 +151,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param limit limit the number of results
      * @param useCache use the query cache
      */
-    public async lookup<T extends object, K extends PropertyAccessor = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
+    public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
         return this.lookupService.lookup(
             this.namespaceService.updateNamespace(type), filter, lookupFields, limit, useCache
         );

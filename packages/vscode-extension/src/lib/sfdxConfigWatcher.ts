@@ -7,7 +7,7 @@ import { ConfigurationManager } from './config';
 /**
  * Class that watches for changes to the SFDX config file and updates the default username in the Vlocode configuration
  */
-@injectable()
+@injectable.singleton()
 export class SfdxConfigWatcher implements vscode.Disposable {
     private watcher: vscode.FileSystemWatcher | undefined;
 

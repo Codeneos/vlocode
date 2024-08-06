@@ -1,13 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import globby from 'globby';
-import { injectable, LifecyclePolicy } from '../index';
+import { injectable } from '../index';
 import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 
 /**
  * Basic class that can wrap any API implementation the NodeJS FS API into a more reduced FileSystem interface.
  */
-@injectable({ provides: FileSystem, lifecycle: LifecyclePolicy.singleton })
+@injectable.singleton({ provides: FileSystem })
 export class NodeFileSystem extends FileSystem {
 
     constructor(protected readonly innerFs: typeof fs = fs) {

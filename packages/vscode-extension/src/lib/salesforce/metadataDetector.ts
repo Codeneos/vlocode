@@ -4,7 +4,7 @@ import { container, injectable } from '@vlocode/core';
 import { fileSuffix, directoryName, fileName } from '@vlocode/util';
 import { MetadataRegistry } from '@vlocode/salesforce';
 
-@injectable()
+@injectable.singleton()
 export class MetadataDetector {
     constructor(private readonly registry: MetadataRegistry) {
     }

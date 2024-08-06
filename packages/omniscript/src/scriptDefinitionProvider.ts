@@ -3,7 +3,7 @@ import { injectable } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptSpecification } from './types';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 
-@injectable()
+@injectable.singleton()
 export class ScriptDefinitionProvider implements OmniScriptDefinitionProvider {
     constructor(
         private readonly queryService: QueryService

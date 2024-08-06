@@ -2,6 +2,7 @@ import * as vm from 'vm';
 import { singleton } from './singleton';
 import { cache } from './cache';
 import { unique } from './collection';
+import { randomUUID } from 'crypto';
 
 /**
  * Helper to allow cache decorator to be used for compiled code
@@ -13,13 +14,22 @@ class Compiler {
         let compiledFn : (context: any) => any;
         if (options?.mode === 'sandbox') {
             // eslint-disable-next-line @typescript-eslint/no-implied-eval
-            compiledFn = new Function('sandbox', `with (context) { ${code} }`) as typeof compiledFn;
+            compiledFn = new Function('context', `${code}`) as typeof compiledFn;
         } else {
-            const script = new vm.Script(code);
-            compiledFn = script.runInNewContext.bind(script);
+            const resultVar = '_' + randomUUID().replace(/-/g, '');
+            const script = new vm.Script(`${resultVar} = (() => { ${code} })()`);
+            compiledFn = (context) => {
+                const scriptContext = {
+                    context,
+                    [resultVar]: undefined
+                };
+                vm.createContext(scriptContext);
+                script.runInContext(scriptContext);
+                return scriptContext[resultVar];
+            } 
         }
 
-        return function (context?: any, contextMutable?: boolean) {
+        return function (context?: any, contextMutable?: boolean): any {
             const sandboxValues = {};
             const sandboxContext = new Proxy(sandboxValues, {
                 get(_target, prop) {
@@ -39,14 +49,24 @@ class Compiler {
                         : [...unique([...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)])];
                 }
             });
-            compiledFn(sandboxContext);
-            return sandboxValues;
+            return compiledFn(sandboxContext);
         };
     }
 }
 
 /**
- * Compiles the specified code as sandboxed function 
+ * Compiles the specified code as sandboxed function. The compiled function can be executed with a context object.
+ * Optionally the context object can be mutable, allowing the compiled code to modify the context object.
+ *
+ * @usage
+ * ```typescript
+ * const context = { counter: 0 };
+ * const code = 'return context.coounter++;';
+ * const compiledFn = compileFunction(code, { mode: 'sandbox' });
+ * expect(compiledFn(context, true)).toBe(1);
+ * expect(context.counter).toBe(1);
+ * ````
+ *
  * @param code JS code
  * @param options specifies how to compile the function
  * @returns 

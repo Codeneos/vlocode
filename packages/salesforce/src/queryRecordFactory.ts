@@ -213,7 +213,7 @@ export class RecordFactory {
     }
 }
 
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@injectable()
 export class Query2Service {
     // private wrapRecord<T extends object>(record: T) {
     //     const getPropertyKey = (target: T, name: string | number | symbol) => {

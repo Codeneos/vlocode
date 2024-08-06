@@ -13,6 +13,7 @@
         "outDir": "out",
         "sourceMap": true,
         "strict": false,
+        "stripInternal": true,
         "strictNullChecks": true,
         "moduleResolution": "node",
         "esModuleInterop": true,

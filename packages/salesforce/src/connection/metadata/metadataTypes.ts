@@ -228,7 +228,7 @@ export interface MetadataTypes {
     'EventSettings': Metadata.EventSettingsMetadata;
     'ExperienceBundle': Metadata.ExperienceBundleMetadata;
     'ExperienceBundleSettings': Metadata.ExperienceBundleSettingsMetadata;
-    'ExperiencePropertyTypeBundle': Metadata.ExperiencePropertyTypeBundleMetadata;
+    'ExperiencePropertyKeyBundle': Metadata.ExperiencePropertyKeyBundleMetadata;
     'ExplainabilityActionDefinition': Metadata.ExplainabilityActionDefinitionMetadata;
     'ExplainabilityActionVersion': Metadata.ExplainabilityActionVersionMetadata;
     'ExternalClientAppSettings': Metadata.ExternalClientAppSettingsMetadata;

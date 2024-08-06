@@ -4,7 +4,7 @@ import { Logger, injectable, container, LifecyclePolicy, Container } from '@vloc
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
-import { DatapackDeploymentRecord, DeploymentStatus } from './datapackDeploymentRecord';
+import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
 import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { DatapackRecordFactory } from './datapackRecordFactory';
 import { DatapackDeploymentSpec, DeploymentSpecExecuteOptions } from './datapackDeploymentSpec';
@@ -52,7 +52,7 @@ export class DatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        this.container.register(this.container.create(QueryService, this.connectionProvider).setCacheDefault(false));
+        this.container.register(this.container.create(QueryService, this.connectionProvider).setQueryCache({ enabled: false }));
         const deployment = this.container.create(DatapackDeployment, options);
         const recordFactory = this.container.create(DatapackRecordFactory);
 

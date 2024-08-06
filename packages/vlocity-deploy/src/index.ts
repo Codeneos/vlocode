@@ -18,3 +18,4 @@ export * from './datapackDeploymentSpec';
 export * from './datapackDeploymentSpecRegistry';
 export * from './datapackRecordFactory';
 export * from './datapackLookupService';
+export * from './export';

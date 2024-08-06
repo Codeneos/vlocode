@@ -28,7 +28,7 @@ interface OmniCompiler {
 /**
  * Compiler that transforms activated OmniScripts into LWC components that can easily be deployed or written to the disk.
  */
-@injectable()
+@injectable.singleton()
 export class OmniScriptLwcCompiler {
 
     private readonly lwcCompilerResource = 'OmniscriptLwcCompiler';

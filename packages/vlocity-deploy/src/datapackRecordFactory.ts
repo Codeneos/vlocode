@@ -41,16 +41,7 @@ export class DatapackRecordFactory {
         const matchingKey = await this.getMatchingKeyDefinition(datapack);
         const sourceKey = this.getDatapackSourceKey(datapack); 
         const record = new DatapackDeploymentRecord(datapack.datapackType, sobject.name, sourceKey, datapack.key, matchingKey?.fields);
-
         const records : Array<typeof record> = [ record ];
-        const reportWarning = (message: string) => {
-            if (!this.uniqueWarnings.has(message)) {
-                // Only report unique warnings in the console
-                this.uniqueWarnings.add(message);
-                this.logger.warn(message);
-            }
-            record.addWarning(message);
-        }
 
         for (const [key, value] of datapack.entries().filter(([key]) => !key.includes('.'))) {
             const field = await this.schemaService.describeSObjectField(sobject.name, key, false);
@@ -76,20 +67,20 @@ export class DatapackRecordFactory {
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {
                         if (!field) {
-                            reportWarning(`Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
+                            this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                             continue;
                         }
                         // Lookups and matching keys are treated the same
                         if (field.type !== 'reference' && field.type !== 'string') {
-                            reportWarning(`Skipping datapack property "${key}" -- cannot use lookup on non-string/reference fields`);
+                            this.reportWarning(record, `Skipping datapack property "${key}" -- cannot use lookup on non-string/reference fields`);
                             continue;
                         }
                         record.addLookup(field.name, item);
                     } else if (item.VlocityDataPackType) {
-                        reportWarning(`Unsupported datapack type ${item.VlocityDataPackType}`);
+                        this.reportWarning(record, `Unsupported datapack type ${item.VlocityDataPackType}`);
                     } else {
                         if (!field) {
-                            reportWarning(`Skipping datapack property "${key}" -- no such field on ${sobject.name} (check )`);
+                            this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name} (check )`);
                             continue;
                         }
                         record.values[field.name] = this.convertValue(value, field);
@@ -98,7 +89,7 @@ export class DatapackRecordFactory {
             } else {
                 // make sure the field exists
                 if (!field) {
-                    reportWarning(`Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
+                    this.reportWarning(record, `Skipping datapack property "${key}" -- no such field on ${sobject.name}`);
                     continue;
                 }
                 record.values[field.name] = this.convertValue(value, field);
@@ -106,6 +97,15 @@ export class DatapackRecordFactory {
         }
 
         return records;
+    }
+
+    private reportWarning(record: DatapackDeploymentRecord, message: string) {
+        if (!this.uniqueWarnings.has(message)) {
+            // Only report unique warnings in the console
+            this.uniqueWarnings.add(message);
+            this.logger.warn(message);
+        }
+        record.addWarning(message);
     }
 
     private getDatapackSourceKey(datapack: VlocityDatapack) {

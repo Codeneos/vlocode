@@ -36,7 +36,6 @@ export class SalesforceSchemaService {
 
     @cache({ unwrapPromise: true, immutable: true })
     public async describeSObjects() : Promise<Array<DescribeGlobalSObjectResult>> {
-        // TODO: move to CompositeSchemaAccess class
         const con = await this.connectionProvider.getJsForceConnection();
         const { sobjects } = await con.describeGlobal();
         return sobjects;
@@ -101,13 +100,13 @@ export class SalesforceSchemaService {
     }
 
     public async describeSObjectById(id: string) : Promise<DescribeSObjectResult> {
-        if (id.length != 3 && !isSalesforceId(id)) {
+        if (id?.length !== 3 && !isSalesforceId(id)) {
             throw Error(`Invalid Salesforce id: ${id}`);
         }
 
         const prefix = id.slice(0, 3);
         for (const obj of await this.describeSObjects()) {
-            if (obj.keyPrefix == prefix) {
+            if (obj.keyPrefix === prefix) {
                 return this.describeSObject(obj.name);
             }
         }

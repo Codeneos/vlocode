@@ -91,7 +91,7 @@ export class DatapackLoader {
         return await this.datapackInfo?.getDatapackType(objectType) ?? datapackTypeFolder;
     }
 
-    public async loadDatapacks(datapackHeaders : string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
+    public async loadDatapacks(datapackHeaders: string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
         const datapacks = await mapAsyncParallel(datapackHeaders, async header => {
             if (cancellationToken?.isCancellationRequested) {
                 return undefined;

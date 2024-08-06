@@ -10,7 +10,14 @@ export interface VlocityMatchingKey {
     readonly returnField: string;
 }
 
-@injectable()
+interface DRMatchingKeyRecord {
+    id: string;
+    objectAPIName: string;
+    matchingKeyFields: string;
+    returnKeyField: string;
+}
+
+@injectable.singleton()
 export class VlocityMatchingKeyService {
 
     constructor(
@@ -80,9 +87,9 @@ export class VlocityMatchingKeyService {
     private async queryMatchingKeys(): Promise<Array<VlocityMatchingKey>> {
         this.logger.verbose('Querying matching keys from Salesforce');
 
-        const matchingKeyResults = await this.lookup.lookup('%vlocity_namespace%__DRMatchingKey__mdt', undefined, 'all');
+        const matchingKeyResults: DRMatchingKeyRecord[] = await this.lookup.lookup('%vlocity_namespace%__DRMatchingKey__mdt', undefined, 'all');
         const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
-            const fields = record.matchingKeyFields.split(',').map(s => s.trim());
+            const fields = record.matchingKeyFields.split(',').map(s => s.trim()).reverse();
             const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
             const datapackType = await this.datapackInfo.getDatapackType(record.objectAPIName);
             return {

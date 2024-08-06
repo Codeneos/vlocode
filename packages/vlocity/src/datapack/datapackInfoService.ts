@@ -44,7 +44,7 @@ interface DatapackConfigurationRecord {
     ValidateType?: string;
 }
 
-@injectable()
+@injectable.singleton()
 export class DatapackInfoService {
 
     constructor(

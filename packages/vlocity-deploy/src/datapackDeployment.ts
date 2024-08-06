@@ -182,6 +182,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.cancelToken = cancelToken;
         this.isStarted = true;
 
+        this.validateRecordDependencies();
+
         let deployableRecords: ReturnType<DatapackDeployment['getDeployableRecords']>;
         while (deployableRecords = this.getDeployableRecords()) {
             await this.deployRecords(deployableRecords, cancelToken);
@@ -205,7 +207,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             this.logger.log(`${deployMessage} in ${timer.stop().toString('seconds')}`);
         }
     }
-
 
     /**
      * Retrieves the deployment messages for the datapack deployment.
@@ -315,7 +316,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
 
         if (records.size == 0) {
-            for (const record of Iterable.filter(this.records.values(), record => record.isPending)) {                
+            for (const record of Iterable.filter(this.records.values(), record => record.isPending)) {
                 const internalDependencies = record.getUnresolvedDependencies('matching')
                     .map(d => d.dependency.VlocityMatchingRecordSourceKey)
                     .filter(d => this.getRecordStatus(d) !== DeploymentStatus.Deployed).join(', ');
@@ -325,7 +326,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
                 if (internalDependencies) {
                     this.logger.warn(`Skipped ${record.sourceKey} due to unresolved internal dependencies: ${internalDependencies}`);
-                    record.updateStatus(DeploymentStatus.Skipped, internalDependencies);                    
+                    record.updateStatus(DeploymentStatus.Skipped, internalDependencies);
                 } else {
                     this.logger.error(`Unable to deploy ${record.sourceKey} due to unresolved external dependencies: ${externalDependencies}`);
                     record.updateStatus(DeploymentStatus.Failed, `Missing external dependencies: ${externalDependencies}`);
@@ -355,10 +356,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             if (this.options.strictOrder && isExternalDependency) {
                 const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
                 if (dependencyStatus !== undefined && dependencyStatus < DeploymentStatus.Deployed) {
-                    if (this.isCircularDatapackDependency(record.datapackKey, dependentRecord.datapackKey)) {
-                        this.reportWarning(record, `Circular datapack dependency: ${record.datapackKey}->${dependentRecord.datapackKey}->${record.datapackKey}`);
-                        continue;
-                    }
                     return true;
                 }
             }
@@ -366,47 +363,33 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return false;
     }
 
-    /**
-     * Checks if there is a circular dependency between two datapacks.
-     * @param datapackKeyA - The key of the first datapack.
-     * @param datapackKeyB - The key of the second datapack.
-     * @returns True if there is a circular dependency, false otherwise.
-     */
-    private isCircularDatapackDependency(datapackKeyA: string, datapackKeyB: string, visited = new Set<string>()): boolean {
-        if (visited.has(datapackKeyB)) {
-            // Prevent a circular dependency check from going into an infinite loop
-            return false;
-        } else {
-            visited.add(datapackKeyB);
-        }
-        
-        for(const record of this.getRecords(datapackKeyB)) {
-            for (const dependency of record.getDependencies()) {
-                const dependentRecord = this.records.get(dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey);
-                if (!dependentRecord || dependentRecord.datapackKey === datapackKeyB) {
-                    continue;
-                }
-                if (dependentRecord.datapackKey === datapackKeyA) {
-                    return true;
-                } else if (this.isCircularDatapackDependency(datapackKeyA, dependentRecord.datapackKey, visited)) {
-                    return true;
-                }
+    private validateRecordDependencies() {
+        for (const record of this.records.values() ) {
+            const depedency = this.hasCircularDependencies(record);
+            if (depedency) {
+                record.setFailed(`Circular dependency detected: ${depedency.join('->')}`);
             }
         }
-        return false;
     }
 
-    private isCircularDependencies(record: DatapackDeploymentRecord, dependentRecord: DatapackDeploymentRecord) {
-        for(const key of dependentRecord.getDependencySourceKeys()) {
+    private hasCircularDependencies(record: DatapackDeploymentRecord, graph = Array<string>()): Array<string> | false {
+        if (!graph.length) {
+            graph.push(record.sourceKey);
+        }
+
+        for(const key of record.getDependencySourceKeys()) {
+            if (graph.includes(key)) {
+                return graph;
+            }
+
             const depedency = this.records.get(key);
             if (!depedency) {
                 continue;
             }
 
-            if (record.sourceKey === depedency.sourceKey) {
-                return true;
-            } else if (this.isCircularDependencies(record, depedency)) {
-                return true;
+            const stack = this.hasCircularDependencies(depedency, [ ...graph, depedency.sourceKey ]);
+            if (stack) {
+                return stack;
             }
         }
         return false;

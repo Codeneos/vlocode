@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { singleton, Iterable, arrayMapPush, asArray, getParameterTypes, getPropertyType } from '@vlocode/util';
+import { singleton, Iterable, arrayMapPush, asArray, getParameterTypes, getPropertyKey } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from './logging';
 import { createServiceProxy, serviceIsResolved, proxyTarget, isServiceProxy, ProxyTarget } from './serviceProxy';
@@ -58,7 +58,7 @@ export const ServiceGuidSymbol = Symbol('Container:ServiceGuid');
 const ContainerRootSymbol = Symbol('Container:IsRoot');
 
 const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({
-    lifecycle: LifecyclePolicy.singleton,
+    lifecycle: LifecyclePolicy.transient,
     priority: 0
 });
 
@@ -381,7 +381,7 @@ export class Container {
                 continue;
             }
             // Resolve property to an actual service
-            const typeInfo = getPropertyType(prototype, property);
+            const typeInfo = getPropertyKey(prototype, property);
             if (!typeInfo) {
                 throw new Error('Code compiled with emitting required type metadata');
             }

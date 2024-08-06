@@ -2,7 +2,7 @@ import * as path from 'path';
 import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
-import { Logger, injectable , LifecyclePolicy, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
+import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals } from '@vlocode/util';
 
 import { PackageManifest } from './deploy/packageXml';
@@ -49,7 +49,7 @@ interface MetadataObject {
     data: Record<string, unknown>;
 }
 
-@injectable( { lifecycle: LifecyclePolicy.transient } )
+@injectable()
 export class SalesforcePackageBuilder {
 
     /**

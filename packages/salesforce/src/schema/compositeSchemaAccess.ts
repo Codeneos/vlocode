@@ -7,7 +7,7 @@ import { ToolingApiSchemaAccess } from './toolingApiSchemaAccess';
 import { EntityDefinition } from './types/entityDefinition';
 import { FieldDefinition } from './types/fieldDefinition';
 
-@injectable()
+@injectable.singleton()
 export class CompositeSchemaAccess {
 
     constructor(

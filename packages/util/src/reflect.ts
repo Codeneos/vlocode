@@ -21,10 +21,10 @@ export function getParameterTypes(ctor: any) : any[] | undefined {
  * Get the design:typeinfo using Reflect.getMetadata for the specified prototype and property.
  * @param ctor type-constructor 
  */
-export function getPropertyType(type: any, propertyKey: string) : string | undefined {
-    const propertyType = Reflect.getMetadata('design:type', type, propertyKey);
-    if (propertyType) {
-        return propertyType;
+export function getPropertyKey(type: any, propertyKey: string) : string | undefined {
+    const PropertyKey = Reflect.getMetadata('design:type', type, propertyKey);
+    if (PropertyKey) {
+        return PropertyKey;
     }
 
     // Probe new style attributes

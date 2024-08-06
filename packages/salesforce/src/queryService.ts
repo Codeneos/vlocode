@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { CancellationToken, PropertyAccessor } from '@vlocode/util';
+import { CancellationToken } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
 import { SObjectRecord, FieldType } from './types';
@@ -8,7 +8,7 @@ import { NamespaceService } from './namespaceService';
 import { QueryCache } from './queryCache';
 import { RecordFactory } from './queryRecordFactory';
 
-export type QueryResult<TBase, TProps extends PropertyAccessor = any> = TBase & SObjectRecord & { [P in TProps]: any; };
+export type QueryResult<TBase, TProps extends PropertyKey = any> = TBase & SObjectRecord & { [P in TProps]: any; };
 
 export interface QueryOptions {
     /**
@@ -56,19 +56,20 @@ export class QueryService {
     }
 
     /**
-     * Disables the query cache functions; overrides useCache and cacheDefault disabling all caching.
-     * @param disabled Disable or enable query cache;
+     * Sets the query cache options. When the query cache is enabled, the query results are stored in memory and reused when the same query is executed again.
+     * When changing cache state the current cache is cleared.
+     * @param options - The query cache options.
+     * @param options.enabled - Indicates whether the query cache is enabled.
+     * @param options.default - Indicates what the default behavior should be when the useCache paramter is not explicitly set by the caller.
+     * @returns The current instance of the QueryService.
      */
-    public disableCache(disabled: boolean): this {
-        this.queryCacheEnabled = !disabled;
-        return this;
-    }
-
-    /**
-     * Changes the default behavior for caching queries, when true if no explicit useCache parameters are passed the caching is decided based on the default cache parameter;
-     */
-    public setCacheDefault(enabled: boolean): this {
-        this.queryCacheDefault = enabled;
+    public setQueryCache(options: { enabled: boolean, default?: boolean }): this {
+        if (options.enabled !== this.queryCacheEnabled) {
+            this.logger.verbose(`Query cache ${options.enabled ? 'enabled' : 'disabled'}`);
+            this.clearCache();
+        }
+        this.queryCacheEnabled = options.enabled === true;
+        this.queryCacheDefault = options.default ?? false;
         return this;
     }
 
@@ -86,7 +87,7 @@ export class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public query<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
+    public query<T extends object = object, K extends PropertyKey = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
         return this.execute(query, { cache: useCache, cancelToken });
     }
 
@@ -95,11 +96,11 @@ export class QueryService {
      * @param query Query string
      * @param useCache Store the query in the internal query cache or retrieve the cached version of the response if it exists
      */
-    public queryTooling<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
+    public queryTooling<T extends object = object, K extends PropertyKey = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken) : Promise<QueryResult<T, K>[]> {
         return this.execute(query, { cache: useCache, cancelToken, toolingApi: true });
     }
 
-    public execute<T extends object = object, K extends PropertyAccessor = keyof T>(query: string, options?: QueryOptions) : Promise<QueryResult<T, K>[]> {
+    public execute<T extends object = object, K extends PropertyKey = keyof T>(query: string, options?: QueryOptions) : Promise<QueryResult<T, K>[]> {
         const nsNormalizedQuery = this.nsService?.updateNamespace(query) ?? query;
         const enableCache = this.queryCacheEnabled && (options?.cache ?? this.queryCacheDefault);
         const queryExecutor = async () => {
