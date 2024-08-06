@@ -11,7 +11,7 @@ import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
 /**
  * Provides a list of recently executed or executing activities 
  */
-@injectable()
+@injectable.singleton()
 export default class DeveloperLogDataProvider extends BaseDataProvider<DeveloperLog> implements vscode.Disposable {
 
     private logs: Array<DeveloperLog> = [];
@@ -35,6 +35,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
         ConfigurationManager.onConfigChange(this.vlocode.config, ['sfdxUsername'], config => {
             this.lastRefresh = undefined;
             this.logs.splice(0);
+            this.refresh();
             if (config.sfdxUsername) {
                 void this.refreshLogs({ refreshView: true });
             }
@@ -171,7 +172,7 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
      * @param options.refreshView Whether or not to refresh the view after the logs have been refreshed
      * @throws {CustomError} When the refresh fails
      */
-    public async refreshLogs(options?: { refreshView?: boolean }) {
+    public async refreshLogs(options?: { refreshView?: boolean, }) {
         await this.vlocode.validateAll(true);
 
         // Load logs since last refresh
