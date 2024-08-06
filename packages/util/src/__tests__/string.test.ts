@@ -36,7 +36,7 @@ describe('util', () => {
             expect(string.evalExpr('\'Foo \' + bar', { bar: 'bar'})).toEqual('Foo bar');
         });
         it('complex expression should return evaluated result as string', () => {
-            expect(string.evalExpr('\'Foo \' + (i == 0 ? (bar || foo) : \'bla\')', { i: 0, foo: 'bar'})).toEqual('Foo bar');
+            expect(string.evalExpr('\'Foo \' + (i == 0 ? (bar || foo) : \'bla\')', { i: 0, foo: 'bar', bar: undefined})).toEqual('Foo bar');
         });
     });
 

@@ -136,8 +136,8 @@ describe('container', () => {
         it('should resolve circular references without creating duplicate service instances', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
-            testContainer.registerType(ServiceImplCircular, [ServiceImplCircular]);
-            testContainer.registerType(CircularRef, [CircularRef]);
+            testContainer.registerType(ServiceImplCircular, [ServiceImplCircular], { lifecycle: LifecyclePolicy.singleton });
+            testContainer.registerType(CircularRef, [CircularRef], { lifecycle: LifecyclePolicy.singleton });
 
             // Act
             const result = testContainer.resolve(ServiceImplCircular)!;
