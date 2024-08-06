@@ -306,8 +306,10 @@ export namespace sfdx {
         }
 
         if (options?.alias) {
-            await setAlias(details.username, options.alias);
+            const aliases = Array.isArray(options?.alias) ? options?.alias : [ options?.alias ];
+            aliases.forEach(alias => stateAggregator.aliases.set(alias, details.username));
         }
+
         await stateAggregator.orgs.write(details.username);
     }
 
@@ -443,6 +445,13 @@ export namespace sfdx {
         const configPath = currentConfig?.path ?? `${folderPath}/${defaultConfigPath}`;
         const newConfig = options.replace ? config : { ...currentConfig?.config, ...config };
         await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(newConfig, undefined, 2)));
+    }
+
+    export async function removeOrg(username: string) {
+        const stateAggregator = await salesforce.StateAggregator.getInstance();
+        stateAggregator.aliases.unsetAll(username);
+        await stateAggregator.orgs.remove(username);
+        await stateAggregator.aliases.write();
     }
 
     /**

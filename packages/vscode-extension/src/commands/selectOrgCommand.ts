@@ -3,11 +3,15 @@ import { SalesforceAuthResult, SalesforceOrgInfo, sfdx } from '@vlocode/util';
 import { CommandBase } from '../lib/commandBase';
 import { vscodeCommand } from '../lib/commandRouter';
 import { VlocodeCommand } from '../constants';
+import { QuickPick } from '../lib/ui/quickPick';
 
 type SelectOrgQuickPickItem = vscode.QuickPickItem & { orgInfo?: SalesforceOrgInfo; instanceUrl?: string };
 
 @vscodeCommand(VlocodeCommand.selectOrg)
 export default class SelectOrgCommand extends CommandBase {
+
+    private readonly setAliasIcon = new vscode.ThemeIcon('account');
+    private readonly deleteOrg = new vscode.ThemeIcon('trash');
 
     private readonly newOrgOption : SelectOrgQuickPickItem = {
         label: '$(key) Authorize new org',
@@ -62,7 +66,11 @@ export default class SelectOrgCommand extends CommandBase {
         return orgList.map(orgInfo => ({
             label: this.getOrgLabel(orgInfo),
             description: this.getOrgDescription(orgInfo),
-            orgInfo
+            orgInfo,
+            buttons: [
+                { iconPath: this.deleteOrg, tooltip: 'Remove Org' },
+                { iconPath: this.setAliasIcon, tooltip: 'Add Alias' }
+            ]
         }));
     }
 
@@ -90,8 +98,7 @@ export default class SelectOrgCommand extends CommandBase {
             selectionOptions.push({ label: '', kind: -1 }, ...knownOrgs)
         }
 
-        const selectedOrg = await vscode.window.showQuickPick(selectionOptions,
-            { placeHolder: 'Select an existing Salesforce org -or- authorize a new one' });
+        const selectedOrg = await this.showOrgSelection(selectionOptions);
 
         if (!selectedOrg) {
             return;
@@ -110,6 +117,35 @@ export default class SelectOrgCommand extends CommandBase {
                 }
             }
         }
+    }
+
+    protected showOrgSelection(orgs: SelectOrgQuickPickItem[]) {
+        const quickPickMenu = QuickPick.create(orgs, {
+            placeHolder: 'Select an existing Salesforce org -or- authorize a new one'
+        });
+
+        quickPickMenu.onTriggerItemButtom(async ({ item, button }) => {
+            if (item.orgInfo && button?.iconPath == this.setAliasIcon) {
+                const alias = await vscode.window.showInputBox({
+                    placeHolder: `Enter an alias for ${item.orgInfo.username}`
+                });
+                if (alias) {
+                    await sfdx.setAlias(item.orgInfo.username, alias);
+                }
+            } else if (item.orgInfo && button?.iconPath == this.deleteOrg) {
+                const confirmation = await vscode.window.showWarningMessage(
+                    `Are you sure you want to permanently delete the org configuration for ${item.orgInfo.username}?\n\n` + 
+                    'You will lose the ability to connect to this org as well as any stored Access and Refresh tokens.',
+                    { modal: true }, 'Yes'
+                );
+                if (confirmation === 'Yes') {
+                    await sfdx.removeOrg(item.orgInfo.username);
+                    vscode.window.showInformationMessage(`Org configuration for '${item.orgInfo.username}' removed.`); 
+                }
+            }
+        });
+
+        return quickPickMenu.onAccept();
     }
 
     protected async authorizeNewOrg() : Promise<SalesforceAuthResult | undefined> {
