@@ -97,11 +97,21 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         label: 'Clear custom debug configurations', description: 'Delete all custom debug flag configurations from VSCode', clear: 'customFlags' 
     };
 
-    private traceFlagsWatcherId: any;
-    private currentTraceFlagsId: string;
+    private traceFlagsWatcherId: any | undefined;
+    private currentTraceFlagsId: string | undefined;
     private currentDebugLevel: SalesforceDebugLevel;
     private currentDebugLevelName: string;
     private readonly traceFlagsDuration = 300;
+
+    constructor() {
+        super();
+        this.vlocode.onConnectionChange(async () => {
+            this.currentTraceFlagsId = undefined;
+            if (this.traceFlagsWatcherId) {                
+                await this.createAndSetTraceFlags(this.currentDebugLevelName, this.currentDebugLevel);
+            }
+        });
+    }
 
     /**
      * Clears all developer logs.

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import chalk from 'chalk';
 
-import { Logger, injectable ,container } from '@vlocode/core';
+import { Logger, injectable ,container, LifecyclePolicy } from '@vlocode/core';
 import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
@@ -13,7 +13,7 @@ import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 
-@injectable({ provides: [SalesforceConnectionProvider, VlocodeService] })
+@injectable({ lifecycle: LifecyclePolicy.singleton, provides: [SalesforceConnectionProvider, VlocodeService] })
 export default class VlocodeService implements vscode.Disposable, SalesforceConnectionProvider {
 
     // Privates
@@ -152,6 +152,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             }
         );
     }
+
+    public onConnectionChange(handler: (newUsername: string) => any) {
+        return ConfigurationManager.onConfigChange(this.config, ['sfdxUsername'], config => {
+            if (config.sfdxUsername) {
+                handler(config.sfdxUsername!);
+            }
+        });
+    } 
 
     private showApiVersionStatusItem() : void {
         this.createUpdateStatusBarItem(
