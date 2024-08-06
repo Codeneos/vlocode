@@ -76,8 +76,8 @@ export function format(formatStr: string, ...args: any[]) {
  * @param contextValues context values supplied
  */
 export function evalExpr(expr: string, contextValues: any) : string {
-    const updatedContext = compileFunction(`$$result = ${expr}`)(contextValues, false);
-    return updatedContext.$$result;
+    const fn = compileFunction(`return ${expr};`);
+    return fn(contextValues, false);
 }
 
 /**
@@ -86,8 +86,8 @@ export function evalExpr(expr: string, contextValues: any) : string {
  * @param contextValues context values supplied
  */
 export function evalTemplate(expr: string, contextValues: any) : string {
-    const updatedContext = compileFunction(`$$result = \`${expr}\``)(contextValues, false);
-    return updatedContext.$$result;
+    const fn = compileFunction(`return \`${expr}\`;`);
+    return fn(contextValues, false);
 }
 
 /**

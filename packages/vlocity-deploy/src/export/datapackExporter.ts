@@ -1,7 +1,7 @@
 import { DescribeSObjectResult, Field, SalesforceLookupService, SalesforceSchemaService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, VlocityMatchingKeyService } from "@vlocode/vlocity";
-import { compileFunction, forEachAsyncParallel, formatString, mapAsyncParallel, Timer } from "@vlocode/util";
+import { forEachAsyncParallel, formatString, mapAsyncParallel, Timer } from "@vlocode/util";
 import { DistinctLogger, Logger, injectable } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";

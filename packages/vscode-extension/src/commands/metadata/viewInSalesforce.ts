@@ -2,7 +2,6 @@
 import * as vscode from 'vscode';
 import open from 'open';
 import MetadataCommand from './metadataCommand';
-import { MetadataType } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { VlocodeCommand } from '../../constants';
 
@@ -11,14 +10,6 @@ export default class ViewInSalesforceCommand extends MetadataCommand {
 
     public async execute(...args: any[]) {
         return this.openFileInSalesforce(args[0] || this.currentOpenDocument);
-    }
-
-    /* eslint-disable no-template-curly-in-string */
-    protected getUrlFormat(metadataType: MetadataType) {
-        if (metadataType.xmlName == 'CustomObject') {
-            return '/lightning/setup/ObjectManager/page?address=/${Id}';
-        }
-        return '/lightning/setup/one/page?address=/${Id}';
     }
 
     protected async openFileInSalesforce(selectedFile: vscode.Uri) {

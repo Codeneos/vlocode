@@ -14,10 +14,10 @@ class Compiler {
         let compiledFn : (context: any) => any;
         if (options?.mode === 'sandbox') {
             // eslint-disable-next-line @typescript-eslint/no-implied-eval
-            compiledFn = new Function('context', `${code}`) as typeof compiledFn;
+            compiledFn = new Function('context', `with (context) { ${code}; }`) as typeof compiledFn;
         } else {
             const resultVar = '_' + randomUUID().replace(/-/g, '');
-            const script = new vm.Script(`${resultVar} = (() => { ${code} })()`);
+            const script = new vm.Script(`${resultVar} = (() => { with (context) { ${code}; } })()`);
             compiledFn = (context) => {
                 const scriptContext = {
                     context,
@@ -31,22 +31,28 @@ class Compiler {
 
         return function (context?: any, contextMutable?: boolean): any {
             const sandboxValues = {};
-            const sandboxContext = new Proxy(sandboxValues, {
-                get(_target, prop) {
-                    return sandboxValues[prop] ?? context[prop];
+            const sandboxContext = new Proxy(context, {
+                get(target, prop) {
+                    return sandboxValues[prop] ?? target[prop];
                 },
-                set(_target, prop, value) {
-                    (contextMutable ? context : sandboxValues)[prop] = value;
+                set(target, prop, value) {
+                    (contextMutable ? target : sandboxValues)[prop] = value;
                     return true;
                 },
-                getOwnPropertyDescriptor(_target, prop) {
+                getOwnPropertyDescriptor(target, prop) {
                     return sandboxValues[prop] !== undefined 
                         ? Reflect.getOwnPropertyDescriptor(sandboxValues, prop) 
-                        : Reflect.getOwnPropertyDescriptor(context, prop) 
+                        : Reflect.getOwnPropertyDescriptor(target, prop) 
                 },
-                ownKeys(_target) {
-                    return contextMutable ? Reflect.ownKeys(context) 
-                        : [...unique([...Reflect.ownKeys(context), ...Reflect.ownKeys(sandboxValues)])];
+                ownKeys(target) {
+                    return contextMutable 
+                        ? Reflect.ownKeys(target) 
+                        : [
+                            ...unique([
+                                ...Reflect.ownKeys(target), 
+                                ...Reflect.ownKeys(sandboxValues)
+                            ])
+                        ];
                 }
             });
             return compiledFn(sandboxContext);
