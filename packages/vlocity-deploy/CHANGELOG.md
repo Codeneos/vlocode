@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
+
+### Bug Fixes
+
+* string eval functions do not work properly due to compiler changes ([cc5ade8](https://github.com/Codeneos/vlocode/commit/cc5ade8de8e79b6c77580246015c0a7b7bd84a57))
+
+### Features
+
+* fail records with circular dependencies before deployment starts ([f7c1580](https://github.com/Codeneos/vlocode/commit/f7c15807fb45afb9453005b2c6742b313f02f600))
+* support datapack export based on configuration definitions in a YAML definitions file ([c2edd7c](https://github.com/Codeneos/vlocode/commit/c2edd7c7537a3d28312befa7ac5d7269140b5276))
+
 ## [1.24.11](https://github.com/Codeneos/vlocode/compare/v1.24.10...v1.24.11) (2024-06-27)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

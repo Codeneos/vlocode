@@ -4,6 +4,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.25.0](https://github.com/codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
+
+### Bug Fixes
+
+* container and eval unit-test errors ([3762d16](https://github.com/codeneos/vlocode/commit/3762d1667555acb320ec8ba29acdce4fafd5029b))
+* string eval functions do not work properly due to compiler changes ([cc5ade8](https://github.com/codeneos/vlocode/commit/cc5ade8de8e79b6c77580246015c0a7b7bd84a57))
+* switching orgs causes developer logs panel to misbehave ([9ea7261](https://github.com/codeneos/vlocode/commit/9ea7261f0c349711c9eae16634e9fa002803f2a5))
+* Update Compiler class to use object type for context parameter ([c3d73c2](https://github.com/codeneos/vlocode/commit/c3d73c27e172c9fff1673d8b56dd4ef0b5aecb4e))
+
+### Features
+
+* add support for adding alias to existing users and delete org configuration ([29c135e](https://github.com/codeneos/vlocode/commit/29c135e09f10de7aaacf8c63f08d078e79af21b0))
+* fail records with circular dependencies before deployment starts ([f7c1580](https://github.com/codeneos/vlocode/commit/f7c15807fb45afb9453005b2c6742b313f02f600))
+* improve extension start-up performance by not pre loading tooling API object data ([9be0283](https://github.com/codeneos/vlocode/commit/9be028385d334602210e4666eed7fcd00bda5da3))
+* support datapack export based on configuration definitions in a YAML definitions file ([c2edd7c](https://github.com/codeneos/vlocode/commit/c2edd7c7537a3d28312befa7ac5d7269140b5276))
+* when switching org also preserve trace-flags ([b17565e](https://github.com/codeneos/vlocode/commit/b17565e8a946e2128697e0a774b01b4bd24e84c2))
+
 ## [1.24.11](https://github.com/codeneos/vlocode/compare/v1.24.10...v1.24.11) (2024-06-27)
 
 ### Bug Fixes

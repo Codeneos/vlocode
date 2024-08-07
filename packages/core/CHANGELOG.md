@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
+
+### Bug Fixes
+
+* container and eval unit-test errors ([3762d16](https://github.com/Codeneos/vlocode/commit/3762d1667555acb320ec8ba29acdce4fafd5029b))
+
+### Features
+
+* support datapack export based on configuration definitions in a YAML definitions file ([c2edd7c](https://github.com/Codeneos/vlocode/commit/c2edd7c7537a3d28312befa7ac5d7269140b5276))
+
 ## [1.24.10](https://github.com/Codeneos/vlocode/compare/v1.24.9...v1.24.10) (2024-06-24)
 
 ### Bug Fixes
