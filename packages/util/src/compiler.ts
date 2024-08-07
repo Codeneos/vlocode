@@ -10,7 +10,7 @@ import { randomUUID } from 'crypto';
 class Compiler {
 
     @cache({ unwrapPromise: true })
-    public compile(code: string, options?: { mode: 'vm' | 'sandbox' }) : (context?: any, contextMutable?: boolean) => any {
+    public compile(code: string, options?: { mode: 'vm' | 'sandbox' }) : (context?: object, contextMutable?: boolean) => any {
         let compiledFn : (context: any) => any;
         if (options?.mode === 'sandbox') {
             // eslint-disable-next-line @typescript-eslint/no-implied-eval
@@ -31,7 +31,7 @@ class Compiler {
 
         return function (context?: any, contextMutable?: boolean): any {
             const sandboxValues = {};
-            const sandboxContext = new Proxy(context, {
+            const sandboxContext = new Proxy(typeof context === 'object' ? context : {}, {
                 get(target, prop) {
                     return sandboxValues[prop] ?? target[prop];
                 },
