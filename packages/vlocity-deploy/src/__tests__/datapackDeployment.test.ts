@@ -214,8 +214,8 @@ describe('DatapackDeployment', () => {
         });
     });
 
-    describe('isCircularDependencies', () => {
-        it('should return true when circular dependencies (A->B->A) exist', () => {
+    describe('hasCircularDependencies', () => {
+        it('should return path when circular dependencies (A->B->A) exist', () => {
             // Arrange
             const deployment = container.create(DatapackDeployment);
             const recordA = mockDatapackRecord( { sourceKey: 'A', datapackKey: 'A' });	
@@ -227,10 +227,12 @@ describe('DatapackDeployment', () => {
             deployment.add(recordA, recordB);
 
             // Act
-            const result = deployment['isCircularDependencies'](recordA, recordB);
+            const result1 = deployment['hasCircularDependencies'](recordA);
+            const result2 = deployment['hasCircularDependencies'](recordB);
 
             // Assert
-            expect(result).toBe(true);
+            expect(result1).toStrictEqual([ 'A', 'B', 'A' ]);	
+            expect(result2).toStrictEqual([ 'B', 'A', 'B' ]);
         });
         it('should return true when a deep circular dependencies (A->B->C->A) exist', () => {
             // Arrange
@@ -246,10 +248,10 @@ describe('DatapackDeployment', () => {
             deployment.add(recordA, recordB, recordC);
 
             // Act
-            const result = deployment['isCircularDependencies'](recordA, recordB);
+            const result = deployment['hasCircularDependencies'](recordA);
 
             // Assert
-            expect(result).toBe(true);
+            expect(result).toStrictEqual([ 'A', 'C', 'B', 'A' ]);	
         });
     });
 });

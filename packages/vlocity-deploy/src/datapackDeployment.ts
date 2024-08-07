@@ -356,6 +356,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             if (this.options.strictOrder && isExternalDependency) {
                 const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
                 if (dependencyStatus !== undefined && dependencyStatus < DeploymentStatus.Deployed) {
+                    if (this.isCircularDatapackDependency(record.datapackKey, dependentRecord.datapackKey)) {
+                        this.reportWarning(record, `Circular datapack dependency: ${record.datapackKey}->${dependentRecord.datapackKey}->${record.datapackKey}`);
+                        continue;
+                    }
                     return true;
                 }
             }
@@ -372,6 +376,36 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         }
     }
 
+    /**
+     * Checks if there is a circular dependency between two datapacks.
+     * @param datapackKeyA - The key of the first datapack.
+     * @param datapackKeyB - The key of the second datapack.
+     * @returns True if there is a circular dependency, false otherwise.
+     */
+    private isCircularDatapackDependency(datapackKeyA: string, datapackKeyB: string, visited = new Set<string>()): boolean {
+        if (visited.has(datapackKeyB)) {
+            // Prevent a circular dependency check from going into an infinite loop
+            return false;
+        } else {
+            visited.add(datapackKeyB);
+        }
+        
+        for(const record of this.getRecords(datapackKeyB)) {
+            for (const dependency of record.getDependencies()) {
+                const dependentRecord = this.records.get(dependency.VlocityMatchingRecordSourceKey ?? dependency.VlocityLookupRecordSourceKey);
+                if (!dependentRecord || dependentRecord.datapackKey === datapackKeyB) {
+                    continue;
+                }
+                if (dependentRecord.datapackKey === datapackKeyA) {
+                    return true;
+                } else if (this.isCircularDatapackDependency(datapackKeyA, dependentRecord.datapackKey, visited)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private hasCircularDependencies(record: DatapackDeploymentRecord, graph = Array<string>()): Array<string> | false {
         if (!graph.length) {
             graph.push(record.sourceKey);
@@ -379,7 +413,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
         for(const key of record.getDependencySourceKeys()) {
             if (graph.includes(key)) {
-                return graph;
+                return [...graph, key];
             }
 
             const depedency = this.records.get(key);
