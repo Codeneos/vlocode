@@ -79,7 +79,6 @@
         "typescript": "5.1.6",
         "webpack": "^5.88.2",
         "webpack-cli": "^5.1.4",
-        "webpack-env": "^0.8.0",
         "webpack-glob-entry": "^2.1.1",
         "webpack-merge": "^5.9.0",
         "webpack-node-externals": "^3.0.0"
