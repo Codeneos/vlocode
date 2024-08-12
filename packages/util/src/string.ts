@@ -77,7 +77,7 @@ export function format(formatStr: string, ...args: any[]) {
  */
 export function evalExpr(expr: string, contextValues: any) : string {
     const fn = compileFunction(`return ${expr}`);
-    return fn(contextValues, false);
+    return fn(contextValues, { allowUndefined: true, mutableContext: false });
 }
 
 /**
@@ -87,7 +87,7 @@ export function evalExpr(expr: string, contextValues: any) : string {
  */
 export function evalTemplate(expr: string, contextValues: any) : string {
     const fn = compileFunction(`return \`${expr}\``);
-    return fn(contextValues, false);
+    return fn(contextValues, { allowUndefined: true, mutableContext: false });
 }
 
 /**

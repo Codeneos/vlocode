@@ -1,4 +1,3 @@
-import { injectable, LifecyclePolicy } from '@vlocode/core';
 import { cache, extractNamespaceAndName, normalizeSalesforceName, PropertyTransformHandler, removeNamespacePrefix, substringAfterLast, substringBefore } from '@vlocode/util';
 import { QueryResultRecord } from './connection';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -7,7 +6,9 @@ import { DateTime } from 'luxon';
 export const RecordAttributes = Symbol('attributes');
 export const RecordId = Symbol('id');
 export const RecordType = Symbol('type');
-type primitiveDataTypes = string | number | boolean | null | undefined;
+
+type PrimitiveDataTypes = string | number | boolean | null | undefined;
+
 interface RecordFactoryCreateOptions {
     /**
      * Create records using a proxy to intercept property access and transform the property name to the correct casing.
@@ -42,7 +43,7 @@ export class RecordFactory {
     /**
      * Static method for creating records using the default factory instance.
      */
-    public static create<T extends object = any>(queryResultRecord: QueryResultRecord, options?: RecordFactoryCreateOptions): T {
+    public static create<T extends object = any>(queryResultRecord: Partial<QueryResultRecord>, options?: RecordFactoryCreateOptions): T {
         return RecordFactory.prototype.create(queryResultRecord, options);
     }
 
@@ -55,7 +56,7 @@ export class RecordFactory {
      * @param options Transformation options that override the default behavior of the factory
      * @returns The transformed record based on the specified options
      */
-    public create<T extends object = any>(queryResultRecord: QueryResultRecord, options?: RecordFactoryCreateOptions): T {
+    public create<T extends object = any>(queryResultRecord: Partial<QueryResultRecord>, options?: RecordFactoryCreateOptions): T {
         if (queryResultRecord.attributes) {
             Object.assign(queryResultRecord, {
                 [RecordAttributes]: queryResultRecord.attributes,
@@ -70,11 +71,11 @@ export class RecordFactory {
         return this.createWithDefine(queryResultRecord);
     }
 
-    private createWithProxy<T extends object>(queryResultRecord: QueryResultRecord): T {
+    private createWithProxy<T extends object>(queryResultRecord: Partial<QueryResultRecord>): T {
         return new Proxy<T>(queryResultRecord as any, new PropertyTransformHandler(RecordFactory.getPropertyKey, RecordFactory.transformValue));
     }
 
-    private createWithDefine<T extends object>(queryResultRecord: QueryResultRecord): T {
+    private createWithDefine<T extends object>(queryResultRecord: Partial<QueryResultRecord>): T {
         const properties: Record<string, PropertyDescriptor> = {};
         const relationships: Array<string> = [];
 
@@ -176,7 +177,7 @@ export class RecordFactory {
             ?? name;
     }
 
-    private static transformValue(value: primitiveDataTypes): unknown {
+    private static transformValue(value: PrimitiveDataTypes): unknown {
         //string matching iso8601Pattern as Date      
         if (typeof value === 'string' &&
             /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(.\d+)?(([+-]\d{2}\d{2})|Z)?)?$/i.test(value)) {
@@ -211,25 +212,4 @@ export class RecordFactory {
 
         return fieldMap;
     }
-}
-
-@injectable()
-export class Query2Service {
-    // private wrapRecord<T extends object>(record: T) {
-    //     const getPropertyKey = (target: T, name: string | number | symbol) => {
-    //         const fieldMap = this.getRecordFieldMap(target);
-    //         const normalizedName = normalizeSalesforceName(name.toString());
-    //         return fieldMap.get(normalizedName) ?? name;
-    //     };
-    //     return new Proxy(record, new PropertyTransformHandler(getPropertyKey));
-    // }
-
-    // private getRecordFieldMap<T extends object>(record: T) {
-    //     let fieldMap = this.recordFieldNames.get(record);
-    //     if (!fieldMap) {
-    //         fieldMap = Object.keys(record).reduce((map, key) => map.set(normalizeSalesforceName(key.toString()), key), new Map());
-    //         this.recordFieldNames.set(record, fieldMap);
-    //     }
-    //     return fieldMap;
-    // }
 }

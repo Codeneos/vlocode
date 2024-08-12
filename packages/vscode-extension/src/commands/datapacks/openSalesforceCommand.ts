@@ -6,6 +6,7 @@ import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
+import { RecordFactory } from '@vlocode/salesforce';
 
 @vscodeCommand(VlocodeCommand.openInSalesforce)
 export default class OpenSalesforceCommand extends DatapackCommand {
@@ -40,7 +41,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
 
         const selectedMatch = matchingRecords.length > 1 ? await this.showRecordSelection(matchingRecords, datapack.datapackType) : matchingRecords.pop();
         if (selectedMatch) {
-            return this.openIdInSalesforce(selectedMatch.Id, datapack.datapackType);
+            return this.openIdInSalesforce(selectedMatch.Id, datapack.datapackType, RecordFactory.create(datapack.data));
         }
     }
 
