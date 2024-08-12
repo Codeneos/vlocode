@@ -420,6 +420,12 @@ export interface ObjectEqualsOptions {
      * the objects are considered equal even though object `b` has an extra property
      */
     ignoreExtraProperties?: boolean;
+    /**
+     * Ignore extra elements in an array when comparing arrays for equality.
+     * For example when array `a` looks like `[1, 2, 3]` and array `b` looks like `[1, 2, 3, 4]`
+     * the arrays are considered equal even though array `b` has an extra element.
+     */
+    ignoreExtraElements?: boolean;
 }
 
 /**
@@ -450,6 +456,26 @@ export function objectEquals(
         return true;
     }
 
+    const objectEqualityFn: typeof objectEquals = options?.objectCompare ?? objectEquals;
+
+    if (Array.isArray(a) && Array.isArray(b)) {
+        if (!options?.ignoreExtraElements && a.length !== b.length) {
+            return false;
+        }
+
+        if (options?.ignoreArrayOrder) {
+            const bElements = [...b];
+            for (const element of a) {
+                const index = bElements.findIndex(otherElement => objectEqualityFn(element, otherElement, options));
+                if (index === -1) {
+                    return false;
+                }
+                bElements.splice(index, 1);
+            }
+            return options?.ignoreExtraElements === true || bElements.length === 0;
+        }
+    }
+
     const missingKeys = Object.keys(a).filter(key => !(key in b));
     if (missingKeys.length && !options?.ignoreMissingProperties) {
         return false;
@@ -458,22 +484,6 @@ export function objectEquals(
     const extraKeys = Object.keys(b).filter(key => !(key in a));
     if (extraKeys.length && !options?.ignoreExtraProperties) {
         return false;
-    }
-
-    const objectEqualityFn: typeof objectEquals = options?.objectCompare ?? objectEquals;
-
-    // If both A and B are arrays and the ignoreArrayOrder option is set, then check if all elements of A are in B
-    // but ignore the order of the elements in B
-    if (options?.ignoreArrayOrder && Array.isArray(a) && Array.isArray(b)) {
-        const validElements = [...b];
-        for (const element of a) {
-            const index = validElements.findIndex(otherElement => objectEqualityFn(otherElement, element, options));
-            if (index === -1) {
-                return false;
-            }
-            validElements.splice(index, 1);
-        }
-        return options?.ignoreExtraProperties === true || validElements.length === 0;
     }
 
     // Check if all keys of A are equal to the keys in B

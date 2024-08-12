@@ -4,6 +4,7 @@ import { RetrieveManifestOptions, SalesforceDeployService } from "./salesforceDe
 import { SalesforcePackage, SalesforcePackageComponent } from "./deploymentPackage";
 import { MetadataRegistry, MetadataType } from "./metadataRegistry";
 import { RetrieveResultComponent } from "./deploy";
+import { outputFile } from "fs-extra";
 
 /**
  * Interface for a strategy to determine if two objects are equal. Used in the delta strategy to determine if a component has changed.
@@ -13,6 +14,9 @@ interface CompareStrategy {
     (a: Buffer | string, b: Buffer | string): boolean
 }
 
+type CompareXmlStrategyType = 'xmlStrict' | 'xmlStrictOrder' | 'xml' | 'metaXml';
+type CompareStrategyType = CompareXmlStrategyType | 'binary' | 'default';
+
 /**
  * Interface for a strategy to determine which components in the packages have changed and need to be deployed.
  * Returns a list of components that have changed which can be used to create a new deployment package.
@@ -20,15 +24,34 @@ interface CompareStrategy {
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class RetrieveDeltaStrategy {
 
-    private readonly compareStrategies : Record<string, CompareStrategy> = {
-        'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),
+    private readonly compareStrategies: Record<CompareStrategyType | string, CompareStrategy> = {
+        'xmlStrict': (a, b) => this.isXmlEqual(a, b, { strictOrder: true }),
+        'xmlStrictOrder': (a, b) => this.isXmlEqual(a, b, { strictOrder: true, ignoreExtra: true }),
         'xml': (a, b) => this.isXmlEqual(a, b, { strictOrder: false, ignoreExtra: true }),
         'metaXml': (a, b) => this.isMetaXmlEqual(a, b),
         'binary': this.isBinaryEqual.bind(this),
         'default': this.isStringEqual.bind(this),
-        // Custom comparers
-        'InstalledPackage': (a, b) => !this.isPackageNewer(a, b),
-    }
+        'InstalledPackage': (a, b) => !this.isPackageNewer(a, b)
+    };
+
+    /**
+     * Represents the metadata strategy for different types of metadata.
+     */
+    public static readonly metadataStrategy : Record<string, CompareStrategyType | CompareStrategy> = {
+        'FlexiPage': 'xmlStrict',  
+        'Layout': 'xmlStrict',
+        'Flow;': 'xmlStrict',
+        'StaticResource': 'binary',
+        'ContentAsset': 'binary',
+        'Document': 'binary',      
+    };
+
+    /**
+     * Determines the default strategy for strict XML parsing.
+     * This strategy is used when no specific strategy is defined for a metadata type.
+     * This strategy is used for XML files that are not metadata types.
+     */
+    public static readonly defaultXmlStrategy: CompareXmlStrategyType = 'xml';
 
     constructor(
         private readonly deployService: SalesforceDeployService,
@@ -104,8 +127,8 @@ export class RetrieveDeltaStrategy {
         packagePath: string,
         localData: Buffer | string | undefined,
         orgData: Buffer | string | undefined,
-        type: MetadataType): boolean
-    {
+        type: MetadataType
+    ): boolean {
         if (Buffer.isBuffer(localData) && Buffer.isBuffer(orgData) && localData.compare(orgData) === 0) {
             // If both are buffers first do a quick buffer comparison
             return false;
@@ -120,20 +143,15 @@ export class RetrieveDeltaStrategy {
         }
 
         try {
-            return !this.getComparer(packagePath, localData, type)(localData, orgData);
+            return !this.getComparer(packagePath, localData, type)(orgData, localData);
         } catch {
-            return !this.compareStrategies.default(localData, orgData);
+            return !this.compareStrategies.default(orgData, localData);
         }
     }
 
     private getComparer(packagePath: string, data: string | Buffer, type: MetadataType): CompareStrategy {
         if (this.compareStrategies[type.name]) {
             return this.compareStrategies[type.name];
-        }
-
-        if (type.name === 'FlexiPage' ||
-            type.name === 'Layout') {
-            return this.compareStrategies.xmlStrictOrder;
         }
 
         if (/\.([a-z]+)-meta\.xml$/i.test(packagePath)) {
@@ -146,10 +164,20 @@ export class RetrieveDeltaStrategy {
             return this.compareStrategies.binary;
         }
 
-        if (/\.xml$/i.test(packagePath) || XML.isXml(data)) {
-            return this.compareStrategies.xml;
+        const strategyName = RetrieveDeltaStrategy.metadataStrategy[type.name];
+        if (strategyName) {
+            if (typeof strategyName === 'string') {
+                if (!(strategyName in this.compareStrategies)) {
+                    throw new Error(`Specified strategy for metadata type ${type.name} does not exist: ${strategyName}`);
+                }
+                return this.compareStrategies[strategyName];
+            }
+            return strategyName;
         }
 
+        if (/\.xml$/i.test(packagePath) || XML.isXml(data)) {
+            return this.compareStrategies[RetrieveDeltaStrategy.defaultXmlStrategy];
+        }
         return this.compareStrategies.default;
     }
 
@@ -170,7 +198,8 @@ export class RetrieveDeltaStrategy {
         return deepCompare(parsedA, parsedB, {
             primitiveCompare: this.primitiveCompare,
             ignoreArrayOrder: !options?.strictOrder,
-            ignoreExtraProperties: !!options?.ignoreExtra
+            ignoreExtraProperties: !!options?.ignoreExtra,
+            ignoreExtraElements: !!options?.ignoreExtra
         });
     }
 
