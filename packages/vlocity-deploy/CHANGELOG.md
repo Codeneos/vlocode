@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.26.0](https://github.com/Codeneos/vlocode/compare/v1.25.0...v1.26.0) (2024-08-13)
+
+### Features
+
+* add folder and file expansion support ([a908273](https://github.com/Codeneos/vlocode/commit/a908273dd0b9b0166a4afb9a9284511ef4a7f23a))
+* distribute JSON schema for DatapackExportDefinition object ([55e1d50](https://github.com/Codeneos/vlocode/commit/55e1d500da73b92cf98d3e932d1a3ea234f9bbc6))
+
 # [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
 
 ### Bug Fixes

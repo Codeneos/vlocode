@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.26.0](https://github.com/codeneos/vlocode/compare/v1.25.0...v1.26.0) (2024-08-13)
+
+### Bug Fixes
+
+* Update evalExpr function to allow undefined values in context ([d225281](https://github.com/codeneos/vlocode/commit/d225281b7552afd1ca8205866836e2311bdf6373))
+
 # [1.25.0](https://github.com/codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
 
 ### Bug Fixes

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.26.0](https://github.com/Codeneos/vlocode/compare/v1.25.0...v1.26.0) (2024-08-13)
+
+### Bug Fixes
+
+* unit test for compare object to match new behavior ([d9687e9](https://github.com/Codeneos/vlocode/commit/d9687e92e0315627fcb1319ac4e50d3ebd081441))
+* Update evalExpr function to allow undefined values in context ([d225281](https://github.com/Codeneos/vlocode/commit/d225281b7552afd1ca8205866836e2311bdf6373))
+* Update objectEquals function to ignore extra elements in arrays ([25fecdb](https://github.com/Codeneos/vlocode/commit/25fecdbd19e4b877fea4c6d100b53fd4af76f75d))
+
 # [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
 
 ### Bug Fixes
