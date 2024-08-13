@@ -177,10 +177,15 @@ describe('util', () => {
             const b = { foo: [ { bar: 2 }, { bar: 1 }, { bar: 1 } ] };
             expect(objectEquals(a, b, { ignoreArrayOrder: false })).toBe(false);
         });
-        it('should return true for arrays with extra elements and ignoreExtraProperties = true and ignoreArrayOrder = true', () => {
+        it('should return false for arrays with extra elements and ignoreExtraProperties = true and ignoreArrayOrder = true', () => {
             const a = { foo: [ { bar: 1 } ] };
             const b = { foo: [ { bar: 1 }, { bar: 2 } ] };
-            expect(objectEquals(a, b, { ignoreExtraProperties: true, ignoreArrayOrder: true })).toBe(true);
+            expect(objectEquals(a, b, { ignoreExtraProperties: true, ignoreArrayOrder: true })).toBe(false);
+        });
+        it('should return false for arrays with extra elements and ignoreExtraElements = true, ignoreExtraProperties = true and ignoreArrayOrder = true', () => {
+            const a = { foo: [ { bar: 1 } ] };
+            const b = { foo: [ { bar: 1 }, { bar: 2 } ] };
+            expect(objectEquals(a, b, { ignoreExtraProperties: true, ignoreExtraElements: true, ignoreArrayOrder: true })).toBe(true);
         });
         it('should return true for equal primitives', () => {
             expect(objectEquals('a', 'a')).toBe(true);
