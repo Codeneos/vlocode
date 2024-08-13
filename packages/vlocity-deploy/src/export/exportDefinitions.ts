@@ -1,4 +1,18 @@
-export interface DatapackExportDefinition extends Partial<ObjectFilter> {
+interface ExpandFileDefinition {
+    /**
+     * When set the data in the field is exported into a separate file with the specified name.
+     * The name can be a string which is evaluated as a template to include values from the datapack:
+     * ```yaml
+     * fileName: "data_{Name}.json"
+     * ```
+     * If no extension is provided the extension is inferred from the field type:
+     * - json: .json
+     * - binary: .bin
+     */
+    fileName?: string | string[];
+}
+
+export interface DatapackExportDefinition extends ExpandFileDefinition {
     /**
      * The name of the file to export the object data to. The name can be a string which is evaluated as a template to include values from the dtapaack:
      * ```yaml
@@ -6,7 +20,7 @@ export interface DatapackExportDefinition extends Partial<ObjectFilter> {
      * ```
      * All exported fields are written to this file in JSON format  and '.json' is appended to the file name if no extension is provided.
      */
-    fileName?: string | string[];
+    folder?: string | string[];
     /**
      * Type of SObject to export
      */
@@ -39,29 +53,18 @@ export interface DatapackExportDefinition extends Partial<ObjectFilter> {
      * and who's data should be included in the export.
      * The key is the name under which related records are exported.
      */
-    relatedObjects?: Record<string, ObjectFilter | ObjectRelationship | string>;
+    relatedObjects?: Record<string, ExportFieldDefinition & (ObjectFilter | ObjectRelationship) | string>;
     /**
      * Optional object with specific export settings for fields in the object.
      */
     fields?: Record<string, ExportFieldDefinition>;
 }
 
-export interface ExportFieldDefinition {
+export interface ExportFieldDefinition extends ExpandFileDefinition {
     /**
      * Processor function snippet to use for processing the field data before exporting.
      */
     processor?: string;
-    /**
-     * When set the data in the field is exported into a separate file with the specified name.
-     * The name can be a string which is evaluated as a template to include values from the datapack:
-     * ```yaml
-     * fileName: "data_{Name}.json"
-     * ```
-     * If no extension is provided the extension is inferred from the field type:
-     * - json: .json
-     * - binary: .bin
-     */
-    fileName?: string | string[];
     /**
      * When true expands an array value in the datapack to individual files.
      */

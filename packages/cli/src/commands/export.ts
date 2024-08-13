@@ -13,7 +13,7 @@ export default class extends SalesforceCommand {
     static description = 'Export an objecr as datapack from Salesforce';
 
     static args = [
-        new Argument('<ids...>', 'list of object IDs to export')
+        new Argument('<ids...>', 'list of object IDs to export').argRequired()
     ];
 
     static options = [
@@ -26,7 +26,7 @@ export default class extends SalesforceCommand {
                 throw new Error('Specified definitions file does not exists');
             }
             return value;
-        }),
+        }).makeOptionMandatory(),
         new Option(
             '-e, --expand',
             'expand the datapack once exported into separate files according to the export definitions'
@@ -49,9 +49,12 @@ export default class extends SalesforceCommand {
             if (options.expand) {
                 const expanded = expander.expandDatapack(result.datapack);
                 for (const [fileName, fileData] of Object.entries(expanded.files)) {
+                    await this.writeFile([expanded.folder, fileName], fileData);
+                }
+                if (result.parentKeys.length) {
                     await this.writeFile(
-                        join(expanded.objectType, expanded.folder ?? id, fileName),
-                        fileData
+                        [expanded.folder, expanded.baseName +  '_ParentKeys.json'], 
+                        result.parentKeys.map(({ key }) => key)
                     );
                 }
             } else {
@@ -62,7 +65,11 @@ export default class extends SalesforceCommand {
         }
     }
 
-    public async writeFile(fileName: string, data: object | string | Buffer) {
+    public async writeFile(fileName: string | string[], data: object | string | Buffer) {
+        if (Array.isArray(fileName)) {
+            fileName = join(...fileName);
+        }
+
         if (typeof data === 'object' && !Buffer.isBuffer(data)) {
             data = JSON.stringify(data, null, 4);
         }

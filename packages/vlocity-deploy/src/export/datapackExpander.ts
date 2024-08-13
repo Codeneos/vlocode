@@ -1,14 +1,20 @@
 import { injectable, Logger } from "@vlocode/core";
-import { formatString, Timer } from "@vlocode/util";
+import { formatString, substringAfter, Timer } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
+import path from "path/posix";
+import { ObjectRef } from "./datapackExporter";
 
 export interface DatapackExpandResult {
-    folder?: string;
+    baseName: string;
+    folder: string;
     objectType: string;
     sourceKey: string;
+    parentKeys: string[];	
     files: Record<string, Buffer | string>;
 }
+
+type FieldRef = ObjectRef & { field: string };
 
 /**
  * Represents a Datapack Expander that expand an exported datapack into a list of files that can be written to the file system or a zip archive.
@@ -68,33 +74,34 @@ export class DatapackExpander {
             scope: context?.scope
         };
 
+        const folderFormat = this.definitions.getFolder(itemRef) 
+            ?? substringAfter(datapack.VlocityRecordSourceKey, '/');
+        const folder = path.join(
+            this.normalizePath(datapack.VlocityRecordSObjectType),
+            this.evalPathFormat(folderFormat, { context: datapack })
+        );
+        
         const data: Record<string, unknown> = {};
-        const files: Record<string, Buffer | string> = {};
+        const files = new DatapackFiles(folder, this.logger);
 
         for (const field of Object.keys(datapack).sort()) {
             if (this.datapackStandardFields.includes(field)) {
                 continue;
             }
 
-            const fieldSettings = this.definitions.getFieldConfig(itemRef, field);
+            const fileNameFormat = this.definitions.getFileName(itemRef, field);
             let value = datapack[field];
 
-            if (fieldSettings?.fileName) {
-                const fileNameFormat = fieldSettings.fileName;
+            if (fileNameFormat) {
                 const defaultExt = 'json';
-
-                if (Array.isArray(value) && fieldSettings.expandArray) {
+                if (this.expandFieldArray({ ...itemRef, field }, value)) {
                     value = value.map(item => {
-                        const fileName = this.evalFileName(fileNameFormat, { context: item ?? datapack, defaultExt });
-                        this.logger.verbose(`Write ${fileName}`);
-                        files[fileName] = this.getFileData(item);
-                        return fileName;
+                        const fileName = this.evalPathFormat(fileNameFormat, { context: item ?? datapack, defaultExt });
+                        return files.addFile(fileName, item);
                     });
                 } else {
-                    const fileName = this.evalFileName(fileNameFormat, { context: value, defaultExt });
-                    this.logger.verbose(`Write ${fileName}`);
-                    files[fileName] = this.getFileData(value);
-                    value = fileName;
+                    const fileName = this.evalPathFormat(fileNameFormat, { context: value, defaultExt });
+                    value = files.addFile(fileName, value);
                 }
             }
 
@@ -112,36 +119,92 @@ export class DatapackExpander {
         }
 
         const fileNameFormat = this.definitions.getFileName(itemRef) ?? '{VlocityRecordSourceKey}';
-        const datapackFileName = `${this.evalFileName(fileNameFormat, { context: datapack })}_DataPack.json`;
-        files[datapackFileName] = this.getFileData(data);
+        const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
+        const datapackFileName = `${baseName}_DataPack.json`;
+        files.addFile(datapackFileName, data);
 
         this.logger.info(`Expanded ${datapack.VlocityRecordSourceKey} - ${timer.toString("ms")}`);
 
         return {
             objectType: datapack.VlocityRecordSObjectType,
             sourceKey: datapack.VlocityRecordSourceKey,
-            files
+            parentKeys: [...this.collectParentKeys(datapack)],
+            files: files.getFiles({ withFolder: false }),
+            folder,
+            baseName
         };
     }
 
-    private getFileData(value: any) {
-        if (Buffer.isBuffer(value)) {
-            return value;
+    private collectParentKeys(datapack: object, parentKeys: Set<string> = new Set()): Set<string> {
+        for (const [key, value] of Object.entries(datapack)) {
+            if (key === 'VlocityDataPackType' && value === 'VlocityLookupMatchingKeyObject') {
+                parentKeys.add(datapack['VlocityLookupRecordSourceKey']);
+            }
+            if (typeof value === 'object' && value !== null) {
+                this.collectParentKeys(value, parentKeys);
+            }
         }
-        return Buffer.from(JSON.stringify(value, null, 4));
+        return parentKeys;
     }
 
-    private evalFileName(format: string | string[], options?: { context?: object; defaultExt?: string; }) {
+    private expandFieldArray(ref: FieldRef, value: unknown): value is unknown[] {
+        if (Array.isArray(value)) {
+            return false;
+        }
+        const shouldExpand = this.definitions.getFieldConfig(ref, ref.field, 'expandArray');
+        if (typeof shouldExpand === 'boolean') {
+            return shouldExpand;
+        }
+        return false;
+    }
+
+    private evalPathFormat(format: string | string[], options?: { context?: object; defaultExt?: string; }) {
         const name = Array.isArray(format) 
-            ? format.map(f => f.startsWith('_') ? f.substring(1) : options?.context?.[f] ?? f).join('_')
+            ? format.map(f => f.startsWith('_') ? f.substring(1) : options?.context?.[f] ?? '').join('_')
             : (options?.context ? formatString(format, options?.context) : format);
         return this.normalizePath(name, options?.defaultExt);
     }
 
     private normalizePath(path: string, extension?: string) {
-        if (!path.includes('.') && extension) {
+        if (extension && !path.includes('.')) {
             path += `.${extension}`;
         }
-        return path.trim().replace(/[^\w\\-\\.]+/g, '_').replace(/_+/g, '_');
+        return path.trim().replace(/[^\w\\-\\.]+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    }
+}
+
+class DatapackFiles {
+    private files: Record<string, Buffer | string> = {};
+
+    constructor(
+        public readonly folder: string, 
+        private readonly logger: Logger
+    ) { }
+
+    public addFile(fileName: string, value: unknown) {
+        const data = this.getFileData(value);
+        this.logger.verbose(`Write ${fileName} (${data.length} bytes)`);
+        this.files[fileName] = data;
+        return fileName;
+    }
+
+    public getFiles(options?: { withFolder?: boolean }): Record<string, Buffer | string> {
+        if (options?.withFolder) {
+            const files: Record<string, Buffer | string> = {};
+            for (const [fileName, data] of Object.entries(this.files)) {
+                files[path.join(this.folder, fileName)] = data;
+            }
+            return files;
+        }
+        return this.files; 
+    }
+
+    private getFileData(value: unknown): Buffer | string {
+        if (Buffer.isBuffer(value)) {
+            return value;
+        }
+        return Buffer.from(JSON.stringify(value, null, 4));
     }
 }

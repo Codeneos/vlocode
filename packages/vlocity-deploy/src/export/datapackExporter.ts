@@ -35,7 +35,20 @@ interface ExportContext {
     parent?: ExportDatapack;
 }
 
-export type DatapackExportOptions = Omit<ExportContext, 'parent'>;
+interface ExportResult {
+    parentKeys: {
+        key: string;
+        id: string;
+    }[];
+    datapack: VlocityDatapackSObject;
+    objectType: string;
+    sourceKey: string;
+}
+
+/**
+ * Options for exporting datapacks.
+ */
+type DatapackExportOptions = Omit<ExportContext, 'parent'>;
 
 /**
  * The `DatapackExporter` class is responsible for exporting and expanding Salesforce objects into datapacks.
@@ -115,19 +128,27 @@ export class DatapackExporter {
      * exporting related objects if needed by calling {@link exportObject} with the parent object id.
      * @param id Id of the object to export
      */
-    public async exportObject(id: string, context?: DatapackExportOptions) {
+    public async exportObject(id: string, context?: DatapackExportOptions): Promise<ExportResult> {
         this.logger.info(`Exporting sobject with id: ${id}`);
         const timer = new Timer();
         const data = await this.lookupService.lookupById(id);
         if (!data) {
             throw new Error(`No object with id [${id}] does not exist in target org`);
         }
-        const result = await this.buildDatapack(data, context ?? {});
+
+        await this.buildDatapack(data, context ?? {});
         const datapack = this.datapacks[id];
-        this.logger.info(`Exported ${result.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
+        this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
+
+        return this.asExportResult(datapack);
+    }
+
+    private asExportResult(datapack: ExportDatapack): ExportResult {
         return {
-            parentKeys: Object.entries(datapack?.foreignKeys).map(([key, id]) => ({ key, id })),
-            datapack: result,
+            parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
+            datapack: datapack.data,
+            sourceKey: datapack.data.VlocityRecordSourceKey,
+            objectType: datapack.objectType
         };
     }
 

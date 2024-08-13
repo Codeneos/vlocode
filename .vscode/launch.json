@@ -26,7 +26,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/packages/cli/dist/cli.js",
             "name": "Debug: CLI (webpacked)",
-            "args": ["deploy", "-u", "dev10pro", "-v"],
+            "args": ["deploy", "-u", "dev10", "-v"],
             "outFiles": ["${workspaceRoot}/packages/cli/dist/**/*.js"],
             "preLaunchTask": "watch-cli-webpack",
             "smartStep": true,
@@ -42,7 +42,7 @@
                 "deploy",
                 "${workspaceRoot}/.test-deploy/activationError/OmniScript",
                 "-u",
-                "dev10pro"
+                "dev10"
             ],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
@@ -61,7 +61,35 @@
             "showAsyncStacks": true,
             "program": "${workspaceRoot}/packages/cli/lib/index.js",
             "name": "Debug: CLI-activate (node)",
-            "args": ["activate", "KPN SME/KPN Order Complete", "-u", "dev10pro", "--debug", "-v"],
+            "args": ["activate", "KPN SME/KPN Order Complete", "-u", "dev10", "--debug", "-v"],
+            "outFiles": [
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/cli/lib/**/*.js"
+            ],
+            "preLaunchTask": "watch-cli",
+            "smartStep": true,
+            "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "showAsyncStacks": true,
+            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "name": "Debug: CLI-export (node)",
+            "args": [
+                "export",
+                "001KO000006BVHGYA4",
+                "-u",
+                "dev10",
+                "--debug",
+                "-v",
+                "-d",
+                "export-defs.yaml",
+                "-e"
+            ],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
                 "${workspaceFolder}/packages/salesforce/lib/**/*.js",
