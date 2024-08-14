@@ -20,12 +20,12 @@
         "email": "peter@curlybracket.nl"
     },
     "devDependencies": {
-        "@lerna-lite/cli": "^1.6.0",
+        "@lerna-lite/cli": "^3.8.0",
         "@types/fs-extra": "^11",
         "@types/jest": "^29.5.11",
         "@types/node": "^20",
-        "@typescript-eslint/eslint-plugin": "^5.62.0",
-        "@typescript-eslint/parser": "^5.62.0",
+        "@typescript-eslint/eslint-plugin": "^8.1.0",
+        "@typescript-eslint/parser": "^8.1.0",
         "chalk": "^4.1.2",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^8.10.0",
@@ -41,7 +41,7 @@
         "js-yaml": "^4.1.0",
         "lint-staged": "^13.1.0",
         "log-symbols": "^4.1.0",
-        "prettier": "^2.6.2",
+        "prettier": "^3.3.3",
         "ts-jest": "^29.1.1",
         "typedoc": "^0.24.8",
         "typedoc-plugin-rename-defaults": "^0.7.0",
@@ -111,7 +111,7 @@
         "sync-ws-version": "node -e \"fs.writeFileSync('./package.json', JSON.stringify({ ...require('./package.json'), version: require('./lerna.json').version }, undefined, 4));\"",
         "test": "jest",
         "prepare": "husky install",
-        "lint": "eslint ./packages/*/src --no-error-on-unmatched-pattern --ext .ts",
+        "lint": "eslint ./packages/*/src/**/*.ts --no-error-on-unmatched-pattern",
         "docs": "pnpm sync-ws-version && typedoc"
     },
     "resolutions": {
@@ -136,5 +136,8 @@
     "lint-staged": {
         "*.ts": "eslint --fix",
         "*.{md,json,yaml}": "prettier --write"
+    },
+    "dependencies": {
+        "typescript-eslint": "^8.1.0"
     }
 }
