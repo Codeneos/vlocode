@@ -46,14 +46,6 @@ module.exports = {
         "@typescript-eslint/no-non-null-assertion": 0,
         "@typescript-eslint/ban-ts-comment": 0,
         "@typescript-eslint/no-namespace": 0,
-        "@typescript-eslint/ban-types": [
-            "error", {
-              "types": {
-                "Object": false
-              },
-              "extendDefaults": true
-            }
-        ],
         "no-cond-assign": 1,
         "prefer-spread": 1,
         "no-unused-vars": "off",

@@ -411,7 +411,7 @@ export class Container {
      * @param serviceGuid the instance guid of the object that owns the dependency
      * @param dependsOn instance of the dependency
      */
-    private trackServiceDependencies(serviceGuid: string, dependsOn: Object) {
+    private trackServiceDependencies(serviceGuid: string, dependsOn: object) {
         const dependencyGuid = dependsOn[ServiceGuidSymbol];
         if (isServiceProxy(dependsOn) && !dependsOn[serviceIsResolved]) {
             dependsOn[proxyTarget].once('resolved', instance => this.trackServiceDependencies(serviceGuid, instance));

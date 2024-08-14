@@ -22,7 +22,7 @@ export interface ServiceProxy<T extends object = object> {
  * @param prototype Prototype of the service instance
  * @returns Service proxy
  */
-export function createServiceProxy<T extends Object>(factory: () => T, prototype: any) : ServiceProxy<T> & T {
+export function createServiceProxy<T extends object>(factory: () => T, prototype: any) : ServiceProxy<T> & T {
     return new Proxy(new ProxyTarget(factory), {
         get(target, prop) {
             if (prop === serviceProxyMarker) {
@@ -83,8 +83,8 @@ export function isServiceProxy(obj: unknown) : obj is ServiceProxy {
  * Allows for listening to the resolved event before the service instance is created.
  * The service instance can be set using the setInstance method which will override the existing instance.
  */
-export class ProxyTarget<T extends Object> extends EventEmitter {
-    public instance?: T & Object;
+export class ProxyTarget<T extends object> extends EventEmitter {
+    public instance?: T & object;
     private static supportedEvents: (symbol | string)[] = [ 'resolved' ];
 
     constructor(private readonly factory: () => T) {

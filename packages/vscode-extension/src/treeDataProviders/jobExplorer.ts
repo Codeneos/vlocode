@@ -51,7 +51,7 @@ export default class JobDataProvider extends BaseDataProvider<JobNode> {
                 cancellable: true
             }, (progress, token) => this.datapackService.runYamlJob(jobCommand.type as vlocity.actionType, node.jobFile.fsPath, token));
             void vscode.window.showInformationMessage(`Successfully ${jobCommand.type.toLowerCase()}ed with ${path.basename(node.jobFile.fsPath)}`);
-        } catch(err) {
+        } catch {
             void vscode.window.showErrorMessage(`Running job file ${path.basename(node.jobFile.fsPath)} resulted in an error, see the log for details.`);
         }
     }

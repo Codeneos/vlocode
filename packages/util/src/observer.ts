@@ -9,7 +9,7 @@ export interface PropertyChangedEventArgs {
     oldValue?: any;
 }
 
-export type Observable<T extends Object> = T & { onPropertyChanged: vscodeModule.Event<PropertyChangedEventArgs> } & vscodeModule.Disposable;
+export type Observable<T extends object> = T & { onPropertyChanged: vscodeModule.Event<PropertyChangedEventArgs> } & vscodeModule.Disposable;
 
 export interface ArrayChangedEventArgs<T> {
     type: 'add' | 'remove' | 'replace';
@@ -24,7 +24,7 @@ export type ObservableArray<T> = Array<T> & { onArrayChanged: vscodeModule.Event
  * Creates an observer that watches all properties in the target objects, when ever a change is detected it fires the change event triggers
  * @param obj
  */
-export function observeObject<T extends Object>(obj: T) : Observable<T> {
+export function observeObject<T extends object>(obj: T) : Observable<T> {
     const eventEmitter = new vscode.EventEmitter<PropertyChangedEventArgs>();
     return new Proxy(obj, {
         get(target, property) {

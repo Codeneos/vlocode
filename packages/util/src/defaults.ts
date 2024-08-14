@@ -16,7 +16,7 @@ export function withDefaults<T extends object, D extends T>(obj: T | undefined, 
                 }
             }
             if (typeof value === 'object' && defaultValues[prop]) {
-                return withDefaults<Object, Object>(value, defaultValues[prop]);
+                return withDefaults<object, object>(value, defaultValues[prop]);
             }
             return value;
         },

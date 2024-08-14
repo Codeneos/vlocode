@@ -35,34 +35,21 @@
                             "type": "array"
                         }
                     ],
-                    "description": "The name of the file to export the object data to. The name can be a string which is evaluated as a template to include values from the dtapaack: ```yaml fileName: \"account_{Name}\" ``` All exported fields are written to this file in JSON format  and '.json' is appended to the file name if no extension is provided."
+                    "description": "When set the data in the field is exported into a separate file with the specified name. The name can be a string which is evaluated as a template to include values from the datapack: ```yaml fileName: \"data_{Name}.json\" ``` If no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
                 },
-                "filter": {
+                "folder": {
                     "anyOf": [
                         {
                             "type": "string"
                         },
                         {
-                            "additionalProperties": {
-                                "anyOf": [
-                                    {
-                                        "$ref": "#/definitions/alias-1030797743-2611-2701-1030797743-0-3796"
-                                    },
-                                    {
-                                        "type": "number"
-                                    },
-                                    {
-                                        "type": "boolean"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ]
+                            "items": {
+                                "type": "string"
                             },
-                            "type": "object"
+                            "type": "array"
                         }
                     ],
-                    "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` relatedObjectFilter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+                    "description": "The name of the file to export the object data to. The name can be a string which is evaluated as a template to include values from the dtapaack: ```yaml fileName: \"account_{Name}\" ``` All exported fields are written to this file in JSON format  and '.json' is appended to the file name if no extension is provided."
                 },
                 "ignoreFields": {
                     "description": "List of fields to exclude from the export.",
@@ -86,10 +73,124 @@
                     "additionalProperties": {
                         "anyOf": [
                             {
-                                "$ref": "#/definitions/ObjectFilter"
+                                "additionalProperties": false,
+                                "properties": {
+                                    "expandArray": {
+                                        "description": "When true expands an array value in the datapack to individual files.",
+                                        "type": "boolean"
+                                    },
+                                    "fileName": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "type": "array"
+                                            }
+                                        ],
+                                        "description": "When set the data in the field is exported into a separate file with the specified name. The name can be a string which is evaluated as a template to include values from the datapack: ```yaml fileName: \"data_{Name}.json\" ``` If no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
+                                    },
+                                    "filter": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "additionalProperties": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/definitions/alias-1030797743-2702-2792-1030797743-0-3887"
+                                                        },
+                                                        {
+                                                            "type": "number"
+                                                        },
+                                                        {
+                                                            "type": "boolean"
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        }
+                                                    ]
+                                                },
+                                                "type": "object"
+                                            }
+                                        ],
+                                        "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` relatedObjectFilter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+                                    },
+                                    "objectType": {
+                                        "description": "Type of SObject to which this filter applies",
+                                        "type": "string"
+                                    },
+                                    "processor": {
+                                        "description": "Processor function snippet to use for processing the field data before exporting.",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["filter", "objectType"],
+                                "type": "object"
                             },
                             {
-                                "$ref": "#/definitions/ObjectRelationship"
+                                "additionalProperties": false,
+                                "properties": {
+                                    "expandArray": {
+                                        "description": "When true expands an array value in the datapack to individual files.",
+                                        "type": "boolean"
+                                    },
+                                    "fileName": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "type": "array"
+                                            }
+                                        ],
+                                        "description": "When set the data in the field is exported into a separate file with the specified name. The name can be a string which is evaluated as a template to include values from the datapack: ```yaml fileName: \"data_{Name}.json\" ``` If no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
+                                    },
+                                    "filter": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "additionalProperties": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/definitions/alias-1030797743-2702-2792-1030797743-0-3887"
+                                                        },
+                                                        {
+                                                            "type": "number"
+                                                        },
+                                                        {
+                                                            "type": "boolean"
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        }
+                                                    ]
+                                                },
+                                                "type": "object"
+                                            }
+                                        ],
+                                        "description": "Optional filter to apply to the related object data to export."
+                                    },
+                                    "processor": {
+                                        "description": "Processor function snippet to use for processing the field data before exporting.",
+                                        "type": "string"
+                                    },
+                                    "relationshipName": {
+                                        "description": "Name of the relationship field on the parent object",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["relationshipName"],
+                                "type": "object"
                             },
                             {
                                 "type": "string"
@@ -138,83 +239,7 @@
             },
             "type": "object"
         },
-        "ObjectFilter": {
-            "additionalProperties": false,
-            "properties": {
-                "filter": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "additionalProperties": {
-                                "anyOf": [
-                                    {
-                                        "$ref": "#/definitions/alias-1030797743-2611-2701-1030797743-0-3796"
-                                    },
-                                    {
-                                        "type": "number"
-                                    },
-                                    {
-                                        "type": "boolean"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ]
-                            },
-                            "type": "object"
-                        }
-                    ],
-                    "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` relatedObjectFilter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
-                },
-                "objectType": {
-                    "description": "Type of SObject to which this filter applies",
-                    "type": "string"
-                }
-            },
-            "required": ["objectType", "filter"],
-            "type": "object"
-        },
-        "ObjectRelationship": {
-            "additionalProperties": false,
-            "properties": {
-                "filter": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "additionalProperties": {
-                                "anyOf": [
-                                    {
-                                        "$ref": "#/definitions/alias-1030797743-2611-2701-1030797743-0-3796"
-                                    },
-                                    {
-                                        "type": "number"
-                                    },
-                                    {
-                                        "type": "boolean"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ]
-                            },
-                            "type": "object"
-                        }
-                    ],
-                    "description": "Optional filter to apply to the related object data to export."
-                },
-                "relationshipName": {
-                    "description": "Name of the relationship field on the parent object",
-                    "type": "string"
-                }
-            },
-            "required": ["relationshipName"],
-            "type": "object"
-        },
-        "alias-1030797743-2611-2701-1030797743-0-3796": {
+        "alias-1030797743-2702-2792-1030797743-0-3887": {
             "anyOf": [
                 {
                     "type": "string"
@@ -223,7 +248,7 @@
                     "additionalProperties": {
                         "anyOf": [
                             {
-                                "$ref": "#/definitions/alias-1030797743-2611-2701-1030797743-0-3796"
+                                "$ref": "#/definitions/alias-1030797743-2702-2792-1030797743-0-3887"
                             },
                             {
                                 "type": "number"

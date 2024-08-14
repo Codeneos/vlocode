@@ -21,6 +21,8 @@
     },
     "devDependencies": {
         "@lerna-lite/cli": "^3.8.0",
+        "@lerna-lite/publish": "^3.8.0",
+        "@lerna-lite/version": "^3.8.0",
         "@types/fs-extra": "^11",
         "@types/jest": "^29.5.11",
         "@types/node": "^20",
@@ -111,7 +113,7 @@
         "sync-ws-version": "node -e \"fs.writeFileSync('./package.json', JSON.stringify({ ...require('./package.json'), version: require('./lerna.json').version }, undefined, 4));\"",
         "test": "jest",
         "prepare": "husky install",
-        "lint": "eslint ./packages/*/src/**/*.ts --no-error-on-unmatched-pattern",
+        "lint": "eslint ./packages/*/src --no-error-on-unmatched-pattern",
         "docs": "pnpm sync-ws-version && typedoc"
     },
     "resolutions": {

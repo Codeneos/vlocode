@@ -3,8 +3,7 @@ import 'reflect-metadata';
 
 export const RequiredMetadataKey = Symbol('[[ValidateRequiredParams]]');
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export const validate = Object.assign(function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<Function>) {
+export const validate = Object.assign(function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) {
     const originalMethod = descriptor.value!;
    
     descriptor.value = function (...args: unknown[]) {
@@ -17,7 +16,7 @@ export const validate = Object.assign(function (target: any, propertyKey: string
         return originalMethod.apply(this, args);
     };
 }, {
-    required: function(target: Object, propertyKey: string | symbol, parameterIndex: number) {
+    required: function(target: object, propertyKey: string | symbol, parameterIndex: number) {
         const requiredParameters: number[] = Reflect.getOwnMetadata(RequiredMetadataKey, target, propertyKey) || [];
         requiredParameters.push(parameterIndex);
         Reflect.defineMetadata(RequiredMetadataKey, requiredParameters, target, propertyKey);

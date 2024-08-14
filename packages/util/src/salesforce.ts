@@ -5,7 +5,7 @@ import { cacheFunction } from './cache';
  * Create a record proxy around a SF record removing any namespace prefixes it may contain and making all fields accessible with case-insensitive keys.
  * @param record SF Like record object
  */
-export function createRecordProxy<T extends Object>(record: T, writable: boolean = false) : T & { [key: string] : any } {
+export function createRecordProxy<T extends object>(record: T, writable: boolean = false) : T & { [key: string] : any } {
     const getPropertyKey = (target: T, name: string | number | symbol) => Object.keys(target).find(key => {
         return stringEquals(key, name.toString(), true) || stringEquals(removeNamespacePrefix(key), name.toString(), true);
     });
