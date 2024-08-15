@@ -4,7 +4,6 @@ import { RetrieveManifestOptions, SalesforceDeployService } from "./salesforceDe
 import { SalesforcePackage, SalesforcePackageComponent } from "./deploymentPackage";
 import { MetadataRegistry, MetadataType } from "./metadataRegistry";
 import { RetrieveResultComponent } from "./deploy";
-import { outputFile } from "fs-extra";
 
 /**
  * Interface for a strategy to determine if two objects are equal. Used in the delta strategy to determine if a component has changed.
@@ -203,9 +202,9 @@ export class RetrieveDeltaStrategy {
         });
     }
 
-    private isPackageNewer(a: Buffer | string, b: Buffer | string): boolean {
-        const localMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
-        const orgMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
+    private isPackageNewer(current: Buffer | string, target: Buffer | string): boolean {
+        const localMeta = XML.parse(target, { arrayMode: false, ignoreAttributes: true });
+        const orgMeta = XML.parse(current, { arrayMode: false, ignoreAttributes: true });
 
         const localVersion = parseFloat(localMeta.InstalledPackage?.versionNumber);
         const orgVersion = parseFloat(orgMeta.InstalledPackage?.versionNumber);
