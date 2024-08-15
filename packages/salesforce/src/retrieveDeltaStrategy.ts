@@ -202,9 +202,9 @@ export class RetrieveDeltaStrategy {
         });
     }
 
-    private isPackageNewer(current: Buffer | string, target: Buffer | string): boolean {
-        const localMeta = XML.parse(target, { arrayMode: false, ignoreAttributes: true });
-        const orgMeta = XML.parse(current, { arrayMode: false, ignoreAttributes: true });
+    private isPackageNewer(a: Buffer | string, b: Buffer | string): boolean {
+        const orgMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
+        const localMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
 
         const localVersion = parseFloat(localMeta.InstalledPackage?.versionNumber);
         const orgVersion = parseFloat(orgMeta.InstalledPackage?.versionNumber);
@@ -227,8 +227,8 @@ export class RetrieveDeltaStrategy {
     private isMetaXmlEqual(a: Buffer | string, b: Buffer | string): boolean {
         // Note: this function does not yet properly deal with changes in the order of XML elements in an array
         // Parse XML and filter out attributes as they are not important for comparison of metadata
-        const localMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
-        const orgMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
+        const orgMeta = XML.parse(a, { arrayMode: false, ignoreAttributes: true });
+        const localMeta = XML.parse(b, { arrayMode: false, ignoreAttributes: true });
 
         if (orgMeta.packageVersions && !localMeta.packageVersions) {
             // If the org data has package versions details but the local data does not, copy the package versions details;
