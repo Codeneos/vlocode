@@ -4,8 +4,8 @@ import * as fs from 'fs-extra';
 import ZipArchive from 'jszip';
 import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
 import { FileProperties, RetrieveResult } from '../connection';
-import { SalesforcePackageComponentFile } from '../deploymentPackage';
-import { PackageManifest } from './packageXml';
+import { PackageManifest } from './maifest';
+import { SalesforcePackageComponentFile } from './package';
 
 /**
  * Extends typings on the JSZipObject with internal _data object

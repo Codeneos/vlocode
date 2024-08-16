@@ -3,7 +3,7 @@ import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger }
 import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
-import { SalesforcePackageBuilder, SalesforcePackageType } from './deploymentPackageBuilder';
+import { SalesforcePackageBuilder, SalesforcePackageType } from './deploy/packageBuilder';
 import { QueryService, QueryResult } from './queryService';
 import { RecordBatch } from './recordBatch';
 import { SalesforceDeployService } from './salesforceDeployService';

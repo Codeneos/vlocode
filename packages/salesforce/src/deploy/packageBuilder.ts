@@ -5,10 +5,11 @@ import ZipArchive from 'jszip';
 import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals } from '@vlocode/util';
 
-import { PackageManifest } from './deploy/packageXml';
-import { SalesforcePackage, SalesforcePackageComponent } from './deploymentPackage';
-import { MetadataRegistry, MetadataType } from './metadataRegistry';
-import { RetrieveDeltaStrategy } from './retrieveDeltaStrategy';
+import { PackageManifest } from './maifest';
+import { SalesforcePackage, SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
+import { MetadataRegistry, MetadataType } from '../metadataRegistry';
+import { RetrieveDeltaStrategy } from '../retrieveDeltaStrategy';
+import { Minimatch } from 'minimatch';
 
 export enum SalesforcePackageType {
     /**
@@ -49,6 +50,67 @@ interface MetadataObject {
     data: Record<string, unknown>;
 }
 
+interface ReplacementDetail {
+    /**
+     * Token to replace in the file content, all text matching this token will be replaced with the replacement value.
+     */
+    token: string;
+    /**
+     * Replacement value or function to generate replacement value
+     */
+    replacement: string | ((file: string, data: string | Buffer) => string);
+    /**
+     * Match file pattern to apply the replacement to.
+     */
+    filePatterns?: string | string[];
+    /**
+     * Match metadata type to apply the replacement to.
+     */
+    metadataTypes?: string | string[];
+}
+
+class TokenReplacement {
+    private filePatterns?: Minimatch[];
+    private metadataTypes?: string[];
+
+    constructor(public detail: ReplacementDetail) {
+        const filePatterns = detail.filePatterns 
+            ? (Array.isArray(detail.filePatterns) ? detail.filePatterns : [ detail.filePatterns ])
+            : undefined;
+        const metadataTypes = detail.metadataTypes 
+            ? (Array.isArray(detail.metadataTypes) ? detail.metadataTypes : [ detail.metadataTypes ]) 
+            : undefined;
+        this.filePatterns = filePatterns?.map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
+        this.metadataTypes = metadataTypes?.map(pattern => pattern.toLocaleLowerCase());
+    }
+    
+    public async isMatch(entry: SalesforcePackageComponentFile) {
+        if (this.filePatterns) {
+            if (!this.filePatterns.some(pattern => pattern.match(entry.packagePath))) {
+                return false;
+            }
+        }
+        if (this.metadataTypes) {
+            const metadataType = entry.componentType.toLocaleLowerCase();
+            if (!this.metadataTypes.includes(metadataType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public async apply(data: Buffer | string, file: string) {
+        const replacementValue = typeof this.detail.replacement === 'function' 
+            ? this.detail.replacement(file, data) 
+            : this.detail.replacement;
+
+        if (typeof data === 'string') {
+            return data.replace(this.detail.token, replacementValue);
+        }
+        return Buffer.from(data.toString().replace(this.detail.token, replacementValue));
+    }
+}
+
 @injectable()
 export class SalesforcePackageBuilder {
 
@@ -61,6 +123,8 @@ export class SalesforcePackageBuilder {
     private readonly fs: FileSystem;
     private readonly parsedFiles = new Set<string>();
     private readonly composedData = new Map<string, MetadataObject>();
+    private readonly replacements = new Array<TokenReplacement>();
+
     @injectable.property private readonly metadataRegistry: MetadataRegistry;
     @injectable.property private readonly logger: Logger;
 
@@ -71,6 +135,22 @@ export class SalesforcePackageBuilder {
     ) {
         this.fs = fs ? new CachedFileSystemAdapter(fs) : fs!;
         this.mdPackage = new SalesforcePackage(this.apiVersion);
+    }
+
+    /**
+     * Add a replacement token to the package builder. When building the package the token will be replaced with the replacement value.
+     * Replacements are applied to all files in the package and can target specific files or metadata types or be applied globally.
+     * @usage
+     * ```typescript
+     * builder.addReplacement({
+     *    token: `$CURRENT_USER`
+     *    metadataTypes:
+     * });
+     * @remark Avoid applying replacements globally as they can have unintended side effects.
+     * @param replacement 
+     */
+    public addReplacement(replacement: ReplacementDetail) {
+        this.replacements.push(new TokenReplacement(replacement));
     }
 
     /**
@@ -279,17 +359,26 @@ export class SalesforcePackageBuilder {
         if (this.type === SalesforcePackageType.destruct) {
             this.mdPackage.addDestructiveChange(componentType, componentName);
         } else {
-            const packagePath = await this.getPackagePath(file, metadataType);
-            this.mdPackage.add({
+            const packageEntry = {
                 componentType,
                 componentName,
-                packagePath,
+                packagePath: await this.getPackagePath(file, metadataType),
                 data: await this.fs.readFile(file),
                 fsPath: file
-            });
+            };
+            await this.applyReplacements(packageEntry);
+            this.mdPackage.add(packageEntry);
         }
 
         this.logger.verbose(`Added %s (%s) as [%s]`, path.basename(file), componentName, chalk.green(metadataType.name));
+    }
+
+    private async applyReplacements(entry: SalesforcePackageComponentFile & { data: Buffer | string }) {
+        for (const replacement of this.replacements) {
+            if (await replacement.isMatch(entry)) {
+                entry.data = await replacement.apply(entry.data, entry.packagePath);
+            }
+        }
     }
 
     /**

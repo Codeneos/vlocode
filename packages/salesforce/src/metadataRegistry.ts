@@ -1,7 +1,7 @@
 import registryData from './registry/metadataRegistry.json';
 import { MetadataType as RegistryMetadataType } from './registry/types';
 import { singletonMixin } from '@vlocode/util';
-import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
+import { injectable, Logger } from '@vlocode/core';
 import urlFormats from './metadataUrls.json';
 
 export interface MetadataUrlFormat {

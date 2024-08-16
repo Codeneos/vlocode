@@ -1,6 +1,6 @@
 import 'jest';
 
-import { SalesforcePackageBuilder, SalesforcePackageType } from '../deploymentPackageBuilder';
+import { SalesforcePackageBuilder, SalesforcePackageType } from '../deploy/packageBuilder';
 import { Logger, MemoryFileSystem, container } from '@vlocode/core';
 import { XML } from '@vlocode/util';
 

@@ -199,8 +199,10 @@ export class PackageManifest {
         const manifest = new PackageManifest();
         this.metadataMembers.forEach((members, type) => {
             if (typeof metadataTypes === 'string') { 
+                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                 metadataTypes === type && members.forEach(member => manifest.add(type, member));
             } else if (Array.isArray(metadataTypes)) { 
+                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                 metadataTypes.includes(type) && members.forEach(member => manifest.add(type, member));
             } else {
                 members.forEach(member => metadataTypes(type, member) && manifest.add(type, member));

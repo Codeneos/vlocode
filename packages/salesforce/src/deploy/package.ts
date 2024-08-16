@@ -3,7 +3,7 @@ import * as path from 'path';
 import ZipArchive from 'jszip';
 import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEqualsIgnoreCase } from '@vlocode/util';
 import { FileSystem } from '@vlocode/core';
-import { PackageManifest } from './deploy/packageXml';
+import { PackageManifest } from './maifest';
 import { isPromise } from 'util/types';
 
 export interface SalesforcePackageComponent {
@@ -144,7 +144,7 @@ export class SalesforcePackage {
      * @param component Component specification for which to get the files
      */
     public *getComponentFiles(component: SalesforcePackageComponent) : Generator<SalesforcePackageEntry> {
-        for (const [path, entry] of this.packageData.entries()) {
+        for (const entry of this.packageData.values()) {
             if (entry.componentName === component.componentName && 
                 entry.componentType === component.componentType) {
                 yield entry;
