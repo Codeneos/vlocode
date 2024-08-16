@@ -1,9 +1,9 @@
 import { injectable, LifecyclePolicy, Logger } from "@vlocode/core";
 import { CancellationToken, deepCompare, remove, XML } from "@vlocode/util";
 import { RetrieveManifestOptions, SalesforceDeployService } from "./salesforceDeployService";
-import { SalesforcePackage, SalesforcePackageComponent } from "./deploymentPackage";
 import { MetadataRegistry, MetadataType } from "./metadataRegistry";
 import { RetrieveResultComponent } from "./deploy";
+import { SalesforcePackage, SalesforcePackageComponent } from "./deploy/package";
 
 /**
  * Interface for a strategy to determine if two objects are equal. Used in the delta strategy to determine if a component has changed.
@@ -244,8 +244,8 @@ export class RetrieveDeltaStrategy {
     }
 
     private isStringEqual(a: Buffer | string, b: Buffer | string): boolean {
-        a = (typeof a === 'string' ? a : a.toString('utf8')).trim();
-        b = (typeof b === 'string' ? b : b.toString('utf8')).trim();
+        a = (typeof a === 'string' ? a : a.toString('utf8')).replace(/\r\n/g, '\n').trim();
+        b = (typeof b === 'string' ? b : b.toString('utf8')).replace(/\r\n/g, '\n').trim();
         return a.localeCompare(b) === 0;
     }
 
