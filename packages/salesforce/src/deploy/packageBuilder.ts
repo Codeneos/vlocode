@@ -54,7 +54,7 @@ interface ReplacementDetail {
     /**
      * Token to replace in the file content, all text matching this token will be replaced with the replacement value.
      */
-    token: string;
+    token: string | RegExp;
     /**
      * Replacement value or function to generate replacement value
      */
@@ -62,11 +62,11 @@ interface ReplacementDetail {
     /**
      * Match file pattern to apply the replacement to.
      */
-    filePatterns?: string | string[];
+    files?: string | string[];
     /**
      * Match metadata type to apply the replacement to.
      */
-    metadataTypes?: string | string[];
+    types?: string | string[];
 }
 
 class TokenReplacement {
@@ -74,11 +74,11 @@ class TokenReplacement {
     private metadataTypes?: string[];
 
     constructor(public detail: ReplacementDetail) {
-        const filePatterns = detail.filePatterns 
-            ? (Array.isArray(detail.filePatterns) ? detail.filePatterns : [ detail.filePatterns ])
+        const filePatterns = detail.files 
+            ? (Array.isArray(detail.files) ? detail.files : [ detail.files ])
             : undefined;
-        const metadataTypes = detail.metadataTypes 
-            ? (Array.isArray(detail.metadataTypes) ? detail.metadataTypes : [ detail.metadataTypes ]) 
+        const metadataTypes = detail.types 
+            ? (Array.isArray(detail.types) ? detail.types : [ detail.types ]) 
             : undefined;
         this.filePatterns = filePatterns?.map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
         this.metadataTypes = metadataTypes?.map(pattern => pattern.toLocaleLowerCase());

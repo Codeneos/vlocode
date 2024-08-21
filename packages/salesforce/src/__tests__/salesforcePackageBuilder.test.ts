@@ -502,5 +502,40 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.list('Dashboard').length).toEqual(2);
             });
         });
+        describe('#replacements', () => {
+            it('should apply replacements when defined as RegEx', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                packageBuilder.addReplacement({
+                    token: /<(apiVersion)>[0-9]{2}.0<\/apiVersion>/g,
+                    replacement: '<$1>75.0</$1>',
+                    files: '**/*-meta.xml'
+                });
+                await packageBuilder.addFiles([ 'src' ]);
+
+                const buildPackage = packageBuilder.getPackage();
+                const classMetaXml = buildPackage.getPackageData('classes/myClass.cls-meta.xml')?.data?.toString();
+                const triggeretaXml = buildPackage.getPackageData('triggers/myTrigger.trigger-meta.xml')?.data?.toString();
+
+                expect(classMetaXml).toEqual('<?xml version="1.0" encoding="UTF-8"?><ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>75.0</apiVersion></ApexClass>');
+                expect(triggeretaXml).toEqual('<?xml version="1.0" encoding="UTF-8"?><ApexTrigger xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>75.0</apiVersion></ApexTrigger>');
+            });
+            it('should apply replacements only to matching metadata types', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                packageBuilder.addReplacement({
+                    token: /<(apiVersion)>[0-9]{2}.0<\/apiVersion>/g,
+                    replacement: '<$1>75.0</$1>',
+                    files: '**/*-meta.xml',
+                    types: ['ApexClass']
+                });
+                await packageBuilder.addFiles([ 'src' ]);
+
+                const buildPackage = packageBuilder.getPackage();
+                const classMetaXml = buildPackage.getPackageData('classes/myClass.cls-meta.xml')?.data?.toString();
+                const triggeretaXml = buildPackage.getPackageData('triggers/myTrigger.trigger-meta.xml')?.data?.toString();
+
+                expect(classMetaXml).toEqual('<?xml version="1.0" encoding="UTF-8"?><ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>75.0</apiVersion></ApexClass>');
+                expect(triggeretaXml).toEqual('<?xml version="1.0" encoding="UTF-8"?><ApexTrigger xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>51.0</apiVersion></ApexTrigger>');
+            });
+        });
     });
 });
