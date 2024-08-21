@@ -33,6 +33,8 @@ type FieldRef = ObjectRef & { field: string };
 @injectable()
 export class DatapackExpander {
 
+    private static datapackFileName = 'DataPack.json';
+
     private fieldTypeExtension = {
         json: 'json',
         array: 'json',
@@ -68,21 +70,24 @@ export class DatapackExpander {
     ): DatapackExpandResult {
         this.logger.info(`Expanding: ${datapack.VlocityRecordSourceKey}`);
         const timer = new Timer();
-
+        
         const itemRef = {
             objectType: datapack.VlocityRecordSObjectType,
             scope: context?.scope
         };
 
-        const folderFormat = this.definitions.getFolder(itemRef) 
-            ?? substringAfter(datapack.VlocityRecordSourceKey, '/');
+        const baseSourceKey = substringAfter(datapack.VlocityRecordSourceKey, '/').replace(/\/+/g, '_');
+        const fileNameFormat = this.definitions.getFileName(itemRef) ?? baseSourceKey;
+        const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
+        
+        const folderFormat = this.definitions.getFolder(itemRef) ?? baseSourceKey;
         const folder = path.join(
             this.normalizePath(datapack.VlocityRecordSObjectType),
             this.evalPathFormat(folderFormat, { context: datapack })
         );
         
         const data: Record<string, unknown> = {};
-        const files = new DatapackFiles(folder, this.logger);
+        const files = new DatapackFiles(baseName, folder, this.logger);
 
         for (const field of Object.keys(datapack).sort()) {
             if (this.datapackStandardFields.includes(field)) {
@@ -118,11 +123,7 @@ export class DatapackExpander {
             }
         }
 
-        const fileNameFormat = this.definitions.getFileName(itemRef) ?? '{VlocityRecordSourceKey}';
-        const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
-        const datapackFileName = `${baseName}_DataPack.json`;
-        files.addFile(datapackFileName, data);
-
+        files.addFile(DatapackExpander.datapackFileName, data);
         this.logger.info(`Expanded ${datapack.VlocityRecordSourceKey} - ${timer.toString("ms")}`);
 
         return {
@@ -166,12 +167,14 @@ export class DatapackExpander {
     }
 
     private normalizePath(path: string, extension?: string) {
-        if (extension && !path.includes('.')) {
-            path += `.${extension}`;
+        const normalized = path.trim()
+            .replace(/[^\s\w.\\/-]+/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+        if (extension) {
+            return `${normalized}.${extension}`;
         }
-        return path.trim().replace(/[^\w\\-\\.]+/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_+|_+$/g, '');
+        return normalized;
     }
 }
 
@@ -179,6 +182,7 @@ class DatapackFiles {
     private files: Record<string, Buffer | string> = {};
 
     constructor(
+        public readonly filePrefix: string, 
         public readonly folder: string, 
         private readonly logger: Logger
     ) { }
@@ -191,14 +195,16 @@ class DatapackFiles {
     }
 
     public getFiles(options?: { withFolder?: boolean }): Record<string, Buffer | string> {
-        if (options?.withFolder) {
-            const files: Record<string, Buffer | string> = {};
-            for (const [fileName, data] of Object.entries(this.files)) {
-                files[path.join(this.folder, fileName)] = data;
-            }
-            return files;
+        const files: Record<string, Buffer | string> = {};
+        for (const [name, data] of Object.entries(this.files)) {
+            files[this.getFileName(name, options)] = data;
         }
-        return this.files; 
+        return files;
+    }
+
+    private getFileName(name: string, options?: { withFolder?: boolean }): string {
+        const fileName = this.filePrefix ? `${this.filePrefix}_${name}` : name;
+        return options?.withFolder ? path.join(this.folder, fileName) : fileName;
     }
 
     private getFileData(value: unknown): Buffer | string {
