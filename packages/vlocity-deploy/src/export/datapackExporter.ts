@@ -2,7 +2,7 @@ import { DescribeSObjectResult, Field, SalesforceLookupService, SalesforceSchema
 import { ObjectFilter, ObjectRelationship } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, VlocityMatchingKeyService } from "@vlocode/vlocity";
 import { forEachAsyncParallel, formatString, mapAsyncParallel, Timer } from "@vlocode/util";
-import { DistinctLogger, Logger, injectable } from "@vlocode/core";
+import { Logger, injectable } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 import { randomUUID } from "crypto";
@@ -83,7 +83,6 @@ export class DatapackExporter {
 
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
-    private distinctLogger = new DistinctLogger(this.logger);
 
     /**
      * Maximum depth to export objects, when the depth is reached the 
@@ -107,6 +106,7 @@ export class DatapackExporter {
         private readonly vlocityMatchingKeys: VlocityMatchingKeyService,
         private readonly logger: Logger,
     ) {
+        this.logger = logger.distinct();
         this.lookupService.enableLookupCache(true);
     }
 
@@ -506,7 +506,7 @@ export class DatapackExporter {
         }
 
         // If matching key fields are empty use auto-generated matching key
-        const allFieldsEmpty = matchingKeyFields.every(field => data[field] === undefined);
+        const allFieldsEmpty = matchingKeyFields.every(field => data[field] === '' || data[field] === undefined || data[field] === null);
         if (allFieldsEmpty) {
             this.logger.warn(`${data['id']} (${describe.name}) all matching key fields empty -- using auto-generated matching key instead`);
             return this.getAutoMatchingKey(describe, data['id'], scope);
@@ -569,7 +569,7 @@ export class DatapackExporter {
         ) {
             try {
                 return JSON.parse(value);
-            } catch (e) {
+            } catch {
                 // Ignore errors when not valid JSON
             }
         }
@@ -583,12 +583,16 @@ export class DatapackExporter {
 
         const sfMatchingKey = (await this.vlocityMatchingKeys.getMatchingKeyDefinition(type.name)).fields;
         if (sfMatchingKey.length > 0) {
-            this.distinctLogger.debug(`Using Vlocity DR Matching keys for: ${type.name}`);
-            return sfMatchingKey;
+            this.logger.debug(`Using Vlocity DR Matching keys for: ${type.name}`);
+            return this.validateFieldList(type, sfMatchingKey);
         }
 
         const detectedFields = this.guessMatchingFields(type);
-        this.distinctLogger.warn(`No matching fields defined for ${type.name} - using fields: ${detectedFields}`);
+        if (detectedFields.length > 0) {
+            this.logger.warn(`No matching fields defined for ${type.name} - using fields: ${detectedFields}`);
+        } else {
+            this.logger.warn(`No matching fields defined for ${type.name} - no unique fields found`);
+        }
         return detectedFields;
     }
 
