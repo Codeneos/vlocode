@@ -12,7 +12,7 @@
         "lib": "./lib"
     },
     "engines": {
-        "node": ">=16.0.0"
+        "node": ">=20.0.0"
     },
     "scripts": {
         "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './src/**/*.{d.ts,ts.map,js.map,js}'",

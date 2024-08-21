@@ -15,7 +15,7 @@
         "lib": "./lib"
     },
     "engines": {
-        "node": ">=16.0.0"
+        "node": ">=20.0.0"
     },
     "config": {
         "metadata": "https://raw.githubusercontent.com/forcedotcom/source-deploy-retrieve/main/src/registry"
@@ -75,6 +75,7 @@
         "jsforce": "1.11.0",
         "jszip": "^3.7.0",
         "luxon": "^3.4.4",
+        "minimatch": "^9.0.3",
         "tough-cookie": "^4.1.2"
     },
     "publisher": "curlybracket",

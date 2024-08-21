@@ -81,14 +81,10 @@
             "name": "Debug: CLI-export (node)",
             "args": [
                 "export",
-                "001KO000006BVHGYA4",
-                "-u",
-                "dev10",
-                "--debug",
-                "-v",
-                "-d",
-                "export-defs.yaml",
-                "-e"
+                "-q", "select Id from Acount Limit 1", 
+                "-u", "dev10",
+                "-d", "export-defs.yaml",
+                "--expand"
             ],
             "outFiles": [
                 "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",

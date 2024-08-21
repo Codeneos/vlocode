@@ -15,7 +15,8 @@ module.exports = {
         ".vscode/**/*",
         ".vscode-test/**/*",
         "packages/vscode-extension/build",
-        "jest.config.ts"
+        "jest.config.ts",
+        "**/*/jest.config.ts"
     ],
     extends: [
         "eslint:recommended",
