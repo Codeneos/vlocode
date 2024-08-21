@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.27.0](https://github.com/Codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
+
+### Bug Fixes
+
+* line ending differences in text files can cause delta compare to fail ([595ccb9](https://github.com/Codeneos/vlocode/commit/595ccb984616ed32dceb98087994cdae2b710b01))
+* order of arguments in isPackageNewer function ([4850446](https://github.com/Codeneos/vlocode/commit/4850446a640d776a6f502f87c79ad5c7f62dee93))
+
+### Features
+
+* add replacement token support to deployment package builder ([467c586](https://github.com/Codeneos/vlocode/commit/467c586d67f6ec3947fd80570ec0655cbfa777a9))
+* add support for replacement tokens ([2332df5](https://github.com/Codeneos/vlocode/commit/2332df56e04de89b89f6c020de00bc0c4ae212b5))
+
 ## [1.26.2](https://github.com/Codeneos/vlocode/compare/v1.26.1...v1.26.2) (2024-08-15)
 
 ### Bug Fixes

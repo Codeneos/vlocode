@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.27.0](https://github.com/Codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
+
+### Bug Fixes
+
+* datapack expander file and folder formats ([38e843f](https://github.com/Codeneos/vlocode/commit/38e843ff11a9585e6ca4d3b9974b007ad3ff62a5))
+* datapack filenames should not contain path seperators ([ec7b6d2](https://github.com/Codeneos/vlocode/commit/ec7b6d25e2f47bbd961ff62e7bbb747ee1e32b9f))
+* expanded datapacks inner file references are missing prefix ([ca9c483](https://github.com/Codeneos/vlocode/commit/ca9c4835957ca883db462c6d9dfa7708b221774b))
+
+### Features
+
+* support setting export query for vlocode CLI export command ([b15cc93](https://github.com/Codeneos/vlocode/commit/b15cc938678c1b131d0a1da1568bc63786c51757))
+
 ## [1.26.2](https://github.com/Codeneos/vlocode/compare/v1.26.1...v1.26.2) (2024-08-15)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

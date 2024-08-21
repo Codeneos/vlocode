@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.27.0](https://github.com/Codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
+
+### Features
+
+* add replacement token support to deployment package builder ([467c586](https://github.com/Codeneos/vlocode/commit/467c586d67f6ec3947fd80570ec0655cbfa777a9))
+
 ## [1.26.1](https://github.com/Codeneos/vlocode/compare/v1.26.0...v1.26.1) (2024-08-14)
 
 **Note:** Version bump only for package @vlocode/util

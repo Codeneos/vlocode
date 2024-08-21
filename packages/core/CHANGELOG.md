@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.27.0](https://github.com/Codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
+
+### Features
+
+* make it easier to create distinct loggers ([a826577](https://github.com/Codeneos/vlocode/commit/a8265776c6c2daa9e4c6e448f82a5716f1a7f202))
+
 ## [1.26.1](https://github.com/Codeneos/vlocode/compare/v1.26.0...v1.26.1) (2024-08-14)
 
 **Note:** Version bump only for package @vlocode/core

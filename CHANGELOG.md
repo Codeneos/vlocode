@@ -4,6 +4,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.27.0](https://github.com/codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
+
+### Bug Fixes
+
+* datapack expander file and folder formats ([38e843f](https://github.com/codeneos/vlocode/commit/38e843ff11a9585e6ca4d3b9974b007ad3ff62a5))
+* datapack filenames should not contain path seperators ([ec7b6d2](https://github.com/codeneos/vlocode/commit/ec7b6d25e2f47bbd961ff62e7bbb747ee1e32b9f))
+* expanded datapacks inner file references are missing prefix ([ca9c483](https://github.com/codeneos/vlocode/commit/ca9c4835957ca883db462c6d9dfa7708b221774b))
+* line ending differences in text files can cause delta compare to fail ([595ccb9](https://github.com/codeneos/vlocode/commit/595ccb984616ed32dceb98087994cdae2b710b01))
+* order of arguments in isPackageNewer function ([4850446](https://github.com/codeneos/vlocode/commit/4850446a640d776a6f502f87c79ad5c7f62dee93))
+
+### Features
+
+* add replacement token support to deployment package builder ([467c586](https://github.com/codeneos/vlocode/commit/467c586d67f6ec3947fd80570ec0655cbfa777a9))
+* add support for replacement tokens ([2332df5](https://github.com/codeneos/vlocode/commit/2332df56e04de89b89f6c020de00bc0c4ae212b5))
+* make it easier to create distinct loggers ([a826577](https://github.com/codeneos/vlocode/commit/a8265776c6c2daa9e4c6e448f82a5716f1a7f202))
+* support --query argument for export of datapacks from CLI ([f7e2eee](https://github.com/codeneos/vlocode/commit/f7e2eeee2114cf60caa23d8b83fdf315d2a21e40))
+* support setting export query for vlocode CLI export command ([b15cc93](https://github.com/codeneos/vlocode/commit/b15cc938678c1b131d0a1da1568bc63786c51757))
+
 ## [1.26.2](https://github.com/codeneos/vlocode/compare/v1.26.1...v1.26.2) (2024-08-15)
 
 ### Bug Fixes
