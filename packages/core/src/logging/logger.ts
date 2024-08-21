@@ -1,4 +1,4 @@
-import { LogLevel } from '../logging';
+import { DistinctLogger, LogLevel } from '../logging';
 import { isPromise } from '@vlocode/util';
 import LogManager from './logManager';
 import { LogEntry, LoggerEntry } from './logEntry';
@@ -142,4 +142,11 @@ export class Logger {
         }
     }
 
+    /**
+     * Returns a new logger that wraps the current logger and filters out duplicate log messages.
+     * @returns A new `DistinctLogger` instance.
+     */
+    public distinct() {
+        return new DistinctLogger(this);
+    }
 }
