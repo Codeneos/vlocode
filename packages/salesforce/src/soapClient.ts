@@ -75,6 +75,11 @@ const SoapRequestHeaderMapping = {
 export class SoapClient {
 
     /**
+     * Default API client name used for new SOAP clients.
+     */
+    public static defaultClientName = 'Vlocode SOAP client';
+
+    /**
      * Retry delay in MS after which a retryable SOAP fault is retried.
      */
     public retryDelay = 3000;
@@ -88,12 +93,7 @@ export class SoapClient {
      * API client name used in the SOAP request to identify the client making the request.
      * Defaults to {@link SoapClient.defaultClientName}
      */
-    public clientName: string = SoapClient.defaultClientName;
-
-    /**
-     * Default API client name used for new SOAP clients.
-     */
-    public static defaultClientName = 'Vlocode SOAP client';
+    public clientName = SoapClient.defaultClientName;
 
     private transport: HttpTransport;
 

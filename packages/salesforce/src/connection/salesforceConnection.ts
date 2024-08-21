@@ -125,8 +125,8 @@ export class SalesforceConnection extends Connection {
      */
     private logger!: Logger;
 
-    public metadata!: MetadataApi & Metadata;
-    public oauth2!: SalesforceOAuth2;
+    declare metadata: MetadataApi & Metadata;
+    declare oauth2: SalesforceOAuth2;
 
     private _transport: Transport;
     private _refreshDelegate!: RefreshDelegate;

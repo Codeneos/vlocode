@@ -5,8 +5,7 @@ import { Logger, injectable } from '@vlocode/core';
 import { Timer, removeAll, stringEqualsIgnoreCase, Iterable } from '@vlocode/util';
 import { CancellationToken, mapAsyncParallel, wait } from '@vlocode/util';
 import { DeployOptions, SalesforceConnectionProvider, DeployResult } from './connection';
-import { DeploymentProgress, PackageManifest, RetrieveResultPackage } from './deploy';
-import { SalesforcePackage } from './deploymentPackage';
+import { DeploymentProgress, PackageManifest, RetrieveResultPackage, SalesforcePackage } from './deploy';
 import { MetadataRegistry } from './metadataRegistry';
 
 export interface RetrieveManifestOptions { 

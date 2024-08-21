@@ -1,7 +1,7 @@
 import { LogManager , container } from '@vlocode/core';
 import { AsyncEventEmitter, CancellationToken, getErrorMessage } from '@vlocode/util';
 import { DeployOptions, DeployResult, DeployResultDetails, DeployStatus, FailureDeployMessage, SalesforceConnection, SalesforceConnectionProvider } from './connection';
-import { SalesforcePackage } from './deploymentPackage';
+import { SalesforcePackage } from './deploy';
 
 export interface SalesforceDeploymentEvents {
     progress: DeployProgress;
@@ -182,10 +182,10 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         try {
             try {
                 this.lastStatus = await this.connection.metadata.cancelDeploy(this.deploymentId);
-            } catch(err) {
+            } catch {
                 this.lastStatus = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
             }
-        } catch(err) {
+        } catch {
             // Ignore errors that occur during cancellation
         } finally {
             void this.emit('cancel', this.lastStatus);

@@ -8,7 +8,6 @@
  export * from './deploy';
  export * from './schema';
  export * from './types';
- export * from './deploymentPackage';
  export * from './deploy/packageBuilder';
  export * from './developerLog';
  export * from './developerLogs';

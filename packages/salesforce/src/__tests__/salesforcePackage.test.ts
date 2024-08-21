@@ -2,7 +2,7 @@ import 'jest';
 
 import { Logger, MemoryFileSystem, container } from '@vlocode/core';
 import { XML } from '@vlocode/util';
-import { SalesforcePackage } from '../deploymentPackage';
+import { SalesforcePackage } from '../deploy';
 
 function buildXml(rootName: string, data?: any) {
     return XML.stringify({

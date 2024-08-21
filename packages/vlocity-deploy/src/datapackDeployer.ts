@@ -35,15 +35,17 @@ export type DatapackFilter =
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeployer {
 
-    private readonly container = (this.creatingContainer ?? container).new();
-    private readonly specRegistry = this.container.get(DatapackDeploymentSpecRegistry);
+    private readonly container: Container;
+    private readonly specRegistry: DatapackDeploymentSpecRegistry;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly objectLookupService: SalesforceLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly logger: Logger,
-        private readonly creatingContainer?: Container) {
+        creatingContainer?: Container) {
+        this.container = (creatingContainer ?? container).new();
+        this.specRegistry = this.container.get(DatapackDeploymentSpecRegistry)
     }
 
     /**

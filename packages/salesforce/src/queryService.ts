@@ -101,6 +101,9 @@ export class QueryService {
     }
 
     public execute<T extends object = object, K extends PropertyKey = keyof T>(query: string, options?: QueryOptions) : Promise<QueryResult<T, K>[]> {
+        if (!query) {
+            throw new Error('None-empty query string mis required for query execution');
+        }
         const nsNormalizedQuery = this.nsService?.updateNamespace(query) ?? query;
         const enableCache = this.queryCacheEnabled && (options?.cache ?? this.queryCacheDefault);
         const queryExecutor = async () => {

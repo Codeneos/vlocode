@@ -8,7 +8,7 @@ import type VlocodeService from './vlocodeService';
  */
 export class VlocodeContext {
 
-    readonly recent: RecentItems = new RecentItems(this.globalState);
+    readonly recent: RecentItems;
 
     constructor(
         /**
@@ -32,7 +32,9 @@ export class VlocodeContext {
         /**
          * The mode the extension is running in.
          */
-        readonly mode: ExtensionMode) {
+        readonly mode: ExtensionMode
+    ) {
+        this.recent = new RecentItems(this.globalState)
     }
 
 
