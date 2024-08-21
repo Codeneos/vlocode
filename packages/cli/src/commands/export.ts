@@ -7,13 +7,14 @@ import { DatapackExpander, DatapackExportDefinitionStore, DatapackExporter } fro
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
+import { QueryService } from '@vlocode/salesforce';
 
 export default class extends SalesforceCommand {
 
     static description = 'Export an objecr as datapack from Salesforce';
 
     static args = [
-        new Argument('<ids...>', 'list of object IDs to export').argRequired()
+        new Argument('<ids...>', 'list of object IDs to export').argOptional()
     ];
 
     static options = [
@@ -30,15 +31,20 @@ export default class extends SalesforceCommand {
         new Option(
             '-e, --expand',
             'expand the datapack once exported into separate files according to the export definitions'
-        )
+        ),
+        new Option(
+            '-q, --query <query-string>',
+            'specify the query to use to export the objects instead of using the object ID'
+        ).conflicts('ids')
     ];
 
     constructor(private logger: Logger = LogManager.get('datapack-export')) {
         super();
     }
 
-    public async run(ids: string[], options: any) {
-        const definitions = await this.loadDefinitions(options.exportDefinitions);
+    public async run() {
+        const ids = await this.getIds();
+        const definitions = await this.loadDefinitions(this.options.exportDefinitions);
         this.container.get(DatapackExportDefinitionStore).load(definitions);
 
         const exporter = this.container.create(DatapackExporter);
@@ -46,7 +52,7 @@ export default class extends SalesforceCommand {
 
         for (const id of ids) {
             const result = await exporter.exportObject(id);
-            if (options.expand) {
+            if (this.options.expand) {
                 const expanded = expander.expandDatapack(result.datapack);
                 for (const [fileName, fileData] of Object.entries(expanded.files)) {
                     await this.writeFile([expanded.folder, fileName], fileData);
@@ -58,11 +64,26 @@ export default class extends SalesforceCommand {
                     );
                 }
             } else {
-                const baseName = result.datapack.VlocityRecordSObjectType + '_' + id;
+                const baseName = result.datapack.name;
                 await this.writeFile(baseName + '_DataPack.json', result.datapack);
                 await this.writeFile(baseName + '_ParentKeys.json', result.parentKeys);
             }
         }
+    }
+
+    private async getIds() {
+        if (this.options.query) {
+            const queryService = this.container.create(QueryService);
+            const records = await queryService.query(this.options.query);
+            if (records.length === 0) {
+                throw new Error(`No records found for the specified query: ${this.options.query}`);
+            }
+            return records.map(record => record.Id);
+        }
+        if (!this.args.ids?.length) {
+            throw new Error('No object IDs or export query specified. Either specify object IDs or an export query.');
+        }
+        return this.args.ids
     }
 
     public async writeFile(fileName: string | string[], data: object | string | Buffer) {
