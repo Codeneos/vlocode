@@ -191,7 +191,7 @@ class DatapackFiles {
         const data = this.getFileData(value);
         this.logger.verbose(`Write ${fileName} (${data.length} bytes)`);
         this.files[fileName] = data;
-        return fileName;
+        return this.getFileName(fileName, { withFolder: false });
     }
 
     public getFiles(options?: { withFolder?: boolean }): Record<string, Buffer | string> {
