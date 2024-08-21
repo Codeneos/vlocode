@@ -20,7 +20,7 @@ export interface DatapackExportDefinition extends ExpandFileDefinition {
      * ```
      * All exported fields are written to this file in JSON format  and '.json' is appended to the file name if no extension is provided.
      */
-    folder?: string | string[];
+    folderName?: string | string[];
     /**
      * Type of SObject to export
      */

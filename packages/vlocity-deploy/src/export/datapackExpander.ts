@@ -76,13 +76,13 @@ export class DatapackExpander {
             scope: context?.scope
         };
 
-        const baseSourceKey = substringAfter(datapack.VlocityRecordSourceKey, '/').replace(/\/+/g, '_');
+        const baseSourceKey = substringAfter(datapack.VlocityRecordSourceKey, '/');
         const fileNameFormat = this.definitions.getFileName(itemRef) ?? baseSourceKey;
         const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
         
         const folderFormat = this.definitions.getFolder(itemRef) ?? baseSourceKey;
         const folder = path.join(
-            this.normalizePath(datapack.VlocityRecordSObjectType),
+            this.normalizeFileName(datapack.VlocityRecordSObjectType),
             this.evalPathFormat(folderFormat, { context: datapack })
         );
         
@@ -163,13 +163,13 @@ export class DatapackExpander {
         const name = Array.isArray(format) 
             ? format.map(f => f.startsWith('_') ? f.substring(1) : options?.context?.[f] ?? '').join('_')
             : (options?.context ? formatString(format, options?.context) : format);
-        return this.normalizePath(name, options?.defaultExt);
+        return this.normalizeFileName(name, options?.defaultExt);
     }
 
-    private normalizePath(path: string, extension?: string) {
+    private normalizeFileName(path: string, extension?: string) {
         const normalized = path.trim()
+            .replace(/[\s\\/]+/g, '-')
             .replace(/[^\s\w.\\/-]+/g, '')
-            .replace(/\s+/g, '-')
             .replace(/-+/g, '-');
         if (extension) {
             return `${normalized}.${extension}`;
