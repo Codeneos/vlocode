@@ -68,8 +68,7 @@ export class DatapackExpander {
             scope?: string;
         }
     ): DatapackExpandResult {
-        this.logger.info(`Expanding: ${datapack.VlocityRecordSourceKey}`);
-        const timer = new Timer();
+        this.logger.verbose(`Expand ${datapack.VlocityRecordSourceKey}`);
         
         const itemRef = {
             objectType: datapack.VlocityRecordSObjectType,
@@ -124,7 +123,7 @@ export class DatapackExpander {
         }
 
         files.addFile(DatapackExpander.datapackFileName, data);
-        this.logger.info(`Expanded ${datapack.VlocityRecordSourceKey} - ${timer.toString("ms")}`);
+        this.logger.info(`Expanded ${datapack.VlocityRecordSourceKey} (${files.count})`);
 
         return {
             objectType: datapack.VlocityRecordSObjectType,
@@ -180,6 +179,14 @@ export class DatapackExpander {
 
 class DatapackFiles {
     private files: Record<string, Buffer | string> = {};
+
+    public get count() {
+        return Object.keys(this.files).length;
+    }
+
+    public get size() {
+        return Object.values(this.files).reduce((size, data) => size + (Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data)), 0);
+    }
 
     constructor(
         public readonly filePrefix: string, 
