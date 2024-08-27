@@ -27,6 +27,7 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     private scriptOffsets = new Map<string, number>();
     private addElementHandlers: Partial<Record<OmniScriptElementType, OmniScriptDefinitionBuilder['addElement']>> = {
         'Input Block': this.addInputBlock.bind(this),
+        'Selectable Items': this.addInputBlock.bind(this),
         'Type Ahead Block': this.addTypeAheadBlock.bind(this)
     };
 
@@ -431,7 +432,10 @@ class OmniScriptElementGroupDefinitionBuilder {
         child.response = null;
         child.children = [];
 
-        if (this.group.type === 'Type Ahead Block' && this.group.children.length) {
+        if (this.group.type === 'Type Ahead Block' && 
+            this.group.children.length && 
+            !this.group.children[0].eleArray[0].propSetMap?.taAction
+        ) {
             this.group.children[0].eleArray[0].propSetMap!.taAction = child;
         } else {
             this.group.children.push({
