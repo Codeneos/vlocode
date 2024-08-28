@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.4](https://github.com/Codeneos/vlocode/compare/v1.27.3...v1.27.4) (2024-08-28)
+
+### Bug Fixes
+
+* update datapackExpander.ts to normalize file names the same way as tools library does ([2b251f9](https://github.com/Codeneos/vlocode/commit/2b251f9eeee935cb0f22c0df1ee66f2ae059083c))
+
 ## [1.27.3](https://github.com/Codeneos/vlocode/compare/v1.27.2...v1.27.3) (2024-08-22)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy
