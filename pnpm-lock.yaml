@@ -568,6 +568,9 @@ importers:
 
   packages/vlocity-deploy:
     dependencies:
+      '@types/unidecode':
+        specifier: ^0.1.3
+        version: 0.1.3
       '@vlocode/core':
         specifier: workspace:*
         version: link:../core
@@ -595,6 +598,9 @@ importers:
       sass:
         specifier: ^1.59.3
         version: 1.59.3
+      unidecode:
+        specifier: ^1.1.0
+        version: 1.1.0
     devDependencies:
       '@types/fs-extra':
         specifier: ^11
@@ -1765,6 +1771,9 @@ packages:
 
   '@types/tough-cookie@4.0.2':
     resolution: {integrity: sha512-Q5vtl1W5ue16D+nIaW8JWebSSraJVlK+EthKn7e7UcD4KWsaSJ8BqGPXNaPghgtcn/fhvrN17Tv8ksUsQpiplw==}
+
+  '@types/unidecode@0.1.3':
+    resolution: {integrity: sha512-7R8zgAf8y1qq5Zif6UIXYR07MHvJIjcQM9Ym2am1YXaWdn9zJltLDwO8HpmIIjHiNT4VMGiNAw+UI9S7OM2foA==}
 
   '@types/vscode@1.70.0':
     resolution: {integrity: sha512-3/9Fz0F2eBgwciazc94Ien+9u1elnjFg9YAhvAb3qDy/WeFWD9VrOPU7CIytryOVUdbxus8uzL4VZYONA0gDtA==}
@@ -6262,6 +6271,10 @@ packages:
     resolution: {integrity: sha512-SdoZNxCWpN2tXTCrGkPF/0rL2HEq+i2gwRG1ReBvx8/0yTzC3enHfugOf8A9JBShVwwrRIkLX0YcDUGbzjbVCA==}
     engines: {node: '>= 0.4.12'}
 
+  unidecode@1.1.0:
+    resolution: {integrity: sha512-GIp57N6DVVJi8dpeIU6/leJGdv7W65ZSXFLFiNmxvexXkc0nXdqUvhA/qL9KqBKsILxMwg5MnmYNOIDJLb5JVA==}
+    engines: {node: '>= 0.4.12'}
+
   unique-filename@3.0.0:
     resolution: {integrity: sha512-afXhuC55wkAmZ0P18QsVE6kp8JaxrEokN2HGIoIVv2ijHQd419H0+6EigAFcIzXeMIkcIkNBpB3L/DXB3cTS/g==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
@@ -8164,6 +8177,8 @@ snapshots:
   '@types/stack-utils@2.0.3': {}
 
   '@types/tough-cookie@4.0.2': {}
+
+  '@types/unidecode@0.1.3': {}
 
   '@types/vscode@1.70.0': {}
 
@@ -13395,6 +13410,8 @@ snapshots:
   unicorn-magic@0.1.0: {}
 
   unidecode@0.1.8: {}
+
+  unidecode@1.1.0: {}
 
   unique-filename@3.0.0:
     dependencies:
