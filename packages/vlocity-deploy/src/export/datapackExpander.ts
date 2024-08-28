@@ -1,8 +1,10 @@
+import path from "path/posix";
+import unidecode from "unidecode";
+
 import { injectable, Logger } from "@vlocode/core";
-import { formatString, substringAfter, Timer } from "@vlocode/util";
+import { formatString, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
-import path from "path/posix";
 import { ObjectRef } from "./datapackExporter";
 
 export interface DatapackExpandResult {
@@ -81,7 +83,7 @@ export class DatapackExpander {
         
         const folderFormat = this.definitions.getFolder(itemRef) ?? baseSourceKey;
         const folder = path.join(
-            this.normalizeFileName(datapack.VlocityRecordSObjectType),
+            this.normalizeFileName(itemRef.scope ?? itemRef.objectType),
             this.evalPathFormat(folderFormat, { context: datapack })
         );
         
@@ -166,10 +168,14 @@ export class DatapackExpander {
     }
 
     private normalizeFileName(path: string, extension?: string) {
-        const normalized = path.trim()
-            .replace(/[\s\\/]+/g, '-')
-            .replace(/[^\s\w.\\/-]+/g, '')
-            .replace(/-+/g, '-');
+        const normalized = unidecode(path)
+            .replace(/%vlocity_namespace%__/gi, '')
+            .replace(/vlocity_([a-z]{2,4})__/gi, '')
+            .replace(/[^A-Z0-9\\/_-]+/gi, '-')
+            .replace(/-+/g, '-')
+            .replace(/[-_]{2,}/g, '_')
+            .replace(/^[-_\\/]+/, '')
+            .replace(/[-_\\/]+$/, '');
         if (extension) {
             return `${normalized}.${extension}`;
         }
