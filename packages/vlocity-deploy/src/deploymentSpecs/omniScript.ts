@@ -101,20 +101,21 @@ export class OmniScript implements DatapackDeploymentSpec {
             const parentKey = element.ParentElementId__c?.VlocityMatchingRecordSourceKey ?? 'root';
             const orderInParent = (elementCountByParent.get(parentKey) ?? 0) + 1;
 
-            const currentLevel = element['%vlocity_namespace%__Level__c'];
-            const currentOrder = element['%vlocity_namespace%__Order__c'];
+            const currentLevel = parseInt(element['%vlocity_namespace%__Level__c']);
+            const currentOrder = parseInt(element['%vlocity_namespace%__Order__c']);
             const calculatedLevel = getElementLevel(element);
 
-            if (currentOrder !== undefined && currentOrder < orderInParent) {
+            if (!isNaN(currentOrder) && currentOrder < orderInParent) {
                 this.addPreprocessingWarning(datapack, `element "${element.Name}" expected "Order__c" to be "${orderInParent}"; instead saw "${currentOrder}"`);
             }
 
-            if (currentLevel !== undefined && currentLevel !== calculatedLevel) {
-                this.addPreprocessingWarning(datapack, `element "${element.Name}" expected "Level__c" to be "${orderInParent}"; instead saw "${currentOrder}"`);
+            if (!isNaN(currentLevel) && currentLevel !== calculatedLevel) {
+                this.addPreprocessingWarning(datapack, `element "${element.Name}" expected "Level__c" to be "${currentLevel}"; instead saw "${calculatedLevel}"`);
             }
 
-            currentOrder === undefined && (element['%vlocity_namespace%__Order__c'] = orderInParent);
-            currentLevel === undefined && (element['%vlocity_namespace%__Level__c'] = calculatedLevel);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            isNaN(currentOrder) && (element['%vlocity_namespace%__Order__c'] = orderInParent);
+            isNaN(currentLevel) && (element['%vlocity_namespace%__Level__c'] = calculatedLevel);
 
             elementCountByParent.set(parentKey, orderInParent);
         }
