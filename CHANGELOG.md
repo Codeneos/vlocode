@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.5](https://github.com/codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
+
+### Bug Fixes
+
+* datapack records with indentical lookup values get incorrectly marked as duplicates ([ef1a01b](https://github.com/codeneos/vlocode/commit/ef1a01b3bea9db79883d655c3fd621e2444bdcfb))
+* error and warning report for Vlocode CLI deploy action is not consistent ([36a52c9](https://github.com/codeneos/vlocode/commit/36a52c9bebafe5be845b6a8a9bbb4e37fe1e2309))
+* errors do not get stored when using just updateStatus to fail a record deployment ([2e497b1](https://github.com/codeneos/vlocode/commit/2e497b15cf90be51691710fd401ab04965877cf4))
+* record activation for matrices and calculation procedures ([dc5fe73](https://github.com/codeneos/vlocode/commit/dc5fe735fee6474238f4e7c4e12a7df70a249399))
+* specs do not use local container causing spec errors ([733c02f](https://github.com/codeneos/vlocode/commit/733c02ffa0e3b04fb25a992e49ba2666938f0627))
+* timeout calculation for httpRequest ([cb6449c](https://github.com/codeneos/vlocode/commit/cb6449cbdddf07200a3d774d25dfe3c421877560))
+
+### Features
+
+* add more flexible partition function to replace segregate ([f21eb2b](https://github.com/codeneos/vlocode/commit/f21eb2b643927f0d4d47c58cd70494bd278c1c04))
+
 ## [1.27.4](https://github.com/codeneos/vlocode/compare/v1.27.3...v1.27.4) (2024-08-28)
 
 ### Bug Fixes

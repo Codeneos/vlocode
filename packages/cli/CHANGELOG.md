@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
+
+### Bug Fixes
+
+* error and warning report for Vlocode CLI deploy action is not consistent ([36a52c9](https://github.com/Codeneos/vlocode/commit/36a52c9bebafe5be845b6a8a9bbb4e37fe1e2309))
+
 ## [1.27.4](https://github.com/Codeneos/vlocode/compare/v1.27.3...v1.27.4) (2024-08-28)
 
 **Note:** Version bump only for package @vlocode/cli

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
+
+### Features
+
+* add more flexible partition function to replace segregate ([f21eb2b](https://github.com/Codeneos/vlocode/commit/f21eb2b643927f0d4d47c58cd70494bd278c1c04))
+
 # [1.27.0](https://github.com/Codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
 
 ### Features

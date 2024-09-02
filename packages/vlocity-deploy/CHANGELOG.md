@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
+
+### Bug Fixes
+
+* datapack records with indentical lookup values get incorrectly marked as duplicates ([ef1a01b](https://github.com/Codeneos/vlocode/commit/ef1a01b3bea9db79883d655c3fd621e2444bdcfb))
+* errors do not get stored when using just updateStatus to fail a record deployment ([2e497b1](https://github.com/Codeneos/vlocode/commit/2e497b15cf90be51691710fd401ab04965877cf4))
+* record activation for matrices and calculation procedures ([dc5fe73](https://github.com/Codeneos/vlocode/commit/dc5fe735fee6474238f4e7c4e12a7df70a249399))
+* specs do not use local container causing spec errors ([733c02f](https://github.com/Codeneos/vlocode/commit/733c02ffa0e3b04fb25a992e49ba2666938f0627))
+
 ## [1.27.4](https://github.com/Codeneos/vlocode/compare/v1.27.3...v1.27.4) (2024-08-28)
 
 ### Bug Fixes
