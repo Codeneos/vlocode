@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
@@ -186,14 +187,14 @@ export class HttpTransport implements Transport {
      * @param info Request information
      * @param options deprecated
      * @returns Promise with the response
-     */
-    public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse> {
+     */    
+    public httpRequest(info: HttpRequestInfo): Promise<HttpResponse>;       
+    public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse>;
+    public httpRequest(info: HttpRequestInfo): Promise<HttpResponse> {
         const url = this.parseUrl(info.url);
-        const request = this.prepareRequest(info);
-
         this.logger.debug('%s %s', info.method, url.pathname);
-
         const timer = new Timer();
+        const request = this.prepareRequest(info);        
         const requestPromise = new DeferredPromise<HttpResponse>();
 
         // Handle error and response
@@ -221,7 +222,7 @@ export class HttpTransport implements Transport {
 
         request.once('timeout', () => {
             request.destroy(new CustomError(
-                `Client timeout (${info.timeout}ms) expired when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
+                `Client timeout (${request.socket?.timeout + 'ms' ?? 'default'}) expired when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
                 { code: 'CLIENT_TIMEDOUT' }
             ));
         });
@@ -265,7 +266,8 @@ export class HttpTransport implements Transport {
             port: url.port,
             headers: info.headers,
             protocol: url.protocol,
-            method: info.method
+            method: info.method,
+            timeout: httpAgent.options.timeout,
         });
 
         if (info.timeout) {
