@@ -42,6 +42,7 @@ module.exports = {
         "@typescript-eslint/no-unsafe-argument": 0,
         // To many false-posetives on this rule
         "@typescript-eslint/restrict-template-expressions": 0,
+        "@typescript-eslint/no-unused-expressions": 0,
         "@typescript-eslint/unbound-method": 1,
         "@typescript-eslint/no-inferrable-types": 0,
         "@typescript-eslint/no-non-null-assertion": 0,
@@ -50,6 +51,6 @@ module.exports = {
         "no-cond-assign": 1,
         "prefer-spread": 1,
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": [ "warn" ]
+        "@typescript-eslint/no-unused-vars": [ "error" ]
     }
 };
