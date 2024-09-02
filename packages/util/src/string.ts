@@ -320,3 +320,14 @@ export function encodeQueryString(params: object): string {
         .map(([v,k]) => k !== undefined ? `${v}=${encodeURIComponent(String(k))}` : k)
         .join('&');
 }
+
+/**
+ * Returns a string with the specified unit pluralized based on the count.
+ *
+ * @param count - The count of the unit.
+ * @param unit - The unit to be pluralized.
+ * @returns The pluralized string.
+ */
+export function pluralize(count: number, unit: string) {
+    return count === 1 ? `${count} ${unit}` : `${count} ${unit}s`;
+}
