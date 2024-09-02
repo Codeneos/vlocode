@@ -5,7 +5,7 @@ import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, T
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploy/packageBuilder';
 import { QueryService, QueryResult } from './queryService';
-import { RecordBatch } from './recordBatch';
+import { RecordBatch, RecordBatchOptions } from './recordBatch';
 import { SalesforceDeployService } from './salesforceDeployService';
 import { SalesforceLookupService } from './salesforceLookupService';
 import { SalesforceProfile } from './salesforceProfile';
@@ -180,12 +180,12 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, cancelToken?: CancellationToken) {
-        const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100 });
+    public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, options?: RecordBatchOptions & { cancelToken?: CancellationToken }) {
+        const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100, ...options });
         for (const record of records) {
             batch.addUpdate(this.namespaceService.updateNamespace(type), record, record.id, record.id);
         }
-        yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
+        yield* batch.execute(await this.getJsForceConnection(), undefined, options?.cancelToken);
     }
 
     /**

@@ -11,6 +11,6 @@ export class CalculationProcedure implements DatapackDeploymentSpec {
     }
 
     public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.getDeployedRecords(), () => ({ isEnabled__c: true }));
+        return this.activator.activateRecords(event.getDeployedRecords(), () => ({ isEnabled__c: true }), { chunkSize: 1 });
     }
 }

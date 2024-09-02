@@ -9,6 +9,11 @@ import { groupBy, removeNamespacePrefix } from '@vlocode/util';
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class RecordActivator {
 
+    /**
+     * Default chunk size for record updates during activation.
+     */
+    static chunkSize = 100;
+
     public constructor(
         private readonly salesforceService: SalesforceService,
         private readonly logger: Logger) {
@@ -20,30 +25,37 @@ export class RecordActivator {
      * @param activator Activator function executed for each record
      * @param recordType Optional record type filter; if set only records of the normalized record type matching will be activated
      */
-    public async activateRecords(records: Iterable<DeployedDatapackDeploymentRecord>, activator: (record: DeployedDatapackDeploymentRecord) => Record<string, unknown>, recordType?: string) {
+    public async activateRecords(
+        records: Iterable<DeployedDatapackDeploymentRecord>, 
+        activator: (record: DeployedDatapackDeploymentRecord) => Record<string, unknown>,
+        options?: { recordType?: string, chunkSize?: number }
+    ) {
         const recordsByType = groupBy(records, r => r.sobjectType);
 
         const recordFilter = ([sobjectType]: [string, unknown]) => {
-            if (!recordType) {
+            if (!options?.recordType) {
                 return true;
             }
 
-            const exactMatch = sobjectType.toLowerCase() !== recordType.toLowerCase();
-            const localMatch = removeNamespacePrefix(sobjectType).toLowerCase() !== recordType.toLowerCase();
+            const exactMatch = sobjectType.toLowerCase() !== options?.recordType.toLowerCase();
+            const localMatch = removeNamespacePrefix(sobjectType).toLowerCase() !== options?.recordType.toLowerCase();
 
             return exactMatch || localMatch;
         }
 
         for (const [sobjectType, recordsOfType] of Object.entries(recordsByType).filter(recordFilter)) {
             const recordsToActivate = recordsOfType.map(record => ({ id: record.recordId, ...activator(record) }));
+            const updateOptions = { 
+                chunkSize: options?.chunkSize ?? RecordActivator.chunkSize 
+            };
 
-            for await(const record of this.salesforceService.update(sobjectType, recordsToActivate)) {
+            for await(const record of this.salesforceService.update(sobjectType, recordsToActivate, updateOptions)) {
                 const datapackRecord = recordsOfType.find(r => r.recordId === record.ref)!;
                 if (!record.success) {
-                    datapackRecord.updateStatus(DeploymentStatus.Failed, `Activation failed: ${record.error}`);
-                    this.logger.warn(`Failed activation for ${datapackRecord.datapackKey}: ${record.error}`);
+                    datapackRecord.updateStatus(DeploymentStatus.Failed, record.error);
+                    this.logger.error(`Activation error ${datapackRecord.datapackKey} [${datapackRecord.recordId}]: ${record.error.message}`);
                 } else {
-                    this.logger.info(`Activated ${datapackRecord.datapackKey}`);
+                    this.logger.info(`Activated ${datapackRecord.datapackKey} [${datapackRecord.recordId}]`);
                 }
             }
         }
