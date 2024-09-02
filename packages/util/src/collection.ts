@@ -453,24 +453,35 @@ export function except<T>(source: ReadonlyArray<T>, target: ReadonlyArray<T>): A
 }
 
 /**
+ * @deprecated Use {@link partition} instead
+ */
+export function segregate<T>(array: Array<T>, predicate: (item: T, index: number) => any) : [ Array<T>, Array<T> ] {
+    return partition(array, predicate);
+}
+
+/**
  * Segregate the elements of the source array into two distinct arrays the first array holding the values for which the predicate returned true
  * and the second array holding the values for which the predicate returned false.
  * @param array Array to segregate
- * @param predicate Predicate to segregate the array
+ * @param paritioner Partion function that puts the item in the right or left bucket depenbding on if it returns a falsish values
+ * @param predicate Predicate to filter the array
  * @returns A tuple with two arrays the first array holding the values for which the predicate returned true and the second array 
  * holding the values for which the predicate returned false.
  * @example
  * ```typescript
  * // Segregate even and odd numbers
- * const [ even, odd ] = segregate([ 1, 2, 3, 4, 5 ], i => i % 2 == 0);
+ * const [ even, odd ] = partition([ 1, 2, 3, 4, 5 ], i => i % 2 == 0);
  * console.log(even); // [ 2, 4 ]
  * console.log(odd); // [ 1, 3, 5 ]
  * ```
  */
-export function segregate<T>(array: Array<T>, predicate: (item: T, index: number) => any) : [ Array<T>, Array<T> ] {
+export function partition<T>(array: Array<T>, paritioner: (item: T, index: number) => any, predicate?: (item: T, index: number) => any) : [ Array<T>, Array<T> ]{
     const result: [ Array<T>, Array<T> ] = [ new Array<T>(), new Array<T>() ];
     array.forEach((item, index) => {
-        result[predicate(item, index) ? 0 : 1].push(item)
+        if (predicate && !predicate(item, index)) {
+            return;
+        }
+        result[paritioner(item, index) ? 0 : 1].push(item)
     });
     return result;
 }
