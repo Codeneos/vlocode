@@ -1,25 +1,42 @@
-import { Container, container, injectable, LifecyclePolicy, Logger, ServiceCtor } from "@vlocode/core";
-import { lazy } from "@vlocode/util";
+import { Container, container, injectable, LifecyclePolicy, ServiceCtor } from "@vlocode/core";
+import { Iterable, lazy } from "@vlocode/util";
 import { DatapackFilter } from './datapackDeployer';
 import { DatapackDeploymentSpec } from './datapackDeploymentSpec';
 
 interface SpecRegistryEntry {
-    readonly key: number;
     readonly filter: DatapackFilter;
     type?: ServiceCtor<DatapackDeploymentSpec>;
     instance?: DatapackDeploymentSpec;
 }
 
-@injectable({ lifecycle: LifecyclePolicy.singleton })
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeploymentSpecRegistry {
 
     /**
      * Get the current global {@link DatapackDeploymentSpecRegistry} instance registered in the root container
      */
-    public static readonly globalInstance = lazy(() => container.get(DatapackDeploymentSpecRegistry));
+    declare static globalInstance: DatapackDeploymentSpecRegistry;
+    declare static globalInstanceCreated: boolean;
+    declare private static getUniqueKey: () => number;
 
-    private static specUniqueIndex = 0;
-    private readonly specs: Record<number, SpecRegistryEntry> = {};
+    private readonly specs: SpecRegistryEntry[] = [];
+
+    static {
+        let globalInstance: DatapackDeploymentSpecRegistry;
+        let uniqueIndex = 0;
+        Object.defineProperties(DatapackDeploymentSpecRegistry, {
+            globalInstance: {
+                get: () => {
+                    if (!globalInstance) {
+                        globalInstance = container.create(DatapackDeploymentSpecRegistry);
+                    }
+                    return globalInstance;
+                },
+            },
+            globalInstanceCreated: { get: () => !!globalInstance },
+            getUniqueKey: { value: () => uniqueIndex++ }
+        });
+    }
 
     constructor(private readonly container: Container) {
     }
@@ -28,7 +45,7 @@ export class DatapackDeploymentSpecRegistry {
      * Get the number of specs registered in this registry.
      */
     public get size() : number {
-        return Object.keys(this.specs).length;
+        return this.specs.length;
     }
 
     /**
@@ -36,21 +53,11 @@ export class DatapackDeploymentSpecRegistry {
      * @returns Iterable
      */
     public *getSpecs() {
-        for (const globalSpec of Object.values(DatapackDeploymentSpecRegistry.globalInstance.specs)) {
-            if (this.specs[globalSpec.key]) {
-                continue;
-            }
-
-            // Copy global specs to local instance; do not copy instances when there is a spec-type set
-            this.specs[globalSpec.key] = {
-                key: globalSpec.key,
-                filter: globalSpec.filter,
-                type: globalSpec.type,
-                instance: !globalSpec.type ? globalSpec.instance : undefined,
-            };
+        const specs = [ this.specs ];
+        if (this !== DatapackDeploymentSpecRegistry.globalInstance) {
+            specs.push(DatapackDeploymentSpecRegistry.globalInstance.specs);
         }
-
-        for (const spec of Object.values(this.specs)) {
+        for (const spec of Iterable.join(...specs)) {
             yield {
                 filter: spec.filter, 
                 spec: spec.instance ?? lazy( () => spec.instance = this.container.create(spec.type!) )
@@ -97,15 +104,13 @@ export class DatapackDeploymentSpecRegistry {
             filter = { datapackFilter: filter };
         }
 
-        const specIndex = DatapackDeploymentSpecRegistry.specUniqueIndex++;
         const isInstance = typeof spec !== 'function';
 
-        this.specs[specIndex] = {
-            key: specIndex,
+        this.specs.push({
             filter,
             type: isInstance ? undefined : spec,
             instance: isInstance ? spec : undefined,
-        };
+        });
     }
 }
 
