@@ -7,7 +7,7 @@ import { stat } from 'fs/promises';
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
 import { DatapackDeployer, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { DatapackLoader } from '@vlocode/vlocity';
-import { countDistinct, groupBy, mapAsync, Timer } from '@vlocode/util';
+import { groupBy, mapAsync, partition, pluralize, Timer } from '@vlocode/util';
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
@@ -107,17 +107,19 @@ export default class extends SalesforceCommand {
 
         // done!!
         const deploymentMessages = deployment.getMessages().filter(({ type }) => type === 'error' || type === 'warn');
-        const recordCount = countDistinct(deploymentMessages, ({ record }) => record?.sourceKey);
+        const [ errorMessages, warningsMessages ] = partition(deploymentMessages, ({ type }) => type === 'error');
         const groupedSortedMessages = Object.entries(
-                groupBy(deploymentMessages, ({ message }) => message.toLowerCase())
+                groupBy(deploymentMessages, ({ message, type }) => message.toLowerCase() + type)
             ).sort((a,b) => a[0].localeCompare(b[0]));
 
         if (groupedSortedMessages.length) {
             this.logger.warn(
                 `${logSymbols.warning} DataPack deployment completed in ${deployTimer.toString('seconds')} with ${
-                    groupedSortedMessages.length} unique message(s) on ${recordCount} record(s)`);
+                    pluralize(errorMessages.length, 'error')} and ${
+                    pluralize(warningsMessages.length, 'warning')}`
+                );
         } else {
-            this.logger.info(`${logSymbols.success} DataPack deployment completed in ${deployTimer.toString('seconds')}`);
+            this.logger.info(`${logSymbols.success} DataPack deployment completed in ${deployTimer.toString('seconds')} without errors or warnings`);
         }
 
         for (const [datapack, messages] of Object.entries(deployment.getMessagesByDatapack())) {
