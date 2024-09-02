@@ -238,7 +238,7 @@ export class DatapackDeploymentRecord {
         return false;
     }
 
-    public updateStatus(status: DeploymentStatus, detail?: string) {
+    public updateStatus(status: DeploymentStatus, detail?: string | Error | RecordError) {
         switch (status) {
             case DeploymentStatus.InProgress:
                 if (this._status !== DeploymentStatus.InProgress) {
@@ -251,6 +251,7 @@ export class DatapackDeploymentRecord {
                 break;
             case DeploymentStatus.Failed:
                 this._deployTimer.stop();
+                detail && this.setError(detail);
                 break;
             case DeploymentStatus.Deployed:
                 this._deployTimer.stop();
@@ -258,12 +259,11 @@ export class DatapackDeploymentRecord {
                 break;
         }
         this._status = status;
-        this._statusDetail = detail;
+        this._statusDetail = detail?.toString();
     }
 
     public setFailed(error: string | Error | RecordError) {
-        this.updateStatus(DeploymentStatus.Failed);
-        this.setError(error);
+        this.updateStatus(DeploymentStatus.Failed, error);
     }
 
     public setError(error: string | Error | RecordError) {
