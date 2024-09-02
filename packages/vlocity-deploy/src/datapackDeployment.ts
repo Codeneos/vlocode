@@ -565,7 +565,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         return this.lookupService.compareRecordsToOrgData([...Iterable.filter(records, rec => rec.recordId && !rec.isSkipped)], cancelToken);
     }
 
-    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
+    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken): Promise<void>;
+    private async resolveDatapackDependencies(datapacks: Map<string, DatapackDeploymentRecord>): Promise<void> {
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         const resolutionQueue = Iterable.transform(datapacks.values(), {
             filter: datapack => datapack.hasUnresolvedDependencies,
@@ -728,7 +729,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.errors.push(datapackRecord);
     }
 
-    private isRetryable(error: RecordError) {
+    private isRetryable(error: RecordError): boolean;
+    private isRetryable() {
         // TODO: check which errors we should retry
         return true;
     }

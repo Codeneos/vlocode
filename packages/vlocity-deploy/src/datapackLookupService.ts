@@ -1,6 +1,6 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
-import { LogManager , injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
-import { last , isSalesforceId, CancellationToken, filterKeys, groupBy, unique, mapAsync, count, removeAll, remove } from '@vlocode/util';
+import { LogManager, injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
+import { last, isSalesforceId, CancellationToken, filterKeys, groupBy, unique, count, remove } from '@vlocode/util';
 import { VlocityNamespaceService, VlocityMatchingKeyService, VlocityDatapackReference } from '@vlocode/vlocity';
 import { DateTime } from 'luxon';
 import * as constants from './constants';
@@ -77,7 +77,6 @@ export class DatapackLookupService implements DatapackDependencyResolver {
                 return true;
             });
 
-        const recMnth = lookupRequests.filter(({ sourceKey }) => sourceKey.toLowerCase().includes('rec_mnth'));
         const matchedIds = await this.lookupMultiple(lookupRequests);
 
         // map record results back to lookup requests
@@ -86,7 +85,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             if (!matchedId?.length) {
                 continue;
             } else if (matchedId.length > 1) {
-                this.distinctLogger.warn(`Dependency with lookup key [${lookupRequest.sourceKey}] matches more than 1 record in target org: [${matchedId.join(', ')}]`);
+                this.distinctLogger.warn(`Dependency with lookup key [${lookupRequest.sourceKey}] matches multiple records in target: [${matchedId.join(', ')}]`);
             }
 
             this.updateCachedEntry(lookupRequest.sobjectType, lookupRequest.sourceKey, matchedId[0]);
@@ -101,7 +100,8 @@ export class DatapackLookupService implements DatapackDependencyResolver {
      * @param records Array of Records to lookup; note the index of the record corresponds to the index in the result array
      * @returns Array with all IDs found in Salesforce; array index matches the order of the records as provided
      */
-    public async lookupIds(datapackRecords: DatapackDeploymentRecord[], cancelToken?: CancellationToken): Promise<Array<string | undefined>> {
+    public async lookupIds(datapackRecords: DatapackDeploymentRecord[], cancelToken?: CancellationToken): Promise<Array<string | undefined>>;
+    public async lookupIds(datapackRecords: DatapackDeploymentRecord[]): Promise<Array<string | undefined>> {
         const lookupResults = new Array<string | undefined>();
 
         // Determine matching keys per object
@@ -123,6 +123,11 @@ export class DatapackLookupService implements DatapackDependencyResolver {
                     this.distinctLogger.warn(`No matching key configuration found for ${sobjectType}`);
                     return false;
                 }
+                const isEmpty = Object.values(filter).every(value => value === undefined || value === null || value === '');
+                if (isEmpty) {
+                    record.setFailed(`All record matching key fields are empty: ${JSON.stringify(filter)}`);
+                    return false;
+                }
                 return true;
             });
 
@@ -140,12 +145,12 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         // If there are multiple lookup requests for the same record
         // it could indicate a bug in in the matching key configuration
         const duplicateLookups = Object.values(
-                groupBy(lookupRequests, ({ filter }) => JSON.stringify(filter))
+                groupBy(lookupRequests, ({ sobjectType, filter }) => sobjectType + JSON.stringify(filter))
             ).filter((requests) => requests.length > 1);
         if (duplicateLookups.length) {
             duplicateLookups.flat().forEach(lookup => {
                 lookup.reportWarning(
-                    `Matching key configuration for "${lookup.sobjectType}" does not uniquely identify a record; ` + 
+                    `Current matching key field configuration causes 2 datapack SObjects to execute an indentical lookup;` + 
                     `delete the matching key from the org or update it so that it uniquely indentifies a records`
                 );
                 // Do not do a lookup for this record
@@ -162,7 +167,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             if (!matchedRecords?.length) {
                 continue;
             } else if (matchedRecords.length > 1) {
-                lookupRequest.reportWarning(`Matches more than 1 record in target org: [${matchedRecords.join(', ')}]`);
+                lookupRequest.reportWarning(`Matches multiple records in target: [${matchedRecords.join(', ')}]`);
             }
 
             const matchedRecord = matchedRecords[0];
@@ -222,11 +227,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
                 }
 
                 for (const [ index ] of matchedLookups) {
-                    if (lookupResults[index]) {
-                        // @ts-expect-error TS does not understand lookupResults[index] is not undefined
-                        lookupResults[index].push(record.Id)
-                    }
-                    lookupResults[index] = [ record.Id ];
+                    (lookupResults[index] ?? (lookupResults[index] = [])).push(record.Id);                    
                 }
             }
         }
@@ -320,15 +321,6 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         return false;
     }
 
-    // private generateLookupKeyFromFilter(sobjectType: string, filter: object) {
-    //     const key = [normalizeSalesforceName(sobjectType)];
-    //     for (const [field, value] of Object.entries(filter)) {
-    //         key.push(normalizeSalesforceName(field));
-    //         key.push(typeof value === 'string' ? value.toLowerCase() : JSON.stringify(value ?? null));
-    //     }
-    //     return key.join('/');
-    // }
-
     private buildFilter<K extends string>(record: DatapackDeploymentRecord, fields?: K[]): { [P in K]?: any } {
         const filter: { [P in K]?: any } = {};
 
@@ -353,21 +345,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         return data;
     }
 
-    private buildLookupKey(sobjectType: string, fields: Array<string>, data: object): string | undefined {
-        const emptyLookupKey = fields.map(field => data[field]).every(value => value === null || value === undefined);
-        if (emptyLookupKey) {
-            return undefined;
-        }
 
-        const values = fields.map(field => data[field]).map(value => value === null || value === undefined ? '' : value);
-        // As opposed to querying lookup keys should not contain a VLocity package namespace as they
-        // are org independent, as such we replace the namespace; if present back with the place holder
-        return this.namespaceService.replaceNamespace(`${sobjectType}/${values.join('/')}`);
-    }
-
-    private async getMatchingFields(sobjectType: string): Promise<string[]> {
-        return this.getSObjectMatchingFields(sobjectType);
-    }
 
     private async getParentRecordMatchingFields(record: DatapackDeploymentRecord): Promise<string[]> {
         const fields = new Array<string>();
@@ -385,54 +363,6 @@ export class DatapackLookupService implements DatapackDependencyResolver {
 
             fields.push(fieldDescribe.fullName);
         }
-        return fields;
-    }
-
-    private async getSObjectMatchingFields(sobjectType: string) : Promise<string[]> {
-        const matchingKey = await this.matchingKeyService.getMatchingKeyDefinition(sobjectType);
-        if (matchingKey.fields.length) {
-            return matchingKey.fields;
-        }
-        const globalKeyField = await this.schema.describeSObjectField(sobjectType, 'GlobalKey__c', false);
-        if (globalKeyField) {
-            return [ globalKeyField.name ];
-        }
-        return [];// this.getMatchingFieldsByValues(sobjectType, record);
-    }
-
-    private async getMatchingFieldsByValues(sobjectType: string, record: object) : Promise<string[]> {
-        const fields = new Array<string>();
-
-        for (const name of Object.keys(record)) {
-            const field = await this.resolveFieldDescribe(sobjectType, name);
-            if (!field) {
-                // Exclude fields that do not exists on the target
-                this.logger.error(`Matching field ${sobjectType}.${name} does not exists:`, record);
-                continue;
-            }
-
-            // The problem with formula fields is that they often lookup an ID on a relationship;
-            // the ID in the datapack is usually in 18-character format whereas the calculatedFormula is often in 15-character or 18-character format
-            // for normal lookup fields the ID format does not matter but for formula fields an exact match is performed; to avoid this we try to resolve such relationships
-            // to the actual field they are looking up; but if the formulae is more complex we strip it
-            if (field.describe.calculated && isSalesforceId(record[name])) {
-                this.logger.error(`Matching field ${sobjectType}.${field.fullName} is ignored due to non-resolvable formula definition:`, field.describe.calculatedFormula);
-                continue;
-            }
-
-            if (!field.describe.filterable) {
-                this.logger.error(`Matching field ${sobjectType}.${field.fullName} is ignored due to not being filterable (${field.describe.type})`);
-                continue;
-            }
-
-            if (field.describe.autoNumber) {
-                this.logger.error(`Matching field ${sobjectType}.${field.fullName} is ignored for being an auto generate number (${field.describe.type})`);
-                continue;
-            }
-
-            fields.push(field.fullName);
-        }
-
         return fields;
     }
 
