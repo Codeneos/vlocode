@@ -1,5 +1,6 @@
 import { spreadAsync } from '@vlocode/util';
 import { minimatch, MinimatchOptions } from 'minimatch'
+import { Glob } from 'glob'
 
 export interface StatsOptions {
     /**
@@ -33,7 +34,7 @@ export interface FindOptions extends WriteOptions {
     /**
      * Single or multiple Working directories to use when searching. If not specified the current working directory is used.
      */
-    cwd?: string  | string[];
+    cwd?: string | string[];
     /**
      * Glob patterns of natches to exclude from the search
      */
@@ -58,7 +59,7 @@ export interface FindOptions extends WriteOptions {
     noCase?: boolean;
 }
 
-type GlobPatterns = string | string[] | RegExp | RegExp[];
+type GlobPatterns = string | string[];
 
 export enum FindType {
     file = 1,
@@ -185,55 +186,33 @@ export abstract class FileSystem {
      * }
      * ```
      */
-    public async *find(globPatterns: GlobPatterns, options?: FindOptions): AsyncGenerator<string> {
-        const inputCwd = options?.cwd;
-        if (Array.isArray(inputCwd)) {
-            // When multiple cwd's are specified, search each of them
-            for (const cwd of inputCwd) {
-                yield* this.find(globPatterns, { ...options, cwd: this.normalizeSeparators(cwd) });
-            }
-            return;
-        }
+    public async *find(patterns: GlobPatterns, options?: FindOptions): AsyncGenerator<string> {
+        const globs = (Array.isArray(patterns) ? patterns : [ patterns ]).flatMap(
+            pattern => (options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ]).map(
+                (cwd: string | undefined) => new Glob(pattern, { 
+                    cwd,
+                    withFileTypes: true,
+                    windowsPathsNoEscape: true,
+                    dotRelative: true,
+                    ignore: options?.exclude,
+                    noext: true, 
+                    nodir: options?.findType === FindType.file,
+                    maxDepth: options?.depth,
+                    nocase: options?.noCase 
+                })
+            )
+        );
 
-        const cwd = this.normalizeSeparators(inputCwd ?? process.cwd());
-        const patterns = this.compilePatterns(globPatterns);
-        const excludePatterns = options?.exclude ? this.compilePatterns(options?.exclude) : undefined;
-        const findType = typeof options?.findType === 'string'
-            ? (options?.findType === 'directory' ? FindType.directory : FindType.file)
-            : (options?.findType ?? FindType.file | FindType.directory);
-        const depth = options?.depth;
         let limit = options?.limit;
 
-        for (const info of await this.readDirectory(cwd)) {
-            const path = `${cwd}/${info.name}`;
-
-            // Exclude according to exclude patterns
-            if (excludePatterns?.some(pattern => pattern.test(info.name) || pattern.test(path))) {
-                continue;
-            }
-
-            if (info.isDirectory()) {
-                // Match directory
-                if (findType & FindType.directory) {
-                    if (patterns.some(pattern => pattern.test(info.name) || pattern.test(path))) {
-                        yield path;
-                        if (limit && --limit <= 0) {
-                            return;
-                        }
-                    }
-                }
-
-                if (depth === undefined || depth > 0) {
-                    // Search sub directories when depth is not specified or when depth is not yet reached
-                    yield* this.find(patterns, { ...options, cwd: path, depth: depth && depth - 1, limit });
-                }
-            } else if (info.isFile() && findType & FindType.file) {
-                // Match files?
-                if (patterns.some(pattern => pattern.test(info.name) || pattern.test(path))) {
-                    yield path;
-                    if (limit && --limit <= 0) {
-                        return;
-                    }
+        for (const glob of globs) {
+            for await (const file of glob) {                
+                if (options?.findType === FindType.directory && !file.isDirectory()) {
+                    continue;
+                }                
+                yield this.normalizeSeparators(file.fullpath());
+                if (limit !== undefined && --limit === 0) {
+                    return;
                 }
             }
         }
@@ -242,7 +221,7 @@ export abstract class FileSystem {
     private compilePatterns(patterns: GlobPatterns, options?: MinimatchOptions): RegExp[] {
         return (Array.isArray(patterns) ? patterns : [ patterns ]).map(pattern => {
             if (typeof pattern === 'string') {
-                const compiled = minimatch.makeRe(pattern, options);
+                const compiled = minimatch.makeRe(this.normalizeSeparators(pattern), options);
                 if (!compiled) {
                     throw new Error(`Invalid glob pattern: ${pattern}`);
                 }
