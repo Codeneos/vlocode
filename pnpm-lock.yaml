@@ -270,8 +270,8 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3(webpack@5.97.1(webpack-cli@6.0.1))
       glob:
-        specifier: ^7.1.7
-        version: 7.2.3
+        specifier: ^11
+        version: 11.0.0
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))

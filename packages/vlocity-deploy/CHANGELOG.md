@@ -4,13 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.6](https://github.com/Codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
+
+**Note:** Version bump only for package @vlocode/vlocity-deploy
+
 ## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
 
 ### Bug Fixes
 
 * datapack records with indentical lookup values get incorrectly marked as duplicates ([ef1a01b](https://github.com/Codeneos/vlocode/commit/ef1a01b3bea9db79883d655c3fd621e2444bdcfb))
+
 * errors do not get stored when using just updateStatus to fail a record deployment ([2e497b1](https://github.com/Codeneos/vlocode/commit/2e497b15cf90be51691710fd401ab04965877cf4))
+
 * record activation for matrices and calculation procedures ([dc5fe73](https://github.com/Codeneos/vlocode/commit/dc5fe735fee6474238f4e7c4e12a7df70a249399))
+
 * specs do not use local container causing spec errors ([733c02f](https://github.com/Codeneos/vlocode/commit/733c02ffa0e3b04fb25a992e49ba2666938f0627))
 
 ## [1.27.4](https://github.com/Codeneos/vlocode/compare/v1.27.3...v1.27.4) (2024-08-28)
@@ -32,7 +39,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * datapack expander file and folder formats ([38e843f](https://github.com/Codeneos/vlocode/commit/38e843ff11a9585e6ca4d3b9974b007ad3ff62a5))
+
 * datapack filenames should not contain path seperators ([ec7b6d2](https://github.com/Codeneos/vlocode/commit/ec7b6d25e2f47bbd961ff62e7bbb747ee1e32b9f))
+
 * expanded datapacks inner file references are missing prefix ([ca9c483](https://github.com/Codeneos/vlocode/commit/ca9c4835957ca883db462c6d9dfa7708b221774b))
 
 ### Features
@@ -52,6 +61,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add folder and file expansion support ([a908273](https://github.com/Codeneos/vlocode/commit/a908273dd0b9b0166a4afb9a9284511ef4a7f23a))
+
 * distribute JSON schema for DatapackExportDefinition object ([55e1d50](https://github.com/Codeneos/vlocode/commit/55e1d500da73b92cf98d3e932d1a3ea234f9bbc6))
 
 # [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
@@ -63,6 +73,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * fail records with circular dependencies before deployment starts ([f7c1580](https://github.com/Codeneos/vlocode/commit/f7c15807fb45afb9453005b2c6742b313f02f600))
+
 * support datapack export based on configuration definitions in a YAML definitions file ([c2edd7c](https://github.com/Codeneos/vlocode/commit/c2edd7c7537a3d28312befa7ac5d7269140b5276))
 
 ## [1.24.11](https://github.com/Codeneos/vlocode/compare/v1.24.10...v1.24.11) (2024-06-27)

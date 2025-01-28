@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.6](https://github.com/Codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
+
+### Bug Fixes
+
+* update glob dependency and improve file search logic in FileSystem class ([763b906](https://github.com/Codeneos/vlocode/commit/763b9062c552a0d08b3bdb04e89581a3293a1c20))
+
 ## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
 
 ### Bug Fixes

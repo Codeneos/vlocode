@@ -4,11 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.6](https://github.com/Codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
+
+**Note:** Version bump only for package @vlocode/salesforce
+
 ## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
 
 ### Bug Fixes
 
 * record activation for matrices and calculation procedures ([dc5fe73](https://github.com/Codeneos/vlocode/commit/dc5fe735fee6474238f4e7c4e12a7df70a249399))
+
 * timeout calculation for httpRequest ([cb6449c](https://github.com/Codeneos/vlocode/commit/cb6449cbdddf07200a3d774d25dfe3c421877560))
 
 # [1.27.0](https://github.com/Codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
@@ -16,11 +21,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * line ending differences in text files can cause delta compare to fail ([595ccb9](https://github.com/Codeneos/vlocode/commit/595ccb984616ed32dceb98087994cdae2b710b01))
+
 * order of arguments in isPackageNewer function ([4850446](https://github.com/Codeneos/vlocode/commit/4850446a640d776a6f502f87c79ad5c7f62dee93))
 
 ### Features
 
 * add replacement token support to deployment package builder ([467c586](https://github.com/Codeneos/vlocode/commit/467c586d67f6ec3947fd80570ec0655cbfa777a9))
+
 * add support for replacement tokens ([2332df5](https://github.com/Codeneos/vlocode/commit/2332df56e04de89b89f6c020de00bc0c4ae212b5))
 
 ## [1.26.2](https://github.com/Codeneos/vlocode/compare/v1.26.1...v1.26.2) (2024-08-15)
@@ -38,6 +45,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * Update evalExpr function to allow undefined values in context ([d225281](https://github.com/Codeneos/vlocode/commit/d225281b7552afd1ca8205866836e2311bdf6373))
+
 * Update objectEquals function to ignore extra elements in arrays ([25fecdb](https://github.com/Codeneos/vlocode/commit/25fecdbd19e4b877fea4c6d100b53fd4af76f75d))
 
 # [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
@@ -45,6 +53,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * improve extension start-up performance by not pre loading tooling API object data ([9be0283](https://github.com/Codeneos/vlocode/commit/9be028385d334602210e4666eed7fcd00bda5da3))
+
 * support datapack export based on configuration definitions in a YAML definitions file ([c2edd7c](https://github.com/Codeneos/vlocode/commit/c2edd7c7537a3d28312befa7ac5d7269140b5276))
 
 ## [1.24.11](https://github.com/Codeneos/vlocode/compare/v1.24.10...v1.24.11) (2024-06-27)
@@ -64,6 +73,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * remove empty metadata members from package manifest ([c04653d](https://github.com/Codeneos/vlocode/commit/c04653d86c1edf787a10a3587db51594fec2fd9d))
+
 * update manifest.remove() to use componentName instead of componentType ([841c40c](https://github.com/Codeneos/vlocode/commit/841c40cbdd84c34dd39f9d5dea5558e14a85831e))
 
 ## [1.24.8](https://github.com/Codeneos/vlocode/compare/v1.24.7...v1.24.8) (2024-06-24)
@@ -71,11 +81,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * delta deploy doesn't uses binary compare for certain meta.xml files causing it to incorrectly mark objects as changed ([ad3b757](https://github.com/Codeneos/vlocode/commit/ad3b757eb504bc8cfaee733ebb6eb44190d15ae4))
+
 * only consider extra properties of installed package when versions match ([53f1988](https://github.com/Codeneos/vlocode/commit/53f19881cc78d80fafdc1c1be1ab9d4dae801b31))
 
 ### Features
 
 * add support for removing components from metadata package ([789eeee](https://github.com/Codeneos/vlocode/commit/789eeee9c547fd8372a9a9316656d57af19e4f9b))
+
 * skip deploy installed package if newer is installed in org ([0a8a26c](https://github.com/Codeneos/vlocode/commit/0a8a26c5680f159aa1bb3e379178e31950c8cdff))
 
 ## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
