@@ -53,7 +53,7 @@
     },
     "dependencies": {
         "@salesforce/core": "3.31.18",
-        "@xmldom/xmldom": "^0.8.8",
+        "@xmldom/xmldom": "^0.9",
         "fast-xml-parser": "^4.4.1",
         "fs-extra": "^11.0",
         "open": "^8.2.1",

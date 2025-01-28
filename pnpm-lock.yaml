@@ -29,7 +29,9 @@ overrides:
   got@<11.8.5: '>=11.8.5'
   global-modules-path@<3.0.0: '>=3.0.0'
   parse-url@<8.1.0: '>=8.1.0'
-  xmldom@<0.5.0: '>=0.5.0'
+  xmldom: npm:@xmldom/xmldom@^0.9
+  '@xmldom/xmldom': '>=0.9'
+  minimatch@<3.0.5: '>=3.0.5'
   simple-git@<3.16.0: '>=3.16.0'
   http-cache-semantics@<4.1.1: '>=4.1.1'
   simple-git@<3.5.0: '>=3.5.0'
@@ -44,7 +46,7 @@ overrides:
   follow-redirects@<=1.15.5: '>=1.15.6'
   tar@<6.2.1: '>=6.2.1'
   minimist@<0.2.4: '>=0.2.4'
-  axios@>=0.8.1 <0.28.0: '>=0.28.0'
+  axios@<1.7.4: '>=1.7.4'
   word-wrap@<1.2.4: '>=1.2.4'
   tough-cookie@<4.1.3: '>=4.1.3'
   jsonwebtoken@<9.0.0: '>=9.0.0'
@@ -52,8 +54,7 @@ overrides:
   async@>=3.0.0 <3.2.2: '>=3.2.2'
   ip@<1.1.9: '>=1.1.9'
   braces@<3.0.3: '>=3.0.3'
-  ws@>=8.0.0 <8.17.1: '>=8.17.1'
-  ws@>=7.0.0 <7.5.10: '>=7.5.10'
+  ws@<8.17.1: '>=8.17.1'
   fast-xml-parser@<4.4.1: '>=4.4.1'
   semver@>=6.0.0 <6.3.1: '>=6.3.1'
 
@@ -483,8 +484,8 @@ importers:
         specifier: 3.31.18
         version: 3.31.18(patch_hash=2ugd47rsshyn45ny4dgq7hcb24)(encoding@0.1.13)
       '@xmldom/xmldom':
-        specifier: ^0.8.8
-        version: 0.8.8
+        specifier: '>=0.9'
+        version: 0.9.7
       fast-xml-parser:
         specifier: ^4.4.1
         version: 4.4.1
@@ -1964,10 +1965,9 @@ packages:
       webpack-dev-server:
         optional: true
 
-  '@xmldom/xmldom@0.8.8':
-    resolution: {integrity: sha512-0LNz4EY8B/8xXY86wMrQ4tz6zEHZv9ehFMJPm8u2gq5lQ71cfRKdaKyxfJAx5aUoyzx0qzgURblTisPGgz3d+Q==}
-    engines: {node: '>=10.0.0'}
-    deprecated: this version has critical issues, please update to the latest version
+  '@xmldom/xmldom@0.9.7':
+    resolution: {integrity: sha512-syvR8iIJjpTZ/stv7l89UAViwGFh6lbheeOaqSxkYx9YNmIVvPTRH+CT/fpykFtUx5N+8eSMDRvggF9J8GEPzQ==}
+    engines: {node: '>=14.6'}
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -2227,8 +2227,8 @@ packages:
   aws4@1.11.0:
     resolution: {integrity: sha512-xh1Rl34h6Fi1DC2WWKfxUTVqRsNnr6LsKz2+hfwDxQJWmrx8+c7ylaqBMcHfl1U1r2dsifOvKX3LQuLNZ+XSvA==}
 
-  axios@1.7.3:
-    resolution: {integrity: sha512-Ar7ND9pU99eJ9GpoGQKhKf58GpUOgnzuaB7ueNQ5BMi0p+LZ5oaEnfF999fAArcTIBwXTCHAmGcHOZJaWPq9Nw==}
+  axios@1.7.9:
+    resolution: {integrity: sha512-LhLcE7Hbiryz8oMDdDptSrWowmB4Bl6RCt6sIJKpRB4XtVf0iEgewX3au/pJqm+Py1kCASkb/FFKjxQaLtxJvw==}
 
   azure-devops-node-api@12.5.0:
     resolution: {integrity: sha512-R5eFskGvOm3U/GzeAuxRkUsAl0hrAwGgWn6zAd2KrZmrEhWZVqLew4OOupbQlXUuojUzpGtq62SmdhJ06N88og==}
@@ -4671,9 +4671,6 @@ packages:
     resolution: {integrity: sha512-ethXTt3SGGR+95gudmqJ1eNhRO7eGEGIgYA9vnPatK4/etz2MEVDno5GMCibdMTuBMyElzIlgxMna3K94XDIDQ==}
     engines: {node: 20 || >=22}
 
-  minimatch@3.0.4:
-    resolution: {integrity: sha512-yJHVQEhyqPLUTgt9B83PXu6W3rx4MvvHvSUvToogpwoGDOUQ+yDrR0HRot+yOCdCO7u4hX3pWft6kWBBcqh0UA==}
-
   minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
 
@@ -6596,18 +6593,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.8.1:
-    resolution: {integrity: sha512-bGy2JzvzkPowEJV++hF07hAD6niYSr0JzBNo/J29WsB57A2r7Wlc1UFcTR9IzrPvuNVO4B8LGqF8qcpsVOhJCA==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: ^5.0.2
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -6639,10 +6624,6 @@ packages:
   xmldom-sfdx-encoding@0.1.30:
     resolution: {integrity: sha512-NOZCfMfwvCMBlSMBr971cnjmToNswV68A1CA3pnM0WGauo1BhWpTgSsj6Lbq8HNAI2OOdWktCSMLtaZU5wVBHA==}
     engines: {node: '>=0.1'}
-
-  xmldom@0.6.0:
-    resolution: {integrity: sha512-iAcin401y58LckRZ0TkI4k0VSM1Qg0KGSc3i8rU+xrxe19A/BN1zHyVSJY7uoutVlaTSzYyk/v5AmkewAP7jtg==}
-    engines: {node: '>=10.0.0'}
 
   xpath@0.0.24:
     resolution: {integrity: sha512-xUsra70vEDlxu0T90+qkg/8/KvPPm4KQbh25yMZCpBABBkdQLaOLNsgzRAUax7wlWZt7Ka5Q+itg/TPzzHieVQ==}
@@ -8001,7 +7982,7 @@ snapshots:
       '@salesforce/core': 3.31.18(patch_hash=2ugd47rsshyn45ny4dgq7hcb24)(encoding@0.1.13)
       '@salesforce/ts-types': 1.7.1
       applicationinsights: 1.8.10
-      axios: 1.7.3(debug@3.2.7)
+      axios: 1.7.9(debug@3.2.7)
     transitivePeerDependencies:
       - debug
       - encoding
@@ -8476,7 +8457,7 @@ snapshots:
       webpack: 5.97.1(webpack-cli@6.0.1)
       webpack-cli: 6.0.1(webpack@5.97.1)
 
-  '@xmldom/xmldom@0.8.8': {}
+  '@xmldom/xmldom@0.9.7': {}
 
   '@xtuc/ieee754@1.2.0': {}
 
@@ -8748,7 +8729,7 @@ snapshots:
 
   aws4@1.11.0: {}
 
-  axios@1.7.3(debug@3.2.7):
+  axios@1.7.9(debug@3.2.7):
     dependencies:
       follow-redirects: 1.15.6(debug@3.2.7)
       form-data: 4.0.0
@@ -10138,7 +10119,7 @@ snapshots:
     dependencies:
       commander: 2.20.3
       fs-extra: 11.2.0
-      xmldom: 0.6.0
+      xmldom: '@xmldom/xmldom@0.9.7'
       xpath: 0.0.24
 
   find-up@4.1.0:
@@ -11703,10 +11684,6 @@ snapshots:
     dependencies:
       brace-expansion: 2.0.1
 
-  minimatch@3.0.4:
-    dependencies:
-      brace-expansion: 1.1.11
-
   minimatch@3.1.2:
     dependencies:
       brace-expansion: 1.1.11
@@ -12404,7 +12381,7 @@ snapshots:
       rimraf: 3.0.2
       tar-fs: 2.1.1
       unbzip2-stream: 1.4.3
-      ws: 8.8.1
+      ws: 8.18.0
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -12532,7 +12509,7 @@ snapshots:
   replace@1.2.1:
     dependencies:
       chalk: 4.1.2
-      minimatch: 3.0.4
+      minimatch: 9.0.5
       yargs: 15.4.1
 
   request@2.88.2:
@@ -13817,8 +13794,6 @@ snapshots:
 
   ws@8.18.0: {}
 
-  ws@8.8.1: {}
-
   xml-name-validator@5.0.0: {}
 
   xml2js@0.5.0:
@@ -13839,8 +13814,6 @@ snapshots:
   xmlcreate@2.0.4: {}
 
   xmldom-sfdx-encoding@0.1.30: {}
-
-  xmldom@0.6.0: {}
 
   xpath@0.0.24: {}
 
