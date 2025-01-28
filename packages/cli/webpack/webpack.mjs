@@ -1,5 +1,5 @@
 import path from 'path';
-import glob from 'glob';
+import { glob } from 'glob';
 import webpack from 'webpack';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { EsbuildPlugin } from 'esbuild-loader';
