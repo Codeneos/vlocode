@@ -30,7 +30,15 @@ const common = {
     context: contextFolder,
     target: 'node',
     entry:
-        glob.sync('./src/commands/**/*.ts').reduce((map, file) => Object.assign(map, {
+        glob.sync(
+            './src/commands/**/*.ts', 
+            { 
+                dotRelative: true, 
+                nocase: true, 
+                nodir: true,
+                posix: true
+            }
+        ).reduce((map, file) => Object.assign(map, {
             [file.replace(/^.*commands[\//]([^.]+)\.ts$/i, 'commands/$1')]: {
                 dependOn: 'cli',
                 import: file,
