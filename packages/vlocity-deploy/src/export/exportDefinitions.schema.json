@@ -37,7 +37,7 @@
                     ],
                     "description": "When set the data in the field is exported into a separate file with the specified name. The name can be a string which is evaluated as a template to include values from the datapack: ```yaml fileName: \"data_{Name}.json\" ``` If no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
                 },
-                "folder": {
+                "folderName": {
                     "anyOf": [
                         {
                             "type": "string"
@@ -102,7 +102,7 @@
                                                 "additionalProperties": {
                                                     "anyOf": [
                                                         {
-                                                            "$ref": "#/definitions/alias-1030797743-2702-2792-1030797743-0-3887"
+                                                            "$ref": "#/definitions/alias-1030797743-2706-2796-1030797743-0-3891"
                                                         },
                                                         {
                                                             "type": "number"
@@ -162,7 +162,7 @@
                                                 "additionalProperties": {
                                                     "anyOf": [
                                                         {
-                                                            "$ref": "#/definitions/alias-1030797743-2702-2792-1030797743-0-3887"
+                                                            "$ref": "#/definitions/alias-1030797743-2706-2796-1030797743-0-3891"
                                                         },
                                                         {
                                                             "type": "number"
@@ -239,7 +239,7 @@
             },
             "type": "object"
         },
-        "alias-1030797743-2702-2792-1030797743-0-3887": {
+        "alias-1030797743-2706-2796-1030797743-0-3891": {
             "anyOf": [
                 {
                     "type": "string"
@@ -248,7 +248,7 @@
                     "additionalProperties": {
                         "anyOf": [
                             {
-                                "$ref": "#/definitions/alias-1030797743-2702-2792-1030797743-0-3887"
+                                "$ref": "#/definitions/alias-1030797743-2706-2796-1030797743-0-3891"
                             },
                             {
                                 "type": "number"

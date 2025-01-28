@@ -1,7 +1,6 @@
-import * as path from 'path';
+import path from 'path';
 import glob from 'glob';
-import * as webpack from 'webpack';
-import packageJson from '../package.json';
+import webpack from 'webpack';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { EsbuildPlugin } from 'esbuild-loader';
 
@@ -13,7 +12,8 @@ const packageExternals = [
     'bufferutil'
 ];
 
-const contextFolder = path.resolve(__dirname, '..');
+const contextFolder = path.resolve('.');
+const packageJson = JSON.parse(readFileSync(path.join(contextFolder, './package.json')));
 const workspaceFolder = path.resolve(contextFolder, '..');
 const workspacePackages = readdirSync(workspaceFolder, { withFileTypes: true })
     .filter(p => p.isDirectory() && existsSync(path.join(workspaceFolder, p.name, 'package.json')))
@@ -23,7 +23,8 @@ const workspacePackages = readdirSync(workspaceFolder, { withFileTypes: true })
         packageJson: JSON.parse(readFileSync(path.join(workspaceFolder, p.name, 'package.json')).toString())
     }));
 
-const common : webpack.Configuration = {
+/* @type {webpack.Configuration} */
+const common = {
     name: 'vlocode-cli',
     mode: 'production',
     context: contextFolder,
@@ -48,7 +49,7 @@ const common : webpack.Configuration = {
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        configFile: path.resolve(__dirname, 'tsconfig.json'),
+                        configFile: path.resolve('./webpack/tsconfig.json'),
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     }
                 }],

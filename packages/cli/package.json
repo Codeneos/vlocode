@@ -25,9 +25,9 @@
     },
     "scripts": {
         "watch": "tsc -w",
-        "watch-webpack": "webpack --watch --config webpack/webpack.ts",
+        "watch-webpack": "webpack --watch --config webpack/webpack.mjs",
         "build": "tsc -b",
-        "build-webpack": "webpack --config webpack/webpack.ts",
+        "build-webpack": "webpack --config webpack/webpack.mjs",
         "pack": "pnpm run prepublish && pnpm run pack-only",
         "prepublish": "pnpm run clean && pnpm run build-webpack && tsc",
         "pack-only": "pnpm pack",
