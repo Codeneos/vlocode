@@ -1,7 +1,9 @@
-import * as webpack from 'webpack';
-import { default as common } from './webpack.common';
 
-const development : webpack.Configuration = {
+import * as webpack from 'webpack';
+import common from './webpack.common.mjs';
+
+/** @type {webpack.Configuration} */
+const development = {
     mode: 'development',
     output: {
         pathinfo: true,
@@ -11,4 +13,4 @@ const development : webpack.Configuration = {
     }
 };
 
-module.exports = env => common(env, development);
+export default (env) => common(env, development);

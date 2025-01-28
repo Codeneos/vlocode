@@ -1,10 +1,9 @@
-import * as path from 'path';
-import * as webpack from 'webpack';
+import path from 'path';
+import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import CopyPlugin from 'copy-webpack-plugin';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { EsbuildPlugin } from 'esbuild-loader';
-import packageJson from '../package.json';
 
 const packageExternals = [
     // VSCode is an external that we do not want to package
@@ -13,7 +12,8 @@ const packageExternals = [
     'electron'
 ];
 
-const contextFolder = path.resolve(__dirname, '..');
+const contextFolder = path.resolve('.');
+const packageJson = JSON.parse(readFileSync(path.join(contextFolder, './package.json')));
 const workspaceFolder = path.resolve(contextFolder, '..');
 const workspacePackages = readdirSync(workspaceFolder, { withFileTypes: true })
     .filter(p => p.isDirectory() && existsSync(path.join(workspaceFolder, p.name, 'package.json')))
@@ -23,7 +23,8 @@ const workspacePackages = readdirSync(workspaceFolder, { withFileTypes: true })
         packageJson: JSON.parse(readFileSync(path.join(workspaceFolder, p.name, 'package.json')).toString())
     }));
 
-const common : webpack.Configuration = {
+/** @type {webpack.Configuration} */
+const common = {
     context: contextFolder,
     devtool: 'source-map',
     target: 'node',
@@ -41,14 +42,14 @@ const common : webpack.Configuration = {
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        configFile: path.resolve(__dirname, 'tsconfig.json'),
+                        configFile: path.resolve('./webpack/tsconfig.json'),
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     }
                 }],
             },
             {
                 test: /\.yaml$/,
-                use: [ path.join(__dirname, './loaders/yaml') ]
+                use: [ path.resolve('./webpack/loaders/yaml') ]
             }
         ]
     },
@@ -139,7 +140,8 @@ const common : webpack.Configuration = {
     }
 };
 
-const extension : webpack.Configuration = {
+/** @type {webpack.Configuration} */
+const extension  = {
     entry: {
         'vlocode': './src/extension.ts',
         'sass-compiler': '../vlocity-deploy/src/scss/forked/fork.ts'
@@ -156,11 +158,11 @@ const extension : webpack.Configuration = {
             ]
         }),
         new webpack.BannerPlugin({
-            banner: `vlocode v${require('../package.json').version} - ${new Date().toISOString()}\nCopyright P. van Gulik <peter@curlybracket.nl>\n[fullhash] ([file])`,
+            banner: `vlocode v${packageJson.version} - ${new Date().toISOString()}\nCopyright P. van Gulik <peter@curlybracket.nl>\n[fullhash] ([file])`,
             include: [ 'vlocode.js' ]
         }),
         new webpack.BannerPlugin({
-            banner: `vlocode v${require('../package.json').version} - ${new Date().toISOString()} ([fullhash])`,
+            banner: `vlocode v${packageJson.version} - ${new Date().toISOString()} ([fullhash])`,
             exclude: [ 'vlocode.js' ]
         }),
         new webpack.BannerPlugin({
