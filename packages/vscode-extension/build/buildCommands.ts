@@ -82,7 +82,9 @@ export function mergeCommandContributions(packageJson: PackageJson, commands: Co
     console.log('Adding VSCode commands to package...');
 
     const contributes : PackageContributions = { commands: [], menus: {} };
-    const activationEvents = new Set<string>(packageJson.activationEvents || []);
+    const activationEvents = new Set<string>((packageJson.activationEvents || []).filter(
+        event => !/^(onCommand|onView):/.test(event)
+    ));
 
     for (const [name, command] of Object.entries(commands)) {
         // Add command base structure
@@ -106,7 +108,7 @@ export function mergeCommandContributions(packageJson: PackageJson, commands: Co
         }
 
         contributes.commands.push(stripUndefined(newCommand));
-        activationEvents.add(`onCommand:${name}`);
+        //activationEvents.add(`onCommand:${name}`);
 
         // Has menus?
         if (!command.menus) {
