@@ -59,4 +59,12 @@ export class RestDeploymentApi implements DeploymentApi {
             `deployRequest/${id}`);
         return result.deployResult;
     }
+
+    public async deployRecentValidation(validatedDeployRequestId: string) {
+        const result = await this.rest.post<DeployRequest>(
+            { validatedDeployRequestId },
+            'deployRequest'
+        );
+        return result.deployResult;
+    }
 }

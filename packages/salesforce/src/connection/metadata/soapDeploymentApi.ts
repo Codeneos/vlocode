@@ -3,7 +3,7 @@ import { Stream } from 'stream';
 import { SoapClient } from '../../soapClient';
 import { SalesforceConnection } from '../salesforceConnection';
 import { DeploymentApi } from './metadataApi';
-import { MetadataResponses } from './metadataOperations';
+import { MetadataRequests, MetadataResponses } from './metadataOperations';
 import { DeployOptions, DeployResult } from './types';
 
 /**
@@ -46,7 +46,12 @@ export class SoapDeploymentApi implements DeploymentApi {
         return this.checkDeployStatus(id);
     }
 
-    private invoke<K extends keyof MetadataResponses>(method: K, message: object, responsePath?: string) : Promise<MetadataResponses[K]>;
+    public async deployRecentValidation(validationId: string) {
+        const response = await this.invoke('deployRecentValidation', { validationId });
+        return this.checkDeployStatus(response.result);
+    }
+
+    private invoke<K extends keyof MetadataResponses>(method: K, message: MetadataRequests[K], responsePath?: string) : Promise<MetadataResponses[K]>;
     private async invoke<T>(method: string, message: object, propertyPath?: string) : Promise<T> {
         const response = await this.soap.request(method, message);
         return (propertyPath ? getObjectProperty(response.body, propertyPath) : response) as T;

@@ -5,24 +5,41 @@ import { SoapClient } from '../../soapClient';
 import { SalesforceConnection } from '../salesforceConnection';
 import { RestDeploymentApi } from './restDeploymentApi';
 import { Operations, Schemas } from './metadataSchemas';
-import { DeployOptions, DeployResult, DescribeMetadataResult, DescribeValueTypeResult, FileProperties, RetrieveResult, SalesforceMetadata, SaveResult, UpsertResult } from './types';
+import { DeployOptions, DeployResult, DeployStatus, DescribeMetadataResult, DescribeValueTypeResult, FileProperties, RetrieveResult, SalesforceMetadata, SaveResult, UpsertResult } from './types';
 import { ListMetadataQuery } from './types/metadataQuery';
 import { RetrieveRequest } from './types/retrieveRequest';
 import { MetadataTypes } from './metadataTypes';
-import { DeleteResult } from '../../types';
+import { DeleteResult, TestLevel } from '../../types';
 import { MetadataResponses } from './metadataOperations';
 import { Schema } from '../../schemaValidator';
+import { QueryBuilder } from "../../queryBuilder";
 
 export enum ValueTypeNamespace {
     metadata = 'http://soap.sforce.com/2006/04/metadata',
     tooling = 'urn:metadata.tooling.soap.sforce.com'
 }
 
+export interface DeployRequest {
+    id: string;
+    userId: string;
+    userName: string;
+    createdDate: string;
+    completedDate: string;
+    numberComponentsTotal: number;
+    checkOnly: boolean;
+    runTestsEnabled: boolean;
+    deployableValidation: boolean;
+    testLevel: TestLevel | '';
+    status: DeployStatus;
+}
+
 export interface DeploymentApi {
     deploy(data: Stream | Buffer | string, deployOptions: DeployOptions): Promise<DeployResult>;
     checkDeployStatus(id: string, includeDetails?: boolean): Promise<DeployResult>;
     cancelDeploy(id: string): Promise<DeployResult>;
+    deployRecentValidation(id: string): Promise<DeployResult>;
 }
+
 
 /**
  * Metadata API implementation for Vlocode partially compatible with Metadata API class  from JSforce.
@@ -247,11 +264,46 @@ export class MetadataApi implements DeploymentApi {
         return this.deployment.deploy(data, deployOptions);
     }
 
+    public deployRecentValidation(id: string): Promise<DeployResult> {
+        return this.deployment.deployRecentValidation(id);
+    }
+
     public checkDeployStatus(id: string, includeDetails?: boolean): Promise<DeployResult> {
         return this.deployment.checkDeployStatus(id, includeDetails);
     }
 
     public cancelDeploy(id: string): Promise<DeployResult>{
         return this.deployment.cancelDeploy(id);
+    }
+
+    public async getDeployableRecentValidation(): Promise<DeployRequest | undefined> {
+        const mostRecentDeploy = (await this.listRecentDeployments())[0];
+        if (mostRecentDeploy && mostRecentDeploy.checkOnly && mostRecentDeploy.runTestsEnabled && mostRecentDeploy.status === 'Succeeded') {
+            return mostRecentDeploy;
+        }
+    }
+
+    public async listRecentDeployments(): Promise<DeployRequest[]> {
+        const recentDeployments = await this.connection.tooling.query<any>(
+            new QueryBuilder({
+                fieldList: [ 'Id', 'CreatedDate', 'CompletedDate', 'CreatedById', 'CreatedBy.UserName', 'NumberComponentsTotal', 'CheckOnly', 'RunTestsEnabled', 'TestLevel', 'Status' ],
+                sobjectType: 'DeployRequest',
+                orderBy: [ 'CreatedDate' ],
+                orderByDirection: "desc",
+            }).getQuery()
+        );
+        return recentDeployments.records.map(deploy => ({
+            id: deploy.Id,
+            deployableValidation: deploy.CheckOnly && deploy.RunTestsEnabled && deploy.Status === 'Success',
+            userName: deploy.CreatedBy.Name,
+            userId: deploy.CreatedById,
+            createdDate: deploy.CreatedDate,
+            completedDate: deploy.CompletedDate,
+            numberComponentsTotal: deploy.NumberComponentsTotal,
+            checkOnly: deploy.CheckOnly,
+            runTestsEnabled: deploy.RunTestsEnabled,
+            testLevel: deploy.TestLevel,
+            status: deploy.Status
+        }));
     }
 }

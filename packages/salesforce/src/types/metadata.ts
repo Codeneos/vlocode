@@ -2,7 +2,6 @@
 // Designed for use with Vlocode libraries and extension
 // Provides design-time validation of Salesforce metadata types
 import type { AsyncResult } from '../connection/metadata/types/asyncResult';
-import type { RecordError } from '../connection/metadata/types/error';
 import type { ReadResult, SaveResult, UpsertResult } from '../connection/metadata/types/crudResult';
 import type { DeployMessage, DeployResult, DeployOptions, RunTestsResult } from '../connection/metadata/types/deployResult';
 import type { CancelDeployResult } from '../connection/metadata/types/cancelDeployResult';
@@ -10587,7 +10586,7 @@ export interface SessionHeader {
 }
 
 export interface CancelDeployRequest {
-    String: string; // xsd-type: "ID"
+    asyncProcessId: string; // xsd-type: "ID"
 }
 
 export interface CancelDeployResponse {
@@ -10630,8 +10629,8 @@ export interface DeleteMetadataResponse {
 }
 
 export interface DeployRequest {
-    ZipFile: string; // xsd-type: "base64Binary"
-    DeployOptions: DeployOptions;
+    zipFile: string; // xsd-type: "base64Binary"
+    deployOptions: DeployOptions;
 }
 
 export interface DeployResponse {
