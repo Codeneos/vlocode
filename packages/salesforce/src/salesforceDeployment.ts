@@ -22,7 +22,6 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     private deploymentId: string;
     private connection: SalesforceConnection;
     private lastStatus: DeployResult;
-    private deployOptions: DeployOptions;
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
     private nextProgressTimeoutId: NodeJS.Timeout;
@@ -122,10 +121,26 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     }
 
     /**
+     * Create a new SalesforceDeployment instance from an existing deployment ID
+     * @param deploymentId ID of the deployment to create the instance for
+     * @returns SalesforceDeployment instance
+     */
+    public static fromId(deploymentId: string) {
+        const deployment = new SalesforceDeployment(new SalesforcePackage('0.0'));
+        deployment.deploymentId = deploymentId;
+        setImmediate(() => deployment.checkDeploymentSafe());
+        return deployment;
+    }
+
+    /**
      * Deploy the specified SalesforcePackage into the target org
      * @param options Options
      */
     public async start(options?: DeployOptions): Promise<this> {
+        if (this.deploymentId) {
+            throw new Error('Deployment has already been started');
+        }
+
         // Set deploy options passed to JSforce; options arg can override the defaults
         const deployOptions: DeployOptions = {
             singlePackage: true,
@@ -155,7 +170,6 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         }
 
         // Start deploy
-        this.deployOptions = deployOptions;
         this.connection = await this.salesforce.getJsForceConnection();
         const zipInput = await this.sfPackage.getBuffer(this.compressionLevel);
         const deployJob = await this.connection.metadata.deploy(zipInput, deployOptions);
