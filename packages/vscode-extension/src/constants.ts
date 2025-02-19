@@ -1,5 +1,3 @@
-
-
 /**
  * Default constants used in this extensipn
  */
@@ -73,4 +71,5 @@ export enum VlocodeCommand {
     omniScriptDeployLwc = 'vlocode.omniScript.deployLwc',
     omniScriptActivate = 'vlocode.omniScript.activate',
     apexToggleCoverage = 'vlocode.apex.toggleCoverage',
+    deployRecentValidation = 'vlocode.deployRecentValidation',
 }

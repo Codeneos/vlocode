@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import open from 'open';
 
 import { forEachAsyncParallel } from '@vlocode/util';
-import { DeployResult, DeployStatus, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
+import { DeployResult, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 import { VlocodeCommand } from '../../constants';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
@@ -16,6 +16,11 @@ import { container } from '@vlocode/core';
 @vscodeCommand(VlocodeCommand.deployMetadata, { focusLog: true, showProductionWarning: true, executeParams: [ VlocodeCommand.deployMetadata ] })
 @vscodeCommand(VlocodeCommand.deployDeltaMetadata, { focusLog: true, showProductionWarning: true, executeParams: [ VlocodeCommand.deployDeltaMetadata ] })
 export default class DeployMetadataCommand extends MetadataCommand {
+
+    protected deployStatusLabels = {
+        'InProgress': 'In Progress',
+        'SucceededPartial': 'Partially Deployed'
+    };
 
     /** 
      * In order to prevent double deployment keep a list of pending deploy ops
@@ -132,12 +137,15 @@ export default class DeployMetadataCommand extends MetadataCommand {
                     if (!deployPackage) {
                         break;
                     }
+                    const deployment = new SalesforceDeployment(deployPackage);
                     await this.vlocode.withActivity({
                         progressTitle: `Deploy ${deployPackage.componentsDescription}`,
                         location: vscode.ProgressLocation.Notification,
                         propagateExceptions: false,
                         cancellable: true
-                    }, this.getDeploymentActivity(deployPackage));
+                    }, async (progress: ActivityProgress, token: vscode.CancellationToken) => {
+                        await this.monitorDeployment(deployment, progress, token);
+                    });
                 }
             } finally {
                 this.deploymentRunning = false;
@@ -146,51 +154,39 @@ export default class DeployMetadataCommand extends MetadataCommand {
         }, 250);
     }
 
-    private getDeploymentActivity(sfPackage: SalesforcePackage) {
-        return async (progress: ActivityProgress, token: vscode.CancellationToken) => {
-            progress.report({ message: `scheduling` });
+    protected async monitorDeployment(deployment: SalesforceDeployment, progress: ActivityProgress, token: vscode.CancellationToken) {
+        progress.report({ message: `scheduling` });
 
-            // start deployment
-            const deployment = new SalesforceDeployment(sfPackage);
-            const progressReporter = deployment.on('progress', result => {
-                if (deployment.isServerSideCancelled) {
-                    progress.report({ message: 'Server-side cancellation requested' });
-                    progressReporter.dispose();
-                } else {
-                    progress.report({
-                        message: `${this.getStatusLabel(result.status)} ${result.total ? `${result.deployed}/${result.total}` : ''}`,
-                        progress: result.deployed,
-                        total: result.total
-                    });
-                }
-            });
-
-            token.onCancellationRequested(() => {
-                progress.report({ message: 'Cancellation in progress' });
+        // start deployment
+        const progressReporter = deployment.on('progress', result => {
+            if (deployment.isServerSideCancelled) {
+                progress.report({ message: 'Server-side cancellation requested' });
                 progressReporter.dispose();
-                deployment.cancel();
-            });
-
-            await deployment.start({ ignoreWarnings: true });
-            this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
-            const result = await deployment.getResult();
-
-            if (deployment.isCancelled) {
-                return;
+            } else {
+                progress.report({
+                    message: `${this.deployStatusLabels[result.status] ?? result.status} ${result.total ? `${result.deployed}/${result.total}` : ''}`,
+                    progress: result.deployed,
+                    total: result.total
+                });
             }
+        });
 
-            this.outputDeployResult(sfPackage.components(), result);
-            return this.onDeploymentComplete(deployment, result);
-        };
-    }
+        token.onCancellationRequested(() => {
+            progress.report({ message: 'Cancellation in progress' });
+            progressReporter.dispose();
+            deployment.cancel();
+        });
 
-    private getStatusLabel(status: DeployStatus) {
-        if (status === 'InProgress') {
-            return 'In Progress';
-        } else if (status === 'SucceededPartial') {
-            return 'Partially Deployed';
+        await deployment.start({ ignoreWarnings: true });
+        this.logger.info(`Deployment details: ${await this.vlocode.salesforceService.getPageUrl(deployment.setupUrl)}`);
+        const result = await deployment.getResult();
+
+        if (deployment.isCancelled) {
+            return;
         }
-        return status;
+
+        this.outputDeployResult(deployment.deploymentPackage.components(), result);
+        return this.onDeploymentComplete(deployment, result);
     }
 
     private onDeploymentComplete(deployment: SalesforceDeployment, result: DeployResult) {

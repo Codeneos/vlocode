@@ -240,6 +240,12 @@ vlocode.removeFromProfile:
   title: 'Salesforce: Remove from profiles'
   group: v_salesforce_profile
   menus: *profileCmdMenuConfig
+vlocode.deployRecentValidation:
+  title: 'Salesforce: Deploy Recent Validation'
+  group: v_salesforce
+  when: config.vlocity.salesforce.enabled
+  menus:
+    - menu: commandPalette
 
 # Data datapackExplorer commands
 vlocode.datapackExplorer.export:
