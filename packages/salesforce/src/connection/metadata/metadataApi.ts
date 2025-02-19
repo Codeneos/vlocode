@@ -13,22 +13,23 @@ import { DeleteResult, TestLevel } from '../../types';
 import { MetadataResponses } from './metadataOperations';
 import { Schema } from '../../schemaValidator';
 import { QueryBuilder } from "../../queryBuilder";
+import { DateTime } from "luxon";
 
 export enum ValueTypeNamespace {
     metadata = 'http://soap.sforce.com/2006/04/metadata',
     tooling = 'urn:metadata.tooling.soap.sforce.com'
 }
 
-export interface DeployRequest {
+export interface Deployment {
     id: string;
     userId: string;
     userName: string;
-    createdDate: string;
-    completedDate: string;
+    date: Date;
+    completedDate?: Date;
     numberComponentsTotal: number;
     checkOnly: boolean;
     runTestsEnabled: boolean;
-    deployableValidation: boolean;
+    quickDeployAvailable: boolean;
     testLevel: TestLevel | '';
     status: DeployStatus;
 }
@@ -276,14 +277,7 @@ export class MetadataApi implements DeploymentApi {
         return this.deployment.cancelDeploy(id);
     }
 
-    public async getDeployableRecentValidation(): Promise<DeployRequest | undefined> {
-        const mostRecentDeploy = (await this.listRecentDeployments())[0];
-        if (mostRecentDeploy && mostRecentDeploy.checkOnly && mostRecentDeploy.runTestsEnabled && mostRecentDeploy.status === 'Succeeded') {
-            return mostRecentDeploy;
-        }
-    }
-
-    public async listRecentDeployments(): Promise<DeployRequest[]> {
+    public async listRecentDeployments(): Promise<Deployment[]> {
         const recentDeployments = await this.connection.tooling.query<any>(
             new QueryBuilder({
                 fieldList: [ 'Id', 'CreatedDate', 'CompletedDate', 'CreatedById', 'CreatedBy.UserName', 'NumberComponentsTotal', 'CheckOnly', 'RunTestsEnabled', 'TestLevel', 'Status' ],
@@ -292,13 +286,14 @@ export class MetadataApi implements DeploymentApi {
                 orderByDirection: "desc",
             }).getQuery()
         );
-        return recentDeployments.records.map(deploy => ({
+        const lastSuccessDeployIndex = recentDeployments.records.findIndex(deploy => !deploy.CheckOnly && deploy.Status === 'Succeeded');
+        return recentDeployments.records.map((deploy, i) => ({
             id: deploy.Id,
-            deployableValidation: deploy.CheckOnly && deploy.RunTestsEnabled && deploy.Status === 'Success',
-            userName: deploy.CreatedBy.Name,
+            date: DateTime.fromISO(deploy.CreatedDate).toJSDate(),
+            quickDeployAvailable: i < lastSuccessDeployIndex && deploy.CheckOnly && deploy.RunTestsEnabled && deploy.Status === 'Succeeded',
+            userName: deploy.CreatedBy.Username,
             userId: deploy.CreatedById,
-            createdDate: deploy.CreatedDate,
-            completedDate: deploy.CompletedDate,
+            completedDate: deploy.CompletedDate ? DateTime.fromISO(deploy.CompletedDate).toJSDate() : undefined,
             numberComponentsTotal: deploy.NumberComponentsTotal,
             checkOnly: deploy.CheckOnly,
             runTestsEnabled: deploy.RunTestsEnabled,
