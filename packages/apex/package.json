@@ -67,7 +67,7 @@
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
-        "antlr4ng": "^3.0.4"
+        "antlr4ng": "^3.0.14"
     },
     "publisher": "curlybracket"
 }

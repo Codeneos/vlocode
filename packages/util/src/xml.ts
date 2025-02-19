@@ -1,5 +1,5 @@
 import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions, XMLValidator } from 'fast-xml-parser';
-import { DOMParser } from '@xmldom/xmldom';
+import { DOMParser, Node } from '@xmldom/xmldom';
 import { visitObject } from './object';
 
 export interface XMLParseOptions {
@@ -263,7 +263,7 @@ export namespace XML {
             return node && Array.from(node.childNodes).find(child => 
                (tag === '*' || child.nodeName === tag) && (!index || ++childNodeIndex === Number(index))
             );
-        }, new DOMParser().parseFromString(xml, 'text/xml') as Node);
+        }, new DOMParser().parseFromString(xml, 'text/xml'));
     }
 
     export function getNodeTextRange(xml: string, path: string): TextRange | undefined {
@@ -271,8 +271,8 @@ export namespace XML {
         if (node) {
             const lines = String(node).split('\n');
             const start = {
-                column: node['columnNumber'],
-                line: node['lineNumber'],
+                column: node.columnNumber!,
+                line: node.lineNumber!,
             };
             const end = {
                 column: (lines.length === 1 ? start.column : 1) + lines[lines.length - 1].length,

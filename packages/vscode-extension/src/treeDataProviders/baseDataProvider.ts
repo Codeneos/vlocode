@@ -70,10 +70,11 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
 
     public abstract getChildren(node?: T): Promise<T[] | undefined> | T[] | undefined;
 
-    protected getItemIconPath(icon: { light: string; dark: string } | string | undefined) : { light: string; dark: string } | string | vscode.ThemeIcon | undefined {
-        if (!icon) {
-            return undefined;
-        }
+    protected getItemIconPath(icon: { light: string; dark: string }) : { light: vscode.Uri; dark: vscode.Uri };
+    protected getItemIconPath(icon: string) : string | vscode.ThemeIcon;
+    protected getItemIconPath(icon: undefined) : undefined;
+    protected getItemIconPath(icon: { light: string; dark: string } | string | undefined) : { light: vscode.Uri; dark: vscode.Uri } | string | vscode.ThemeIcon | undefined;
+    protected getItemIconPath(icon: { light: string; dark: string } | string | undefined) : { light: vscode.Uri; dark: vscode.Uri } | string | vscode.ThemeIcon | undefined {
         if (typeof icon === 'string') {
             const themeIconMatches = icon.match(/^\$\(([^ ]+)\)$/i);
             if (themeIconMatches) {
@@ -83,9 +84,10 @@ export default abstract class BaseDataProvider<T> implements vscode.TreeDataProv
         }
         if (typeof icon === 'object') {
             return {
-                light: this.getAbsolutePath(icon.light),
-                dark: this.getAbsolutePath(icon.dark)
+                light: vscode.Uri.file(this.getAbsolutePath(icon.light)),
+                dark: vscode.Uri.file(this.getAbsolutePath(icon.dark))
             };
         }
+        return undefined;
     }
 }

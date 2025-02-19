@@ -68,7 +68,6 @@
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
-        "antlr4ng": "^2.0.8",
         "chalk": "^4.1.1",
         "csv-parse": "^5.3.3",
         "fs-extra": "^11.0",

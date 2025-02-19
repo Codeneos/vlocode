@@ -13,7 +13,7 @@
     "readme": "README.md",
     "publisher": "curlybracket",
     "engines": {
-        "vscode": "^1.80.0"
+        "vscode": "^1.95.0"
     },
     "homepage": "https://github.com/Codeneos/vlocode/tree/main/packages/vscode-extension",
     "categories": [
@@ -1459,7 +1459,7 @@
         "@types/jsforce": "^1.9.38",
         "@types/luxon": "^3.3.0",
         "@types/node": "^20.4.2",
-        "@types/vscode": "^1.70.0",
+        "@types/vscode": "^1.95.0",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
         "@vlocode/salesforce": "workspace:*",

@@ -112,6 +112,7 @@ export class BufferStream implements CharStream {
  * character code for any character that is not `Token.EOF`.
  */
 export class CaseInsensitiveCharStream implements CharStream {
+    public get name() { return this.stream.name; }
     public get index() { return this.stream.index; }
     public get size() { return this.stream.size; }
 
