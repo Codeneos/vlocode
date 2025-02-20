@@ -175,4 +175,30 @@ describe('util', () => {
             expect(result).toEqual(input);
         });
     });
+
+    describe('#substringBetween', () => {
+        it('should return "123" for string "test/123/test/456" with needles "/" and "/"', () => {
+            const input = 'test/123/test/456';
+            const result = string.substringBetween(input, '/', '/');
+            expect(result).toEqual('123');
+        });
+
+        it('should return "123" for string "test/123" with needles "/" and "/"', () => {
+            const input = 'test/123';
+            const result = string.substringBetween(input, '/', '/');
+            expect(result).toEqual('123');
+        });
+
+        it('should return original string "123" when start needle not found for "123" with needles "/" and "/"', () => {
+            const input = '123';
+            const result = string.substringBetween(input, '/', '/');
+            expect(result).toEqual('123');
+        });
+
+        it('should return "123/test" for string "test[123/test]456" with needles "[" and "]"', () => {
+            const input = 'test[123/test]456';
+            const result = string.substringBetween(input, '[', ']');
+            expect(result).toEqual('123/test');
+        });
+    });
 });

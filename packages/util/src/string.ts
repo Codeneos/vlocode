@@ -175,7 +175,7 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
 }
 
 /**
- * Get the substring between the first occurrence of the specified start and end string. 
+ * Get the substring between the last occurrence of the specified start and end string. 
  * If the end string is not found the substring after the start string is returned.
  * If the start string is not found but the end of the string is found the substring before the end string is returned.
  * @param value value to search in
@@ -194,6 +194,27 @@ export function substringBetweenLast(value: string, start: string, end: string):
         return value.substring(indexOfStart + start.length);
     }
     return value;
+}
+
+/**
+ * Returns the first occurrence of the substring between the specified start and end needles.
+ * If the start needle is not found, returns the original string.
+ * If the end needle is not found, returns the substring from after the start needle to the end of the string.
+ * @param value Input string
+ * @param start The starting needle
+ * @param end The ending needle
+ */
+export function substringBetween(value: string, start: string, end: string): string {
+    const startIndex = value.indexOf(start);
+    if (startIndex === -1) {
+        return value;
+    }
+    const startPos = startIndex + start.length;
+    const endIndex = value.indexOf(end, startPos);
+    if (endIndex === -1) {
+        return value.substring(startPos);
+    }
+    return value.substring(startPos, endIndex);
 }
 
 /**
