@@ -115,8 +115,8 @@ export default class extends SalesforceCommand {
         if (groupedSortedMessages.length) {
             this.logger.warn(
                 `${logSymbols.warning} DataPack deployment completed in ${deployTimer.toString('seconds')} with ${
-                    pluralize(errorMessages.length, 'error')} and ${
-                    pluralize(warningsMessages.length, 'warning')}`
+                    pluralize('error', errorMessages)} and ${
+                    pluralize('warning', warningsMessages)}`
                 );
         } else {
             this.logger.info(`${logSymbols.success} DataPack deployment completed in ${deployTimer.toString('seconds')} without errors or warnings`);

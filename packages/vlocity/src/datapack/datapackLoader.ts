@@ -54,12 +54,11 @@ export class DatapackLoader {
 
             this.logger.verbose(`Loaded datapack ${datapackKey} from "${datapackHeader}"`);
 
-            return new VlocityDatapack(datapackHeader,
-                datapackType,
-                datapackKey,
-                getExportProjectFolder(datapackHeader),
-                datapackJson
-            );
+            return new VlocityDatapack(datapackType, datapackJson, {
+                key: datapackKey,
+                headerFile: datapackHeader,
+                projectFolder: getExportProjectFolder(datapackHeader)
+            });
         } catch(error) {
             if (bubbleExceptions) {
                 throw new CustomError(`Error loading datapack ${path.basename(datapackHeader)}: ${getErrorMessage(error, { includeStack: false })}`, error);
@@ -144,7 +143,7 @@ export class DatapackLoader {
                     if (value !== undefined) {
                         return value;
                     }
-                } catch(err) {
+                } catch {
                     // Ignore loader errors; if the loader fails it will return the default value
                 }
             }

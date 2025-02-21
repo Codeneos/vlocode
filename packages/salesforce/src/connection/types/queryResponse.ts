@@ -1,3 +1,5 @@
+import { SObjectRecordAttributes } from "../../types";
+
 /**
  * Query rest API response
  */
@@ -7,13 +9,8 @@ export interface QueryResponse<T extends object = Record<string, unknown>> {
     nextRecordsUrl?: string | undefined | null;
     queryLocator?: string | undefined | null;
     records: Array<T & {
-        attributes: QueryRecordAttributes
+        attributes: SObjectRecordAttributes
     }>
-}
-
-interface QueryRecordAttributes {
-    type: string,
-    url: string
 }
 
 export interface QueryRelationshipInfo<T extends object = Record<string, unknown>> {
@@ -24,12 +21,11 @@ export interface QueryRelationshipInfo<T extends object = Record<string, unknown
     queryLocator?: string | undefined | null;
     entityTypeName?: string;
     records: Array<T & {
-        attributes: QueryRecordAttributes
+        attributes: SObjectRecordAttributes
     }>
 }
 
 export type QueryResultRecord = { 
-    [field: string]: string | boolean | number | null | undefined | Array<QueryResultRecord> | QueryResultRecord;
-} & {
-    attributes: QueryRecordAttributes;
+    attributes: SObjectRecordAttributes;
+    [field: string]: string | boolean | number | null | undefined | Array<QueryResultRecord> | QueryResultRecord | SObjectRecordAttributes;
 }

@@ -1,5 +1,5 @@
 import { dirname } from 'path';
-import { PropertyTransformHandler, removeNamespacePrefix } from '@vlocode/util';
+import { normalizeName, PropertyTransformHandler, removeNamespacePrefix, substringBetween } from '@vlocode/util';
 import { randomUUID as generateGuid } from 'crypto';
 import { ManifestEntry, ObjectEntry } from '../types';
 
@@ -54,6 +54,41 @@ export interface VlocityDatapackSObject extends Record<string, any> {
     VlocityRecordSourceKey: string;
 }
 
+interface VlocityDatapackCreateOptions {
+    headerFile?: string;
+    projectFolder?: string;
+    key?: string;
+}
+
+/**
+ * Determines if the provided data object is a Vlocity datapack record.
+ * 
+ * This function checks if the object contains the properties `VlocityDataPackType` 
+ * and `VlocityRecordSObjectType`, which are indicative of a Vlocity datapack record.
+ * 
+ * @param data - The object to check.
+ * @returns A type predicate indicating whether the object is a Vlocity datapack record.
+ */
+export function isDatapackRecord(data: object) : data is (VlocityDatapackSObject | VlocityDatapackMatchingReference | VlocityDatapackLookupReference) {
+    return 'VlocityDataPackType' in data && 'VlocityRecordSObjectType' in data;
+}
+
+/**
+ * Determines if the given data object is a Vlocity datapack reference.
+ *
+ * This function checks if the provided data object is a valid datapack record
+ * and if its `VlocityDataPackType` is either 'VlocityLookupMatchingKeyObject' or 'VlocityMatchingKeyObject'.
+ *
+ * @param data - The data object to check.
+ * @returns A boolean indicating whether the data object is a Vlocity datapack reference.
+ */
+export function isDatapackReference(data: object) : data is (VlocityDatapackMatchingReference | VlocityDatapackLookupReference) {
+    if (!isDatapackRecord(data)) {
+        return false;
+    }
+    return data.VlocityDataPackType === 'VlocityLookupMatchingKeyObject' || data.VlocityDataPackType === 'VlocityMatchingKeyObject';
+}
+
 /**
  * Simple representation of a datapack; maps common values to properties. Source of the datapsck can be accessed through the `data` property
  */
@@ -61,22 +96,27 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
 
     [key: string] : any;
 
+    public readonly datapackType: string;    
+    public readonly key: string;
+    public readonly projectFolder?: string;
+    public readonly headerFile?: string;
+
     public get globalKey(): string { return this.data['%vlocity_namespace%__GlobalKey__c']; }
     public get name(): string { return this.data.Name; }
     public get sobjectType(): string { return this.data.VlocityRecordSObjectType; }
     public get sourceKey(): string { return this.data.VlocityRecordSourceKey; }
     public get manifestEntry(): ManifestEntry { return { key: this.key, datapackType: this.datapackType }; }
-    public get datapackFolder(): string { return dirname(this.headerFile); }
+    public get datapackFolder() { return this.headerFile ? dirname(this.headerFile) : undefined; }
     public readonly data: object & { [key: string]: any };
 
     #dataProxy: any;
 
-    constructor(
-        public readonly headerFile: string,
-        public readonly datapackType: string,
-        public readonly key: string,
-        public readonly projectFolder: string,
-        data?: any) {
+    // constructor(type: string, data: Buffer, options?: VlocityDatapackCreateOptions);
+    // constructor(type: string, data: string, options?: VlocityDatapackCreateOptions);
+    // constructor(type: string, data: object, options?: VlocityDatapackCreateOptions);
+    // constructor(type: string, data: VlocityDatapackSObject, options?: VlocityDatapackCreateOptions);
+    // constructor(type: string, data?: undefined | null, options?: VlocityDatapackCreateOptions);
+    constructor(type: string, data: unknown, options?: VlocityDatapackCreateOptions) {
         if (Buffer.isBuffer(data)) {
             data = data.toString();
         }
@@ -94,6 +134,10 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
             throw Error(`Specified data type not support: ${typeof data}`);
         }
 
+        this.headerFile = options?.headerFile;
+        this.projectFolder = options?.projectFolder;
+        this.datapackType = type;
+        this.key = options?.key ?? this.getDatapackKey();
         this.#dataProxy = VlocityDatapackDataProxy.create(this.data);
 
         // Proxies allow us to intercept all property calls
@@ -306,6 +350,18 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         }
     }
 
+    private getDatapackKey() {
+        if (this.headerFile) {
+            const [ datapackName ] = this.headerFile.split(/[\\|/]+/).slice(-2, -1);
+            return `${this.datapackType}/${datapackName}`;
+        }
+        if (this.sourceKey) {
+            const name = normalizeName(substringBetween(this.sourceKey, '/', '/'));
+            return `${this.datapackType}/${name}`;
+        }
+        return `${this.datapackType}/${generateGuid()}`;
+    }
+
     private forEachChildObject(object: any, executer: (object: any) => any) {
         return object.keys(object || {}).forEach(key => {
             if (Array.isArray(object[key])) {
@@ -355,6 +411,6 @@ class VlocityDatapackDataProxy<T extends object> extends PropertyTransformHandle
             return name;
         }
         const normalizedName = VlocityDatapackDataProxy.nameTransformer(name.toString());
-        return Object.keys(target).find(key => VlocityDatapackDataProxy.nameTransformer(key) == normalizedName);
+        return Object.keys(target).find(key => VlocityDatapackDataProxy.nameTransformer(key) === normalizedName);
     }
 }

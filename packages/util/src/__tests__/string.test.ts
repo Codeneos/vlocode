@@ -201,4 +201,41 @@ describe('util', () => {
             expect(result).toEqual('123/test');
         });
     });
+
+    describe('#normalizeName', () => {
+        it('should convert Greek, Chinese, Hebrew, and Cyrillic to ASCII', () => {
+            expect(string.normalizeName('Ωμέγα')).toEqual('Omega');
+            expect(string.normalizeName('你好')).toEqual('Ni-Hao');
+            expect(string.normalizeName('Привет')).toEqual('Privet');
+        });
+
+        it('should not contain consecutive dashes or underscores', () => {
+            // Expected transformation: "Test--__@@--Name" -> "Test_Name"
+            expect(string.normalizeName('Test--__@@--Name')).toEqual('Test_Name');
+        });
+
+        it('should not end with a dash or underscore', () => {
+            expect(string.normalizeName('Test-')).toEqual('Test');
+            expect(string.normalizeName('Test_')).toEqual('Test');
+            expect(string.normalizeName('Test--')).toEqual('Test');
+            expect(string.normalizeName('Test__')).toEqual('Test');
+        });
+
+        it('should remove Vlocity namespace patterns', () => {
+            expect(string.normalizeName('vlocity_namespace__Test')).toEqual('Test');
+            expect(string.normalizeName('%vlocity_namespace%__Test')).toEqual('Test');
+            expect(string.normalizeName('vlocity_cmt__Test')).toEqual('Test');
+            expect(string.normalizeName('%vlocity_namespace%__Test/%vlocity_namespace%__Test')).toEqual('Test/Test');
+        });
+
+        it('should replace non-alphanumeric characters appropriately', () => {
+            // Expected transformation:
+            // "Alpha@@@Beta###Gamma--Delta__Epsilon!!!"
+            // -> after replacements: "Alpha-Beta-Gamma--Delta__Epsilon-"
+            // -> condense dashes: "Alpha-Beta-Gamma-Delta__Epsilon-"
+            // -> condense mixed groups: "Alpha-Beta-Gamma-Delta_Epsilon-"
+            // -> remove trailing dash: "Alpha-Beta-Gamma-Delta_Epsilon"
+            expect(string.normalizeName('Alpha@@@Beta###Gamma--Delta__Epsilon!!!')).toEqual('Alpha-Beta-Gamma-Delta_Epsilon');
+        });
+    });
 });

@@ -45,7 +45,7 @@ describe('datapackRecordFactory', () => {
         testContainer.register(await new SchemaDataStore().loadFromFile(schemaDataFile));
         testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);
 
-        const datapack = new VlocityDatapack('', datapackData.VlocityDataPackType, datapackData.VlocityRecordSourceKey, '', datapackData);
+        const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
         const sut = testContainer.create(DatapackRecordFactory);
 
         // Act
@@ -226,7 +226,7 @@ describe('datapackRecordFactory', () => {
         testContainer.register(await new SchemaDataStore().load(schemaData));
         testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);
 
-        const datapack = new VlocityDatapack('', datapackData.VlocityDataPackType, datapackData.VlocityRecordSourceKey, '', datapackData);
+        const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
         const sut = testContainer.create(DatapackRecordFactory);
 
         // Act

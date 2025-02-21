@@ -58,7 +58,8 @@
         "fs-extra": "^11.0",
         "open": "^8.2.1",
         "optional-require": "^1.1.7",
-        "reflect-metadata": "^0.1.13"
+        "reflect-metadata": "^0.1.13",
+        "unidecode": "^1.1.0"
     },
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"

@@ -17,6 +17,10 @@ export abstract class SalesforceCommand extends Command {
         new Option('--replay-session <file>', 'load the specified session log previously recorded through the replay session option').conflicts('record-session'),
     ];
 
+    protected getConnection() {
+        return this.container.get(SalesforceConnectionProvider).getJsForceConnection();
+    }
+
     protected container = container.new();
 
     protected async init(options: any) {

@@ -14,13 +14,9 @@ describe('datapackDeployer', () => {
     });
 
     function createDatapack(type: string, data: any) {
-        return new VlocityDatapack(
-            './mydatapack_DataPack.json',
-            type,
-            data.VlocityRecordSourceKey,
-            './project-folder',
-            data
-        );
+        return new VlocityDatapack(type, data, {
+            key: data.VlocityRecordSourceKey
+        });
     }
 
     describe('#evalFilter', () => {

@@ -6,6 +6,7 @@
 export * from './deploymentSpecs';
 export * from './types';
 export * from './scss';
+export * from './convert';
 export * from './datapackDeploy';
 export * from './datapackDeployer';
 export * from './datapackDeployment';

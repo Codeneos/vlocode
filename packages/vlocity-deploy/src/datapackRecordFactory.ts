@@ -62,7 +62,7 @@ export class DatapackRecordFactory {
                 for (const item of Array.isArray(value) ? value : [ value ]) {
                     if (item.VlocityDataPackType === 'SObject') {
                         // Embedded datapack
-                        const embeddedDatapack = new VlocityDatapack(datapack.headerFile, datapack.datapackType, datapack.key, '', item);
+                        const embeddedDatapack = new VlocityDatapack(datapack.datapackType, item, { key: datapack.key });
                         const embeddedRecords = await this.createRecords(embeddedDatapack);
                         records.push(...embeddedRecords);
                     } else if (item.VlocityDataPackType?.endsWith('MatchingKeyObject')) {

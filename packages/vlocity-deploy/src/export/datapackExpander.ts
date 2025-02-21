@@ -1,8 +1,7 @@
 import path from "path/posix";
-import unidecode from "unidecode";
 
 import { injectable, Logger } from "@vlocode/core";
-import { formatString, substringAfter } from "@vlocode/util";
+import { formatString, normalizeName, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 import { ObjectRef } from "./datapackExporter";
@@ -168,14 +167,7 @@ export class DatapackExpander {
     }
 
     private normalizeFileName(path: string, extension?: string) {
-        const normalized = unidecode(path)
-            .replace(/%vlocity_namespace%__/gi, '')
-            .replace(/vlocity_([a-z]{2,4})__/gi, '')
-            .replace(/[^A-Z0-9\\/_-]+/gi, '-')
-            .replace(/-+/g, '-')
-            .replace(/[-_]{2,}/g, '_')
-            .replace(/^[-_\\/]+/, '')
-            .replace(/[-_\\/]+$/, '');
+        const normalized = normalizeName(path);
         if (extension) {
             return `${normalized}.${extension}`;
         }

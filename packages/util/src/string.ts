@@ -1,5 +1,6 @@
 import { compileFunction } from './compiler';
 import { getObjectProperty } from './object';
+import unidecode from 'unidecode';
 
 /**
  * Compares strings for equality; by default comparisons are case insensitive
@@ -183,7 +184,10 @@ export function substringAfter(value: string, delimiter: string | RegExp): strin
  * @param end end string
  * @returns 
  */
-export function substringBetweenLast(value: string, start: string, end: string): string {
+export function substringBetweenLast(value: string, start: string, end?: string): string {
+    if (end === undefined) {
+        return substringBetweenLast(value, start, start);
+    }
     const indexOfEnd = value.lastIndexOf(end);
     if (indexOfEnd < 0) {
         return substringAfterLast(value, start);
@@ -345,10 +349,46 @@ export function encodeQueryString(params: object): string {
 /**
  * Returns a string with the specified unit pluralized based on the count.
  *
- * @param count - The count of the unit.
  * @param unit - The unit to be pluralized.
+ * @param count - The count of the unit.
  * @returns The pluralized string.
  */
-export function pluralize(count: number, unit: string) {
+export function pluralize(unit: unknown, count: number | Array<unknown>) {
+    count = Array.isArray(count) ? count.length : count;
     return count === 1 ? `${count} ${unit}` : `${count} ${unit}s`;
+}
+
+// Precompiled regexes for optimize normalizeName function
+const vlocityNamespaceRegex = /(%vlocity_namespace%|vlocity_namespace)__/gi;
+const vlocityRegex = /vlocity_([a-z]{2,4})__/gi;
+const nonAlphaNumRegex = /[^A-Z0-9\\/_-]+/gi;
+const multiDashRegex = /-+/g;
+const multiHyphenUnderscoreRegex = /[-_]{2,}/g;
+const leadingCharsRegex = /^[-_\\/]+/;
+const trailingCharsRegex = /[-_\\/]+$/;
+
+/**
+ * Normalizes a given name string by performing the following transformations:
+ * - Normalizes the string using Unicode Normalization Form D (NFD).
+ * - Removes accents and diacritical marks.
+ * - Removes occurrences of the Vlocity namespace.
+ * - Removes occurrences of the Vlocity keyword.
+ * - Replaces non-alphanumeric characters with a hyphen ('-').
+ * - Replaces multiple consecutive hyphens with a single hyphen.
+ * - Replaces multiple consecutive hyphens and underscores with a single underscore.
+ * - Removes leading non-alphanumeric characters.
+ * - Removes trailing non-alphanumeric characters.
+ *
+ * @param name - The name string to be normalized.
+ * @returns The normalized name string.
+ */
+export function normalizeName(name: string) {
+    return unidecode(name)
+        .replace(vlocityNamespaceRegex, '')
+        .replace(vlocityRegex, '')
+        .replace(nonAlphaNumRegex, '-')
+        .replace(multiDashRegex, '-')
+        .replace(multiHyphenUnderscoreRegex, '_')
+        .replace(leadingCharsRegex, '')
+        .replace(trailingCharsRegex, '');
 }

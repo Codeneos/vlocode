@@ -41,7 +41,7 @@ try {
     salesforce.Logger.root().then(logger => {
         logger.useMemoryLogging();
     });
-} catch(err) {
+} catch {
     // Ignore errors while updating SFDX logger
 }
 
@@ -258,9 +258,14 @@ export namespace sfdx {
     }
 
     export async function getOrgDetails(usernameOrAlias: string) : Promise<SalesforceOrgInfo | undefined> {
+        if (!usernameOrAlias) {
+            throw new Error('No username or alias specified');
+        }
+        const username = usernameOrAlias.toLowerCase().trim();
         for await (const config of getAllValidatedConfigs()) {
-            if (config.username?.toLowerCase() === usernameOrAlias?.toLowerCase() || 
-                config.aliases.some(alias => alias.toLowerCase() === usernameOrAlias?.toLowerCase())) {
+            if (config.username?.toLowerCase() === username || 
+                config.aliases.some(alias => alias.toLowerCase() === username)
+            ) {
                 return config;
             }
         }

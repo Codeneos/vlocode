@@ -24,7 +24,7 @@ export class VlocityUITemplate implements DatapackDeploymentSpec {
     public async preprocess(datapack: VlocityDatapack) {
         if (datapack.sass__c) {
             const timer = new Timer();
-            const includePaths = [ datapack.datapackFolder, path.join(datapack.datapackFolder, '..') ];
+            const includePaths = datapack.datapackFolder ? [ datapack.datapackFolder, path.join(datapack.datapackFolder, '..') ] : [];
             const result = await this.sass.compile(datapack.sass__c, { importer: { includePaths } });
             this.logger.info(`Compiled ${datapack.name} SASS [${timer.stop()}]`);
             datapack['%vlocity_namespace%__Css__c'] = result.css;
