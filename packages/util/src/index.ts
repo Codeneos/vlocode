@@ -4,6 +4,7 @@
  * @description Vlocode's util module contains a broad selection utility methods and classes as well as type definitions to allow using vscode specific constructs without depending on the vscode libraries or types.
  */
 export * from './async';
+export * from './buffer';
 export * from './cache';
 export * from './callStack';
 export * from './cancellationToken';

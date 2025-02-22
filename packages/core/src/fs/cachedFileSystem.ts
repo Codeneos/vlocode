@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import { cache, clearCache } from '@vlocode/util';
 import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 
@@ -24,7 +23,9 @@ export class CachedFileSystemAdapter extends FileSystem {
         return this.innerFs.readFile(fileName);
     }
 
-    @cache({ unwrapPromise: true, immutable: true })
+    public stat(path: string, options?: { throws: true }): Promise<FileStat>;
+    public stat(path: string, options?: StatsOptions): Promise<FileStat | undefined>;
+    @cache({ unwrapPromise: true, immutable: true })    
     public stat(path: string, options?: StatsOptions): Promise<FileStat | undefined> {
         return this.innerFs.stat(path, options);
     }

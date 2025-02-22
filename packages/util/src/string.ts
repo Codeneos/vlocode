@@ -355,7 +355,8 @@ export function encodeQueryString(params: object): string {
  */
 export function pluralize(unit: unknown, count: number | Array<unknown>) {
     count = Array.isArray(count) ? count.length : count;
-    return count === 1 ? `${count} ${unit}` : `${count} ${unit}s`;
+    const unitStr = `${unit}`;
+    return count === 1 ? `${count} ${unit}` : `${count} ${unitStr}${unitStr.endsWith('s') ? 'es' : 's'}`;
 }
 
 // Precompiled regexes for optimize normalizeName function

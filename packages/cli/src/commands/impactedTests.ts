@@ -1,28 +1,19 @@
 import { Logger, LogManager, FileSystem, injectable } from '@vlocode/core';
-import { Timer, stringEqualsIgnoreCase, unique } from '@vlocode/util';
+import { pluralize, Timer } from '@vlocode/util';
 import { existsSync} from 'fs-extra';
-import path from 'path';
-import chalk from 'chalk';
 
-import { Parser } from '@vlocode/apex';
+import { Apex } from '@vlocode/apex';
 import { Argument, Option, Command } from '../command';
-
-interface ApexClassInfo {
-    name: string,
-    file: string,
-    isAbstract: boolean,
-    isTest: boolean,
-    refs: string[],
-    testClasses?: string[]
-}
 
 @injectable()
 export default class extends Command {
 
-    static description = 'Find impacted unit tests for a given set of APEX classes';
+    static description = 'Find impacted unit test classes for a given set of APEX classes. ' + 
+        'This command parses source files to map references between APEX classes and their corresponding test classes, ' +
+        'and identifies both directly and indirectly impacted tests based on the provided search depth.';
 
     static args = [
-        new Argument('<folders...>', 'path to a folder containing the APEX classes files and triggers to parse')
+        new Argument('<classFiles...>', 'List of APEX class file paths to analyze. Provide one or more file paths to determine which test classes may be impacted.')
             .argParser((value, previous: string[] | undefined) => {
                 if (!existsSync(value)) {
                     throw new Error('No such folder exists');
@@ -32,9 +23,15 @@ export default class extends Command {
     ];
 
     static options = [
-        new Option('--classes <classes...>', 'list of classes to find impacted tests for'),
-        new Option('--output <file>', 'path to the file to which to write the impacted tested output as JSON').default('impactedTests.json')
+        new Option('--sources <folder>', 'Folder containing the source files for APEX classes used to build the dependency map for impacted test classes.')
+            .makeOptionMandatory(false),
+        new Option('--depth <depth>', 'Specifies the search depth for identifying indirectly impacted test classes. Default is 0 (only direct test classes are considered).')
+            .makeOptionMandatory(false),
+        new Option('--output (<file>)', 'Path to the output file where the impacted test classes will be written as JSON. Defaults to "impactedTests.json".')
+            .default('impactedTests.json')
     ];
+
+    private apex = new Apex();
 
     constructor(
         private fileSystem: FileSystem,
@@ -43,93 +40,28 @@ export default class extends Command {
         super();
     }
 
-    public async run(folders: string[], options: { classes?: string[] }) {
-        const timerAll = new Timer();
-
-        const data = await this.parseSourceFiles(folders);
-        const testClasses = Object.values(data).filter((info) => info.isTest);
-
-        this.logger.info(`Parsed ${Object.keys(data).length} in ${timerAll.toString('ms')}`);
-        this.logger.info(`Found ${testClasses.length} test classes`);
-
-        for (const classInfo of Object.values(data)) {
-            if (classInfo.isTest) {
-                continue;
-            }
-
-            const directTestClasses = testClasses.filter(testClass =>
-                testClass.refs.some(ref => stringEqualsIgnoreCase(ref, classInfo.name))
-            );
-            const indirectTestClasses = testClasses.filter(testClass =>
-                testClass.refs.some(ref => {
-                    const refInfo = data[ref.toLowerCase()];
-                    return refInfo && refInfo.refs.some(ref => stringEqualsIgnoreCase(ref, classInfo.name));
-                })
-            );
-
-            classInfo.testClasses = [
-                ...directTestClasses,
-                ...indirectTestClasses
-            ].map(testClass => testClass.name);
+    public async run(apexClassFiles: string[], options: { sources?: string, output?: string, depth?: number }) {
+        this.logger.info(`Searching impacted tests classes for ${pluralize('APEX file', apexClassFiles.length)}`);
+        this.logger.info(`Search depth: ${options?.depth ?? 0}`);
+        this.logger.info(`Source folder: ${options.sources ?? 'auto'}`);
+        this.logger.info(`Output file: ${options.output ?? 'N/A'}`)
+        this.logger.verbose(`APEX Classes: ${apexClassFiles.join(', ')}`);
+        
+        for (const classFile of apexClassFiles) {
+            this.logger.verbose(`\u2022 ${classFile}`);
         }
 
-        for (const className of options.classes ?? []) {
-            const classInfo = data[className.toLowerCase()];
-            if (!classInfo) {
-                this.logger.error(`Class ${className} not found`);
-                continue;
-            }
-
-            this.logger.info(`Class ${chalk.bold(classInfo.name)} is referenced by ${chalk.bold(classInfo.testClasses?.length ?? 0)} test classes`);
-            if (classInfo.testClasses?.length) {
-                this.logger.info(`Test classes: ${classInfo.testClasses.join(', ')}`);
-            }
-        }
-        this.logger.info(`Write impacted tests to impactedTests.json`);
-        await this.fileSystem.writeFile('impactedTests.json', Buffer.from(JSON.stringify(data, null, 4)));
-        this.logger.info(`Parsed ${Object.keys(data).length} in ${timerAll.toString('ms')}`);
-    }
-
-    private async parseSourceFiles(folders: string[]) {
-        const data: Record<string, ApexClassInfo> = {};
-
-        for (const folder of folders) {
-            for await (const { buffer, file } of this.readSourceFiles(folder)) {
-                const parseTimer = new Timer();
-                const parser = new Parser(buffer);
-                const struct = parser.getCodeStructure();
-
-                for (const classInfo of struct.classes) {
-                    //const refs = parser.getReferencedTypes({ excludeSystemTypes: true });
-                    data[classInfo.name.toLowerCase()] = {
-                        name: classInfo.name,
-                        file,
-                        isAbstract: !!classInfo.isAbstract,
-                        isTest: !!classInfo.isTest,
-                        refs: [...unique(classInfo.refs, ref => ref.name.toLowerCase(), ref => ref.name)]
-                    };
-                }
-
-                this.logger.info(`Parsed ${file} in ${parseTimer.toString('ms')}`);
-            }
+        const timer = new Timer();
+        const impactedClasses = await this.apex.findImpactedTests(apexClassFiles, { sourceFolder: options.sources, depth: options.depth });
+        this.logger.info(`\u2713 Parsed ${pluralize('file', this.apex.parsedFileCount)} in ${timer.stop().toString('seconds')}`);
+        this.logger.info(`Found ${pluralize('impacted test class', impactedClasses.length)}:`);
+        for (const impactedClass of impactedClasses) {
+            this.logger.info(`\u2022 ${impactedClass}`);
         }
 
-        return data;
-    }
-
-    private async* readSourceFiles(folder: string){
-        for (const file of await this.fileSystem.readDirectory(folder)) {
-            const fullPath = path.join(folder, file.name);
-            if (file.isDirectory()) {
-                yield* this.readSourceFiles(fullPath);
-            }
-            if (file.isFile() && file.name.endsWith('.cls') || file.name.endsWith('.trigger')) {
-                yield {
-                    buffer: await this.fileSystem.readFile(fullPath),
-                    fullPath,
-                    file: file.name
-                };
-            }
+        if (options.output) {
+            this.logger.info(`Write impacted tests to: ${options.output}`);
+            await this.fileSystem.outputFile(options.output, impactedClasses);
         }
     }
 }

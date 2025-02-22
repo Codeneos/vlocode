@@ -1,6 +1,6 @@
 import { spreadAsync } from '@vlocode/util';
-import { minimatch, MinimatchOptions } from 'minimatch'
-import { Glob } from 'glob'
+import { FSOption, Glob } from 'glob'
+import type { Dirent, Stats } from 'fs';
 
 export interface StatsOptions {
     /**
@@ -144,13 +144,17 @@ export abstract class FileSystem {
         return (await this.readFile(path)).toString(encoding);
     }
 
+    public async realPath(path: string): Promise<string> {
+        return (await this.stat(path))?.name ?? path;
+    }
+
     /**
      * Write a file to the file system, when the directory does not exists it will be created.
      * @param path path to the file to read
      * @param body body to write to the file
      * @param options write options
      */
-    public async outputFile(path: string, body?: Buffer | string, options?: OutputOptions) {
+    public async outputFile(path: string, body?: Buffer | string | unknown, options?: OutputOptions) {
         if (!await this.pathExists(path)) {
             let currentPath = '';
             for (const folder of path.split(/\//).filter(folder => !!folder).slice(0, -1)) {
@@ -158,9 +162,9 @@ export abstract class FileSystem {
                 await this.createDirectory(currentPath);
             }
         }
-        const fileBody = typeof body === 'string' || body === undefined
+        const fileBody = typeof body === 'string' || body === undefined || body === null
             ? Buffer.from(body ?? '', options?.encoding ?? 'utf-8')
-            : body;
+            : Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body));
         return this.writeFile(path, fileBody, options);
     }
 
@@ -218,19 +222,6 @@ export abstract class FileSystem {
         }
     }
 
-    private compilePatterns(patterns: GlobPatterns, options?: MinimatchOptions): RegExp[] {
-        return (Array.isArray(patterns) ? patterns : [ patterns ]).map(pattern => {
-            if (typeof pattern === 'string') {
-                const compiled = minimatch.makeRe(this.normalizeSeparators(pattern), options);
-                if (!compiled) {
-                    throw new Error(`Invalid glob pattern: ${pattern}`);
-                }
-                return compiled;
-            } 
-            return pattern;
-        });
-    }
-
     private normalizeSeparators(path: string): string {
         // Normalize windows path separator to posix for globby
         return path.replace(/[/\\]+/g, '/');
@@ -263,7 +254,9 @@ export abstract class FileSystem {
     /**
      * Get file statistics; returns undefined when the file does not exists
      * @param path Path to check
-     */
+     */    
+    public abstract stat(path: string, options?: { throws: true }): Promise<FileStat>;
+    public abstract stat(path: string, options?: StatsOptions): Promise<FileStat | undefined>;
     public abstract stat(path: string, options?: StatsOptions): Promise<FileStat | undefined>;
 
     /**
@@ -285,4 +278,65 @@ export abstract class FileSystem {
     public findFiles(globPatterns: string | string[]): Promise<string[]> {
         return spreadAsync(this.find(globPatterns, { findType: FindType.file }));
     }
+
+    protected getGlobFs(): Required<FSOption['promises']> {
+        return new GlobFsAdapter(this);
+    }
+}
+
+class GlobFsAdapter {
+    constructor(private readonly fs: FileSystem) { }
+
+    public readdir(path: string): Promise<Dirent[]> {
+        return this.fs.readDirectory(path).then(files => files.map(file => new DirentAdapter(file)));
+    }
+
+    public lstat(path: string): Promise<Stats> {
+        return this.fs.stat(path, { throws: true }).then(stats => new StatsAdapter(stats));
+    }
+
+    public realpath(): Promise<string> {
+        throw new Error('Method not implemented.');
+    }
+
+    public readlink(): Promise<string> {
+        throw new Error('Method not implemented.');
+    }
+}
+
+class DirentAdapter<T extends FileInfo = FileInfo> implements Dirent {
+    constructor(protected readonly file: T) {}
+    isFile() { return this.file.isFile(); }
+    isDirectory() { return this.file.isDirectory(); }
+    isBlockDevice() { return false; }
+    isCharacterDevice() { return false; }
+    isSymbolicLink() { return false; }
+    isFIFO() { return false; }
+    isSocket() { return false; }
+    get name() { return this.file.name; }
+    get path() { return this.file.name; }
+}
+
+class StatsAdapter extends DirentAdapter<FileStat> implements Stats {
+    constructor(file: FileStat) {
+        super(file);
+    }
+    dev: number;
+    ino: number;
+    mode: number;
+    nlink: number;
+    uid: number;
+    gid: number;
+    rdev: number;
+    blksize: number;
+    blocks: number;
+    atimeMs: number;
+    birthtimeMs: number;
+    atime: Date;
+    birthtime: Date;
+    get ctime() { return new Date(this.file.ctime); }
+    get mtime() { return new Date(this.file.mtime); }
+    get ctimeMs() { return this.file.ctime; }
+    get mtimeMs() { return this.file.mtime; }
+    get size() { return this.file.size; }
 }

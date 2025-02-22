@@ -47,9 +47,9 @@ export namespace ApexSourceRange {
 
 export interface ApexInterface extends SourceFragment {
     name: string;
+    extends: ApexTypeRef[];
     methods: ApexMethod[];
-    properties: ApexProperty[];
-    fields: ApexField[];
+    refs: ApexTypeRef[];
 }
 
 export interface ApexClass extends SourceFragment {
@@ -66,6 +66,7 @@ export interface ApexClass extends SourceFragment {
     sharing?: ApexSharingModifier;
     extends?: ApexTypeRef;
     nested: ApexClass[];
+    interfaces?: ApexInterface[];
     refs: ApexTypeRef[];
 }
 

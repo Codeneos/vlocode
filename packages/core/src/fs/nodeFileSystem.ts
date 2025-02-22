@@ -14,6 +14,8 @@ export class NodeFileSystem extends FileSystem {
         super();
     }
 
+    public stat(path: string, options?: { throws: true }): Promise<FileStat>;
+    public stat(path: string, options?: StatsOptions): Promise<FileStat | undefined>;
     public stat(path: string, options?: StatsOptions): Promise<FileStat | undefined> {
         return new Promise((resolve, reject) => this.innerFs.stat(path, (err, result) => {
             if (err) {

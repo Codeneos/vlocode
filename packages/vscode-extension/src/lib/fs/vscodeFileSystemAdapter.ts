@@ -20,6 +20,8 @@ export class VSCodeFileSystemAdapter extends FileSystem {
         return Buffer.from(result);
     }
 
+    public async stat(path: string, options?: { throws: true }): Promise<FileStat>;
+    public async stat(path: string, options?: StatsOptions): Promise<FileStat | undefined>;
     public async stat(path: string, options?: StatsOptions): Promise<FileStat | undefined> {
         try {
             return new VSCodeFileStatsAdapter(path, await workspace.fs.stat(this.pathToUri(path)));

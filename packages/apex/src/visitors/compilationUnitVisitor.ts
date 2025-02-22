@@ -1,7 +1,8 @@
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { ClassDeclarationVisitor } from "./classDeclarationVisitor";
-import { ApexClass, ApexCompilationUnit, ApexSourceRange } from "../types";
+import { ApexClass, ApexCompilationUnit, ApexInterface, ApexSourceRange } from "../types";
 import { TypeDeclarationContext } from "../grammar";
+import { InterfaceDeclarationVisitor } from "./interfaceDeclarationVisitor";
 
 export class CompilationUnitVisitor extends ApexSyntaxTreeVisitor<ApexCompilationUnit> {
     constructor(state?: ApexCompilationUnit) {
@@ -14,6 +15,12 @@ export class CompilationUnitVisitor extends ApexSyntaxTreeVisitor<ApexCompilatio
             if (classInfo) {
                 classInfo.sourceRange = ApexSourceRange.fromToken(ctx);
                 this.addClass(classInfo);
+            }
+        } else if (ctx.interfaceDeclaration()) {
+            const interfaceInfo = new InterfaceDeclarationVisitor().visit(ctx);
+            if (interfaceInfo) {
+                interfaceInfo.sourceRange = ApexSourceRange.fromToken(ctx);
+                this.addInterface(interfaceInfo);
             }
         }
         return this.state;
@@ -31,5 +38,9 @@ export class CompilationUnitVisitor extends ApexSyntaxTreeVisitor<ApexCompilatio
                 }))
             );
         }
+    }
+
+    private addInterface(interfaceInfo: ApexInterface) {
+        this.state.interfaces.push(interfaceInfo);
     }
 }

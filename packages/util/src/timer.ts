@@ -31,10 +31,16 @@ export class Timer {
         return this.toString();
     }
 
+    public start(): this {
+        this.#start = Date.now();
+        this.#stop = 0;
+        return this;
+    }
+
     public stop(): this {
         if (!this.#stop) {
             this.#stop = Date.now();
-            this.#elapsed += this.#stop - this.#start;
+            this.#elapsed += (this.#stop - this.#start);
         }
         return this;
     }

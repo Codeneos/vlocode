@@ -1,7 +1,7 @@
 import { ApexMethod, ApexMethodModifier, ApexSourceRange, ApexTypeRef } from "../types";
 import { FormalParameterVisitor } from "./formalParameterVisitor";
 import { TypeRefVisitor } from "./typeRefVisitor";
-import { AnnotationContext, BlockContext, FormalParametersContext, MethodDeclarationContext, ModifierContext } from "../grammar";
+import { AnnotationContext, BlockContext, FormalParametersContext, InterfaceMethodDeclarationContext, MethodDeclarationContext, ModifierContext } from "../grammar";
 import { BlockVisitor } from "./blockVisitor";
 
 export class MethodDeclarationVisitor extends BlockVisitor<ApexMethod> {
@@ -49,10 +49,19 @@ export class MethodDeclarationVisitor extends BlockVisitor<ApexMethod> {
         return this.state;
     }
 
-    public visitMethodDeclaration(ctx: MethodDeclarationContext) {
+    public visitInterfaceMethodDeclaration(ctx: InterfaceMethodDeclarationContext): ApexMethod {
+        return this.visitGenericMethodDeclaration(ctx);
+    }
+
+    public visitMethodDeclaration(ctx: MethodDeclarationContext): ApexMethod {
+        this.visitGenericMethodDeclaration(ctx);
+        ctx.block()?.accept(this);
+        return this.state;
+    }
+
+    public visitGenericMethodDeclaration(ctx: MethodDeclarationContext | InterfaceMethodDeclarationContext): ApexMethod {
         this.state.name = ctx.id().getText();
         ctx.formalParameters().accept(this);
-        ctx.block()?.accept(this);
         if (ctx.VOID()) {
             this.state.returnType = ApexTypeRef.fromString('void');
         } else {
