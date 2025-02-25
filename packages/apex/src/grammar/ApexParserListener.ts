@@ -1,15 +1,16 @@
+// eslint-disable-file
 // Generated from ./grammar/ApexParser.g4 by ANTLR 4.13.1
 
 import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";
 
 
-import { TriggerUnitContext } from "./ApexParser.js";
-import { TriggerCaseContext } from "./ApexParser.js";
 import { CompilationUnitContext } from "./ApexParser.js";
 import { TypeDeclarationContext } from "./ApexParser.js";
 import { ClassDeclarationContext } from "./ApexParser.js";
 import { EnumDeclarationContext } from "./ApexParser.js";
 import { EnumConstantsContext } from "./ApexParser.js";
+import { TriggerDeclarationContext } from "./ApexParser.js";
+import { TriggerEventContext } from "./ApexParser.js";
 import { InterfaceDeclarationContext } from "./ApexParser.js";
 import { TypeListContext } from "./ApexParser.js";
 import { ClassBodyContext } from "./ApexParser.js";
@@ -185,26 +186,6 @@ import { AnyIdContext } from "./ApexParser.js";
  */
 export class ApexParserListener implements ParseTreeListener {
     /**
-     * Enter a parse tree produced by `ApexParser.triggerUnit`.
-     * @param ctx the parse tree
-     */
-    enterTriggerUnit? (ctx: TriggerUnitContext): void;
-    /**
-     * Exit a parse tree produced by `ApexParser.triggerUnit`.
-     * @param ctx the parse tree
-     */
-    exitTriggerUnit? (ctx: TriggerUnitContext): void;
-    /**
-     * Enter a parse tree produced by `ApexParser.triggerCase`.
-     * @param ctx the parse tree
-     */
-    enterTriggerCase? (ctx: TriggerCaseContext): void;
-    /**
-     * Exit a parse tree produced by `ApexParser.triggerCase`.
-     * @param ctx the parse tree
-     */
-    exitTriggerCase? (ctx: TriggerCaseContext): void;
-    /**
      * Enter a parse tree produced by `ApexParser.compilationUnit`.
      * @param ctx the parse tree
      */
@@ -254,6 +235,26 @@ export class ApexParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitEnumConstants? (ctx: EnumConstantsContext): void;
+    /**
+     * Enter a parse tree produced by `ApexParser.triggerDeclaration`.
+     * @param ctx the parse tree
+     */
+    enterTriggerDeclaration? (ctx: TriggerDeclarationContext): void;
+    /**
+     * Exit a parse tree produced by `ApexParser.triggerDeclaration`.
+     * @param ctx the parse tree
+     */
+    exitTriggerDeclaration? (ctx: TriggerDeclarationContext): void;
+    /**
+     * Enter a parse tree produced by `ApexParser.triggerEvent`.
+     * @param ctx the parse tree
+     */
+    enterTriggerEvent? (ctx: TriggerEventContext): void;
+    /**
+     * Exit a parse tree produced by `ApexParser.triggerEvent`.
+     * @param ctx the parse tree
+     */
+    exitTriggerEvent? (ctx: TriggerEventContext): void;
     /**
      * Enter a parse tree produced by `ApexParser.interfaceDeclaration`.
      * @param ctx the parse tree
@@ -1989,9 +1990,9 @@ export class ApexParserListener implements ParseTreeListener {
      */
     exitAnyId? (ctx: AnyIdContext): void;
 
-    visitTerminal(node: TerminalNode): void {} // eslint-disable-line
-    visitErrorNode(node: ErrorNode): void {} // eslint-disable-line
-    enterEveryRule(node: ParserRuleContext): void {} // eslint-disable-line
-    exitEveryRule(node: ParserRuleContext): void {} // eslint-disable-line
+    visitTerminal(node: TerminalNode): void {}
+    visitErrorNode(node: ErrorNode): void {}
+    enterEveryRule(node: ParserRuleContext): void {}
+    exitEveryRule(node: ParserRuleContext): void {}
 }
 

@@ -14,6 +14,7 @@ module.exports = {
         "node_modules/**/*",
         ".vscode/**/*",
         ".vscode-test/**/*",
+        "packages/apex/src/grammar",
         "packages/vscode-extension/build",
         "jest.config.ts",
         "**/*/jest.config.ts"
@@ -25,10 +26,10 @@ module.exports = {
     parser: "@typescript-eslint/parser",
     parserOptions: {
         tsconfigRootDir: __dirname,
-		project: [ 
+        project: [ 
             'packages/**/tsconfig.json'
         ]
-	},
+    },
     plugins: [
         "@typescript-eslint"
     ],

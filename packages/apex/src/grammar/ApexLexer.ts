@@ -1,7 +1,6 @@
 // Generated from ./grammar/ApexLexer.g4 by ANTLR 4.13.1
 
 import * as antlr from "antlr4ng";
-import { Token } from "antlr4ng";
 import { CaseInsensitiveCharStream } from "../streams";
 
 

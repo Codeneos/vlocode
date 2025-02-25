@@ -3,13 +3,13 @@
 import { AbstractParseTreeVisitor } from "antlr4ng";
 
 
-import { TriggerUnitContext } from "./ApexParser.js";
-import { TriggerCaseContext } from "./ApexParser.js";
 import { CompilationUnitContext } from "./ApexParser.js";
 import { TypeDeclarationContext } from "./ApexParser.js";
 import { ClassDeclarationContext } from "./ApexParser.js";
 import { EnumDeclarationContext } from "./ApexParser.js";
 import { EnumConstantsContext } from "./ApexParser.js";
+import { TriggerDeclarationContext } from "./ApexParser.js";
+import { TriggerEventContext } from "./ApexParser.js";
 import { InterfaceDeclarationContext } from "./ApexParser.js";
 import { TypeListContext } from "./ApexParser.js";
 import { ClassBodyContext } from "./ApexParser.js";
@@ -178,8 +178,6 @@ import { SoslIdContext } from "./ApexParser.js";
 import { IdContext } from "./ApexParser.js";
 import { AnyIdContext } from "./ApexParser.js";
 
-// Regex: (\w+)\?: (\([^\)]+\)) => (\w+);
-// Replace: $1? $2: $3; \1? \2: \3;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
@@ -189,18 +187,6 @@ import { AnyIdContext } from "./ApexParser.js";
  * operations with no return type.
  */
 export class ApexParserVisitor<Result> extends AbstractParseTreeVisitor<Result> {
-    /**
-     * Visit a parse tree produced by `ApexParser.triggerUnit`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTriggerUnit? (ctx: TriggerUnitContext): Result;
-    /**
-     * Visit a parse tree produced by `ApexParser.triggerCase`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTriggerCase? (ctx: TriggerCaseContext): Result;
     /**
      * Visit a parse tree produced by `ApexParser.compilationUnit`.
      * @param ctx the parse tree
@@ -231,6 +217,18 @@ export class ApexParserVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitEnumConstants? (ctx: EnumConstantsContext): Result;
+    /**
+     * Visit a parse tree produced by `ApexParser.triggerDeclaration`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTriggerDeclaration? (ctx: TriggerDeclarationContext): Result;
+    /**
+     * Visit a parse tree produced by `ApexParser.triggerEvent`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTriggerEvent? (ctx: TriggerEventContext): Result;
     /**
      * Visit a parse tree produced by `ApexParser.interfaceDeclaration`.
      * @param ctx the parse tree
