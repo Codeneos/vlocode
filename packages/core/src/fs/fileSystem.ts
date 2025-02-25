@@ -1,6 +1,6 @@
 import { spreadAsync } from '@vlocode/util';
 import { FSOption, Glob } from 'glob'
-import type { Dirent, Stats } from 'fs';
+import fs from 'fs';
 
 export interface StatsOptions {
     /**
@@ -83,7 +83,7 @@ export interface FileInfo {
 
 export interface FileStat extends FileInfo {
     /**
-     * The file name that this `DirectoryEntry` object refers to.
+     * The file name that this `FileStat` object refers to.
      */
     readonly name: string;
     /**
@@ -195,6 +195,7 @@ export abstract class FileSystem {
             pattern => (options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ]).map(
                 (cwd: string | undefined) => new Glob(pattern, { 
                     cwd,
+                    fs: this.getGlobFs(),
                     withFileTypes: true,
                     windowsPathsNoEscape: true,
                     dotRelative: true,
@@ -279,64 +280,7 @@ export abstract class FileSystem {
         return spreadAsync(this.find(globPatterns, { findType: FindType.file }));
     }
 
-    protected getGlobFs(): Required<FSOption['promises']> {
-        return new GlobFsAdapter(this);
+    protected getGlobFs(): Required<FSOption> {
+        return fs;
     }
-}
-
-class GlobFsAdapter {
-    constructor(private readonly fs: FileSystem) { }
-
-    public readdir(path: string): Promise<Dirent[]> {
-        return this.fs.readDirectory(path).then(files => files.map(file => new DirentAdapter(file)));
-    }
-
-    public lstat(path: string): Promise<Stats> {
-        return this.fs.stat(path, { throws: true }).then(stats => new StatsAdapter(stats));
-    }
-
-    public realpath(): Promise<string> {
-        throw new Error('Method not implemented.');
-    }
-
-    public readlink(): Promise<string> {
-        throw new Error('Method not implemented.');
-    }
-}
-
-class DirentAdapter<T extends FileInfo = FileInfo> implements Dirent {
-    constructor(protected readonly file: T) {}
-    isFile() { return this.file.isFile(); }
-    isDirectory() { return this.file.isDirectory(); }
-    isBlockDevice() { return false; }
-    isCharacterDevice() { return false; }
-    isSymbolicLink() { return false; }
-    isFIFO() { return false; }
-    isSocket() { return false; }
-    get name() { return this.file.name; }
-    get path() { return this.file.name; }
-}
-
-class StatsAdapter extends DirentAdapter<FileStat> implements Stats {
-    constructor(file: FileStat) {
-        super(file);
-    }
-    dev: number;
-    ino: number;
-    mode: number;
-    nlink: number;
-    uid: number;
-    gid: number;
-    rdev: number;
-    blksize: number;
-    blocks: number;
-    atimeMs: number;
-    birthtimeMs: number;
-    atime: Date;
-    birthtime: Date;
-    get ctime() { return new Date(this.file.ctime); }
-    get mtime() { return new Date(this.file.mtime); }
-    get ctimeMs() { return this.file.ctime; }
-    get mtimeMs() { return this.file.mtime; }
-    get size() { return this.file.size; }
 }

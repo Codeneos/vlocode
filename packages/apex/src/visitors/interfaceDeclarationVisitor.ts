@@ -25,6 +25,7 @@ export class InterfaceDeclarationVisitor extends DeclarationVisitor<ApexInterfac
         }
         
         ctx.interfaceBody().accept(this);
+        ctx.modifier().forEach(modifier => modifier.accept(this));
         return this.state;
     }
 

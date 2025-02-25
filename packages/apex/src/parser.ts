@@ -4,7 +4,7 @@ import { ApexCompilationUnit, ApexTypeRef } from "./types";
 import { TypeRefCollector } from "./visitors/typeRefCollector";
 import { CompilationUnitVisitor } from "./visitors/compilationUnitVisitor";
 import { BufferStream } from "./streams";
-import { ApexParser, ApexLexer, CompilationUnitContext, TriggerUnitContext } from "./grammar";
+import { ApexParser, ApexLexer, CompilationUnitContext } from "./grammar";
 
 /**
  * APEX Source code parser and lexer. Provides methods to parse APEX source
@@ -23,7 +23,7 @@ export class Parser {
 
     private lexer: ApexLexer;
     private parser: ApexParser;
-    private cu: CompilationUnitContext | TriggerUnitContext;
+    private cu: CompilationUnitContext;
 
     constructor(private input: Buffer | string) {
     }

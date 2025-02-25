@@ -1,6 +1,5 @@
 import { ParserRuleContext } from "antlr4ng";
 import { ApexParserVisitor } from "../grammar";
-import "../grammar";
 
 export abstract class ApexSyntaxTreeVisitor<T> extends ApexParserVisitor<T> {
     constructor(protected state: T) {

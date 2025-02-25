@@ -7,6 +7,8 @@ export type ApexSharingModifier = 'without' | 'with' | 'inherited';
 export type ApexMethodModifier = 'static' | 'final' | 'webservice' | 'override' | 'testmethod';
 export type ApexFieldModifier = 'transient' | 'final' | 'static';
 export type ApexPropertyModifier = 'transient' | 'static';
+export type ApexTriggerEventOperation = 'insert' | 'update' | 'delete' | 'undelete';
+export type ApexTriggerEventWhen = 'before' | 'after';
 export type ApexModifier = ApexAccessModifier | ApexClassModifier | ApexSharingModifier | ApexMethodModifier | ApexFieldModifier;
 
 export interface ApexSourceLocation {
@@ -52,6 +54,18 @@ export interface ApexInterface extends SourceFragment {
     refs: ApexTypeRef[];
 }
 
+export interface ApexTrigger extends ApexBlock {
+    name: string;
+    sobject: string;
+    triggerEvents: ApexTriggerEvent[];
+    refs: ApexTypeRef[];
+}
+
+export interface ApexTriggerEvent {
+    type: ApexTriggerEventWhen;
+    operation: ApexTriggerEventOperation;
+}
+
 export interface ApexClass extends SourceFragment {
     name: string;
     isTest?: boolean;
@@ -82,6 +96,11 @@ export interface ApexMethod extends ApexBlock {
     decorators: string[];
     localVariables: ApexLocalVariable[];
     refs: ApexTypeRef[]; // References to other things
+}
+
+export interface ApexMethodParameter {
+    name: string;
+    type: ApexTypeRef;
 }
 
 export interface ApexLocalVariable extends SourceFragment {
@@ -132,6 +151,8 @@ export interface ApexTypeRef {
     name: string;
     genericArguments?: ApexTypeRef[];
     isSystemType: boolean;
+    isArray?: boolean;
+    isGeneric?: boolean;
     source?: ApexTypeRefSource;
 }
 
@@ -181,12 +202,8 @@ export namespace ApexTypeRef {
     }
 }
 
-export interface ApexMethodParameter {
-    name: string;
-    type: ApexTypeRef;
-}
-
 export interface ApexCompilationUnit {
     classes: ApexClass[];
     interfaces: ApexInterface[];
+    triggers?: ApexTrigger[];
 }

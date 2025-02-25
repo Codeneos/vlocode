@@ -1,12 +1,13 @@
 import { stringEquals } from "@vlocode/util";
 import { ModifierContext } from "../grammar";
-import { ApexAccessModifier, ApexTypeRef, ApexTypeRefSource } from "../types";
+import { ApexAccessModifier, ApexSourceRange, ApexTypeRef, ApexTypeRefSource } from "../types";
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 
 export abstract class DeclarationVisitor<T extends { 
     access?: ApexAccessModifier, 
     modifiers?: string[], 
-    refs?: ApexTypeRef[] 
+    refs?: ApexTypeRef[],
+    sourceRange?: ApexSourceRange
 }> extends ApexSyntaxTreeVisitor<T> {
     constructor(state: T) {
         super(state);

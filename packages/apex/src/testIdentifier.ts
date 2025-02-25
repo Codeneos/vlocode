@@ -1,27 +1,6 @@
-import { Logger, LogManager, FileSystem, container, injectable, LifecyclePolicy } from '@vlocode/core';
-import { Timer, stringEqualsIgnoreCase } from '@vlocode/util';
-import path from 'path';
-
-import { ApexClass } from './types';
-import { Parser } from './parser';
-
-interface ApexClassInfo {
-    name: string,
-    file: string,
-    isAbstract: boolean,
-    isTest: boolean,
-    classStructure: ApexClass
-}
-
-interface ApexTestClassInfo {
-    name: string,
-    file: string,
-    classCoverage: string[],
-    testMethods: {
-        methodName: string,
-        classCoverage: string[]
-    }[]
-}
+import { Logger, LogManager, injectable, LifecyclePolicy } from '@vlocode/core';
+import { Iterable, Timer, spreadAsync } from '@vlocode/util';
+import { Apex, ApexParsedFileInfo } from './apex';
 
 /**
  * This class can be used to identify test classes that cover a given Apex class, it
@@ -41,22 +20,19 @@ interface ApexTestClassInfo {
 export class TestIdentifier {
 
     /**
-     * Full path of the file to the apex class name.
-     */
-    private fileToApexClass: Map<string, string> = new Map();
-
-    /**
      * Map of Apex class information by name class name (lowercase)
      */
-    private apexClassesByName: Map<string, ApexClassInfo> = new Map();
+    private apexClassesByName: Map<string, ApexParsedFileInfo & { isClass: true }> = new Map();
 
     /**
      * Set of test class names
      */
-    private testClasses: Map<string, ApexTestClassInfo> = new Map();
+    private testClasses: Set<string> = new Set<string>();
+
+    private apexClassesRefs: Map<string, Set<string>> = new Map();
 
     constructor(
-        private fileSystem: FileSystem,
+        private apexParser: Apex,
         private logger: Logger = LogManager.get('apex-test-identifier')
     ) {
     }
@@ -70,24 +46,29 @@ export class TestIdentifier {
     public async loadApexClasses(folders: string[]) {
         const timerAll = new Timer();
 
-        const loadedFiles = await this.parseSourceFiles(folders);
-        const testClasses = loadedFiles.filter((info) => info.classStructure.methods.some(method => method.isTest));
-        testClasses.forEach(testClass => this.testClasses.set(testClass.name.toLowerCase(), {
-            name: testClass.name,
-            file: testClass.file,
-            classCoverage: testClass.classStructure.methods
-                .filter(method => method.isTest)
-                .flatMap(method => method.refs.filter(ref => !ref.isSystemType))
-                .map(ref => ref.name.toLowerCase()),
-            testMethods: testClass.classStructure.methods
-                .filter(method => method.isTest)
-                .map(method => ({
-                    methodName: method.name,
-                    classCoverage: method.refs.filter(ref => !ref.isSystemType).map(ref => ref.name.toLowerCase())
-                })),
-        }));
+        const loadedFiles = await spreadAsync(this.apexParser.parseSourceFiles(folders));
+        for (const info of loadedFiles) {
+            this.onFileParsed(info);
+        }
 
-        this.logger.info(`Loaded ${loadedFiles.length} sources (${testClasses.length} test classes) in ${timerAll.toString('ms')}`);
+        this.logger.info(`Loaded ${loadedFiles.length} sources (${this.testClasses.size} test classes) in ${timerAll.toString('seconds')}`);
+    }
+
+    private onFileParsed(info: ApexParsedFileInfo) {
+        if (!info.isClass) {
+            return;
+        }
+
+        this.apexClassesByName.set(info.name.toLowerCase(), info);
+        this.apexClassesRefs.set(info.name.toLowerCase(), new Set(info.body.refs.map(ref => ref.name.toLowerCase())));
+
+        if (info.isTest && info.body.methods.some(method => method.isTest)) {
+            this.addTestClass(info);
+        }
+    }
+
+    private addTestClass(info: ApexParsedFileInfo & { isClass: true }) {
+        this.testClasses.add(info.name.toLowerCase());
     }
 
     /**
@@ -100,96 +81,36 @@ export class TestIdentifier {
      * @param options - Optional parameters for controlling the depth of the search.
      * @returns An array of test class names that cover the specified class.
      */
-    public getTestClasses(className: string, options?: { depth?: number }) {
-        const classInfo = this.apexClassesByName.get(className.toLowerCase());
-        if (!classInfo) {
-            return undefined;
-        }
-
-        const testClasses = new Set<string>();
-        for (const testClass of this.testClasses.values()) {
-            if (testClass.classCoverage.includes(className.toLowerCase())) {
-                testClasses.add(testClass.name);
+    public async findImpactedTests(sourceFiles: string[], options?: { depth?: number }) {
+        const classInfos = await spreadAsync(this.apexParser.parseSourceFiles(sourceFiles));
+        const classNames = classInfos.map(info => info.name.toLowerCase());
+        const result: string[] = [];
+        
+        for (const testClass of Iterable.map(this.testClasses, name => this.apexClassesByName.get(name.toLowerCase()))) {
+            if (testClass && this.isReferenced(testClass, classNames, options?.depth)) {
+                result.push(testClass.name);
             }
         }
 
-        if (options?.depth) {
-            for (const referenceClassName of this.getClassReferences(className)) {
-                this.getTestClasses(referenceClassName, { depth: options.depth - 1 })
-                    ?.forEach(testClass => testClasses.add(testClass))
-            }
-        }
-
-        return [...testClasses];
+        return result;
     }
 
-    /**
-     * Retrieves an Array class that references the given class.
-     * @param className The name of the class to retrieve references for.
-     * @returns An array of class names that reference the given class.
-     */
-    private getClassReferences(className: string) {
-        const references = new Set<string>();
-        for (const classInfo of this.apexClassesByName.values()) {
-            if (classInfo.classStructure.refs.some(ref => stringEqualsIgnoreCase(ref.name, className))) {
-                references.add(classInfo.name);
-            }
+    private isReferenced(apexClass: ApexParsedFileInfo & { isClass: true }, classList: string[], depth: number = 0) {
+        if (apexClass.references.some(ref => classList.includes(ref.toLowerCase()))) {
+            return true;
         }
-        return [...references];
-    }
 
-    private async parseSourceFiles(folders: string[]) {
-        const sourceFiles = new Array<ApexClassInfo>();
+        if (!depth || depth <= 0) {
+            return false;
+        }
 
-        for (const folder of folders) {
-            this.logger.verbose(`Parsing source files in: ${folder}`);
-
-            for await (const { buffer, file } of this.readSourceFiles(folder)) {
-                const apexClassName = this.fileToApexClass.get(file);
-                if (apexClassName) {
-                    sourceFiles.push(this.apexClassesByName.get(apexClassName.toLowerCase())!);
-                    continue;
-                }
-
-                const parseTimer = new Timer();
-                const parser = new Parser(buffer);
-                const struct = parser.getCodeStructure();
-
-                for (const classInfo of struct.classes) {
-                    const sourceData = {
-                        classStructure: classInfo,
-                        name: classInfo.name,
-                        file,
-                        isAbstract: !!classInfo.isAbstract,
-                        isTest: !!classInfo.isTest,
-                    };
-
-                    this.fileToApexClass.set(file, classInfo.name);
-                    this.apexClassesByName.set(classInfo.name.toLowerCase(), sourceData);
-
-                    sourceFiles.push(sourceData);
-                }
-
-                this.logger.verbose(`Parsed: ${file} (${parseTimer.toString('ms')})`);
+        for (const ref of apexClass.references) {
+            const refClass = this.apexClassesByName.get(ref.toLowerCase());
+            if (refClass?.isClass && this.isReferenced(refClass, classList, depth - 1)) {
+                return true;
             }
         }
 
-        return sourceFiles;
-    }
-
-    private async* readSourceFiles(folder: string){
-        for (const file of await this.fileSystem.readDirectory(folder)) {
-            const fullPath = path.join(folder, file.name);
-            if (file.isDirectory()) {
-                yield* this.readSourceFiles(fullPath);
-            }
-            if (file.isFile() && file.name.endsWith('.cls') /* || file.name.endsWith('.trigger') */) {
-                yield {
-                    buffer: await this.fileSystem.readFile(fullPath),
-                    fullPath,
-                    file: file.name
-                };
-            }
-        }
+        return false;
     }
 }

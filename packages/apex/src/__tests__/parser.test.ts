@@ -354,5 +354,130 @@ describe('ApexParser', () => {
                 'System.Assert'
             ]);
         });
+        it('should parse abstract method', () => {
+            // Arrange
+            const code = `
+                public abstract class MyClass {
+                    public abstract void myMethod(String arg);
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const methods = actualCodeStructure.classes[0].methods;
+            expect(methods.length).toEqual(1);
+            expect(methods[0]).toMatchObject({ name: 'myMethod', isAbstract: true, returnType: { name: 'void' } });
+            expect(methods[0].parameters).toMatchObject([{ name: 'arg', type: { name: 'String' } }]);
+        });
+        it('should parse array parameters correctly', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public void myMethod(String[] args) { }
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const methods = actualCodeStructure.classes[0].methods;
+            expect(methods.length).toEqual(1);
+            expect(methods[0]).toMatchObject({ name: 'myMethod', returnType: { name: 'void' } });
+            expect(methods[0].parameters).toMatchObject([{ name: 'args', type: { name: 'String', isArray: true } }]);
+        });
+        it('should parse generic Map-type parameters correctly', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public void myMethod(Map<String, Object> args) { }
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const methods = actualCodeStructure.classes[0].methods;
+            expect(methods.length).toEqual(1);
+            expect(methods[0]).toMatchObject({ name: 'myMethod', returnType: { name: 'void' } });
+            expect(methods[0].parameters).toMatchObject([{ name: 'args', type: { name: 'Map' } }]);
+            expect(methods[0].parameters[0].type.genericArguments).toMatchObject([
+                { name: 'String', isSystemType: true },
+                { name: 'Object', isSystemType: true }
+            ]);
+        });
+        it('should parse nested generic types parameters correctly', () => {
+            // Arrange
+            const code = `
+                public class MyClass {
+                    public void myMethod(List<Map<String, String[]>> args) { }
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const methods = actualCodeStructure.classes[0].methods;
+            expect(methods.length).toEqual(1);
+            expect(methods[0]).toMatchObject({ name: 'myMethod', returnType: { name: 'void' } });
+            expect(methods[0].parameters).toMatchObject([{ name: 'args', type: { name: 'List' } }]);
+            expect(methods[0].parameters[0].type.genericArguments).toMatchObject([
+                { name: 'Map' }
+            ]);
+            expect(methods[0].parameters[0].type.genericArguments?.[0].genericArguments).toMatchObject([
+                { name: 'String', isSystemType: true },
+                { name: 'String', isArray: true }
+            ]);
+        });
+        it('should parse interfaces', () => {
+            // Arrange
+            const code = `
+                public interface MyInterface {
+                    String myMethod1();
+                    void myMethod2(String myArg);
+                    void myMethod3(String[] args);
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            const methods = actualCodeStructure.interfaces[0].methods;
+            expect(methods.length).toEqual(3);
+            expect(methods[0]).toMatchObject({ name: 'myMethod1', returnType: { name: 'String' } });
+            expect(methods[1]).toMatchObject({ name: 'myMethod2', returnType: { name: 'void' } });
+            expect(methods[2]).toMatchObject({ name: 'myMethod3', returnType: { name: 'void' } });
+            expect(methods[1].parameters).toMatchObject([{ name: 'myArg', type: { name: 'String', isArray: false } }]);
+            expect(methods[2].parameters).toMatchObject([{ name: 'args', type: { name: 'String', isArray: true } }]);
+        });
+
+        it('should parse trigger', () => {
+            // Arrange
+            const code = `
+                trigger MyTrigger on MyObject__c (after insert) {
+                    new TriggerDispatcher(
+                        new TriggerEventHandler(new MyHandler(), -1, false)
+                    ).dispatch();
+                }
+            `;
+
+            // Act
+            const actualCodeStructure = new Parser(code).getCodeStructure();
+
+            // Assert
+            expect(actualCodeStructure.triggers?.length).toEqual(1);
+            expect(actualCodeStructure.triggers?.[0]).toMatchObject({
+                name: 'MyTrigger',
+                sobject: 'MyObject__c'
+            });
+            expect(actualCodeStructure.triggers?.[0].triggerEvents).toMatchObject([
+                { type: 'after', operation: 'insert' }
+            ]);
+        });
     });
 });

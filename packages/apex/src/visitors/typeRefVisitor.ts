@@ -1,5 +1,5 @@
 import { TerminalNode } from "antlr4ng";
-import { TypeArgumentsContext } from "../grammar";
+import { ArraySubscriptsContext, TypeArgumentsContext, TypeNameContext } from "../grammar";
 import { ApexTypeRef } from "../types";
 import { ApexSyntaxTreeVisitor } from "./syntaxTreeVisitor";
 import { TypeListVisitor } from "./typeListVisitor";
@@ -14,9 +14,19 @@ export class TypeRefVisitor extends ApexSyntaxTreeVisitor<ApexTypeRef> {
         return this.state;
     }
 
+    public visitTypeName(ctx: TypeNameContext): ApexTypeRef {
+        this.visitChildren(ctx);
+        this.state.isSystemType = ApexTypeRef.isSystemType(this.state.name);
+        return this.state;
+    }
+
+    public visitArraySubscripts(ctx: ArraySubscriptsContext): ApexTypeRef {
+        this.state.isArray = ctx.children.length > 0;
+        return this.state;
+    }
+
     public visitTerminal(node: TerminalNode) {
         this.state.name = node.getText();
-        this.state.isSystemType = ApexTypeRef.isSystemType(this.state.name);
         return this.state;
     }
 }

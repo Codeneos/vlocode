@@ -10,7 +10,7 @@ export class ConsoleWriter implements LogWriter {
 
     public write({ level, time, category, message } : LogEntry) : void {
         const timestamp = time ? DateTime.fromJSDate(time) : DateTime.now();
-        const formattedMessage = this.formatMessages ? `${timestamp.toFormat(ConsoleWriter.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}]: ${message}` : message;
+        const formattedMessage = this.formatMessages ? `${timestamp.toFormat(ConsoleWriter.LOG_DATE_FORMAT)}:: [${LogLevel[level]}] [${category}] ${message}` : message;
         switch(level) {
             case LogLevel.debug: return console.debug(formattedMessage);
             case LogLevel.warn: return console.warn(formattedMessage);

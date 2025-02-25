@@ -73,6 +73,7 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
         }
 
         ctx.classBody().accept(this);
+        ctx.modifier().forEach(modifier => modifier.accept(this));
         return this.state;
     }
 

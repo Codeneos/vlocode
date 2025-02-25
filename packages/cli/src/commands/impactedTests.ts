@@ -1,11 +1,10 @@
-import { Logger, LogManager, FileSystem, injectable } from '@vlocode/core';
+import { LogManager, FileSystem, container } from '@vlocode/core';
 import { pluralize, Timer } from '@vlocode/util';
 import { existsSync} from 'fs-extra';
 
 import { Apex } from '@vlocode/apex';
 import { Argument, Option, Command } from '../command';
 
-@injectable()
 export default class extends Command {
 
     static description = 'Find impacted unit test classes for a given set of APEX classes. ' + 
@@ -27,15 +26,14 @@ export default class extends Command {
             .makeOptionMandatory(false),
         new Option('--depth <depth>', 'Specifies the search depth for identifying indirectly impacted test classes. Default is 0 (only direct test classes are considered).')
             .makeOptionMandatory(false),
-        new Option('--output (<file>)', 'Path to the output file where the impacted test classes will be written as JSON. Defaults to "impactedTests.json".')
+        new Option('--output <file>', 'Path to the output file where the impacted test classes will be written as JSON. Defaults to "impactedTests.json".')
             .default('impactedTests.json')
     ];
 
-    private apex = new Apex();
-
     constructor(
-        private fileSystem: FileSystem,
-        private logger: Logger = LogManager.get('vlocode-cli')
+        private fileSystem = container.get(FileSystem),
+        private apex = container.get(Apex),
+        private logger = LogManager.get('command:impactedTests')
     ) {
         super();
     }
