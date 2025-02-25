@@ -29,7 +29,7 @@
         "@lerna-lite/version": "^3.8.0",
         "@types/fs-extra": "^11",
         "@types/jest": "^29.5.11",
-        "@types/node": "^20",
+        "@types/node": "~20.17",
         "@typescript-eslint/eslint-plugin": "^8.1.0",
         "@typescript-eslint/parser": "^8.1.0",
         "chalk": "^4.1.2",
@@ -123,7 +123,7 @@
     "resolutions": {
         "@types/fs-extra": "^11",
         "@oclif/command": "1.8.16",
-        "@types/node": "^20",
+        "@types/node": "~20.17",
         "moment": ">=2.29.4",
         "fs-extra": "11",
         "js-force": "1.11.0",

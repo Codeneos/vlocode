@@ -7,7 +7,7 @@ settings:
 overrides:
   '@types/fs-extra': ^11
   '@oclif/command': 1.8.16
-  '@types/node': ^20
+  '@types/node': ~20.17
   moment: '>=2.29.4'
   fs-extra: '11'
   js-force: 1.11.0
@@ -108,8 +108,8 @@ importers:
         specifier: ^29.5.11
         version: 29.5.11
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.1.0
         version: 8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
@@ -145,7 +145,7 @@ importers:
         version: 8.0.1
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       jest-junit:
         specifier: ^16.0.0
         version: 16.0.0
@@ -166,7 +166,7 @@ importers:
         version: 3.3.3
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typedoc:
         specifier: ^0.24.8
         version: 0.24.8(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
@@ -205,8 +205,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       '@types/tough-cookie':
         specifier: ^4.0.2
         version: 4.0.2
@@ -215,7 +215,7 @@ importers:
         version: 2.0.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       nugget:
         specifier: ^2.2.0
         version: 2.2.0
@@ -224,7 +224,7 @@ importers:
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -238,8 +238,8 @@ importers:
         specifier: ^4.0.2
         version: 4.0.5
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       '@vlocode/apex':
         specifier: workspace:*
         version: link:../apex
@@ -275,7 +275,7 @@ importers:
         version: 11.0.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
@@ -290,13 +290,13 @@ importers:
         version: 0.5.21
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       ts-loader:
         specifier: ^9.5
         version: 9.5.2(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))(webpack@5.97.1)
       ts-node:
         specifier: ^10.9.0
-        version: 10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       tsconfig-paths-webpack-plugin:
         specifier: ^3.5.2
         version: 3.5.2
@@ -350,17 +350,17 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -390,17 +390,17 @@ importers:
         specifier: ^21.1.7
         version: 21.1.7
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -454,14 +454,14 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       '@types/tough-cookie':
         specifier: ^4.0.2
         version: 4.0.2
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       nugget:
         specifier: ^2.2.0
         version: 2.2.0
@@ -470,7 +470,7 @@ importers:
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -509,20 +509,20 @@ importers:
         specifier: ^29.5.11
         version: 29.5.11
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       '@types/vscode':
         specifier: ^1.70.0
         version: 1.70.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -546,20 +546,20 @@ importers:
         specifier: ^29.5.11
         version: 29.5.11
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       fs-extra:
         specifier: '11'
         version: 11.2.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       typescript:
         specifier: 5.1.6
         version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
@@ -604,17 +604,17 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       ts-json-schema-generator:
         specifier: ^2.3.0
         version: 2.3.0
@@ -643,8 +643,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       '@types/node':
-        specifier: ^20
-        version: 20.4.2
+        specifier: ~20.17
+        version: 20.17.19
       '@types/vscode':
         specifier: ^1.95.0
         version: 1.96.0
@@ -692,7 +692,7 @@ importers:
         version: 11.1.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
@@ -719,13 +719,13 @@ importers:
         version: 0.5.21
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       ts-loader:
         specifier: ^9.5
         version: 9.5.2(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))(webpack@5.97.1)
       ts-node:
         specifier: ^10.9.0
-        version: 10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
       tsconfig-paths-webpack-plugin:
         specifier: ^3.5.2
         version: 3.5.2
@@ -1733,8 +1733,8 @@ packages:
   '@types/mute-stream@0.0.4':
     resolution: {integrity: sha512-CPM9nzrCPPJHQNA9keH9CVkVI+WR5kMa+7XEs5jcGQ0VoAGnLv242w8lIVgwAEfmE4oufJRaTc9PNLQl0ioAow==}
 
-  '@types/node@20.4.2':
-    resolution: {integrity: sha512-Dd0BYtWgnWJKwO1jkmTrzofjK2QXXcai0dmtzvIBhcA+RsG5h8R3xlyta0kGOZRNfL9GuRtb1knmPEhQrePCEw==}
+  '@types/node@20.17.19':
+    resolution: {integrity: sha512-LEwC7o1ifqg/6r2gn9Dns0f1rhK+fPFDoMiceTJ6kWmVk6bgXBI/9IOWfVan4WiAavK9pIVWdX0/e3J+eEUh5A==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -4118,7 +4118,7 @@ packages:
     resolution: {integrity: sha512-uXbpfeQ7R6TZBqI3/TxCU4q4ttk3u0PJeC+E0zbfSoSjq6bJ7buBPxzQPL0ifrkY4DNu4JUdk0ImlBUYi840eQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     peerDependencies:
-      '@types/node': ^20
+      '@types/node': ~20.17
       ts-node: '>=9.0.0'
     peerDependenciesMeta:
       '@types/node':
@@ -6135,7 +6135,7 @@ packages:
     peerDependencies:
       '@swc/core': '>=1.2.50'
       '@swc/wasm': '>=1.2.50'
-      '@types/node': ^20
+      '@types/node': ~20.17
       typescript: 5.1.6
     peerDependenciesMeta:
       '@swc/core':
@@ -6272,6 +6272,9 @@ packages:
 
   underscore@1.13.6:
     resolution: {integrity: sha512-+A5Sja4HP1M08MaXya7p5LvjuM7K6q/2EaC0+iovj/wOcMsTzMvDFbasi/oSapiwOlt252IqsKqPjCl7huKS0A==}
+
+  undici-types@6.19.8:
+    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
 
   unicorn-magic@0.1.0:
     resolution: {integrity: sha512-lRfVq8fE8gz6QMBuDM6a+LO3IAzTi05H6gCVaUpir2E1Rwpo4ZUog45KpNXKC/Mn3Yb9UDuHumeFTo9iV/D9FQ==}
@@ -7123,7 +7126,7 @@ snapshots:
       '@inquirer/figures': 1.0.5
       '@inquirer/type': 1.5.2
       '@types/mute-stream': 0.0.4
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       '@types/wrap-ansi': 3.0.0
       ansi-escapes: 4.3.2
       cli-spinners: 2.9.2
@@ -7187,27 +7190,27 @@ snapshots:
   '@jest/console@29.7.0':
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       chalk: 4.1.2
       jest-message-util: 29.7.0
       jest-util: 29.7.0
       slash: 3.0.0
 
-  '@jest/core@29.7.0(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))':
+  '@jest/core@29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))':
     dependencies:
       '@jest/console': 29.7.0
       '@jest/reporters': 29.7.0
       '@jest/test-result': 29.7.0
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       ci-info: 3.9.0
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -7232,7 +7235,7 @@ snapshots:
     dependencies:
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       jest-mock: 29.7.0
 
   '@jest/expect-utils@29.7.0':
@@ -7250,7 +7253,7 @@ snapshots:
     dependencies:
       '@jest/types': 29.6.3
       '@sinonjs/fake-timers': 10.3.0
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       jest-message-util: 29.7.0
       jest-mock: 29.7.0
       jest-util: 29.7.0
@@ -7272,7 +7275,7 @@ snapshots:
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
       '@jridgewell/trace-mapping': 0.3.20
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       chalk: 4.1.2
       collect-v8-coverage: 1.0.2
       exit: 0.1.2
@@ -7342,7 +7345,7 @@ snapshots:
       '@jest/schemas': 29.6.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       '@types/yargs': 17.0.32
       chalk: 4.1.2
 
@@ -8075,7 +8078,7 @@ snapshots:
 
   '@types/copy-webpack-plugin@8.0.1(webpack-cli@6.0.1)':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       tapable: 2.2.1
       webpack: 5.97.1(webpack-cli@6.0.1)
     transitivePeerDependencies:
@@ -8103,11 +8106,11 @@ snapshots:
   '@types/fs-extra@11.0.4':
     dependencies:
       '@types/jsonfile': 6.1.4
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
 
   '@types/graceful-fs@4.1.9':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
 
   '@types/http-cache-semantics@4.0.4': {}
 
@@ -8130,13 +8133,13 @@ snapshots:
 
   '@types/jsdom@21.1.7':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       '@types/tough-cookie': 4.0.2
       parse5: 7.1.2
 
   '@types/jsforce@1.9.42(patch_hash=6yh4qlsazb5qjqmlnbys4ekmaq)':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
 
   '@types/json-schema@7.0.11': {}
 
@@ -8146,7 +8149,7 @@ snapshots:
 
   '@types/jsonfile@6.1.4':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
 
   '@types/lodash@4.14.182': {}
 
@@ -8154,13 +8157,15 @@ snapshots:
 
   '@types/mkdirp@1.0.2':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
 
   '@types/mute-stream@0.0.4':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
 
-  '@types/node@20.4.2': {}
+  '@types/node@20.17.19':
+    dependencies:
+      undici-types: 6.19.8
 
   '@types/normalize-package-data@2.4.4': {}
 
@@ -8190,7 +8195,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
     optional: true
 
   '@typescript-eslint/eslint-plugin@8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
@@ -9340,13 +9345,13 @@ snapshots:
     dependencies:
       buffer: 5.7.1
 
-  create-jest@29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  create-jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
     dependencies:
       '@jest/types': 29.6.3
       chalk: 4.1.2
       exit: 0.1.2
       graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       jest-util: 29.7.0
       prompts: 2.4.2
     transitivePeerDependencies:
@@ -10017,7 +10022,7 @@ snapshots:
     dependencies:
       '@types/chai': 4.3.1
       '@types/lodash': 4.14.182
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       '@types/sinon': 10.0.11
       lodash: 4.17.21
       mock-stdin: 1.0.0
@@ -10864,7 +10869,7 @@ snapshots:
       '@jest/expect': 29.7.0
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       chalk: 4.1.2
       co: 4.6.0
       dedent: 1.5.1
@@ -10884,16 +10889,16 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  jest-cli@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
     dependencies:
-      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
       chalk: 4.1.2
-      create-jest: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      create-jest: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       exit: 0.1.2
       import-local: 3.1.0
-      jest-config: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       jest-util: 29.7.0
       jest-validate: 29.7.0
       yargs: 17.7.2
@@ -10903,7 +10908,7 @@ snapshots:
       - supports-color
       - ts-node
 
-  jest-config@29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  jest-config@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
     dependencies:
       '@babel/core': 7.23.6
       '@jest/test-sequencer': 29.7.0
@@ -10928,8 +10933,8 @@ snapshots:
       slash: 3.0.0
       strip-json-comments: 3.1.1
     optionalDependencies:
-      '@types/node': 20.4.2
-      ts-node: 10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@types/node': 20.17.19
+      ts-node: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -10958,7 +10963,7 @@ snapshots:
       '@jest/environment': 29.7.0
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       jest-mock: 29.7.0
       jest-util: 29.7.0
 
@@ -10968,7 +10973,7 @@ snapshots:
     dependencies:
       '@jest/types': 29.6.3
       '@types/graceful-fs': 4.1.9
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       anymatch: 3.1.3
       fb-watchman: 2.0.2
       graceful-fs: 4.2.11
@@ -11014,7 +11019,7 @@ snapshots:
   jest-mock@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       jest-util: 29.7.0
 
   jest-pnp-resolver@1.2.3(jest-resolve@29.7.0):
@@ -11049,7 +11054,7 @@ snapshots:
       '@jest/test-result': 29.7.0
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       chalk: 4.1.2
       emittery: 0.13.1
       graceful-fs: 4.2.11
@@ -11077,7 +11082,7 @@ snapshots:
       '@jest/test-result': 29.7.0
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       chalk: 4.1.2
       cjs-module-lexer: 1.2.3
       collect-v8-coverage: 1.0.2
@@ -11128,7 +11133,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -11147,7 +11152,7 @@ snapshots:
     dependencies:
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       emittery: 0.13.1
@@ -11156,23 +11161,23 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
   jest-worker@29.7.0:
     dependencies:
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  jest@29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
     dependencies:
-      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       '@jest/types': 29.6.3
       import-local: 3.1.0
-      jest-cli: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-cli: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -11271,7 +11276,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.20.1
       '@babel/runtime-corejs3': 7.20.1
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       abort-controller: 3.0.0
       base64url: 3.0.1
       commander: 4.1.1
@@ -13215,11 +13220,11 @@ snapshots:
     dependencies:
       typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
 
-  ts-jest@29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.4.2))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  ts-jest@29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 29.7.0(@types/node@20.4.2)(ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
       jest-util: 29.7.0
       json5: 2.2.3
       lodash.memoize: 4.1.2
@@ -13253,14 +13258,14 @@ snapshots:
       typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
       webpack: 5.97.1(webpack-cli@6.0.1)
 
-  ts-node@10.9.2(@types/node@20.4.2)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.8
       '@tsconfig/node12': 1.0.9
       '@tsconfig/node14': 1.0.1
       '@tsconfig/node16': 1.0.2
-      '@types/node': 20.4.2
+      '@types/node': 20.17.19
       acorn: 8.14.0
       acorn-walk: 8.2.0
       arg: 4.1.3
@@ -13415,6 +13420,8 @@ snapshots:
       through: 2.3.8
 
   underscore@1.13.6: {}
+
+  undici-types@6.19.8: {}
 
   unicorn-magic@0.1.0: {}
 
