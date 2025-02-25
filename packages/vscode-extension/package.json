@@ -1467,7 +1467,7 @@
         "@types/js-yaml": "^4.0.2",
         "@types/jsforce": "^1.9.38",
         "@types/luxon": "^3.3.0",
-        "@types/node": "^20.4.2",
+        "@types/node": "~20.17",
         "@types/vscode": "^1.95.0",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
