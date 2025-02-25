@@ -41,35 +41,27 @@
 parser grammar ApexParser;
 options {tokenVocab=ApexLexer;}
 
-// entry point for Apex trigger files
-triggerUnit
-    : TRIGGER id ON object=id LPAREN triggerCase (COMMA triggerCase)* RPAREN block EOF
-    ;
-
-triggerCase
-    : when=(BEFORE|AFTER) operation=(INSERT|UPDATE|DELETE|UNDELETE)
-    ;
-
 // entry point for Apex class files
 compilationUnit
     : typeDeclaration* EOF
     ;
 
 typeDeclaration
-    : modifier* classDeclaration
-    | modifier* enumDeclaration
-    | modifier* interfaceDeclaration
+    : triggerDeclaration
+    | classDeclaration
+    | enumDeclaration
+    | interfaceDeclaration
     ;
 
 classDeclaration
-    : CLASS id
+    : modifier* CLASS id
       (EXTENDS typeRef)?
       (IMPLEMENTS typeList)?
       classBody
     ;
 
 enumDeclaration
-    : ENUM id
+    : modifier* ENUM id
       LBRACE enumConstants? RBRACE
     ;
 
@@ -77,8 +69,16 @@ enumConstants
  	: id (COMMA id)*
    	;
 
+triggerDeclaration
+    : TRIGGER id ON sobject=id LPAREN triggerEvent (COMMA triggerEvent)* RPAREN block EOF
+    ;
+
+triggerEvent
+    : when=(BEFORE|AFTER) operation=(INSERT|UPDATE|DELETE|UNDELETE)
+    ;
+
 interfaceDeclaration
-    : INTERFACE id (EXTENDS typeList)? interfaceBody
+    : modifier* INTERFACE id (EXTENDS typeList)? interfaceBody
     ;
 
 typeList
