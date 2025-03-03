@@ -96,10 +96,11 @@ export abstract class CommandBase implements Command {
             });
         }
 
-        const header = columns.map((column, index) => column.padEnd(columnWidths[index])).join('  ');
+        const header = columns.map((column, index) => column.padEnd(columnWidths[index]).toUpperCase()).join('  ');
+        const seperator = columnWidths.map((width) => TerminalCharacters.HorizontalLine.repeat(width)).join('  ');
 
         this.outputChannel.appendLine(header);
-        this.outputSeperator(header.length + 4);
+        this.outputChannel.appendLine(seperator);
         rows.forEach(row => this.outputTableRow(row, columnWidths));
 
         if (options?.appendEmptyLine) {
@@ -126,10 +127,6 @@ export abstract class CommandBase implements Command {
         if (nextRow.length) {
             this.outputTableRow(nextRow, columnWidths);
         }
-    }
-
-    protected outputSeperator(length: number = 100) {
-        this.outputChannel.appendLine(TerminalCharacters.HorizontalLine.repeat(length));
     }
 
     protected outputBlank(count: number = 1) {
