@@ -357,9 +357,21 @@ export function encodeQueryString(params: object): string {
  * @param count - The count of the unit.
  * @returns The pluralized string.
  */
-export function pluralize(unit: unknown, count: number | Array<unknown>) {
-    count = Array.isArray(count) ? count.length : count;
-    return count === 1 ? `${count} ${unit}` : `${count} ${unit}s`;
+export function pluralize(unit: unknown, count: number | Array<unknown> | object) {
+    count = Array.isArray(count) ? count.length : typeof count === 'object' ? Object.keys(count).length : count;
+    const unitStr = `${unit}`;
+    if (count === 1) {
+        return `${count} ${unitStr}`;
+    }
+    let pluralUnit: string;
+    if (unitStr.endsWith('y')) {
+        pluralUnit = unitStr.substring(0, unitStr.length - 1) + 'ies';
+    } else if (unitStr.endsWith('s')) {
+        pluralUnit = unitStr + 'es';
+    } else {
+        pluralUnit = unitStr + 's';
+    }
+    return `${count} ${pluralUnit}`;
 }
 
 // Precompiled regexes for optimize normalizeName function
