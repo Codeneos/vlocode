@@ -1499,7 +1499,7 @@
         "type-fest": "^2.12.2",
         "typescript": "5.1.6",
         "vlocity": "1.14.18",
-        "vscode-languageclient": "^8.1.0",
+        "vscode-languageclient": "^9.0.1",
         "webpack": "^5.97",
         "webpack-cli": "^6.0",
         "webpack-merge": "^6.0"

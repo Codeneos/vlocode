@@ -1,0 +1,13 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "composite": true,
+        "outDir": "lib",
+        "rootDir": "src",
+        "declaration": true,
+        "declarationMap": true,
+        "skipLibCheck": true
+    },
+    "include": ["src/**/*.ts", "src/**/*.json"],
+    "references": [{ "path": "../util" }, { "path": "../core" }, { "path": "../apex" }]
+}

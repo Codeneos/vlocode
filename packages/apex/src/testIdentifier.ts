@@ -46,7 +46,7 @@ export class TestIdentifier {
     public async loadApexClasses(folders: string[]) {
         const timerAll = new Timer();
 
-        const loadedFiles = await spreadAsync(this.apexParser.parseSourceFiles(folders));
+        const loadedFiles = await spreadAsync(this.apexParser.parseSourcePaths(...folders));
         for (const info of loadedFiles) {
             this.onFileParsed(info);
         }
@@ -82,7 +82,7 @@ export class TestIdentifier {
      * @returns An array of test class names that cover the specified class.
      */
     public async findImpactedTests(sourceFiles: string[], options?: { depth?: number }) {
-        const classInfos = await spreadAsync(this.apexParser.parseSourceFiles(sourceFiles));
+        const classInfos = await spreadAsync(this.apexParser.parseSourcePaths(...sourceFiles));
         const classNames = classInfos.map(info => info.name.toLowerCase());
         const result: string[] = [];
         

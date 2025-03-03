@@ -1,8 +1,9 @@
+import { hash } from 'node:crypto';
 import { ILogger, LogManager, FileSystem, NodeFileSystem, injectable, LifecyclePolicy, container } from "@vlocode/core";
+import { AwaitableAsyncGenerator, pluralize, spreadAsync, stringEqualsIgnoreCase, Timer, unique } from "@vlocode/util";
 import { Parser } from "./parser";
-import { bufferIndexOfCaseInsensitive, spreadAsync, stringEqualsIgnoreCase, Timer, unique } from "@vlocode/util";
-import { ApexClass, ApexInterface, ApexTrigger } from "./types";
-import path, { dirname } from "path";
+import { ApexClass, ApexCompilationUnit, ApexInterface, ApexTrigger } from "./types";
+import path from "path";
 import { TestIdentifier } from "./testIdentifier";
 import { EventEmitter } from 'node:events';
 
@@ -45,6 +46,15 @@ export interface ApexParsedTriggerInfo extends ApexParsedFileInfoBase<'trigger'>
 
 export type ApexParsedFileInfo = ApexParsedClassInfo | ApexParsedTriggerInfo | ApexParsedInterfaceInfo;
 
+interface ApexCacheFile {
+    version: 1;
+    parserCache: Record<string, ApexParsedFileInfo & {
+        hash: string
+    }>;
+    classToFileMap: Record<string, string>;
+    fileTimes: Record<string, { mtime: number, size: number }>;
+}
+
 @injectable({ lifecycle: LifecyclePolicy.singleton })
 export class Apex extends EventEmitter<{
     /**
@@ -66,17 +76,27 @@ export class Apex extends EventEmitter<{
     /**
      * Cached of parsed APEX classes keyed by the file path
      */
-    private fileCache: Record<string, ApexParsedFileInfo & {
-            mtime: number,
-            size: number
-        }> = {};    
+    private parserCache: Record<string, ApexParsedFileInfo & {
+            hash: string
+        }> = {};
+    
+    /**
+     * Maps class names to file paths
+     */
     private classToFileMap: Record<string, string> = {};
+
+    /**
+     * Stores the last modified time and size of the file for each file in the cache
+     * which can be used to determine if the file has changed since it was last parsed.
+     */
+    private fileTimes: Record<string, { mtime: number, size: number }> = {};
+
 
     /**
      * Returns the number of APEX classes that have been parsed.
      */
     public get parsedFileCount() {
-        return Object.values(this.fileCache).length;
+        return Object.values(this.parserCache).length;
     }
 
     /**
@@ -109,46 +129,6 @@ export class Apex extends EventEmitter<{
         const td = container.get(TestIdentifier);
         await td.loadApexClasses([ options?.sourceFolder ]);
         return td.findImpactedTests(apexClassFiles, { depth: options?.depth });
-
-        // // Parse APEX classes
-        // const apexClasses: Record<string, ApexParsedFileInfo> = Object.fromEntries(
-        //     await Promise.all(apexClassFiles.map(async file => [file, await this.parseSourceFileSafe(file)]))
-        // );
-        // const apexClassNames = Object.values(apexClasses).map(cls => cls.name);
-
-        // if (options?.sourceFolder) {
-        //     this.logger?.verbose(`Parsing source files in: ${options.sourceFolder}`);
-        // } else {
-        //     this.logger?.verbose(`Parsing sibling source files for: ${apexClassFiles.join(', ')}`);
-        // }
-
-        // // Parse all test classes in the same folder as 
-        // // the classes we are looking for impacted tests for
-        // const results = new Set<string>();
-        // const sourcesFiles = options?.sourceFolder 
-        //     ? await spreadAsync(this.findSourceFiles([ options?.sourceFolder ]))
-        //     : await this.findSiblingSources(apexClassFiles);
-        // this.logger?.verbose(`Found ${sourcesFiles.length} source files`);
-    
-        // // for (const file of sourcesFiles) {
-        // //     this.classToFileMap[fileName(file, true)] = file;
-        // // }
-
-        // for (const file of sourcesFiles) {
-        //     if (await this.isTestClass(file)) {
-        //         const testClass = await this.parseSourceFileSafe(file);
-        //         if (!testClass || testClass.isInterface || !this.hasTestMethods(testClass)) {
-        //             continue;
-        //         }
-
-        //         // Check if test class has a reference to any of the classes we are looking for
-        //         if (await this.isReferenced(testClass, apexClassNames, options?.depth)) {
-        //             results.add(testClass.name);
-        //         }
-        //     }
-        // }
-
-        // return [...results];
     }
 
     /**
@@ -235,13 +215,15 @@ export class Apex extends EventEmitter<{
      * @param folders - An array of folder paths to read source files from.
      * @yields The result of parsing each source file, if the parsing is successful.
      */
-    public async* parseSourceFiles(folders: string[]) {
-        for await (const file of this.getSourceFiles(folders)) {
-            const result = await this.parseSourceFileSafe(file);
-            if (result) {
-                yield result;
+    public parseSourcePaths(...paths: string[]): AwaitableAsyncGenerator<ApexParsedFileInfo> {
+        return new AwaitableAsyncGenerator(async function*(this: Apex) {
+            for await (const file of this.getSourceFiles(paths)) {
+                const result = await this.parseSourceFileSafe(file);
+                if (result) {
+                    yield result;
+                }
             }
-        }
+        }, this);
     }
 
     /**
@@ -250,18 +232,6 @@ export class Apex extends EventEmitter<{
      * @param file - The path to the Apex source file to be parsed.
      * @returns A promise that resolves to an `ApexParsedFileInfo` object containing information about the parsed file, or `undefined` if no valid class or interface is found.
      * @throws An error if the file is not found.
-     * 
-     * The returned `ApexParsedFileInfo` object contains:
-     * - `mtime`: The modification time of the file.
-     * - `size`: The size of the file.
-     * - `name`: The name of the class or interface.
-     * - `file`: The full path to the file.
-     * - `type === 'class'`: A boolean indicating if the parsed body is a class.
-     * - `isInterface`: A boolean indicating if the parsed body is an interface.
-     * - `isAbstract`: A boolean indicating if the class is abstract (only for classes).
-     * - `isTest`: A boolean indicating if the class is a test class (only for classes).
-     * - `refs`: An array of references found in the class (only for classes).
-     * - `body`: The parsed body of the class or interface.
      */
     public async parseSourceFile(file: string): Promise<ApexParsedFileInfo> {
         const fileInfo = await this.fileSystem.stat(file, { throws: false });
@@ -271,70 +241,98 @@ export class Apex extends EventEmitter<{
 
         // Check for a cached entry
         const fullPath = await this.fileSystem.realPath(file);
-        const key = `${fullPath}`;
-        const cachedEntry = this.fileCache[key];
+        const fileInfoCache = this.fileTimes[fullPath];
 
-        if (cachedEntry && cachedEntry.mtime === fileInfo.mtime && cachedEntry.size === fileInfo.size) {
-            return this.fileCache[key];
+        if (this.parserCache[fullPath] && fileInfoCache?.mtime === fileInfo.mtime && fileInfoCache?.size === fileInfo.size) {
+            return this.parserCache[fullPath];
         }
 
         // Read and parse the file
+        const source = await this.fileSystem.readFile(fullPath);
+        return this.parseSource(source, fullPath);
+    }
+
+    /**
+     * Parses the given source buffer and returns the parsed file information.
+     * If the file has been parsed before and the hash matches, the cached result is returned.
+     * 
+     * @param source - The source buffer to parse.
+     * @param fullPath - The full path of the source file.
+     * @returns A promise that resolves to the parsed file information.
+     */
+    public parseSource(source: Buffer | string, fullPath: string): ApexParsedFileInfo {
+        // Check for a cached entry
+        const sourceHash = hash('md5', source, 'hex');
+        const parsedFileInfo = this.parserCache[fullPath];
+        if (parsedFileInfo && parsedFileInfo.hash === sourceHash) {
+            return parsedFileInfo; 
+        } 
+
+        // Read and parse the file
         const parseTimer = new Timer();
-        const content = await this.fileSystem.readFile(fullPath);
-        const parser = new Parser(content);
+        const parser = new Parser(source);
         const struct = parser.getCodeStructure();
 
         this.parsingTimeCounter += parseTimer.stop().elapsed;
-        this.logger?.verbose(`Parsed ${file} in ${parseTimer.toString('ms')}`);
-        
-        const entry = {
-            mtime: fileInfo.mtime,
-            size: fileInfo.size,
-            file: fullPath,
-        };
+        this.logger?.verbose(`Parsed ${fullPath ?? hash} in ${parseTimer.toString('ms')}`);
+        return this.storeCompilationUnit(struct, sourceHash, fullPath);
+    }
 
-        if (struct.classes[0]) {
-            const [ body ] = struct.classes;
-            this.fileCache[key] = {
-                ...entry,
-                type: 'class',
-                isClass: true,
-                isInterface: false,
-                isTrigger: false,
-                name: body.name,
-                isAbstract: body.isAbstract === true,
-                isTest: body.isTest === true,
-                references: [...unique(body.refs.filter(ref => !ref.isSystemType), ref => ref.name.toLowerCase(), ref => ref.name)],
-                body: body
-            };
-        } else if (struct.interfaces[0]) {
-            const [ body ] = struct.interfaces;
-            this.fileCache[key] = {
-                ...entry,
-                isClass: false,
-                isInterface: true,
-                isTrigger: false,
-                type: 'interface',
-                name: body.name,
-                body: body
-            };
-        } else if (struct.triggers?.[0]) {
-            const [ body ] = struct.triggers;
-            this.fileCache[key] = {
-                ...entry,
-                isClass: false,
-                isInterface: false,
-                isTrigger: true,
-                type: 'trigger',
-                name: body.name,
-                references: [...unique(body.refs.filter(ref => !ref.isSystemType), ref => ref.name.toLowerCase(), ref => ref.name)],
-                body: body
-            };
+    private storeCompilationUnit(cu: ApexCompilationUnit, hash: string, fullPath: string) {
+        const info = Object.assign(
+            { hash, file: fullPath }, 
+            this.createCacheEntry(cu)
+        );
+        this.parserCache[fullPath] = info;
+        this.emit('parse', info);
+        return info;
+    }
+
+    private createCacheEntry(cu: ApexCompilationUnit) {
+        if (cu.classes[0]) {
+            return this.createClassEntry(cu.classes[0]);
+        } else if (cu.interfaces[0]) {
+            return this.createInterfaceEntry(cu.interfaces[0]);
+        } else if (cu.triggers?.[0]) {
+            return this.createTriggerEntry(cu.triggers[0]);
         }
+    }
 
-        this.classToFileMap[this.fileCache[key].name.toLowerCase()] = fullPath;
+    private createClassEntry(cu: ApexClass): Omit<ApexParsedClassInfo, 'file'> {
+        return {
+            isClass: true,
+            isInterface: false,
+            isTrigger: false,
+            isAbstract: cu.isAbstract === true,
+            isTest: cu.isTest === true,
+            type: 'class',
+            name: cu.name,
+            references: [...unique(cu.refs.filter(ref => !ref.isSystemType), ref => ref.name.toLowerCase(), ref => ref.name)],
+            body: cu
+        };
+    }
 
-        return this.fileCache[key];
+    private createTriggerEntry(cu: ApexTrigger): Omit<ApexParsedTriggerInfo, 'file'> {
+        return {
+            isClass: false,
+            isInterface: false,
+            isTrigger: true,
+            type: 'trigger',
+            name: cu.name,
+            references: [...unique(cu.refs.filter(ref => !ref.isSystemType), ref => ref.name.toLowerCase(), ref => ref.name)],
+            body: cu
+        };
+    }
+
+    private createInterfaceEntry(cu: ApexInterface): Omit<ApexParsedInterfaceInfo, 'file'> {
+        return {
+            isClass: false,
+            isInterface: true,
+            isTrigger: false,
+            type: 'interface',
+            name: cu.name,
+            body: cu
+        };
     }
 
     /**
@@ -356,31 +354,8 @@ export class Apex extends EventEmitter<{
      * Clears the cache of parsed APEX classes.
      */
     public clear() {
-        this.fileCache = {};
-    }
-
-    private async isTestClass(file: string) {
-        const fileInfo = await this.fileSystem.stat(file, { throws: false });
-        if (!fileInfo) {
-            throw new Error(`File not found: ${file}`);
-        }
-        const fullPath = await this.fileSystem.realPath(file);
-        const key = `${fullPath}:${fileInfo.mtime}:${fileInfo.size}`;
-        const cachedEntry = this.fileCache[key];
-        if (cachedEntry?.type === 'class' && cachedEntry.isTest) {
-            return true;
-        }
-        const content = await this.fileSystem.readFile(fullPath);
-        return bufferIndexOfCaseInsensitive(content, '@isTest') >= 0;
-    }
-
-    private async findSiblingSources(files: string[], extensions = [ '.cls', '.trigger' ]): Promise<string[]> {
-        const siblings = new Set<string>();
-        const folders = await Promise.all(files.map(async file => dirname(await this.fileSystem.realPath(file))));
-        for (const cwd of unique(folders)) {
-            (await spreadAsync(this.getSourceFilesInFolder(cwd, extensions))).forEach(siblings.add, siblings);
-        }
-        return [...siblings]
+        this.parserCache = {};
+        this.fileTimes = {};
     }
 
     private async* getSourceFiles(paths: string[], extensions = [ '.cls', '.trigger' ]): AsyncGenerator<string> {
@@ -410,5 +385,37 @@ export class Apex extends EventEmitter<{
 
     private isExtMatch(file: string, extensions: string[]) {
         return extensions.some(ext => file.toLowerCase().endsWith(ext));
+    }
+
+    public async persistCache(cacheFile: string) {
+        const cache: ApexCacheFile = {
+            version: 1,
+            parserCache: this.parserCache,
+            fileTimes: this.fileTimes,
+            classToFileMap: this.classToFileMap,
+        };
+
+        const timer = new Timer();
+        this.logger?.info(`Persisting APEX parser cache to: ${cacheFile}`);
+        try {
+            await this.fileSystem.outputFile(cacheFile, Buffer.from(JSON.stringify(cache, undefined, 4)));        
+            this.logger?.info(`Persisted ${pluralize('entry', this.parserCache)} to APEX parser cache [${timer.stop().toString('ms')}]`);
+        } catch(err) {
+            this.logger?.error('Failed to persist APEX cache:', err);
+        }
+    }
+
+    public async loadCache(cacheFile: string) {
+        const timer = new Timer();
+        this.logger?.info(`Loading APEX parser cache from: ${cacheFile}`);
+        try {
+            const cache: ApexCacheFile = JSON.parse(await this.fileSystem.readFileAsString(cacheFile));
+            this.parserCache = cache.parserCache;
+            this.fileTimes = cache.fileTimes;
+            this.classToFileMap = cache.classToFileMap;
+            this.logger?.info(`Loaded ${pluralize('entry', this.parserCache)} from APEX parser cache [${timer.stop().toString('ms')}]`);
+        } catch(e) {
+            this.logger?.warn('Failed to load APEX parser cache:', e);
+        }        
     }
 }

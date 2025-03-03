@@ -144,7 +144,8 @@ const common = {
 const extension  = {
     entry: {
         'vlocode': './src/extension.ts',
-        'sass-compiler': '../vlocity-deploy/src/scss/forked/fork.ts'
+        'sass-compiler': '../vlocity-deploy/src/scss/forked/fork.ts',
+        'apex-ls': '../vscode-apex/src/index.ts'
     },
     name: 'vlocode',
     output: {
@@ -159,11 +160,11 @@ const extension  = {
         }),
         new webpack.BannerPlugin({
             banner: `vlocode v${packageJson.version} - ${new Date().toISOString()}\nCopyright P. van Gulik <peter@curlybracket.nl>\n[fullhash] ([file])`,
-            include: [ 'vlocode.js' ]
+            include: [ 'vlocode.js', 'apex-ls.js' ]
         }),
         new webpack.BannerPlugin({
             banner: `vlocode v${packageJson.version} - ${new Date().toISOString()} ([fullhash])`,
-            exclude: [ 'vlocode.js' ]
+            exclude: [ 'vlocode.js', 'apex-ls.js' ]
         }),
         new webpack.BannerPlugin({
             banner: `"use strict";\nvar __vlocodeStartTime = Date.now();`,

@@ -1,5 +1,7 @@
 // Easier debugging with source maps
 import * as vscode from 'vscode';
+import * as vscodeLanguageclient from 'vscode-languageclient/node';
+import { LanguageClient, LanguageClientOptions,	NodeModule, TransportKind } from 'vscode-languageclient/node';
 import vlocityPackageManifest from 'vlocity/package.json';
 
 import * as constants from './constants';
@@ -9,7 +11,7 @@ import { getContext, initializeContext } from './lib/vlocodeContext';
 import { ConfigurationManager } from './lib/config';
 import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
-import { getErrorMessage, lazy } from '@vlocode/util';
+import { fileExists, getErrorMessage, lazy } from '@vlocode/util';
 import { WorkspaceContextDetector } from './lib/workspaceContextDetector';
 import { MetadataDetector } from './lib/salesforce/metadataDetector';
 import { DatapackDetector } from './lib/vlocity/datapackDetector';
@@ -33,6 +35,7 @@ import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 import './commands';
 import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
 import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
+import path from 'path';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -63,6 +66,7 @@ class Vlocode {
     private static instance: Vlocode;
     private isDebug: boolean;
     private service: VlocodeService;
+    private lsClient: LanguageClient;
 
     constructor() {
         if (!Vlocode.instance) {
@@ -115,6 +119,60 @@ class Vlocode {
         vlocityUtil.setLogger(LogManager.get('vlocity'));
     }
 
+    private startLanguageServer(context: vscode.ExtensionContext) {
+        // The server is implemented in node
+        const serverModule: NodeModule = { 
+            module: context.asAbsolutePath(
+                path.join('out', 'apex-ls.js')
+            ), 
+            transport: TransportKind.ipc,
+            options: {
+                execArgv: ['--nolazy', '--inspect=6009']
+            }
+        }
+
+        if (!fileExists(serverModule.module)) {
+            this.logger.error(`Unable to start language server; server module not found at: ${serverModule.module}`);
+            return;
+        } 
+
+        // Options to control the language client
+        const clientOptions: LanguageClientOptions = {
+            // Register the server for plain text documents
+            documentSelector: [ { scheme: 'file', pattern: '**/*.{cls,trigger}' } ],
+            synchronize: {
+                fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{cls,trigger}')
+            },
+            outputChannel: vscode.window.createOutputChannel('Vlocode Language Server'),
+            errorHandler: {
+                /* eslint-disable @typescript-eslint/no-unused-vars */
+                error: (error, message, count) => {
+                    this.logger.error(`Language server error: ${message}`);
+                    return { action: vscodeLanguageclient.ErrorAction.Continue };
+                },
+                closed: () => {
+                    this.logger.warn(`Language server closed; restarting...`);
+                    return { action: vscodeLanguageclient.CloseAction.Restart };
+                }
+            },
+        };
+
+        // Create the language client and start the client.        
+        this.lsClient = new LanguageClient(
+            'vlocodeLanguageServer',    
+            'Vlocode APEX Language Server',
+            serverModule,
+            clientOptions
+        );
+
+        this.logger.info(`Starting language server using module: ${serverModule.module}`);
+        this.lsClient.start().then(() => {
+            this.lsClient.outputChannel.appendLine('Vlocode APEX Language server started');
+        }, error => {
+            this.lsClient.outputChannel.appendLine('Failed to start language server');
+        });
+    }
+
     /**
      * Creates an instance of the Developer log panel and registers the required event handlers
      */
@@ -164,7 +222,8 @@ class Vlocode {
         // Salesforce support
         ConfigurationManager.onConfigChange(this.service.config.salesforce, 'enabled', c => this.service.enableSalesforceSupport(c.enabled));
         if (this.service.config.salesforce.enabled) {
-            this.service.enableSalesforceSupport(true);
+            this.service.enableSalesforceSupport(true);            
+            this.startLanguageServer(context);
         }
 
         // Register switchable FS interface

@@ -55,7 +55,7 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
     }
 
     public visitClassDeclaration(ctx: ClassDeclarationContext): ApexClass {
-        this.state.name = ctx.id().getText();
+        this.state.name = ctx.id()?.getText();
 
         if (ctx.EXTENDS()) {
             // Parse `extends XXX`
@@ -72,8 +72,8 @@ export class ClassDeclarationVisitor extends DeclarationVisitor<ApexClass> {
             this.addRef(this.state.implements, 'implements');
         }
 
-        ctx.classBody().accept(this);
-        ctx.modifier().forEach(modifier => modifier.accept(this));
+        ctx.classBody()?.accept(this);
+        ctx.modifier()?.forEach(modifier => modifier.accept(this));
         return this.state;
     }
 
