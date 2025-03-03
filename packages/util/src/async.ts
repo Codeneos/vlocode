@@ -1,4 +1,5 @@
 import { CancellationToken } from './cancellationToken';
+import { spreadAsync } from './collection';
 import { DeferredPromise } from './deferred';
 import { CustomError } from './errors';
 
@@ -308,5 +309,68 @@ export class ThenablePromise<T> implements Promise<T> {
             callback(undefined, value);
             return value;
         }, (err) => callback(err, undefined));
+    }
+}
+
+/**
+ * A class that wraps an AsyncGenerator and makes it both iterable and awaitable as a Promise.
+ * When used as a Promise, it will resolve to an array containing all generated values.
+ * When used as an AsyncGenerator, it behaves like the original generator.
+ */
+export class AwaitableAsyncGenerator<T> implements AsyncGenerator<T>, Promise<T[]> {
+    readonly [Symbol.toStringTag] = 'AwaitableAsyncGenerator';
+    private promiseResult?: Promise<T[]>;
+    private generator: AsyncGenerator<T, void, unknown>;
+
+    constructor(generator: AsyncGenerator<T, void, unknown>);
+    constructor(generator: () => AsyncGenerator<T, void, unknown>, thisArg?: unknown);
+    constructor(generator: (() => AsyncGenerator<T, void, unknown>) | AsyncGenerator<T, void, unknown>, thisArg?: unknown) {
+        this.generator = typeof generator === 'function' ? generator.call(thisArg) : generator;
+    }
+
+    private getPromiseResult(): Promise<T[]> {
+        return this.promiseResult ?? (this.promiseResult = spreadAsync(this.generator));
+    }
+
+    private getGenerator():AsyncGenerator<T> {
+        if (this.promiseResult) {
+            throw new Error('Cannot access async generator after it has been awaited');
+        }
+        return this.generator;
+    }
+
+    // AsyncGenerator implementation delegates to original generator
+    public next(...[value]: [] | [unknown]): Promise<IteratorResult<T, void>> {
+        return this.getGenerator().next(value);
+    }
+
+    public return(value: void | PromiseLike<void>): Promise<IteratorResult<T, void>> {
+        return this.getGenerator().return(value);
+    }
+
+    public throw(e: any): Promise<IteratorResult<T, void>> {
+        return this.getGenerator().throw(e);
+    }
+
+    public [Symbol.asyncIterator](): AsyncGenerator<T, void, unknown> {
+        return this.getGenerator();
+    }
+
+    // Promise implementation uses lazy initialization of promise result
+    public then<TResult1 = T[], TResult2 = never>(
+        onfulfilled?: ((value: T[]) => TResult1 | PromiseLike<TResult1>) | null | undefined,
+        onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined
+    ): Promise<TResult1 | TResult2> {
+        return this.getPromiseResult().then(onfulfilled, onrejected);
+    }
+
+    public catch<TResult = never>(
+        onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined
+    ): Promise<T[] | TResult> {
+        return this.getPromiseResult().catch(onrejected);
+    }
+
+    public finally(onfinally?: (() => void) | null | undefined): Promise<T[]> {
+        return this.getPromiseResult().finally(onfinally);
     }
 }
