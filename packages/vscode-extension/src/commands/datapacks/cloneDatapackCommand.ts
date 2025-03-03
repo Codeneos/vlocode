@@ -66,7 +66,7 @@ export default class CloneDatapackCommand extends DatapackCommand {
         await this.vlocode.withActivity(
             `Clone datapack ${datapackName}...`,
             async () => {
-                await this.vlocode.datapackService.expandDatapack(datapack, datapack.projectFolder);
+                await this.vlocode.datapackService.expandDatapack(datapack, datapack.projectFolder!);
             }
         );
     }

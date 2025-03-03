@@ -21,7 +21,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
         super();
     }
 
-    public execute(...args: any[]) : Promise<void> {
+    public execute() : Promise<void> {
         return this.buildParentKeyFiles();
     }
 
@@ -102,8 +102,8 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
                 // Log any missing references as warnings
                 const missingKeyLocations = await Promise.all(
                     missingParents.map(async parentKey =>
-                        await this.findInFiles(path.dirname(datapack.headerFile), parentKey) ||
-                              this.findInFiles(path.dirname(datapack.headerFile), substringAfterLast(parentKey, '/'))
+                        await this.findInFiles(path.dirname(datapack.headerFile!), parentKey) ||
+                              this.findInFiles(path.dirname(datapack.headerFile!), substringAfterLast(parentKey, '/'))
                     )
                 );
                 for (const [i, [file, range]] of filterUndefined(missingKeyLocations).entries()) {
@@ -113,7 +113,7 @@ export default class BuildParentKeyFilesCommand extends DatapackCommand {
 
                 // write parent key file
                 if (parentKeyReferences.length > 0) {
-                    await this.updateParentKeysFile(datapack.headerFile, parentKeyReferences);
+                    await this.updateParentKeysFile(datapack.headerFile!, parentKeyReferences);
                 }
             }
 

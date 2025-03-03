@@ -17,7 +17,7 @@ export default class RenameDatapackCommand extends CloneDatapackCommand {
 
         // Delete old Datapack after rename
         const changes = new vscode.WorkspaceEdit();
-        changes.deleteFile(vscode.Uri.file(path.dirname(datapack.headerFile)), { recursive: true, ignoreIfNotExists: false });
+        changes.deleteFile(vscode.Uri.file(path.dirname(datapack.headerFile!)), { recursive: true, ignoreIfNotExists: false });
         await vscode.workspace.applyEdit(changes);
     }
 }
