@@ -5,11 +5,13 @@
 
 export interface ObjectMapping {
     sobjectType: string;
+    datapackType?: string;
     fields: Record<string, string>;
 }
 
 export const OmniScriptMapping: ObjectMapping = {
     sobjectType: "OmniProcess",
+    datapackType: "OmniProcess",
     fields: {
         "Name": "Name",
         "Description": "%vlocity_namespace%__AdditionalInformation__c",
@@ -57,7 +59,25 @@ export const OmniScriptElementMapping: ObjectMapping = {
     }
 }
 
+export const VlocityCardMapping: ObjectMapping = {
+    sobjectType: "OmniUiCard",
+    datapackType: "FlexCard",
+    fields: {
+        "Name": "Name",
+        "%vlocity_namespace%__Version__c": "VersionNumber",
+        "%vlocity_namespace%__Definition__c": "PropertySetConfig",
+        "%vlocity_namespace%__Description__c": "Description",
+        "%vlocity_namespace%__IsChildCard__c": "OmniUiCardType",
+        "%vlocity_namespace%__GlobalKey__c": "OmniUiCardKey",
+        "%vlocity_namespace%__Author__c": "AuthorName",
+        "%vlocity_namespace%__Styles__c": "StylingConfiguration",
+        "%vlocity_namespace%__SampleData__c": "SampleDataSourceResponse",
+        "%vlocity_namespace%__Datasource__c": "DataSourceConfig"
+    }
+}
+
 export const OmniSObjectMappings: Record<string, ObjectMapping> = {
     "%vlocity_namespace%__OmniScript__c": OmniScriptMapping,
-    "%vlocity_namespace%__Element__c": OmniScriptElementMapping
+    "%vlocity_namespace%__Element__c": OmniScriptElementMapping,
+    "%vlocity_namespace%__VlocityCard__c": VlocityCardMapping,
 };

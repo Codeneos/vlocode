@@ -94,7 +94,6 @@ export class OmniStudioConverter {
      * @template T - The type to which the record should be converted.
      * @param {string} sobjectType - The SObject type of the record.
      * @param {object} record - The record to be converted.
-     * @returns {T} - The converted record of type T.
      * @throws {Error} - Throws an error if no OmniStudio runtime mappings are found for the given SObject type.
      */
     private convertRecord(sobjectType: string, record: object) {
