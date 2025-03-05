@@ -352,6 +352,29 @@ vlocode.omniScript.activate:
   group: v_vlocity_omniscript
   menus: *omniScriptCommandMenus
 
+# Omistudio Conversion
+vlocode.vlocityCard.convert:
+  title: 'Vlocity: Convert to FlexCard (Standard)'
+  group: v_vlocity
+  menus: &vlocityCardCommandMenus
+    - menu: explorer/context
+      when:
+        - explorerResourceIsFolder && resourcePath =~ /.+\\VlocityCard\\[^\\]+$/
+        - explorerResourceIsFolder && resourcePath =~ /.+\/VlocityCard\/[^\/]+$/
+        - resourceScheme == file && resourcePath =~ /.+\/VlocityCard\/.+\/.+\.json$/
+        - resourceScheme == file && resourcePath =~ /.+\\VlocityCard\\.+\\.+\.json$/
+    - menu: commandPalette
+      when: &whenVlocityCard
+        - resourceScheme == file && resourcePath =~ /.+\/VlocityCard\/.+\/.+\.json$/
+        - resourceScheme == file && resourcePath =~ /.+\\VlocityCard\\.+\\.+\.json$/
+    - menu: editor/context
+      when: *whenVlocityCard
+vlocode.omniScript.convert:
+  title: 'Vlocity: Convert to OmniProcess (Standard)'
+  group: v_vlocity
+  menus:
+    - <<: *omniScriptCommandMenus
+
 # editor
 vlocode.openMetaXml:
   title: 'Salesforce: Open -meta.xml'

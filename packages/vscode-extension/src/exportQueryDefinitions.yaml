@@ -50,26 +50,6 @@ OmniScript:
       - '%vlocity_namespace%__Version__c'
       - '%vlocity_namespace%__Language__c'
 
-OmniProcess:
-  salesforceUrl:
-    namespace: vlocity
-    path: >
-      IsLwcEnabled__c
-      ? '/lightning/cmp/' + namespace + '__OmniDesignerAuraWrapper?c__recordId=' + id
-      : '/apex/' + namespace + '__omniscriptdesigner?id=' + id
-  query: Select Id, Name, LastModifiedDate, IsLwcEnabled, Type, SubType, Language, Version, IsActive from OmniProcess where IsProcedure = false
-  name: "'Version ' + (Version || 0)"
-  orderBy: Type,SubType,Language,Version
-  groupKey: Type + SubType + Language
-  groupName: Type + '/' + SubType + ' (' + Language + ')'
-  description: "(IsActive ? 'Active - ' : '') + (IsLwcEnabled ? 'LWC' : 'classic')"
-  matchingKey:
-    fields:
-      - SubType
-      - Type
-      - Version
-      - Language
-
 IntegrationProcedure:
   salesforceUrl:
     namespace: vlocity
@@ -106,3 +86,35 @@ AttributeCategory:
   salesforceUrl:
     namespace: vlocity
     path: "'/apex/' + namespace + '__VlocityAttributeCategoryEdit?id=' + id "
+
+# OmniStudio standard runtime objects
+OmniProcess:
+  salesforceUrl:
+    namespace: vlocity
+    path: >
+      IsLwcEnabled__c
+      ? '/lightning/cmp/' + namespace + '__OmniDesignerAuraWrapper?c__recordId=' + id
+      : '/apex/' + namespace + '__omniscriptdesigner?id=' + id
+  query: Select Id, Name, LastModifiedDate, IsLwcEnabled, Type, SubType, Language, Version, IsActive from OmniProcess where IsProcedure = false
+  name: "'Version ' + (Version || 0)"
+  orderBy: Type,SubType,Language,Version
+  groupKey: Type + SubType + Language
+  groupName: Type + '/' + SubType + ' (' + Language + ')'
+  description: "(IsActive ? 'Active - ' : '') + (IsLwcEnabled ? 'LWC' : 'classic')"
+  matchingKey:
+    fields:
+      - SubType
+      - Type
+      - Version
+      - Language
+
+OmniUiCard:
+  query: Select Id, Name, AuthorName, VersionNumber, UniqueName, IsActive from OmniProcess where IsProcedure = false
+  groupKey: Name
+  groupName: Name
+  description: "AuthorName + (IsActive ? (AuthorName ? ' - ' : '') + 'Active' : '')"
+  name: "'Version ' + (VersionNumber || 0)"
+  matchingKey:
+    fields:
+      - Name
+      - VersionNumber

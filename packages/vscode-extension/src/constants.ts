@@ -71,5 +71,7 @@ export enum VlocodeCommand {
     omniScriptDeployLwc = 'vlocode.omniScript.deployLwc',
     omniScriptActivate = 'vlocode.omniScript.activate',
     apexToggleCoverage = 'vlocode.apex.toggleCoverage',
-    deployRecentValidation = 'vlocode.deployRecentValidation',
+    deployRecentValidation = 'vlocode.deployRecentValidation',    
+    convertOmniScript  = 'vlocode.omniScript.convert',
+    convertVlocityCard  = 'vlocode.vlocityCard.convert',
 }

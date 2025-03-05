@@ -356,6 +356,14 @@
                 "title": "OmniScript: (Re-)Activate"
             },
             {
+                "command": "vlocode.vlocityCard.convert",
+                "title": "Vlocity: Convert to FlexCard (Standard)"
+            },
+            {
+                "command": "vlocode.omniScript.convert",
+                "title": "Vlocity: Convert to OmniProcess (Standard)"
+            },
+            {
                 "command": "vlocode.openMetaXml",
                 "title": "Salesforce: Open -meta.xml",
                 "icon": {
@@ -646,6 +654,21 @@
                     "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
                 },
                 {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/VlocityCard\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\VlocityCard\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
+                    "group": "v_vlocity",
+                    "when": "false"
+                },
+                {
                     "command": "vlocode.apex.toggleCoverage",
                     "group": "v_apex",
                     "when": "resourceExtname == .cls"
@@ -796,6 +819,46 @@
                     "command": "vlocode.omniScript.activate",
                     "group": "v_vlocity_omniscript",
                     "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\VlocityCard\\\\[^\\\\]+$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/VlocityCard\\/[^\\/]+$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/VlocityCard\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\VlocityCard\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
+                    "group": "v_vlocity",
+                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
                 }
             ],
             "editor/context": [
@@ -883,6 +946,16 @@
                     "command": "vlocode.omniScript.activate",
                     "group": "v_vlocity_omniscript",
                     "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\/VlocityCard\\/.+\\/.+\\.json$/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity",
+                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\VlocityCard\\\\.+\\\\.+\\.json$/"
                 },
                 {
                     "command": "vlocode.apex.toggleCoverage",
