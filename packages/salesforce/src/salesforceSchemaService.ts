@@ -221,6 +221,16 @@ export class SalesforceSchemaService {
     public async sObjectHasField(type: string, fieldName: string) : Promise<boolean> {
         return (await this.describeSObjectField(type, fieldName, false)) !== undefined;
     }
+    
+    /**
+     * Retrieves the API name of the name field for a specific Salesforce object type.
+     * 
+     * @param type - The API name of the Salesforce object type (e.g., 'Account', 'Contact')
+     * @returns A Promise that resolves to the API name of the name field, or undefined if no name field is found
+     */
+    public async getNameField(type: string) {
+        return (await this.describeSObject(type)).fields.find(f => f.nameField)?.name;
+    }
 
     /**
      * Get the field type of an SObject field in Salesforce
