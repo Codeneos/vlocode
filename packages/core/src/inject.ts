@@ -61,7 +61,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
      * @param options Constructions options for the service
      * @returns 
      */
-    transient: function(options?: DependencyOptions) {
+    transient: function(options?: Omit<DependencyOptions, 'lifecycle'>) {
         return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.transient } );
     },
     /**
@@ -69,7 +69,7 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
      * @param options Constructions options for the service
      * @returns 
      */
-    singleton: function(options?: DependencyOptions) {
+    singleton: function(options?: Omit<DependencyOptions, 'lifecycle'>) {
         return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.singleton } );
     },
     /**
