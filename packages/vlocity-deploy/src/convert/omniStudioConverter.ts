@@ -1,27 +1,36 @@
 import { OmniProcessRecord, OmniScriptElementRecord, OmniScriptRecord } from '@vlocode/omniscript';
 import { RecordFactory } from '@vlocode/salesforce';
-import { cache, removeNamespacePrefix } from '@vlocode/util';
+import { cache, fileName, filterUndefined, removeNamespacePrefix } from '@vlocode/util';
 import { OmniSObjectMappings } from './omniStudioMappings';
 import { isDatapackRecord, VlocityDatapack } from '@vlocode/vlocity';
 import { ILogger, injectable, LogManager } from '@vlocode/core';
+import path from 'path';
 
-@injectable()
+@injectable.singleton()
 export class OmniStudioConverter {
 
     constructor(private logger: ILogger = LogManager.get(OmniStudioConverter)) {
     }
 
+    /**
+     * Converts a Vlocity datapack to the corresponding OmniStudio format.
+     * 
+     * @param datapack - The Vlocity datapack to convert
+     * @returns A new VlocityDatapack instance with converted data in OmniStudio format
+     * @throws Error when no OmniStudio runtime mapping is found for the given datapack type
+     */
     public convertDatapack(datapack: VlocityDatapack): VlocityDatapack {
-        const target = this.getTargetSObject(datapack.VlocityRecordSObjectType);
-        if (!target) {
+        const target = this.getMapping(datapack.VlocityRecordSObjectType);
+        if (!target?.datapackType) {
             throw new Error(`No OmniStudio runtime mappings found for datapack: ${datapack.datapackType} (${datapack.VlocityRecordSObjectType})`);
         }
 
         const covertedData = this.convertDatapackRecord(datapack.data);
-        return new VlocityDatapack(datapack.datapackType, covertedData, { 
-            headerFile: datapack.headerFile,
-            projectFolder: datapack.projectFolder,
-            key: datapack.key
+        const projectFolder = datapack.projectFolder ?? '.';
+        const headerFile = datapack.headerFile ? path.join(projectFolder, target.datapackType, fileName(datapack.headerFile)) : undefined;
+        const key = datapack.key.replace(datapack.datapackType, target.datapackType);
+        return new VlocityDatapack(target.datapackType, covertedData, { 
+            key, headerFile, projectFolder
         });
     }
 
@@ -30,36 +39,64 @@ export class OmniStudioConverter {
             return data;
         }
 
-        const sourceObject = data.VlocityRecordSObjectType;
-        const targetObject = this.getTargetSObject(data.VlocityRecordSObjectType);
-        if (!targetObject) {
-            return data;
+        const sourceType = data.VlocityRecordSObjectType;
+        const mapping = this.getMapping(sourceType);
+        if (!mapping) {
+            throw new Error(`No OmniStudio runtime mappings found for managed package SObject type: ${sourceType}`);
         }
+        const targetType = mapping.sobjectType;
 
         const covertedData: Record<string, unknown> = {
             VlocityDataPackType: data.VlocityDataPackType,
-            VlocityRecordSObjectType: targetObject
+            VlocityRecordSObjectType: targetType
         };
 
         if (data.VlocityLookupRecordSourceKey) {
-            covertedData.VlocityLookupRecordSourceKey = data.VlocityLookupRecordSourceKey.replace(sourceObject, targetObject);
+            covertedData.VlocityLookupRecordSourceKey = data.VlocityLookupRecordSourceKey.replace(sourceType, targetType);
         } else if (data.VlocityMatchingRecordSourceKey) {
-            covertedData.VlocityMatchingRecordSourceKey = data.VlocityMatchingRecordSourceKey.replace(sourceObject, targetObject);
+            covertedData.VlocityMatchingRecordSourceKey = data.VlocityMatchingRecordSourceKey.replace(sourceType, targetType);
         } else if ('VlocityRecordSourceKey' in data) {
-            covertedData.VlocityRecordSourceKey = data.VlocityRecordSourceKey.replace(sourceObject, targetObject);
+            covertedData.VlocityRecordSourceKey = data.VlocityRecordSourceKey.replace(sourceType, targetType);
         }
         
-        this.logger.debug(`${data.VlocityDataPackType}: ${sourceObject} -> ${targetObject}`);
-        for (const [ field, value ] of Object.entries(data)) {
-            const targetField = this.getTargetField(sourceObject, field);
-            if (targetField) {
-                this.logger.debug(`${sourceObject}:${field} -> ${targetObject}:${targetField}`);
-                covertedData[targetField] = this.transformDatapackRecordValue(value);
-            } else {
-                this.logger.verbose(`No mapping found for field ${field} in ${sourceObject}`);
+        this.logger.debug(`${data.VlocityDataPackType}: ${sourceType} -> ${targetType}`);
+
+        for (const [ field, sourceFieldName ] of Object.entries(mapping.fields)) {
+            const sourceFields = filterUndefined(
+                typeof sourceFieldName === 'string' 
+                    ? [ this.getField(data, sourceFieldName) ] 
+                    : sourceFieldName.map( f => this.getField(data, f))
+            );
+            if (sourceFields.length) {
+                this.logger.debug(`${sourceType}:${sourceFields.map(({ name }) => name).join('_')} -> ${targetType}:${field}`);
+                covertedData[field] = sourceFields.length > 1 
+                    ? sourceFields.map(({ value }) => this.transformDatapackRecordValue(value)).join('_')
+                    : this.transformDatapackRecordValue(sourceFields[0].value);
             }
         }
+
+        if (mapping.postProcess) {
+            mapping.postProcess(covertedData);
+        }
+
         return covertedData;
+    }
+
+    private getField(data: object, field: string): { value: unknown, name: string } | undefined {
+        if (field in data) {
+            return { name: field, value: data[field] };
+        }
+        const dataFields = Object.keys(data);        
+        const lowerCasedField = field.toLowerCase();
+        const normalizedField = removeNamespacePrefix(field).toLowerCase();
+        const dataField = dataFields.find(f => f.toLowerCase() === lowerCasedField) ??
+            dataFields.find(f => removeNamespacePrefix(f).toLowerCase() === normalizedField);
+
+        if (dataField) {
+            return { value: data[dataField], name: dataField };
+        } else {
+            this.logger.debug(`Mapped field "${field}" not defined in source data: ${dataFields}`);
+        }
     }
 
     private transformDatapackRecordValue(value: unknown): unknown {
@@ -108,13 +145,25 @@ export class OmniStudioConverter {
             }
         };
 
-        for (const [ field, targetField ] of Object.entries(mapping.fields)) {
-            result[targetField] = record[field];
+        for (const [ targetField, sourceFieldName ] of Object.entries(mapping.fields)) {
+            const sourceFields = filterUndefined(
+                typeof sourceFieldName === 'string' 
+                    ? [ this.getField(record, sourceFieldName) ] 
+                    : sourceFieldName.map( f => this.getField(record, f))
+            );
+            result[targetField] = sourceFields.length > 1 
+                ? sourceFields.map(({ value }) => value).join('_')
+                : sourceFields[0].value;
+        }
+
+        if (mapping.postProcess) {
+            mapping.postProcess(result);
         }
 
         return result;
     }
 
+    @cache({ scope: 'instance', immutable: true })
     private getMapping(type: string) {
         const normalizedType = removeNamespacePrefix(type).toLowerCase();
         for (const [ key, mapping ] of Object.entries(OmniSObjectMappings)) {
@@ -126,26 +175,5 @@ export class OmniStudioConverter {
             }
         }
         return undefined;
-    }
-
-    private getTargetSObject(type: string) {
-        return this.getMapping(type)?.sobjectType;
-    }
-
-    @cache({ scope: 'global', ttl: -1 })
-    private getTargetField(type: string, field: string) {
-        const mapping = this.getMapping(type);
-        if (!mapping) {
-            return undefined;
-        }
-        const normalizedField = removeNamespacePrefix(field).toLowerCase();
-        for (const [ targetField, sourceField ] of Object.entries(mapping.fields)) {
-            if (sourceField === field.toLowerCase()) {
-                return targetField;
-            }
-            if (removeNamespacePrefix(sourceField).toLowerCase() === normalizedField) {
-                return targetField;
-            }
-        }
     }
 }
