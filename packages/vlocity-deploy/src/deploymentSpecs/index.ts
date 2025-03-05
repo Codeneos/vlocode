@@ -13,3 +13,7 @@ export * from './vlocityAction';
 export * from './vlocityCard';
 export * from './vlocityUILayout';
 export * from './vlocityUITemplate';
+
+// OmniStudio components
+export * from './omniProcess';
+export * from './omniUiCard';
