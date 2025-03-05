@@ -114,6 +114,10 @@ export class QueryBuilder extends QueryBuilderData {
         return this;
     }
 
+    public isSelected(field: string) {
+        return this.query.fieldList.includes(field);
+    }
+
     public selectRelated(relationName: string, fields: (string | { name: string })[]) {
         return this.select(...fields.map(f => `${relationName}.${typeof f === 'string' ? f : f.name}`));
     }
