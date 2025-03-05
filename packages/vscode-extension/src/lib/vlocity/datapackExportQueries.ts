@@ -34,17 +34,22 @@ export class DatapackExportQueries {
      * @param datapack Datapack like objects that has a datapack type and datapack data fields
      * @returns Export query
      */
-    public async getQuery(datapack: ObjectEntry) {
+    public async getQuery(datapack: ObjectEntry): Promise<string> {
         const datapackDef = exportQueryDefinitions[datapack.datapackType];
         const query = this.getDatapackQuery(datapack.datapackType) ?? new QueryBuilder(datapack.sobjectType, [ 'Id' ]);
         const macthingKeys = datapackDef?.matchingKey ?? await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
+        const nameField = await this.schema.getNameField(datapack.sobjectType);
 
-        if (macthingKeys) {
-            query.select(...macthingKeys.fields);
-            if (macthingKeys.returnField) {
-                query.select(macthingKeys.returnField);
-            }
+        if (!macthingKeys.fields.length && nameField) {
+            macthingKeys.fields.push(nameField);                       
+        } else if (nameField) {
+            query.select(nameField);
         }
+        
+        if (macthingKeys.returnField) {
+            query.select(macthingKeys.returnField);
+        }
+        query.select(...macthingKeys.fields); 
 
         if (datapack.id) {
             query.where.equals('Id', datapack.id);
@@ -63,10 +68,19 @@ export class DatapackExportQueries {
                 }
             }
 
-            if (macthingKeys.fields.length && missingMatchingKeys.length === macthingKeys.fields.length) {
+            if (!macthingKeys.fields.length) {
+                throw new Error(
+                    `Unable to build an export query for ${
+                        datapack.datapackType
+                    }; no matching key fields are defined.`
+                );
+            } else if (macthingKeys.fields.length && missingMatchingKeys.length === macthingKeys.fields.length) {
                 throw new Error(
                     `Unable to build an export query for ${datapack.datapackType}; ` +
-                    `all matching key fields (${macthingKeys.fields.join(', ')}) are undefined: ${JSON.stringify(datapack, undefined, 2)}`);
+                    `all matching key fields (${macthingKeys.fields.join(', ')}) are undefined: ${
+                        JSON.stringify(datapack, undefined, 2)
+                    }`
+                );
             } else if (missingMatchingKeys.length) {
                 this.logger.warn(`Datapack of type ${datapack.datapackType} is missing some matching key fields: ${missingMatchingKeys.join(', ')}`);
             }
