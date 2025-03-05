@@ -250,6 +250,9 @@ export default class SelectOrgCommand extends CommandBase {
             void vscode.window.showErrorMessage('Failed to authorize new org, see the log for more details');
             return;
         }
+        if (options.alias) {
+            await sfdx.setAlias(authInfo.username, options.alias);
+        }
         const successMessage = `Successfully authorized ${authInfo.username}, you can now close the browser`;
         this.logger.log(successMessage);
         void vscode.window.showInformationMessage(successMessage);
