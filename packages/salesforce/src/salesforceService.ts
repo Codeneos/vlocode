@@ -18,7 +18,6 @@ import { DeveloperLogs } from './developerLogs';
 import { QueryBuilder } from './queryBuilder';
 import { SalesforceBatchService } from './salesforceBatchService';
 
-
 export interface OrganizationDetails {
     id: string;
     name: string;
@@ -131,6 +130,16 @@ export class SalesforceService implements SalesforceConnectionProvider {
     public async getOrganizationDetails() : Promise<OrganizationDetails> {
         const results = await this.query<OrganizationDetails>('SELECT Id, Name, PrimaryContact, IsSandbox, InstanceName, OrganizationType, NamespacePrefix FROM Organization');
         return results[0];
+    }
+
+    /**
+     * Updates the namespace used for Salesforce operations.
+     * 
+     * @param value - The new namespace value to set
+     * @returns A promise that resolves when the namespace has been updated
+     */
+    public updateNamespace(value: string) {
+        return this.namespaceService.updateNamespace(value);
     }
 
     /**
@@ -441,7 +450,6 @@ export class SalesforceService implements SalesforceConnectionProvider {
     public getApiVersion() {
         return this.connectionProvider.getApiVersion();
     }
-
 
     /**
      * Get a list of available API version on the connected server
