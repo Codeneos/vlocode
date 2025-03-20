@@ -3,7 +3,7 @@ import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema';
-import { cache, findField, isSalesforceId, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
+import { cache, findField, groupBy, isSalesforceId, mapAsyncParallel, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
 import { PicklistEntry } from 'jsforce';
 
 /**
@@ -95,23 +95,35 @@ export class SalesforceSchemaService {
         return undefined;
     }
 
-    public describeSObjectByPrefix(prefix: string) {
-        return this.describeSObjectById(prefix);
+    public async describeSObjectByPrefix(prefix: string) {
+        if (prefix.length < 3) {
+            throw Error(`Invalid key prefix: ${prefix}`);
+        }
+        const result = await this.describeByPrefix(prefix.slice(0, 3));
+        if (result) {
+            return result;
+        }
+        throw Error(`No object type found matching the key prefix specified: ${prefix}`);
     }
 
     public async describeSObjectById(id: string) : Promise<DescribeSObjectResult> {
         if (id?.length !== 3 && !isSalesforceId(id)) {
             throw Error(`Invalid Salesforce id: ${id}`);
         }
+        const result = await this.describeByPrefix(id.slice(0, 3));
+        if (result) {
+            return result;
+        }
+        throw Error(`No object type found matching the key id specified: ${id}`);
+    }
 
-        const prefix = id.slice(0, 3);
+    @cache({ unwrapPromise: true, immutable: true })
+    public async describeByPrefix(prefix: string) {
         for (const obj of await this.describeSObjects()) {
             if (obj.keyPrefix === prefix) {
                 return this.describeSObject(obj.name);
             }
         }
-
-        throw Error(`No object found matching the key prefix specified: ${prefix}`);
     }
 
     public async describePicklistValues(type: string, fieldName: string): Promise<PicklistEntry[]>;
@@ -199,6 +211,31 @@ export class SalesforceSchemaService {
                 return matchingField;
             }
         }
+    }
+
+
+    /**
+     * Filters a list of Salesforce IDs based on the provided filter function.
+     * 
+     * This method groups IDs by their 3-character prefix, determines the corresponding 
+     * SObject type for each prefix, and then applies the filter function to each ID 
+     * based on its SObject type.
+     * 
+     * @param ids - A single Salesforce ID or an array of Salesforce IDs to filter
+     * @param predicate - A function that determines whether an ID should be included based on its SObject type
+     * @returns A Promise that resolves to an array of filtered Salesforce IDs
+     * 
+     * @example
+     * // Filter only Contact IDs
+     * const contactIds = await filterIds(mixedIds, (type) => type.name === 'Contact');
+     */
+    public async filterIds(ids: string | string[], predicate: (type: DescribeSObjectResult, id: string) => boolean): Promise<string[]> {
+        const prefixes = groupBy(Array.isArray(ids) ? ids : [ids], id => id.slice(0, 3));
+        const objectTypes = await mapAsyncParallel(Object.keys(prefixes), prefix => this.describeSObjectByPrefix(prefix));
+        return Object.values(prefixes).flatMap((ids, index) => {
+            const objectType = objectTypes[index];
+            return ids.filter(id => predicate(objectType, id));
+        });
     }
 
     /**
