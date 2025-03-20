@@ -180,7 +180,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async* update(type: string, records: Array<{ id: string; [key: string]: any }>, options?: RecordBatchOptions & { cancelToken?: CancellationToken }) {
+    public async* update(type: string, records: Array<{ id: string; [key: string]: unknown }>, options?: RecordBatchOptions & { cancelToken?: CancellationToken }) {
         const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100, ...options });
         for (const record of records) {
             batch.addUpdate(this.namespaceService.updateNamespace(type), record, record.id, record.id);
@@ -349,12 +349,13 @@ export class SalesforceService implements SalesforceConnectionProvider {
         if (metadataInfo.componentType == 'Layout') {
             name = substringAfter(metadataInfo.componentName, '-');
         }
+
         if (metadataInfo.componentType == 'CustomField') {
             name = name.split('.').pop()!;
         }
 
         const nameParts = name.split('__');
-        if (nameParts.length > 2) {
+        if (nameParts.length > 2 || (nameParts.length > 1 && metadataInfo.componentType === 'CustomApplication')) {
             return {
                 namespace: nameParts.shift()!,
                 name: nameParts.join('__')
