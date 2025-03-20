@@ -383,7 +383,7 @@ export class Container {
             // Resolve property to an actual service
             const typeInfo = getPropertyKey(prototype, property);
             if (!typeInfo) {
-                throw new Error('Code compiled with emitting required type metadata');
+                throw new Error('Code compiled WIHTOUT emitting required type metadata');
             }
             const resolvedPropertyValue = this.resolve(typeInfo, undefined, prototype.constructor);
             if (resolvedPropertyValue) {
