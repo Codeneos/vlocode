@@ -153,5 +153,9 @@
         "strategy": "standard",
         "query": "select Id from ${fullName.split('.').shift()}__mdt where DeveloperName = '${fullName.split('.').pop()}'",
         "url": "/lightning/setup/${type}/page?address=/${id}"
+    },
+    "CustomApplication": {
+        "strategy": "tooling",
+        "url": "/visualEditor/appBuilder.app?id=${id}"
     }
 }
