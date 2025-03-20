@@ -1,29 +1,33 @@
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
-import { RecordActivator } from './recordActivator';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
-import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
+import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
+import { FlexCardActivator } from '../flexCard/flexCardActivator';
+import { Container, Logger } from '@vlocode/core';
+import { forEachAsyncParallel, getErrorMessage, Timer } from '@vlocode/util';
+import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
 
 @deploymentSpec({ recordFilter: /^OmniUiCard$/i })
 export class OmniUiCard implements DatapackDeploymentSpec {
 
     public constructor(
-        private readonly activator: RecordActivator) {
-    }
+        private readonly activator: FlexCardActivator,
+        private readonly logger: Logger,
+        private readonly container: Container,
+    ) { }
 
     /**
      * Pre-process template datapacks
      * @param datapack Datapack
      */
     public async preprocess(datapack: VlocityDatapack) {
-        // Update to inactive to allow insert; later in the process these are activated
         datapack.data['IsActive'] = false;
     }
 
     public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         for (const record of records) {
-            //this.addCardStateDependencies(record);
+            this.addCardStateDependencies(record);
             record.upsertFields = [
                 'VersionNumber',
                 'Name'
@@ -51,16 +55,63 @@ export class OmniUiCard implements DatapackDeploymentSpec {
             return;
         }
 
-        for (const cardState of cardDefinition.states) {
-            if (Array.isArray(cardState.childCards) && cardState.childCards.length) {
-                for (const childCardName of cardState.childCards) {
-                    record.addLookupDependency ('OmniUiCard', { Name: childCardName });
-                }
-            }
+        const childCards = this.collectChildCardsFromDefinition(cardDefinition.states, new Set<string>());
+        for (const childCardName of childCards) {
+            record.addLookupDependency ('OmniUiCard', { Name: childCardName });
         }
     }
 
-    public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.deployedRecords, () => ({ IsActive: true }));
+    private collectChildCardsFromDefinition(node: unknown, childCards = new Set<string>()) {
+        if (typeof node !== 'object' || node === null) {
+            return childCards;
+        }
+
+        for (const [key, value] of Object.entries(node)) {
+            if (key === 'cardName' && typeof value === 'string') {
+                const versionedCardMatch = /^(.*)_[0-9]+_[a-zA-Z0-9]+$/.exec(value);
+                if (versionedCardMatch?.[1]) {
+                    childCards.add(versionedCardMatch[1]);
+                } else {
+                    childCards.add(value);
+                }
+            } else {
+                this.collectChildCardsFromDefinition(value, childCards);
+            }
+        }
+
+        return childCards;
+    }
+
+    public async afterDeploy(event: DatapackDeploymentEvent) {
+        const packages = new Array<SalesforcePackage>();
+        const options = {
+            useStandardRuntime: event.deployment.options.standardRuntime
+        };
+
+        await forEachAsyncParallel(
+            event.getDeployedRecords('OmniUiCard'), 
+            async record => {
+                try {
+                    if (event.deployment.options.useMetadataApi) {
+                        await this.activator.activate(record.recordId, { skipLwcDeployment: true, ...options });
+                        packages.push(await this.activator.getMetadataPackage(record.recordId));
+                    } else {
+                        await this.activator.activate(record.recordId, { toolingApi: true, ...options });
+                    }
+                } catch(err) {
+                    this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${getErrorMessage(err)}`);
+                    record.updateStatus(DeploymentStatus.Failed, err.message || err);
+                }
+            }, 
+            event.deployment.options.parallelToolingDeployments ?? 4
+        );
+
+        if (packages.length) {
+            const timer = new Timer();
+            this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
+            const mergedPackage = packages.reduce((p, c) => p.merge(c));
+            await this.container.create(SalesforceDeployService, undefined, Logger.null).deployPackage(mergedPackage);
+            this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
+        }
     }
 }

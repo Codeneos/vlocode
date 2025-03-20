@@ -1,16 +1,21 @@
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
-import { RecordActivator } from './recordActivator';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
-import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
+import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
+import { forEachAsyncParallel, getErrorMessage, Iterable, Timer } from '@vlocode/util';
+import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
+import { FlexCardActivator } from '../flexCard/flexCardActivator';
+import { Container, Logger } from '@vlocode/core';
 
 @deploymentSpec({ recordFilter: /^VlocityCard__c$/i })
 export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
 
     public constructor(
-        private readonly activator: RecordActivator) {
-    }
+        private readonly activator: FlexCardActivator,
+        private readonly logger: Logger,
+        private readonly container: Container,
+    ) { }
 
     /**
      * Pre-process template datapacks
@@ -37,10 +42,10 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
         if (typeof cardDefinition === 'string') {
             try {
                 cardDefinition = JSON.parse(cardDefinition);
-            } catch(err) {
+            } catch {
                 record.addWarning('Unable to parse card definition as JSON');
                 return;
-            }            
+            }
         }
 
         if (typeof cardDefinition !== 'object' && !Array.isArray(cardDefinition.states)) {
@@ -64,7 +69,35 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
         }
     }
 
-    public afterDeploy(event: DatapackDeploymentEvent) {
-        return this.activator.activateRecords(event.deployedRecords, () => ({ Active__c: true }));
+    public async afterDeploy(event: DatapackDeploymentEvent) {
+        const packages = new Array<SalesforcePackage>();
+
+        await forEachAsyncParallel(
+            Iterable.filter(
+                event.getDeployedRecords('VlocityCard__c'), 
+                record => record.value('CardType__c') === 'flex'
+            ), 
+            async record => {
+                try {
+                    if (event.deployment.options.useMetadataApi) {
+                        await this.activator.activate(record.recordId, { skipLwcDeployment: true });
+                        packages.push(await this.activator.getMetadataPackage(record.recordId));
+                    } else {
+                        await this.activator.activate(record.recordId, { toolingApi: true });
+                    }
+                } catch(err) {
+                    this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${getErrorMessage(err)}`);
+                    record.updateStatus(DeploymentStatus.Failed, err.message || err);
+                }
+            }, 
+            event.deployment.options.parallelToolingDeployments ?? 4
+        );
+
+        if (packages.length) {
+            const timer = new Timer();
+            this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
+            await this.container.create(SalesforceDeployService, undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
+            this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
+        }
     }
 }
