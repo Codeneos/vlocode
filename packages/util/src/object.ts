@@ -645,3 +645,25 @@ export function sortProperties(
         .sort(([a, v1], [b, v2]) => Array.isArray(v1) == Array.isArray(v2) ? a.localeCompare(b, 'en') : (Array.isArray(v1) ? 1 : -1));
     return Object.fromEntries(objectEntries);
 }
+
+/**
+ * Makes access to the  properties of the target object case-insensitive by transforming the property names to lower-case. Does not
+ * change the original object and instead wraps the object in a proxy that transforms the property names to lower-case.
+ * @param target Target object to make case-insensitive
+ * @returns A new object that has case-insensitive property access
+ */
+export function caseInsensetive<T extends object>(target: T): T {
+    if (target === null) {
+        return target;
+    }
+    return transformPropertyProxy<T>(target, (target, name) => {
+        if (name in target) {
+            return name;
+        }
+        if (typeof name === 'string') {
+            const key = Object.keys(target).find(key => stringEquals(key, name, { caseInsensitive: true }));
+            return key ?? name;
+        }
+        return name;
+    });
+}
