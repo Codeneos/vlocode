@@ -5,6 +5,7 @@ import { Iterable, XML , directoryName, arrayMapPush, asArray, groupBy, stringEq
 import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './maifest';
 import { isPromise } from 'util/types';
+import { outputFile } from 'fs-extra';
 
 export interface SalesforcePackageComponent {
     componentType: string; // componentType
@@ -674,5 +675,16 @@ export class SalesforcePackage {
                 level: compressionLevel
             }
         });
+    }
+
+    /**
+     * Writes the package content to a file at the specified path with optional compression
+     * 
+     * @param filePath - The path where the file will be written
+     * @param compressionLevel - The level of compression to apply (0-9, where 0 is no compression and 9 is maximum compression), default is 4
+     * @returns A Promise that resolves when the file has been successfully written
+     */
+    public async writeToFile(filePath: string, compressionLevel: number = 4) {
+        return outputFile(filePath, await this.getBuffer(compressionLevel));
     }
 }
