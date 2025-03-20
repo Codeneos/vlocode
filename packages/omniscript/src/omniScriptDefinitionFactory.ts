@@ -1,11 +1,11 @@
 import { OmniScriptDefinition, OmniScriptElementDefinition } from './types';
 import { deepClone, getErrorMessage, Iterable } from '@vlocode/util';
-import { OmniScriptElementRecord, OmniScriptRecord } from './omniScriptLookupService';
+import { OmniScriptElementRecord, OmniScriptRecord } from './types/omniScript';
 
-type DefinitionRecordMapping = Record<string, 
+type DefinitionRecordMapping<TRec> = Record<string, 
     string | boolean | number | null | 
-    { field?: string, value?: any } |
-    ((record: any, field: string) => any)
+    { field?: keyof TRec, value?: any } |
+    ((record: TRec, field: string) => any)
 >;
 
 /**
@@ -13,23 +13,23 @@ type DefinitionRecordMapping = Record<string,
  */
 export class OmniScriptDefinitionFactory {
 
-    private scriptMapping: DefinitionRecordMapping = {
+    private scriptMapping: DefinitionRecordMapping<OmniScriptRecord> = {
         'userTimeZone': null,
         'userProfile': '',
         'userName': '',
         'userId': '',
         'userCurrencyCode': '',
         'timeStamp': '',
-        'testTemplates': rec => rec['TestHTMLTemplates__c'] || '',
+        'testTemplates': rec => rec.testHTMLTemplates ?? '',
         'templateList': { value: [] },
-        'sOmniScriptId': { field: 'Id' },
+        'sOmniScriptId': { field: 'id' },
         'sobjPL': { value: {} },
-        'RPBundle': rec => rec['DataRaptorBundleId__c'] || '',
+        'RPBundle': rec => rec.dataRaptorBundleId ?? '',
         'rMap': { value: {} },
         'response': null,
-        'propSetMap': rec => this.parseAsJson(rec, 'PropertySet__c'),
+        'propSetMap': rec => this.parseAsJson(rec, 'propertySet'),
         'prefillJSON': '{}',
-        'lwcId': { field: 'LwcId__c' },
+        'lwcId': { field: 'lwcId' },
         'labelMap': { value: {} },
         'labelKeyMap': { value: {} },
         'errorMsg': '',
@@ -37,32 +37,32 @@ export class OmniScriptDefinitionFactory {
         'dMap': { value: {} },
         'depSOPL': { value: {} },
         'depCusPL': { value: {} },
-        'customJS': rec => rec['CustomJavaScript__c'] || '',
+        'customJS': rec => rec.customJavaScript ?? '',
         'cusPL': { value: {} },
         'children': { value: [] },
-        'bReusable': { field: 'IsReusable__c' },
-        'bpVersion': { field: 'Version__c' },
-        'bpType': { field: 'Type__c' },
-        'bpSubType': { field: 'SubType__c' },
-        'bpLang': { field: 'Language__c' },
+        'bReusable': { field: 'isReusable' },
+        'bpVersion': { field: 'version' },
+        'bpType': { field: 'type' },
+        'bpSubType': { field: 'subType' },
+        'bpLang': { field: 'language' },
         'bHasAttachment': false
     };
 
-    private elementMapping: DefinitionRecordMapping = {
-        'type': { field: 'Type__c' },
-        'propSetMap': rec => this.parseAsJson(rec, 'PropertySet__c'),
-        'name': { field: 'Name' },
-        'level': { field: 'Level__c' },
+    private elementMapping: DefinitionRecordMapping<OmniScriptElementRecord> = {
+        'type': { field: 'type' },
+        'propSetMap': rec => this.parseAsJson(rec, 'propertySet'),
+        'name': { field: 'name' },
+        'level': { field: 'level' },
         'indexInParent': 0,
         'bHasAttachment': rec => rec.type === 'File'
     };
 
     public createScript(scriptRecord: OmniScriptRecord): OmniScriptDefinition {
-        return this.createFromMapping<OmniScriptDefinition>(scriptRecord, this.scriptMapping);
+        return this.createFromMapping<OmniScriptRecord, OmniScriptDefinition>(scriptRecord, this.scriptMapping);
     }
 
     public createElement(elementRecord: OmniScriptElementRecord): OmniScriptElementDefinition {
-        const elementDefinition = this.createFromMapping<any>(elementRecord, this.elementMapping);
+        const elementDefinition = this.createFromMapping<OmniScriptElementRecord, OmniScriptElementDefinition>(elementRecord, this.elementMapping);
 
         if (elementDefinition.type === 'Step') {
             elementDefinition.response = null;
@@ -92,8 +92,8 @@ export class OmniScriptDefinitionFactory {
         return [...Iterable.map(elementRecord, element => this.createElement(element))];
     }
 
-    private createFromMapping<T extends object>(record: object, recordMapping: DefinitionRecordMapping): T {
-        const definition = {} as T;
+    private createFromMapping<TRec, TOut extends object = object>(record: TRec, recordMapping: DefinitionRecordMapping<TRec>): TOut {
+        const definition = {} as TOut;
         for (const [field, def] of Object.entries(recordMapping)) {
             if (typeof def === 'function') {
                 definition[field] = def(record, field);
@@ -106,17 +106,18 @@ export class OmniScriptDefinitionFactory {
         return definition;
     }
 
-    private parseAsJson(record: object, field: string): object | null {
-        if (!record[field]) {
+    private parseAsJson<T>(record: T, field: keyof T): object | null {
+        const value = record[field];
+        if (!value) {
             return {};
-        } else if (record[field] === 'null') {
+        } else if (typeof value !== 'string' || value === 'null') {
             return null;
         }
 
         try {
-            return JSON.parse(record[field]);
+            return JSON.parse(value);
         } catch (err) {
-            throw new Error(`Unable to parse field ${field} for record with Id ${record['Id']} as JSON: ${getErrorMessage(err)}`);
+            throw new Error(`Unable to parse field ${String(field)} for record with Id ${record['Id']} as JSON: ${getErrorMessage(err)}`);
         }
     }
 }

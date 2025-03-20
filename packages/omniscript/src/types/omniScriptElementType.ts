@@ -1,61 +1,39 @@
-/**
- * OmniScript element types
- */
-export type OmniScriptElementType =
-    'Aggregate' |
-    'Block' |
-    'Calculation Action' |
+export type OmniScriptInputElementType =
     'Checkbox' |
     'Currency' |
-    'DataRaptor Extract Action' |
-    'DataRaptor Post Action' |
     'Date' |
     'Date/Time (Local)' |
     'Disclosure' |
+    'Email' |
+    'File' |
+    'Lookup' |
+    'Number' |
+    'Password' |
+    'Range' |
+    'Signature' |
+    'Telephone' |
+    'Text' |
+    'Text Area' |
+    'Time' |
+    'Type Ahead' |
+    'URL';
+
+export type OmniScriptInputChoiceElementType = 'Radio' | 'Select' | 'Multi-select';
+
+export type OmniScriptActionElementType = 
+    'Calculation Action' |
+    'DataRaptor Extract Action' |
+    'DataRaptor Post Action' |
     'DocuSign Envelope Action' |
     'DocuSign Signature Action' |
     'Done Action' |
     'Email Action' |
-    'Email' |
-    'File' |
-    'Filter' |
-    'Filter Block' |
-    'Formula' |
-    'Geolocation' |
-    'Headline' |
-    'Image' |
-    'Input Block' |
-    'Line Break' |
-    'Lookup' |
-    'Multi-select' |
-    'Number' |
-    'OmniScript' |
-    'Password' |
     'PDF Action' |
     'Post to Object Action' |
-    'Radio' |
-    'Range' |
     'Remote Action' |
     'Response Action' |
     'Rest Action' |
     'Review Action' |
-    'Select' |
-    'Selectable Items' |
-    'Set Errors' |
-    'Set Values' |
-    'Signature' |
-    'Step' |
-    'Submit' |
-    'Telephone' |
-    'Text' |
-    'Text Area' |
-    'Text Block' |
-    'Time' |
-    'Type Ahead Block' |
-    'Type Ahead' |
-    'Edit Block' |
-    'URL' |
-    'Validation' |
     'DataRaptor Transform Action' |
     'Matrix Action' |
     'Integration Procedure Action' |
@@ -65,11 +43,45 @@ export type OmniScriptElementType =
     'Navigate Action' |
     'Delete Action' |
     'Batch Action' |
-    'Cache Block' |
-    'Try Catch Block' |
-    'Loop Block' |
-    'Conditional Block' |
-    'Radio Group' |
-    'DataRaptor Turbo Action' |
-    'Custom Lightning Web Component' |
+    'DataRaptor Turbo Action';
+
+export type OmniScriptGroupElementType = 
+    'Block' | 
+    'Step' | 
+    'Loop Block' | 
+    'Conditional Block' | 
+    'Try Catch Block' | 
+    'Filter Block' |
+    'Type Ahead Block' | 
+    'Edit Block' |    
     'Action Block';
+
+export type OmniScriptBaseElementType = 
+    'Aggregate' |
+    'Filter' |
+    'Formula' |
+    'Geolocation' |
+    'Headline' |
+    'Image' |
+    'Input Block' |
+    'Line Break' |
+    'Text Block' |
+    'Selectable Items' |
+    'Set Errors' |
+    'Set Values' |
+    'Submit' |
+    'Validation' |
+    'Custom Lightning Web Component' |
+    'Cache Block' |
+    'Radio Group';
+
+/**
+ * OmniScript element types
+ */
+export type OmniScriptElementType = 
+    OmniScriptInputElementType | 
+    OmniScriptActionElementType |
+    OmniScriptInputChoiceElementType | 
+    OmniScriptGroupElementType |
+    OmniScriptBaseElementType |
+    'OmniScript';

@@ -1,25 +1,44 @@
-import { SalesforceService, SalesforceDeployService } from '@vlocode/salesforce';
+import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
-import { Timer } from '@vlocode/util';
+import { spreadAsync, timeout, Timer } from '@vlocode/util';
 
-import { OmniScriptDefinition, OmniScriptSpecification } from './types';
+import { OmniScriptDefinition, OmniScriptRecord, OmniScriptSpecification } from './types';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
-import { OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
 import { OmniScriptDefinitionGenerator } from './omniScriptDefinitionGenerator';
+import { OmniScriptAccess } from './omniScriptAccess';
 
-export interface OmniScriptActivationOptions {
+export interface OmniScriptLwcCompileOptions {
+    /**
+     * API version to use when deploying the LWC components
+     */
+    apiVersion?: string;
+    /**
+     * When set to true, the compiler will use the standard runtime for the generated LWC components
+     */
+    useStandardRuntime?: boolean;
+}
+
+export interface OmniScriptLwcDeployOptions extends OmniScriptLwcCompileOptions {
+    /**
+     * When `true`, the LWC components will be updated an deployed using the tooling API instead of the metadata API.
+     * The benefit of this is that the LWC components will be deployed to the org without the need to deploy the entire package.
+     */
+    toolingApi?: boolean;
+    /**
+     * Timeout in milliseconds for the tooling API deployment. Default is 120 seconds.
+     * @default 120000
+     */
+    toolingApiTimeout?: number;
+}
+
+export interface OmniScriptActivationOptions extends OmniScriptLwcDeployOptions, OmniScriptLwcCompileOptions {
     /**
      * Skip deployment of LWC components even when the script is LWC enabled.
      * By default activation will rebuild and deploy the LWC component of the script; setting this option to `true` will skip this step.
      */
     skipLwcDeployment?: boolean;
-    /**0
-     * When `true`, the LWC components will be updated an deployed using the tooling API instead of the metadata API.
-     * The benefit of this is that the LWC components will be deployed to the org without the need to deploy the entire package.
-     */
-    toolingApi?: boolean;
     /**
      * When `true`, the script will be activated using the standard Vlocity APEX activation function exposed by the
      * Vlocity Business Process Controller that runs as anonymous Apex.
@@ -52,7 +71,7 @@ export class OmniScriptActivator {
 
     constructor(
         private readonly salesforceService: SalesforceService,
-        private readonly lookup: OmniScriptLookupService,
+        private readonly scriptAccess: OmniScriptAccess,
         private readonly lwcCompiler: OmniScriptLwcCompiler,
         @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: OmniScriptDefinitionProvider,
         @injectable.param(OmniScriptDefinitionGenerator) private readonly definitionGenerator: OmniScriptDefinitionProvider,
@@ -66,25 +85,33 @@ export class OmniScriptActivator {
      * @param input OmniScript to activate
      * @param options Extra options that control how the script is activated
      */
-    public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions) {
-        const script = await this.lookup.getScript(input);
+    public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions): Promise<OmniScriptDefinition> {
+        const script = await this.scriptAccess.find(input);
+        let definition: OmniScriptDefinition | undefined;
 
         // (Re-)Activate script
-        if (options?.remoteActivation || script.omniProcessType !== 'OmniScript') {
-            await this.remoteScriptActivation(script);
+        if (options?.useStandardRuntime === false) {
+            // Only managed package runtime require a script definition
+            if (options?.remoteActivation || script.omniProcessType !== 'OmniScript') {
+                definition = await this.remoteScriptActivation(script);
+            } else {
+                definition = await this.localScriptActivation(script);
+            }
         } else {
-            await this.localScriptActivation(script);
+            definition = this.standardRuntimeDefinition(script);
+            await this.updateActiveVersion(script);
         }
 
         // Deploy LWC when required
-        if (options?.skipLwcDeployment !== true && script.isLwcEnabled) {
-            const definition = await this.definitionProvider.getScriptDefinition(script.id);
+        if (script.isLwcEnabled && options?.skipLwcDeployment !== true) {
             await this.deployLwc(definition, options);
         }
 
-        if (options?.reactivateDependentScripts && script.isReusable) {
+        if (script.isReusable && options?.reactivateDependentScripts) {
             await this.reactivateDependentScripts(script, options);
         }
+
+        return definition;
     }
 
     private async remoteScriptActivation(script: OmniScriptRecord) {
@@ -107,30 +134,42 @@ export class OmniScriptActivator {
     }
 
     private async updateActiveVersion(script: OmniScriptRecord, extraActivationValues?: Record<string, any>) {
-        const allVersions = await this.lookup.getScriptVersions(script);
+        const allVersions = await this.scriptAccess.filter({ type: script.type, subType: script.subType, language: script.language });
         const scriptUpdates = allVersions
             .filter(version => version.isActive ? version.id !== script.id : version.id === script.id)
-            .map(version => ({ id: version.id, isActive: script.id === version.id }) );
+            .map(version => ({ script: version, activate: script.id === version.id }) );
 
-        const versionDeactivations = scriptUpdates.filter(version => !version.isActive);
-        const versionActivations = scriptUpdates.filter(version => version.isActive).map(version => Object.assign(version, extraActivationValues));
+        const activationBatch = new RecordBatch(this.salesforceService.schema);
+        const deactivationBatch = new RecordBatch(this.salesforceService.schema);
+
+        for (const update of scriptUpdates) {
+            (update.activate ? activationBatch : deactivationBatch).addUpdate(
+                this.salesforceService.updateNamespace(update.script.sObjectType), 
+                {
+                    [update.script.activationField]: update.activate,
+                    ...(update.activate ? extraActivationValues : {})
+                }, 
+                update.script.id, 
+                update.script.id
+            );
+        }
+
+        const connection = await this.salesforceService.getJsForceConnection();
+        const results = {
+            deactivation: await spreadAsync(deactivationBatch.execute(connection)),
+            activation: await spreadAsync(activationBatch.execute(connection)),
+        };
 
         // It is not possible to activate a new version and de-activate the old version in the same update
-        // due to a there being trigger on the OmniScript__c object that ensures only one active version is allowed
-
-        if (versionDeactivations.length) {
-            for await (const updateResult of this.salesforceService.update('%vlocity_namespace%__OmniScript__c', versionDeactivations)) {
-                if (!updateResult.success) {
-                    throw new Error(`Unable to de-activate old script version due to Salesforce error: ${updateResult.error}`);
-                }
+        for (const updateResult of results.deactivation) {
+            if (!updateResult.success) {
+                throw new Error(`Unable to de-activate old script version (${updateResult.recordId}, ${script.type}/${script.subType}) due to Salesforce error: ${updateResult.error.message}`);
             }
         }
 
-        if (versionActivations.length) {
-            for await (const updateResult of this.salesforceService.update('%vlocity_namespace%__OmniScript__c', versionActivations)) {
-                if (!updateResult.success) {
-                    throw new Error(`Unable set activate script version due to Salesforce error: ${updateResult.error}`);
-                }
+        for (const updateResult of results.activation) {
+            if (!updateResult.success) {
+                throw new Error(`Unable activate script version (${updateResult.recordId}, ${script.type}/${script.subType}) due to Salesforce error: ${updateResult.error.message}`);
             }
         }
     }
@@ -156,7 +195,7 @@ export class OmniScriptActivator {
     }
 
     private async reactivateDependentScripts(script: OmniScriptRecord, options?: OmniScriptActivationOptions) {
-        for (const dependentScript of await this.lookup.getActiveDependentScripts(script)) {
+        for (const dependentScript of await this.scriptAccess.findActiveDependentScripts(script)) {
             await this.activate(dependentScript, options);
         }
     }
@@ -203,7 +242,7 @@ export class OmniScriptActivator {
     }
 
     private async deleteAllInactiveScriptDefinitions(input: OmniScriptSpecification | string) {
-        const script = typeof input === 'string' ? await this.lookup.getScriptInfo(input) : input;
+        const script = typeof input === 'string' ? await this.scriptAccess.find(input) : input;
         const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', {
             omniScriptId: {
                 type: script.type,
@@ -223,8 +262,8 @@ export class OmniScriptActivator {
      * Activate the LWC component for the specified OmniScript regardless of the script is LWC enabled or not.
      * @param id Id of the OmniScript for which to activate the LWC component
      */
-    public async activateLwc(id: string, options?: OmniScriptActivationOptions) {
-        const definition = await this.definitionProvider.getScriptDefinition(id);
+    public async activateLwc(id: string, options?: OmniScriptLwcDeployOptions) {
+        const definition = await this.scriptDefinition(id, options);
         await this.deployLwc(definition, options);
     }
 
@@ -233,9 +272,9 @@ export class OmniScriptActivator {
      * @param id Id of the OmniScript
      * @returns Deployable Metadata package
      */
-    public async getMetadataPackage(id: string) {
-        const definition = await this.definitionProvider.getScriptDefinition(id);
-        return this.lwcCompiler.compileToPackage(definition);
+    public async compileToPackage(input: string | OmniScriptDefinition, options?: OmniScriptLwcCompileOptions) {
+        const definition = typeof input === 'string' ? await this.scriptDefinition(input, options) : input;
+        return this.lwcCompiler.compileToPackage(definition, options);
     }
 
     /**
@@ -243,22 +282,42 @@ export class OmniScriptActivator {
      * @param definition Definition of the OmniScript to deploy
      * @param options Extra options that control how the script is activated
      */
-    public async deployLwc(definition: OmniScriptDefinition, options?: OmniScriptActivationOptions) {
+    public async deployLwc(definition: OmniScriptDefinition, options?: OmniScriptLwcDeployOptions) {
         const timer = new Timer();
         const apiLabel = options?.toolingApi ? 'tooling' : 'metadata';
         this.logger.info(`Deploying LWC ${definition.bpType}/${definition.bpSubType} (${apiLabel} api)...`);
 
         if (options?.toolingApi) {
-            await this.deployLwcWithToolingApi(definition);
+            await this.deployLwcWithToolingApi(definition, options);
         } else {
-            await this.deployLwcWithMetadataApi(definition);
+            await this.deployLwcWithMetadataApi(definition, options);
         }
 
         this.logger.info(`Deployed LWC ${definition.bpType}/${definition.bpSubType} (${definition.sOmniScriptId}) in ${timer.toString("seconds")}`);
     }
 
-    private async deployLwcWithMetadataApi(definition: OmniScriptDefinition) {
-        const sfPackage = await this.lwcCompiler.compileToPackage(definition);
+    private async scriptDefinition(input: string | OmniScriptSpecification, options?: { useStandardRuntime?: boolean }): Promise<OmniScriptDefinition> {
+        if (options?.useStandardRuntime) {
+            const scriptRecord = await this.scriptAccess.find(input, { preferActive: true });
+            // Using type assertion as we only need these minimum properties for standard runtime
+            return this.standardRuntimeDefinition(scriptRecord);
+        }
+        return this.definitionProvider.getScriptDefinition(input);
+    }
+
+    private standardRuntimeDefinition(scriptRecord: OmniScriptRecord): OmniScriptDefinition {
+        return {
+            sOmniScriptId: scriptRecord.id,
+            bpType: scriptRecord.type,
+            bpLang: scriptRecord.language,
+            bpSubType: scriptRecord.subType,
+            bReusable: scriptRecord.isReusable,
+            bpVersion: scriptRecord.version,
+        } as OmniScriptDefinition;
+    }
+
+    private async deployLwcWithMetadataApi(definition: OmniScriptDefinition, options?: OmniScriptLwcCompileOptions) {
+        const sfPackage = await this.lwcCompiler.compileToPackage(definition, options);
         const deployService = new SalesforceDeployService(this.salesforceService, Logger.null);
         const result = await deployService.deployPackage(sfPackage);
         if (!result.success) {
@@ -266,9 +325,13 @@ export class OmniScriptActivator {
         }
     }
 
-    private async deployLwcWithToolingApi(definition: OmniScriptDefinition) {
-        const tollingRecord = await this.lwcCompiler.compileToToolingRecord(definition)
-        const result = await this.upsertToolingRecord(`LightningComponentBundle`, tollingRecord);
+    private async deployLwcWithToolingApi(definition: OmniScriptDefinition, options?: OmniScriptLwcDeployOptions) {
+        const tollingRecord = await this.lwcCompiler.compileToToolingRecord(definition, options)
+        const result = await timeout(
+            this.upsertToolingRecord(`LightningComponentBundle`, tollingRecord), 
+            options?.toolingApiTimeout ?? (120 * 1000),
+            `Tooling API deployment of OmniScript LWC component ${definition.bpType}/${definition.bpSubType} timed out`
+        );
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${JSON.stringify(result.errors)}`);
         }

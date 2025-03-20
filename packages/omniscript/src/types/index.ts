@@ -1,5 +1,5 @@
 export * from './omniProcess';
-export * from './omniProcessConfig';
+export * from './omniScript';
 export * from './omniScriptDefinition';
 export * from './omniScriptElementDefinition';
 export * from './omniScriptElementType';

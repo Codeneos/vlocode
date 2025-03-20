@@ -3,11 +3,12 @@ import { RecordFactory, SalesforceSchemaService } from '@vlocode/salesforce';
 import { groupBy, sortBy } from '@vlocode/util';
 import { VlocityDatapack, VlocityInterfaceInvoker } from '@vlocode/vlocity';
 
-import { OmniScriptDefinition, OmniScriptSpecification, OmniScriptElementDefinition, OmniScriptEmbeddedScriptElementDefinition, isChoiceScriptElement, OmniScriptChoiceElementDefinition } from './types';
+import { OmniScriptDefinition, OmniScriptSpecification, isChoiceScriptElement, OmniScriptChoiceElementDefinition } from './types';
 import { OmniScriptDefinitionFactory } from './omniScriptDefinitionFactory';
 import { OmniScriptDefinitionBuilder } from './omniScriptDefinitionBuilder';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
-import { OmniScriptElementRecord, OmniScriptLookupService, OmniScriptRecord } from './omniScriptLookupService';
+import { OmniScriptElementRecord, OmniScriptRecord } from './types/omniScript';
+import { OmniScriptAccess } from './omniScriptAccess';
 
 @injectable()
 export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvider {
@@ -15,14 +16,14 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     private generator = new OmniScriptDefinitionFactory();
 
     constructor(
-        private readonly lookup: OmniScriptLookupService,
+        private readonly scriptAccess: OmniScriptAccess,
         private readonly genericInvoker: VlocityInterfaceInvoker,
         private readonly schema: SalesforceSchemaService,
         private readonly logger: Logger) {
     }
 
     public async getScriptDefinition(input: string | OmniScriptSpecification): Promise<OmniScriptDefinition> {
-        const scriptRecord = await this.lookup.getScript(input);
+        const scriptRecord = await this.scriptAccess.find(input);
         const scriptDef = await this.buildScriptDefinition(scriptRecord);
         return scriptDef;
     }
@@ -83,7 +84,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         await this.addElements(scriptBuilder, elementRecords || scriptRecord.id);
 
         if (scriptBuilder.templateNames.length > 0) {
-            const templateRecords = await this.lookup.getActiveTemplates(scriptBuilder.templateNames);
+            const templateRecords = await this.scriptAccess.findActiveTemplates(scriptBuilder.templateNames);
             for (const template of templateRecords.values()) {
                 scriptBuilder.addTemplate(template);
             }
@@ -104,8 +105,10 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         elementsOrSpec: OmniScriptElementRecord[] | OmniScriptSpecification | string, 
         options?: { scriptElementId?: string }
     ) {
-        const scriptElements = Array.isArray(elementsOrSpec) 
-            ? elementsOrSpec : [...(await this.lookup.getScriptElements(elementsOrSpec)).values()];
+        const scriptElements = Array.isArray(elementsOrSpec) ? elementsOrSpec 
+            : typeof elementsOrSpec === 'string' 
+            ? await this.scriptAccess.elements({ scriptId: elementsOrSpec }) 
+            : (await this.scriptAccess.find(elementsOrSpec, { preferActive: true, withElements: true })).elements;
 
         const elements = new Map(
             sortBy(scriptElements, rec => (rec.level << 16) | rec.order, 'asc').map(record => [record.id, record])
@@ -120,7 +123,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             const definition = this.generator.createElement(record);
 
             if (definition.level === undefined) {
-                definition.level = record.parentElementId ? builder.getElementLevel(record.parentElementId) : 0;
+                definition.level = record.parentElementId ? builder.elementLevel(record.parentElementId) : 0;
             }
 
             if (isChoiceScriptElement(definition)) {
@@ -143,7 +146,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
                 this.logger.error(`Failed to add element ${record.name} (${record.type}) to script definition:`, error);
             }
 
-            if (this.isEmbeddedScriptElement(definition)) {
+            if (definition.type === 'OmniScript') {
                 const embeddedScript = {
                     type: definition.propSetMap.Type,
                     subType: definition.propSetMap['Sub Type'],
@@ -154,7 +157,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
                 await this.addElements(builder, embeddedScript, { scriptElementId: id });
 
                 // Merge JS and templates
-                const scriptRecord = await this.lookup.getScript(embeddedScript);
+                const scriptRecord = await this.scriptAccess.find(embeddedScript);
                 builder.embedScriptHeader(this.generator.createScript(scriptRecord));
             }
         }
@@ -207,10 +210,6 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         return true;
     }
 
-    private isEmbeddedScriptElement(def: OmniScriptElementDefinition): def is OmniScriptEmbeddedScriptElementDefinition {
-        return def.type === 'OmniScript';
-    }
-
     private async getPicklistOptions(picklist: string) {
         const entries = await this.getActivePicklistEntries(picklist);
         return entries.map(entry => ({ value: entry.label ?? entry.value, name: entry.value }));
@@ -226,7 +225,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             const [type, field] = picklist.split('.');
             const values = await this.schema.describePicklistValues(type, field);
             return values.filter(entry => entry.active);
-        } catch(error) {
+        } catch {
             this.logger.warn(`Unable to retrieve picklist values for: ${picklist}`);
         }
         return [];

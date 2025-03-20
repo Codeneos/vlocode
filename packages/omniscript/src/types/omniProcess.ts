@@ -1,4 +1,7 @@
-export interface OmniProcessRecord {
+import { OmniScriptSpecification } from "./omniScriptDefinition";
+
+export interface OmniProcessRecord extends Required<OmniScriptSpecification> {
+    id: string;
     name: string;
     description: string;
     requiredPermission: string;
@@ -7,7 +10,6 @@ export interface OmniProcessRecord {
     isActive: boolean;
     isMetadataCacheDisabled: boolean;
     responseCacheType: string;
-    isIntegrationProcedure: boolean;
     isOmniScriptEmbeddable: boolean;
     isWebCompEnabled: boolean;
     language: string;
@@ -20,7 +22,7 @@ export interface OmniProcessRecord {
     lastPreviewPage: string;
     webComponentKey: string;
     isTestProcedure: boolean;
-    omniProcessType: string;
+    omniProcessType: 'OmniScript' | 'IntegrationProcedure';
     designerCustomizationType: string;
     uniqueName: string;
     namespace: string;
@@ -28,23 +30,59 @@ export interface OmniProcessRecord {
     discoveryFrameworkUsageType: string;
 }
 
+export namespace OmniProcessRecord {
+    export const SObjectType = 'OmniProcess' as const;
+    export const Fields = [
+        'Id', 
+        'Name', 
+        'VersionNumber',
+        'IsActive', 
+        'CustomJavaScript',
+        'CustomHtmlTemplates',
+        'Type',
+        'SubType',
+        'Language',
+        'PropertySetConfig',
+        'OmniProcessType',
+        'IsWebCompEnabled',
+        'IsOmniScriptEmbeddable'
+    ];
+}
+
 export interface OmniProcessElementRecord {
+    id: string;
     name: string;
     omniProcessId: string;
     isActive: boolean;
     description: string;
-    level: string;
-    omniProcessVersionNumber: number;
+    level: number;
     sequenceNumber: number;
     parentElementId: string;
-    parentElementName: string;
-    parentElementType: string;
     propertySetConfig: string;
     isOmniScriptEmbeddable: boolean;
     embeddedOmniScriptKey: string;
     type: string;
-    designerCustomizationType: string;
-    discoveryFrameworkUsageType: string;
+    //designerCustomizationType: string;
+    //discoveryFrameworkUsageType: string;
 }
 
-
+export namespace OmniProcessElementRecord {
+    export const SObjectType = 'OmniProcessElement';    
+    export const ScriptLookupField = 'OmniProcessId';    
+    export const ScriptActiveField = 'OmniProcess.IsActive';
+    
+    export const Fields = [
+        'Id', 
+        'Name',
+        'OmniProcessId',
+        'IsActive',
+        'Description',
+        'Level',
+        'SequenceNumber',
+        'ParentElementId',
+        'PropertySetConfig',
+        'IsOmniScriptEmbeddable',
+        'EmbeddedOmniScriptKey',
+        'Type'
+    ];
+}

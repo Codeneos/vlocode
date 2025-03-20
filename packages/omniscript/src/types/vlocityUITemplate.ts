@@ -8,3 +8,8 @@ export interface VlocityUITemplate {
     css?: string;
     sass?: string;
 }
+
+export interface VlocityUITemplateRecord extends VlocityUITemplate {
+    id: string;
+    active: boolean;
+}

@@ -1,8 +1,8 @@
-import { OmniScriptElementType } from "./omniScriptElementType";
+import { OmniScriptBaseElementType, OmniScriptElementType, OmniScriptGroupElementType, OmniScriptInputChoiceElementType, OmniScriptInputElementType } from "./omniScriptElementType";
 import { OmniScriptBaseElementPropertySet } from "./omniScriptElementPropertySet";
 
-export interface OmniScriptBaseElementDefinition {
-    type: OmniScriptElementType;
+export interface OmniScriptBaseElementDefinition<T extends OmniScriptElementType = OmniScriptBaseElementType> {
+    type: T;
     inheritShowProp?: object | null,
     response?: object | null,
     JSONPath?: string;
@@ -24,30 +24,34 @@ export interface OmniScriptBaseElementDefinition {
     }>
 }
 
-export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementDefinition {
+export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementDefinition<OmniScriptGroupElementType> {
     children: Array<{
         bHasAttachment: boolean,
         eleArray: Array<OmniScriptElementDefinition>;
         indexInParent: number;
         level: number;
         response: null | string;
-    }>
+    }>;    
+    propSetMap: OmniScriptBaseElementPropertySet;
     bAccordionOpen: boolean,
     bAccordionActive: boolean,
 }
 
-export interface OmniScriptEmbeddedScriptElementDefinition extends OmniScriptBaseElementDefinition {
-    type: 'OmniScript';
-    propSetMap: OmniScriptBaseElementPropertySet & {
-        Type: string;
-        'Sub Type': string,
-        Language: string
-    }
+export interface OmniScriptEmbeddedScriptPropertySet extends OmniScriptBaseElementPropertySet {
+    Type: string;
+    'Sub Type': string,
+    Language: string
 }
 
-export interface OmniScriptInputElementDefinition extends OmniScriptBaseElementDefinition {
-    type: OmniScriptElementType;
-    propSetMap: OmniScriptBaseElementPropertySet & {
+export interface OmniScriptEmbeddedScriptElementDefinition extends OmniScriptBaseElementDefinition<'OmniScript'> {
+    propSetMap: OmniScriptEmbeddedScriptPropertySet
+}
+
+export interface OmniScriptInputElementDefinition<
+    T extends OmniScriptElementType = OmniScriptInputElementType, 
+    TProps = object
+> extends OmniScriptBaseElementDefinition<T> {
+    propSetMap: TProps & {
         required: boolean;
         repeatClone: boolean;
         repeat: boolean;
@@ -58,12 +62,13 @@ export interface OmniScriptInputElementDefinition extends OmniScriptBaseElementD
         helpText: string;
         conditionType: string;
         accessibleInFutureSteps: boolean;
-    }
+    } & OmniScriptBaseElementPropertySet
 }
 
-export interface OmniScriptChoiceElementDefinition extends OmniScriptInputElementDefinition {
-    type: 'Select' | 'Radio';
-    propSetMap: OmniScriptInputElementDefinition['propSetMap'] & {
+/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
+export interface OmniScriptChoiceElementDefinition extends OmniScriptInputElementDefinition<
+    OmniScriptInputChoiceElementType, 
+    {
         dependency?: Record<string, Array<{ value: string, name: string }>>;
         options: Array<{ value: string, name: string }>;
         optionSource: {
@@ -75,20 +80,16 @@ export interface OmniScriptChoiceElementDefinition extends OmniScriptInputElemen
             source: string
             element: string
         }
-    }
-}
+    }> 
+{ }
 
 export type OmniScriptElementDefinition =
-    OmniScriptBaseElementDefinition |
     OmniScriptGroupElementDefinition |
     OmniScriptEmbeddedScriptElementDefinition |
     OmniScriptInputElementDefinition |
-    OmniScriptChoiceElementDefinition;
-
-export function isEmbeddedScriptElement(def: OmniScriptElementDefinition): def is OmniScriptEmbeddedScriptElementDefinition {
-    return def.type === 'OmniScript';
-}
-
+    OmniScriptChoiceElementDefinition | 
+    OmniScriptBaseElementDefinition
+    
 export function isChoiceScriptElement(def: OmniScriptElementDefinition): def is OmniScriptChoiceElementDefinition {
     return def.type === 'Select' || def.type === 'Radio';
 }

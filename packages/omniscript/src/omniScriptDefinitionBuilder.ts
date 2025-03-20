@@ -1,4 +1,4 @@
-import { isChoiceScriptElement, isEmbeddedScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptElementType, OmniScriptGroupElementDefinition, VlocityUITemplate } from './types';
+import { isChoiceScriptElement, OmniScriptDefinition, OmniScriptElementDefinition, OmniScriptElementType, OmniScriptGroupElementDefinition, VlocityUITemplate } from './types';
 import { CustomError, deepClone, escapeHtmlEntity, isCustomError, mapGetOrCreate } from '@vlocode/util';
 import { randomUUID } from 'crypto';
 import { OmniScriptAllowedRootElementTypes } from './constants';
@@ -96,64 +96,64 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     /**
      * Adds an element to the script definition.
      * @param id ID of the element to add
-     * @param ele Element definition to add
+     * @param element Element definition to add
      * @param options Options for adding the element
      */
-    public addElement(id: string, ele: OmniScriptElementDefinition, options?: AddElementOptions) {
+    public addElement(id: string, element: OmniScriptElementDefinition, options?: AddElementOptions) {
         // Validate if the element can be added
-        this.validateElement(ele, options);
-        this.elements.set(id, ele);
+        this.validateElement(element, options);
+        this.elements.set(id, element);
 
-        if (ele.propSetMap?.HTMLTemplateId) {
-            this.requiredTemplates.add(ele.propSetMap.HTMLTemplateId);
+        if (element.propSetMap?.HTMLTemplateId) {
+            this.requiredTemplates.add(element.propSetMap.HTMLTemplateId);
         }
 
-        if (isChoiceScriptElement(ele)) {
-            if (ele.propSetMap.optionSource.type === 'Custom' && ele.propSetMap.optionSource.source.includes('.')) {
-                this.scriptDef.cusPL[ele.propSetMap.optionSource.source] = '';
+        if (isChoiceScriptElement(element)) {
+            if (element.propSetMap.optionSource.type === 'Custom' && element.propSetMap.optionSource.source.includes('.')) {
+                this.scriptDef.cusPL[element.propSetMap.optionSource.source] = '';
             }
         }
 
-        if (ele.propSetMap?.repeat == true || ['Radio', 'Multi-select', 'Radio Group', 'Edit Block'].includes(ele.type)) {
-            this.scriptDef.rMap[ele.name] = "";
+        if (element.propSetMap?.repeat == true || ['Radio', 'Multi-select', 'Radio Group', 'Edit Block'].includes(element.type)) {
+            this.scriptDef.rMap[element.name] = "";
         }
 
-        const elementLevel = options?.parentElementId ? this.getElementById(options.parentElementId).level + 1 : 0;
-        if (ele.level === undefined || elementLevel > 0) {
-            ele.level = elementLevel;
+        const elementLevel = options?.parentElementId ? this.findElementById(options.parentElementId).level + 1 : 0;
+        if (element.level === undefined || elementLevel > 0) {
+            element.level = elementLevel;
         }
 
         if (options?.scriptElementId && !options?.parentElementId) {
-            const scriptElement = this.getElementById(options.scriptElementId);
-            ele.offSet = this.scriptOffsets.get(options.scriptElementId)!;
-            ele.inheritShowProp = scriptElement.propSetMap?.show;
-            ele.bEmbed = true;
+            const scriptElement = this.findElementById(options.scriptElementId);
+            element.offSet = this.scriptOffsets.get(options.scriptElementId)!;
+            element.inheritShowProp = scriptElement.propSetMap?.show;
+            element.bEmbed = true;
         } else if (options?.scriptElementId || !options?.parentElementId)  {
-            ele.bEmbed = false;
-            ele.offSet = 0;
+            element.bEmbed = false;
+            element.offSet = 0;
         }
 
         if (options?.parentElementId) {
             try {
-                this.getGroup(options.parentElementId).addElement(ele);
+                this.group(options.parentElementId).addElement(element);
             } catch (err) {
                 if (isCustomError(err) && err.code === 'ELEMENT_NOT_FOUND') {
-                    throw new Error(`Script element "${ele.name}" (${id}) has a ` +
+                    throw new Error(`Script element "${element.name}" (${id}) has a ` +
                         `none-existing parent element with Id "${options?.parentElementId}"`);
                 }
                 throw err;
             }
         } else {
-            if (isEmbeddedScriptElement(ele)) {
+            if (element.type === 'OmniScript') {
                 this.scriptOffsets.set(id, this.indexInParent);
-                ele.indexInParent = 0;
+                element.indexInParent = 0;
             } else {
-                ele.indexInParent = this.indexInParent++;
+                element.indexInParent = this.indexInParent++;
             }
-            this.scriptDef.children.push(ele);
+            this.scriptDef.children.push(element);
         }
 
-        this.addElementHandlers[ele.type]?.(id, ele, options);
+        this.addElementHandlers[element.type]?.(id, element, options);
     }
 
     /**
@@ -164,7 +164,7 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
      */
     private validateElement(element: OmniScriptElementDefinition, options?: AddElementOptions) : void | never {
         if (options?.parentElementId) {
-            const scriptElement = this.getElementById(options.parentElementId, { throwsException: false });
+            const scriptElement = this.findElementById(options.parentElementId, { throwsException: false });
             if (!scriptElement) {
                 throw new Error(
                     `Element "${element.name}" (${element.type
@@ -174,7 +174,7 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         }
 
         if (options?.scriptElementId) {
-            const scriptElement = this.getElementById(options.scriptElementId, { throwsException: false });
+            const scriptElement = this.findElementById(options.scriptElementId, { throwsException: false });
             if (!scriptElement) {
                 throw new Error(
                     `Element "${element.name}" (${element.type
@@ -204,50 +204,50 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     }
 
     /**
-     * Get the level of an existing element in the script definition.
+     * Level of an existing element in the script definition.
      * @param id ID of the ekement to get the level
      */
-    public getElementLevel(id: string) {
-        return this.getElementById(id).level;
+    public elementLevel(id: string) {
+        return this.findElementById(id).level;
     }
 
     /**
-     * Get the next order number for an element in the script definition.
+     * Calculate next order number for an element in the script definition.
      * @param parentId Optional ID of the parent element to get the next order number for
      */
-    public getNextElementOrder(parentId?: string) {
-        return parentId ? this.getGroup(parentId).getNextElementOrder() : this.scriptDef.children.length;
+    public nextOrder(parentId?: string) {
+        return parentId ? this.group(parentId).nextOrder() : this.scriptDef.children.length;
     }
 
-    private addInputBlock(id: string, ele: OmniScriptElementDefinition) {
-         ele.JSONPath = this.getJsonPath(ele);
+    private addInputBlock(id: string, element: OmniScriptElementDefinition) {
+         element.JSONPath = this.elementPath(element);
     }
 
-    private addTypeAheadBlock(id: string, ele: OmniScriptElementDefinition) {
-        const typeAheadElement = deepClone(ele);
-        this.getGroup(id).addElement(typeAheadElement);
+    private addTypeAheadBlock(id: string, element: OmniScriptElementDefinition) {
+        const typeAheadElement = deepClone(element);
+        this.group(id).addElement(typeAheadElement);
 
         // Update level and root index of inner type ahead
         typeAheadElement.type = 'Type Ahead';
-        typeAheadElement.rootIndex = ele.indexInParent;
-        typeAheadElement.level = ele.level + 1;
+        typeAheadElement.rootIndex = element.indexInParent;
+        typeAheadElement.level = element.level + 1;
 
         // The outer type-ahead block gets a `-Block` postfix so it can be distinguished from the
         // inner element which carries the original element name
-        ele.name += `-Block`;
+        element.name += `-Block`;
    }
 
-    private getGroup(id: string) {
+    private group(id: string) {
         return mapGetOrCreate(
             this.groups, id,
-            () => new OmniScriptElementGroupDefinitionBuilder(this.getElementById(id))
+            () => new OmniScriptElementGroupDefinitionBuilder(this.findElementById(id))
         );
     }
 
-    private getElementById(id: string, options: { errorMessage?: string, throwsException: false }) : OmniScriptElementDefinition | undefined;
-    private getElementById(id: string, options?: { errorMessage?: string, throwsException?: true }): OmniScriptElementDefinition | never;
-    private getElementById(id: string, options?: { errorMessage?: string, throwsException?: boolean }): OmniScriptElementDefinition | undefined;
-    private getElementById(id: string, options?: { errorMessage?: string, throwsException?: boolean }) : OmniScriptElementDefinition | undefined | never {
+    private findElementById(id: string, options: { errorMessage?: string, throwsException: false }) : OmniScriptElementDefinition | undefined;
+    private findElementById(id: string, options?: { errorMessage?: string, throwsException?: true }): OmniScriptElementDefinition | never;
+    private findElementById(id: string, options?: { errorMessage?: string, throwsException?: boolean }): OmniScriptElementDefinition | undefined;
+    private findElementById(id: string, options?: { errorMessage?: string, throwsException?: boolean }) : OmniScriptElementDefinition | undefined | never {
         const elementDefinition = this.elements.get(id);
         if (!elementDefinition && options?.throwsException) {
             throw new CustomError(options?.errorMessage ?? `Unable to find element with id "${id}"`, {
@@ -274,8 +274,8 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
      */
     private updateLabelMap() {
         this.scriptDef.labelMap = {};
-        for (const child of this.getElements()) {
-            if (isEmbeddedScriptElement(child)) {
+        for (const child of this.iterateElements()) {
+            if (child.type === 'OmniScript') {
                 continue;
             }
             this.scriptDef.labelMap[child.name] = child.propSetMap?.label ?? null;
@@ -333,19 +333,19 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         return `<${name}${tagAttributes ? ` ${tagAttributes}>` : '>'}${body ?? ''}</${name}>`;
     }
 
-    private *getElements(elements: Array<OmniScriptElementDefinition> = this.scriptDef.children): IterableIterator<OmniScriptElementDefinition> {
+    private *iterateElements(elements: Array<OmniScriptElementDefinition> = this.scriptDef.children): IterableIterator<OmniScriptElementDefinition> {
         for (const child of elements) {
             yield child;
             if (Array.isArray(child['children']) && child.type !== 'Type Ahead Block') {
                 for (const ele of child['children']) {
-                    yield* this.getElements(ele.eleArray);
+                    yield* this.iterateElements(ele.eleArray);
                 }
             }
         }
     }
 
     [Symbol.iterator](): Iterator<OmniScriptElementDefinition, any, undefined> {
-        return this.getElements();
+        return this.iterateElements();
     }
 
     /**
@@ -367,14 +367,14 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
      * @param element Element to get the JSON path for
      * @returns JSON path of the element
      */
-    private getJsonPath(element: OmniScriptElementDefinition): string {
+    private elementPath(element: OmniScriptElementDefinition): string {
         if (element.level === 0) {
             return element.name;
         }
 
         for (const [id, group] of this.groups) {
             if (group.hasElement(element)) {
-                return [this.getJsonPath(this.elements.get(id)!), element.name].join(':');
+                return [this.elementPath(this.elements.get(id)!), element.name].join(':');
             }
         }
 
@@ -414,7 +414,7 @@ class OmniScriptElementGroupDefinitionBuilder {
      * Gets the next element order number in the group.
      * @returns The next element order number in the group
      */
-    public getNextElementOrder() { 
+    public nextOrder() { 
         return this.group.children?.length ?? 0;
     }
 

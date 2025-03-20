@@ -6,6 +6,7 @@ import { injectable } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { XML } from '@vlocode/util';
 import { OmniScriptDefinition, OmniScriptSpecification } from './types';
+import { outputFile } from 'fs-extra';
 
 export interface CompiledResource {
     name: string,
@@ -13,16 +14,33 @@ export interface CompiledResource {
     source: string
 }
 
+export interface OmniCompilerOptions {
+    lwcName?: string, 
+    apiVersion?: string,    
+    useStandardRuntime?: boolean,
+}
+
 interface OmniCompiler {
     /**
      * Creates a list of LWC components from an OmniScripts
      * @param componentName Name of the LWC component to be generated
      * @param scriptDefinition Script definition created when activating an OmniScript stored as OmniScriptDefinition record
-     * @param b 
-     * @param c 
-     * @param namespace Vlocity Namespace
+     * @param hidden  If the component is available or not on the AppBuilder
+     * @param addRuntimeNamespace When in a package org, runtimeNamespace allows the use of packed LWC components.
+     * @param namespace The namespace of the package
      */
-    compileActivated(componentName: string, scriptDefinition: OmniScriptDefinition, b: boolean, c: boolean, namespace: string): Promise<CompiledResource[]>
+    compileActivated(componentName: string, scriptDefinition: OmniScriptDefinition, hidden: boolean, addRuntimeNamespace: boolean, namespace: string): Promise<CompiledResource[]>
+    
+    /**
+     * Creates a list of LWC components from an OmniScripts for the Core Runtime
+     * @param componentName Name of the LWC component to be generated
+     * @param type Type of the OmniScript
+     * @param subType Subtype of the OmniScript
+     * @param scriptId Id of the OmniScript
+     * @param addRuntimeNamespace When in a package org, runtimeNamespace allows the use of packed LWC components.
+     * @param namespace The namespace of the package
+     */
+    compileForCoreRuntime(componentName: string, type: string, subType: string, scriptId: string, addRuntimeNamespace: boolean, namespace: string): Promise<CompiledResource[]>
 }
 
 /**
@@ -38,6 +56,7 @@ export class OmniScriptLwcCompiler {
     constructor(
         private readonly salesforceService: SalesforceService,
         private readonly namespaceService: VlocityNamespaceService) {
+            this.getCompiler().then(() => {});
     }
 
     private async getCompiler() {
@@ -64,6 +83,9 @@ export class OmniScriptLwcCompiler {
             contentType: "text/html",
             runScripts: "dangerously"
         });
+
+        const body = (await compilerSource.getBody()).toString('utf-8');
+        await outputFile('compiler.js', body);
 
         // Initialize the compiler and expose on the virtual DOM
         new Script(`
@@ -92,12 +114,21 @@ export class OmniScriptLwcCompiler {
      * @param options Options to control the compilation
      * @returns 
      */
-    public async compile(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }): Promise<{ name: string, resources: Array<CompiledResource> }> {
+    public async compile(scriptDefinition: OmniScriptDefinition, options?: OmniCompilerOptions): Promise<{ name: string, resources: Array<CompiledResource> }> {
+        if (!options?.useStandardRuntime && !scriptDefinition.propSetMap) {
+            throw new Error('OmniScript definition is missing propSetMap');
+        }
         // Get the name of the component or generate it and compile the OS
         const componentName = options?.lwcName ?? this.getLwcName({ type: scriptDefinition.bpType, subType: scriptDefinition.bpSubType, language: scriptDefinition.bpLang });
+        const namespace = this.namespaceService.getNamespace();
         const compiler = await this.getCompiler();
-        const resources = await compiler.compileActivated(componentName, scriptDefinition, false, true, this.namespaceService.getNamespace());
-        return { name: componentName, resources }
+        const resources = !options?.useStandardRuntime 
+            ? await compiler.compileActivated(componentName, scriptDefinition, false, true, namespace)
+            : await compiler.compileForCoreRuntime(componentName, scriptDefinition.bpType, scriptDefinition.bpSubType, scriptDefinition.sOmniScriptId, true, namespace);
+        return { 
+            name: componentName, 
+            resources
+        }
     }
 
     /**
@@ -106,11 +137,9 @@ export class OmniScriptLwcCompiler {
      * @param options Options to control the compilation
      * @returns 
      */
-    public async compileToToolingRecord(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string }) {
+    public async compileToToolingRecord(scriptDefinition: OmniScriptDefinition, options?: OmniCompilerOptions) {
         // Get the name of the component or generate it and compile the OS
-        const componentName = options?.lwcName ?? this.getLwcName({ type: scriptDefinition.bpType, subType: scriptDefinition.bpSubType, language: scriptDefinition.bpLang });
-        const compiler = await this.getCompiler();
-        const resources = await compiler.compileActivated(componentName, scriptDefinition, false, true, this.namespaceService.getNamespace());
+        const { name: componentName, resources } = await this.compile(scriptDefinition, options);
 
         const componentMetaDefinition = resources.find(r => r.name.endsWith('.js-meta.xml'));
         if (!componentMetaDefinition) {
@@ -151,7 +180,7 @@ export class OmniScriptLwcCompiler {
      * @param options Options to control the compilation and bundling
      * @returns 
      */
-    public async compileToPackage(scriptDefinition: OmniScriptDefinition, options?: { lwcName?: string, apiVersion?: string }) {
+    public async compileToPackage(scriptDefinition: OmniScriptDefinition, options?: OmniCompilerOptions) {
         const compiledBundle = await this.compile(scriptDefinition, options);
         const sfPackage = new SalesforcePackage(options?.apiVersion ?? this.compilerApiVersion);
 
