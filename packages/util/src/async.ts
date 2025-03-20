@@ -275,6 +275,22 @@ export function thenablePromise<T extends (...args: TArgs[]) => Promise<TReturn>
 }
 
 /**
+ * Wraps a promise with a timeout. If the promise does not resolve or reject within the specified time, the promise will reject with a TimeoutError.
+ * @param promise The promise to wrap.
+ * @param ms The number of milliseconds to wait before timing out.
+ * @param message Optional error message to use when the promise times out.
+ * @returns A new promise that resolves or rejects with the same value as the original promise, or rejects with a TimeoutError if the promise times out.
+ */
+export function timeout<T>(promise: Promise<T>, ms: number, message?: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error(message ?? `Promise timed out after ${ms}ms`));
+        }, ms);
+        promise.then(resolve, reject).finally(() => clearTimeout(timeout));
+    })
+}
+
+/**
  * A promise wrapper that supports the old NodeJS callback style with `thenCall` method.
  * Used by `thenablePromise` decorator to make any Async function that 
  * returns a promise support the old NodeJS callback style and return the promise that supports `thenCall` method.
