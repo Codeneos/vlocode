@@ -170,6 +170,7 @@ export class RecordFactory {
         let fieldMap = target[RecordFactory.fieldMapKey];
         if (fieldMap === undefined) {
             fieldMap = RecordFactory.generateNormalizedFieldMap(Object.keys(target));
+            target[RecordFactory.fieldMapKey] = fieldMap;
         }
 
         return fieldMap.get(String(name).toLowerCase())
