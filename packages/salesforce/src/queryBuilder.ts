@@ -58,6 +58,8 @@ export interface QueryFilterCondition {
     [field: string]: any | { op: WhereOperatorType, value: any }
 }
 
+type FieldReference = string | { name: string };
+
 /**
  * Simple salesforce SOQL builder
  */
@@ -104,12 +106,12 @@ export class QueryBuilder extends QueryBuilderData {
         return new QueryConditionBuilder(this.query);
     }
 
-    public filter(filter: QueryFilterCondition): this {
-        new QueryConditionBuilder(this.query).fromObject(filter);
+    public filter(filter: QueryFilterCondition, options?: { ignoreUndefined: boolean }): this {
+        new QueryConditionBuilder(this.query).fromObject(filter, options);
         return this;
     }
 
-    public select(...fields: (string | { name: string })[]) {
+    public select(...fields: FieldReference[]) {
         this.query.fieldList.push(...fields.map(f => typeof f === 'string' ? f : f.name));
         return this;
     }
@@ -118,13 +120,13 @@ export class QueryBuilder extends QueryBuilderData {
         return this.query.fieldList.includes(field);
     }
 
-    public selectRelated(relationName: string, fields: (string | { name: string })[]) {
+    public selectRelated(relationName: string, fields: FieldReference[]) {
         return this.select(...fields.map(f => `${relationName}.${typeof f === 'string' ? f : f.name}`));
     }
 
-    public sortBy(...sortFields: (string | { name: string })[]) : QueryBuilder {
-        this.query.orderBy = sortFields.map(f => typeof f === 'string' ? f : f.name);
-        return this;
+    public sortBy(sortFields: FieldReference | FieldReference[], direction?: 'asc' | 'desc') : QueryBuilder {
+        this.query.orderBy = (Array.isArray(sortFields) ? sortFields : [ sortFields ]).map(f => typeof f === 'string' ? f : f.name);
+        return direction ? this.sortDirection(direction) : this;
     }
 
     public sortDirection(direction: 'asc' | 'desc') : QueryBuilder {
@@ -160,10 +162,13 @@ export class QueryConditionBuilder extends QueryBuilderData {
         return this;
     }
 
-    public fromObject(values: QueryFilterCondition) : QueryConditionBuilder {
+    public fromObject(values: QueryFilterCondition, options?: { ignoreUndefined?: boolean }) : QueryConditionBuilder {
         for (const [field, value] of Object.entries(flattenObject(values, obj => typeof obj?.operator !== 'string'))) {
             const operator = value?.op ?? (Array.isArray(value) ? 'in' : '=');
             const cmpValue = value?.op ? value.value : value;
+            if (cmpValue === undefined && options?.ignoreUndefined) {
+                continue;
+            }
             this.and.condition(`${field} ${operator} ${Array.isArray(cmpValue) ? `(${cmpValue.map(v => this.formatValue(v)).join(',')})` : this.formatValue(cmpValue)}`);
         }
         return this;
