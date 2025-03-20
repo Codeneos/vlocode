@@ -133,7 +133,7 @@ export class OmniStudioConverter {
      * @param {object} record - The record to be converted.
      * @throws {Error} - Throws an error if no OmniStudio runtime mappings are found for the given SObject type.
      */
-    private convertRecord(sobjectType: string, record: object) {
+    public convertRecord(sobjectType: string, record: object) {
         const mapping = this.getMapping(sobjectType);
         if (!mapping) {
             throw new Error(`No OmniStudio runtime mappings found for managed package SObject type: ${sobjectType}`);
@@ -165,6 +165,9 @@ export class OmniStudioConverter {
 
     @cache({ scope: 'instance', immutable: true })
     private getMapping(type: string) {
+        if (type in OmniSObjectMappings) {
+            return OmniSObjectMappings[type];
+        }
         const normalizedType = removeNamespacePrefix(type).toLowerCase();
         for (const [ key, mapping ] of Object.entries(OmniSObjectMappings)) {
             if (key.toLowerCase() === normalizedType) {
