@@ -1,5 +1,5 @@
 import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions, XMLValidator } from 'fast-xml-parser';
-import { DOMParser, Node } from '@xmldom/xmldom';
+import { DOMParser, LiveNodeList, Node } from '@xmldom/xmldom';
 import { visitObject } from './object';
 
 export interface XMLParseOptions {
@@ -264,6 +264,17 @@ export namespace XML {
                (tag === '*' || child.nodeName === tag) && (!index || ++childNodeIndex === Number(index))
             );
         }, new DOMParser().parseFromString(xml, 'text/xml'));
+    }
+
+    /**
+     * Parses an XML string and retrieves all elements with the specified tag name.
+     * 
+     * @param xml - The XML string to parse
+     * @param tag - The tag name to search for within the XML
+     * @returns A live NodeList collection of matched elements
+     */
+    export function getElementsByTagName(xml: string, tag: string): LiveNodeList<Node> {
+        return new DOMParser().parseFromString(xml, 'text/xml').getElementsByTagName(tag);
     }
 
     export function getNodeTextRange(xml: string, path: string): TextRange | undefined {
