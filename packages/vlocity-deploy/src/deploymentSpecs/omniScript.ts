@@ -19,7 +19,6 @@ interface ScriptElement {
 }
 
 @deploymentSpec({
-    datapackFilter: /^(OmniScript|IntegrationProcedure)$/i,
     recordFilter: /^(OmniScript__c|Element__c)$/i
 })
 export class OmniScript implements DatapackDeploymentSpec {
@@ -27,16 +26,6 @@ export class OmniScript implements DatapackDeploymentSpec {
     private readonly lwcEnabledDatapacks = new Set<string>();
     private readonly embeddedTemplates = new Map<string, string[]>();
     private readonly preprocessorMessages = new Map<string, string[]>();
-
-    /**
-     * Number of parallel activations to perform.
-     */
-    public static ParallelActivations = 4;
-
-    /**
-     * Number of parallel tooling deployments to perform.
-     */
-    public static ParallelToolingDeployments = 4;
 
     public constructor(
         private readonly activator: OmniScriptActivator,
@@ -189,7 +178,7 @@ export class OmniScript implements DatapackDeploymentSpec {
                 this.logger.error(`Failed to activate ${record.datapackKey} -- ${getErrorMessage(err)}`);
                 record.updateStatus(DeploymentStatus.Failed, getErrorMessage(err));
             }
-        }, OmniScript.ParallelActivations);
+        }, event.deployment.options.parallelToolingDeployments ?? 4);
     }
 
     /**
@@ -202,7 +191,7 @@ export class OmniScript implements DatapackDeploymentSpec {
         await forEachAsyncParallel(Iterable.filter(event.getDeployedRecords('OmniScript__c'), r => this.lwcEnabledDatapacks.has(r.datapackKey)), async record => {
             try {
                 if (event.deployment.options.useMetadataApi) {
-                    packages.push(await this.activator.getMetadataPackage(record.recordId));
+                    packages.push(await this.activator.compileToPackage(record.recordId));
                 } else {
                     await this.activator.activateLwc(record.recordId, { toolingApi: true });
                 }
@@ -210,7 +199,7 @@ export class OmniScript implements DatapackDeploymentSpec {
                 this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${getErrorMessage(err)}`);
                 record.updateStatus(DeploymentStatus.Failed, err.message || err);
             }
-        }, OmniScript.ParallelToolingDeployments);
+        }, event.deployment.options.parallelToolingDeployments ?? 4);
 
         if (packages.length) {
             const timer = new Timer();

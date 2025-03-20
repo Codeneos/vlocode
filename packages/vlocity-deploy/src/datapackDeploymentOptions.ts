@@ -63,26 +63,42 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      *
      * When this option is enabled records the deployment will try to deploy the record wihtout resolving the dependency. Only enable this if you are
      * sure that all records can be deployed without all dependencies resolved.
-     * @default false;
+     * @default false
      */
     allowUnresolvedDependencies?: boolean;
     /**
      * When enabled LWC enabled OmniScripts will not get compiled into native LWC components and be deployed to the target org during deployment.
      *
      * Use this if you want to manually compile OmniScripts into LWC or have a batch process ot activate OmniScript LWCs in bulk.
-     * @default false;
+     * @default false
      */
     skipLwcActivation?: boolean;
     /**
      * When true LWC components are deployed using the metadata API instead of the tooling API. The tooling API is usually faster and thus the preferred way to compiled deploy LWC components.
      *
      * Disable this if you need to use the metadata API to deploy LWC components.
-     * @default false;
+     * @default false
      */
     useMetadataApi?: boolean;
     /**
+     * Number of milliseconds to wait before timing out a tooling API deployment. This setting is only used when the tooling API is used to deploy LWC components; {@link useMetadataApi} set to `false`.
+     * @default 120000
+     */
+    toolingApiTimeout?: number;
+    /**
+     * Number of parallel tooling deployments for OmniStudio components. This setting controls the number of parallel deployments that are performed when deploying LWC components for OmniScripts and FlexCards.
+     * @default 4
+     */
+    parallelToolingDeployments?: number;
+    /**
      * When enabled the deployment will activate OmniScripts in the target org using Anonyms Apex.
-     * @default false;
+     * @default false
      */
     remoteScriptActivation?: boolean;
+    /**
+     * When enabled LWC components for FlexCards and OmniScripts will be deployed using the standard (in core) runtime instead of the managed packaged
+     * runtime. This setting only works on Orgs on which the standard OmniStudio runtime is enabled.
+     * @default false
+     */
+    standardRuntime?: boolean;
 }
