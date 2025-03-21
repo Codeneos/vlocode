@@ -1191,6 +1191,39 @@
                         "type": "number",
                         "default": 100,
                         "markdownDescription": "Number of records to deploy in as single operation using the collection API, only affects deployments when *direct* mode is enabled"
+                    },
+                    "vlocity.deploy.lwcActivation": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Deploy LWC components for OmniScripts or FlexCards that are LWC enabled"
+                    },
+                    "vlocity.deploy.lwcDeploymentType": {
+                        "type": "string",
+                        "enum": [
+                            "tooling",
+                            "metadata"
+                        ],
+                        "default": "tooling",
+                        "enumDescriptions": [
+                            "Use the Salesforce Tooling API to deploy LWC components",
+                            "Use the Salesforce Metadata API to deploy LWC components"
+                        ],
+                        "markdownDescription": "The deployment type used for LWC components; Generally the Tooling API is faster and is recommended. The Metadata API has better error reporting and is more reliable for larger deployments."
+                    },
+                    "vlocity.deploy.standardRuntime": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "Enables generation of standard runtime (in core) LWC components for OmniScripts and FlexCards. _Note: only has effect when **vlocity.deploy.lwcActivation** is enabled_"
+                    },
+                    "vlocity.deploy.allowUnresolvedDependencies": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "Allow deployment of datapacks with unresolved dependencies; this can lead to deployment failures if the dependencies are required in the target org."
+                    },
+                    "vlocity.deploy.disableTriggers": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "Disable Vlocity/Industries triggers during deployment. Helps with resolving deployment errors and speeds up deployment but runtime generated fields will not be populated."
                     }
                 }
             },

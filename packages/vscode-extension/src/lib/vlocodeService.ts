@@ -14,6 +14,21 @@ import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
 
 @injectable({ lifecycle: LifecyclePolicy.singleton, provides: [SalesforceConnectionProvider, VlocodeService] })
+/**
+ * Core service class for the Vlocode extension, responsible for managing Salesforce connections,
+ * datapack services, and extension state.
+ * 
+ * This service:
+ * - Manages connections to Salesforce orgs
+ * - Initializes and provides access to Vlocity datapack services
+ * - Manages status bar items for displaying connection status and other information
+ * - Handles activity tracking and progress reporting for long-running tasks
+ * - Provides utilities for validating the workspace and Salesforce connectivity
+ * - Manages OAuth token refresh when credentials expire
+ * 
+ * @implements {vscode.Disposable}
+ * @implements {SalesforceConnectionProvider}
+ */
 export default class VlocodeService implements vscode.Disposable, SalesforceConnectionProvider {
 
     // Privates
@@ -71,7 +86,8 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     constructor(
         public readonly config: VlocodeConfiguration,
         private readonly commandRouter: CommandRouter,
-        private readonly logger: Logger) {
+        private readonly logger: Logger
+    ) {
         this.createConfigWatcher();
     }
 
@@ -235,6 +251,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }, typeof task === 'function' ? task : () => task);
     }
 
+    public withActivity<T>(title: string, task: Promise<T>) : Promise<T>;
     /**
      * Wrapper around `vscode.window.withProgress` that registers the task as an activity visible in the activity explorer if used.
      * @param title Title of the task to run as it will appear on the progress and UI
@@ -247,13 +264,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
      * @param task Task to run
      */
     public withActivity<T>(options: ActivityOptions, task: ActivityTask<T>) : Promise<T>;
-    public withActivity<T>(input: ActivityOptions | string, task: ActivityTask<T>) {
+    public withActivity<T>(input: ActivityOptions | string, task: ActivityTask<T> | Promise<T>) {
         // Create activity record to track activity progress
+        const isFn = typeof task === 'function';
         const options: ActivityOptions = typeof input == 'string' ? {
             activityTitle: input,
             progressTitle: input,
             propagateExceptions: true,
-            cancellable: task.length > 2,
+            cancellable: isFn && task.length > 2,
             location: vscode.ProgressLocation.Notification
         } : input;
 
@@ -312,7 +330,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             token?.onCancellationRequested(() => cancelTokenSource && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
             activityRecord.status = VlocodeActivityStatus.InProgress;
             try {
-                const result = await task(progressInterceptor(progress), cancelTokenSource?.token);
+                const result = await (isFn ? task(progressInterceptor(progress), cancelTokenSource?.token) : task);
                 if (activityRecord.status == VlocodeActivityStatus.InProgress) {
                     activityRecord.status = VlocodeActivityStatus.Completed;
                 }

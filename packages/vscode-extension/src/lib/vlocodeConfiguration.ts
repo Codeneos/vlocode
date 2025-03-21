@@ -16,6 +16,11 @@ export abstract class VlocodeVlocityDeployConfiguration extends BaseConfiguratio
     chunkSize: number;
     bulkApiThreshold: number;
     useBulkApi: boolean;
+    standardRuntime: boolean;
+    lwcActivation: boolean;
+    lwcDeploymentType: 'metadata' | 'tooling';
+    disableTriggers: boolean;
+    allowUnresolvedDependencies: boolean;
 }
 
 export default abstract class VlocodeConfiguration extends BaseConfiguration {

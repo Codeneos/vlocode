@@ -6,13 +6,15 @@ import { DatapackDeployer, DatapackDeployment } from '@vlocode/vlocity-deploy';
 import { VlocityDeploy } from './vlocityDeploy';
 import VlocityDatapackService from './vlocityDatapackService';
 import { count, Iterable } from '@vlocode/util';
+import VlocodeConfiguration from '../vlocodeConfiguration';
 
 @injectable()
 export class VlocodeDirectDeployment implements VlocityDeploy {
 
     constructor(
         private readonly datapackService: VlocityDatapackService,
-        private readonly datapackDeployer: DatapackDeployer,
+        private readonly datapackDeployer: DatapackDeployer,        
+        private readonly config: VlocodeConfiguration,
         private readonly logger: Logger) {
     }
 
@@ -23,12 +25,16 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
     ) {
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
         const deployment = await this.datapackDeployer.createDeployment(datapacks, {
-                // TODO: allow user to override these from options
                 strictOrder: true,
                 purgeMatchingDependencies: false,
                 lookupFailedDependencies: false,
                 continueOnError: true,
                 maxRetries: 1,
+                skipLwcActivation: this.config.deploy.lwcActivation === false,
+                useMetadataApi: this.config.deploy.lwcDeploymentType === 'metadata',
+                standardRuntime: !!this.config.deploy.standardRuntime,
+                disableTriggers: !!this.config.deploy.disableTriggers,
+                allowUnresolvedDependencies: !!this.config.deploy.allowUnresolvedDependencies,
             }, cancellationToken);
         deployment.on('progress', result => {
             progress.report({ message: `${result.progress}/${result.total}`, progress: result.progress, total: result.total });

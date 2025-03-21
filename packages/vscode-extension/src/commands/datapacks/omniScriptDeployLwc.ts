@@ -42,13 +42,8 @@ export default class DeployLwcCommand extends DatapackCommand {
         for (const [i, datapack] of datapacks.entries()) {
             progress.report({ message: `Generating ${datapack.name} definitions...`, total: datapacks.length, progress: i });
             const definition = await container.get(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
-
             progress.report({ message: `Deploying ${datapack.name} LWC...` });
-            await container.get(OmniScriptActivator).deployLwc(definition, { 
-                toolingApi: true, 
-                remoteActivation: false, 
-                reactivateDependentScripts: true
-            });
+            container.get(OmniScriptActivator).deployLwc(definition, { toolingApi: true });
         }
         void vscode.window.showInformationMessage(`Deployed LWC components for ${datapacks.length} OmniScript(s)`);
     }
