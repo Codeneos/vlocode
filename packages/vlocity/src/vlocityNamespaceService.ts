@@ -18,7 +18,7 @@ export class VlocityNamespaceService extends NamespaceService {
      * Get the vlocity namespace for the specified 
      */
     public getNamespace() {
-        return this.vlocityNamespace ?? '';
+        return this.vlocityNamespace ?? 'c';
     }
 
     /**

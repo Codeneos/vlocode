@@ -25,11 +25,11 @@ export class NamespaceService {
      * @param obj Object
      * @returns 
      */
-    public updateObjectNamespace(obj: object) {
+    public updateObjectNamespace<T extends object>(obj: T): T {
         return this.updateObject(obj, this.updateNamespace.bind(this));
     }
 
-    private updateObject(obj: object, replacerFn: (value: string) => string) {
+    private updateObject<T extends object>(obj: T, replacerFn: (value: string) => string): T {
         return visitObject(obj, (prop, value, target) => {
             if (typeof prop === 'string') {
                 const newProp = replacerFn(prop);
@@ -38,7 +38,9 @@ export class NamespaceService {
                 }
                 prop = newProp;
             }
-            target[prop] = replacerFn(value);
+            if (typeof value === 'string') {
+                target[prop] = replacerFn(value);
+            }
         });
     }
 }

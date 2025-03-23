@@ -1,5 +1,7 @@
 import { injectable } from "@vlocode/core";
-import { QueryBuilder, SalesforceService } from "@vlocode/salesforce";
+import { QueryBuilder, RecordFactory, SalesforceService } from "@vlocode/salesforce";
+import { asString } from "@vlocode/util";
+import { VlocityDatapack } from "@vlocode/vlocity";
 
 export interface FlexCardDefinition {
     SObjectType: string;
@@ -68,6 +70,17 @@ export namespace FlexCardDefinition {
         '%vlocity_namespace%__Type__c'
     ];
 
+    export function fromDatapack(datapack: VlocityDatapack): FlexCardDefinition {
+        const record = RecordFactory.create(datapack.data);
+        if (datapack.sobjectType === 'OmniUiCard') {
+            return fromOmniCard(record as OmniUiCardRecord);
+        } 
+        if (datapack.sobjectType === '%vlocity_namespace%__VlocityCard__c') {
+            return fromVlocityCard(record as VlocityCardRecord);
+        }
+        throw new Error(`Unsupported datapack type: ${datapack.sobjectType}`);
+    }
+
     export function fromOmniCard(record: OmniUiCardRecord): FlexCardDefinition {
         return {
             SObjectType: 'OmniUiCard',
@@ -76,12 +89,12 @@ export namespace FlexCardDefinition {
             Id: record.Id,
             VersionNumber: record.VersionNumber,
             AuthorName: record.AuthorName,
-            IsActive: record.IsActive,
+            IsActive: record.IsActive === undefined ? true : record.IsActive,
             IsChildCard: record.OmniUiCardType === 'child',
             Type: 'flex',
             UniqueName: record.UniqueName,
-            PropertySetConfig: record.PropertySetConfig,
-            StylingConfiguration: record.StylingConfiguration
+            PropertySetConfig: asString(record.PropertySetConfig),
+            StylingConfiguration: asString(record.StylingConfiguration)
         };
     }
 
@@ -93,11 +106,11 @@ export namespace FlexCardDefinition {
             Id: record.Id,
             VersionNumber: record.Version,
             AuthorName: record.Author,
-            IsActive: record.Active,
+            IsActive: record.Active === undefined ? true : record.Active,
             IsChildCard: record.IsChildCard,
             Type: record.CardType,
-            PropertySetConfig: record.Definition,
-            StylingConfiguration: record.Styles
+            PropertySetConfig: asString(record.Definition),
+            StylingConfiguration: asString(record.Styles)
         };
     }
 }

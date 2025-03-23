@@ -73,5 +73,8 @@ export enum VlocodeCommand {
     apexToggleCoverage = 'vlocode.apex.toggleCoverage',
     deployRecentValidation = 'vlocode.deployRecentValidation',    
     convertOmniScript  = 'vlocode.omniScript.convert',
-    convertVlocityCard  = 'vlocode.vlocityCard.convert',
+    convertVlocityCard  = 'vlocode.vlocityCard.convert', 
+    cardGenerateLwc  = 'vlocode.card.generateLwc',
+    cardDeployLwc  = 'vlocode.card.deployLwc',
+    cardActivate  = 'vlocode.card.activate',
 }

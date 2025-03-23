@@ -1,5 +1,8 @@
+import { isDatapackReference, VlocityDatapack } from "@vlocode/vlocity";
 import { OmniProcessElementRecord, OmniProcessRecord } from "./omniProcess";
 import { OmniScriptSpecification } from "./omniScriptDefinition";
+import { asString } from "@vlocode/util";
+import { RecordFactory } from "@vlocode/salesforce";
 
 export interface OmniScriptRecord extends Required<OmniScriptSpecification> {
     sObjectType: typeof OmniScriptRecord.SObjectType | typeof OmniProcessRecord.SObjectType;
@@ -54,9 +57,31 @@ export namespace OmniScriptRecord {
         '%vlocity_namespace%__IsReusable__c'
     ];
 
+    export function fromDatapack(datapack: VlocityDatapack): OmniScriptWithElementsRecord {
+        const record = RecordFactory.create(datapack.data);
+        let result: OmniScriptRecord;
+        let elements: OmniScriptElementRecord[];
+        
+        if (datapack.sobjectType === OmniProcessRecord.SObjectType) {
+            result = fromProcess(record as OmniProcessRecord);
+            elements = record.omniProcessElement?.map(element => OmniScriptElementRecord.fromProcessElement(element)) || [];
+        } else if (datapack.sobjectType === OmniScriptRecord.SObjectType) {
+            result = fromScript(record as OmniScriptRecord);
+            elements = record.element?.map(element => OmniScriptElementRecord.fromScriptElement(element)) || [];
+        } else {
+            throw new Error(`Unsupported datapack type: ${datapack.sobjectType}`);
+        }
+        
+        return Object.assign(result, { 
+                isActive: true, 
+                version: result.version ?? 1, 
+                elements 
+            });
+    } 
+
     export function fromScript(record: OmniScriptRecord): OmniScriptRecord {
         return {
-            sObjectType: SObjectType,
+            sObjectType: OmniScriptRecord.SObjectType,
             activationField: '%vlocity_namespace%__IsActive__c',
             id: record.id,
             name: record.name,
@@ -67,7 +92,7 @@ export namespace OmniScriptRecord {
             type: record.type,
             subType: record.subType,
             language: record.language,
-            propertySet: record.propertySet,
+            propertySet: asString(record.propertySet),
             omniProcessType: record.omniProcessType,
             isActive: record.isActive,
             isLwcEnabled: record.isLwcEnabled,
@@ -88,7 +113,7 @@ export namespace OmniScriptRecord {
             type: record.type,
             subType: record.subType,
             language: record.language,
-            propertySet: record.propertySetConfig,
+            propertySet: asString(record.propertySetConfig),
             omniProcessType: record.omniProcessType,
             isActive: record.isActive,
             isLwcEnabled: record.isWebCompEnabled,
@@ -96,7 +121,6 @@ export namespace OmniScriptRecord {
         };
     }
 }
-
 
 export namespace OmniScriptElementRecord {
     export const SObjectType = '%vlocity_namespace%__Element__c';
@@ -118,31 +142,41 @@ export namespace OmniScriptElementRecord {
 
     export function fromScriptElement(record: OmniScriptElementRecord): OmniScriptElementRecord {
         return {
-            sObjectType: SObjectType,
-            id: record.id,
-            omniScriptId: record.omniScriptId,
-            parentElementId: record.parentElementId,
+            sObjectType: OmniScriptElementRecord.SObjectType,
+            id: record.id ?? record['VlocityRecordSourceKey'],
+            omniScriptId: getLookupValue(record.omniScriptId),
+            parentElementId: getLookupValue(record.parentElementId),
             name: record.name,
             type: record.type,
             active: record.active,
             order: record.order,
             level: record.level,
-            propertySet: record.propertySet
+            propertySet: asString(record.propertySet)
         };
     }
 
     export function fromProcessElement(record: OmniProcessElementRecord): OmniScriptElementRecord {
         return {
-            sObjectType: SObjectType,
-            id: record.id,
-            omniScriptId: record.omniProcessId,
-            parentElementId: record.parentElementId,
+            sObjectType: OmniProcessElementRecord.SObjectType,
+            id: record.id ?? record['VlocityRecordSourceKey'],
+            omniScriptId: getLookupValue(record.omniProcessId),
+            parentElementId: getLookupValue(record.parentElementId),
             name: record.name,
             type: record.type,
             active: record.isActive,
             order: record.sequenceNumber,
             level: record.level,
-            propertySet: record.propertySetConfig
+            propertySet: asString(record.propertySetConfig)
         };
+    }
+
+    /* eslint-disable-next-line */
+    function getLookupValue(value: unknown): string {
+        if (typeof value === 'string') {
+            return value;
+        } else if (typeof value === 'object' && value !== null && isDatapackReference(value)) {
+            return (value.VlocityMatchingRecordSourceKey ?? value.VlocityLookupRecordSourceKey) as string;
+        }
+        return '';
     }
 }

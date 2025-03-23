@@ -1,3 +1,7 @@
+/**
+ * String utility functions for manipulating and comparing strings.
+ * @module string
+ */
 import { compileFunction } from './compiler';
 import { getObjectProperty } from './object';
 import unidecode from 'unidecode';
@@ -391,4 +395,36 @@ export function normalizeName(name: string) {
         .replace(multiHyphenUnderscoreRegex, '_')
         .replace(leadingCharsRegex, '')
         .replace(trailingCharsRegex, '');
+}
+
+/**
+ * Converts any value to a string representation.
+ * 
+ * @param value - The value to convert to a string
+ * @returns A string representation of the input value
+ * 
+ * - If `undefined`, returns an empty string
+ * - If already a string, returns it unchanged
+ * - If a BigInt, converts to decimal string
+ * - If a Date, converts to ISO string
+ * - If an object, converts to JSON string
+ * - For all other types, uses String() conversion
+ */
+export function asString(value: unknown): string {
+    if (value === undefined) {
+        return '';
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value instanceof BigInt) {
+        return value.toString(10);
+    }
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+    if (typeof value === 'object') {
+        return JSON.stringify(value);
+    }
+    return String(value);
 }

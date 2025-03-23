@@ -1,5 +1,5 @@
 import { injectable, Logger } from '@vlocode/core';
-import { RecordFactory, SalesforceSchemaService } from '@vlocode/salesforce';
+import { NamespaceService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { groupBy, sortBy } from '@vlocode/util';
 import { VlocityDatapack, VlocityInterfaceInvoker } from '@vlocode/vlocity';
 
@@ -18,9 +18,10 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     constructor(
         private readonly scriptAccess: OmniScriptAccess,
         private readonly genericInvoker: VlocityInterfaceInvoker,
-        private readonly schema: SalesforceSchemaService,
-        private readonly logger: Logger) {
-    }
+        private readonly schema: SalesforceSchemaService,        
+        private readonly namespaceService: NamespaceService,
+        private readonly logger: Logger
+    ) { }
 
     public async getScriptDefinition(input: string | OmniScriptSpecification): Promise<OmniScriptDefinition> {
         const scriptRecord = await this.scriptAccess.find(input);
@@ -33,39 +34,8 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             throw new Error(`Datapack ${datapack.vlocityDataPackKey} is not an OmniScript`);
         }
 
-        const records = await this.createRecordsFromDatapack(datapack);
-        return this.buildScriptDefinition(records.scriptRecord, records.elementRecords);
-    }
-
-    private async createRecordsFromDatapack(datapack: VlocityDatapack) {
-        // OmniScripts do not have version when exported; force them to version 1 so we don't get undefined version errors
-        const scriptData = { ...datapack.data, "%vlocity_namespace%__Version__c": datapack.version ?? 1 };
-        const scriptRecord = this.createRecord(scriptData);
-        const elementRecords = datapack.Element__c.map(ele => this.createRecord(ele));
-        return { scriptRecord, elementRecords };
-    }
-
-    private createRecord(values: object) {
-        const recordType = values['VlocityRecordSObjectType'];
-        const sourceKey = values['VlocityRecordSourceKey'];
-        const entries = [
-            ...Object.entries(values)
-                .filter(([key]) => !['VlocityDataPackType', 'VlocityRecordSObjectType'].includes(key))
-                .map(([key, entry]) => {
-                    if (typeof entry === 'object' && 
-                        entry.VlocityDataPackType === 'VlocityMatchingKeyObject') {
-                        return [key, entry['VlocityMatchingRecordSourceKey']];
-                    } else if (key === 'VlocityRecordSourceKey') {
-                        return ['id', entry];
-                    } else if (/__PropertySet__c$/i.test(key)) {
-                        return [key, JSON.stringify(entry)];
-                    }
-                    return [key, entry];
-                })
-                .filter(([,entry]) => typeof entry !== 'object' && !(entry instanceof Date)),
-            [ 'attributes', { type: recordType, url: sourceKey } ],
-        ];
-        return RecordFactory.create(Object.fromEntries(entries));
+        const record = this.namespaceService.updateObjectNamespace(OmniScriptRecord.fromDatapack(datapack));
+        return this.buildScriptDefinition(record, record.elements);
     }
 
     private async buildScriptDefinition(

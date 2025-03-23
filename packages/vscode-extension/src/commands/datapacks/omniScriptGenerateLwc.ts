@@ -4,8 +4,8 @@ import { join, relative } from 'path';
 import { OmniScriptDefinitionGenerator, OmniScriptLwcCompiler } from '@vlocode/omniscript';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { container, FileSystem, FindOptions } from '@vlocode/core';
-import { spreadAsync } from '@vlocode/util';
-import { SalesforcePackage } from '@vlocode/salesforce';
+import { getErrorMessage, spreadAsync } from '@vlocode/util';
+import { FlexCardDefinition, FlexCardLwcCompiler } from '@vlocode/vlocity-deploy';
 
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
@@ -13,6 +13,7 @@ import { withProgress } from '../../lib/vlocodeService';
 import { DatapackCommand } from './datapackCommand';
 
 @vscodeCommand(VlocodeCommand.omniScriptGenerateLwc, { focusLog: true })
+@vscodeCommand(VlocodeCommand.cardGenerateLwc, { focusLog: true })
 export default class GenerateLwcCommand extends DatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {
@@ -20,21 +21,10 @@ export default class GenerateLwcCommand extends DatapackCommand {
     }
 
     private async executeWithSelection(selectedFiles: vscode.Uri[]) : Promise<void> {
-        const datapacks = await this.loadDatapacks(selectedFiles);
+        const datapacks = (await this.loadDatapacks(selectedFiles))
+            .filter(datapack => datapack.datapackType === 'OmniScript' || datapack.datapackType === 'FlexCard');
         if (datapacks.length === 0) {
             throw new Error('Selected file is not a Vlocity OmniScript DataPack');
-        }
-
-        const notLwcEnabled = datapacks.some(datapack => !datapack.IsLwcEnabled__c);
-        if (notLwcEnabled) {
-            const notLwcWarningResult = await vscode.window.showWarningMessage(
-                'Not all selected OmniScripts are LWC enabled. ' +
-                'Generating an LWC form a non-LWC enabled OmniScript can cause the resulting component to be incomplete.',
-                'Continue', 'Cancel'
-            );
-            if (notLwcWarningResult !== 'Continue') {
-                return;
-            }
         }
 
         const outputFolder = await this.promptOutputPathSelection();
@@ -42,58 +32,87 @@ export default class GenerateLwcCommand extends DatapackCommand {
             throw new Error('No output folder selected');
         }
 
-        return this.generateLwc(datapacks, outputFolder);
+        const useStandardRuntime = await this.promptUseStandardRuntime();
+        return this.generateLwc(datapacks, outputFolder, { useStandardRuntime });
+    }
+
+    private async compile(datapack: VlocityDatapack, options?: { useStandardRuntime?: boolean }) {      
+        if (datapack.datapackType === 'OmniScript') {
+            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
+            return container.create(OmniScriptLwcCompiler).compile(definition, options);
+        }
+        if (datapack.datapackType === 'FlexCard') {
+            const definition = FlexCardDefinition.fromDatapack(datapack);
+            return container.create(FlexCardLwcCompiler).compile(definition, options);
+        }
+        throw new Error(`Unsupported datapack type: ${datapack.datapackType}`);
     }
 
     @withProgress({ location: vscode.ProgressLocation.Notification, title: 'Generating LWC components...' })
-    private async generateLwc(datapacks: VlocityDatapack[], outputFolder: string) : Promise<void> {
-        const packageData = new SalesforcePackage(this.vlocode.apiVersion);
+    private async generateLwc(datapacks: VlocityDatapack[], outputFolder: string, options?: { useStandardRuntime?: boolean }) : Promise<void> {
+        const jsMetaFiles: string[] = [];
+        const fs = container.get(FileSystem);
+        const result: { datapack: string, file: string }[] = [];
 
         for (const datapack of datapacks) {
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
-            const sfPackage = await container.create(OmniScriptLwcCompiler).compileToPackage(definition);
-            if (sfPackage.isEmpty) {
-                throw new Error('No LWC components generated');
-            }
-
-            for (const comp of sfPackage.components()) {
-                this.logger.info(`Saving ${datapack.Type__c}/${datapack.SubType__c} LWC to: ${outputFolder}/lwc/${comp.componentName}`);
-                for (const file of comp.files) {
-                    const outputFilePath = join(outputFolder, file.packagePath);
-                    this.logger.verbose(`Write LWC metadata ${relative(outputFolder, outputFilePath)} (${file.data!.length} bytes)`);
-                    await container.get(FileSystem).outputFile(outputFilePath, file.data!);
+            try {
+                this.logger.info(`Generating LWC: ${datapack.key}`);
+                const components = await this.compile(datapack, options);
+                for (const resource of components.resources) {
+                    // write the file to disk
+                    const outputFilePath = join(outputFolder, resource.name);                    
+                    this.logger.debug(`Write ${relative(outputFolder, outputFilePath)}`);
+                    await fs.outputFile(outputFilePath, resource.source);
+                    
+                    // Store the path to the js-meta.xml file for opening
+                    if (resource.name.endsWith('.js-meta.xml')) {
+                        jsMetaFiles.push(outputFilePath);
+                    }
+                    result.push({ datapack: datapack.key, file: outputFilePath });
                 }
-            }
-
-            packageData.merge(sfPackage);
+            } catch (error) {
+                this.logger.error(`Datapack LWC generation failed:`, error.stack);                
+                result.push({ datapack: datapack.key, file: `ERROR ${getErrorMessage(error)}` });
+            }            
         }
 
-        const components = packageData.components();
-        if (components.length === 1) {
-            const metaFile = components[0].files.find(file => file.packagePath.endsWith('.js-meta.xml'))!;
-            const componentPath = join(outputFolder, metaFile.packagePath.slice(0, -'-meta.xml'.length));
+        if (jsMetaFiles.length === 0) {
+            throw new Error('No LWC components generated');
+        }
+
+        if (jsMetaFiles.length === 1) {
             void vscode.window.showTextDocument(
-                await vscode.workspace.openTextDocument(vscode.Uri.file(componentPath)),
+                await vscode.workspace.openTextDocument(vscode.Uri.file(jsMetaFiles[0])),
                 {
                     preview: true,
-                    preserveFocus: true,
-                    viewColumn: vscode.ViewColumn.Beside
+                    preserveFocus: false,
+                    viewColumn: vscode.ViewColumn.Active
                 }
             );
-        } else {
-            void vscode.window.showInformationMessage(`Generated LWC components for ${components.length} components from ${datapacks.length} DataPacks`);
         }
+
+        this.outputTable(result);
+    }
+
+    private async promptUseStandardRuntime() {
+        const selected = await vscode.window.showQuickPick([
+            { label: 'Managed Package Runtime', description: 'Use the managed package runtime', useStandardRuntime: false },
+            { label: 'Standard Runtime', description: 'Use the standard runtime', useStandardRuntime: true }
+        ], { placeHolder: 'Select the runtime to generate LWC components for' });
+        return selected?.useStandardRuntime ?? false;
     }
 
     private async promptOutputPathSelection() : Promise<string | undefined> {
         const cwd = vscode.workspace.workspaceFolders?.map(folder => folder.uri.fsPath);
         const options: FindOptions = { cwd, findType: 'directory', exclude: ['**/node_modules/**', '.*'], limit: 10 };
-        const results = (await spreadAsync(container.get(FileSystem).find('lwc', options)));
-
-        let selectedFolder: string | undefined;
+        const results = (await spreadAsync(container.get(FileSystem).find('**/lwc/', options)));
+        
         if (results.length === 0) {
-            selectedFolder = cwd?.shift() ?? '.';
-        } else if (results.length === 1) {
+            return cwd?.[0] ?? '.';
+        } 
+
+        let selectedFolder: string | undefined;        
+        if (results.length === 1) {
             selectedFolder =  results[0];
         } else {
             selectedFolder = await vscode.window.showQuickPick(results, {
@@ -101,6 +120,6 @@ export default class GenerateLwcCommand extends DatapackCommand {
             });
         }
 
-        return selectedFolder ? selectedFolder.split('/').slice(0,-1).join('/') : undefined;
+        return selectedFolder && selectedFolder.split(/[/\\]+/ig).slice(0,-1).join('/');
     }
 }
