@@ -91,15 +91,7 @@ export default class GenerateLwcCommand extends DatapackCommand {
             );
         }
 
-        this.outputTable(result);
-    }
-
-    private async promptUseStandardRuntime() {
-        const selected = await vscode.window.showQuickPick([
-            { label: 'Managed Package Runtime', description: 'Use the managed package runtime', useStandardRuntime: false },
-            { label: 'Standard Runtime', description: 'Use the standard runtime', useStandardRuntime: true }
-        ], { placeHolder: 'Select the runtime to generate LWC components for' });
-        return selected?.useStandardRuntime ?? false;
+        this.outputTable(result, { focus: true });
     }
 
     private async promptOutputPathSelection() : Promise<string | undefined> {

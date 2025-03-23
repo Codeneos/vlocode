@@ -102,7 +102,7 @@ export abstract class CommandBase implements Command {
         this.outputSeperator(header.length + 4);
         rows.forEach(row => this.outputTableRow(row, columnWidths));
 
-        if (options?.appendEmptyLine) {
+        if (options?.appendEmptyLine !== false) {
             this.outputBlank();
         }
         if (options?.focus) {

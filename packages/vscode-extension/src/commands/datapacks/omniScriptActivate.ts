@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { OmniScriptActivationOptions, OmniScriptActivator, OmniScriptSpecification } from '@vlocode/omniscript';
+import { OmniScriptActivationOptions, OmniScriptActivator, OmniScriptRecord } from '@vlocode/omniscript';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { container } from '@vlocode/core';
 
@@ -8,8 +8,11 @@ import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackCommand } from './datapackCommand';
 import { ActivityProgress } from '../../lib/vlocodeActivity';
+import { FlexCardActivationOptions, FlexCardActivator, FlexCardDefinition, FlexCardDefinitionAccess } from '@vlocode/vlocity-deploy';
+import { getErrorMessage, Timer } from '@vlocode/util';
 
 @vscodeCommand(VlocodeCommand.omniScriptActivate, { focusLog: true, showProductionWarning: true })
+@vscodeCommand(VlocodeCommand.cardActivate, { focusLog: true, showProductionWarning: true })
 export default class ActivateOmniScriptCommand extends DatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {
@@ -18,63 +21,92 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
 
     protected async executeWithSelection(selectedFiles: vscode.Uri[]) : Promise<void> {
         const datapacks = await this.loadDatapacks(selectedFiles);
-        const options = {
-            toolingApi: true,
-            remoteActivation: false,
-            reactivateDependentScripts: false
-        };
-
         if (datapacks.length === 0) {
             throw new Error('Selected file is not a Vlocity OmniScript DataPack');
         }
 
-        const hasReusableScripts = datapacks.some(datapack => datapack.IsReusable__c);
-        if (hasReusableScripts && await this.promptDependencyReactivation()) {
-            options.reactivateDependentScripts = true;
-        }
+        const options: OmniScriptActivationOptions | FlexCardActivationOptions = {
+            useStandardRuntime: await this.promptUseStandardRuntime(),
+            toolingApi: true,
+            skipLwcDeployment: false
+        };
 
-        return this.vlocode.withActivity('OmniScript', (progress) => this.activateScripts(datapacks, options, progress));
+        return this.vlocode.withActivity('Datapack activation', (progress) => this.activateDatapacks(datapacks, options, progress));
     }
 
-    protected async activateScripts(
+    protected async activateDatapacks(
         datapacks: VlocityDatapack[], 
         options: OmniScriptActivationOptions, 
         progress: ActivityProgress
     ) : Promise<void> {
-        const activated = new Array<OmniScriptSpecification>();
-        const failed = new Array<OmniScriptSpecification & { error: unknown }>();
+
+        const results: { datapack: string, time: Timer, error: string }[] = [];
 
         for (const datapack of datapacks) {
-            const omniScriptSpec = {
-                type: datapack.Type__c,
-                subType: datapack.SubType__c,
-                language: datapack.Language__c
-            };
-
-            if (!omniScriptSpec.subType || !omniScriptSpec.type) {
-                throw new Error(`Datapack is not of type OmniScript: ${datapack.headerFile}`);
-            }
-
-            progress.report({ message: `Activating ${omniScriptSpec.type}/${omniScriptSpec.subType}...` });
-
+            progress.report({ message: `${datapack.name}...` });
+            const timer = new Timer();
             try {
-                await container.get(OmniScriptActivator).activate(omniScriptSpec, options);
-                activated.push(omniScriptSpec);
+                if (datapack.datapackType === 'OmniScript') {
+                    await this.activateOmniScript(datapack, options);
+                } else if (datapack.datapackType === 'FlexCard' || datapack.datapackType === 'VlocityCard') {
+                    await this.activateFlexCard(datapack, options);
+                } else {
+                    throw new Error(`Unsupported datapack ${datapack.datapackType} (${datapack.sobjectType})`);
+                }
+                results.push({ datapack: datapack.Name, time: timer.stop(), error: '' });
             } catch (error) {
-                failed.push({...omniScriptSpec, error });
-                this.logger.error(`Failed to activate ${omniScriptSpec.type}/${omniScriptSpec.subType}: ${error.message}`);
+                this.logger.error(`Failed to activate ${datapack.name}: ${getErrorMessage(error)}`);
+                results.push({ datapack: datapack.Name, time: timer.stop(), error: getErrorMessage(error) });
             }
         }
 
-        void vscode.window.showInformationMessage(`Activated ${activated.length} OmniScript(s)`);
+        const failed = results.filter(r => r.error);
+        const activated = results.filter(r => !r.error);
+
+        if (failed.length && !activated.length) {
+            throw new Error(`Failed to activate ${failed.length} Datapack(s): ${failed.map(f => f.datapack).join(', ')}`);
+        } else if (failed.length) {
+            void vscode.window.showWarningMessage(`Activated ${activated.length} Datapack(s) but failed to activate ${failed.length} Datapack(s): ${failed.map(f => f.datapack).join(', ')}`);
+        } else {
+            void vscode.window.showInformationMessage(`Activated ${datapacks.length} Datapack(s)`);
+        }
+
+        this.outputTable(results, { focus: true });
     }
 
-    private async promptDependencyReactivation() : Promise<boolean> {
+    private async activateOmniScript(datapack: VlocityDatapack, options: OmniScriptActivationOptions)  {
+        const omniScriptDef = OmniScriptRecord.fromDatapack(datapack);
+        if (!omniScriptDef.subType || !omniScriptDef.type) {
+            throw new Error(`Datapack is not of type OmniScript: ${datapack.headerFile}`);
+        }
+        const reactivateDependentScripts = omniScriptDef.isReusable && await this.promptDependencyReactivation(omniScriptDef);
+        await container.get(OmniScriptActivator).activate({
+                type: omniScriptDef.type,
+                subType: omniScriptDef.subType,
+                language: omniScriptDef.language
+            }, { ...options, reactivateDependentScripts });
+    }
+
+    private async activateFlexCard(datapack: VlocityDatapack, options: FlexCardActivationOptions)  {
+        const cardDefinition = FlexCardDefinition.fromDatapack(datapack);
+        const deployedCards = [...(await container.get(FlexCardDefinitionAccess).getFlexCardDefinitions({ 
+            name: cardDefinition.Name, 
+            author: cardDefinition.AuthorName, 
+            version: cardDefinition.VersionNumber 
+        })).values()];
+        if (deployedCards.length === 0) {
+            throw new Error(`Unable to find deployed FlexCard: ${cardDefinition.Name} v${cardDefinition.VersionNumber} by ${cardDefinition.AuthorName}. Resolve this issue by deploying the FlexCard before re-activating it.`);
+        }
+        await container.get(FlexCardActivator).activate(deployedCards[0], options);
+    }
+
+    private async promptDependencyReactivation(record: OmniScriptRecord) : Promise<boolean> {
         const outcome = await vscode.window.showQuickPick([
-            { value: true, label: 'Yes', description: 'Reactivate scripts that use this script as dependency' },
-            { value: false, label: 'No', description: 'Only reactivate this script and do not refresh any scripts embedding this script as dependency' }
+            { value: true, label: 'Yes', description: `Reactivate scripts that embed '${record.type}/${record.subType}'` },
+            { value: false, label: 'No', description: `Only reactivate '${record.type}/${record.subType}', scripts that embed this script will not be changed` }
         ], {
-            placeHolder: 'Reactivate dependent scripts?'
+            placeHolder: `Reactivate scripts that embed ;${record.type}/${record.subType}' as dependency?`,
+            ignoreFocusOut: true,
         });
         if (!outcome) {
             throw new Error('User cancelled operation');

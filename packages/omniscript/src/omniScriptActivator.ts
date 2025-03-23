@@ -127,7 +127,9 @@ export class OmniScriptActivator {
 
     private async localScriptActivation(script: OmniScriptRecord) {
         const definition = await this.definitionGenerator.getScriptDefinition(script.id);
-        await this.updateScriptDefinition(script.id, definition);
+        if (script.sObjectType !== 'OmniProcess') {
+            await this.updateScriptDefinition(script.id, definition);
+        }
         await this.updateActiveVersion(script, { lwcId: definition.lwcId });
         await this.deleteAllInactiveScriptDefinitions(script.id);
         return definition;
@@ -189,7 +191,7 @@ export class OmniScriptActivator {
 
         for await (const insertResult of this.salesforceService.insert('%vlocity_namespace%__OmniScriptDefinition__c', records)) {
             if (!insertResult.success) {
-                throw new Error(`Failed to insert OmniScript activation records: ${insertResult.error}`);
+                throw new Error(`Failed to insert OmniScript activation records: ${insertResult.error.message}`);
             }
         }
     }

@@ -44,8 +44,12 @@ export class FlexCardActivator {
      * @param input FlexCard to activate
      * @param options Extra options that control how the script is activated
      */
-    public async activate(input: FlexCardIdentifier | string, options?: FlexCardActivationOptions) {
-        const card = await this.lookup.findCardDefinition(input);
+    public async activate(input: FlexCardDefinition | FlexCardIdentifier | string, options?: FlexCardActivationOptions) {
+        const card = FlexCardDefinition.isCardDefinition(input) 
+            ? input : await this.lookup.findCardDefinition(input);
+        if (!card.Id) {
+            throw new Error(`FlexCard ${card.Name} is not deployed to the org`);
+        }
         if (!card.IsActive) {
             await this.activateRecord(card);
         }

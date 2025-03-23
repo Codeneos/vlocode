@@ -123,4 +123,13 @@ export abstract class DatapackCommand extends CommandBase {
 
         return recordOptions;
     }
+
+    protected async promptUseStandardRuntime() {
+        const standardRuntime = this.vlocode.config.deploy.standardRuntime;
+        const selected = await vscode.window.showQuickPick([
+            { label: `${standardRuntime ? '$(primitive-dot) ' : ''}Managed Package Runtime`, description: 'Use the managed package runtime', useStandardRuntime: false },
+            { label: `${!standardRuntime ? '$(primitive-dot) ' : ''}Standard Runtime`, description: 'Use the standard runtime', useStandardRuntime: true }
+        ], { placeHolder: 'Select the runtime to generate LWC components for' });
+        return selected?.useStandardRuntime ?? false;
+    }
 }

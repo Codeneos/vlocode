@@ -70,6 +70,23 @@ export namespace FlexCardDefinition {
         '%vlocity_namespace%__Type__c'
     ];
 
+    export function isCardDefinition(obj: any): obj is FlexCardDefinition {
+        if (typeof obj !== 'object' || obj === null) {
+            return false;
+        }
+        // Validate required fields are present
+        return [ 
+            'SObjectType', 
+            'ActivationField', 
+            'Name', 
+            'Id', 
+            'AuthorName', 
+            'VersionNumber', 
+            'IsActive', 
+            'PropertySetConfig' 
+        ].every(field => field in obj);
+    }
+
     export function fromDatapack(datapack: VlocityDatapack): FlexCardDefinition {
         const record = RecordFactory.create(datapack.data);
         if (datapack.sobjectType === 'OmniUiCard') {
