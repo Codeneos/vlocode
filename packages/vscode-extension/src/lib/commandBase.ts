@@ -72,18 +72,25 @@ export abstract class CommandBase implements Command {
         data: T[],
         options?: CommandOutputOptions<{
             maxCellWidth: number | Record<K, number>,
-            format: (row: T) => any,
-            columns: Array<K>
+            format: Record<K, (value: T[K]) => string>,
+            columns: Array<K>,
+            labels: Record<K, string>,
         }>
     ) {
         if (options?.format) {
+            const format = options?.format;
             // Map data to formatted data using the provided format function
-            data = data.map(options.format);
+            data = data.map(row => 
+                Object.fromEntries(Object.entries(row).map(([key, value]) => {
+                    const formater = format[key];
+                    return [key, formater ? formater(value) : value];
+                })) as T
+            );
         }
 
         const columns = options?.columns ?? Object.keys(data[0]);
         const rows = data.map(row => columns.map(column => this.formatOutputArg(row[column])));
-        const columnWidths = columns.map((column, index) => Math.max(column.length, ...rows.map(row => row[index].length)));
+        const columnWidths = columns.map((column, index) => Math.max((options?.labels?.[column] ?? column).length, ...rows.map(row => row[index].length)));
 
         // Adjust column widths to max width if specified
         const maxWidths = options?.maxCellWidth;
@@ -96,7 +103,7 @@ export abstract class CommandBase implements Command {
             });
         }
 
-        const header = columns.map((column, index) => column.padEnd(columnWidths[index]).toUpperCase()).join('  ');
+        const header = columns.map((column, index) => (options?.labels?.[column] ?? column).padEnd(columnWidths[index]).toUpperCase()).join('  ');
         const seperator = columnWidths.map((width) => TerminalCharacters.HorizontalLine.repeat(width)).join('  ');
 
         this.outputChannel.appendLine(header);
@@ -120,7 +127,8 @@ export abstract class CommandBase implements Command {
                 nextRow[i] = values[i].substring(columnWidths[i]);
                 values[i] = values[i].substring(0, columnWidths[i]);
             }
-            currentRow.push((values[i] ?? '').padEnd(columnWidths[i]));
+            const paddingFn = 'padEnd';
+            currentRow.push((values[i] ?? '')[paddingFn](columnWidths[i]));
         }
 
         this.outputChannel.appendLine(currentRow.join('  '));
