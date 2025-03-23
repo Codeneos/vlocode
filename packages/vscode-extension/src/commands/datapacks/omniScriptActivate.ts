@@ -31,16 +31,19 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
             skipLwcDeployment: false
         };
 
-        return this.vlocode.withActivity('Datapack activation', (progress) => this.activateDatapacks(datapacks, options, progress));
+        const results = await this.vlocode.withActivity('Datapack activation', 
+            (progress) => this.activateDatapacks(datapacks, options, progress)
+        );
+        this.outputTable(results, { focus: true, labels: { time: 'activation time (ms)' } });
     }
 
     protected async activateDatapacks(
         datapacks: VlocityDatapack[], 
         options: OmniScriptActivationOptions, 
         progress: ActivityProgress
-    ) : Promise<void> {
+    ) : Promise<{ datapack: string, status: string, time: number, error?: string }[]> {
 
-        const results: { datapack: string, time: Timer, error: string }[] = [];
+        const results: { datapack: string, status: string, time: number, error?: string }[] = [];
 
         for (const datapack of datapacks) {
             progress.report({ message: `${datapack.name}...` });
@@ -53,10 +56,10 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
                 } else {
                     throw new Error(`Unsupported datapack ${datapack.datapackType} (${datapack.sobjectType})`);
                 }
-                results.push({ datapack: datapack.Name, time: timer.stop(), error: '' });
+                results.push({ datapack: datapack.Name, status: 'activated', time: timer.elapsed });
             } catch (error) {
                 this.logger.error(`Failed to activate ${datapack.name}: ${getErrorMessage(error)}`);
-                results.push({ datapack: datapack.Name, time: timer.stop(), error: getErrorMessage(error) });
+                results.push({ datapack: datapack.Name, status: 'error', time: timer.elapsed, error: getErrorMessage(error) });
             }
         }
 
@@ -71,7 +74,7 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
             void vscode.window.showInformationMessage(`Activated ${datapacks.length} Datapack(s)`);
         }
 
-        this.outputTable(results, { focus: true });
+        return results;
     }
 
     private async activateOmniScript(datapack: VlocityDatapack, options: OmniScriptActivationOptions)  {
