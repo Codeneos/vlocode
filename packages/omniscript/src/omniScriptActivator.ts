@@ -127,10 +127,12 @@ export class OmniScriptActivator {
 
     private async localScriptActivation(script: OmniScriptRecord) {
         const definition = await this.definitionGenerator.getScriptDefinition(script.id);
+        const extraFields: Record<string, unknown> = {};
         if (script.sObjectType !== 'OmniProcess') {
             await this.updateScriptDefinition(script.id, definition);
+            extraFields.lwcId = definition.lwcId;
         }
-        await this.updateActiveVersion(script, { lwcId: definition.lwcId });
+        await this.updateActiveVersion(script, extraFields);
         await this.deleteAllInactiveScriptDefinitions(script.id);
         return definition;
     }
