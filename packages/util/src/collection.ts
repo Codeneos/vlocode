@@ -17,7 +17,7 @@ export function flatten<T>(array: T[], depth: number = 1) : T {
             acc.push(cur);
         }
         return acc;
-    }, []) : array;
+    }, []) : array as T;
 }
 
 /**
