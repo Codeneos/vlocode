@@ -39,7 +39,8 @@ export interface OmniScriptElementRecord {
 }
 
 export namespace OmniScriptRecord {
-    export const SObjectType = '%vlocity_namespace%__OmniScript__c' as const;
+    export const SObjectType = '%vlocity_namespace%__OmniScript__c';
+    export const ActivationField = '%vlocity_namespace%__IsActive__c';
     export const Fields = [
         'Id', 
         'Name', 
@@ -82,7 +83,7 @@ export namespace OmniScriptRecord {
     export function fromScript(record: OmniScriptRecord): OmniScriptRecord {
         return {
             sObjectType: OmniScriptRecord.SObjectType,
-            activationField: '%vlocity_namespace%__IsActive__c',
+            activationField: OmniScriptRecord.ActivationField,
             id: record.id,
             name: record.name,
             version: record.version,
@@ -103,7 +104,7 @@ export namespace OmniScriptRecord {
     export function fromProcess(record: OmniProcessRecord): OmniScriptRecord {
         return {
             sObjectType: OmniProcessRecord.SObjectType,
-            activationField: 'IsActive',
+            activationField: OmniProcessRecord.ActivationField,
             id: record.id,
             name: record.name,
             version: record.versionNumber,
