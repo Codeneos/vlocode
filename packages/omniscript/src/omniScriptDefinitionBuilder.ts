@@ -112,6 +112,9 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
             if (element.propSetMap.optionSource.type === 'Custom' && element.propSetMap.optionSource.source.includes('.')) {
                 this.scriptDef.cusPL[element.propSetMap.optionSource.source] = '';
             }
+            for (const option of (element.propSetMap.options ?? []).filter(o => o.value)) {
+                this.scriptDef.labelKeyMap[option.value] = option.value;
+            }
         }
 
         if (element.propSetMap?.repeat == true || ['Radio', 'Multi-select', 'Radio Group', 'Edit Block'].includes(element.type)) {
@@ -131,6 +134,10 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         } else if (options?.scriptElementId || !options?.parentElementId)  {
             element.bEmbed = false;
             element.offSet = 0;
+        }
+
+        if (element.propSetMap?.label) {
+            this.scriptDef.labelKeyMap[element.propSetMap.label] = element.propSetMap.label;
         }
 
         if (options?.parentElementId) {

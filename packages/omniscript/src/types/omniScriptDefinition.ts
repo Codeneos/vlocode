@@ -102,6 +102,7 @@ export interface OmniScriptDefinition {
     prefillJSON: string;
     lwcId: string;
     labelMap: Record<string, string | null>;
+    /** Maps labels by their key to their resolved value based on the user activation language */
     labelKeyMap: Record<string, string>;
     errorMsg: string;
     error: string;

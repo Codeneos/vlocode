@@ -1,5 +1,5 @@
 import { injectable, Logger } from '@vlocode/core';
-import { NamespaceService, SalesforceSchemaService } from '@vlocode/salesforce';
+import { NamespaceService, SalesforceLabels, SalesforceSchemaService } from '@vlocode/salesforce';
 import { groupBy, sortBy } from '@vlocode/util';
 import { VlocityDatapack, VlocityInterfaceInvoker } from '@vlocode/vlocity';
 
@@ -18,7 +18,8 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     constructor(
         private readonly scriptAccess: OmniScriptAccess,
         private readonly genericInvoker: VlocityInterfaceInvoker,
-        private readonly schema: SalesforceSchemaService,        
+        private readonly schema: SalesforceSchemaService,
+        private readonly labels: SalesforceLabels,
         private readonly namespaceService: NamespaceService,
         private readonly logger: Logger
     ) { }
@@ -59,6 +60,10 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
                 scriptBuilder.addTemplate(template);
             }
         }
+
+        // Add Labels and translate them to the current user language
+        const labels = await this.labels.getCustomLabels(Object.keys(scriptDef.labelKeyMap));
+        scriptDef.labelKeyMap = Object.fromEntries(Object.values(labels).map(label => ([label.name, label.value])));
 
         return scriptBuilder.build();
     }
