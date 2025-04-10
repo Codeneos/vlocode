@@ -51,7 +51,16 @@ export namespace Iterable {
      * Merge two or more iterators together into a single iterable.
      * @param itrs iterators to merge
      */
-    export function join<T>(...itrs: (Iterable<T> | undefined)[]): Iterable<T> {
+    export function join<T, K>(itr: Iterable<T>, mapFunc?: (item: T, index: number) => K, seperator?: string): string {
+        const tragte: Iterable<unknown> = mapFunc ? Iterable.map(itr, mapFunc) : itr;
+        return Array.from(tragte).join(seperator);
+    }
+
+    /**
+     * Merge two or more iterators together into a single iterable.
+     * @param itrs iterators to merge
+     */
+    export function concat<T>(...itrs: (Iterable<T> | undefined)[]): Iterable<T> {
         return {
             *[Symbol.iterator]() {
                 for (const itr of itrs) {
