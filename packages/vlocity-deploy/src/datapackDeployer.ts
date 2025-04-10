@@ -38,12 +38,25 @@ export class DatapackDeployer {
     private readonly container: Container;
     private readonly specRegistry: DatapackDeploymentSpecRegistry;
 
+    /**
+     * List of Vlocity global identifier field names that need verification after deployment.
+     * These fields may be modified by Vlocity triggers during deployment, requiring
+     * additional verification and potential updates to ensure data consistency.
+     */
+    public vlocityGlobalKeyFields = [ 
+        'GlobalKey', 
+        `${NAMESPACE_PLACEHOLDER}__GlobalKey__c`, 
+        `${NAMESPACE_PLACEHOLDER}__GlobalKey2__c`, 
+        `${NAMESPACE_PLACEHOLDER}__GlobalGroupKey__c`
+    ];
+
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly objectLookupService: SalesforceLookupService,
         private readonly schemaService: SalesforceSchemaService,
         private readonly logger: Logger,
-        creatingContainer?: Container) {
+        creatingContainer?: Container
+    ) {
         this.container = (creatingContainer ?? container).new();
         this.specRegistry = this.container.get(DatapackDeploymentSpecRegistry)
     }
@@ -81,6 +94,7 @@ export class DatapackDeployer {
                 if (!options?.continueOnError) {
                     throw new CustomError(errorMessage, err);
                 }
+                deployment.addError(datapack.key, getErrorMessage(err, { includeStack: false }));
                 this.logger.error(errorMessage);
             }
         }, 8);
@@ -239,7 +253,7 @@ export class DatapackDeployer {
         if (deployment.isCancelled) {
             return;
         }
-        await this.verifyDeployedFieldData(datapackRecords, [ 'GlobalKey__c', 'GlobalKey2__c', 'GlobalGroupKey__c' ]);
+        await this.verifyDeployedFieldData(datapackRecords, this.vlocityGlobalKeyFields);
         await this.runSpecFunction('afterDeployRecord', { 
             args: [ [...datapackRecords] ], 
             ignoreErrors: true, 
