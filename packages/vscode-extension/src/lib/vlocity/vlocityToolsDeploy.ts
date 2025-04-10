@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { injectable, Logger } from '@vlocode/core';
 
 import VlocityDatapackService, { DatapackResultCollection } from './vlocityDatapackService';
-import { VlocityDeploy } from './vlocityDeploy';
+import { VlocityDeploy, VlocityDeployResult } from './vlocityDeploy';
+import { substringBefore } from '@vlocode/util';
 
 @injectable()
 export class VlocityToolsDeployment implements VlocityDeploy {
@@ -18,9 +19,10 @@ export class VlocityToolsDeployment implements VlocityDeploy {
         cancellationToken: vscode.CancellationToken
     ) {
         const results = await this.datapackService.deploy(datapackHeaders.map(header => header.fsPath), cancellationToken);
-        if (!cancellationToken.isCancellationRequested) {
-            this.printDatapackDeployResults(results);
-        }
+        // if (!cancellationToken.isCancellationRequested) {
+        //     this.printDatapackDeployResults(results);
+        // }
+        return this.prepareResults(results);
     }
 
     private printDatapackDeployResults(results : DatapackResultCollection) {
@@ -34,5 +36,23 @@ export class VlocityToolsDeployment implements VlocityDeploy {
         } else {
             void vscode.window.showInformationMessage(`Successfully deployed ${resultSummary}`);
         }
+    }
+
+    private prepareResults(deployResults: DatapackResultCollection): VlocityDeployResult[] {
+        const results = new Array<VlocityDeployResult>();
+        for (const datapackResult of deployResults) {
+            results.push({
+                datapack: datapackResult.key,
+                type: substringBefore(datapackResult.key, '/'),
+                status: datapackResult.success ? 'success' : 'error',
+                totalRecords: 1,
+                failedRecords: datapackResult.success ? 1 : 0,
+                messages: datapackResult.errorMessage ? [ {
+                    type: 'error',
+                    message: datapackResult.errorMessage
+                } ] : []
+            });
+        }
+        return results;
     }
 }

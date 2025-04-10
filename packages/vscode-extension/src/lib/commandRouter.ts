@@ -20,17 +20,35 @@ export interface CommandOptions {
  */
 const commandRegistry: { [id: string]: { command: CommandFn, options?: CommandOptions } } = { };
 
+
 /**
- * Register a command in the command registery with a certain ID and options
- * @param options Command options
- * @returns decorator factory fn
+ * Decorator function that registers VSCode commands with the specified command ID(s).
+ * Used to associate a function with one or more VSCode command identifiers.
+ * 
+ * @param ids - A single command ID or an array of command IDs to register
+ * @param options - Optional configuration options for the command
+ * @returns A decorator function that registers the decorated method as a VSCode command handler
+ * @throws Error when attempting to register a command ID that is already registered
+ * 
+ * @example
+ * ```typescript
+ * @vscodeCommand('my.command.id')
+ * export function myCommand() {
+ *   // Command implementation
+ * }
+ * ```
  */
-export function vscodeCommand(id: string, options?: CommandOptions) {
+export function vscodeCommand(ids: string | string[], options?: CommandOptions) {
     return (command: CommandFn) => {
-        if (commandRegistry[id]) {
-            throw new Error(`Command with id "${id}" is already registered; command ids should be unique`);
+        if (typeof ids === 'string') {
+            ids = [ ids ];
         }
-        commandRegistry[id] = { command, options };
+        for (const id of ids) {
+            if (commandRegistry[id]) {
+                throw new Error(`Command with id "${id}" is already registered; command ids should be unique`);
+            }
+            commandRegistry[id] = { command, options };
+        }
     };
 }
 

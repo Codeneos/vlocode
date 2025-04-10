@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import chalk from 'chalk';
 
 import {  injectable, Logger } from '@vlocode/core';
-import { DatapackDeployer, DatapackDeployment } from '@vlocode/vlocity-deploy';
-import { VlocityDeploy } from './vlocityDeploy';
+import { DatapackDeployer, DatapackDeployment, DatapackDeploymentOptions, DatapackkDeploymentState } from '@vlocode/vlocity-deploy';
+import { VlocityDeploy, VlocityDeployResult } from './vlocityDeploy';
 import VlocityDatapackService from './vlocityDatapackService';
 import { count, Iterable } from '@vlocode/util';
 import VlocodeConfiguration from '../vlocodeConfiguration';
@@ -23,33 +23,62 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
         progress: vscode.Progress<{ message: string, progress: number; total: number }>, 
         cancellationToken: vscode.CancellationToken
     ) {
+        const options: DatapackDeploymentOptions = {
+            strictOrder: true,
+            purgeMatchingDependencies: false,
+            lookupFailedDependencies: false,
+            continueOnError: true,
+            maxRetries: 1,
+            skipLwcActivation: this.config.deploy.lwcActivation === false,
+            useMetadataApi: this.config.deploy.lwcDeploymentType === 'metadata',
+            standardRuntime: !!this.config.deploy.standardRuntime,
+            disableTriggers: !!this.config.deploy.disableTriggers,
+            allowUnresolvedDependencies: !!this.config.deploy.allowUnresolvedDependencies,
+        };
+
         const datapacks = await this.datapackService.loadAllDatapacks(datapackHeaders, cancellationToken);
-        const deployment = await this.datapackDeployer.createDeployment(datapacks, {
-                strictOrder: true,
-                purgeMatchingDependencies: false,
-                lookupFailedDependencies: false,
-                continueOnError: true,
-                maxRetries: 1,
-                skipLwcActivation: this.config.deploy.lwcActivation === false,
-                useMetadataApi: this.config.deploy.lwcDeploymentType === 'metadata',
-                standardRuntime: !!this.config.deploy.standardRuntime,
-                disableTriggers: !!this.config.deploy.disableTriggers,
-                allowUnresolvedDependencies: !!this.config.deploy.allowUnresolvedDependencies,
-            }, cancellationToken);
+        const deployment = await this.datapackDeployer.createDeployment(datapacks, options, cancellationToken);
         deployment.on('progress', result => {
             progress.report({ message: `${result.progress}/${result.total}`, progress: result.progress, total: result.total });
         });
-        await deployment?.start(cancellationToken);
+        await deployment.start(cancellationToken);
 
-        if (cancellationToken.isCancellationRequested) {
-            return;
+        // if (!deployment.hasErrors) {
+        //     void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
+        // } else {
+        //     this.showDatapackErrors(deployment);
+        // }
+
+        return this.prepareResults(deployment);
+    }
+
+    private prepareResults(deployment: DatapackDeployment): VlocityDeployResult[] {
+        const status = deployment.getStatus();
+        const results: VlocityDeployResult[] = [];
+        const mapping: Record<DatapackkDeploymentState, VlocityDeployResult['status']> = {
+            [DatapackkDeploymentState.Pending]: 'pending',
+            [DatapackkDeploymentState.InProgress]: 'inProgress',
+            [DatapackkDeploymentState.Error]: 'error',
+            [DatapackkDeploymentState.PartialSuccess]: 'partial',
+            [DatapackkDeploymentState.Success]: 'success',
+        } as const;
+
+        for (const datapack of status.datapacks) {
+            results.push({
+                datapack: datapack.datapack,
+                type: datapack.type,
+                status: mapping[datapack.status],
+                totalRecords: datapack.recordCount,
+                failedRecords: datapack.failedCount,
+                messages: datapack.messages.map(message => ({
+                    type: message.type,
+                    message: message.message,
+                    code: message.type === 'error' ? message.code : undefined
+                }))
+            });
         }
 
-        if (!deployment.hasErrors) {
-            void vscode.window.showInformationMessage(`Successfully deployed ${datapacks.length} datapacks`);
-        } else {
-            this.showDatapackErrors(deployment);
-        }
+        return results;
     }
 
     private showDatapackErrors(deployment: DatapackDeployment) {

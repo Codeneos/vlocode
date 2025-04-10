@@ -150,6 +150,8 @@ declare module 'vlocity' {
             VlocityDataPackStatus: 'Error' | 'Success' | 'Ready';
             /** Display label based on the datapack label settings */
             VlocityDataPackDisplayLabel: string;
+            /** The name of the file in the export folder */
+            VlocityDataPackKeyForManifest: string;
         }
 
         export interface JobOptions {

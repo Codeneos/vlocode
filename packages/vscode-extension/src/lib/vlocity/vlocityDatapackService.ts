@@ -49,6 +49,7 @@ export class DatapackResultCollection implements Iterable<DatapackResult> {
     public static fromJobResult(result: vlocity.VlocityJobResult) : DatapackResultCollection {
         const records : DatapackResult[] = (result.records || []).map(record => ({
             key: record.VlocityDataPackKey,
+            type: record.VlocityDataPackType,
             label: record.VlocityDataPackDisplayLabel,
             success: record.VlocityDataPackStatus == 'Success',
             errorMessage: record.ErrorMessage?.trim()
@@ -325,18 +326,23 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this.loader.loadDatapacks(files.map(file => file.fsPath), cancellationToken);
     }
 
+
     /**
-     * Expands a datapack into multiple files according to the specified expand definitions
-     * @param datapack The datapack to save and expand
-     * @param targetPath The path to expand to
+     * Expands a Vlocity datapack into individual files at the specified target path.
+     * Uses DataPacksExpand to process the datapack and create the folder structure.
+     * 
+     * @param datapack - The Vlocity datapack object to expand
+     * @param targetPath - The target directory where the datapack will be expanded
+     * @returns A promise that resolves to the full path of the expanded datapack header file
      */
-    public async expandDatapack(datapack: VlocityDatapack, targetPath: string) : Promise<void> {
+    public async expandDatapack(datapack: VlocityDatapack, targetPath: string) {
         const expander = new DataPacksExpand(this.vlocityBuildTools);
         expander.targetPath = targetPath;
         const jobOptions = {...await this.getCustomJobOptions(), ...this.config};
         const parentName = expander.getDataPackFolder(datapack.datapackType, datapack.VlocityRecordSObjectType, datapack);
         this.logger.verbose(`Expanding datapack ${parentName} (${datapack.datapackType})`);
-        await expander.processDataPackData(datapack.datapackType, parentName, undefined, datapack.data, false, jobOptions);
+        const datapackHeader = await expander.processDataPackData(datapack.datapackType, parentName, undefined, datapack.data, false, jobOptions);
+        return path.join(targetPath, datapack.datapackType, parentName, datapackHeader);
     }
 
     public getDatapackReferenceKey(datapack : VlocityDatapack) {
