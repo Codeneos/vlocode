@@ -612,3 +612,51 @@ export function findFirstMatch<T>(items: T[], matchers: Iterable<(field: T) => b
         }
     }
 }
+
+/**
+ * Merges two Maps by adding all entries from the second Map into the first Map.
+ * If a key exists in both Maps, either applies a merge function to combine the values
+ * or uses the value from the second Map if no merge function is provided.
+ * 
+ * @param map - The target Map that will be modified and returned
+ * @param other - The source Map whose entries will be merged into the target Map
+ * @param mergeFn - Optional function to combine values when the same key exists in both Maps.
+ *                  Receives the value from the target Map as the first argument and the value
+ *                  from the source Map as the second argument.
+ * @returns The modified target Map with all entries merged (note: modifies the original Map)
+ * 
+ * @typeParam K - The type of keys in both Maps
+ * @typeParam V - The type of values in both Maps
+ */
+export function mapMerge<K, V>(map: Map<K, V>, other: Map<K, V>, mergeFn?: (v1: V, v2: V) => V): Map<K, V> {
+    for (const [key, value] of other.entries()) {
+        if (map.has(key)) {
+            map.set(key, mergeFn ? mergeFn(map.get(key)!, value) : value);
+        } else {
+            map.set(key, value);
+        }
+    }
+    return map;
+}
+
+/**
+ * Sets a value in a two-level nested Map structure. Creates the inner map if it doesn't exist.
+ * 
+ * @param map - The outer map containing inner maps
+ * @param key1 - The key for the outer map
+ * @param key2 - The key for the inner map
+ * @param value - The value to set in the inner map
+ * @returns The updated outer map
+ * @typeParam K1 - Type of keys in the outer map
+ * @typeParam K2 - Type of keys in the inner map
+ * @typeParam V - Type of values stored in the inner maps
+ */
+export function mapSetNested<K1, K2, V>(map: Map<K1, Map<K2, V>>, key1: K1, key2: K2, value: V): Map<K1, Map<K2, V>> {
+    let innerMap = map.get(key1);
+    if (!innerMap) {
+        innerMap = new Map<K2, V>();
+        map.set(key1, innerMap);
+    }
+    innerMap.set(key2, value);
+    return map;
+}

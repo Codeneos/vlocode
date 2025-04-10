@@ -109,7 +109,7 @@ export class QueryService {
         const queryExecutor = async () => {
             const connection = await this.connectionProvider.getJsForceConnection();
             const result = connection.query2<QueryResult<T, K>>(nsNormalizedQuery, { 
-                queryType: options?.toolingApi ? 'tooling' : 'data', 
+                type: options?.toolingApi ? 'tooling' : 'data', 
                 batchSize: options?.chunkSize,
                 queryMore: !options?.toolingApi
             });

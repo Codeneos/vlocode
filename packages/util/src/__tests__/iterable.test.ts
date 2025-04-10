@@ -30,13 +30,13 @@ describe('iterable', () => {
         });
     });
 
-    describe('#join', () => {
-        it('should join iterables into one', () => {
-            const itr = Iterable.join(new Set([ 1 ]), new Set([ 2 ]));
+    describe('#conact', () => {
+        it('should conact iterables into one', () => {
+            const itr = Iterable.concat(new Set([ 1 ]), new Set([ 2 ]));
             expect([...itr]).toEqual([1,2]);
         });
         it('should not be closed after execution', () => {
-            const itr = Iterable.join(new Set([ 1 ]), new Set([ 2 ]));
+            const itr = Iterable.concat(new Set([ 1 ]), new Set([ 2 ]));
             const eval1 = [...itr];
             const eval2 = [...itr];
             expect(eval1).toEqual(eval2);

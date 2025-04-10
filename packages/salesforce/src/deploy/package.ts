@@ -280,7 +280,7 @@ export class SalesforcePackage {
      * @returns Array of paths to files included in this package
      */
     public files(): Set<string> {
-        return new Set(Iterable.join(
+        return new Set(Iterable.concat(
             Iterable.transform(this.packageData.values(), {
                 filter: value => !!value.fsPath,
                 map: value => value.fsPath!

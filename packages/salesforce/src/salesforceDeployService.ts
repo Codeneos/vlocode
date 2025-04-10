@@ -182,7 +182,7 @@ export class SalesforceDeployService {
             if (metadataInfo) {
                 // Due to the way the metadata API works, we can't retrieve a single child type
                 // as it will always retrieve the parent type as well -- even if the parent type is not specified in the manifest
-                for (const group of Iterable.join(metadataGroups, [ types ])) {
+                for (const group of Iterable.concat(metadataGroups, [ types ])) {
                     if (group !== currentGroup) {
                         currentGroup.push(
                             ...removeAll(group, (item) => stringEqualsIgnoreCase(item, metadataInfo.childXmlNames))

@@ -3,7 +3,7 @@ import { Timer, arrayMapPush, CancellationToken, groupBy, AwaitReturnType } from
 import { RecordResult, BatchInfo } from 'jsforce';
 
 import { SalesforceSchemaService } from './salesforceSchemaService';
-import { SalesforceConnection, RecordError } from './connection';
+import { SalesforceConnection, RecordError, SalesforceConnectionProvider } from './connection';
 
 type RecordOperationType = 'update' | 'insert';
 
@@ -79,13 +79,17 @@ export class RecordBatch {
         }
     }
 
-    public async *execute(connection: SalesforceConnection, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
+    public async *execute(connection: SalesforceConnection | SalesforceConnectionProvider, onProgress?: BatchProgressCallback, cancelToken?: CancellationToken): AsyncGenerator<BatchResultRecord> {
         if (this.isExecuting) {
             throw new Error('Batch is already executing; you have to wait for the current batch to finish before you can start a new one');
         }
 
         if (!this.size) {
             return;
+        }
+
+        if ('getJsForceConnection' in connection) {
+            connection = await connection.getJsForceConnection();
         }
 
         // Periodically report progress back on the progress callback
@@ -191,7 +195,8 @@ export class RecordBatch {
         }
     }
 
-    private async executeWithCollectionApi(connection: SalesforceConnection, chunk: RecordBatchChunk, cancelToken?: CancellationToken): Promise<RecordResult[]> {
+    // @es-lint-disable-next-line @typescript-eslint/no-unused-vars
+    private async executeWithCollectionApi(connection: SalesforceConnection, chunk: RecordBatchChunk): Promise<RecordResult[]> {
         const timer = new Timer();
         const results = await (connection[chunk.operation] as any)(chunk.sobjectType, chunk.records, {
             allOrNone: false,

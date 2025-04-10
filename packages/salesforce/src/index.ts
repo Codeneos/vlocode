@@ -24,6 +24,7 @@
  export * from './salesforceBatchService';
  export * from './salesforceDebugLevel';
  export * from './salesforceDeployService';
+ export * from './salesforceLabels';
  export * from './salesforceDeployment';
  export * from './salesforceLookupService';
  export * from './salesforceProfile';

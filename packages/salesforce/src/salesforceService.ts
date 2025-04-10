@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined, AwaitableAsyncGenerator } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploy/packageBuilder';
@@ -174,12 +174,12 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async* insert(type: string, records: Array<{ values: any; ref: string }>, cancelToken?: CancellationToken) {
+    public insert(type: string, records: Array<{ values: any; ref: string }>, cancelToken?: CancellationToken) {
         const batch = new RecordBatch(this.schema);
         for (const record of records) {
             batch.addInsert(this.namespaceService.updateNamespace(type), record.values, record.ref);
         }
-        yield* batch.execute(await this.getJsForceConnection(), undefined, cancelToken);
+        return new AwaitableAsyncGenerator(batch.execute(this, undefined, cancelToken));
     }
 
     /**
@@ -189,12 +189,12 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param records record data and references
      * @param cancelToken optional cancellation token
      */
-    public async* update(type: string, records: Array<{ id: string; [key: string]: unknown }>, options?: RecordBatchOptions & { cancelToken?: CancellationToken }) {
+    public update(type: string, records: Array<{ id: string; [key: string]: unknown }>, options?: RecordBatchOptions & { cancelToken?: CancellationToken }) {
         const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100, ...options });
         for (const record of records) {
             batch.addUpdate(this.namespaceService.updateNamespace(type), record, record.id, record.id);
         }
-        yield* batch.execute(await this.getJsForceConnection(), undefined, options?.cancelToken);
+        return new AwaitableAsyncGenerator(batch.execute(this, undefined, options?.cancelToken));
     }
 
     /**

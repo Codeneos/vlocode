@@ -1,5 +1,5 @@
 import { container } from '@vlocode/core';
-import { deepClone, flattenObject } from '@vlocode/util';
+import { deepClone, flattenObject, Iterable } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './connection';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
@@ -15,6 +15,10 @@ class QueryBuilderData {
 
     public getQuery() {
         return QueryFormatter.format(this.getSpec());
+    }
+
+    public toString() {
+        return this.getQuery();
     }
 
     public get fields(): Iterable<string> {
@@ -191,39 +195,39 @@ export class QueryConditionBuilder extends QueryBuilderData {
         return this;
     }
 
-    public equals(field: (string | { name: string }), value: any) : this {
+    public equals(field: (string | { name: string }), value: unknown) : this {
         return this.condition(`${field} = ${this.formatValue(value)}`);
     }
 
-    public notEquals(field: (string | { name: string }), value: any) : this {
+    public notEquals(field: (string | { name: string }), value: unknown) : this {
         return this.condition(`${field} != ${this.formatValue(value)}`);
     }
 
-    public greaterThan(field: (string | { name: string }), value: any) : this {
+    public greaterThan(field: (string | { name: string }), value: unknown) : this {
         return this.condition(`${field} > ${this.formatValue(value)}`);
     }
 
-    public greaterThanOrEquals(field: (string | { name: string }), value: any) : this {
+    public greaterThanOrEquals(field: (string | { name: string }), value: unknown) : this {
         return this.condition(`${field} >= ${this.formatValue(value)}`);
     }
 
-    public lesserThan(field: (string | { name: string }), value: any) : this {
+    public lesserThan(field: (string | { name: string }), value: unknown) : this {
         return this.condition(`${field} < ${this.formatValue(value)}`);
     }
 
-    public lesserThanOrEquals(field: (string | { name: string }), value: any) : this {
+    public lesserThanOrEquals(field: (string | { name: string }), value: unknown) : this {
         return this.condition(`${field} <= ${this.formatValue(value)}`);
     }
 
-    public in(field: (string | { name: string }), values: any[]) : this {
-        return this.condition(`${field} in (${values.map(v => this.formatValue(v)).join(',')})`);
+    public in(field: (string | { name: string }), values: unknown[] | Iterable<unknown>) : this {
+        return this.condition(`${field} in (${Iterable.join(values, v => this.formatValue(v), ',')})`);
     }
 
-    public notIn(field: (string | { name: string }), values: any[]) : this {
-        return this.condition(`${field} not in (${values.map(v => this.formatValue(v)).join(',')})`);
+    public notIn(field: (string | { name: string }), values: unknown[] | Iterable<unknown>) : this {
+        return this.condition(`${field} not in (${Iterable.join(values, v => this.formatValue(v), ',')})`);
     }
 
-    private formatValue(value: any) {
+    private formatValue(value: unknown) {
         if (value === null || value === undefined) {
             return null;
         }

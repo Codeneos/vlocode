@@ -289,7 +289,7 @@ export class SalesforceConnection extends Connection {
     public async request<T = any>(
         info: string | HttpRequestInfo,
         options?: RequestOptions | any,
-        callback?: any
+        callback?: any // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<T> {
 
         const request = this.prepareRequest(info);
@@ -484,13 +484,13 @@ export class SalesforceConnection extends Connection {
      * @returns Async iterable and awaitable results from the query
      */
     public query2<T extends object = Record<string, unknown>>(soql: string, options?: Query2Options): AsyncQueryIterator<T> {
-        this.logger.debug(`SOQL=${soql}`);
         const timer = new Timer();
-        return new AsyncQueryIterator<T>(
-            new RestClient(this, options?.queryType === 'tooling' ? `/services/data/v{apiVersion}/tooling` : `/services/data/v{apiVersion}`),
-            `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${encodeRFC3986URI(soql)}`,
-            options?.queryMore
-        ).once('done', (records) => this.logger.debug(`[SIZE=${records.length}] SOQL=${soql} (${timer})`));
+        this.logger.debug(`SOQL=%s`, soql);
+        const isTooling = (options?.type ?? options?.queryType) === 'tooling';
+        const baseUri = `/services/data/v{apiVersion}${isTooling ? `/tooling` : ''}`;
+        const resourceUri = `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${encodeRFC3986URI(soql)}`;
+        return new AsyncQueryIterator<T>(new RestClient(this, baseUri), resourceUri, options?.queryMore)
+            .once('done', (records) => this.logger.debug(`[SIZE=%s] SOQL=%s (%s)`, records.length, soql, timer.elapsed));
     }
 
     /**
@@ -522,8 +522,10 @@ export interface Query2Options {
     /**
      * Defines the query backend type API to call. Some objects are available on both tooling and data API.
      * When not set defaults to `data`
-     */
-    queryType?: 'tooling' | 'data';
+     */    
+    type?: 'tooling' | 'data';
+    /** @deprecated Use {@link type} instead */
+    queryType?: Query2Options['type'];
     /**
      * A numeric value that specifies the number of records returned for a query request.
      * Child objects count toward the number of records for the batch size. For example,
