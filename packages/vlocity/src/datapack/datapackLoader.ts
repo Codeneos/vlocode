@@ -1,9 +1,8 @@
 import * as path from 'path';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, stringEquals, extractNamespaceAndName } from '@vlocode/util';
+import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, stringEquals, extractNamespaceAndName, directoryName, cache, fileName } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
 import { getExportProjectFolder } from './datapackUtil';
-import { join } from 'path/posix';
 import { DatapackInfoService } from './datapackInfoService';
 
 type DatapackLoaderFunc = (fileName: string) => OptionalPromise<string | object>;
@@ -29,7 +28,7 @@ export class DatapackLoader {
     }
 
     public async loadDatapacksFromFolder(datapackFolder: string, cancellationToken?: CancellationToken) {
-        const datapackHeaders = await this.fileSystem.findFiles(join(datapackFolder, '**/*_DataPack.json'));
+        const datapackHeaders = await this.fileSystem.findFiles(path.join(datapackFolder, '**/*_DataPack.json'));
         return this.loadDatapacks(datapackHeaders, cancellationToken);
     }
 
@@ -61,9 +60,9 @@ export class DatapackLoader {
             });
         } catch(error) {
             if (bubbleExceptions) {
-                throw new CustomError(`Error loading datapack ${path.basename(datapackHeader)}: ${getErrorMessage(error, { includeStack: false })}`, error);
+                throw new CustomError(`Error loading datapack ${fileName(datapackHeader)}: ${getErrorMessage(error, { includeStack: false })}`, error);
             }
-            this.logger.error(`Error loading datapack ${path.basename(datapackHeader)} -- ${getErrorMessage(error)}`);
+            this.logger.error(`Error loading datapack ${fileName(datapackHeader)} -- ${getErrorMessage(error)}`);
         }
     }
 
@@ -101,12 +100,12 @@ export class DatapackLoader {
     }
 
     protected async loadJson(fileName : string) : Promise<any> {
-        if (!await this.fileSystem.pathExists(fileName)) {
+        if (!await this.fileExists(fileName)) {
             return undefined;
         }
 
         const datapackJson = await this.fileSystem.readFile(fileName);
-        const baseDir = path.dirname(fileName);
+        const baseDir = directoryName(fileName);
         const datapack = JSON.parse(datapackJson.toString());
 
         for (const [key, value] of Object.entries(datapack)) {
@@ -121,14 +120,14 @@ export class DatapackLoader {
     }
 
     private async loadText(fileName: string) : Promise<any> {
-        if (!await this.fileSystem.pathExists(fileName)) {
+        if (!await this.fileExists(fileName)) {
             return undefined;
         }
         return (await this.fileSystem.readFile(fileName)).toString('utf-8');
     }
 
     private async loadBinary(fileName: string) : Promise<any> {
-        if (!await this.fileSystem.pathExists(fileName)) {
+        if (!await this.fileExists(fileName)) {
             return undefined;
         }
         return this.fileSystem.readFile(fileName);
@@ -154,5 +153,20 @@ export class DatapackLoader {
                 async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key])));
         }
         return fieldValue;
+    }
+
+    private async fileExists(fileName: string) : Promise<boolean> {
+        return (await this.readDirFiles(directoryName(fileName))).has(fileName);
+    }
+
+    @cache({ ttl: 3000, unwrapPromise: true })
+    private async readDirFiles(dir: string){
+        const filePaths = new Set<string>();
+        for (const file of await this.fileSystem.readDirectory(dir)) {
+            if (file.isFile()) {
+                filePaths.add(path.join(dir, file.name));
+            }
+        }
+        return filePaths;
     }
 }

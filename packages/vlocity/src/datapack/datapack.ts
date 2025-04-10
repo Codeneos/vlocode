@@ -21,12 +21,23 @@ export type VlocityDatapackReferenceType = 'VlocityLookupMatchingKeyObject' | 'V
 export type VlocityDatapackType = VlocityDatapackReferenceType | 'SObject';
 
 /**
+ * Datapack standard fields that are used to identify the type of datapack and its source key.
+ */
+export const DatapackFields = {
+    sobjectType: 'VlocityRecordSObjectType',
+    sourceKey: 'VlocityRecordSourceKey',
+    matchingKey: 'VlocityMatchingRecordSourceKey',
+    lookupKey: 'VlocityLookupRecordSourceKey',
+    dataPackType: 'VlocityDataPackType',
+} as const;
+
+/**
  * Maps the type of a Vlocity datapack to the corresponding source key field.
  */
 export const VlocityDatapackSourceKey = {
-    VlocityLookupMatchingKeyObject: 'VlocityLookupRecordSourceKey',
-    VlocityMatchingKeyObject: 'VlocityMatchingRecordSourceKey',
-    SObject: 'VlocityRecordSourceKey',
+    VlocityLookupMatchingKeyObject: DatapackFields.lookupKey,
+    VlocityMatchingKeyObject: DatapackFields.matchingKey,
+    SObject: DatapackFields,
 } as const;
 
 /**
