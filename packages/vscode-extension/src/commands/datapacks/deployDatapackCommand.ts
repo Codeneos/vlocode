@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { randomUUID } from 'crypto';
 
-import { forEachAsyncParallel } from '@vlocode/util';
+import { forEachAsyncParallel, unique } from '@vlocode/util';
 import { DatapackUtil } from '@vlocode/vlocity';
 import { container } from '@vlocode/core';
 
@@ -56,13 +56,27 @@ export class DeployDatapackCommand extends DatapackCommand {
         }
 
         const progressText = await this.getProgressText(datapackHeaders);
-        await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
+        const results = await this.vlocode.withCancelableProgress(progressText, async (progress, token) => {
             await this.saveUnsavedChangesInDatapacks(datapackHeaders);
-            await this.strategy.deploy(datapackHeaders, progress, token);
-            if (token.isCancellationRequested) {
-                void vscode.window.showWarningMessage('Datapack deployment cancelled');
-            }
+            const results = await this.strategy.deploy(datapackHeaders, progress, token);
+            return results;
         });
+
+        const hasErrors = results.some(result => result.status === 'error');
+        const hasSuccess = results.some(result => result.status === 'success');
+        if (hasErrors && !hasSuccess) {
+            vscode.window.showErrorMessage('Failed to deploy the selected datapacks');  
+        } else if(hasErrors) {
+            vscode.window.showWarningMessage('Deployment partially failed, check the output for details');
+        } else {            
+            vscode.window.showInformationMessage('Successfully deployed the selected datapacks');
+        }
+
+        this.outputTable(results.map(result => ({
+            datapack: result.datapack,
+            status: result.status,
+            error: [...unique(result.messages.filter(e => e.type === 'error').map(e => e.message))].join(', '),
+        })), { focus: true, maxCellWidth: 80 });
     }
 
     /**
