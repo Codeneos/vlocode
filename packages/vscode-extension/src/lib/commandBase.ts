@@ -77,6 +77,10 @@ export abstract class CommandBase implements Command {
             labels: Record<K, string>,
         }>
     ) {
+        if (!data.length) {
+            return;
+        }
+
         if (options?.format) {
             const format = options?.format;
             // Map data to formatted data using the provided format function
