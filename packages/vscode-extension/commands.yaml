@@ -354,26 +354,42 @@ vlocode.omniScript.activate:
 
 # Omistudio Conversion
 vlocode.vlocityCard.convert:
-  title: 'Vlocity: Convert to FlexCard (Standard)'
-  group: v_vlocity
-  menus: &vlocityCardCommandMenus
+  title: 'FlexCard: Convert Runtime'
+  group: v_vlocity_cards
+  menus:
     - menu: explorer/context
-      when:
-        - explorerResourceIsFolder && resourcePath =~ /.+\\VlocityCard\\[^\\]+$/
-        - explorerResourceIsFolder && resourcePath =~ /.+\/VlocityCard\/[^\/]+$/
-        - resourceScheme == file && resourcePath =~ /.+\/VlocityCard\/.+\/.+\.json$/
-        - resourceScheme == file && resourcePath =~ /.+\\VlocityCard\\.+\\.+\.json$/
-    - menu: commandPalette
       when: &whenVlocityCard
-        - resourceScheme == file && resourcePath =~ /.+\/VlocityCard\/.+\/.+\.json$/
-        - resourceScheme == file && resourcePath =~ /.+\\VlocityCard\\.+\\.+\.json$/
+        - resourcePath =~ /[\/\\](VlocityCard|FlexCard)([\/\\]|$)/
+    - menu: commandPalette
+      when: *whenVlocityCard
     - menu: editor/context
       when: *whenVlocityCard
 vlocode.omniScript.convert:
-  title: 'Vlocity: Convert to OmniProcess (Standard)'
-  group: v_vlocity
+  title: 'OmniScript: Convert Runtime'
+  group: v_vlocity_omniscript
+  menus: *omniScriptCommandMenus
+vlocode.ip.convert:
+  title: 'Integration Procedure: Convert Runtime'
+  group: v_vlocity_omniscript
   menus:
-    - <<: *omniScriptCommandMenus
+    - menu: explorer/context
+      when: &whenIp
+        - resourcePath =~ /[\/\\]IntegrationProcedure([\/\\]|$)/
+    - menu: commandPalette
+      when: *whenIp
+    - menu: editor/context
+      when: *whenIp
+vlocode.dataRaptor.convert:
+  title: 'DataRaptor: Convert Runtime'
+  group: v_vlocity_omniscript
+  menus:
+    - menu: explorer/context
+      when: &whenDataRaptor
+        - resourcePath =~ /[\/\\](DataRaptor|OmniDataTransform)([\/\\]|$)/
+    - menu: commandPalette
+      when: *whenDataRaptor
+    - menu: editor/context
+      when: *whenDataRaptor
 
 # editor
 vlocode.openMetaXml:

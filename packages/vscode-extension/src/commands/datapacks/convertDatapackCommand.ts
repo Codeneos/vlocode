@@ -6,9 +6,14 @@ import { VlocityDatapack } from '@vlocode/vlocity';
 import * as vscode from 'vscode';
 import { DatapackCommand } from './datapackCommand';
 import { OmniStudioConverter } from '@vlocode/vlocity-deploy';
+import { pluralize } from '@vlocode/util';
 
-@vscodeCommand(VlocodeCommand.convertOmniScript)
-@vscodeCommand(VlocodeCommand.convertVlocityCard)
+@vscodeCommand([
+    VlocodeCommand.convertOmniScript, 
+    VlocodeCommand.convertDataRaptor, 
+    VlocodeCommand.convertIntegrationProcedure, 
+    VlocodeCommand.convertVlocityCard
+])
 export default class ConvertDatapackCommand extends DatapackCommand {
 
     public execute(...args: any[]) : Promise<void> {
@@ -16,12 +21,31 @@ export default class ConvertDatapackCommand extends DatapackCommand {
     }
 
     protected async convertDatapacks(selectedFiles: vscode.Uri[]) : Promise<any> {
-        const datapacks = await this.vlocode.withProgress('Loading datapack...', () => this.loadDatapacks(selectedFiles));
-        for (const datapack of datapacks) {
-            const datapackName = datapack.name || datapack.sourceKey;
-            const convertedDatapack = await this.convertAndExpandDatapack(datapack);
-            vscode.window.showInformationMessage(`Converted datapack ${datapackName} to ${convertedDatapack.datapackType}`);
+        const datapacks = await this.vlocode.withProgress('Loading datapacks...', () => this.loadDatapacks(selectedFiles));
+        const results: Array<{ status: string, from: string, to: string }> = [];
+        const converted: VlocityDatapack[] = [];
+
+        await this.vlocode.withProgress('Converting datapacks', async (progress) => {
+            const total = datapacks.length;
+            for (const datapack of datapacks) {
+                progress.report({ message: datapack.name, progress: 1, total });
+                const convertedDatapack = await this.convertAndExpandDatapack(datapack);
+                converted.push(convertedDatapack);
+                results.push({
+                    from: `${datapack.sourceKey}`,
+                    to: `${convertedDatapack.sourceKey}`,
+                    status: 'converted'
+                });
+            }
+        });
+
+        if (converted[0]?.headerFile) {
+            // open the first converted file in the editor
+            await vscode.window.showTextDocument(vscode.Uri.file(converted[0].headerFile), { preview: false });
         }
+
+        vscode.window.showInformationMessage(`Converted ${pluralize('datapack', results)}`);
+        this.outputTable(results, { focus: true });
     }
 
     protected async convertAndExpandDatapack(datapack: VlocityDatapack) : Promise<VlocityDatapack> {
@@ -30,11 +54,8 @@ export default class ConvertDatapackCommand extends DatapackCommand {
         const omnistudioDatapack = converter.convertDatapack(datapack);
 
         // execute rename and expand into new folder structure
-        await this.vlocode.withActivity(
-            `Convert datapack ${datapack.name}...`,
-            this.vlocode.datapackService.expandDatapack(omnistudioDatapack, omnistudioDatapack.projectFolder!)
-        );
-
+        const expandedHeader = await this.vlocode.datapackService.expandDatapack(omnistudioDatapack, omnistudioDatapack.projectFolder ?? '.');
+        (omnistudioDatapack as any).headerFile = expandedHeader; // Hack as headerFile is not readonly in the class
         return omnistudioDatapack;
     }
 }
