@@ -21,15 +21,16 @@ export class OmniStudioConverter {
      */
     public convertDatapack(datapack: VlocityDatapack): VlocityDatapack {
         const target = this.getMapping(datapack.VlocityRecordSObjectType);
-        if (!target?.datapackType) {
+        if (!target) {
             throw new Error(`No OmniStudio runtime mappings found for datapack: ${datapack.datapackType} (${datapack.VlocityRecordSObjectType})`);
         }
 
+        const datapackType = target.datapackType ?? datapack.datapackType;
         const covertedData = this.convertDatapackRecord(datapack.data);
         const projectFolder = datapack.projectFolder ?? '.';
-        const headerFile = datapack.headerFile ? path.join(projectFolder, target.datapackType, fileName(datapack.headerFile)) : undefined;
-        const key = datapack.key.replace(datapack.datapackType, target.datapackType);
-        return new VlocityDatapack(target.datapackType, covertedData, { 
+        const headerFile = datapack.headerFile ? path.join(projectFolder, datapackType, fileName(datapack.headerFile)) : undefined;
+        const key = datapack.key.replace(datapack.datapackType, datapackType);
+        return new VlocityDatapack(datapackType, covertedData, { 
             key, headerFile, projectFolder
         });
     }
