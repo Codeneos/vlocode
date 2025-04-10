@@ -7,7 +7,7 @@ import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider
 import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
-import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity, VlocodeActivity, VlocodeActivityStatus } from '../lib/vlocodeActivity';
+import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity as NonCancellableActivity, VlocodeActivity, VlocodeActivityStatus, ActivityProgressData } from '../lib/vlocodeActivity';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
@@ -214,13 +214,13 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
      * @param title Title of the task
      * @param task task to run
      */
-    public withProgress<T>(title: string, task: NoncancellableActivity<T> | Promise<T>) : Promise<T> {
+    public withProgress<T>(title: string, task: NonCancellableActivity<T> | Promise<T>) : Promise<T> {
         return this.withActivity({
             progressTitle: title,
             cancellable: false,
             hidden: true,
             location: vscode.ProgressLocation.Notification
-        }, typeof task === 'function' ? task : () => task);
+        }, task);
     }
 
     /**
@@ -228,7 +228,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
      * @param title Title of the task
      * @param task task to run
      */
-    public withCancelableProgress<T>(title: string, task: CancellableActivity<T>) : Promise<T> {
+    public withCancelableProgress<T>(title: string, task: CancellableActivity<T> | Promise<T>) : Promise<T> {
         return this.withActivity({
             progressTitle: title,
             cancellable: true,
@@ -242,7 +242,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
      * @param title Title of the task
      * @param task task to run
      */
-    public withStatusBarProgress<T>(title: string, task: NoncancellableActivity<T> | Promise<T>) : Promise<T> {
+    public withStatusBarProgress<T>(title: string, task: NonCancellableActivity<T> | Promise<T>) : Promise<T> {
         return this.withActivity({
             progressTitle: title,
             cancellable: false,
@@ -251,19 +251,18 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }, typeof task === 'function' ? task : () => task);
     }
 
-    public withActivity<T>(title: string, task: Promise<T>) : Promise<T>;
     /**
      * Wrapper around `vscode.window.withProgress` that registers the task as an activity visible in the activity explorer if used.
      * @param title Title of the task to run as it will appear on the progress and UI
      * @param task Task to run
      */
-    public withActivity<T>(title: string, task: ActivityTask<T>) : Promise<T>;
+    public withActivity<T>(title: string, task: ActivityTask<T> | Promise<T>) : Promise<T>;
     /**
      * Wrapper around `vscode.window.withProgress` that registers the task as an activity visible in the activity explorer if used.
      * @param options Activity options
      * @param task Task to run
      */
-    public withActivity<T>(options: ActivityOptions, task: ActivityTask<T>) : Promise<T>;
+    public withActivity<T>(options: ActivityOptions, task: ActivityTask<T> | Promise<T>) : Promise<T>;
     public withActivity<T>(input: ActivityOptions | string, task: ActivityTask<T> | Promise<T>) {
         // Create activity record to track activity progress
         const isFn = typeof task === 'function';
@@ -271,7 +270,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             activityTitle: input,
             progressTitle: input,
             propagateExceptions: true,
-            cancellable: isFn && task.length > 2,
+            cancellable: isFn && task.length == 2,
             location: vscode.ProgressLocation.Notification
         } : input;
 
@@ -300,11 +299,13 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
         const progressInterceptor = (vscodeProgress: vscode.Progress<{ message?: string; increment?: number }>) => {
             return {
-                report({message, progress, total, status}) {
+                report(state: ActivityProgressData) {
+                    const total = state.total ?? 100;
                     let relativeIncrement: number | undefined = undefined;
-                    if (progress !== undefined && total) {
+
+                    if ('progress' in state && state.progress !== undefined) {
                         const lastRelativeProgress = activityRecord.progess / activityRecord.total;
-                        const currentRelativeProgress = progress / total;
+                        const currentRelativeProgress = state.progress / total;
 
                         relativeIncrement = Math.floor((currentRelativeProgress - lastRelativeProgress) * 100);
                         if (relativeIncrement < 0) {
@@ -313,24 +314,33 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                             relativeIncrement = Math.floor(currentRelativeProgress * 100);
                         }
 
-                        activityRecord.progess = progress;
+                        activityRecord.progess = state.progress;
                         activityRecord.total = total;
+                    } else if ('increment' in state && state.increment !== undefined) {
+                        relativeIncrement = Math.floor((state.increment / total) * 100);
+                        activityRecord.progess += state.increment;
+                        activityRecord.total = total;
+                    }
+
+                    vscodeProgress.report( { message: state.message, increment: relativeIncrement } );
+                    
+                    if (state.status !== undefined) {
+                        activityRecord.status = state.status;
+                    }
+
+                    if (relativeIncrement) {                        
                         activityRecord.normalizedProgress += relativeIncrement;
                     }
-                    vscodeProgress.report( { message, increment: relativeIncrement ?? undefined } );
-                    if (status !== undefined) {
-                        activityRecord.status = status;
-                    }
                 }
-            } as ActivityProgress;
+            };
         };
 
         // anon-function that is going to run our task
         const taskRunner = async (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => {
-            token?.onCancellationRequested(() => cancelTokenSource && !cancelTokenSource.token.isCancellationRequested && cancelTokenSource.cancel());
+            token?.onCancellationRequested(() => !cancelTokenSource?.token.isCancellationRequested && cancelTokenSource?.cancel());
             activityRecord.status = VlocodeActivityStatus.InProgress;
             try {
-                const result = await (isFn ? task(progressInterceptor(progress), cancelTokenSource?.token) : task);
+                const result = await (isFn ? task(progressInterceptor(progress), cancelTokenSource?.token!) : task);
                 if (activityRecord.status == VlocodeActivityStatus.InProgress) {
                     activityRecord.status = VlocodeActivityStatus.Completed;
                 }

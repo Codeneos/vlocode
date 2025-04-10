@@ -75,21 +75,26 @@ export interface ActivityOptions {
     propagateExceptions?: boolean;
 }
 
-export type ActivityProgress = vscode.Progress<{
+export type ActivityProgressData =  {
     message?: string;
     progress?: number;
     total?: number;
     status?: VlocodeActivityStatus;
-}>;
-
-export interface Activity<T> {
-    (progress: ActivityProgress, token?: vscode.CancellationToken): Promise<T>;
+} | {
+    message?: string;
+    increment?: number;
+    total?: number;
+    status?: VlocodeActivityStatus;
 }
 
-export interface CancellableActivity<T> extends Activity<T> {
+export type ActivityProgress = vscode.Progress<ActivityProgressData>;
+
+export interface CancellableActivity<T> {
     (progress: ActivityProgress, token: vscode.CancellationToken): Promise<T>;
 }
 
-export interface NoncancellableActivity<T> extends Activity<T>  {
+export interface NoncancellableActivity<T> {
     (progress: ActivityProgress): Promise<T>;
 }
+
+export type Activity<T> = CancellableActivity<T> | NoncancellableActivity<T>;
