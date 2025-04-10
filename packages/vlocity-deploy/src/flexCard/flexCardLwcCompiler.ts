@@ -152,7 +152,7 @@ export class FlexCardLwcCompiler {
         const connection = await this.salesforceService.getJsForceConnection();
         return connection.query2<LightningComponentBundle>(
             'SELECT Id, DeveloperName, NamespacePrefix, ApiVersion FROM LightningComponentBundle',
-            { queryType: 'tooling' }
+            { type: 'tooling' }
         );
     }
 }

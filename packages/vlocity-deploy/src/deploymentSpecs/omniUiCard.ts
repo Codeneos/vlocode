@@ -6,7 +6,7 @@ import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymen
 import { FlexCardActivator } from '../flexCard/flexCardActivator';
 import { Container, Logger } from '@vlocode/core';
 import { forEachAsyncParallel, getErrorMessage, Timer } from '@vlocode/util';
-import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
+import { SalesforceDeployService, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 
 @deploymentSpec({ recordFilter: /^OmniUiCard$/i })
 export class OmniUiCard implements DatapackDeploymentSpec {
@@ -25,13 +25,37 @@ export class OmniUiCard implements DatapackDeploymentSpec {
         datapack.data['IsActive'] = false;
     }
 
+    /**
+     * Hook that is called after records are converted from datapack format.
+     * This method adds card state dependencies and sets specific fields for upsert operations.
+     * 
+     * @param records - The converted datapack deployment records to process
+     */
     public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         for (const record of records) {
             this.addCardStateDependencies(record);
-            record.upsertFields = [
-                'VersionNumber',
-                'Name'
-            ];
+        }
+    }
+
+    /**
+     * Deactivates all OmniUiCards that are being updated before deployment.
+     * This method is called before deploying the records to ensure that active cards
+     * are deactivated first, preventing potential conflicts during deployment.
+     * 
+     * @param records - Array of datapack deployment records to be deployed
+     * @returns A Promise that resolves when all cards have been deactivated
+     */
+    public async beforeDeployRecord(records: ReadonlyArray<DatapackDeploymentRecord>) {
+        // Deactivate all cards that are being updated
+        const updatedCards = records
+            .filter(rec => rec.recordId !== undefined)
+            .map(rec => ({
+                id: rec.recordId!,
+                isActive: false
+            })
+        );
+        if (updatedCards.length) {
+            await this.container.get(SalesforceService).update('OmniUiCard', updatedCards);
         }
     }
 
@@ -57,6 +81,9 @@ export class OmniUiCard implements DatapackDeploymentSpec {
 
         const childCards = this.collectChildCardsFromDefinition(cardDefinition.states, new Set<string>());
         for (const childCardName of childCards) {
+            if (childCardName === record.value('Name')) {
+                continue;
+            }
             record.addLookupDependency ('OmniUiCard', { Name: childCardName });
         }
     }
@@ -82,6 +109,17 @@ export class OmniUiCard implements DatapackDeploymentSpec {
         return childCards;
     }
 
+    /**
+     * Handles post-deployment activities for OmniUiCard datapacks.
+     * 
+     * This method activates deployed OmniUiCard records and, if configured to use Metadata API,
+     * collects and deploys the associated LWC components. The process can run in parallel
+     * based on the deployment configuration.
+     * 
+     * @param event - The deployment event containing information about the deployed datapacks
+     * @returns A Promise that resolves when all post-deployment activities are completed
+     * @throws Will propagate any errors that occur during the activation or deployment process
+     */
     public async afterDeploy(event: DatapackDeploymentEvent) {
         const packages = new Array<SalesforcePackage>();
         const options = {

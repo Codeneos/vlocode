@@ -4,7 +4,6 @@ export * from './contentVersionLookup';
 export * from './customObjectMap';
 export * from './dataRaptor';
 export * from './documentTemplate';
-export * from './omniScript';
 export * from './overrideDefinitionRecords';
 export * from './product2';
 export * from './productChildItem';
@@ -15,5 +14,11 @@ export * from './vlocityUILayout';
 export * from './vlocityUITemplate';
 
 // OmniStudio components
+export * from './omniScriptElementOrder';
+export * from './omniScript';
 export * from './omniProcess';
 export * from './omniUiCard';
+export * from './omniDataTransform';
+
+// Multi purpose specs
+export * from './matchingFields';

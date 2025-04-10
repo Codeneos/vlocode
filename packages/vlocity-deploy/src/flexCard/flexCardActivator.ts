@@ -58,6 +58,18 @@ export class FlexCardActivator {
         }
     }
 
+    /**
+     * Activates a FlexCard definition in Salesforce.
+     * 
+     * This method performs the following steps:
+     * 1. Finds any currently active cards with the same name as the target card
+     * 2. Deactivates those cards to prevent activation conflicts
+     * 3. Activates the target card
+     * 4. Updates the card's IsActive property to reflect the new state
+     *
+     * @param card - The FlexCard definition to activate
+     * @throws Error if the activation of the target card fails
+     */
     public async activateRecord(card: FlexCardDefinition) {
         // Deactivate card records with the same name that current active
         // otherwise activating the new card will fail

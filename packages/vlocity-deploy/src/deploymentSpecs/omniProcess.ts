@@ -11,7 +11,6 @@ import { OmniScriptActivator, OmniScriptDefinition } from '@vlocode/omniscript';
 @deploymentSpec({ recordFilter: /^OmniProcess$/i })
 export class OmniProcess implements DatapackDeploymentSpec {
 
-
     public constructor(
         private readonly activator: OmniScriptActivator,
         private readonly container: Container,
