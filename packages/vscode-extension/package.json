@@ -121,71 +121,71 @@
         "commands": [
             {
                 "command": "vlocode.selectOrg",
-                "title": "Vlocity: Select Salesforce Org"
+                "title": "Vlocode: Select Salesforce Org"
             },
             {
                 "command": "vlocode.refreshDatapack",
-                "title": "Vlocity: Refresh Datapack from Org"
+                "title": "Datapack: Refresh from Org"
             },
             {
                 "command": "vlocode.deployDatapack",
-                "title": "Vlocity: Deploy Datapack to Org"
+                "title": "Datapack: Deploy to Org"
             },
             {
                 "command": "vlocode.openSalesforce",
-                "title": "Vlocity: Open in Org"
+                "title": "Datapack: Open in Org"
             },
             {
                 "command": "vlocode.renameDatapack",
-                "title": "Vlocity: Rename Datapack"
+                "title": "Datapack: Rename..."
             },
             {
                 "command": "vlocode.cloneDatapack",
-                "title": "Vlocity: Clone Datapack"
+                "title": "Datapack: Clone..."
             },
             {
                 "command": "vlocode.exportDatapack",
-                "title": "Vlocity: Export Datapack from Org"
+                "title": "Datapack: Export from Org"
             },
             {
                 "command": "vlocode.buildParentKeyFiles",
-                "title": "Vlocity: Repair Datapack dependencies"
+                "title": "Datapack: Repair dependencies"
             },
             {
                 "command": "vlocode.createOmniscriptLwc",
-                "title": "Vlocity: New Omniscript Web Component (LWC)"
+                "title": "Vlocode: New OmniScript Web Component (LWC)"
             },
             {
                 "command": "vlocode.buildDatapack",
-                "title": "Vlocity: Build Datapack"
+                "title": "Datapack: Build zip file"
             },
             {
                 "command": "vlocode.viewDatapack.generic",
-                "title": "Vlocity: View Datapack"
+                "title": "Datapack: View"
             },
             {
                 "command": "vlocode.adminCommands",
-                "title": "Vlocity: Administration Console"
+                "title": "Vlocode: Industries Administration Console"
             },
             {
                 "command": "vlocode.admin.refreshPriceBook",
-                "title": "Vlocity: Refresh Pricebook"
+                "title": "Vlocode: Refresh Pricebook"
             },
             {
                 "command": "vlocode.admin.refreshProductHierarchy",
-                "title": "Vlocity: Refresh Product Hierarchy"
+                "title": "Vlocode: Refresh Product Hierarchy"
             },
             {
                 "command": "vlocode.admin.refreshPriceBookAndProductHierarchy",
-                "title": "Vlocity: Refresh Pricebook and Product Hierarchy"
+                "title": "Vlocode: Refresh Pricebook and Product Hierarchy"
             },
             {
                 "command": "vlocode.admin.updateAllProdAttribCommand",
-                "title": "Vlocity: Update Product Attributes"
+                "title": "Vlocode: Update Industries Product Attributes"
             },
             {
                 "command": "vlocode.admin.clearPlatformCache",
-                "title": "Vlocity: Clear Platform Cache"
+                "title": "Vlocode: Clear Industries Platform Cache"
             },
             {
                 "command": "vlocode.deployMetadata",
@@ -348,20 +348,32 @@
                 "title": "OmniScript: Generate LWC"
             },
             {
-                "command": "vlocode.omniScript.deployLwc",
-                "title": "OmniScript: Deploy as LWC"
-            },
-            {
                 "command": "vlocode.omniScript.activate",
                 "title": "OmniScript: (Re-)Activate"
             },
             {
+                "command": "vlocode.card.generateLwc",
+                "title": "FlexCard: Generate LWC"
+            },
+            {
+                "command": "vlocode.card.activate",
+                "title": "FlexCard: (Re-)Activate"
+            },
+            {
                 "command": "vlocode.vlocityCard.convert",
-                "title": "Vlocity: Convert to FlexCard (Standard)"
+                "title": "FlexCard: Convert Runtime"
             },
             {
                 "command": "vlocode.omniScript.convert",
-                "title": "Vlocity: Convert to OmniProcess (Standard)"
+                "title": "OmniScript: Convert Runtime"
+            },
+            {
+                "command": "vlocode.ip.convert",
+                "title": "Integration Procedure: Convert Runtime"
+            },
+            {
+                "command": "vlocode.dataRaptor.convert",
+                "title": "DataRaptor: Convert Runtime"
             },
             {
                 "command": "vlocode.openMetaXml",
@@ -626,47 +638,42 @@
                 {
                     "command": "vlocode.omniScript.generateLwc",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.generateLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.omniScript.activate",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.omniScript.activate",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                    "command": "vlocode.card.generateLwc",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.card.activate",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/VlocityCard\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\VlocityCard\\\\.+\\\\.+\\.json$/"
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.omniScript.convert",
-                    "group": "v_vlocity",
-                    "when": "false"
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.ip.convert",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourcePath =~ /[\\/\\\\]IntegrationProcedure([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.dataRaptor.convert",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.apex.toggleCoverage",
@@ -763,102 +770,42 @@
                 {
                     "command": "vlocode.omniScript.generateLwc",
                     "group": "v_vlocity_omniscript",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
-                },
-                {
-                    "command": "vlocode.omniScript.generateLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
-                },
-                {
-                    "command": "vlocode.omniScript.generateLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.generateLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.omniScript.activate",
                     "group": "v_vlocity_omniscript",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.omniScript.activate",
+                    "command": "vlocode.card.generateLwc",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.card.activate",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
                     "group": "v_vlocity_omniscript",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.omniScript.activate",
+                    "command": "vlocode.ip.convert",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]IntegrationProcedure([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.omniScript.activate",
+                    "command": "vlocode.dataRaptor.convert",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\VlocityCard\\\\[^\\\\]+$/"
-                },
-                {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/VlocityCard\\/[^\\/]+$/"
-                },
-                {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/VlocityCard\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\VlocityCard\\\\.+\\\\.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.convert",
-                    "group": "v_vlocity",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\\\OmniScript\\\\[^\\\\]+$/"
-                },
-                {
-                    "command": "vlocode.omniScript.convert",
-                    "group": "v_vlocity",
-                    "when": "explorerResourceIsFolder && resourcePath =~ /.+\\/OmniScript\\/[^\\/]+$/"
-                },
-                {
-                    "command": "vlocode.omniScript.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)([\\/\\\\]|$)/"
                 }
             ],
             "editor/context": [
@@ -920,42 +867,42 @@
                 {
                     "command": "vlocode.omniScript.generateLwc",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.generateLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
-                },
-                {
-                    "command": "vlocode.omniScript.deployLwc",
-                    "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.omniScript.activate",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/OmniScript\\/.+\\/.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.omniScript.activate",
+                    "command": "vlocode.card.generateLwc",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.card.activate",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.vlocityCard.convert",
+                    "group": "v_vlocity_cards",
+                    "when": "resourcePath =~ /[\\/\\\\](VlocityCard|FlexCard)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.omniScript.convert",
                     "group": "v_vlocity_omniscript",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\OmniScript\\\\.+\\\\.+\\.json$/"
+                    "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\/VlocityCard\\/.+\\/.+\\.json$/"
+                    "command": "vlocode.ip.convert",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourcePath =~ /[\\/\\\\]IntegrationProcedure([\\/\\\\]|$)/"
                 },
                 {
-                    "command": "vlocode.vlocityCard.convert",
-                    "group": "v_vlocity",
-                    "when": "resourceScheme == file && resourcePath =~ /.+\\\\VlocityCard\\\\.+\\\\.+\\.json$/"
+                    "command": "vlocode.dataRaptor.convert",
+                    "group": "v_vlocity_omniscript",
+                    "when": "resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)([\\/\\\\]|$)/"
                 },
                 {
                     "command": "vlocode.apex.toggleCoverage",
@@ -1065,19 +1012,11 @@
             "editor/title/run": [
                 {
                     "command": "vlocode.openMetaXml",
-                    "when": "resourceScheme == file && resourceExtname =~ /\\.cls$/"
-                },
-                {
-                    "command": "vlocode.openMetaXml",
-                    "when": "resourceScheme == file && resourceExtname =~ /\\.trigger$/"
+                    "when": "resourceExtname =~ /\\.(cls|trigger)$/"
                 },
                 {
                     "command": "vlocode.openSourceFile",
-                    "when": "resourceScheme == file && resourcePath =~ /\\.cls-meta\\.xml$/"
-                },
-                {
-                    "command": "vlocode.openSourceFile",
-                    "when": "resourceScheme == file && resourcePath =~ /\\.trigger-meta\\.xml$/"
+                    "when": "resourcePath =~ /\\.(cls|trigger)-meta\\.xml$/"
                 }
             ]
         },
@@ -1142,7 +1081,7 @@
             },
             {
                 "type": "object",
-                "title": "Vlocity",
+                "title": "Datapacks",
                 "properties": {
                     "vlocity.projectPath": {
                         "type": "string",
@@ -1172,7 +1111,7 @@
                     "vlocity.parallelLimit": {
                         "type": "number",
                         "default": 50,
-                        "markdownDescription": "The number of parallel exports to run when exporting or refreshing Vlocity datapacks"
+                        "markdownDescription": "The number of parallel exports to run when exporting or refreshing datapacks"
                     },
                     "vlocity.deploymentMode": {
                         "type": "string",
@@ -1223,7 +1162,7 @@
                     "vlocity.deploy.disableTriggers": {
                         "type": "boolean",
                         "default": false,
-                        "markdownDescription": "Disable Vlocity/Industries triggers during deployment. Helps with resolving deployment errors and speeds up deployment but runtime generated fields will not be populated."
+                        "markdownDescription": "Disable SF Industries triggers during deployment. Helps with resolving deployment errors and speeds up deployment but runtime generated fields will not be populated."
                     }
                 }
             },

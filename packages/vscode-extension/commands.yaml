@@ -1,13 +1,13 @@
 # Extension setup commands
 vlocode.selectOrg:
-  title: 'Vlocity: Select Salesforce Org'
+  title: 'Vlocode: Select Salesforce Org'
   group: v_vlocity
   menus:
     - menu: commandPalette
 
 # Vlocity basic commands
 vlocode.refreshDatapack:
-  title: 'Vlocity: Refresh Datapack from Org'
+  title: 'Datapack: Refresh from Org'
   group: v_vlocity
   when: &vlocityFileActionWhen 'vlocode.conditionalContextMenus == false || resourcePath in vlocode.datapacks'
   menus:
@@ -15,7 +15,7 @@ vlocode.refreshDatapack:
     - menu: explorer/context
     - menu: editor/context
 vlocode.deployDatapack:
-  title: 'Vlocity: Deploy Datapack to Org'
+  title: 'Datapack: Deploy to Org'
   group: v_vlocity
   when: *vlocityFileActionWhen
   menus:
@@ -23,7 +23,7 @@ vlocode.deployDatapack:
     - menu: explorer/context
     - menu: editor/context
 vlocode.openSalesforce:
-  title: 'Vlocity: Open in Org'
+  title: 'Datapack: Open in Org'
   group: v_vlocity
   when: *vlocityFileActionWhen
   menus:
@@ -31,14 +31,14 @@ vlocode.openSalesforce:
     - menu: explorer/context
     - menu: editor/context
 vlocode.renameDatapack:
-  title: 'Vlocity: Rename Datapack'
+  title: 'Datapack: Rename...'
   group: v_vlocity
   when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
     - menu: explorer/context
 vlocode.cloneDatapack:
-  title: 'Vlocity: Clone Datapack'
+  title: 'Datapack: Clone...'
   group: v_vlocity
   when: *vlocityFileActionWhen
   menus:
@@ -46,58 +46,58 @@ vlocode.cloneDatapack:
     - menu: explorer/context
     - menu: editor/context
 vlocode.exportDatapack:
-  title: 'Vlocity: Export Datapack from Org'
+  title: 'Datapack: Export from Org'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocode.buildParentKeyFiles:
-  title: 'Vlocity: Repair Datapack dependencies'
+  title: 'Datapack: Repair dependencies'
   group: v_vlocity
   when: *vlocityFileActionWhen
   menus:
     - menu: commandPalette
 vlocode.createOmniscriptLwc:
-  title: 'Vlocity: New Omniscript Web Component (LWC)'
+  title: 'Vlocode: New OmniScript Web Component (LWC)'
   group: v_vlocity
   menus:
     - menu: commandPalette
 
 # hide commands
 vlocode.buildDatapack:
-  title: 'Vlocity: Build Datapack'
+  title: 'Datapack: Build zip file'
   group: v_vlocity
 vlocode.viewDatapack.generic:
-  title: 'Vlocity: View Datapack'
+  title: 'Datapack: View'
   group: v_vlocity
 
 # Admin type commands
 vlocode.adminCommands:
-  title: 'Vlocity: Administration Console'
+  title: 'Vlocode: Industries Administration Console'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocode.admin.refreshPriceBook:
-  title: 'Vlocity: Refresh Pricebook'
+  title: 'Vlocode: Refresh Pricebook'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocode.admin.refreshProductHierarchy:
-  title: 'Vlocity: Refresh Product Hierarchy'
+  title: 'Vlocode: Refresh Product Hierarchy'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocode.admin.refreshPriceBookAndProductHierarchy:
-  title: 'Vlocity: Refresh Pricebook and Product Hierarchy'
+  title: 'Vlocode: Refresh Pricebook and Product Hierarchy'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocode.admin.updateAllProdAttribCommand:
-  title: 'Vlocity: Update Product Attributes'
+  title: 'Vlocode: Update Industries Product Attributes'
   group: v_vlocity
   menus:
     - menu: commandPalette
 vlocode.admin.clearPlatformCache:
-  title: 'Vlocity: Clear Platform Cache'
+  title: 'Vlocode: Clear Industries Platform Cache'
   group: v_vlocity
   menus:
     - menu: commandPalette
@@ -332,25 +332,41 @@ vlocode.omniScript.generateLwc:
   group: v_vlocity_omniscript
   menus: &omniScriptCommandMenus
     - menu: explorer/context
-      when:
-        - explorerResourceIsFolder && resourcePath =~ /.+\\OmniScript\\[^\\]+$/
-        - explorerResourceIsFolder && resourcePath =~ /.+\/OmniScript\/[^\/]+$/
-        - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+\.json$/
-        - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+\.json$/
-    - menu: commandPalette
       when: &whenOmniScript
-        - resourceScheme == file && resourcePath =~ /.+\/OmniScript\/.+\/.+\.json$/
-        - resourceScheme == file && resourcePath =~ /.+\\OmniScript\\.+\\.+\.json$/
+        - resourcePath =~ /[\/\\]OmniScript([\/\\]|$)/
+    - menu: commandPalette
+      when: *whenOmniScript
     - menu: editor/context
       when: *whenOmniScript
-vlocode.omniScript.deployLwc:
-  title: 'OmniScript: Deploy as LWC'
-  group: v_vlocity_omniscript
-  menus: *omniScriptCommandMenus
+# vlocode.omniScript.deployLwc:
+#   title: 'OmniScript: Deploy LWC only'
+#   group: v_vlocity_omniscript
+#   menus: *omniScriptCommandMenus
 vlocode.omniScript.activate:
   title: 'OmniScript: (Re-)Activate'
   group: v_vlocity_omniscript
   menus: *omniScriptCommandMenus
+
+# Card LWC commands
+vlocode.card.generateLwc:
+  title: 'FlexCard: Generate LWC'
+  group: v_vlocity_cards
+  menus: &cardCommandMenus
+    - menu: explorer/context
+      when: &whenCard
+        - resourcePath =~ /[\/\\](VlocityCard|FlexCard)([\/\\]|$)/
+    - menu: commandPalette
+      when: *whenCard
+    - menu: editor/context
+      when: *whenCard
+# vlocode.card.deployLwc:
+#   title: 'FlexCard: Deploy LWC only'
+#   group: v_vlocity_omniscript
+#   menus: *cardCommandMenus
+vlocode.card.activate:
+  title: 'FlexCard: (Re-)Activate'
+  group: v_vlocity_cards
+  menus: *cardCommandMenus
 
 # Omistudio Conversion
 vlocode.vlocityCard.convert:
@@ -398,8 +414,7 @@ vlocode.openMetaXml:
   menus:
     - menu: editor/title/run
       when:
-        - resourceScheme == file && resourceExtname =~ /\.cls$/
-        - resourceScheme == file && resourceExtname =~ /\.trigger$/
+        - resourceExtname =~ /\.(cls|trigger)$/
     - menu: commandPalette
 vlocode.openSourceFile:
   title: 'Salesforce: Open Source'
@@ -407,8 +422,7 @@ vlocode.openSourceFile:
   menus:
     - menu: editor/title/run
       when:
-        - resourceScheme == file && resourcePath =~ /\.cls-meta\.xml$/
-        - resourceScheme == file && resourcePath =~ /\.trigger-meta\.xml$/
+        - resourcePath =~ /\.(cls|trigger)-meta\.xml$/
     - menu: commandPalette
 vlocode.apex.toggleCoverage:
   title: 'APEX: Highlight Unit Test Coverage'
