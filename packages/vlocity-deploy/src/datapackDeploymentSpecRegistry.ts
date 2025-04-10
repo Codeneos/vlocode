@@ -57,7 +57,7 @@ export class DatapackDeploymentSpecRegistry {
         if (this !== DatapackDeploymentSpecRegistry.globalInstance) {
             specs.push(DatapackDeploymentSpecRegistry.globalInstance.specs);
         }
-        for (const spec of Iterable.join(...specs)) {
+        for (const spec of Iterable.concat(...specs)) {
             yield {
                 filter: spec.filter, 
                 spec: spec.instance ?? lazy( () => spec.instance = this.container.create(spec.type!) )

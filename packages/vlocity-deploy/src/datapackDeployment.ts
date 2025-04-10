@@ -1,14 +1,15 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
 import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService, RecordError } from '@vlocode/salesforce';
-import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique } from '@vlocode/util';
+import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
 import { DatapackDeploymentRecord, DeploymentAction, DeploymentStatus } from './datapackDeploymentRecord';
-import { DatapackDeploymentRecordGroup, DeploymentGroupStatus } from './datapackDeploymentRecordGroup';
+import { DatapackDeploymentRecordGroup } from './datapackDeploymentRecordGroup';
 import { DeferredDependencyResolver } from './deferredDependencyResolver';
 import { DatapackDeploymentError as Error } from './datapackDeploymentError';
 import { VlocityDatapackReference } from '@vlocode/vlocity';
+import { DatapackDeploymentDatapackStatus, DatapackDeploymentMessage, DatapackDeploymentStatus, DatapackkDeploymentState } from './datapackDeploymentStatus';
 
 export interface DatapackDeploymentEvents {
     beforeDeployRecord: Iterable<DatapackDeploymentRecord>;
@@ -81,6 +82,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     private readonly deployed = new Array<DatapackDeploymentRecord>();
     private readonly records = new Map<string, DatapackDeploymentRecord>();
     private readonly recordGroups = new Map<string, DatapackDeploymentRecordGroup>();
+    private readonly recordGroupsErrors = new Map<string, Error[]>();
     private readonly orgDependencyResolver: DatapackDependencyResolver;
 
     private isStarted = false;
@@ -209,6 +211,110 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
+     * Add a Datapack level error to the deployment.
+     * This is used to add errors that are not related to a specific record but to a whole datapack, or
+     * to add errors that are related to a datapack for which the records could not added to the deployment.
+     * @param datapackKey Group key of the datapack to which the error belongs
+     * @param error Error to add to the deployment
+     */
+    public addError(datapackKey: string, error: Error | string) {
+        if (typeof error === 'string') {
+            error = new Error('UNKNOWN_ERROR', error);
+        }
+        arrayMapPush(this.recordGroupsErrors, datapackKey, error);
+    }
+
+     /**
+     * Retrieves all datapack deployment records as {@link DatapackDeploymentRecordGroup} objects. 
+     * The return groups can be manipulated when the deployment hasn't started yet.
+     * @returns An array of DatapackDeploymentRecordGroup objects.
+     */
+     public getStatus() : DatapackDeploymentStatus {
+        const datapacks = new Map<string, DatapackDeploymentDatapackStatus>();
+        
+        for (const [datapackKey, group] of this.recordGroups) {
+            // Transform errors to the format expected in DatapackDeploymentStatus
+            const messages: DatapackDeploymentMessage[] = [];
+            
+            // Add record-level errors
+            for (const record of group) {
+                if (record.isFailed && !record.isCascadeFailure) {
+                    messages.push({
+                        type: 'error',
+                        message: this.formatDeployError(record),
+                        code: record.errorCode ?? 'UNKNOWN_ERROR'
+                    });
+                } else if (record.hasWarnings) {
+                    for (const warning of record.warnings) {
+                        messages.push({ message: warning, type: 'warn' });
+                    }
+                }
+            }
+            
+            // Create and add the status object to results
+            datapacks.set(datapackKey, {
+                datapack: datapackKey,
+                type: group.datapackType,
+                status: group.status,
+                recordCount: group.size,
+                failedCount: group.failedCount,
+                messages
+            });
+        }
+
+        // Add any errors that are not related to a specific record
+        for (const [datapackKey, errors] of this.recordGroupsErrors) {
+            const messages = errors.map<DatapackDeploymentMessage>(error => ({
+                type: 'error',
+                message: error.message,
+                code: error.errorCode as string
+            }));
+            
+            const datapackStatus = datapacks.get(datapackKey)
+            if (!datapackStatus) {
+                datapacks.set(datapackKey, {
+                    datapack: datapackKey,
+                    type: substringBefore(datapackKey, '/'),
+                    status: DatapackkDeploymentState.Error,
+                    recordCount: 1,
+                    failedCount: 1,
+                    messages 
+                });
+            } else {
+                Object.assign(datapackStatus, {
+                    messages: [...datapackStatus.messages, ...messages]
+                });
+            }
+        }
+
+        const datapackValues = [...datapacks.values()];
+        return {
+            total: this.totalDatapackCount,
+            status: DatapackkDeploymentState.summarize(datapackValues.map(result => result.status)),
+            datapacks: datapackValues,
+        };
+    }
+
+    /**
+     * Retrieves all datapack deployment records as {@link DatapackDeploymentRecordGroup} objects. 
+     * The return groups can be manipulated when the deployment hasn't started yet.
+     * @returns An array of DatapackDeploymentRecordGroup objects.
+     */ 
+    public getDatapacks() : Array<DatapackDeploymentRecordGroup> {
+        return [...this.recordGroups.values()];
+    }
+
+    /**
+     * Returns an array of keys from the datapacks in this deployment.
+     * The keys returned by this method can be used to retrieve deployment records using {@link getRecords}.
+     * 
+     * @returns {Array<string>} An array containing all datapack keys.
+     */
+    public datapackKeys() : Array<string> {
+        return [...this.recordGroups.keys()];
+    }
+
+    /**
      * Retrieves the deployment messages for the datapack deployment.
      * 
      * @param options - An optional object that specifies additional options for retrieving the messages.
@@ -237,7 +343,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     private formatDeployError(record: DatapackDeploymentRecord) {
-        const message = record.errorMessage;
+        const message = record.statusMessage;
         if (!message) {
             return 'No error message';
         }
@@ -693,11 +799,11 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
             const completedGroups = [...Iterable.filter(recordGroups.values(), group => !group.hasPendingRecords())];
 
             for (const group of completedGroups) {
-                if (group.status === DeploymentGroupStatus.Success) {
+                if (group.status === DatapackkDeploymentState.Success) {
                     this.logger.info(`Deployed ${group.datapackKey}`);
-                } else if (group.status === DeploymentGroupStatus.PartialSuccess) {
+                } else if (group.status === DatapackkDeploymentState.PartialSuccess) {
                     this.logger.warn(`Partially deployed ${group.datapackKey} (${group.size -group.failedCount}/${group.size})`);
-                } else if (group.status === DeploymentGroupStatus.Error) {
+                } else if (group.status === DatapackkDeploymentState.Error) {
                     this.logger.error(`Failed ${group.datapackKey}; see errors`);
                 }
             }
