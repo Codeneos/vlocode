@@ -1502,10 +1502,10 @@
         "build-webpack-dev": "pnpm pre-build && webpack --config webpack/webpack.dev.mjs --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.mjs --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.mjs --env extension",
-        "pack": "pnpx @vscode/vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
+        "pack": "vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "shx rm -rf ./out ./.ts-temp './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "publish": "pnpx @vscode/vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
+        "publish": "vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
         "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build-webpack"
     },
@@ -1525,11 +1525,12 @@
         "@vlocode/vlocity": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "@vscode/test-electron": "^2.3.8",
-        "@vscode/vsce": "^3.3.2",
+        "@vscode/vsce": "^3.4.1",
         "chalk": "^4.1.1",
         "copy-webpack-plugin": "^9.1.0",
-        "esbuild-loader": "^4.0.3",
+        "esbuild-loader": "^4.3.0",
         "escape-string-regexp": "^4.0.0",
+        "fast-glob": "^3.3.3",
         "fs-extra": "^11.0",
         "jest": "^29.7.0",
         "js-yaml": "^4.1.0",
@@ -1540,19 +1541,16 @@
         "reflect-metadata": "^0.1.13",
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
-        "ts-jest": "^29.1.1",
-        "ts-loader": "^9.5",
-        "ts-node": "^10.9.0",
+        "ts-jest": "^29.3.4",
+        "ts-loader": "^9.5.2",
+        "ts-node": "^10.9.2",
         "tsconfig-paths-webpack-plugin": "^3.5.2",
         "type-fest": "^2.12.2",
         "typescript": "5.1.6",
         "vlocity": "1.14.18",
         "vscode-languageclient": "^8.1.0",
-        "webpack": "^5.99.7",
-        "webpack-cli": "^6.0",
-        "webpack-merge": "^6.0"
-    },
-    "dependencies": {
-        "fast-glob": "^3.3.3"
+        "webpack": "^5.99.9",
+        "webpack-cli": "^6.0.1",
+        "webpack-merge": "^6.0.1"
     }
 }
