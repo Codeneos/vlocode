@@ -6,7 +6,7 @@ const production = {
     mode: 'production',
     devtool: false,
     optimization: {
-        minimize: false
+        minimize: true
     }
 };
 
