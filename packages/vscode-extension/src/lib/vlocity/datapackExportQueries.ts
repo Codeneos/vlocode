@@ -1,14 +1,14 @@
 import { injectable, Logger } from "@vlocode/core";
-import {  QueryBuilder, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
-import { VlocityMatchingKeyService } from "@vlocode/vlocity";
-import exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
+import {  NamespaceService, QueryBuilder, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
+import { DatapackTypeDefinitions, VlocityMatchingKeyService } from "@vlocode/vlocity";
 import { ObjectEntry } from './vlocityDatapackService';
+import { deepClone, removeNamespacePrefix } from '@vlocode/util';
 
 @injectable()
 export class DatapackExportQueries {
 
     constructor(
-        private readonly matchingKeys: VlocityMatchingKeyService, 
+        private readonly matchingKeys: VlocityMatchingKeyService,
         private readonly schema: SalesforceSchemaService, 
         private readonly logger: Logger) {
     }
@@ -18,15 +18,11 @@ export class DatapackExportQueries {
      * @param datapackType Datapack type
      * @returns List of fields as string array
      */
-    public async getMatchingFields(datapackType: string) {
-        const macthingKeys = exportQueryDefinitions[datapackType]?.matchingKey ?? 
+    public async getMatchingFields(datapackType: string, sobjectType?: string): Promise<string[]> {
+        const exportDefinition = this.getExportDefinition(datapackType, sobjectType);
+        const macthingKeys = exportDefinition?.matchingKey ?? 
             await this.matchingKeys.getMatchingKeyDefinition(datapackType);
         return macthingKeys.fields ?? [ 'Name' ];
-    }
-
-    public getDatapackQuery(datapackType: string) {
-        const datapackDef = exportQueryDefinitions[datapackType];
-        return datapackDef?.query ? QueryBuilder.parse(datapackDef.query) : undefined;
     }
 
     /**
@@ -35,21 +31,27 @@ export class DatapackExportQueries {
      * @returns Export query
      */
     public async getQuery(datapack: ObjectEntry): Promise<string> {
-        const datapackDef = exportQueryDefinitions[datapack.datapackType];
-        const query = this.getDatapackQuery(datapack.datapackType) ?? new QueryBuilder(datapack.sobjectType, [ 'Id' ]);
-        const macthingKeys = datapackDef?.matchingKey ?? await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
+        const exportDefinition = this.getExportDefinition(datapack.datapackType, datapack.sobjectType);
+        const query = new QueryBuilder(
+            deepClone(exportDefinition?.source) ?? {
+                sobjectType: datapack.sobjectType,
+                fieldList: [ 'Id' ],
+            }
+        );
+        const matchingDefinition = await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
+        const macthingKey = matchingDefinition.fields.length ? matchingDefinition : (exportDefinition?.matchingKey ?? matchingDefinition);
         const nameField = await this.schema.getNameField(datapack.sobjectType);
 
-        if (!macthingKeys.fields.length && nameField) {
-            macthingKeys.fields.push(nameField);                       
+        if (!macthingKey.fields.length && nameField) {
+            macthingKey.fields.push(nameField);                       
         } else if (nameField) {
             query.select(nameField);
         }
         
-        if (macthingKeys.returnField) {
-            query.select(macthingKeys.returnField);
+        if (macthingKey.returnField) {
+            query.select(macthingKey.returnField);
         }
-        query.select(...macthingKeys.fields); 
+        query.select(...macthingKey.fields); 
 
         if (datapack.id) {
             query.where.equals('Id', datapack.id);
@@ -57,27 +59,31 @@ export class DatapackExportQueries {
             const missingMatchingKeys = new Array<string>();
 
             for (const field of query.fields) {
-                const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field);
+                const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field, false);
+                if (!fieldDescribe) {
+                    this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
+                    continue;
+                }
                 const value = fieldDescribe.reduce((o, f) => o && o[f.name], datapack);
 
                 if (value !== undefined) {
                     const fullName = fieldDescribe.map(f => f.name).join('.');
                     query.where.and.condition(`${fullName} = ${QueryService.formatFieldValue(value, fieldDescribe.slice(-1)[0])}`);
-                } else if (macthingKeys.fields.includes(field)) {
+                } else if (macthingKey.fields.includes(field)) {
                     missingMatchingKeys.push(field);
                 }
             }
 
-            if (!macthingKeys.fields.length) {
+            if (!macthingKey.fields.length) {
                 throw new Error(
                     `Unable to build an export query for ${
                         datapack.datapackType
                     }; no matching key fields are defined.`
                 );
-            } else if (macthingKeys.fields.length && missingMatchingKeys.length === macthingKeys.fields.length) {
+            } else if (macthingKey.fields.length && missingMatchingKeys.length === macthingKey.fields.length) {
                 throw new Error(
                     `Unable to build an export query for ${datapack.datapackType}; ` +
-                    `all matching key fields (${macthingKeys.fields.join(', ')}) are undefined: ${
+                    `all matching key fields (${macthingKey.fields.join(', ')}) are undefined: ${
                         JSON.stringify(datapack, undefined, 2)
                     }`
                 );
@@ -88,4 +94,19 @@ export class DatapackExportQueries {
 
         return query.getQuery();
     }
+
+    private getExportDefinition(datapackType: string, sobjectType?: string) {
+        const exportDefinition = DatapackTypeDefinitions[datapackType];
+        if (!exportDefinition) {
+            return;
+        }
+        if (Array.isArray(exportDefinition)) {
+            if (!sobjectType) {
+                return exportDefinition[0];
+            }
+            return exportDefinition.find(def => def.source.sobjectType === sobjectType) || 
+                exportDefinition.find(def => removeNamespacePrefix(def.source.sobjectType) === removeNamespacePrefix(sobjectType));
+        }
+        return exportDefinition;
+    };
 }

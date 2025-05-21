@@ -574,7 +574,7 @@ export class Container {
         return instance[proxyTarget];
     }
 
-    public registerProvider<T extends object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I| Promise<I> | undefined) {
+    public registerProvider<T extends object, I extends T = T>(service: ServiceType<T>, provider: (receiver: any) => I | Promise<I> | undefined) {
         this.logger.debug(`(${this.containerGuid}) Register provider for: ${this.getServiceName(service)}`);
         this.providers.set(this.getServiceName(service), provider);
     }

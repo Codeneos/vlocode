@@ -32,3 +32,4 @@
  export * from './salesforceService';
  export * from './schemaValidator';
  export * from './soapClient';
+ export * from './visualforceRemoting';

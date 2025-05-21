@@ -12,3 +12,4 @@ export * from './renameDatapackCommand';
 export * from './omniScriptGenerateLwc';
 export * from './omniScriptDeployLwc';
 export * from './omniScriptActivate';
+export * from './importMultipackCommand';

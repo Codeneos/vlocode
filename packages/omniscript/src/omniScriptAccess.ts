@@ -1,6 +1,6 @@
 import { injectable } from "@vlocode/core";
 import { QueryBuilder, SalesforceLookupService, SalesforceSchemaService, SalesforceService } from "@vlocode/salesforce";
-import { OmniProcessRecord, OmniScriptSpecification, OmniScriptRecord, OmniScriptElementRecord, OmniProcessElementRecord, OmniScriptWithElementsRecord, OmniScriptEmbeddedScriptPropertySet, OmniScriptElementType, VlocityUITemplateRecord } from "./types";
+import { OmniProcessRecord, OmniScriptSpecification, OmniScriptRecord, OmniScriptElementRecord, OmniProcessElementRecord, OmniScriptWithElementsRecord, OmniScriptElementType, VlocityUITemplateRecord } from "./types";
 import { arrayMapPush } from "@vlocode/util";
 
 type OmniScriptFilter = (OmniScriptSpecification & { version?: number, active?: boolean })
@@ -235,16 +235,25 @@ export class OmniScriptAccess {
      *   dependentScriptIds.map(id => omniScriptAccess.find(id))
      * );
      */
-    public async findActiveDependentScripts(script: OmniScriptSpecification) {
+    public async findActiveDependentScripts(script: OmniScriptSpecification | OmniScriptSpecification[]) {
         const elements = await this.elements({ type: 'OmniScript', active: true });
         const scriptIds = new Set<string>();
+        const scripts = Array.isArray(script) ? script : [ script ];
 
         for (const element of elements) {
-            const propSet: OmniScriptEmbeddedScriptPropertySet = JSON.parse(element.propertySet);
-            if (script.subType === propSet["Sub Type"] && 
-                script.type === propSet.Type && 
-                script.language === propSet.Language
-            ) {
+            const { 
+                "Type": scriptType, 
+                "Sub Type": scriptSubType, 
+                "Language": scriptLanguage 
+            } = JSON.parse(element.propertySet);
+
+            const isMatchingScript = scripts.some(script => {
+                return script.type === scriptType && 
+                    script.subType === scriptSubType && 
+                    script.language === scriptLanguage;
+            });
+            
+            if (isMatchingScript) {
                 scriptIds.add(element.omniScriptId);
             }
         }
@@ -264,7 +273,6 @@ export class OmniScriptAccess {
                 Type: script.type, 
                 SubType: script.subType, 
                 VersionNumber: script.version, 
-                OmniProcessType: 'OmniScript',
                 IsActive: script.active
             }, { 
                 ignoreUndefined: true 
@@ -291,7 +299,6 @@ export class OmniScriptAccess {
                 '%vlocity_namespace%__SubType__c': script.subType, 
                 '%vlocity_namespace%__Language__c': script.language, 
                 '%vlocity_namespace%__Version__c': script.version, 
-                '%vlocity_namespace%__OmniProcessType__c': 'OmniScript',
                 '%vlocity_namespace%__IsActive__c': script.active
             }, { 
                 ignoreUndefined: true 

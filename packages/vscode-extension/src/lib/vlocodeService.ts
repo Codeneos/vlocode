@@ -434,6 +434,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this.config.salesforce.apiVersion;
     }
 
+    public getNamespace() {
+        return this.nsService.getNamespace();
+    }
+
     private getConnector() {
         if (this.connector) {
             return this.connector;

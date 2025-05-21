@@ -1,15 +1,13 @@
 import * as vscode from 'vscode';
 import * as constants from '../../constants';
 
-import { groupBy , createRecordProxy, evalExpr } from '@vlocode/util';
+import { groupBy, pluralize } from '@vlocode/util';
 
-import exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import { DatapackCommand } from './datapackCommand';
-import { SObjectRecord } from '@vlocode/salesforce';
+import { QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackResultCollection } from '../../lib/vlocity/vlocityDatapackService';
-import { ObjectEntry } from '@vlocode/vlocity';
-
+import { DatapackTypeDefinitions, DatapackTypeDefinition, ObjectEntry } from '@vlocode/vlocity';
 @vscodeCommand(constants.VlocodeCommand.exportDatapack, { focusLog: true  })
 export default class ExportDatapackCommand extends DatapackCommand {
 
@@ -31,29 +29,26 @@ export default class ExportDatapackCommand extends DatapackCommand {
     }
 
     protected async exportWizard() : Promise<void>  {
-        const datapackType = await this.showDatapackTypeSelection();
-        if (!datapackType || !exportQueryDefinitions[datapackType]) {
+        const datapack = await this.showDatapackTypeSelection();
+        if (!datapack) {
             return; // selection cancelled;
         }
-        const queryDef = exportQueryDefinitions[datapackType];
 
         // query available records
-        let records = await this.queryExportableRecords(datapackType);
+        let records = await this.queryExportableRecords(datapack.definition);
         if (records.length == 0) {
-            void vscode.window.showWarningMessage(`No exportable records for ${datapackType}`);
+            void vscode.window.showWarningMessage(`No exportable records for ${datapack}`);
             return;
         }
 
-        if (queryDef.groupKey) {
-            const groupedRecords = await this.showGroupSelection(records, datapackType);
-            if (!groupedRecords) {
-                return; // selection cancelled;
-            }
-            records = groupedRecords;
+       const groupedRecords = await this.showGroupSelection(records, datapack.definition);
+        if (!groupedRecords) {
+            return; // selection cancelled;
         }
+        records = groupedRecords;
 
         // Select object
-        const recordToExport = await this.showRecordSelection(records, datapackType);
+        const recordToExport = await this.showRecordSelection(records, datapack.definition);
         if (!recordToExport) {
             return; // selection cancelled;
         }
@@ -61,74 +56,73 @@ export default class ExportDatapackCommand extends DatapackCommand {
         return this.exportObjects({
             id: recordToExport.Id,
             sobjectType: recordToExport.attributes.type,
-            datapackType: datapackType
+            datapackType: datapack.type
         });
     }
 
-    private getExportQuery(datapackType: string, vlocityNamespace?: string) : string {
-        if (exportQueryDefinitions[datapackType]) {
-            return exportQueryDefinitions[datapackType].query
-                .replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, vlocityNamespace || this.datapackService.vlocityNamespace);
+    private getExportDefinition(datapackType: string) {
+        if (!datapackType || !DatapackTypeDefinitions[datapackType]) {
+            return;
         }
-        throw new Error(`Cannot get export query for unknown datapack type: ${datapackType}`);
+        const exportDefinition = DatapackTypeDefinitions[datapackType];
+        if (!Array.isArray(exportDefinition)) {
+            return [ exportDefinition ];
+        }
+        return exportDefinition;
     }
 
-    protected async queryExportableRecords(datapackType : string) : Promise<SObjectRecord[]> {
+    private getExportQuery(datapackType: DatapackTypeDefinition) : string {
+        return new QueryBuilder(datapackType.source).toString();
+    }
+
+    protected async queryExportableRecords(datapackType: DatapackTypeDefinition) : Promise<SObjectRecord[]> {
         // query available records
         return this.vlocode.withProgress('Querying salesforce for list of objects to export...', async () => {
             return await this.salesforce.query<SObjectRecord>(this.getExportQuery(datapackType));
         });
     }
 
-    protected async showDatapackTypeSelection() : Promise<string | undefined> {
-        const datapackOptions = Object.entries(exportQueryDefinitions)
-            .filter(([,queryDef]) => queryDef.query && !queryDef.requiredSetting)
-            .map(([key, queryDef]) => ({
-                label: key,
-                detail: queryDef.query.replace(constants.NAMESPACE_PLACEHOLDER_PATTERN, 'vlocity'),
-                datapackType: queryDef.VlocityDataPackType
-            }));
+    protected async showDatapackTypeSelection() {
+        const datapackOptions = Object.entries(DatapackTypeDefinitions)      
+            .flatMap(([key, exportDefinition]) => {
+                if (Array.isArray(exportDefinition)) {
+                    return exportDefinition.map(definition => (
+                        { definition, type: key, label: `${definition.typeLabel} (${definition.source.sobjectType})` }
+                    ));
+                }
+                return { definition: exportDefinition, type: key, label: exportDefinition.typeLabel };                
+            });
 
         const datapackToExport = await vscode.window.showQuickPick(datapackOptions, {
             matchOnDetail: true,
             ignoreFocusOut: true,
             placeHolder: 'Select datapack types to export'
         });
-        if (!datapackToExport) {
-            return; // selection cancelled;
-        }
 
-        return datapackToExport.datapackType;
+        return datapackToExport;
     }
 
-    protected async showGroupSelection(records : SObjectRecord[], datapackType : string) : Promise<SObjectRecord[] | undefined> {
-        // get the query def for the object type
-        const queryDef = exportQueryDefinitions[datapackType];
-        const groupNameFormat = queryDef.groupName;
-        const groupKeyormat = queryDef.groupKey;
-        if (!groupNameFormat || !groupKeyormat) {
-            return;
+    protected async showGroupSelection(records : SObjectRecord[], datapackType: DatapackTypeDefinition) : Promise<SObjectRecord[] | undefined> {
+        const datapackGrouping = datapackType.grouping;
+        if (!datapackGrouping) {
+            return records; // no grouping, return all records
         }
 
         // grouped records support
-        const groupedRecords = groupBy(records, r => evalExpr(groupKeyormat, r));
-        const groupOptions = Object.keys(groupedRecords).map(key => {
-            const groupRecord = createRecordProxy({ count: groupedRecords[key].length, ...groupedRecords[key][0]});
+        const groupedRecords = groupBy(records, record => datapackGrouping.fields.map(field => record[field]).join(':'));
+        const groupOptions = Object.values(groupedRecords).map(records => {
             return {
-                label: evalExpr(groupNameFormat, groupRecord),
-                description: queryDef.groupDescription ? evalExpr(queryDef.groupDescription, groupRecord) : `version(s) ${groupedRecords[key].length}`,
-                records: groupedRecords[key]
+                label: this.evalLabel(records[0], datapackGrouping.displayName),
+                description: pluralize('record', records),
+                records
             };
         }).sort((a,b) => a.label.localeCompare(b.label));
 
         const objectGroupSelection = await vscode.window.showQuickPick(groupOptions, {
-            placeHolder: 'Select datapack object to export',
+            placeHolder: 'Select datapack to export',
             ignoreFocusOut: true
         });
-        if (!objectGroupSelection) {
-            return; // selection cancelled;
-        }
-        return objectGroupSelection.records;
+        return objectGroupSelection?.records;
     }
 
     protected async showDependencySelection() : Promise<number | undefined> {
@@ -136,14 +130,31 @@ export default class ExportDatapackCommand extends DatapackCommand {
         const withDependencies = await vscode.window.showQuickPick([
             { label: 'None', description: 'Do not export any dependencies, only export the selected object', maxDepth: 0 },
             { label: 'Direct', description: 'Include only direct dependencies, up to 1 level deep', maxDepth: 1  },
-            { label: 'All', description: 'Include all depending objects', maxDepth: -1  }
+            { label: 'All', description: 'Include all depending objects', maxDepth: -1  },
+            { label: '-', kind: vscode.QuickPickItemKind.Separator },
+            { label: 'Other', description: 'Specify the level of dependencies to export as a number'  },
         ], { placeHolder: 'Export object dependencies', ignoreFocusOut: true });
 
         if (!withDependencies) {
             return; // selection cancelled;
         }
 
-        return withDependencies.maxDepth;
+        if (withDependencies.maxDepth !== undefined) {
+            return withDependencies.maxDepth;
+        }
+
+        const maxDepth = await vscode.window.showInputBox({
+            placeHolder: 'Enter the maximum depth of dependencies to export',
+            prompt: 'Enter the maximum depth of dependencies to export',
+            validateInput: value => {
+                const parsedValue = parseInt(value);
+                if (isNaN(parsedValue) || parsedValue < 0) {
+                    return 'Invalid number, please enter a positive number';
+                }
+                return null;
+            }
+        });
+        return maxDepth ? parseInt(maxDepth, 10) : undefined;
     }
 
     protected async showExportPathSelection() : Promise<string | undefined> {

@@ -50,6 +50,11 @@ vlocode.exportDatapack:
   group: v_vlocity
   menus:
     - menu: commandPalette
+vlocode.importMultipack:
+  title: 'Datapack: Import Multipack...'
+  group: v_vlocity
+  menus:
+    - menu: commandPalette
 vlocode.buildParentKeyFiles:
   title: 'Datapack: Repair dependencies'
   group: v_vlocity

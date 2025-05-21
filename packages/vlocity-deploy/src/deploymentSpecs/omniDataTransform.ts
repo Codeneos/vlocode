@@ -7,6 +7,7 @@ export class OmniDataTransformationSpec implements DatapackDeploymentSpec {
 
     private itemsField = 'OmniDataTransformItem';
     private parentField = 'OmniDataTransformationId';
+    private activationField = 'IsActive';
     private matchingFields = ['GlobalKey'];
 
     public async preprocess(datapack: VlocityDatapack) {
@@ -21,6 +22,12 @@ export class OmniDataTransformationSpec implements DatapackDeploymentSpec {
                 VlocityMatchingRecordSourceKey: datapack.sourceKey,
                 VlocityRecordSObjectType: datapack.sobjectType,
             } as VlocityDatapackMatchingReference;
+        }
+
+        // Set the activation status of the DataMapper -- strictly speaking this is not needed but for UI consistency
+        // we set the activation status of the DataMapper to true if it is not set in the datapack
+        if (datapack[this.activationField] === undefined) {
+            datapack[this.activationField] = true;
         }
     }
 

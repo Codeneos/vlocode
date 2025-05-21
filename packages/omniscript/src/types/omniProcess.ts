@@ -32,7 +32,8 @@ export interface OmniProcessRecord extends Required<OmniScriptSpecification> {
 
 export namespace OmniProcessRecord {
     export const SObjectType = 'OmniProcess' as const;
-    export const ActivationField = 'IsActive';
+    export const ActivationField = 'IsActive';    
+    export const WebComponentKeyField = 'WebComponentKey';
     export const Fields = [
         'Id', 
         'Name', 

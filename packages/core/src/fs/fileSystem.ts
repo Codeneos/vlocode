@@ -1,6 +1,6 @@
 import { spreadAsync } from '@vlocode/util';
-import { minimatch, MinimatchOptions } from 'minimatch'
-import { Glob } from 'glob'
+import * as fs from 'fs'
+import { globbyStream, Options as GlobbyOptions } from 'globby';
 
 export interface StatsOptions {
     /**
@@ -187,48 +187,32 @@ export abstract class FileSystem {
      * ```
      */
     public async *find(patterns: GlobPatterns, options?: FindOptions): AsyncGenerator<string> {
-        const globs = (Array.isArray(patterns) ? patterns : [ patterns ]).flatMap(
-            pattern => (options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ]).map(
-                (cwd: string | undefined) => new Glob(pattern, { 
-                    cwd,
-                    withFileTypes: true,
-                    windowsPathsNoEscape: true,
-                    dotRelative: true,
-                    ignore: options?.exclude,
-                    noext: true, 
-                    nodir: options?.findType === FindType.file,
-                    maxDepth: options?.depth,
-                    nocase: options?.noCase 
-                })
-            )
+        const globs = (options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ]).map(
+            (cwd: string | undefined) => globbyStream(patterns, {
+                cwd,
+                fs: this.globbyFs?.() ?? fs,
+                ignore: options?.exclude ? Array.isArray(options?.exclude) ? options.exclude : [ options?.exclude ] : undefined,
+                onlyDirectories: options?.findType === FindType.directory,
+                onlyFiles: options?.findType === FindType.file,
+                deep: options?.depth,
+                unique: true,
+                absolute: true,
+            })
         );
 
         let limit = options?.limit;
 
         for (const glob of globs) {
-            for await (const file of glob) {                
-                if (options?.findType === FindType.directory && !file.isDirectory()) {
+            for await (const file of glob) {
+                if (typeof file !== 'string') {
                     continue;
-                }                
-                yield this.normalizeSeparators(file.fullpath());
+                }
+                yield this.normalizeSeparators(file);
                 if (limit !== undefined && --limit === 0) {
                     return;
                 }
             }
         }
-    }
-
-    private compilePatterns(patterns: GlobPatterns, options?: MinimatchOptions): RegExp[] {
-        return (Array.isArray(patterns) ? patterns : [ patterns ]).map(pattern => {
-            if (typeof pattern === 'string') {
-                const compiled = minimatch.makeRe(this.normalizeSeparators(pattern), options);
-                if (!compiled) {
-                    throw new Error(`Invalid glob pattern: ${pattern}`);
-                }
-                return compiled;
-            } 
-            return pattern;
-        });
     }
 
     private normalizeSeparators(path: string): string {
@@ -285,4 +269,6 @@ export abstract class FileSystem {
     public findFiles(globPatterns: string | string[]): Promise<string[]> {
         return spreadAsync(this.find(globPatterns, { findType: FindType.file }));
     }
+
+    protected globbyFs?(): GlobbyOptions['fs'];
 }

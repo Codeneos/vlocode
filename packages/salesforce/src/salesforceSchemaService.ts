@@ -7,10 +7,39 @@ import { cache, findField, groupBy, isSalesforceId, mapAsyncParallel, mapBy, nor
 import { PicklistEntry } from 'jsforce';
 
 /**
+ * Interface defining the contract for accessing Salesforce schema information
+ */
+export interface ISalesforceSchemaService {
+    dispose(): void;
+    describeSObjects(): Promise<Array<DescribeGlobalSObjectResult>>;
+    describeCustomMetadataObjects(): Promise<Array<string>>;
+    isSObjectDefined(type: string): Promise<boolean>;
+    isSObjectFieldDefined(type: string, field: string): Promise<boolean>;
+    describeSObject(type: string): Promise<DescribeSObjectResult>;
+    describeSObject(type: string, throwWhenNotFound: boolean | false): Promise<DescribeSObjectResult | undefined>;
+    describeSObjectByPrefix(prefix: string): Promise<DescribeSObjectResult>;
+    describeSObjectById(id: string): Promise<DescribeSObjectResult>;
+    describeByPrefix(prefix: string): Promise<DescribeSObjectResult | undefined>;
+    describePicklistValues(type: string, fieldName: string): Promise<PicklistEntry[]>;
+    describePicklistValues(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<PicklistEntry[] | undefined>;
+    describeSObjectField(type: string, fieldName: string): Promise<Field>;
+    describeSObjectField(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<Field | undefined>;
+    describeSObjectFieldPath(type: string, fieldName: string): Promise<Field[]>;
+    describeSObjectFieldPath(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<ReadonlyArray<Field> | undefined>;
+    filterIds(ids: string | string[], predicate: (type: DescribeSObjectResult, id: string) => boolean): Promise<string[]>;
+    getSObjectFields(type: string): Promise<ReadonlyMap<string, Field>>;
+    sObjectHasField(type: string, fieldName: string): Promise<boolean>;
+    getNameField(type: string): Promise<string | undefined>;
+    sObjectGetFieldType(type: string, fieldName: string): Promise<FieldType>;
+    sObjectGetFieldType(type: string, fieldName: string, throwWhenNotFound: boolean | false): Promise<FieldType | undefined>;
+    toSalesforceField(type: string, path: string): Promise<string>;
+}
+
+/**
  * Provides access to Database Schema methods like describe.
  */
 @injectable.singleton()
-export class SalesforceSchemaService {
+export class SalesforceSchemaService implements ISalesforceSchemaService {
 
     private readonly fieldMatchingStrategies: Array<(field: Field, name: string) => boolean> = [
         (field, name) => field.name.toLowerCase() === name.toLowerCase(),

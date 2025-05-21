@@ -17,7 +17,7 @@ describe('DatapackExportQueries', () => {
         } as any) as VlocityMatchingKeyService;
     }
 
-    function mockSchemaService(fieldTypes?: Record<string, string>) {
+    function mockSchemaService(fieldTypes?: Record<string, string>, nameField: string = 'Name') {
         return ({
             describeSObjectFieldPath: (obj: string, field: string) => {
                 const path = field.split('.');
@@ -28,7 +28,10 @@ describe('DatapackExportQueries', () => {
                     relationshipName: undefined,
                     relationshipOrder: undefined,
                 })));
-            }
+            },            
+            getNameField: () => {
+                return nameField;
+            },
         } as any) as SalesforceSchemaService;
     }
 

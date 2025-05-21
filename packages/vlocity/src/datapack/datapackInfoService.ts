@@ -1,6 +1,7 @@
 import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
-import { cache, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
+import { cache, filterUndefined, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
+import { DatapackTypeDefinition, DatapackTypeDefinitions } from './datapackTypeDefinitions';
 
 export interface VlocityDatapackDefinition {
     /**
@@ -57,24 +58,58 @@ export class DatapackInfoService {
      * @returns {Promise<VlocityDatapackDefinition[]>} Array of datapack info objects linking datapacks to SObjects
      */
     @cache()
-    public async getDatapackDefinitions() : Promise<VlocityDatapackDefinition[]> {
+    public async getDatapackDefinitions() : Promise<DatapackTypeDefinition[]> {
         this.logger.verbose('Querying DataPack configuration from Salesforce');
         const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('%vlocity_namespace%__VlocityDataPackConfiguration__mdt', undefined, 'all');
-        if (configurationRecords.length == 0) {
-            throw new Error('No DataPack configuration found in Salesforce');
+        if (configurationRecords.length == 0) {            
+            this.logger.error(`No DataPack configuration found in Salesforce`);
+        } else {
+            this.logger.verbose(`Loaded ${configurationRecords.length} DataPack configurations`);
         }
-        this.logger.verbose(`Loaded ${configurationRecords.length} DataPack configurations`);
 
         // Split between standard and custom configuration, custom is preferred over standard
         const standardConfiguration = configurationRecords.filter(f => f.NamespacePrefix != null);
         const customConfiguration = configurationRecords.filter(f => f.NamespacePrefix == null);
 
-        const datapackInfos = [...customConfiguration, ...standardConfiguration].map(record => [
+        const orgConfigs = new Map([...customConfiguration, ...standardConfiguration].map(record => [
             record.DeveloperName.toLowerCase(),
-            { sobjectType: record.primarySObjectType, datapackType: record.developerName }
-        ]) as Array<[string, VlocityDatapackDefinition]>;
+            { 
+                sobjectType: record.primarySObjectType, 
+                datapackType: record.developerName
+            }
+        ]) as Array<[string, VlocityDatapackDefinition]>);
+        
+        const localTypes = new Set(Object.keys(DatapackTypeDefinitions).map(key => key.toLowerCase()));
+        const configs = Object.values(DatapackTypeDefinitions).flat();
 
-        return [...new Map(datapackInfos).values()];
+        for (const [type, info] of orgConfigs.entries()) {
+            if (localTypes.has(type)) {
+                continue;
+            }
+
+            if (!info.sobjectType) {
+                this.logger.error(`Datapack configuration '${info.datapackType}' does not have a primary SObject type - set the PrimarySObjectType field in the VlocityDataPackConfiguration__mdt metadata object`);
+                continue;
+            }
+
+            const sobject = await this.salesforce.schema.describeSObject(info.sobjectType, false) ||
+            await this.salesforce.schema.describeSObject(this.salesforce.updateNamespace(`%vlocity_namespace%__${info.sobjectType}`), false);
+            if (!sobject) {
+                this.logger.error(`Datapack configuration '${info.datapackType}' has an invalid SObject type '${info.sobjectType}'`);
+                continue;
+            }
+            
+            configs.push({
+                typeLabel: sobject.label,
+                datapackType: info.datapackType,
+                source: {
+                    sobjectType: sobject.name,
+                    fieldList: filterUndefined([ 'Id', sobject.fields.find(f => f.nameField)?.name ]),
+                }
+            });
+        }
+        
+        return configs;
     }
 
     /**
@@ -83,11 +118,15 @@ export class DatapackInfoService {
      * otherwise returns the datapack definition.
      * @param datapackType Datapack type
      */
-    public async getDatapackInfo(datapackType: string) : Promise<VlocityDatapackDefinition | undefined> {
-        const lowerCaseType = datapackType.toLowerCase();
-        return (await this.getDatapackDefinitions()).find(
-            dataPack => dataPack.datapackType.toLowerCase() === lowerCaseType
+    public async getDatapackInfo(sobjectType: string, datapackType?: string) : Promise<DatapackTypeDefinition | undefined> {
+        const objectRegex = new RegExp(`^([a-z0-9_%]+__)?${removeNamespacePrefix(sobjectType)}$`,'i');
+        const objects = (await this.getDatapackDefinitions()).filter(
+            dataPack => objectRegex.test(dataPack.source.sobjectType)
         );
+        if (objects.length > 1 && datapackType) {
+            return objects.find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase());
+        }
+        return objects[0];
     }
 
     /**
@@ -107,7 +146,7 @@ export class DatapackInfoService {
         // if not found match based on datapack type; this is not 100% correct but yield good results with the standard configiration
         // TODO: analyze DR and based on that determine the SObject type
         const datapackInfo =
-            definitions.find(dataPack => dataPack.sobjectType && objectRegex.test(removeNamespacePrefix(dataPack.sobjectType))) ||
+            definitions.find(dataPack => dataPack.source.sobjectType && objectRegex.test(removeNamespacePrefix(dataPack.source.sobjectType))) ||
             definitions.find(dataPack => dataPack.datapackType && typeRegex.test(dataPack.datapackType));
 
         if (!datapackInfo) {
@@ -121,17 +160,17 @@ export class DatapackInfoService {
      * Gets the SObject type for the specified Datapack, namespaces are returned with a replaceable prefix %vlocity_namespace%
      * @param sobjectType Datapack type
      */
-    public async getSObjectType(datapackType: string) : Promise<string> {
-        const datapackInfo = await this.getDatapackInfo(datapackType);
-        if (!datapackInfo) {
-            throw new Error(`No Datapack with name '${datapackType}' is not configured in Salesforce (see VlocityDataPackConfiguration object)`);
-        }
-        if (!datapackInfo?.sobjectType) {
-            throw new Error(`No primary SObject set datapack for datapack '${datapackType}' in VlocityDataPackConfiguration`);
-        }
-        const sobjectType =
-            await this.salesforce.schema.describeSObject(datapackInfo.sobjectType, datapackInfo.sobjectType.startsWith('%vlocity_namespace%')) ||
-            await this.salesforce.schema.describeSObject(`%vlocity_namespace%__${datapackInfo.sobjectType}`);
-        return sobjectType.name;
-    }
+    // public async getSObjectType(datapackType: string) : Promise<string> {
+    //     const datapackInfo = await this.getDatapackInfo(datapackType);
+    //     if (!datapackInfo) {
+    //         throw new Error(`No Datapack with name '${datapackType}' is not configured in Salesforce (see VlocityDataPackConfiguration object)`);
+    //     }
+    //     if (!datapackInfo?.source.sobjectType) {
+    //         throw new Error(`No primary SObject set datapack for datapack '${datapackType}' in VlocityDataPackConfiguration`);
+    //     }
+    //     const sobjectType =
+    //         await this.salesforce.schema.describeSObject(datapackInfo?.source.sobjectType, datapackInfo?.source.sobjectType.startsWith('%vlocity_namespace%')) ||
+    //         await this.salesforce.schema.describeSObject(`%vlocity_namespace%__${datapackInfo?.source.sobjectType}`);
+    //     return sobjectType.name;
+    // }
 }

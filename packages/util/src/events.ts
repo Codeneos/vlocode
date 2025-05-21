@@ -25,7 +25,7 @@ interface EventToken {
 
 type EventMap = Record<string, any>;
 type EventKey<T extends EventMap> = string & keyof T;
-type EventReceiver<T> = ( params: T) => any | Promise<any>;
+type EventReceiver<T> = (params: T) => any | Promise<any>;
 
 export type AsyncEventHandler<T extends EventMap> = {
     [K in keyof T]?: EventReceiver<T[K]>
@@ -157,7 +157,7 @@ export class AsyncEventEmitter<T extends EventMap = any> {
      */
     protected onCallbackEmitError(err: unknown, event: string, failedCallback: EventReceiver<any>) {
         if (err instanceof Error) {
-            console.error(`Event "${event}" failed with error:`, err.message, '\n', err.stack);
+            console.error(`Event "${event}" failed with error:`, err.message, '\n', err.stack, '\n', failedCallback);
         } else {
             console.error(`Event "${event}" failed with error:`, err);
         }
@@ -234,4 +234,19 @@ export class AsyncEventEmitter<T extends EventMap = any> {
         }
         return this;
     }
+}
+
+
+type Events<T> = Record<keyof T, any[]>;
+type UntypedEvents = { [event: string]: [...any] }
+type EventListener<K, T> = 
+    K extends keyof T ? (T[K] extends unknown[] ? (...args: T[K]) => void : never) : never
+
+export interface EventEmitting<T extends Events<T> = UntypedEvents> {
+    on<K extends keyof T>(event:K, listener: EventListener<K, T>): this;
+    once<K extends keyof T>(event: K, listener: EventListener<K, T>): this;
+    off<K extends keyof T>(eventName: K, listener: EventListener<K, T>): this;
+    addListener<K extends keyof T>(eventName: K, listener: EventListener<K, T>): this;
+    removeListener<K extends keyof T>(event: K, listener: EventListener<K, T>): this;
+    removeAllListeners<K extends keyof T>(event?: K): this;
 }

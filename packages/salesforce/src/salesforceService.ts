@@ -1,6 +1,6 @@
 import * as jsforce from 'jsforce';
 import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, spreadAsync, filterUndefined, AwaitableAsyncGenerator } from '@vlocode/util';
+import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, filterUndefined, AwaitableAsyncGenerator } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploy/packageBuilder';
@@ -75,9 +75,9 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return (await this.getInstalledPackageDetails(packageName)) !== undefined;
     }
 
-    public async getPageUrl(page : string, ops?: { namespacePrefix? : string; useFrontdoor?: boolean}) {
+    public async getPageUrl(page : string, options?: { namespacePrefix? : string; useFrontdoor?: boolean}) {
         const con = await this.getJsForceConnection();
-        let relativeUrl = page.replace(/^\/+/, '');
+        let relativeUrl = this.namespaceService.updateNamespace(page.replace(/^\/+/, ''));
         if (relativeUrl.startsWith('apex/')) {
             // Build lightning URL
             const state = {
@@ -90,11 +90,11 @@ export class SalesforceService implements SalesforceConnectionProvider {
             relativeUrl = `one/one.app#${Buffer.from(JSON.stringify(state)).toString('base64')}`;
         }
 
-        if (ops?.useFrontdoor) {
+        if (options?.useFrontdoor) {
             relativeUrl = `secur/frontdoor.jsp?sid=${encodeURIComponent(con.accessToken)}&retURL=${encodeURIComponent(relativeUrl)}`;
         }
 
-        const urlNamespace = ops?.namespacePrefix ? `--${  ops.namespacePrefix.replace(/_/i, '-')}` : '';
+        const urlNamespace = options?.namespacePrefix ? `--${  options.namespacePrefix.replace(/_/i, '-')}` : '';
         let url = con.instanceUrl.replace(/(http(s|):\/\/)([^.]+)(.*)/i, `$1$3${urlNamespace}$4/${relativeUrl}`);
 
         if (relativeUrl.startsWith('lightning/') && url.includes('.my.')) {
@@ -110,20 +110,38 @@ export class SalesforceService implements SalesforceConnectionProvider {
         if (!installedPackage) {
             throw new Error(`Package with name ${packageName} is not installed on your Salesforce organization`);
         }
-        return installedPackage.fullName!;
+        return installedPackage.namespace ?? '';
     }
 
     @cache()
-    public async getInstalledPackageDetails(packageName: string | RegExp){
+    public async getInstalledPackageDetails(packageName: string | RegExp) {
         const results = await this.getInstalledPackages();
-        return results.find(packageInfo => typeof packageName === 'string' ? packageName === packageInfo.fullName : packageName.test(packageInfo.fullName!));
+        return results.find(packageInfo => typeof packageName === 'string' 
+            ? packageName === packageInfo.name 
+            : packageName.test(packageInfo.name)
+        );
     }
 
     @cache()
     public async getInstalledPackages() {
-        const connection = await this.getJsForceConnection();
-        const packageList = await spreadAsync(connection.metadata.readAll('InstalledPackage'));
-        return packageList;
+        const connection = await this.queryService.queryTooling(
+            new QueryBuilder('InstalledSubscriberPackage', [
+                'SubscriberPackageVersion.MinorVersion',
+                'SubscriberPackageVersion.MajorVersion',
+                'SubscriberPackageVersion.PatchVersion',
+                'SubscriberPackageVersion.Name',
+                'SubscriberPackage.Name',
+                'SubscriberPackage.NamespacePrefix',
+                'SubscriberPackage.Id'
+            ]).getQuery()
+        );
+        return connection.map(pkg => ({
+            id: pkg.Id,
+            name: pkg.SubscriberPackage.Name as string,
+            namespace: pkg.SubscriberPackage.NamespacePrefix as (string | undefined),
+            version: `${pkg.SubscriberPackageVersion.MajorVersion}.${pkg.SubscriberPackageVersion.MinorVersion}.${pkg.SubscriberPackageVersion.PatchVersion}`,
+            versionName: `${pkg.SubscriberPackageVersion.Name}`,
+        }));
     }
 
     @cache()
@@ -379,9 +397,18 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param resourceName Name of the static resource
      * @returns 
      */
-    public async getStaticResource(resourceName: string) {
+    public async listStaticResources(resourceName: string, filter?: { contentType?: string, namespace?: string }) {
+        const query = new QueryBuilder('StaticResource', [ 'Id', 'Body', 'Name', 'NamespacePrefix', 'BodyLength' ]);
+        query.where.like('Name', resourceName);
+        if (filter?.namespace) {
+            query.where.like('NamespacePrefix', filter.namespace);
+        }
+        if (filter?.contentType) {
+            query.where.like('ContentType', filter.contentType);
+        }
+
         const connection = await this.getJsForceConnection();
-        const { records: staticResources } = await connection.tooling.query<any>(`SELECT Id, Body, Name, NamespacePrefix FROM StaticResource WHERE Name = '${resourceName}'`);
+        const { records: staticResources } = await connection.tooling.query<any>(query.toString());
         
         if (staticResources.length == 0) {
             return [];
@@ -390,7 +417,8 @@ export class SalesforceService implements SalesforceConnectionProvider {
         return staticResources.map(r => ({
             id: r.Id,
             namespace: r.NamespacePrefix,
-            name: r.name,
+            name: r.Name,
+            size: r.BodyLength,
             getBody: async function() {
                 if (!this._body) {
                     this._body = await connection.request(r.Body);

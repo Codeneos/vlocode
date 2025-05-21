@@ -9,7 +9,6 @@ import { Logger, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
-import exportQueryDefinitions, { DatapackQueryDefinitions } from '../../exportQueryDefinitions.yaml';
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
 import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
@@ -241,27 +240,27 @@ export default class VlocityDatapackService implements vscode.Disposable {
         return this.vlocityBuildTools.namespace;
     }
 
-    /**
-     * Get all known query definitions.
-     */
-    public async getQueryDefinitions() : Promise<DatapackQueryDefinitions> {
-        const customJobOptions = await this.getCustomJobOptions();
-        if (customJobOptions && customJobOptions.customQueries) {
-            const customQueries = customJobOptions.customQueries.reduce((map, val) =>
-                Object.assign(map, { [val.VlocityDataPackType]: val }) , {});
-            return {...customQueries, ...exportQueryDefinitions};
-        }
-        return exportQueryDefinitions;
-    }
+    // /**
+    //  * Get all known query definitions.
+    //  */
+    // public async getQueryDefinitions() : Promise<DatapackQueryDefinitions> {
+    //     const customJobOptions = await this.getCustomJobOptions();
+    //     if (customJobOptions && customJobOptions.customQueries) {
+    //         const customQueries = customJobOptions.customQueries.reduce((map, val) =>
+    //             Object.assign(map, { [val.VlocityDataPackType]: val }) , {});
+    //         return {...customQueries, ...exportQueryDefinitions};
+    //     }
+    //     return exportQueryDefinitions;
+    // }
 
-    /**
-     * Get the query definition for the specified datapack type.
-     * @param datapack Datapack type
-     */
-    public async getQueryDefinition(datapack: string) {
-        const q = await this.getQueryDefinitions();
-        return Object.entries(await this.getQueryDefinitions()).find(([type]) => stringEquals(type, datapack))?.[1];
-    }
+    // /**
+    //  * Get the query definition for the specified datapack type.
+    //  * @param datapack Datapack type
+    //  */
+    // public async getQueryDefinition(datapack: string) {
+    //     const q = await this.getQueryDefinitions();
+    //     return Object.entries(await this.getQueryDefinitions()).find(([type]) => stringEquals(type, datapack))?.[1];
+    // }
 
     /**
      * Expanded value for a specific datapack setting

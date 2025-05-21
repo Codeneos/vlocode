@@ -152,10 +152,10 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             return connection.request(request);
         });
         this.logger.info(`${request.method} ${request.url} [${timer.stop()}]`);
-
+        
         const responseDocument = await vscode.workspace.openTextDocument({
-            language: 'json',
-            content: JSON.stringify(response, null, 4)
+            language: typeof response === 'string' ? undefined : 'json',
+            content: typeof response === 'string' ? response : JSON.stringify(response, null, 4)
         });
 
         if (responseDocument) {

@@ -1,6 +1,7 @@
-export interface ErrorOptions extends Record<string, string | number | boolean | undefined>{
+export type ErrorOptions = Record<string, string | number | boolean | undefined> &{
     name?: string;
     code?: string;
+    cause?: unknown;
 }
 
 /**
@@ -16,7 +17,7 @@ export class CustomError extends Error {
     public readonly code?: string;
 
     constructor(message: string, options?: ErrorOptions | Error) {
-        super(message);
+        super(message, { cause: options?.cause });
         if (options) {
             if (options['code'] && !options['name']) {
                 options['name'] = options['code'];

@@ -6,7 +6,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [1.27.7](https://github.com/codeneos/vlocode/compare/v1.27.6...v1.27.7) (2025-01-28)
 
-**Note:** Version bump only for package vlocode
+**Note:** Version bump only for package vlocode-project
 
 ## [1.27.6](https://github.com/codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
 
@@ -16,23 +16,41 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## [1.27.5](https://github.com/codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* datapack records with indentical lookup values get incorrectly marked as duplicates ([ef1a01b](https://github.com/codeneos/vlocode/commit/ef1a01b3bea9db79883d655c3fd621e2444bdcfb))
+
+* error and warning report for Vlocode CLI deploy action is not consistent ([36a52c9](https://github.com/codeneos/vlocode/commit/36a52c9bebafe5be845b6a8a9bbb4e37fe1e2309))
+
+* errors do not get stored when using just updateStatus to fail a record deployment ([2e497b1](https://github.com/codeneos/vlocode/commit/2e497b15cf90be51691710fd401ab04965877cf4))
+
+* record activation for matrices and calculation procedures ([dc5fe73](https://github.com/codeneos/vlocode/commit/dc5fe735fee6474238f4e7c4e12a7df70a249399))
+
+* specs do not use local container causing spec errors ([733c02f](https://github.com/codeneos/vlocode/commit/733c02ffa0e3b04fb25a992e49ba2666938f0627))
+
+* timeout calculation for httpRequest ([cb6449c](https://github.com/codeneos/vlocode/commit/cb6449cbdddf07200a3d774d25dfe3c421877560))
+
+### Features
+
+* add more flexible partition function to replace segregate ([f21eb2b](https://github.com/codeneos/vlocode/commit/f21eb2b643927f0d4d47c58cd70494bd278c1c04))
 
 ## [1.27.4](https://github.com/codeneos/vlocode/compare/v1.27.3...v1.27.4) (2024-08-28)
 
-**Note:** Version bump only for package vlocode
+### Bug Fixes
+
+* update datapackExpander.ts to normalize file names the same way as tools library does ([2b251f9](https://github.com/codeneos/vlocode/commit/2b251f9eeee935cb0f22c0df1ee66f2ae059083c))
 
 ## [1.27.3](https://github.com/codeneos/vlocode/compare/v1.27.2...v1.27.3) (2024-08-22)
 
-**Note:** Version bump only for package vlocode
+**Note:** Version bump only for package vlocode-project
 
 ## [1.27.2](https://github.com/codeneos/vlocode/compare/v1.27.1...v1.27.2) (2024-08-22)
 
-**Note:** Version bump only for package vlocode
+**Note:** Version bump only for package vlocode-project
 
 ## [1.27.1](https://github.com/codeneos/vlocode/compare/v1.27.0...v1.27.1) (2024-08-21)
 
-**Note:** Version bump only for package vlocode
+**Note:** Version bump only for package vlocode-project
 
 # [1.27.0](https://github.com/codeneos/vlocode/compare/v1.26.2...v1.27.0) (2024-08-21)
 

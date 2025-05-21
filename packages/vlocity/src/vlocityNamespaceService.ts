@@ -56,7 +56,7 @@ export class VlocityNamespaceService extends NamespaceService {
     private async getConnectionNamespace(connection: SalesforceConnection) {
         // Init namespace by query a Vlocity class similar as to what is done in the build tools
         const timer = new Timer();
-        const results = await connection.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
+        const results = await connection.tooling.query<{ NamespacePrefix: string }>('select NamespacePrefix from ApexClass where name = \'DRDataPackService\' limit 1');
         const namespace = results.records[0]?.NamespacePrefix ?? null;
 
         if (results.totalSize == 0) {

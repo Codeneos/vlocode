@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import { cache, clearCache } from '@vlocode/util';
 import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 

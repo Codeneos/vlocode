@@ -11,6 +11,13 @@ import { OmniScriptActivator, OmniScriptDefinition } from '@vlocode/omniscript';
 @deploymentSpec({ recordFilter: /^OmniProcess$/i })
 export class OmniProcess implements DatapackDeploymentSpec {
 
+    private readonly fields = {
+        isProcedure: 'IsIntegrationProcedure',
+        lwcKey: 'WebComponentKey',
+        uiniqueName: 'UniqueName',
+        active: 'IsActive'
+    } as const;
+
     public constructor(
         private readonly activator: OmniScriptActivator,
         private readonly container: Container,
@@ -18,7 +25,11 @@ export class OmniProcess implements DatapackDeploymentSpec {
     }
 
     public async preprocess(datapack: VlocityDatapack) {
-        datapack.data['IsActive'] = false;
+        datapack.data[this.fields.active] = false;
+        delete datapack.data[this.fields.uiniqueName];
+        if (datapack.data[this.fields.isProcedure] === true) {
+            delete datapack.data[this.fields.lwcKey];
+        }
     }
 
     public async afterDeploy(event: DatapackDeploymentEvent) {
@@ -32,7 +43,7 @@ export class OmniProcess implements DatapackDeploymentSpec {
                     reactivateDependentScripts: false,
                     useStandardRuntime: event.deployment.options.standardRuntime
                 });
-                activatedScripts.push(activatedScript);
+                activatedScript && activatedScripts.push(activatedScript);
             } catch(err) {
                 this.logger.error(`Failed to activate omniScript for ${record.datapackKey} -- ${getErrorMessage(err)}`);
                 record.updateStatus(DeploymentStatus.Failed, err.message || err);

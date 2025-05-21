@@ -1,3 +1,5 @@
+import { OmniProcessRecord } from './omniProcess';
+import { OmniScriptRecord } from './omniScript';
 import { OmniScriptElementDefinition } from "./omniScriptElementDefinition";
 
 export interface OmniScriptSpecification {
@@ -138,4 +140,45 @@ export interface OmniScriptDefinition {
     bpSubType: string;
     bpLang: string;
     bHasAttachment: boolean;
+}
+
+export namespace OmniScriptDefinition {
+    
+    /**
+     * Maps OmniScript record types to their corresponding Salesforce SObject API names.
+     *
+     * - `OmniScriptRecord.SObjectType`: Maps to the namespaced OmniScriptDefinition SObject.
+     * - `OmniProcessRecord.SObjectType`: Maps to the OmniProcessCompilation SObject.
+     *
+     * This constant is used to resolve the correct SObject type for different OmniScript-related records.
+     * The mapping is immutable.
+     */
+    export const SObjectType = {
+        [OmniScriptRecord.SObjectType]: '%vlocity_namespace%__OmniScriptDefinition__c',
+        [OmniProcessRecord.SObjectType]: 'OmniProcessCompilation'
+    } as const;
+
+    /**
+     * A constant object mapping SObject types to their corresponding field name mappings.
+     * 
+     * Each key is an SObject type (from either `OmniScriptRecord.SObjectType` or `OmniProcessRecord.SObjectType`),
+     * and its value is an object that maps logical field identifiers (`sequence`, `scriptId`, `content`)
+     * to their actual field names in the data model.
+     *
+     * @remarks
+     * This mapping is used to abstract field name differences between different SObject types,
+     * allowing code to reference fields in a type-safe and consistent manner.
+     */
+    export const Fields = {
+        [OmniScriptRecord.SObjectType]: {
+            sequence: '%vlocity_namespace%__Sequence__c',
+            scriptId: '%vlocity_namespace%__OmniScriptId__c',
+            content: '%vlocity_namespace%__Content__c'
+        } ,
+        [OmniProcessRecord.SObjectType]: {
+            sequence: 'Sequence',
+            scriptId: 'OmniProcessId',
+            content: 'Content'
+        }
+    } as const;
 }

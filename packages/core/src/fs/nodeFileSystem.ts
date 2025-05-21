@@ -1,6 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path';
-import globby from 'globby';
 import { injectable } from '../index';
 import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
 
@@ -68,24 +66,15 @@ export class NodeFileSystem extends FileSystem {
         }));
     }
 
-    public findFiles(patterns: string | string[]): Promise<string[]> {
-        return globby(this.normalizeGlobPatterns(patterns), {
-            fs: {
-                lstat: this.innerFs.lstat.bind(this.innerFs),
-                stat: this.innerFs.stat.bind(this.innerFs),
-                lstatSync: this.innerFs.lstatSync.bind(this.innerFs),
-                statSync: this.innerFs.statSync.bind(this.innerFs),
-                readdir: this.innerFs.readdir.bind(this.innerFs),
-                readdirSync: this.innerFs.readdirSync.bind(this.innerFs)
-            }
-        });
-    }
-
-    protected normalizeGlobPatterns(patterns: string | string[]) {
-        // Normalize windows path separator to posix for globby
-        return typeof patterns == 'string' ?
-            patterns.replace(/[/\\]+/g, path.posix.sep) :
-            patterns.map(this.normalizeGlobPatterns, this);
+    protected globbyFs() {
+        return {
+            lstat: this.innerFs.lstat.bind(this.innerFs),
+            stat: this.innerFs.stat.bind(this.innerFs),
+            lstatSync: this.innerFs.lstatSync.bind(this.innerFs),
+            statSync: this.innerFs.statSync.bind(this.innerFs),
+            readdir: this.innerFs.readdir.bind(this.innerFs),
+            readdirSync: this.innerFs.readdirSync.bind(this.innerFs)
+        };
     }
 }
 

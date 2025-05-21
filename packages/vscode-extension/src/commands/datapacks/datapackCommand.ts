@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 
-import exportQueryDefinitions from '../../exportQueryDefinitions.yaml';
 import VlocityDatapackService, { ManifestEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { CommandBase } from '../../lib/commandBase';
-import { evalExpr, mapAsync, mapAsyncParallel } from '@vlocode/util';
-import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackUtil } from '@vlocode/vlocity';
+import { mapAsync, mapAsyncParallel } from '@vlocode/util';
+import { getDatapackHeaders, getDatapackManifestKey, VlocityDatapack, DatapackTypeDefinition, getDatapackTypeDefinition } from '@vlocode/vlocity';
 import { SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 
 
@@ -61,11 +60,15 @@ export abstract class DatapackCommand extends CommandBase {
      * @returns List of datapacks and their associated salesforce records and record Ids
      */
     protected async getSalesforceRecords(datapacks: VlocityDatapack[], options?: { showRecordSelection?: boolean }) {
-        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) =>
-            options?.showRecordSelection && matchedRecords.length > 1
-                ? this.showRecordSelection(matchedRecords, datapacks[i].datapackType) 
-                : this.getBestRecord(matchedRecords, datapacks[i].datapackType)
-        );
+        const matchingRecords = await mapAsync(await this.datapackService.getDatapackRecords(datapacks), async (matchedRecords, i) => {
+            const type = getDatapackTypeDefinition(datapacks[i]);
+            if (!type) {
+                return matchedRecords[0];
+            }
+            return options?.showRecordSelection && matchedRecords.length > 1
+                ? this.showRecordSelection(matchedRecords, type) 
+                : this.getBestRecord(matchedRecords, type)
+        });
 
         return datapacks.map((datapack, i) => ({ 
             datapack,
@@ -76,37 +79,34 @@ export abstract class DatapackCommand extends CommandBase {
         }));
     }
 
-    protected async showRecordSelection(records: SObjectRecord[], datapackType: string, placeHolder?: string) : Promise<SObjectRecord | undefined> {
+    protected async showRecordSelection(records: SObjectRecord[], datapackType: DatapackTypeDefinition | undefined, placeHolder?: string) : Promise<SObjectRecord | undefined> {
         return (await vscode.window.showQuickPick(this.getRecordSelectionOptions(records, datapackType), { placeHolder, ignoreFocusOut: true }))?.record;
     }
 
-    private getBestRecord(records: SObjectRecord[], datapackType: string): SObjectRecord | undefined {
+    private getBestRecord(records: SObjectRecord[], datapackType: DatapackTypeDefinition | undefined): SObjectRecord {
         if (records.length > 1) {
             return this.getRecordSelectionOptions(records, datapackType)[0].record;
         }
         return records[0];
     }
 
-    private getRecordSelectionOptions(records: SObjectRecord[], datapackType: string): RecordQuickPickItem[] {
-        // get the query def for the object type
-        const queryDef = exportQueryDefinitions[datapackType];
-
+    private getRecordSelectionOptions(records: SObjectRecord[], datapackType: DatapackTypeDefinition | undefined): RecordQuickPickItem[] {
         // Select object
-        const recordOptions: Array<RecordQuickPickItem> = records.map(r => ({
-            label: queryDef?.name ? evalExpr(queryDef.name, r) : DatapackUtil.getLabel(r),
-            description: r.attributes.url,
-            record: r
+        const recordOptions: Array<RecordQuickPickItem> = records.map(record => ({
+            label: this.evalLabel(record, datapackType?.displayName ?? 'Name'),
+            description: this.evalLabel(record, datapackType?.description),
+            record
         }));
         recordOptions.sort((a, b) => a.record.version ? b.record.version - a.record.version : a.label.localeCompare(b.label));
 
-        if (queryDef?.groupKey) {
+        if (datapackType?.grouping) {
             recordOptions.unshift({ kind: vscode.QuickPickItemKind.Separator } as any);
 
             // add latest version option
             const latestVersion = recordOptions[1].record;
             recordOptions.unshift({
                 label: 'Latest',
-                description: queryDef.name ? evalExpr(queryDef.name, latestVersion) : DatapackUtil.getLabel(latestVersion),
+                description: this.evalLabel(latestVersion, datapackType.displayName ?? 'Name'),
                 record: latestVersion
             });
 
@@ -115,7 +115,7 @@ export abstract class DatapackCommand extends CommandBase {
             if (activeVersion) {
                 recordOptions.unshift({
                     label: '$(primitive-dot) Active',
-                    description: queryDef.name ? evalExpr(queryDef.name, activeVersion) : DatapackUtil.getLabel(activeVersion),
+                    description: this.evalLabel(activeVersion, datapackType.displayName ?? 'Name'),
                     record: activeVersion
                 });
             }
@@ -131,5 +131,12 @@ export abstract class DatapackCommand extends CommandBase {
             { label: `${!standardRuntime ? '$(primitive-dot) ' : ''}Standard Runtime`, description: 'Use the standard runtime', useStandardRuntime: true }
         ], { placeHolder: 'Select the runtime to generate LWC components for' });
         return selected?.useStandardRuntime ?? false;
+    }
+
+    protected evalLabel(record : SObjectRecord, labelFn: string | ((record: any) => string) | undefined) {
+        if (typeof labelFn === 'function') {
+            return labelFn(record);
+        }
+        return labelFn ? record[labelFn] : undefined;
     }
 }

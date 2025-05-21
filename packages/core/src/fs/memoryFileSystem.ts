@@ -11,7 +11,7 @@ export class MemoryFileSystem extends NodeFileSystem {
         return this.innerFs as unknown as Volume
     }
 
-    constructor(files: { [fileName: string] : string } = {}) {
+    constructor(files: { [fileName: string] : string | Buffer } = {}) {
         super(MemFs.fromJSON(files) as any);
     }
 

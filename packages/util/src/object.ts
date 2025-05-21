@@ -174,6 +174,8 @@ export function filterKeys<TOut extends object = object, TIn extends object = ob
  * @param {*} value object
  * @returns Deep copy of an object
  */
+export function deepClone<T>(value: T): T;
+export function deepClone<T, K extends T & undefined>(value: K): K;
 export function deepClone<T>(value: T): T {
     if (value === undefined || value === null) {
         return value;

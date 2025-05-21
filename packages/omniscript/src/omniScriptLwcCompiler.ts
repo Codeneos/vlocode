@@ -65,7 +65,7 @@ export class OmniScriptLwcCompiler {
         }
 
         // fetch compiler script from server
-        const [compilerSource] = await this.salesforceService.getStaticResource(this.lwcCompilerResource);
+        const [compilerSource] = await this.salesforceService.listStaticResources(this.lwcCompilerResource);
 
         if (!compilerSource) {
             throw new Error('Unable to find OmniScript LWC compiler; is the Vlocity managed package installed?');

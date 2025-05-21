@@ -79,4 +79,5 @@ export enum VlocodeCommand {
     cardGenerateLwc  = 'vlocode.card.generateLwc',
     cardDeployLwc  = 'vlocode.card.deployLwc',
     cardActivate  = 'vlocode.card.activate',
+    importMultipack = 'vlocode.importMultipack',
 }

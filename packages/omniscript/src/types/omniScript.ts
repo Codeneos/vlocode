@@ -41,6 +41,7 @@ export interface OmniScriptElementRecord {
 export namespace OmniScriptRecord {
     export const SObjectType = '%vlocity_namespace%__OmniScript__c';
     export const ActivationField = '%vlocity_namespace%__IsActive__c';
+    export const WebComponentKeyField = '%vlocity_namespace%__LwcId__c';
     export const Fields = [
         'Id', 
         'Name', 
@@ -57,7 +58,6 @@ export namespace OmniScriptRecord {
         '%vlocity_namespace%__IsLwcEnabled__c',
         '%vlocity_namespace%__IsReusable__c'
     ];
-
     export function fromDatapack(datapack: VlocityDatapack): OmniScriptWithElementsRecord {
         const record = RecordFactory.create(datapack.data);
         let result: OmniScriptRecord;

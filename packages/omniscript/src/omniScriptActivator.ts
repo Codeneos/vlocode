@@ -1,8 +1,8 @@
-import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
+    import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { spreadAsync, timeout, Timer } from '@vlocode/util';
 
-import { OmniScriptDefinition, OmniScriptRecord, OmniScriptSpecification } from './types';
+import { OmniProcessRecord, OmniScriptDefinition, OmniScriptRecord, OmniScriptSpecification } from './types';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
@@ -59,7 +59,7 @@ export interface OmniScriptActivationOptions extends OmniScriptLwcDeployOptions,
 }
 
 /**
- * Activates an OmniScript creating compiled OmniScriptDefinition__c records in Salesforce and sets the script state to active.
+ * Activates an OmniScript creating compilation records in Salesforce and sets the script state to active.
  */
 @injectable()
 export class OmniScriptActivator {
@@ -80,27 +80,24 @@ export class OmniScriptActivator {
     }
 
     /**
-     * Activates the specified OmniScript, creates the OmniScriptDefinition__c records in Salesforce and sets the OmniScript to active.
-     * Any existing active OmniScriptDefinition__c records will be deleted.
+     * Activates the specified OmniScript, creates the compilation record in Salesforce and sets the OmniScript to active.
+     * Any existing active compilation records will be deleted.
      * @param input OmniScript to activate
      * @param options Extra options that control how the script is activated
      */
-    public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions): Promise<OmniScriptDefinition> {
+    public async activate(input: OmniScriptSpecification | string, options?: OmniScriptActivationOptions): Promise<OmniScriptDefinition | undefined> {
         const script = await this.scriptAccess.find(input);
-        let definition: OmniScriptDefinition | undefined;
 
-        // (Re-)Activate script
-        if (options?.useStandardRuntime === false) {
-            // Only managed package runtime require a script definition
-            if (options?.remoteActivation || script.omniProcessType !== 'OmniScript') {
-                definition = await this.remoteScriptActivation(script);
-            } else {
-                definition = await this.localScriptActivation(script);
-            }
-        } else {
-            definition = this.standardRuntimeDefinition(script);
+        if (script.omniProcessType !== 'OmniScript') {
             await this.updateActiveVersion(script);
+            return;
         }
+
+        // Only managed package runtime require a script definition
+        const definition: OmniScriptDefinition = 
+            options?.remoteActivation 
+                ? await this.remoteScriptActivation(script) 
+                : await this.localScriptActivation(script);
 
         // Deploy LWC when required
         if (script.isLwcEnabled && options?.skipLwcDeployment !== true) {
@@ -127,13 +124,14 @@ export class OmniScriptActivator {
 
     private async localScriptActivation(script: OmniScriptRecord) {
         const definition = await this.definitionGenerator.getScriptDefinition(script.id);
-        const extraFields: Record<string, unknown> = {};
-        if (script.sObjectType !== 'OmniProcess') {
-            await this.updateScriptDefinition(script.id, definition);
-            extraFields.lwcId = definition.lwcId;
-        }
-        await this.updateActiveVersion(script, extraFields);
-        await this.deleteAllInactiveScriptDefinitions(script.id);
+        await this.updateScriptDefinition(script, definition);
+        await this.updateActiveVersion(script, { 
+            [script.sObjectType === 'OmniProcess' 
+                ? OmniProcessRecord.WebComponentKeyField 
+                : OmniScriptRecord.WebComponentKeyField
+            ]: definition.lwcId 
+        });
+        await this.deleteAllInactiveScriptDefinitions(script);
         return definition;
     }
 
@@ -178,20 +176,22 @@ export class OmniScriptActivator {
         }
     }
 
-    private async updateScriptDefinition(scriptId: string, definition: OmniScriptDefinition) {
+    private async updateScriptDefinition(script: OmniScriptRecord, definition: OmniScriptDefinition) {
         const contentChunks = this.serializeDefinition(definition);
+        const fieldMapping = OmniScriptDefinition.Fields[script.sObjectType];
         const records = contentChunks.map((content, index) => ({
-            ref: `${scriptId}_${index}`,
+            ref: `${script.id}_${index}`,
             values: {
-                content: content,
-                sequence: index,
-                omniScriptId: scriptId,
+                name: script.id,
+                [fieldMapping.content]: content,
+                [fieldMapping.sequence]: index,
+                [fieldMapping.scriptId]: script.id,
             }
         }));
 
-        await this.deleteScriptDefinition(scriptId);
+        await this.deleteScriptDefinition(script);
 
-        for await (const insertResult of this.salesforceService.insert('%vlocity_namespace%__OmniScriptDefinition__c', records)) {
+        for await (const insertResult of this.salesforceService.insert(OmniScriptDefinition.SObjectType[script.sObjectType], records)) {
             if (!insertResult.success) {
                 throw new Error(`Failed to insert OmniScript activation records: ${insertResult.error.message}`);
             }
@@ -234,21 +234,23 @@ export class OmniScriptActivator {
      * Deletes the OmniScriptDefinition__c records for the specified OmniScript
      * @param input OmniScript to clean the script definitions for
      */
-    private async deleteScriptDefinition(scriptId: string) {
-        const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', {
-            omniScriptId: scriptId
-        });
+    private async deleteScriptDefinition(script: OmniScriptRecord) {
+        const results = await this.salesforceService.deleteWhere(
+            OmniScriptDefinition.SObjectType[script.sObjectType], 
+            {
+                [OmniScriptDefinition.Fields[script.sObjectType].scriptId]: script.id
+            }
+        );
         if (results.some(result => !result.success)) {
             this.logger.warn(
-                `Unable to delete all definition record(s) for script with Id "${scriptId}"`,
+                `Unable to delete all definition record(s) for script with Id "${script.id}"`,
                 results.map(result => result.error).join(', '));
         }
     }
 
-    private async deleteAllInactiveScriptDefinitions(input: OmniScriptSpecification | string) {
-        const script = typeof input === 'string' ? await this.scriptAccess.find(input) : input;
-        const results = await this.salesforceService.deleteWhere('%vlocity_namespace%__OmniScriptDefinition__c', {
-            omniScriptId: {
+    private async deleteAllInactiveScriptDefinitions(script: OmniScriptRecord) {
+        const results = await this.salesforceService.deleteWhere(OmniScriptDefinition.SObjectType[script.sObjectType], {
+            [OmniScriptDefinition.Fields[script.sObjectType].scriptId]: {
                 type: script.type,
                 subType: script.subType,
                 language: script.language,

@@ -192,7 +192,11 @@ export class QueryConditionBuilder extends QueryBuilderData {
             }
             this.nextConditionOp = undefined;
         }
-        return this;
+        return this
+    }
+
+    public like(field: (string | { name: string }), value: unknown) : this {
+        return this.condition(`${field} LIKE ${this.formatValue(value)}`);
     }
 
     public equals(field: (string | { name: string }), value: unknown) : this {

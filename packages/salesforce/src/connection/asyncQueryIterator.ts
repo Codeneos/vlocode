@@ -79,8 +79,9 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
                     this.state = AsyncQueryIteratorState.done;
                 }
 
-                this.records.push(...responses.records);
                 this.emit('records', responses.records);
+                this.records.push(...responses.records);
+                this.emit('next');
 
                 if (!this.queryMore) {
                     // Query more is disabled, stop fetching records but do fetch the first record set
@@ -203,7 +204,7 @@ export class AsyncQueryIterator<T extends object = Record<string, unknown>> exte
             void this.fetch();
         }
 
-        return this.oncePromise('records', () => this.next());
+        return this.oncePromise('next', () => this.next());
     }
 
     private oncePromise<TResult>(event: string, handler: (...args: any[]) => TResult): Promise<TResult> {

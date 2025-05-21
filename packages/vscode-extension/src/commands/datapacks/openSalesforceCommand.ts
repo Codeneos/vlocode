@@ -1,19 +1,16 @@
 import * as vscode from 'vscode';
 import open from 'open';
 
-import { proxySpread, evalExpr } from '@vlocode/util';
+import { deepClone } from '@vlocode/util';
 import { ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackCommand } from './datapackCommand';
 import { VlocodeCommand } from '../../constants';
 import { vscodeCommand } from '../../lib/commandRouter';
-import { RecordFactory } from '@vlocode/salesforce';
+import { QueryBuilder } from '@vlocode/salesforce';
+import { DatapackTypeDefinition, getDatapackTypeDefinition } from '@vlocode/vlocity';
 
 @vscodeCommand(VlocodeCommand.openInSalesforce)
 export default class OpenSalesforceCommand extends DatapackCommand {
-
-    private readonly namespaceResolver = {
-        'vlocity': () => this.datapackService.vlocityNamespace
-    };
 
     public execute(...args: any[]): void | Promise<void> {
         return this.openInSalesforce(args[0] || this.currentOpenDocument);
@@ -38,10 +35,11 @@ export default class OpenSalesforceCommand extends DatapackCommand {
             void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; datapack might not be deployed on target org.');
             return;
         }
-
-        const selectedMatch = matchingRecords.length > 1 ? await this.showRecordSelection(matchingRecords, datapack.datapackType) : matchingRecords.pop();
+        
+        const typeDefinition = getDatapackTypeDefinition(datapack);
+        const selectedMatch = matchingRecords.length > 1 ? await this.showRecordSelection(matchingRecords, typeDefinition) : matchingRecords.pop();
         if (selectedMatch) {
-            return this.openIdInSalesforce(selectedMatch.Id, datapack.datapackType, RecordFactory.create(datapack.data));
+            return this.openIdInSalesforce(selectedMatch.Id, datapack.datapackType, selectedMatch);
         }
     }
 
@@ -50,23 +48,27 @@ export default class OpenSalesforceCommand extends DatapackCommand {
         return this.openIdInSalesforce(obj.id ?? record.Id, obj.datapackType, record);
     }
 
-    protected async openIdInSalesforce(objectId: string | undefined, datapackType: string, extraFields?: any) {
+    protected async openIdInSalesforce(objectId: string | undefined, datapackType: string, record?: any) {
         if (!objectId) {
             void vscode.window.showErrorMessage('Unable to resolve Salesforce id for the selected item; it might not be deployed on the connected org.');
             return;
         }
 
         // Build URL
-        const queryDefinition = await this.datapackService.getQueryDefinition(datapackType);
-        let salesforceUrl = queryDefinition?.salesforceUrl || await this.getObjectNativeUrl(objectId);
-        salesforceUrl = typeof salesforceUrl === 'string' ? { path: salesforceUrl } : salesforceUrl;
+        const sobjectInfo = await this.salesforce.schema.describeSObjectById(objectId);
+        const typeDefinition = getDatapackTypeDefinition({ sobjectType: sobjectInfo.name, datapackType });
+        let salesforceUrl: string;
 
-        const namespace = this.resolveNamespace(salesforceUrl.namespace);
-        const salesforcePath = evalExpr(salesforceUrl.path, proxySpread(extraFields, { id: objectId, type: datapackType, namespace }));
+        if (typeDefinition && typeDefinition.salesforceUrl) {
+            const objectQuery = new QueryBuilder(deepClone(typeDefinition.source)).limit(1).where.equals('Id', objectId);
+            const objectData = record ?? (await this.salesforce.query(objectQuery.toString()))[0];
+            salesforceUrl = await this.getObjectUrl(objectData, typeDefinition);
+        } else {
+            salesforceUrl = await this.getObjectNativeUrl(objectId)
+        }
 
-        const url = await this.vlocode.salesforceService.getPageUrl(salesforcePath, { useFrontdoor: true });
-        this.logger.info(`Opening URL: ${salesforcePath}`);
-        // Do not use vscode.env.openExternal as it encodes params of the URI creating an invalid URI
+        const url = await this.vlocode.salesforceService.getPageUrl(salesforceUrl, { useFrontdoor: true });
+        this.logger.info(`Opening URL: ${salesforceUrl}`);
         void open(url);
     }
 
@@ -75,17 +77,25 @@ export default class OpenSalesforceCommand extends DatapackCommand {
 
         if (objectInfo.customSetting) {
             const apexPage = `/setup/ui/viewCustomSettingsData.apexp?appLayout=setup&id=${objectId}`;
-            return `'lightning/setup/CustomSettings/page?address=${encodeURIComponent(apexPage)}'`;
+            return `lightning/setup/CustomSettings/page?address=${encodeURIComponent(apexPage)}`;
         }
 
-        return `'lightning/r/${objectId}/view'`;
+        return `lightning/r/${objectInfo.name}/${objectId}/view`;
     }
 
-    protected resolveNamespace(namespace: string | undefined) : string | undefined {
-        if (namespace && this.namespaceResolver[namespace.toLowerCase()]) {
-            return this.namespaceResolver[namespace.toLowerCase()]();
-        } else if(namespace) {
-            return namespace;
+    private async getObjectUrl(record: object, typeDef: DatapackTypeDefinition) {
+        if (!typeDef.salesforceUrl) {
+            return this.getObjectNativeUrl(record['Id']);
         }
+        if (typeof typeDef.salesforceUrl === 'object') {
+            const options = Object.entries(typeDef.salesforceUrl)
+                .map(([key, value]) => ({
+                    label: key,
+                    detail: value(record),
+                }));
+            const selected = await vscode.window.showQuickPick(options, { placeHolder: 'Select URL' });
+            return selected?.detail ?? options[0].detail;
+        }
+        return typeDef.salesforceUrl(record);
     }
 }

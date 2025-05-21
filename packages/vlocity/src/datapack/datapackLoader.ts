@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { FileSystem , Logger, LogManager , injectable } from '@vlocode/core';
-import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, stringEquals, extractNamespaceAndName, directoryName, cache, fileName } from '@vlocode/util';
+import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, CustomError, getErrorMessage, directoryName, cache, fileName } from '@vlocode/util';
 import { VlocityDatapack } from './datapack';
 import { getExportProjectFolder } from './datapackUtil';
 import { DatapackInfoService } from './datapackInfoService';
@@ -74,19 +74,11 @@ export class DatapackLoader {
             throw new Error(`Datapack missing "VlocityDataPackType" or "VlocityRecordSObjectType" property of type string`);
         }
 
-        const datapackInfo = datapackTypeFolder ? await this.datapackInfo?.getDatapackInfo(datapackTypeFolder) : undefined;
-        const datapackObjectName = extractNamespaceAndName(objectType);
+        const datapackDef = 
+            await this.datapackInfo.getDatapackInfo(objectType, datapackTypeFolder) ||
+            await this.datapackInfo.getDatapackInfo(objectType);
 
-        if (datapackInfo?.sobjectType) {
-            const infoObjectName = extractNamespaceAndName(datapackInfo.sobjectType);
-            if (stringEquals(infoObjectName.name, datapackObjectName.name)) {
-                return datapackTypeFolder;
-            }
-        } else if (datapackInfo) {
-            return datapackInfo.datapackType;
-        }
-
-        return await this.datapackInfo?.getDatapackType(objectType) ?? datapackTypeFolder;
+        return datapackDef?.datapackType ?? 'SObject';
     }
 
     public async loadDatapacks(datapackHeaders: string[], cancellationToken?: CancellationToken) : Promise<VlocityDatapack[]> {
@@ -156,10 +148,11 @@ export class DatapackLoader {
     }
 
     private async fileExists(fileName: string) : Promise<boolean> {
-        return (await this.readDirFiles(directoryName(fileName))).has(fileName);
+        const files = await this.readDirFiles(directoryName(fileName));
+        return files.has(fileName);
     }
 
-    @cache({ ttl: 3000, unwrapPromise: true })
+    @cache({ ttl: 2, unwrapPromise: true })
     private async readDirFiles(dir: string){
         const filePaths = new Set<string>();
         for (const file of await this.fileSystem.readDirectory(dir)) {

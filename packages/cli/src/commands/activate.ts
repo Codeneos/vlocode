@@ -1,5 +1,5 @@
 import { Logger, LogManager, FileSystem } from '@vlocode/core';
-import { OmniScriptActivator, OmniScriptVersionDetail, ScriptDefinitionProvider, OmniScriptLookupService } from '@vlocode/omniscript';
+import { OmniScriptAccess, OmniScriptActivator, OmniScriptRecord, ScriptDefinitionProvider } from '@vlocode/omniscript';
 import { Argument, Option } from '../command';
 import logSymbols from 'log-symbols';
 import { forEachAsyncParallel, getErrorMessage, groupBy, isSalesforceId, Iterable, sortBy, Timer } from '@vlocode/util';
@@ -7,9 +7,9 @@ import { SalesforceCommand } from '../salesforceCommand';
 
 interface ScriptActivationInfo {
     type: string,
-    allVersions: Array<OmniScriptVersionDetail>,
+    allVersions: Array<OmniScriptRecord>,
     dependencies: Array<ScriptActivationInfo>,
-    script: OmniScriptVersionDetail,
+    script: OmniScriptRecord,
     status?: 'pending' | 'activated' | 'error',
 }
 
@@ -119,7 +119,7 @@ export default class extends SalesforceCommand {
     }
 
 
-    private async saveDefinition(script: OmniScriptVersionDetail, options?: { preFix?: string, postFix?: string } ) {
+    private async saveDefinition(script: OmniScriptRecord, options?: { preFix?: string, postFix?: string } ) {
         const fileNameParts = [ 
             options?.preFix ?? '', 
             script.type, 
@@ -151,8 +151,8 @@ export default class extends SalesforceCommand {
     }
 
     private async getScripts(scriptFilter: any): Promise<Map<string, ScriptActivationInfo> | undefined> {
-        const lookup = this.container.create(OmniScriptLookupService);
-        const scripts = await lookup.getScriptVersions(scriptFilter);
+        const lookup = this.container.create(OmniScriptAccess);
+        const scripts = await lookup.filter(scriptFilter);
 
         if (!scripts.length) {
             return;
@@ -173,12 +173,11 @@ export default class extends SalesforceCommand {
         );
 
         // Build dependency graph
-        const elements = await lookup.getScriptElements([...scriptsToActivate.keys()], { type: 'OmniScript' });
+        const elements = await lookup.elements({ scriptId:  [...scriptsToActivate.keys()], type: 'OmniScript', active: true });
         for (const element of elements.values()) {
             const propSet = JSON.parse(element.propertySet);
             const scriptRef = `${propSet['Type']}/${propSet['Sub Type']}/${propSet['Language']!}`;
             const dependency = Iterable.find(scriptsToActivate.values(), info => info.type.toLowerCase() === scriptRef.toLowerCase());
-
             if (dependency) {
                 scriptsToActivate.get(element.omniScriptId)!.dependencies.push(dependency);
             }

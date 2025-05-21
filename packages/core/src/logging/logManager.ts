@@ -21,7 +21,7 @@ export default class LogManager {
     constructor(private globalLogLevel: LogLevel) {
     }
 
-    public get<T>(type: (new (...args: any[]) => T) | string) : Logger {
+    public get(type: { name: string } | string) : Logger {
         const name = typeof type === 'string' ? type : type.name;
         return this.activeLoggers[name] || (this.activeLoggers[name] = this.createLogger(name));
     }

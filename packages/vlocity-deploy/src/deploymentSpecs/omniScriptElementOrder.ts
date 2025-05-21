@@ -75,6 +75,10 @@ export class OmniScriptElementOrderSpec implements DatapackDeploymentSpec {
                 if (!parent) {
                     break;
                 }
+                if (parentElementPath.includes(parent)) {
+                    this.messages.warn(datapack, `element "${element.Name}" has a circular reference to "${parent.Name}"`);
+                    break;
+                }
                 parentElementPath.push(element = parent);
             }
             return parentElementPath.length;
