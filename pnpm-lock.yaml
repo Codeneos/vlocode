@@ -60,28 +60,28 @@ overrides:
 
 patchedDependencies:
   '@oclif/command@1.8.16':
-    hash: iqkmirytp56czwdq3zgc6rvyoy
+    hash: a3982983134038227052e3c0746cc7318e7fb94d720c40044895d73474783914
     path: patches/@oclif__command@1.8.16.patch
   '@salesforce/core@2.37.1':
-    hash: dwmtazf7ord73csdsectnecuee
+    hash: 3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970
     path: patches/@salesforce__core@2.33.1.patch
   '@salesforce/core@3.31.18':
-    hash: 2ugd47rsshyn45ny4dgq7hcb24
+    hash: cf3bfc7bfc41a0bde2a69d8ca69fca11468300eedaf48c952edd356053e34e7b
     path: patches/@salesforce__core@3.31.18.patch
   '@types/jsforce@1.9.42':
-    hash: 6yh4qlsazb5qjqmlnbys4ekmaq
+    hash: f373692d058251ca5c7d9cb8a448f3d20a64f7d74bb4768c8752e026af563621
     path: patches/@types__jsforce@1.9.42.patch
   fast-glob@3.2.11:
-    hash: les5rwnofyjhvbdlmiugb25agu
+    hash: 6890863d47c3d72501c74d3e5f2366fee4ecfdecd77afe43130c0c4abebc876f
     path: patches/fast-glob@3.2.11.patch
   jsforce@1.11.0:
-    hash: e7ayos5jozkcmldmo4pozdageu
+    hash: d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a
     path: patches/jsforce@1.11.0.patch
   typescript@5.1.6:
-    hash: sjs4irdv5ckbkl3gggmzheybku
+    hash: 3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf
     path: patches/typescript@5.1.6.patch
   vlocity@1.14.18:
-    hash: qwnk35chvrotw5mlgicrjke6q4
+    hash: ce2baf6c266b30863dabc3f026eb5887f112c87d14c589dd355ac7e68f126596
     path: patches/vlocity@1.14.18.patch
 
 importers:
@@ -90,17 +90,17 @@ importers:
     dependencies:
       typescript-eslint:
         specifier: ^8.1.0
-        version: 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     devDependencies:
       '@lerna-lite/cli':
         specifier: ^3.8.0
-        version: 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@lerna-lite/publish':
         specifier: ^3.8.0
-        version: 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@lerna-lite/version':
         specifier: ^3.8.0
-        version: 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@types/fs-extra':
         specifier: ^11
         version: 11.0.4
@@ -112,10 +112,10 @@ importers:
         version: 20.17.19
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.1.0
-        version: 8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@typescript-eslint/parser':
         specifier: ^8.1.0
-        version: 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       chalk:
         specifier: ^4.1.2
         version: 4.1.2
@@ -127,7 +127,7 @@ importers:
         version: 8.10.0(eslint@8.57.0)
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0)
+        version: 2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint@8.57.0)
       eslint-plugin-jsdoc:
         specifier: ^37.9.7
         version: 37.9.7(eslint@8.57.0)
@@ -145,7 +145,7 @@ importers:
         version: 8.0.1
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       jest-junit:
         specifier: ^16.0.0
         version: 16.0.0
@@ -166,16 +166,16 @@ importers:
         version: 3.3.3
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typedoc:
         specifier: ^0.24.8
-        version: 0.24.8(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 0.24.8(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typedoc-plugin-rename-defaults:
         specifier: ^0.7.0
-        version: 0.7.0(typedoc@0.24.8(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 0.7.0(typedoc@0.24.8(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/apex:
     dependencies:
@@ -200,7 +200,7 @@ importers:
         version: 29.5.11
       '@types/jsforce':
         specifier: 1.9.42
-        version: 1.9.42(patch_hash=6yh4qlsazb5qjqmlnbys4ekmaq)
+        version: 1.9.42(patch_hash=f373692d058251ca5c7d9cb8a448f3d20a64f7d74bb4768c8752e026af563621)
       '@types/luxon':
         specifier: ^3.3.0
         version: 3.3.0
@@ -215,7 +215,7 @@ importers:
         version: 2.0.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       nugget:
         specifier: ^2.2.0
         version: 2.2.0
@@ -224,10 +224,10 @@ importers:
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/cli:
     devDependencies:
@@ -272,7 +272,7 @@ importers:
         version: 4.0.3(webpack@5.97.1)
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
@@ -287,19 +287,19 @@ importers:
         version: 0.5.21
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       ts-loader:
         specifier: ^9.5
-        version: 9.5.2(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))(webpack@5.97.1)
+        version: 9.5.2(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))(webpack@5.97.1)
       ts-node:
         specifier: ^10.9.0
-        version: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       tsconfig-paths-webpack-plugin:
         specifier: ^3.5.2
         version: 3.5.2
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
       webpack:
         specifier: ^5.97
         version: 5.97.1(webpack-cli@6.0.1)
@@ -348,16 +348,16 @@ importers:
         version: 20.17.19
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/omniscript:
     dependencies:
@@ -388,16 +388,16 @@ importers:
         version: 20.17.19
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/salesforce:
     dependencies:
@@ -418,7 +418,7 @@ importers:
         version: 11.2.0
       jsforce:
         specifier: 1.11.0
-        version: 1.11.0(patch_hash=e7ayos5jozkcmldmo4pozdageu)
+        version: 1.11.0(patch_hash=d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a)
       jszip:
         specifier: ^3.7.0
         version: 3.9.1
@@ -443,7 +443,7 @@ importers:
         version: 29.5.11
       '@types/jsforce':
         specifier: 1.9.42
-        version: 1.9.42(patch_hash=6yh4qlsazb5qjqmlnbys4ekmaq)
+        version: 1.9.42(patch_hash=f373692d058251ca5c7d9cb8a448f3d20a64f7d74bb4768c8752e026af563621)
       '@types/luxon':
         specifier: ^3.3.0
         version: 3.3.0
@@ -455,7 +455,7 @@ importers:
         version: 4.0.2
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       nugget:
         specifier: ^2.2.0
         version: 2.2.0
@@ -464,16 +464,16 @@ importers:
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/util:
     dependencies:
       '@salesforce/core':
         specifier: 3.31.18
-        version: 3.31.18(patch_hash=2ugd47rsshyn45ny4dgq7hcb24)(encoding@0.1.13)
+        version: 3.31.18(patch_hash=cf3bfc7bfc41a0bde2a69d8ca69fca11468300eedaf48c952edd356053e34e7b)(encoding@0.1.13)
       '@xmldom/xmldom':
         specifier: '>=0.9'
         version: 0.9.7
@@ -510,16 +510,16 @@ importers:
         version: 1.70.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/vlocity:
     dependencies:
@@ -547,16 +547,16 @@ importers:
         version: 11.2.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/vlocity-deploy:
     dependencies:
@@ -602,19 +602,19 @@ importers:
         version: 20.17.19
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       ts-json-schema-generator:
         specifier: ^2.3.0
         version: 2.3.0
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   packages/vscode-extension:
     dependencies:
@@ -636,7 +636,7 @@ importers:
         version: 4.0.5
       '@types/jsforce':
         specifier: 1.9.42
-        version: 1.9.42(patch_hash=6yh4qlsazb5qjqmlnbys4ekmaq)
+        version: 1.9.42(patch_hash=f373692d058251ca5c7d9cb8a448f3d20a64f7d74bb4768c8752e026af563621)
       '@types/luxon':
         specifier: ^3.3.0
         version: 3.3.0
@@ -687,13 +687,13 @@ importers:
         version: 11.2.0
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+        version: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
       jsforce:
         specifier: ^1.11.0
-        version: 1.11.0(patch_hash=e7ayos5jozkcmldmo4pozdageu)
+        version: 1.11.0(patch_hash=d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a)
       log-symbols:
         specifier: ^4.0.0
         version: 4.1.0
@@ -714,13 +714,13 @@ importers:
         version: 0.5.21
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       ts-loader:
         specifier: ^9.5
-        version: 9.5.2(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))(webpack@5.99.7)
+        version: 9.5.2(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))(webpack@5.99.7)
       ts-node:
         specifier: ^10.9.0
-        version: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+        version: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       tsconfig-paths-webpack-plugin:
         specifier: ^3.5.2
         version: 3.5.2
@@ -729,10 +729,10 @@ importers:
         version: 2.12.2
       typescript:
         specifier: 5.1.6
-        version: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+        version: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
       vlocity:
         specifier: 1.14.18
-        version: 1.14.18(patch_hash=qwnk35chvrotw5mlgicrjke6q4)(encoding@0.1.13)
+        version: 1.14.18(patch_hash=ce2baf6c266b30863dabc3f026eb5887f112c87d14c589dd355ac7e68f126596)(encoding@0.1.13)
       vscode-languageclient:
         specifier: ^8.1.0
         version: 8.1.0
@@ -7207,7 +7207,7 @@ snapshots:
       jest-util: 29.7.0
       slash: 3.0.0
 
-  '@jest/core@29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))':
+  '@jest/core@29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))':
     dependencies:
       '@jest/console': 29.7.0
       '@jest/reporters': 29.7.0
@@ -7221,7 +7221,7 @@ snapshots:
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -7416,10 +7416,10 @@ snapshots:
 
   '@kwsites/promise-deferred@1.1.1': {}
 
-  '@lerna-lite/cli@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@lerna-lite/cli@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
-      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@lerna-lite/init': 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@lerna-lite/init': 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@lerna-lite/npmlog': 3.8.0
       dedent: 1.5.3
       dotenv: 16.4.5
@@ -7427,15 +7427,15 @@ snapshots:
       load-json-file: 7.0.1
       yargs: 17.7.2
     optionalDependencies:
-      '@lerna-lite/publish': 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@lerna-lite/version': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@lerna-lite/publish': 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@lerna-lite/version': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     transitivePeerDependencies:
       - babel-plugin-macros
       - bluebird
       - supports-color
       - typescript
 
-  '@lerna-lite/core@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@lerna-lite/core@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
       '@inquirer/expand': 2.1.22
       '@inquirer/input': 2.2.9
@@ -7445,7 +7445,7 @@ snapshots:
       chalk: 4.1.2
       clone-deep: 4.0.1
       config-chain: 1.1.13
-      cosmiconfig: 9.0.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      cosmiconfig: 9.0.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       dedent: 1.5.3
       execa: 8.0.1
       fs-extra: 11.2.0
@@ -7471,9 +7471,9 @@ snapshots:
       - supports-color
       - typescript
 
-  '@lerna-lite/init@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@lerna-lite/init@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
-      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       fs-extra: 11.2.0
       p-map: 7.0.2
       write-json-file: 6.0.0
@@ -7495,12 +7495,12 @@ snapshots:
       strip-ansi: 7.1.0
       wide-align: 1.1.5
 
-  '@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
-      '@lerna-lite/cli': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@lerna-lite/cli': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@lerna-lite/npmlog': 3.8.0
-      '@lerna-lite/version': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@lerna-lite/version': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@npmcli/arborist': 7.5.4
       '@npmcli/package-json': 5.2.0
       byte-size: 9.0.0
@@ -7532,10 +7532,10 @@ snapshots:
       - supports-color
       - typescript
 
-  '@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
-      '@lerna-lite/cli': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@lerna-lite/cli': 3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(@lerna-lite/version@3.8.0(@lerna-lite/publish@3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@lerna-lite/core': 3.8.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@lerna-lite/npmlog': 3.8.0
       '@octokit/plugin-enterprise-rest': 6.0.1
       '@octokit/rest': 21.0.1
@@ -7720,7 +7720,7 @@ snapshots:
       - bluebird
       - supports-color
 
-  '@oclif/command@1.8.16(patch_hash=iqkmirytp56czwdq3zgc6rvyoy)(@oclif/config@1.18.3)(supports-color@8.1.1)':
+  '@oclif/command@1.8.16(patch_hash=a3982983134038227052e3c0746cc7318e7fb94d720c40044895d73474783914)(@oclif/config@1.18.3)(supports-color@8.1.1)':
     dependencies:
       '@oclif/config': 1.18.3
       '@oclif/errors': 1.3.5
@@ -7793,7 +7793,7 @@ snapshots:
 
   '@oclif/plugin-help@2.2.3(@oclif/config@1.18.3)':
     dependencies:
-      '@oclif/command': 1.8.16(patch_hash=iqkmirytp56czwdq3zgc6rvyoy)(@oclif/config@1.18.3)(supports-color@8.1.1)
+      '@oclif/command': 1.8.16(patch_hash=a3982983134038227052e3c0746cc7318e7fb94d720c40044895d73474783914)(@oclif/config@1.18.3)(supports-color@8.1.1)
       chalk: 4.1.2
       indent-string: 4.0.0
       lodash.template: 4.5.0
@@ -7890,12 +7890,12 @@ snapshots:
 
   '@salesforce/command@4.2.2(@oclif/config@1.18.3)':
     dependencies:
-      '@oclif/command': 1.8.16(patch_hash=iqkmirytp56czwdq3zgc6rvyoy)(@oclif/config@1.18.3)(supports-color@8.1.1)
+      '@oclif/command': 1.8.16(patch_hash=a3982983134038227052e3c0746cc7318e7fb94d720c40044895d73474783914)(@oclif/config@1.18.3)(supports-color@8.1.1)
       '@oclif/errors': 1.3.5
       '@oclif/parser': 3.8.6
       '@oclif/plugin-help': 2.2.3(@oclif/config@1.18.3)
       '@oclif/test': 1.2.9
-      '@salesforce/core': 2.37.1(patch_hash=dwmtazf7ord73csdsectnecuee)
+      '@salesforce/core': 2.37.1(patch_hash=3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970)
       '@salesforce/kit': 1.8.0
       '@salesforce/ts-types': 1.7.1
       chalk: 4.1.2
@@ -7904,14 +7904,14 @@ snapshots:
       - '@oclif/config'
       - supports-color
 
-  '@salesforce/core@2.37.1(patch_hash=dwmtazf7ord73csdsectnecuee)':
+  '@salesforce/core@2.37.1(patch_hash=3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970)':
     dependencies:
       '@salesforce/bunyan': 2.0.0
       '@salesforce/kit': 1.8.0
       '@salesforce/schemas': 1.1.0
       '@salesforce/ts-types': 1.7.1
       '@types/graceful-fs': 4.1.9
-      '@types/jsforce': 1.9.42(patch_hash=6yh4qlsazb5qjqmlnbys4ekmaq)
+      '@types/jsforce': 1.9.42(patch_hash=f373692d058251ca5c7d9cb8a448f3d20a64f7d74bb4768c8752e026af563621)
       '@types/mkdirp': 1.0.2
       ajv: 8.11.0
       archiver: 5.3.1
@@ -7919,7 +7919,7 @@ snapshots:
       faye: 1.4.0
       graceful-fs: 4.2.11
       js2xmlparser: 4.0.2
-      jsforce: 1.11.0(patch_hash=e7ayos5jozkcmldmo4pozdageu)
+      jsforce: 1.11.0(patch_hash=d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a)
       jsonwebtoken: 9.0.2
       mkdirp: 1.0.4
       semver: 7.6.3
@@ -7927,7 +7927,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@salesforce/core@3.31.18(patch_hash=2ugd47rsshyn45ny4dgq7hcb24)(encoding@0.1.13)':
+  '@salesforce/core@3.31.18(patch_hash=cf3bfc7bfc41a0bde2a69d8ca69fca11468300eedaf48c952edd356053e34e7b)(encoding@0.1.13)':
     dependencies:
       '@salesforce/bunyan': 2.0.0
       '@salesforce/kit': 1.8.0
@@ -7960,7 +7960,7 @@ snapshots:
     dependencies:
       '@oclif/config': 1.18.3
       '@salesforce/command': 4.2.2(@oclif/config@1.18.3)
-      '@salesforce/core': 2.37.1(patch_hash=dwmtazf7ord73csdsectnecuee)
+      '@salesforce/core': 2.37.1(patch_hash=3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970)
       '@salesforce/telemetry': 3.2.1(debug@3.2.7)(encoding@0.1.13)
       tslib: 2.6.3
     transitivePeerDependencies:
@@ -7972,7 +7972,7 @@ snapshots:
 
   '@salesforce/source-deploy-retrieve@4.5.12':
     dependencies:
-      '@salesforce/core': 2.37.1(patch_hash=dwmtazf7ord73csdsectnecuee)
+      '@salesforce/core': 2.37.1(patch_hash=3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970)
       '@salesforce/kit': 1.8.0
       '@salesforce/ts-types': 1.7.1
       archiver: 5.3.1
@@ -7988,7 +7988,7 @@ snapshots:
   '@salesforce/source-tracking@0.2.2':
     dependencies:
       '@oclif/config': 1.18.3
-      '@salesforce/core': 2.37.1(patch_hash=dwmtazf7ord73csdsectnecuee)
+      '@salesforce/core': 2.37.1(patch_hash=3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970)
       '@salesforce/kit': 1.8.0
       '@salesforce/source-deploy-retrieve': 4.5.12
       isomorphic-git: 1.17.2
@@ -7998,7 +7998,7 @@ snapshots:
 
   '@salesforce/telemetry@3.2.1(debug@3.2.7)(encoding@0.1.13)':
     dependencies:
-      '@salesforce/core': 3.31.18(patch_hash=2ugd47rsshyn45ny4dgq7hcb24)(encoding@0.1.13)
+      '@salesforce/core': 3.31.18(patch_hash=cf3bfc7bfc41a0bde2a69d8ca69fca11468300eedaf48c952edd356053e34e7b)(encoding@0.1.13)
       '@salesforce/ts-types': 1.7.1
       applicationinsights: 1.8.10
       axios: 1.7.9(debug@3.2.7)
@@ -8164,7 +8164,7 @@ snapshots:
       '@types/tough-cookie': 4.0.2
       parse5: 7.1.2
 
-  '@types/jsforce@1.9.42(patch_hash=6yh4qlsazb5qjqmlnbys4ekmaq)':
+  '@types/jsforce@1.9.42(patch_hash=f373692d058251ca5c7d9cb8a448f3d20a64f7d74bb4768c8752e026af563621)':
     dependencies:
       '@types/node': 20.17.19
 
@@ -8225,34 +8225,34 @@ snapshots:
       '@types/node': 20.17.19
     optional: true
 
-  '@typescript-eslint/eslint-plugin@8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@typescript-eslint/eslint-plugin@8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
       '@eslint-community/regexpp': 4.11.0
-      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@typescript-eslint/scope-manager': 8.1.0
-      '@typescript-eslint/type-utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/type-utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@typescript-eslint/visitor-keys': 8.1.0
       eslint: 8.57.0
       graphemer: 1.4.0
       ignore: 5.3.2
       natural-compare: 1.4.0
-      ts-api-utils: 1.3.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      ts-api-utils: 1.3.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     optionalDependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
       '@typescript-eslint/scope-manager': 8.1.0
       '@typescript-eslint/types': 8.1.0
-      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       '@typescript-eslint/visitor-keys': 8.1.0
       debug: 4.3.6(supports-color@8.1.1)
       eslint: 8.57.0
     optionalDependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
     transitivePeerDependencies:
       - supports-color
 
@@ -8261,21 +8261,21 @@ snapshots:
       '@typescript-eslint/types': 8.1.0
       '@typescript-eslint/visitor-keys': 8.1.0
 
-  '@typescript-eslint/type-utils@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@typescript-eslint/type-utils@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
-      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       debug: 4.3.6(supports-color@8.1.1)
-      ts-api-utils: 1.3.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      ts-api-utils: 1.3.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     optionalDependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
     transitivePeerDependencies:
       - eslint
       - supports-color
 
   '@typescript-eslint/types@8.1.0': {}
 
-  '@typescript-eslint/typescript-estree@8.1.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@typescript-eslint/typescript-estree@8.1.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
       '@typescript-eslint/types': 8.1.0
       '@typescript-eslint/visitor-keys': 8.1.0
@@ -8284,18 +8284,18 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.6.3
-      ts-api-utils: 1.3.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      ts-api-utils: 1.3.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     optionalDependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))':
+  '@typescript-eslint/utils@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))':
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.0)
       '@typescript-eslint/scope-manager': 8.1.0
       '@typescript-eslint/types': 8.1.0
-      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       eslint: 8.57.0
     transitivePeerDependencies:
       - supports-color
@@ -9130,7 +9130,7 @@ snapshots:
 
   cli-ux@5.6.7(@oclif/config@1.18.3):
     dependencies:
-      '@oclif/command': 1.8.16(patch_hash=iqkmirytp56czwdq3zgc6rvyoy)(@oclif/config@1.18.3)(supports-color@8.1.1)
+      '@oclif/command': 1.8.16(patch_hash=a3982983134038227052e3c0746cc7318e7fb94d720c40044895d73474783914)(@oclif/config@1.18.3)(supports-color@8.1.1)
       '@oclif/errors': 1.3.5
       '@oclif/linewrap': 1.0.0
       '@oclif/screen': 1.0.4
@@ -9349,14 +9349,14 @@ snapshots:
 
   core-util-is@1.0.3: {}
 
-  cosmiconfig@9.0.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  cosmiconfig@9.0.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)):
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.0
       js-yaml: 4.1.0
       parse-json: 5.2.0
     optionalDependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
   crc-32@1.2.2: {}
 
@@ -9374,13 +9374,13 @@ snapshots:
     dependencies:
       buffer: 5.7.1
 
-  create-jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  create-jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))):
     dependencies:
       '@jest/types': 29.6.3
       chalk: 4.1.2
       exit: 0.1.2
       graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       jest-util: 29.7.0
       prompts: 2.4.2
     transitivePeerDependencies:
@@ -9820,17 +9820,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint-import-resolver-node@0.3.9)(eslint@8.57.0):
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint-import-resolver-node@0.3.9)(eslint@8.57.0):
     dependencies:
       debug: 3.2.7(supports-color@5.5.0)
     optionalDependencies:
-      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint@8.57.0):
     dependencies:
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
@@ -9840,7 +9840,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint-import-resolver-node@0.3.9)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint-import-resolver-node@0.3.9)(eslint@8.57.0)
       hasown: 2.0.2
       is-core-module: 2.15.0
       is-glob: 4.0.3
@@ -9851,7 +9851,7 @@ snapshots:
       semver: 6.3.1
       tsconfig-paths: 3.15.0
     optionalDependencies:
-      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -10916,16 +10916,16 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  jest-cli@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))):
     dependencies:
-      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
       chalk: 4.1.2
-      create-jest: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      create-jest: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       exit: 0.1.2
       import-local: 3.1.0
-      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-config: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       jest-util: 29.7.0
       jest-validate: 29.7.0
       yargs: 17.7.2
@@ -10935,7 +10935,7 @@ snapshots:
       - supports-color
       - ts-node
 
-  jest-config@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  jest-config@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))):
     dependencies:
       '@babel/core': 7.23.6
       '@jest/test-sequencer': 29.7.0
@@ -10961,7 +10961,7 @@ snapshots:
       strip-json-comments: 3.1.1
     optionalDependencies:
       '@types/node': 20.17.19
-      ts-node: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      ts-node: 10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -11199,12 +11199,12 @@ snapshots:
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))):
     dependencies:
-      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       '@jest/types': 29.6.3
       import-local: 3.1.0
-      jest-cli: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest-cli: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -11263,7 +11263,7 @@ snapshots:
 
   jsesc@2.5.2: {}
 
-  jsforce@1.11.0(patch_hash=e7ayos5jozkcmldmo4pozdageu):
+  jsforce@1.11.0(patch_hash=d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a):
     dependencies:
       base64-url: 2.3.3
       co-prompt: 1.0.0
@@ -12669,7 +12669,7 @@ snapshots:
       '@oclif/errors': 1.3.5
       '@oclif/plugin-help': 2.2.3(@oclif/config@1.18.3)
       '@salesforce/command': 4.2.2(@oclif/config@1.18.3)
-      '@salesforce/core': 2.37.1(patch_hash=dwmtazf7ord73csdsectnecuee)
+      '@salesforce/core': 2.37.1(patch_hash=3860e92abf1948bc3e429edb4ce142f8280ca95fd6b1dcb5bfd603579c76c970)
       '@salesforce/kit': 1.8.0
       '@salesforce/plugin-telemetry': 1.4.0(debug@3.2.7)(encoding@0.1.13)
       '@salesforce/source-deploy-retrieve': 4.5.12
@@ -12689,7 +12689,7 @@ snapshots:
       heroku-cli-util: 8.0.12
       js2xmlparser: 3.0.0
       jsen: 0.6.6
-      jsforce: 1.11.0(patch_hash=e7ayos5jozkcmldmo4pozdageu)
+      jsforce: 1.11.0(patch_hash=d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a)
       klaw: 2.1.1
       lodash: 4.17.21
       mime: 1.6.0
@@ -13267,21 +13267,21 @@ snapshots:
 
   treeverse@3.0.0: {}
 
-  ts-api-utils@1.3.0(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  ts-api-utils@1.3.0(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)):
     dependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
-  ts-jest@29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))))(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  ts-jest@29.1.1(@babel/core@7.23.6)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.23.6))(jest@29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))))(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))
+      jest: 29.7.0(@types/node@20.17.19)(ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))
       jest-util: 29.7.0
       json5: 2.2.3
       lodash.memoize: 4.1.2
       make-error: 1.3.6
       semver: 7.5.4
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
       yargs-parser: 21.1.1
     optionalDependencies:
       '@babel/core': 7.23.6
@@ -13297,29 +13297,29 @@ snapshots:
       normalize-path: 3.0.0
       safe-stable-stringify: 2.4.3
       tslib: 2.6.3
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
-  ts-loader@9.5.2(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))(webpack@5.97.1):
+  ts-loader@9.5.2(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))(webpack@5.97.1):
     dependencies:
       chalk: 4.1.2
       enhanced-resolve: 5.18.0
       micromatch: 4.0.5
       semver: 7.6.3
       source-map: 0.7.4
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
       webpack: 5.97.1(webpack-cli@6.0.1)
 
-  ts-loader@9.5.2(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))(webpack@5.99.7):
+  ts-loader@9.5.2(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))(webpack@5.99.7):
     dependencies:
       chalk: 4.1.2
       enhanced-resolve: 5.18.0
       micromatch: 4.0.5
       semver: 7.6.3
       source-map: 0.7.4
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
       webpack: 5.99.7(webpack-cli@6.0.1)
 
-  ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  ts-node@10.9.2(@types/node@20.17.19)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.8
@@ -13333,7 +13333,7 @@ snapshots:
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 
@@ -13435,31 +13435,31 @@ snapshots:
       tunnel: 0.0.6
       underscore: 1.13.6
 
-  typedoc-plugin-rename-defaults@0.7.0(typedoc@0.24.8(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))):
+  typedoc-plugin-rename-defaults@0.7.0(typedoc@0.24.8(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))):
     dependencies:
       camelcase: 8.0.0
-      typedoc: 0.24.8(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      typedoc: 0.24.8(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
 
-  typedoc@0.24.8(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  typedoc@0.24.8(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)):
     dependencies:
       lunr: 2.3.9
       marked: 4.3.0
       minimatch: 9.0.5
       shiki: 0.14.1
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
 
-  typescript-eslint@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)):
+  typescript-eslint@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
-      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku))
+      '@typescript-eslint/eslint-plugin': 8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)))(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
+      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf))
     optionalDependencies:
-      typescript: 5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku)
+      typescript: 5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf)
     transitivePeerDependencies:
       - eslint
       - supports-color
 
-  typescript@5.1.6(patch_hash=sjs4irdv5ckbkl3gggmzheybku): {}
+  typescript@5.1.6(patch_hash=3c77918f4af9e2c3c8d79c247306e4fc513f10a1186925837a6729dcef68e9bf): {}
 
   uc.micro@2.1.0: {}
 
@@ -13573,7 +13573,7 @@ snapshots:
       core-util-is: 1.0.2
       extsprintf: 1.3.0
 
-  vlocity@1.14.18(patch_hash=qwnk35chvrotw5mlgicrjke6q4)(encoding@0.1.13):
+  vlocity@1.14.18(patch_hash=ce2baf6c266b30863dabc3f026eb5887f112c87d14c589dd355ac7e68f126596)(encoding@0.1.13):
     dependencies:
       async: 3.2.4
       diff2html: 2.5.0
