@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.28.1](https://github.com/codeneos/vlocode/compare/v1.28.0...v1.28.1) (2025-05-21)
+
+### Bug Fixes
+
+* update pnpm version in workflow and use frozen lockfile for dependency installation ([23a124e](https://github.com/codeneos/vlocode/commit/23a124ebeadde410da7d414e4a30fa5421c0d6bb))
+* upgrade build images and pnpm to resolve corepack error ([cf99049](https://github.com/codeneos/vlocode/commit/cf990495df5e7eb8c5f8d9326c9244770036d8cc))
+
 # [1.28.0](https://github.com/codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
 
 ### Bug Fixes
