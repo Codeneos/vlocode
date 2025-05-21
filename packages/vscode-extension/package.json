@@ -3,7 +3,7 @@
     "private": true,
     "displayName": "Salesforce Vlocity Integration",
     "description": "Salesforce and Vlocity development and deployment extension for VSCode",
-    "version": "1.27.7",
+    "version": "1.28.1",
     "license": "MIT",
     "icon": "resources/icon.png",
     "author": {
@@ -146,6 +146,10 @@
             {
                 "command": "vlocode.exportDatapack",
                 "title": "Datapack: Export from Org"
+            },
+            {
+                "command": "vlocode.importMultipack",
+                "title": "Datapack: Import Multipack..."
             },
             {
                 "command": "vlocode.buildParentKeyFiles",
@@ -1498,10 +1502,10 @@
         "build-webpack-dev": "pnpm pre-build && webpack --config webpack/webpack.dev.mjs --env extension",
         "watch": "webpack --watch --config webpack/webpack.dev.mjs --env extension",
         "watch-prod": "webpack --watch --config webpack/webpack.prod.mjs --env extension",
-        "pack": "pnpm vsce package --no-dependencies --allow-star-activation",
+        "pack": "pnpx @vscode/vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "pre-build": "ts-node build/buildCommands.ts ./package.json ./commands.yaml",
         "clean": "shx rm -rf ./out ./.ts-temp './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "publish": "vsce publish --no-dependencies --allow-star-activation",
+        "publish": "pnpx @vscode/vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
         "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build-webpack"
     },
@@ -1521,13 +1525,12 @@
         "@vlocode/vlocity": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "@vscode/test-electron": "^2.3.8",
-        "@vscode/vsce": "^3.0.0",
+        "@vscode/vsce": "^3.3.2",
         "chalk": "^4.1.1",
         "copy-webpack-plugin": "^9.1.0",
         "esbuild-loader": "^4.0.3",
         "escape-string-regexp": "^4.0.0",
         "fs-extra": "^11.0",
-        "globby": "^11.0.4",
         "jest": "^29.7.0",
         "js-yaml": "^4.1.0",
         "jsforce": "^1.11.0",
@@ -1545,8 +1548,11 @@
         "typescript": "5.1.6",
         "vlocity": "1.14.18",
         "vscode-languageclient": "^8.1.0",
-        "webpack": "^5.97",
+        "webpack": "^5.99.7",
         "webpack-cli": "^6.0",
         "webpack-merge": "^6.0"
+    },
+    "dependencies": {
+        "fast-glob": "^3.3.3"
     }
 }

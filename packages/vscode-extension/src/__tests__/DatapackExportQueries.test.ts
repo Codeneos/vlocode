@@ -39,7 +39,7 @@ describe('DatapackExportQueries', () => {
         it('should use null when nummeric fields are empty string', async () => {
             // Arrange
             const types = { '%vlocity_namespace%__Version__c': 'double' };
-            const fieds = [ 'Name', 'Version__c', 'Author__c' ];
+            const fieds = [ 'Name', '%vlocity_namespace%__Version__c', '%vlocity_namespace%__Author__c' ];
             const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), mockSchemaService(types), Logger.null);
             const entry = {
                 datapackType: 'VlocityCard',

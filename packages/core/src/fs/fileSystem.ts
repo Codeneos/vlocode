@@ -1,6 +1,7 @@
 import { spreadAsync } from '@vlocode/util';
 import * as fs from 'fs'
-import { globbyStream, Options as GlobbyOptions } from 'globby';
+import fg, { FileSystemAdapter } from 'fast-glob';
+import path from 'path';
 
 export interface StatsOptions {
     /**
@@ -166,7 +167,7 @@ export abstract class FileSystem {
 
     /**
      * Find files and or folders matching the specified glob pattern as an async iterable. If the result is not iterated completely, the search is stopped.
-     * When you need the results as an array, use the `Iterable.spreadAsync` method to convert the async interable into an array.
+     * When you need the results as an array, use the `Iterable.spreadAsync` method to convert the async iterable into an array.
      *
      * By default the current working directory is used as the base directory for the search.
      * 
@@ -187,27 +188,27 @@ export abstract class FileSystem {
      * ```
      */
     public async *find(patterns: GlobPatterns, options?: FindOptions): AsyncGenerator<string> {
-        const globs = (options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ]).map(
-            (cwd: string | undefined) => globbyStream(patterns, {
-                cwd,
-                fs: this.globbyFs?.() ?? fs,
-                ignore: options?.exclude ? Array.isArray(options?.exclude) ? options.exclude : [ options?.exclude ] : undefined,
+        const cwdList = options?.cwd && Array.isArray(options.cwd) ? options.cwd : [ options?.cwd ];
+        let limit = options?.limit;
+        for (const cwd of cwdList) {
+            // Ensure cwd is string or undefined
+            const cwdStr = typeof cwd === 'string' ? cwd : undefined;
+            const stream = fg.stream(patterns, {
+                cwd: cwdStr,
+                fs: this.globFs?.() ?? fs,
+                ignore: options?.exclude ? (Array.isArray(options.exclude) ? options.exclude : [ options.exclude ]) : undefined,
                 onlyDirectories: options?.findType === FindType.directory,
                 onlyFiles: options?.findType === FindType.file,
                 deep: options?.depth,
-                unique: true,
-                absolute: true,
-            })
-        );
-
-        let limit = options?.limit;
-
-        for (const glob of globs) {
-            for await (const file of glob) {
+                caseSensitiveMatch: options?.noCase === false,
+                absolute: false,
+                unique: true
+            });
+            for await (const file of stream) {
                 if (typeof file !== 'string') {
                     continue;
                 }
-                yield this.normalizeSeparators(file);
+                yield cwdStr ? path.posix.join(cwdStr, file) : file;
                 if (limit !== undefined && --limit === 0) {
                     return;
                 }
@@ -215,8 +216,8 @@ export abstract class FileSystem {
         }
     }
 
-    private normalizeSeparators(path: string): string {
-        // Normalize windows path separator to posix for globby
+    private normalizePath(path: string): string {
+        // Normalize windows path separator to posix
         return path.replace(/[/\\]+/g, '/');
     }
 
@@ -270,5 +271,5 @@ export abstract class FileSystem {
         return spreadAsync(this.find(globPatterns, { findType: FindType.file }));
     }
 
-    protected globbyFs?(): GlobbyOptions['fs'];
+    protected globFs?(): Partial<FileSystemAdapter>;
 }

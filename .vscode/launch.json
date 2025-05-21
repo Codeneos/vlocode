@@ -6,20 +6,31 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Attach",
+            "port": 6009,
+            "request": "attach",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "name": "Debug: vscode-extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--disable-extensions",
+                "--verbose",
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
             "outFiles": ["${workspaceFolder}/packages/vscode-extension/out/**/*.js"],
             "pauseForSourceMap": true,
-            "skipFiles": ["<node_internals>/**/*.js", "async_hooks.js", "inspector_async_hook.js"],
+            "skipFiles": ["<node_internals>/**/*", "async_hooks.js", "inspector_async_hook.js"],
             "preLaunchTask": "build-extension",
             "smartStep": true,
-            "sourceMaps": true
+            "sourceMaps": true,
+            "autoAttachChildProcesses": true
         },
         {
             "type": "node",
@@ -29,6 +40,52 @@
             "args": ["deploy", "-u", "dev10", "-v"],
             "outFiles": ["${workspaceRoot}/packages/cli/dist/**/*.js"],
             "preLaunchTask": "watch-cli-webpack",
+            "smartStep": true,
+            "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "showAsyncStacks": true,
+            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "name": "Debug: CLI-impacted-tests (node)",
+            "args": [
+                "impacted-tests",
+                "../kpn/kpn_esmee/src/core/classes/dataAccess/SObjectRepository.cls",
+                "--sources", "../kpn/kpn_esmee/src",
+                "--depth", "3"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/cli/lib/**/*.js",
+                "${workspaceFolder}/packages/apex/lib/**/*.js"
+            ],
+            "preLaunchTask": "watch-cli",
+            "smartStep": true,
+            "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "showAsyncStacks": true,
+            "program": "${workspaceRoot}/packages/cli/lib/index.js",
+            "name": "Debug: CLI-convert (node)",
+            "args": [
+                "convert",
+                "../vlocode/.test-deploy/activationError/OmniScript",
+                "-u", "peter@curlybracket.l.dnd "
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/vlocity-deploy/lib/**/*.js",
+                "${workspaceFolder}/packages/salesforce/lib/**/*.js",
+                "${workspaceFolder}/packages/core/lib/**/*.js",
+                "${workspaceFolder}/packages/util/lib/**/*.js",
+                "${workspaceFolder}/packages/cli/lib/**/*.js"
+            ],
+            "preLaunchTask": "watch-cli",
             "smartStep": true,
             "sourceMaps": true
         },

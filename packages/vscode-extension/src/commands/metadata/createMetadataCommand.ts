@@ -2,8 +2,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { formatString, sanitizePath } from '@vlocode/util';
 import * as fs from 'fs-extra';
+import fg from 'fast-glob';
 import itemTemplates, { NewItemTemplate } from '../../newItemTemplates.yaml';
-import globby from 'globby';
 import { container } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import MetadataCommand from './metadataCommand';
@@ -56,7 +56,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
             try {
                 await fs.ensureDir(path.dirname(fileUri.fsPath));
                 await fs.writeFile(fileUri.fsPath, fileBody, { flag: 'wx' });
-            } catch(e) {
+            } catch {
                 void vscode.window.showErrorMessage(`Unable to create the specified item; a file with the same name already exists: ${fileUri.fsPath}`);
             }
 
@@ -95,7 +95,7 @@ export default class CreateMetadataCommand extends MetadataCommand {
 
         const workspaceFolders = vscode.workspace.workspaceFolders.map(ws => sanitizePath(ws.uri.fsPath, path.posix.sep));
         const patterns = workspaceFolders.map(ws => path.posix.join(ws, '**', newItemType.folderName));
-        const targetFolders: string[] = await globby(patterns, { onlyDirectories: true, absolute: true });
+        const targetFolders: string[] = await fg.glob(patterns, { onlyDirectories: true, absolute: true });
 
         if (targetFolders.length == 1) {
             return targetFolders[0];

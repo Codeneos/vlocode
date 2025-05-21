@@ -52,10 +52,9 @@
     "dependencies": {
         "@vlocode/util": "workspace:*",
         "chalk": "^4.1.1",
-        "glob": "^11",
-        "globby": "^11.0.4",
+        "fast-glob": "^3.3.3",
         "luxon": "^3.4.4",
-        "memfs": "^3.2.2",
+        "memfs": "^4.17.0",
         "minimatch": "^9.0.3",
         "reflect-metadata": "^0.1.13",
         "unique-names-generator": "^4.6.0"

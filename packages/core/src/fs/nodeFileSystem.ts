@@ -66,7 +66,7 @@ export class NodeFileSystem extends FileSystem {
         }));
     }
 
-    protected globbyFs() {
+    protected globFs() {
         return {
             lstat: this.innerFs.lstat.bind(this.innerFs),
             stat: this.innerFs.stat.bind(this.innerFs),

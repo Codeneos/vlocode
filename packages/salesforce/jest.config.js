@@ -7,5 +7,8 @@ module.exports = {
   ],
   transform: {
     '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }]
+  },
+  moduleNameMapper: {
+    '^@vlocode/(.*)$': '<rootDir>/../$1/src'
   }
 };

@@ -10,5 +10,6 @@
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "cSpell.words": ["Frontdoor", "jsforce", "SOQL", "Visualforce", "vlocode"],
     "cSpell.enabled": true,
-    "eslint.packageManager": "pnpm"
+    "vlocity.sfdxUsername": "peter.van.gulik@ses.com.prod.devpeter",
+    "vlocity.salesforce.apiVersion": "63.0",
 }

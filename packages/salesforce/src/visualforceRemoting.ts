@@ -182,7 +182,7 @@ export class VisualforceRemoting {
      * @param remoteMethod Method to call
      * @param params Optional list of params to pass to the call
      */
-    public async invoke(method: RemoteMethodSignature | string, params?: object[]): Promise<VisualforceRemotingResponse> {
+    public async invoke(method: RemoteMethodSignature | string, params?: unknown[]): Promise<VisualforceRemotingResponse> {
         if (!this.initialized) {
             throw new Error('Cannot invoke methods before Visualforce remoting is initialized');
         }

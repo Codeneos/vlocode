@@ -51,7 +51,7 @@ describe('SalesforcePackageBuilder', () => {
         // Trigger
         'src/triggers/myTrigger.trigger': 'trigger MyTrigger on Account (before insert, before update, after insert, after update) { }',
         'src/triggers/myTrigger.trigger-meta.xml': buildMetadataXml('ApexTrigger'),
-        // decomposd object
+        // decomposed object
         'src/objects/PetersCustomObject__c/fields/PetersField__c.field-meta.xml': buildXml('CustomField', { fullName: 'PetersField__c' }),
         'src/objects/PetersCustomObject__c/listViews/What_A_View.listview-meta.xml': buildXml('ListView', { fullName: 'What_A_View' }),
         'src/objects/PetersCustomObject__c/PetersCustomObject__c.object-meta.xml': buildXml('CustomObject', { fullName: 'PetersCustomObject__c' }),

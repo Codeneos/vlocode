@@ -15,5 +15,8 @@ module.exports = {
   ],
   transform: {
     '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }]
-  }
+  },
+  transformIgnorePatterns: [
+    "/node_modules/"
+  ]
 };
