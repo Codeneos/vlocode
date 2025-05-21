@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.28.0](https://github.com/Codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
+
+### Bug Fixes
+
+* CLI fails to build due to upgrade of glob module ([ac8cc9c](https://github.com/Codeneos/vlocode/commit/ac8cc9c6583d4b571db7c7094df1dbd973157000))
+* update glob import to use named import syntax ([a130bab](https://github.com/Codeneos/vlocode/commit/a130bab69fc5c85a3a761854ac84ace8c657f00a))
+
+### Features
+
+* add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+
 ## [1.27.7](https://github.com/Codeneos/vlocode/compare/v1.27.6...v1.27.7) (2025-01-28)
 
 **Note:** Version bump only for package @vlocode/cli

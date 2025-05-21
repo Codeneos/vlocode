@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.28.0](https://github.com/Codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
+
+### Bug Fixes
+
+* injectable sub methods singleton and transient should omit lifecycle from options ([d753ee1](https://github.com/Codeneos/vlocode/commit/d753ee12235cdf02dc48aae380307868a7979133))
+* update path splitting regex to support both forward and backward slashes ([b2e496e](https://github.com/Codeneos/vlocode/commit/b2e496e6fb043a6f39d14dad4aa26264453db52f))
+
+### Features
+
+* add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+
 ## [1.27.6](https://github.com/Codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
 
 ### Bug Fixes

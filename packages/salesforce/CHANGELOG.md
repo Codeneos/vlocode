@@ -4,6 +4,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.28.0](https://github.com/Codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
+
+### Bug Fixes
+
+* getMetadataInfo doesn't detect namespaces for CustomApplication metadata ([e6da44a](https://github.com/Codeneos/vlocode/commit/e6da44a8772d3b1ade02b4e9ce09b83ab47e522b))
+* record proxy field mapping not store in cache ([628c121](https://github.com/Codeneos/vlocode/commit/628c121964f39cd482e2f08a94bf4ce35d1ac31f))
+* set default compression level to 4 in getBuffer method ([4e5e81c](https://github.com/Codeneos/vlocode/commit/4e5e81cb6efea62a4a3952d38fe68a52fd4d5441))
+* update antlr4ng dependency versions and improve type definitions in icon path handling ([3bc215a](https://github.com/Codeneos/vlocode/commit/3bc215a3472984eb7ae65768b467c0739125db81))
+
+### Features
+
+* add CustomApplication metadata URL with tooling strategy ([13e36d3](https://github.com/Codeneos/vlocode/commit/13e36d37beebfaa661e21fd77e8fda4565d9300e))
+* add filterIds method to filter Salesforce IDs by SObject type ([27bc4c7](https://github.com/Codeneos/vlocode/commit/27bc4c7ffb7df5c69b7187182d125b712e1ac77b))
+* add functions to deploy recent validations ([33a340c](https://github.com/Codeneos/vlocode/commit/33a340c226fb86ddfb9cd71e1123b91d465c0ce4))
+* add getNameField method to schema service to get name field of an object ([560b0b6](https://github.com/Codeneos/vlocode/commit/560b0b66194000b75e3fa387d57a3160edcb1225))
+* add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+* add isSelected method to QueryBuilder for field selection checking ([3a94596](https://github.com/Codeneos/vlocode/commit/3a945963ec84c05e557cfc696df768229435ad6e))
+* add static method to create SalesforceDeployment instance from existing deployment ID ([744c44c](https://github.com/Codeneos/vlocode/commit/744c44c9fb7a81ffa10139fdf267d13cfc7a1553))
+* add writeToFile method to write SF package to a file ([67a7d0a](https://github.com/Codeneos/vlocode/commit/67a7d0a4f590d82c44d0451353eef4a1aaa187de))
+* enhance QueryBuilder select and sort functions ([de40433](https://github.com/Codeneos/vlocode/commit/de40433481329059522d9979f376cc539eb6ca22))
+* list recent validations with quick deploy functionality ([0660abe](https://github.com/Codeneos/vlocode/commit/0660abe518622bab25fea07e087a813e3b9afaff))
+* refactor query handling and enhance iterable operations in Salesforce connection and deployment services ([f3de249](https://github.com/Codeneos/vlocode/commit/f3de24973bd4c19dfdf41e5f3313289c95419d8e))
+* support for using labels in OmniScript deployment. Currently uses the default language of the label and not the translations. ([e4aa309](https://github.com/Codeneos/vlocode/commit/e4aa3096dbba646ec76f76e652b0163c34a273d6))
+* support generation of LWCs from OmniStudio Datapacks without deploying ([fa4c421](https://github.com/Codeneos/vlocode/commit/fa4c421d1c95592c6a590ec8ad73a0257bf4d277))
+
 ## [1.27.6](https://github.com/Codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
 
 **Note:** Version bump only for package @vlocode/salesforce

@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/util",
-    "version": "1.27.5",
+    "version": "1.28.0",
     "description": "Vlocode utility library",
     "main": "lib/index.js",
     "publishConfig": {

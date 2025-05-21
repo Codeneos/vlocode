@@ -4,6 +4,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.28.0](https://github.com/codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
+
+### Bug Fixes
+
+* add early return for empty data in outputTable method ([2aadb8c](https://github.com/codeneos/vlocode/commit/2aadb8cf2668e02c40686b2153a10c4c110ddb67))
+* add missing command definition to package.json ([dbe49be](https://github.com/codeneos/vlocode/commit/dbe49be450b76d684f184f8408f2ba72de105d46))
+* alias is not saved fro newly authenticated orgs ([c671d42](https://github.com/codeneos/vlocode/commit/c671d428222becda2938ce0dbe37d0c9704036dd))
+* build error due to `headerFile` being optional for datapacks ([a20f6f1](https://github.com/codeneos/vlocode/commit/a20f6f1aaa3f587235c5042f8a52c6d6f2178572))
+* remove activation events to exclude command and view triggers ([fe1be2b](https://github.com/codeneos/vlocode/commit/fe1be2b3768b627a42e028665e4976c1b05e8bbf))
+* throw error when an object has no matching keys in Datapack Export from VSCode ([c8592bd](https://github.com/codeneos/vlocode/commit/c8592bd392c7a648f0f6190973974a8e347cb885))
+* update antlr4ng dependency versions and improve type definitions in icon path handling ([3bc215a](https://github.com/codeneos/vlocode/commit/3bc215a3472984eb7ae65768b467c0739125db81))
+
+### Features
+
+* add import multipack command to enhance datapack management ([e69ec9e](https://github.com/codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+* add new VScCode commands to convert managed package datapacks to standard runtime datapacks for OmniScript to OmniProcess and VlocityCard to OmniUiCard ([40fddfe](https://github.com/codeneos/vlocode/commit/40fddfe7e6eebf8d1c53c7a856f47bc9632e8a12))
+* add OmniProcess support with query and grouping enhancements ([cf5f521](https://github.com/codeneos/vlocode/commit/cf5f5211f0bcadf05afe5ba669fca1608562cea4))
+* add support for runtime conversion of Integration Procedures and DataRaptors ([1d96f64](https://github.com/codeneos/vlocode/commit/1d96f64bfeba992a0e28044222912c2eeb3fafd0))
+* add Vlocode command to deploy a recent validation ([2c245e0](https://github.com/codeneos/vlocode/commit/2c245e08af5fd604def461594577270ec94163f5))
+* enhance command output formatting with customizable labels and improved data mapping ([ca14e27](https://github.com/codeneos/vlocode/commit/ca14e276081f81788bd71abcbe4761137cf257c1))
+* enhance OmniScript activation with detailed results and improved output formatting ([a7b11c7](https://github.com/codeneos/vlocode/commit/a7b11c70f34b122dc2618c248657e40efbed681f))
+* improve command output formatting for tables ([97f69d5](https://github.com/codeneos/vlocode/commit/97f69d5a7774f8feb11d392956f41d879698dd3f))
+* list recent validations with quick deploy functionality ([0660abe](https://github.com/codeneos/vlocode/commit/0660abe518622bab25fea07e087a813e3b9afaff))
+* output deployment results in a normalized fromat for both deployment strategies ([67e408c](https://github.com/codeneos/vlocode/commit/67e408c34aa1d341c29de4d009e203c8ce2e79cb))
+* print datapack deployment as table in output instead of console log ([7462a47](https://github.com/codeneos/vlocode/commit/7462a47fdacc1f033ed4a40ebed09b5a3399849c))
+* support for FlexCard activation from VSCode incl. LWC component generation ([fb61d6d](https://github.com/codeneos/vlocode/commit/fb61d6ddcae675cab1407f38f806dd12b89e6e35))
+* support generation of LWCs from OmniStudio Datapacks without deploying ([fa4c421](https://github.com/codeneos/vlocode/commit/fa4c421d1c95592c6a590ec8ad73a0257bf4d277))
+* support more deployment config options ([00da3ce](https://github.com/codeneos/vlocode/commit/00da3ce0b751fd7e81b6463327c8f490f5927bd3))
+* support progress logging with incremental progress instead of absolute ([aa0deba](https://github.com/codeneos/vlocode/commit/aa0deba792c7597654550b01f5d281316820288a))
+
 ## [1.27.7](https://github.com/codeneos/vlocode/compare/v1.27.6...v1.27.7) (2025-01-28)
 
 **Note:** Version bump only for package vlocode-project

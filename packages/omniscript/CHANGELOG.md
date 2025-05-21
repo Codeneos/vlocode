@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.28.0](https://github.com/Codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
+
+### Bug Fixes
+
+* OmniProcess does not activate ([514cad8](https://github.com/Codeneos/vlocode/commit/514cad80d1d7ab849c09fedd1316c0fc2d2764d9))
+
+### Features
+
+* add ActivationField constants for OmniProcess and OmniScript records ([cfc1d2d](https://github.com/Codeneos/vlocode/commit/cfc1d2d55b28d14b94b3c33b1bbbfdfe371eaea8))
+* add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+* support building definitions and activation of OmniStudio OmniScripts stored as OmniProcess in standard and managed package runtime ([3fe9eb3](https://github.com/Codeneos/vlocode/commit/3fe9eb3d5175e822634712b4cfaec2f96e1d3d4c))
+* support for FlexCard activation from VSCode incl. LWC component generation ([fb61d6d](https://github.com/Codeneos/vlocode/commit/fb61d6ddcae675cab1407f38f806dd12b89e6e35))
+* support for using labels in OmniScript deployment. Currently uses the default language of the label and not the translations. ([e4aa309](https://github.com/Codeneos/vlocode/commit/e4aa3096dbba646ec76f76e652b0163c34a273d6))
+* support generation of LWCs from OmniStudio Datapacks without deploying ([fa4c421](https://github.com/Codeneos/vlocode/commit/fa4c421d1c95592c6a590ec8ad73a0257bf4d277))
+
 ## [1.27.6](https://github.com/Codeneos/vlocode/compare/v1.27.5...v1.27.6) (2025-01-28)
 
 **Note:** Version bump only for package @vlocode/omniscript

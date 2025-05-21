@@ -4,6 +4,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.28.0](https://github.com/Codeneos/vlocode/compare/v1.27.7...v1.28.0) (2025-05-21)
+
+### Bug Fixes
+
+* cast flattened array to correct type in flatten function ([ae03e6d](https://github.com/Codeneos/vlocode/commit/ae03e6deea7c0cc542238d5e1084b1efba8d93f9))
+* update antlr4ng dependency versions and improve type definitions in icon path handling ([3bc215a](https://github.com/Codeneos/vlocode/commit/3bc215a3472984eb7ae65768b467c0739125db81))
+
+### Features
+
+* add AwaitableAsyncGenerator class for iterable and awaitable async generators ([a54df41](https://github.com/Codeneos/vlocode/commit/a54df41c7c5e06ec17fa093aceb5d71edec39987))
+* add case-insensitive property access fn for target objects using a proxy ([bb9dffd](https://github.com/Codeneos/vlocode/commit/bb9dffdf8d6f1c6a34ea740734b3b4e8a6ae152a))
+* add function to retrieve elements by tag name from XML string ([149da7b](https://github.com/Codeneos/vlocode/commit/149da7b3fd07465e6965c013ba72354460e0c9d6))
+* add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+* add substringBetween function to extract substring between specified needles ([ea2d924](https://github.com/Codeneos/vlocode/commit/ea2d924b14d33d3801296e0ad999e8e069a39e0c))
+* add timeout function to wrap promises with a timeout mechanism ([a9d62c4](https://github.com/Codeneos/vlocode/commit/a9d62c4a370a28f5edbc334bb768b6b1a0cca61c))
+* enhance pluralize function to handle object counts and improve pluralization logic ([d4b397b](https://github.com/Codeneos/vlocode/commit/d4b397b787476aadcf4db1c981c12267937ae38e))
+* refactor query handling and enhance iterable operations in Salesforce connection and deployment services ([f3de249](https://github.com/Codeneos/vlocode/commit/f3de24973bd4c19dfdf41e5f3313289c95419d8e))
+* support generation of LWCs from OmniStudio Datapacks without deploying ([fa4c421](https://github.com/Codeneos/vlocode/commit/fa4c421d1c95592c6a590ec8ad73a0257bf4d277))
+
 ## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
 
 ### Features
@@ -25,7 +44,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * unit test for compare object to match new behavior ([d9687e9](https://github.com/Codeneos/vlocode/commit/d9687e92e0315627fcb1319ac4e50d3ebd081441))
+
 * Update evalExpr function to allow undefined values in context ([d225281](https://github.com/Codeneos/vlocode/commit/d225281b7552afd1ca8205866836e2311bdf6373))
+
 * Update objectEquals function to ignore extra elements in arrays ([25fecdb](https://github.com/Codeneos/vlocode/commit/25fecdbd19e4b877fea4c6d100b53fd4af76f75d))
 
 # [1.25.0](https://github.com/Codeneos/vlocode/compare/v1.24.11...v1.25.0) (2024-08-07)
@@ -33,12 +54,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * container and eval unit-test errors ([3762d16](https://github.com/Codeneos/vlocode/commit/3762d1667555acb320ec8ba29acdce4fafd5029b))
+
 * string eval functions do not work properly due to compiler changes ([cc5ade8](https://github.com/Codeneos/vlocode/commit/cc5ade8de8e79b6c77580246015c0a7b7bd84a57))
+
 * Update Compiler class to use object type for context parameter ([c3d73c2](https://github.com/Codeneos/vlocode/commit/c3d73c27e172c9fff1673d8b56dd4ef0b5aecb4e))
 
 ### Features
 
 * add support for adding alias to existing users and delete org configuration ([29c135e](https://github.com/Codeneos/vlocode/commit/29c135e09f10de7aaacf8c63f08d078e79af21b0))
+
 * support datapack export based on configuration definitions in a YAML definitions file ([c2edd7c](https://github.com/Codeneos/vlocode/commit/c2edd7c7537a3d28312befa7ac5d7269140b5276))
 
 ## [1.24.7](https://github.com/Codeneos/vlocode/compare/v1.24.6...v1.24.7) (2024-06-21)
