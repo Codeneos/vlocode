@@ -46,11 +46,38 @@ export interface XMLParseOptions {
     skipValidation?: boolean;
 }
 
+/**
+ * Options for controlling XML string conversion behavior.
+ * 
+ * @interface XMLStringfyOptions
+ */
 export interface XMLStringfyOptions {
+    /**
+     * When true the parser will ignore attributes and only parse the node name and value.
+     * @remark `\r\n` is normalized to `\n`
+     * @default true
+     */
     trimValues?: boolean;
+    /**
+     * When true the XML string will be without a XML declaration.
+     * @default false
+     */
     headless?: boolean;
+    /**
+     * The indent prefix to use for the XML indentation. When not set the XML tags are not indented and no new lines are added.
+     * When set to a number the XML string will be indented with the specified number of spaces or the specified string.
+     * @default false
+     */
     indent?: string | number;
+    /**
+     * When true empty nodes are removed when stringifying the XML.
+     */
     stripEmptyNodes?: boolean;
+    /**
+     * Defines the prefix to use for attributes in the XML string.
+     * The default is `@` for attributes groups.
+     */
+    attributePrefix?: string;
 }
 
 export interface TextPosition {
@@ -95,17 +122,27 @@ export namespace XML {
     /**
      * Global parser options for XML to JSON; changing the defaults affects all parsing in all packages. Change with care.
      */
-    export const globalParserOptions: Partial<X2jOptions> = {
+    export const ParserDefaults: Partial<X2jOptions> = {
         ...options
     } as const;
 
     /**
      * Global stringify options for converting JSON to XML; changing the defaults affects JSON to XML formatting in all packages. Change with care.
      */
-    export const globalStringifyOptions: Partial<XmlBuilderOptions> = {
+    export const FormatterDefaults: Partial<XmlBuilderOptions> = {
         ...options,
         suppressEmptyNode: false
     } as const;
+
+    /**
+     * @deprecated Use {@link XML.ParserDefaults} instead.
+     */
+    export const globalParserOptions = ParserDefaults;
+
+    /**
+     * @deprecated Use {@link XML.FormatterDefaults} instead.
+     */
+    export const globalStringifyOptions = FormatterDefaults;
 
     /**
      * Parse XML into a JSON object with the default options.
@@ -118,10 +155,10 @@ export namespace XML {
         }
 
         const parserOptions : Partial<X2jOptions> = { 
-            ...globalParserOptions, 
-            ignoreAttributes: options.ignoreAttributes ?? globalParserOptions.ignoreAttributes,
-            trimValues: options.trimValues ?? globalParserOptions.trimValues,
-            removeNSPrefix: options.ignoreNamespacePrefix ?? globalParserOptions.removeNSPrefix
+            ...ParserDefaults, 
+            ignoreAttributes: options.ignoreAttributes ?? ParserDefaults.ignoreAttributes,
+            trimValues: options.trimValues ?? ParserDefaults.trimValues,
+            removeNSPrefix: options.ignoreNamespacePrefix ?? ParserDefaults.removeNSPrefix
         };
 
         if (options.valueProcessor) {
@@ -172,11 +209,13 @@ export namespace XML {
 
         const builderOptions: Partial<XmlBuilderOptions> = {
             format: !!indentBy,
+            attributeNamePrefix: options?.attributePrefix ?? ParserDefaults.attributeNamePrefix,
+            attributesGroupName: options?.attributePrefix ?? ParserDefaults.attributesGroupName,
             suppressEmptyNode: options?.stripEmptyNodes === true,
             indentBy
         };
 
-        const xmlString = new XMLBuilder({ ...globalStringifyOptions, ...builderOptions }).build(jsonObj);
+        const xmlString = new XMLBuilder({ ...FormatterDefaults, ...builderOptions }).build(jsonObj);
         if (options?.headless !== true) {
             return `<?xml version="1.0" encoding="UTF-8"?>${builderOptions.format ? '\n' : ''}${xmlString}`;
         }
