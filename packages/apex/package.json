@@ -54,7 +54,6 @@
     },
     "homepage": "https://github.com/Codeneos/vlocode/tree/main/packages/apex#readme",
     "devDependencies": {
-        "@types/csv-parse": "^1.2.2",
         "@types/fs-extra": "^11",
         "@types/jest": "^29.5.11",
         "@types/jsforce": "^1.9.41",
