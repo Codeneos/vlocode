@@ -9,6 +9,8 @@
         "Deployment"
     ],
     "main": "src/index.ts",
+    "module": "dist/index.ts",
+    "type": "module",
     "publishConfig": {
         "main": "dist/index.cjs",
         "module": "dist/index.mjs",

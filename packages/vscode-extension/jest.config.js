@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   preset: 'ts-jest',
   roots: [ 'src' ],
   collectCoverageFrom: [
@@ -7,7 +7,7 @@ module.exports = {
   ],
   testRegex: "(\\.)(test)\\.[jt]sx?$",
   transform: {
-    '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }],
+    '^.+\\.ts$': ['ts-jest', { esModuleInterop: true, isolatedModules: true }],
     '\\.yaml$': '<rootDir>/webpack/loaders/yaml.js'
   },
   moduleNameMapper: {

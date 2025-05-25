@@ -1,5 +1,5 @@
 /** @type {import('@jest/types').Config.InitialOptions} */
-module.exports = {
+export default {
   preset: 'ts-jest',
   collectCoverage: true,
   coverageProvider: 'v8',
@@ -14,9 +14,6 @@ module.exports = {
     "packages/vscode-extension"
   ],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { isolatedModules: true, esModuleInterop: true }]
-  },
-  transformIgnorePatterns: [
-    "/node_modules/"
-  ]
+    '^.+\\.ts$': ['ts-jest', { esModuleInterop: true, isolatedModules: true }]
+  }
 };

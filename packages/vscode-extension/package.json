@@ -1526,7 +1526,7 @@
         "@vlocode/vlocity-deploy": "workspace:*",
         "@vscode/test-electron": "^2.3.8",
         "@vscode/vsce": "^3.4.1",
-        "chalk": "^5.4.1",
+        "chalk": "^4.1.2",
         "copy-webpack-plugin": "^9.1.0",
         "esbuild-loader": "^4.3.0",
         "escape-string-regexp": "^4.0.0",

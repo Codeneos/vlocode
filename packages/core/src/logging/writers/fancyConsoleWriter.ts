@@ -1,5 +1,5 @@
 import { LogWriter, LogEntry, LogLevel } from '..';
-import { Chalk } from 'chalk';
+import chalk from 'chalk';
 import { DateTime } from 'luxon';
 
 export class FancyConsoleWriterOptions { 
@@ -12,7 +12,7 @@ export class FancyConsoleWriterOptions {
 export class FancyConsoleWriter implements LogWriter {
 
     private readonly options: FancyConsoleWriterOptions;
-    private readonly chalk = new Chalk({ level: 2 });
+    private readonly chalk = new chalk.Instance({ level: 2 });
     private readonly colors = {
         [LogLevel.debug]: this.chalk.magenta,
         [LogLevel.verbose]: this.chalk.dim,

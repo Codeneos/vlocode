@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import { Chalk } from 'chalk';
+import chalk from 'chalk';
 import { DateTime } from 'luxon';
 import { LogLevel, LogWriter, LogEntry } from '../../logging';
 
@@ -18,7 +18,7 @@ export class TerminalWriter implements LogWriter {
     private terminalWatchdog? : any;
     private isOpened = false;
     private readonly queuedMessages : LogEntry[] = [];
-    private readonly chalk = new Chalk({ level: 2 });
+    private readonly chalk = new chalk.Instance({ level: 2 });
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     private readonly vscode: typeof vscode = require('vscode');
     private readonly colors = {
