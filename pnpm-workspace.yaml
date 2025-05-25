@@ -3,6 +3,7 @@ packages:
   - '!**/test/**'
 
 publicHoistPattern:
+  - 'ts-node'
   - 'eslint'
   - 'eslint-config-*'
   - 'eslint-plugin-*'
