@@ -23,10 +23,8 @@
         "node": ">=20.0.0"
     },
     "scripts": {
-        "watch": "tsc -w",
-        "watch-webpack": "webpack --watch --config webpack/webpack.mjs",
-        "build": "tsc -b",
-        "build-webpack": "webpack --config webpack/webpack.mjs",
+        "watch": "webpack --watch --config webpack/webpack.mjs",
+        "build": "webpack --config webpack/webpack.mjs",
         "pack": "pnpm run prepublish && pnpm run pack-only",
         "prepublish": "pnpm run clean && pnpm run build-webpack && tsc",
         "pack-only": "pnpm pack",
