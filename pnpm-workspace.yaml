@@ -1,3 +1,16 @@
 packages:
   - 'packages/*'
   - '!**/test/**'
+
+publicHoistPattern:
+  - 'eslint'
+  - 'eslint-config-*'
+  - 'eslint-plugin-*'
+  - 'prettier'
+  - 'prettier-plugin-*'
+
+resolutionMode: highest
+
+dedupeDirectDeps: true
+
+preferWorkspacePackages: true

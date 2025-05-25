@@ -1,9 +1,9 @@
 // Parse commands YAML into a package JSON command structure
 import chalk from 'chalk';
-import * as fs from 'fs-extra';
-import * as yaml from 'js-yaml';
+import fs from 'fs-extra';
+import yaml from 'js-yaml';
 import logSymbols from 'log-symbols';
-import * as path from 'path';
+import path from 'path';
 
 interface CommandMenuInfo {
     menu: string;

@@ -2,7 +2,7 @@
     "extends": "../../tsconfig",
     "compilerOptions": {
         "composite": true,
-        "outDir": "lib",
+        "outDir": "dist",
         "rootDir": "src",
         "declaration": true,
         "declarationMap": true

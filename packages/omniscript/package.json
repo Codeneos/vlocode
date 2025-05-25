@@ -8,10 +8,11 @@
         "OmniScript",
         "OmniStudio"
     ],
-    "main": "lib/index.js",
+    "main": "src/index.ts",
     "publishConfig": {
-        "main": "lib/index.js",
-        "typings": "lib/index.d.ts"
+        "main": "dist/index.cjs",
+        "module": "dist/index.mjs",
+        "typings": "dist/index.d.ts"
     },
     "readme": "../SITE.md",
     "directories": {
@@ -21,11 +22,12 @@
         "node": ">=20.0.0"
     },
     "scripts": {
-        "build": "tsc",
-        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "watch": "tsc -w",
-        "pack": "pnpm run build && pnpm pack",
-        "prepublish": "pnpm run build"
+        "clean": "shx rm -rf ./lib ./dist ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
+        "build": "tsc --emitDeclarationOnly && pnpm bundle",
+        "bundle": "node ../../scripts/esbuild.mjs --entrypoint ./src/index.ts",
+        "watch": "pnpm bundle --watch",
+        "pack": "pnpm pack",
+        "prepublish": "pnpm build"
     },
     "repository": {
         "type": "git",
@@ -36,8 +38,9 @@
         "email": "peter@curlybracket.nl"
     },
     "files": [
-        "lib/**/*.d.ts",
-        "lib/**/*.js",
+        "dist/**/*.d.ts",
+        "dist/index.cjs",
+        "dist/index.mjs",
         "lib/**/*.json",
         "patches/*.patch"
     ],
@@ -50,6 +53,7 @@
         "@types/jest": "^29.5.11",
         "@types/jsdom": "^21.1.7",
         "@types/node": "~20.17",
+        "esbuild": "^0.25.4",
         "jest": "^29.7.0",
         "shx": "^0.3.4",
         "ts-jest": "^29.3.4",

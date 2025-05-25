@@ -8,6 +8,8 @@ retire-cache
 testReports
 tslint-report.json
 packages/*/lib
+packages/*/dist
+packages/*/out
 /coverage
 /packages/cli/dist
 *.tgz

@@ -4,7 +4,6 @@ import * as path from 'path';
 import { Command, Option } from 'commander';
 import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
-import { Command as CliCommand } from './command';
 
 // @ts-ignore
 const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
@@ -38,7 +37,6 @@ class CLI {
         if (CLI.isVerbose || CLI.isDebug) {
             LogManager.registerWriter(new FancyConsoleWriter());
             if (CLI.isDebug) {
-                import('source-map-support/register');
                 LogManager.setGlobalLogLevel(LogLevel.debug);
             } else {
                 LogManager.setGlobalLogLevel(LogLevel.verbose);
@@ -62,6 +60,7 @@ class CLI {
 
     constructor(private commandsFolder: string) {
         this.logger.verbose(this.versionString);
+        debugger; // eslint-disable-line no-debugger
         this.program = new Command()
             .name(CLI.programName)
             .description(CLI.description)

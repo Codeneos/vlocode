@@ -135,9 +135,6 @@ class Vlocode {
     private activate(context: vscode.ExtensionContext) {
         // Check context flags
         this.isDebug = context.extensionMode > 1 || /--debug|--inspect-brk/.test(process.execArgv.join(' '));
-        if (this.isDebug) {
-            import('source-map-support/register');
-        }
 
         // All SFDX and Vlocity commands work better when we are running from the workspace folder
         vscode.workspace.onDidChangeWorkspaceFolders(this.setWorkingDirectory.bind(this));

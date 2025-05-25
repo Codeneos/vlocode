@@ -5,10 +5,11 @@
     "keywords": [
         "Salesforce"
     ],
-    "main": "lib/index.js",
+    "main": "src/index.ts",
     "publishConfig": {
-        "main": "lib/index.js",
-        "typings": "lib/index.d.ts"
+        "main": "dist/index.cjs",
+        "module": "dist/index.mjs",
+        "typings": "dist/index.d.ts"
     },
     "readme": "../SITE.md",
     "directories": {
@@ -21,15 +22,15 @@
         "metadata": "https://raw.githubusercontent.com/forcedotcom/source-deploy-retrieve/main/src/registry"
     },
     "scripts": {
-        "build": "pnpm run pre-build && tsc",
-        "clean": "shx rm -rf ./lib ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "watch": "pnpm run pre-build && tsc -w",
-        "pack": "pnpm run build && pnpm pack",
-        "prepublish": "pnpm run build",
+        "clean": "shx rm -rf ./lib ./dist ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
+        "build": "tsc --emitDeclarationOnly && pnpm bundle",
+        "bundle": "node ../../scripts/esbuild.mjs --entrypoint ./src/index.ts",
+        "watch": "pnpm bundle --watch",
+        "pack": "pnpm pack",
+        "prepublish": "pnpm build",
         "update-registry": "nugget $npm_package_config_metadata/metadataRegistry.json $npm_package_config_metadata/stdValueSetRegistry.json $npm_package_config_metadata/types.ts -q -d ./src/registry",
-        "pre-build": "pnpm update-registry",
-        "prepare": "pnpm update-registry",
-        "build-grammar": "antlr4ng -Dlanguage=TypeScript -o src/apex/grammar -visitor -listener ./grammar/ApexLexer.g4 ./grammar/ApexParser.g4"
+        "prebuild": "pnpm update-registry",
+        "prepare": "pnpm update-registry"
     },
     "repository": {
         "type": "git",
@@ -40,8 +41,9 @@
         "email": "peter@curlybracket.nl"
     },
     "files": [
-        "lib/**/*.d.ts",
-        "lib/**/*.js",
+        "dist/**/*.d.ts",
+        "dist/index.cjs",
+        "dist/index.mjs",
         "lib/**/*.json",
         "patches/*.patch",
         "../SITE.md"
@@ -59,6 +61,7 @@
         "@types/luxon": "^3.3.0",
         "@types/node": "~20.17",
         "@types/tough-cookie": "^4.0.2",
+        "esbuild": "^0.25.4",
         "jest": "^29.7.0",
         "nugget": "^2.2.0",
         "shx": "^0.3.4",
@@ -68,7 +71,7 @@
     "dependencies": {
         "@vlocode/core": "workspace:*",
         "@vlocode/util": "workspace:*",
-        "chalk": "^4.1.1",
+        "chalk": "^5.4.1",
         "csv-parse": "^5.3.3",
         "fs-extra": "^11.0",
         "jsforce": "1.11.0",

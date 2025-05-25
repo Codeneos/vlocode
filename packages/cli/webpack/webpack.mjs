@@ -3,6 +3,7 @@ import { glob } from 'glob';
 import webpack from 'webpack';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { EsbuildPlugin } from 'esbuild-loader';
+import { sourceMapsEnabled } from 'process';
 
 const packageExternals = [
     'vscode',
@@ -28,6 +29,7 @@ const common = {
     name: 'vlocode-cli',
     mode: 'production',
     context: contextFolder,
+    devtool: 'source-map',
     target: 'node',
     entry:
         glob.sync(
@@ -85,7 +87,6 @@ const common = {
         __filename: false
     },
     optimization: {
-        runtimeChunk: false,
         concatenateModules: true,
         mergeDuplicateChunks: true,
         mangleExports: false,
@@ -94,16 +95,11 @@ const common = {
         providedExports: false,
         usedExports: false,
         portableRecords: true,
-        splitChunks: false,
-        minimize: true,
-        minimizer: [
-            new EsbuildPlugin({
-                target: 'es2020',
-                keepNames: true,
-                minify: true,
-                legalComments: 'external'
-            })
-        ]
+        minimize: false,
+        splitChunks: {
+            minSize: 20000,
+            chunks: 'all'
+        },
     },
     externals: function({ request }, callback) {
         const isExternal = packageExternals.some(
