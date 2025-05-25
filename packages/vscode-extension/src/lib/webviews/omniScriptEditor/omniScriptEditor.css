@@ -1,0 +1,425 @@
+/* General body styling to match VSCode */
+body {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-font-family);
+    font-weight: var(--vscode-font-weight);
+    font-size: var(--vscode-font-size);
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent body scroll, components will manage their own scroll */
+}
+
+/* Main editor layout */
+.omni-script-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    background-color: var(--vscode-editor-background);
+}
+
+.editor-top-bar {
+    padding: 10px;
+    border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, var(--vscode-border, #ccc)));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--vscode-editorGroupHeader-tabsBackground, var(--vscode-panel-background, var(--vscode-editorWidget-background)));
+}
+
+.editor-title {
+    margin: 0;
+    font-size: 1.1em; /* Slightly larger for title */
+    color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
+}
+
+.editor-main-area {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden; /* Important for child components to scroll independently */
+}
+
+/* Navigation Sidebar */
+.navigation-sidebar {
+    width: 300px;
+    min-width: 200px;
+    height: 100%; /* Fill the main area height */
+    overflow-y: auto;
+    border-right: 1px solid var(--vscode-sideBar-border, var(--vscode-panel-border, var(--vscode-border, #ccc)));
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+
+.navigation-sidebar h3 {
+    margin-top: 0;
+    color: var(--vscode-sideBarTitle-foreground, var(--vscode-foreground));
+}
+
+.sidebar-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.sidebar-list-item {
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border: 1px solid var(--vscode-tree-tableColumnsBorder, var(--vscode-border, #eee));
+    border-radius: 4px;
+    background-color: var(--vscode-list-inactiveSelectionBackground, var(--vscode-editorWidget-background));
+    color: var(--vscode-list-inactiveSelectionForeground, var(--vscode-foreground));
+    user-select: none;
+    cursor: pointer;
+}
+
+.sidebar-list-item.selected {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+    border: 1px solid var(--vscode-focusBorder, var(--vscode-list-focusOutline, #007fd4)); /* More prominent border */
+    outline: 1px solid var(--vscode-list-focusOutline, var(--vscode-focusBorder, #007fd4)); /* Ensure focus is clear */
+}
+
+.sidebar-list-item.dragging {
+    background-color: var(--vscode-list-hoverBackground); /* A distinct color for dragging */
+    opacity: 0.8;
+}
+
+.sidebar-list-item:hover:not(.selected) {
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
+}
+
+.sidebar-item-type {
+    color: var(--vscode-descriptionForeground, var(--vscode-disabledForeground)); /* Subtler color for the type */
+    font-size: 0.9em;
+    margin-left: 8px;
+}
+
+.sidebar-list-item.selected .sidebar-item-type {
+    color: var(--vscode-list-activeSelectionForeground); /* Ensure type has contrast on selected background */
+}
+
+
+/* Main View (Property Editor) */
+.main-view {
+    padding: 20px;
+    flex-grow: 1;
+    height: 100%; 
+    overflow-y: auto;
+    box-sizing: border-box;
+    background-color: var(--vscode-editor-background);
+}
+
+.main-view-title { /* Was main-view h3 */
+    margin-top: 0;
+    margin-bottom: 20px; /* Space below title */
+    color: var(--vscode-settings-headerForeground, var(--vscode-foreground));
+    font-size: 1.2em;
+}
+
+.main-view form {
+    /* Removed display: flex; flex-direction: column; to allow sections to manage layout */
+}
+
+/* Property Grid Container (applied to the div wrapping property renderers within a section) */
+.property-grid-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Spacing between grid items */
+    margin-bottom: 20px; /* Space below each grid container/section */
+}
+
+/* Individual property item (wrapper for ConfigurablePropertyRenderer) */
+.property-grid-item {
+    /* flex-basis is applied inline by ConfigurablePropertyRenderer */
+    /* Styles for the content within the grid item */
+}
+
+.property-group { /* This class is inside ConfigurablePropertyRenderer */
+    margin-bottom: 0; /* Grid gap will handle spacing */
+}
+
+.property-label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--vscode-input-placeholderForeground, var(--vscode-foreground));
+    font-size: 0.9em; /* Slightly smaller labels */
+}
+
+.property-input,
+.property-textarea,
+.property-select {
+    width: 100%;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-settings-textInputBorder, #ccc));
+    border-radius: 3px;
+    font-family: var(--vscode-font-family); /* Ensure select also inherits font */
+    font-size: var(--vscode-font-size);   /* Ensure select also inherits font size */
+}
+
+.property-input:focus,
+.property-textarea:focus,
+.property-select:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    border-color: var(--vscode-focusBorder);
+}
+
+/* Specific to checkbox layout within ConfigurablePropertyRenderer if needed */
+.property-checkbox-container {
+    display: flex;
+    align-items: center; 
+    height: calc(var(--vscode-font-size) * 1.5 + 12px + 2px); 
+}
+
+.property-checkbox {
+    margin-right: 8px;
+    accent-color: var(--vscode-button-background);
+}
+
+/* Radio button group styling */
+.property-radio-group {
+    display: flex;
+    flex-direction: row; /* Or column, depending on desired layout */
+    gap: 10px; /* Spacing between radio options */
+    align-items: center;
+    height: calc(var(--vscode-font-size) * 1.5 + 12px + 2px); /* Match height of other inputs */
+}
+
+.property-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Space between radio button and its label */
+    font-size: 0.9em;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+}
+
+.property-radio {
+    accent-color: var(--vscode-button-background);
+    margin: 0; 
+}
+
+.property-textarea.property-code {
+    font-family: var(--vscode-editor-font-family, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
+    background-color: var(--vscode-editorWidget-background, var(--vscode-input-background)); /* Use editor widget background if available */
+    color: var(--vscode-editor-foreground, var(--vscode-input-foreground));
+    border: 1px solid var(--vscode-inputOption-activeBorder, var(--vscode-focusBorder)); /* Use a distinct border */
+    min-height: 80px; /* Default larger size for code */
+}
+
+/* Help text styling */
+.property-label-container {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between label and help icon */
+    margin-bottom: 5px; /* Keep space if label is separate */
+}
+
+.property-help-icon {
+    cursor: pointer;
+    color: var(--vscode-editorHint-foreground, var(--vscode-icon-foreground));
+    font-size: 0.9em; /* Make it slightly smaller than label */
+    border: 1px solid transparent; /* For consistent sizing and focus */
+    border-radius: 50%;
+    padding: 0px 4px;
+    user-select: none; /* Prevent text selection */
+}
+
+.property-help-icon:hover {
+    color: var(--vscode-focusBorder);
+}
+
+.property-help-icon:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    border-color: var(--vscode-focusBorder);
+}
+
+.property-help-text-panel {
+    padding: 8px;
+    margin-top: 2px; /* Space below the input field or label */
+    margin-bottom: 8px; /* Space before next property if panel is open */
+    background-color: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background));
+    border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-input-border));
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+    /* Basic transition for visibility - more complex needed for slide */
+    transition: opacity 0.1s ease-in-out, max-height 0.2s ease-in-out;
+    overflow: hidden;
+    /* max-height: 0;
+    opacity: 0; */ /* Initial state handled by conditional rendering in React */
+}
+
+/* Removed old .property-help-text as it's replaced by the panel */
+
+/* Lookup Specific Styling */
+.lookup-container { /* Applied to the .property-group div for lookup type */
+    position: relative; /* For positioning the suggestions list */
+}
+
+.lookup-suggestions-list {
+    position: absolute;
+    top: 100%; /* Position below the input field */
+    left: 0;
+    right: 0;
+    background-color: var(--vscode-editorWidget-background, var(--vscode-input-background));
+    border: 1px solid var(--vscode-input-border, var(--vscode-settings-textInputBorder, #ccc));
+    border-top: none; /* Avoid double border with input */
+    border-radius: 0 0 3px 3px;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px; /* Limit height and allow scrolling */
+    overflow-y: auto;
+    z-index: 100; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.lookup-suggestion-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+}
+
+.lookup-suggestion-item:hover {
+    background-color: var(--vscode-list-hoverBackground, var(--vscode-quickInputList-focusBackground));
+    color: var(--vscode-list-hoverForeground, var(--vscode-quickInputList-focusForeground));
+}
+
+/* List UI Type Styling */
+.property-list-container {
+    width: 100%;
+}
+
+.property-list-item {
+    border: 1px solid var(--vscode-input-border, var(--vscode-settings-textInputBorder, #ccc));
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: var(--vscode-editorWidget-background, var(--vscode-input-background)); /* Slightly different background for item */
+}
+
+.property-list-item-fields {
+    display: flex;
+    flex-wrap: wrap; /* Allow nested properties to wrap */
+    gap: 10px; /* Spacing between fields within a list item */
+    margin-bottom: 10px; /* Space before the delete button */
+}
+
+/* Nested ConfigurablePropertyRenderer instances within a list item will use .property-grid-item */
+.property-list-item .property-grid-item {
+    /* Adjust flex-basis if they are inside another flex container (property-list-item-fields) */
+    /* For example, if listItemConfig defines gridWidth=6, it should take half of the item fields area */
+    margin-bottom: 0; /* Remove default bottom margin as list item fields has gap */
+}
+
+
+.property-list-item-delete,
+.property-list-add-button {
+    /* Using existing .vscode-button styles, can add specific overrides if needed */
+    /* For example, a secondary style for delete button */
+    margin-top: 5px; /* Space above add button if it's after all items */
+}
+
+.vscode-button-secondary { /* Example for a less prominent delete button */
+    background-color: var(--vscode-button-secondaryBackground, var(--vscode-input-background));
+    color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+    border: 1px solid var(--vscode-button-secondaryBorder, var(--vscode-input-border));
+}
+
+.vscode-button-secondary:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground, var(--vscode-list-hoverBackground));
+}
+
+
+/* Section Styling */
+.property-section {
+    margin-bottom: 25px; /* Space between sections */
+}
+
+.property-section-header {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--vscode-settings-headerForeground, var(--vscode-foreground));
+    border-bottom: 1px solid var(--vscode-settings-rowHoverBackground, var(--vscode-editorGroupHeader-tabsBorder, #ccc));
+    padding-bottom: 8px;
+    margin-bottom: 15px; /* Space between header and first property */
+}
+
+
+/* Buttons */
+.vscode-button {
+    padding: 8px 15px;
+    border: 1px solid var(--vscode-button-border, transparent);
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.vscode-button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.vscode-button:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+}
+
+/* Save Status Message */
+.save-status {
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+.save-status.success {
+    color: var(--vscode-terminal-ansiGreen, green);
+}
+
+.save-status.error {
+    color: var(--vscode-errorForeground, red);
+}
+
+/* Placeholder text in MainView */
+.main-view-placeholder {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--vscode-editorHint-foreground, var(--vscode-disabledForeground));
+}
+
+/* Scrollbar theming (basic example, might be overridden by webview defaults or specific VSCode toolkit styles) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--vscode-scrollbarSlider-background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+::-webkit-scrollbar-track {
+    background: var(--vscode-editor-background); /* Or a slightly different background */
+}
+
+/* Codicon support (if added) */
+.codicon {
+  font-family: 'codicon'; /* Ensure this matches how codicon is loaded */
+  font-size: 16px; /* Or desired size */
+}
