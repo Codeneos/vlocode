@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/util",
-    "version": "1.28.2",
+    "version": "1.29.0",
     "description": "Vlocode utility library",
     "main": "src/index.ts",
     "module": "dist/index.ts",
