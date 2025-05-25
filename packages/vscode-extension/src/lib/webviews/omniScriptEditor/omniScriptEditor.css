@@ -1,0 +1,231 @@
+/* General body styling to match VSCode */
+body {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-font-family);
+    font-weight: var(--vscode-font-weight);
+    font-size: var(--vscode-font-size);
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent body scroll, components will manage their own scroll */
+}
+
+/* Main editor layout */
+.omni-script-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    background-color: var(--vscode-editor-background);
+}
+
+.editor-top-bar {
+    padding: 10px;
+    border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, var(--vscode-border, #ccc)));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--vscode-editorGroupHeader-tabsBackground, var(--vscode-panel-background, var(--vscode-editorWidget-background)));
+}
+
+.editor-title {
+    margin: 0;
+    font-size: 1.1em; /* Slightly larger for title */
+    color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
+}
+
+.editor-main-area {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden; /* Important for child components to scroll independently */
+}
+
+/* Navigation Sidebar */
+.navigation-sidebar {
+    width: 300px;
+    min-width: 200px;
+    height: 100%; /* Fill the main area height */
+    overflow-y: auto;
+    border-right: 1px solid var(--vscode-sideBar-border, var(--vscode-panel-border, var(--vscode-border, #ccc)));
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+
+.navigation-sidebar h3 {
+    margin-top: 0;
+    color: var(--vscode-sideBarTitle-foreground, var(--vscode-foreground));
+}
+
+.sidebar-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.sidebar-list-item {
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border: 1px solid var(--vscode-tree-tableColumnsBorder, var(--vscode-border, #eee));
+    border-radius: 4px;
+    background-color: var(--vscode-list-inactiveSelectionBackground, var(--vscode-editorWidget-background));
+    color: var(--vscode-list-inactiveSelectionForeground, var(--vscode-foreground));
+    user-select: none;
+    cursor: pointer;
+}
+
+.sidebar-list-item.selected {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+    border-color: var(--vscode-list-activeSelectionBackground); /* Or a focus border color */
+}
+
+.sidebar-list-item.dragging {
+    background-color: var(--vscode-list-hoverBackground); /* A distinct color for dragging */
+    opacity: 0.8;
+}
+
+.sidebar-list-item:hover:not(.selected) {
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
+}
+
+
+/* Main View (Property Editor) */
+.main-view {
+    padding: 20px;
+    flex-grow: 1;
+    height: 100%; /* Fill the main area height */
+    overflow-y: auto;
+    box-sizing: border-box;
+    background-color: var(--vscode-editor-background);
+}
+
+.main-view h3 {
+    margin-top: 0;
+    color: var(--vscode-settings-headerForeground, var(--vscode-foreground));
+}
+
+.main-view form {
+    display: flex;
+    flex-direction: column;
+}
+
+.property-group {
+    margin-bottom: 15px;
+}
+
+.property-label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--vscode-input-placeholderForeground, var(--vscode-foreground)); /* Or just --vscode-foreground */
+}
+
+.property-input,
+.property-textarea,
+.property-select {
+    width: 100%;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-settings-textInputBorder, #ccc));
+    border-radius: 3px;
+}
+
+.property-input:focus,
+.property-textarea:focus,
+.property-select:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    border-color: var(--vscode-focusBorder);
+}
+
+.property-checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.property-checkbox {
+    margin-right: 8px;
+    /* Customizing checkboxes is tricky; VSCode might use its own toolkit styles here.
+       This provides basic theming for the default checkbox. */
+    accent-color: var(--vscode-button-background); /* Basic theming for the check itself */
+}
+
+.property-checkbox-label {
+     color: var(--vscode-foreground);
+}
+
+
+/* Buttons */
+.vscode-button {
+    padding: 8px 15px;
+    border: 1px solid var(--vscode-button-border, transparent);
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.vscode-button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.vscode-button:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+}
+
+/* Save Status Message */
+.save-status {
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+.save-status.success {
+    color: var(--vscode-terminal-ansiGreen, green);
+}
+
+.save-status.error {
+    color: var(--vscode-errorForeground, red);
+}
+
+/* Placeholder text in MainView */
+.main-view-placeholder {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--vscode-editorHint-foreground, var(--vscode-disabledForeground));
+}
+
+/* Scrollbar theming (basic example, might be overridden by webview defaults or specific VSCode toolkit styles) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--vscode-scrollbarSlider-background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+::-webkit-scrollbar-track {
+    background: var(--vscode-editor-background); /* Or a slightly different background */
+}
+
+/* Codicon support (if added) */
+.codicon {
+  font-family: 'codicon'; /* Ensure this matches how codicon is loaded */
+  font-size: 16px; /* Or desired size */
+}

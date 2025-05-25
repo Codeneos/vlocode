@@ -1,0 +1,133 @@
+{
+    "Description": "A simple OmniScript for testing the editor.",
+    "ElementTypeComponentMapping": {
+        "Checkbox": "vlcCheckbox",
+        "Currency": "vlcCurrency",
+        "Date": "vlcDate",
+        "DateTime": "vlcDateTime",
+        "Disclosure": "vlcDisclosure",
+        "Email": "vlcEmail",
+        "File": "vlcFile",
+        "Formula": "vlcFormula",
+        "Headline": "vlcHeadline",
+        "Lookup": "vlcLookup",
+        "MultiSelect": "vlcMultiSelect",
+        "Number": "vlcNumber",
+        "Password": "vlcPassword",
+        "Radio": "vlcRadio",
+        "Range": "vlcRange",
+        "Select": "vlcSelect",
+        "Step": "vlcStep",
+        "Telephone": "vlcTelephone",
+        "Text": "vlcText",
+        "TextBlock": "vlcTextBlock",
+        "TextArea": "vlcTextArea",
+        "Time": "vlcTime",
+        "URL": "vlcURL"
+    },
+    "IsActive": true,
+    "IsOmniScriptEmbeddable": false,
+    "IsProcedure": false,
+    "IsWebCompEnabled": false,
+    "Language": "English",
+    "Name": "SampleOmniScript",
+    "OmniProcessType": "OmniScript",
+    "PropertySetConfig": {
+        "persistentComponent": [
+            {
+                "id": "vlcCart",
+                "itemsKey": "cartItems",
+                "label": "Cart"
+            }
+        ],
+        "allowSaveForLater": true,
+        "saveNameTemplate": null,
+        "saveExpireInDays": null,
+        "saveForLaterRedirectPageName": "sflRedirect",
+        "saveForLaterRedirectTemplateUrl": "vflSaveForLaterAcknowledge.html",
+        "saveContentEncoded": false,
+        "saveObjectId": "%ContextId%",
+        "saveURL": "/services/apexrest/%vlocity_namespace%/v1/GenericInvoke2",
+        "showInputWidth": false,
+        "showStepChart": true
+    },
+    "SubType": "Test",
+    "Type": "Script",
+    "UniqueName": "Test_SampleOmniScript_English",
+    "VlocityDataPackType": "OmniScript",
+    "VlocityRecordSObjectType": "%vlocity_namespace%__OmniScript__c",
+    "VlocityRecordSourceKey": "%vlocity_namespace%__OmniScript__c/Test/SampleOmniScript/English",
+    "elements": [
+        {
+            "Active": true,
+            "ElementType": "Step",
+            "Level": 0,
+            "Name": "Step1",
+            "Order": 1,
+            "PropertySetConfig": {
+                "label": "Step 1",
+                "validationRequired": true,
+                "show": null
+            },
+            "children": [
+                {
+                    "Active": true,
+                    "ElementType": "Text",
+                    "Level": 1,
+                    "Name": "Name",
+                    "Order": 1,
+                    "PropertySetConfig": {
+                        "label": "Your Name",
+                        "placeholder": "Enter your full name",
+                        "controlWidth": 6,
+                        "required": true,
+                        "show": null
+                    }
+                },
+                {
+                    "Active": true,
+                    "ElementType": "Checkbox",
+                    "Level": 1,
+                    "Name": "IsStudent",
+                    "Order": 2,
+                    "PropertySetConfig": {
+                        "label": "Are you a student?",
+                        "controlWidth": 6,
+                        "checked": false,
+                        "show": null
+                    }
+                }
+            ]
+        },
+        {
+            "Active": true,
+            "ElementType": "Step",
+            "Level": 0,
+            "Name": "Step2",
+            "Order": 2,
+            "PropertySetConfig": {
+                "label": "Step 2",
+                "validationRequired": true,
+                "show": null,
+                "previousLabel": "Back to Step 1",
+                "nextLabel": "Proceed"
+            },
+            "children": [
+                 {
+                    "Active": true,
+                    "ElementType": "Number",
+                    "Level": 1,
+                    "Name": "Age",
+                    "Order": 1,
+                    "PropertySetConfig": {
+                        "label": "Your Age",
+                        "controlWidth": 4,
+                        "min": 0,
+                        "max": 120,
+                        "show": null
+                    }
+                }
+            ]
+        }
+    ]
+}

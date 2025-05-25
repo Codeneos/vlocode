@@ -33,6 +33,8 @@ import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 import './commands';
 import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
 import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
+import { OmniScriptEditor } from './lib/webviews/omniScriptEditor/OmniScriptEditor';
+import { ReactPanel } from './lib/webviews/ReactPanel';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -223,6 +225,32 @@ class Vlocode {
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(SfdxConfigWatcher).initialize());
+
+        // Register OmniScript Editor command
+        this.service.commands.registerCommand('vlocode.omniScriptEditor', async () => {
+            // For now, using a hardcoded path to the sample OmniScript JSON
+            // In a real scenario, this path would be dynamic (e.g., from a context menu action on a datapack file)
+            const omniScriptFilePath = vscode.Uri.joinPath(getContext().extensionUri, 'src', 'test-data', 'SampleOmniScript.json');
+            try {
+                const omniScriptFileContent = await vscode.workspace.fs.readFile(omniScriptFilePath);
+                const omniScriptJson = Buffer.from(omniScriptFileContent).toString('utf8');
+
+                const panel = new ReactPanel(
+                    getContext().extensionUri, 
+                    'omniScriptEditor', 
+                    'OmniScript Editor', 
+                    omniScriptFilePath, // Pass the file path here
+                    vscode.ViewColumn.One, 
+                    {
+                        // retainContextWhenHidden: true, // Consider this for more complex editors
+                    }
+                );
+                panel.show(<OmniScriptEditor />, { omniScriptJson }); // Pass data as props
+            } catch (error) {
+                vscode.window.showErrorMessage(`Error loading OmniScript: ${error.message}`);
+                this.logger.error(`Error loading OmniScript ${omniScriptFilePath.fsPath}:`, error);
+            }
+        });
 
         // track activation time
         this.logger.focus();
