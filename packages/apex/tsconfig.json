@@ -2,7 +2,7 @@
     "extends": "../../tsconfig",
     "compilerOptions": {
         "composite": true,
-        "module": "esnext",
+
         "outDir": "dist",
         "rootDir": "src",
         "declaration": true,

@@ -6,11 +6,8 @@
         "Salesforce"
     ],
     "main": "src/index.ts",
-    "module": "src/index.ts",
-    "type": "module",
     "publishConfig": {
-        "main": "dist/index.cjs",
-        "module": "dist/index.mjs",
+        "main": "dist/index.js",
         "typings": "dist/index.d.ts"
     },
     "readme": "../SITE.md",
@@ -25,8 +22,8 @@
     },
     "scripts": {
         "clean": "shx rm -rf ./lib ./dist ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "build": "pnpm bundle",
-        "postbuild": "tsc --emitDeclarationOnly",
+        "build": "tsc -b",
+        "postbuild": "",
         "bundle": "node ../../scripts/esbuild.mjs --entrypoint ./src/index.ts",
         "watch": "pnpm bundle --watch",
         "pack": "pnpm pack",
@@ -46,8 +43,8 @@
     "files": [
         "dist/**/*.d.ts",
         "!dist/**/*.test.d.ts",
-        "dist/index.cjs",
-        "dist/index.mjs",
+        "dist/**/*.js",
+        "!dist/**/*.test.js",
         "lib/**/*.json",
         "patches/*.patch",
         "../SITE.md"
