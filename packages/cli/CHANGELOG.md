@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.4](https://github.com/Codeneos/vlocode/compare/v1.29.3...v1.29.4) (2025-05-26)
+
+### Bug Fixes
+
+* JSON files missing in NPM packages ([5f61f62](https://github.com/Codeneos/vlocode/commit/5f61f62d42e4d473f2eabfafdaced5748eb9afc6))
+
 ## [1.29.3](https://github.com/Codeneos/vlocode/compare/v1.29.2...v1.29.3) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/cli
