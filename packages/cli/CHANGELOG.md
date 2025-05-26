@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
+
+### Bug Fixes
+
+* typo in CLI webpack build ([910fb70](https://github.com/Codeneos/vlocode/commit/910fb70402d84bbb4743ead2dd90616e4fe56993))
+
 ## [1.29.4](https://github.com/Codeneos/vlocode/compare/v1.29.3...v1.29.4) (2025-05-26)
 
 ### Bug Fixes
@@ -45,6 +51,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * CLI fails to build due to upgrade of glob module ([ac8cc9c](https://github.com/Codeneos/vlocode/commit/ac8cc9c6583d4b571db7c7094df1dbd973157000))
+
 * update glob import to use named import syntax ([a130bab](https://github.com/Codeneos/vlocode/commit/a130bab69fc5c85a3a761854ac84ace8c657f00a))
 
 ### Features

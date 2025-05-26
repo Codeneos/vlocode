@@ -4,6 +4,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
+
+**Note:** Version bump only for package @vlocode/vlocity-deploy
+
 ## [1.29.4](https://github.com/Codeneos/vlocode/compare/v1.29.3...v1.29.4) (2025-05-26)
 
 ### Bug Fixes
@@ -43,17 +47,29 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+
 * add new spec files for OmniProcess and OmniUiCard components ([08facfd](https://github.com/Codeneos/vlocode/commit/08facfd6ada59e1776754de52e260f2046a03762))
+
 * add support for DataMapper deployment and update specs for OmniStudio components ([2113651](https://github.com/Codeneos/vlocode/commit/21136517c247d54c78efe9c540891a5aa5b6dc76))
+
 * add support for DataRaptor to standard runtime conversion ([8500435](https://github.com/Codeneos/vlocode/commit/8500435f4f662a69c53e88c011d8a8b0777e5f9e))
+
 * add supprto for activating OmniStudio OmniScripts ([b919563](https://github.com/Codeneos/vlocode/commit/b9195630eb24d4becfc13005594cb41bc4b70111))
+
 * automaticly generate standard and managed package LWC components during FlexCard deployment ([c495a4b](https://github.com/Codeneos/vlocode/commit/c495a4b85b5627a0727e0aa8a47a3c00a97dfca3))
+
 * enhance datapack deployment with error reporting on datapack loading errors which were previously not reported when continueOnError was set to true ([1aa6136](https://github.com/Codeneos/vlocode/commit/1aa61367ed7bc1f9fab3de19a354ca1495c1b5f6))
+
 * enhance OmniStudio conversion with VlocityCard support ([fa2b4e8](https://github.com/Codeneos/vlocode/commit/fa2b4e802e6c07adf8efe698d80eb6e9da5086e1))
+
 * generate and compile and deploy LWC component when activating a flex card ([7e79a83](https://github.com/Codeneos/vlocode/commit/7e79a83eeb0e4d22d1e3e841222d95bfea9d3746))
+
 * improve mapping for standard OmniStudio runtime components ([69d68a0](https://github.com/Codeneos/vlocode/commit/69d68a0eb681de104f6015e0aec7c2e7c4c5aa86))
+
 * optimize datapack loading by caching the file directory during the loading process ([f84e3b2](https://github.com/Codeneos/vlocode/commit/f84e3b2c528e4bd0d15cb5173e490c72387dd460))
+
 * support for FlexCard activation from VSCode incl. LWC component generation ([fb61d6d](https://github.com/Codeneos/vlocode/commit/fb61d6ddcae675cab1407f38f806dd12b89e6e35))
+
 * support generation of LWCs from OmniStudio Datapacks without deploying ([fa4c421](https://github.com/Codeneos/vlocode/commit/fa4c421d1c95592c6a590ec8ad73a0257bf4d277))
 
 ## [1.27.7](https://github.com/Codeneos/vlocode/compare/v1.27.6...v1.27.7) (2025-01-28)

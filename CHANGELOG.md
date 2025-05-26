@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.5](https://github.com/codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
+
+### Bug Fixes
+
+* typo in CLI webpack build ([910fb70](https://github.com/codeneos/vlocode/commit/910fb70402d84bbb4743ead2dd90616e4fe56993))
+
 ## [1.29.4](https://github.com/codeneos/vlocode/compare/v1.29.3...v1.29.4) (2025-05-26)
 
 ### Bug Fixes
