@@ -222,7 +222,7 @@ export class HttpTransport implements Transport {
 
         request.once('timeout', () => {
             request.destroy(new CustomError(
-                `Client timeout (${request.socket?.timeout + 'ms' ?? 'default'}) expired when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
+                `Client timeout (${request.socket?.timeout ?? 'default'}) expired when requesting ${url.pathname} (${request.method}) after ${timer.elapsed}ms`,
                 { code: 'CLIENT_TIMEDOUT' }
             ));
         });

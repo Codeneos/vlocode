@@ -9,7 +9,7 @@
         "OmniStudio"
     ],
     "main": "src/index.ts",
-    "module": "dist/index.ts",
+    "module": "src/index.ts",
     "type": "module",
     "publishConfig": {
         "main": "dist/index.cjs",
@@ -25,7 +25,8 @@
     },
     "scripts": {
         "clean": "shx rm -rf ./lib ./dist ./coverage ./tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "build": "tsc --emitDeclarationOnly && pnpm bundle",
+        "build": "pnpm bundle",
+        "postbuild": "tsc --emitDeclarationOnly",
         "bundle": "node ../../scripts/esbuild.mjs --entrypoint ./src/index.ts",
         "watch": "pnpm bundle --watch",
         "pack": "pnpm pack",
