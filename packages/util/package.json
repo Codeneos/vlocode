@@ -36,6 +36,7 @@
         "dist/**/*.d.ts",
         "!dist/**/*.test.d.ts",
         "dist/**/*.js",
+        "dist/**/*.json",
         "!dist/**/*.test.js",
         "patches/*.patch",
         "../SITE.md"

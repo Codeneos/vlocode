@@ -79,7 +79,7 @@ const common = {
         filename: '[name].js',
         chunkFilename: '[id].js',
         devtoolModuleFilenameTemplate: '[absolute-resource-path]',
-        libraryTarget: 'commonjs2',
+        libraryTarget: 'esm',
         path: path.resolve(contextFolder, 'dist')
     },
     node: {

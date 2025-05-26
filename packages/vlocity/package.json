@@ -40,6 +40,7 @@
         "dist/**/*.d.ts",
         "!dist/**/*.test.d.ts",
         "dist/**/*.js",
+        "dist/**/*.json",
         "!dist/**/*.test.js",
         "lib/**/*.json",
         "patches/*.patch"
