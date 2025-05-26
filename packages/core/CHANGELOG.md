@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.3](https://github.com/Codeneos/vlocode/compare/v1.29.2...v1.29.3) (2025-05-26)
+
+### Bug Fixes
+
+* revert ESM changes with ESBuild as ESBuild does not emit proper decorator data for use IoC framework ([a80f136](https://github.com/Codeneos/vlocode/commit/a80f13675e0fcb7e90bcccbfaedb089aeda07930))
+
 ## [1.29.2](https://github.com/Codeneos/vlocode/compare/v1.29.1...v1.29.2) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/core
@@ -27,6 +33,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * injectable sub methods singleton and transient should omit lifecycle from options ([d753ee1](https://github.com/Codeneos/vlocode/commit/d753ee12235cdf02dc48aae380307868a7979133))
+
 * update path splitting regex to support both forward and backward slashes ([b2e496e](https://github.com/Codeneos/vlocode/commit/b2e496e6fb043a6f39d14dad4aa26264453db52f))
 
 ### Features

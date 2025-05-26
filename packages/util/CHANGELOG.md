@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.3](https://github.com/Codeneos/vlocode/compare/v1.29.2...v1.29.3) (2025-05-26)
+
+### Bug Fixes
+
+* revert ESM changes with ESBuild as ESBuild does not emit proper decorator data for use IoC framework ([a80f136](https://github.com/Codeneos/vlocode/commit/a80f13675e0fcb7e90bcccbfaedb089aeda07930))
+
 ## [1.29.2](https://github.com/Codeneos/vlocode/compare/v1.29.1...v1.29.2) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/util
@@ -29,18 +35,27 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * cast flattened array to correct type in flatten function ([ae03e6d](https://github.com/Codeneos/vlocode/commit/ae03e6deea7c0cc542238d5e1084b1efba8d93f9))
+
 * update antlr4ng dependency versions and improve type definitions in icon path handling ([3bc215a](https://github.com/Codeneos/vlocode/commit/3bc215a3472984eb7ae65768b467c0739125db81))
 
 ### Features
 
 * add AwaitableAsyncGenerator class for iterable and awaitable async generators ([a54df41](https://github.com/Codeneos/vlocode/commit/a54df41c7c5e06ec17fa093aceb5d71edec39987))
+
 * add case-insensitive property access fn for target objects using a proxy ([bb9dffd](https://github.com/Codeneos/vlocode/commit/bb9dffdf8d6f1c6a34ea740734b3b4e8a6ae152a))
+
 * add function to retrieve elements by tag name from XML string ([149da7b](https://github.com/Codeneos/vlocode/commit/149da7b3fd07465e6965c013ba72354460e0c9d6))
+
 * add import multipack command to enhance datapack management ([e69ec9e](https://github.com/Codeneos/vlocode/commit/e69ec9e2210a885b210addf9aef6e6777a53913f))
+
 * add substringBetween function to extract substring between specified needles ([ea2d924](https://github.com/Codeneos/vlocode/commit/ea2d924b14d33d3801296e0ad999e8e069a39e0c))
+
 * add timeout function to wrap promises with a timeout mechanism ([a9d62c4](https://github.com/Codeneos/vlocode/commit/a9d62c4a370a28f5edbc334bb768b6b1a0cca61c))
+
 * enhance pluralize function to handle object counts and improve pluralization logic ([d4b397b](https://github.com/Codeneos/vlocode/commit/d4b397b787476aadcf4db1c981c12267937ae38e))
+
 * refactor query handling and enhance iterable operations in Salesforce connection and deployment services ([f3de249](https://github.com/Codeneos/vlocode/commit/f3de24973bd4c19dfdf41e5f3313289c95419d8e))
+
 * support generation of LWCs from OmniStudio Datapacks without deploying ([fa4c421](https://github.com/Codeneos/vlocode/commit/fa4c421d1c95592c6a590ec8ad73a0257bf4d277))
 
 ## [1.27.5](https://github.com/Codeneos/vlocode/compare/v1.27.4...v1.27.5) (2024-09-02)
