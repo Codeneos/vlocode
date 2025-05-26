@@ -36,6 +36,7 @@
     },
     "files": [
         "dist/**/*.d.ts",
+        "!dist/**/*.test.d.ts",
         "dist/index.cjs",
         "dist/index.mjs",
         "patches/*.patch",

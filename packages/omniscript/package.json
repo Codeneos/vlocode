@@ -42,6 +42,7 @@
     },
     "files": [
         "dist/**/*.d.ts",
+        "!dist/**/*.test.d.ts",
         "dist/index.cjs",
         "dist/index.mjs",
         "lib/**/*.json",
