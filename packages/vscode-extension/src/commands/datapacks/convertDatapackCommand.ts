@@ -45,7 +45,7 @@ export default class ConvertDatapackCommand extends DatapackCommand {
         }
 
         vscode.window.showInformationMessage(`Converted ${pluralize('datapack', results)}`);
-        this.outputTable(results, { focus: true });
+        this.output.table(results, { focus: true });
     }
 
     protected async convertAndExpandDatapack(datapack: VlocityDatapack) : Promise<VlocityDatapack> {

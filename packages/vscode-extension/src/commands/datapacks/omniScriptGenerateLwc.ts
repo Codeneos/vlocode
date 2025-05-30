@@ -91,7 +91,7 @@ export default class GenerateLwcCommand extends DatapackCommand {
             );
         }
 
-        this.outputTable(result, { focus: true });
+        this.output.table(result, { focus: true });
     }
 
     private async promptOutputPathSelection() : Promise<string | undefined> {

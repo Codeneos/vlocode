@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getDocumentBodyAsString, groupBy, mapBy } from '@vlocode/util';
+import { getDocumentBodyAsString, mapBy } from '@vlocode/util';
 import { CommandBase } from '../../lib/commandBase';
 import { DeployResult, SalesforcePackage, SalesforcePackageComponent, SalesforceService } from '@vlocode/salesforce';
 
@@ -58,11 +58,11 @@ export default abstract class MetadataCommand extends CommandBase {
         );
 
         if (!result.success) {
-            this.outputTable(deployErrors, { appendEmptyLine: true, focus: true });
+            this.output.table(deployErrors, { appendEmptyLine: true, focus: true });
         } else if (deployComponentStatus.length) {
-            this.outputTable(deployComponentStatus, { appendEmptyLine: true, focus: true });
+            this.output.table(deployComponentStatus, { appendEmptyLine: true, focus: true });
             if (deployErrors.length) {
-                this.outputTable(deployErrors, {
+                this.output.table(deployErrors, {
                     appendEmptyLine: true,
                     focus: true,
                         maxCellWidth: {
@@ -73,7 +73,7 @@ export default abstract class MetadataCommand extends CommandBase {
             }
         }
 
-        this.output(
+        this.output.appendLine(
             `Deployment ${result?.id} -- ${result.status} (${result.numberComponentsDeployed}/${result.numberComponentsTotal})`,
             { appendEmptyLine: true, focus: true }
         );

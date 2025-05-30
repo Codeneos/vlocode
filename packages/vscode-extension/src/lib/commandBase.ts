@@ -4,8 +4,9 @@ import VlocodeService from '../lib/vlocodeService';
 import { container, LogManager } from '@vlocode/core';
 import { Command } from '../lib/command';
 import { getContext, VlocodeContext } from '../lib/vlocodeContext';
-import { lazy } from '@vlocode/util';
+import { forEachAsyncParallel, Iterable, lazy } from '@vlocode/util';
 import { OutputChannelManager } from './outputChannelManager';
+import { CommandLogger } from './commandLogger';
 
 type CommandOutputOptions<T = {}> = Partial<T> & {
     appendEmptyLine?: boolean;
@@ -21,14 +22,15 @@ const TerminalCharacters = {
 
 export abstract class CommandBase implements Command {
 
+    private outputLogger?: CommandLogger;
+    private outputChannel?: vscode.OutputChannel;
+    
     protected outputChannelName?: string;
     protected readonly logger = LogManager.get(this.getName());
     protected readonly vlocode = lazy(() => container.get(VlocodeService));
 
-    protected get outputChannel() : vscode.OutputChannel {
-        return this.outputChannelName
-            ? OutputChannelManager.get(this.outputChannelName)
-            : OutputChannelManager.getDefault();
+    protected get output() {
+        return this.outputLogger ?? (this.outputLogger = new CommandLogger(this.getOutputChannel()));
     }
 
     public abstract execute(...args: any[]): any | Promise<any>;
@@ -48,128 +50,34 @@ export abstract class CommandBase implements Command {
             ? vscode.window.activeTextEditor.document.getText(vscode.window.activeTextEditor.selection)
             : undefined;
     }
+    
+    /**
+     * Saves all open and dirty text documents in the workspace, optionally limited to the specified files.
+     *
+     * @param files - An optional array of `vscode.Uri` objects representing the files to save. 
+     *                If not provided, all dirty documents will be saved.
+     * @returns A list of saved documents or an empty array if no documents were dirty.
+     */
+    protected async saveOpenDocuments(files?: Iterable<{ toString(): string } | string>) {
+        const fileUris = files ? new Set(Iterable.map(files, file => typeof file === 'string' ? file : file.toString())) : undefined;
+        const dirtyDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && (!fileUris || fileUris.has(d.uri.fsPath)  || fileUris.has(d.uri.toString())));
+        if (dirtyDocuments.length === 0) {
+            return [];
+        }
+        await forEachAsyncParallel(dirtyDocuments, doc => doc.save(), 4);
+        return dirtyDocuments;
+    }
 
     protected getName() : string {
         return this.constructor?.name || 'Command';
     }
 
-    protected output(message: string, options?: CommandOutputOptions<{ args: any[] }>) {
-        if (options?.args) {
-            message = message.replace(/{(\d+)}/g, (match, number) => this.formatOutputArg(options.args![number] ?? `${match}`));
+    protected getOutputChannel() {
+        if (!this.outputChannel) {
+            this.outputChannel = this.outputChannelName
+                ? OutputChannelManager.get(this.outputChannelName)
+                : OutputChannelManager.getDefault();
         }
-
-        this.outputChannel.appendLine(message);
-
-        if (options?.appendEmptyLine) {
-            this.outputBlank();
-        }
-        if (options?.focus) {
-            this.outputFocus();
-        }
-    }
-
-    protected outputTable<T extends object, K extends (keyof T & string)>(
-        data: T[],
-        options?: CommandOutputOptions<{
-            maxCellWidth: number | Record<K, number>,
-            format: Record<K, (value: T[K]) => string>,
-            columns: Array<K>,
-            labels: Record<K, string>,
-        }>
-    ) {
-        if (!data.length) {
-            return;
-        }
-
-        if (options?.format) {
-            const format = options?.format;
-            // Map data to formatted data using the provided format function
-            data = data.map(row => 
-                Object.fromEntries(Object.entries(row).map(([key, value]) => {
-                    const formater = format[key];
-                    return [key, formater ? formater(value) : value];
-                })) as T
-            );
-        }
-
-        const columns = options?.columns ?? Object.keys(data[0]);
-        const rows = data.map(row => columns.map(column => this.formatOutputArg(row[column])));
-        const columnWidths = columns.map((column, index) => Math.max((options?.labels?.[column] ?? column).length, ...rows.map(row => row[index].length)));
-
-        // Adjust column widths to max width if specified
-        const maxWidths = options?.maxCellWidth;
-        if (maxWidths) {
-            columnWidths.forEach((width, index) => {
-                const maxWidth = typeof maxWidths === 'number' ? maxWidths : maxWidths[columns[index]];
-                if (maxWidth) {
-                    columnWidths[index] = Math.min(width, maxWidth);
-                }
-            });
-        }
-
-        const header = columns.map((column, index) => (options?.labels?.[column] ?? column).padEnd(columnWidths[index]).toUpperCase()).join('  ');
-        const seperator = columnWidths.map((width) => TerminalCharacters.HorizontalLine.repeat(width)).join('  ');
-
-        this.outputChannel.appendLine(header);
-        this.outputChannel.appendLine(seperator);
-        rows.forEach(row => this.outputTableRow(row, columnWidths));
-
-        if (options?.appendEmptyLine !== false) {
-            this.outputBlank();
-        }
-        if (options?.focus) {
-            this.outputFocus();
-        }
-    }
-
-    private outputTableRow(values: string[], columnWidths: number[]) {
-        const nextRow: string[] = [];
-        const currentRow: string[] = [];
-
-        for (let i = 0; i < columnWidths.length; i++) {
-            if (values[i] && values[i].length > columnWidths[i]) {
-                nextRow[i] = values[i].substring(columnWidths[i]);
-                values[i] = values[i].substring(0, columnWidths[i]);
-            }
-            const paddingFn = 'padEnd';
-            currentRow.push((values[i] ?? '')[paddingFn](columnWidths[i]));
-        }
-
-        this.outputChannel.appendLine(currentRow.join('  '));
-        if (nextRow.length) {
-            this.outputTableRow(nextRow, columnWidths);
-        }
-    }
-
-    protected outputBlank(count: number = 1) {
-        for (let i = 0; i < count; i++) {
-            this.outputChannel.appendLine('');
-        }
-    }
-
-    protected outputFocus() {
-        this.outputChannel.show();
-    }
-
-    private formatOutputArg(arg: unknown) {
-        if (arg === undefined) {
-            return '';
-        }
-        if (arg instanceof Error) {
-            return `Error(${arg.message})`
-        }
-        if (arg instanceof Date) {
-            return arg.toISOString();
-        }
-        if (Buffer.isBuffer(arg)) {
-            return `(Buffer<${arg.length}>)`
-        }
-        if (typeof arg === 'object' && arg !== null) {
-            return JSON.stringify(arg, null);
-        }
-        if (typeof arg === 'string') {
-            return arg;
-        }
-        return String(arg);
+        return this.outputChannel;
     }
 }

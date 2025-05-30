@@ -34,7 +34,7 @@ export default class ActivateOmniScriptCommand extends DatapackCommand {
         const results = await this.vlocode.withActivity('Datapack activation', 
             (progress) => this.activateDatapacks(datapacks, options, progress)
         );
-        this.outputTable(results, { focus: true, labels: { time: 'activation time (ms)' } });
+        this.output.table(results, { focus: true, labels: { time: 'activation time (ms)' } });
     }
 
     protected async activateDatapacks(

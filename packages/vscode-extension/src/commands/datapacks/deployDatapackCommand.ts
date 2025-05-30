@@ -72,7 +72,7 @@ export class DeployDatapackCommand extends DatapackCommand {
             vscode.window.showInformationMessage('Successfully deployed the selected datapacks');
         }
 
-        this.outputTable(results.map(result => ({
+        this.output.table(results.map(result => ({
             datapack: result.datapack,
             status: result.status,
             error: [...unique(result.messages.filter(e => e.type === 'error').map(e => e.message))].join(', '),
