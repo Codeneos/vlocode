@@ -117,9 +117,10 @@ export class SalesforcePackageBuilder {
     /**
      * Default API version to use when no version is specified.
      */
-    public static defaultApiVersion = '50.0';
+    public static defaultApiVersion = '60.0';
 
-    private readonly mdPackage: SalesforcePackage;
+    private mdPackage: SalesforcePackage;
+    private rebuildRequired = false;
     private readonly fs: FileSystem;
     private readonly parsedFiles = new Set<string>();
     private readonly composedData = new Map<string, MetadataObject>();
@@ -151,6 +152,29 @@ export class SalesforcePackageBuilder {
      */
     public addReplacement(replacement: ReplacementDetail) {
         this.replacements.push(new TokenReplacement(replacement));
+        this.rebuildRequired = true;
+    }
+
+    /**
+     * Rebuilds the Salesforce metadata package by reinitializing the package instance,
+     * clearing any previously parsed files and composed data. 
+     * 
+     * This is automatically called when replacement tokens are added to the package builder after files have been added.
+     * 
+     * @returns {this} The current instance for method chaining.
+     */
+    public rebuildPackage(token?: CancellationToken): Promise<this> {
+        const sources = this.mdPackage.files();
+        if (sources.size === 0) {
+            // There is no point in rebuilding the package when no files are added
+            return Promise.resolve(this);
+        }
+        this.logger.verbose(`Rebuilding package with ${sources.size} files`);
+        this.mdPackage = new SalesforcePackage(this.apiVersion);
+        this.parsedFiles.clear();
+        this.composedData.clear();
+        this.rebuildRequired = false;
+        return this.addFiles(sources, token);
     }
 
     /**
@@ -236,7 +260,8 @@ export class SalesforcePackageBuilder {
         strategy?: S | (new(...args: any[]) => S),
         options?: Parameters<S['getChangedComponents']>[1]
     ) : Promise<Array<SalesforcePackageComponent>> {
-        const mdPackage = this.getPackage();
+        const mdPackage = this.mdPackage;
+        mdPackage.generateMissingMetaFiles();
         const deltaStrategy: DeltaPackageStrategy<T> = typeof strategy === 'function' || !strategy 
             ? (Container.get(this) ?? container).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
 
@@ -576,7 +601,7 @@ export class SalesforcePackageBuilder {
         strategy?: S | (new(...args: any[]) => S),
         options?: Parameters<S['getChangedComponents']>[1]
     ) {
-        const mdPackage = this.getPackage();
+        const mdPackage = await this.build();
         const deltaStrategy = typeof strategy === 'function' || !strategy 
             ? (Container.get(this) ?? container).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
         const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
@@ -601,9 +626,31 @@ export class SalesforcePackageBuilder {
     }
 
     /**
+     * Retrieves the list of files included in the current metadata package.
+     *
+     * @returns {string[]} An array of file paths representing the files in the package.
+     */
+    public getPackageFiles() {
+        return this.mdPackage.files();
+    }
+
+
+    /**
+     * Gets the SalesforcePackage underlying the builder without rebuilding it.
+     * @deprecated Use {@link build} instead which also rebuilds the package when required (e.g. when replacement tokens are added).
+     */
+    public getPackage() {
+        this.mdPackage.generateMissingMetaFiles();
+        return this.mdPackage;
+    }
+
+    /**
      * Gets SalesforcePackage underlying the builder.
      */
-    public getPackage(): SalesforcePackage {
+    public async build(token?: CancellationToken): Promise<SalesforcePackage> {     
+        if (this.rebuildRequired) {  
+            await this.rebuildPackage(token);
+        }
         this.mdPackage.generateMissingMetaFiles();
         return this.mdPackage;
     }

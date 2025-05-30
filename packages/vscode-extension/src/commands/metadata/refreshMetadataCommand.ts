@@ -31,7 +31,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
         }, async (_progress, token) => {
             // Build manifest
             const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.retrieve, apiVersion);
-            const sfPackage = (await packageBuilder.addFiles(selectedFiles, token)).getPackage();
+            const sfPackage = (await packageBuilder.addFiles(selectedFiles, token)).build();
             this.clearPreviousErrors(sfPackage.files());
 
             if (sfPackage.size() == 0) {

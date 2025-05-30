@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import open from 'open';
 
-import { forEachAsyncParallel } from '@vlocode/util';
 import { DeployResult, RetrieveDeltaStrategy, SalesforceDeployment, SalesforcePackage, SalesforcePackageBuilder, SalesforcePackageType } from '@vlocode/salesforce';
 
 import { VlocodeCommand } from '../../constants';
@@ -67,47 +66,25 @@ export default class DeployMetadataCommand extends MetadataCommand {
     public clearQueue() {
         this.pendingPackages.splice(0, this.pendingPackages.length);
     }
-
-    /**
-     * Saved all unsaved changes in the files related to each of the selected Salesforce metadata
-     * @param sfPackage Metadata Deployment package
-     */
-    private saveOpenFiles(sfPackage: SalesforcePackage) : Promise<vscode.TextDocument[]> {
-        const filesToSave = new Set(sfPackage.files());
-        const openDocuments = vscode.workspace.textDocuments.filter(d => d.isDirty && filesToSave.has(d.uri.fsPath));
-        return forEachAsyncParallel(openDocuments, doc => doc.save());
-    }
-
+ 
     protected async deployMetadata(selectedFiles: vscode.Uri[], options?: { delta?: boolean }) {
         // build package
-        const packageBuilder = container.create(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
-        await packageBuilder.addFiles(selectedFiles);
-        const packageComponents = packageBuilder.getPackageComponents();
-        if (packageComponents.length === 0) {
-            return void vscode.window.showWarningMessage('None of specified files are deployable Salesforce Metadata');
+        const sfPackage = await this.buildDeployPackage(selectedFiles, options);
+        if (!sfPackage) {
+            return void vscode.window.showWarningMessage('No deployable components found in the selected files');
         }
-
-        if (options?.delta) {
-            await packageBuilder.removeUnchanged(RetrieveDeltaStrategy);
-        }
-        const sfPackage = packageBuilder.getPackage();
-
-        if (sfPackage.isEmpty && options?.delta) {
+        if (sfPackage.isEmpty) {
             return void vscode.window.showInformationMessage('Metadata is already up to date with Salesforce, no changes to deploy');
         }
-
         if (sfPackage.hasDestructiveChanges) {
             if (!await this.showDestructiveChangesWarning()) {
                 return;
             }
         }
-
         return this.queueDeployment(sfPackage);
     }
 
     private async queueDeployment(sfPackage: SalesforcePackage) {
-        // Save all open files
-        await this.saveOpenFiles(sfPackage);
         this.pendingPackages.push(sfPackage);
         const components = sfPackage.getComponentNames()
 
@@ -122,6 +99,22 @@ export default class DeployMetadataCommand extends MetadataCommand {
             // Start deployment
             this.startDeploymentTask();
         }
+    }
+
+    private async buildDeployPackage(files: Iterable<(vscode.Uri | string)>, options?: { delta?: boolean }) {
+        const packageBuilder = container.create(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
+        await packageBuilder.addFiles(files);
+        if (packageBuilder.getPackageComponents().length === 0) {
+            return;
+        }
+        const savedDocuments = await this.saveOpenDocuments(packageBuilder.getPackageFiles());
+        if (savedDocuments.length !== 0) {
+            await packageBuilder.rebuildPackage();
+        }
+        if (options?.delta) {
+            await packageBuilder.removeUnchanged(RetrieveDeltaStrategy);
+        }
+        return packageBuilder.build();
     }
 
     private startDeploymentTask() {

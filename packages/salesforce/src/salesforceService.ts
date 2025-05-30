@@ -351,7 +351,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
     public async getMetadataInfo(input: string | FileSystemUri | Array<string | FileSystemUri>): Promise<MetadataInfo | undefined | (MetadataInfo | undefined)[]> {
         const filePaths = (Array.isArray(input) ? input : [ input ]);
         const files = filePaths.map(filePath => typeof filePath === 'string' ? filePath : filePath.fsPath);
-        const sfPackage = (await new SalesforcePackageBuilder(SalesforcePackageType.retrieve).addFiles(files)).getPackage();
+        const sfPackage = (await new SalesforcePackageBuilder(SalesforcePackageType.retrieve).addFiles(files)).build();
         const infos = await mapAsyncParallel(files, async file => {
             const info = sfPackage.getSourceFileInfo(file);
             if (info) {

@@ -264,8 +264,8 @@ export class SalesforcePackage {
      * @param name Component name
      * @returns FS path from which the component was loaded or undefined when not loaded or not in the current package
      */
-    public getComponentSourceFiles(type: string, name: string) {
-        return this.componentToSource.get(`${type}.${name}`.toLowerCase());
+    public getComponentSourceFiles(component: SalesforcePackageComponent) {
+        return this.componentToSource.get(`${component.componentType}.${component.componentName}`.toLowerCase());
     }
 
     /**
@@ -280,21 +280,15 @@ export class SalesforcePackage {
      * @returns Array of paths to files included in this package
      */
     public files(): Set<string> {
-        return new Set(Iterable.concat(
-            Iterable.transform(this.packageData.values(), {
-                filter: value => !!value.fsPath,
-                map: value => value.fsPath!
-            }),
-            this.sourceFileToComponent.keys()
-        ));
+        return new Set(this.sourceFileToComponent.keys());
     }
 
     /**
      * Get a list of paths to files included in this package and the respective files on the file system from which they were generated.
      */
     public *sourceFiles() {
-        for (const [packagePath, { fsPath }] of this.packageData) {
-            yield { packagePath, fsPath };
+        for (const [fsPath, component] of this.sourceFileToComponent) {
+            yield { packagePath: component.packagePath, fsPath };
         }
     }
 
@@ -305,6 +299,21 @@ export class SalesforcePackage {
      */
     public getSourceFile(packagePath: string) {
         return this.packageData.get(packagePath)?.fsPath;
+    }
+
+    /**
+     * Retrieves the source files associated with a specific package path.
+     *
+     * @param packagePath - The path to the package whose source files are to be retrieved.
+     * @returns The source files mapped to the component identified by the package entry,
+     *          or `undefined` if the package entry does not exist.
+     */
+    public getSourceFiles(packagePath: string) {
+        const packageEntry = this.packageData.get(packagePath);
+        if (!packageEntry) {
+            return;
+        }
+        return this.getComponentSourceFiles(packageEntry);
     }
 
     /**
@@ -626,8 +635,8 @@ export class SalesforcePackage {
      * @param name Name of the component
      * @returns Parsed XML metadata associated to the component as defined in the package
      */
-    public getPackageMetadata<T extends object = Record<string, any>>(type: string, name: string): T | undefined {
-        const fsPaths = this.getComponentSourceFiles(type, name);
+    public getPackageMetadata<T extends object = Record<string, any>>(component: SalesforcePackageComponent): T | undefined {
+        const fsPaths = this.getComponentSourceFiles(component);
         if (fsPaths?.length) {
             const metaFile = fsPaths.length == 1 ? fsPaths[0] : fsPaths.find(f => f.toLowerCase().endsWith('.xml'));
             const metaFileSourceMap = metaFile && this.sourceFileToComponent.get(metaFile);

@@ -74,7 +74,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml']);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(4);
@@ -93,7 +93,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.html']);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(4);
@@ -112,7 +112,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.js']);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(4);
@@ -131,7 +131,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/lwc/test' ]);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(4);
@@ -156,7 +156,7 @@ describe('SalesforcePackageBuilder', () => {
                     'src/lwc/test/support.js'
                 ]);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(4);
@@ -177,7 +177,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/aura/test/test.cmp']);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(3);
@@ -195,7 +195,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/aura/test/testController.js']);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(3);
@@ -213,7 +213,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/aura/test' ]);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(3);
@@ -233,7 +233,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/classes/myClass.cls']);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(2);
@@ -263,7 +263,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c']);
 
-                const sfPackage = await packageBuilder.getPackage().generateArchive();
+                const sfPackage = await packageBuilder.build().generateArchive();
                 const packageFiles = Object.keys(sfPackage.files);
                 const metadata = await sfPackage.file('objects/PetersCustomObject__c.object')?.async('string');
                 const parsedMetadata = metadata && XML.parse(metadata, { ignoreAttributes: true, ignoreNamespacePrefix: true });
@@ -291,7 +291,7 @@ describe('SalesforcePackageBuilder', () => {
                 await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c/fields']);
 
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
-                const sfPackage = await packageBuilder.getPackage().generateArchive();
+                const sfPackage = await packageBuilder.build().generateArchive();
                 const packageFiles = Object.keys(sfPackage.files);
                 const metadata = await sfPackage.file('objects/PetersCustomObject__c.object')?.async('string');
                 const parsedMetadata = metadata && XML.parse(metadata, { ignoreAttributes: true, ignoreNamespacePrefix: true });
@@ -331,7 +331,7 @@ describe('SalesforcePackageBuilder', () => {
                     'main/default/app/settings/BusinessHours.settings'
                 ]);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(3);
@@ -355,7 +355,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src/destructiveChangesPost.xml' ]);
 
-                const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
+                const filesAdded = normalizePath(Object.keys((await packageBuilder.build().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(2); // includes package.xml
@@ -369,9 +369,9 @@ describe('SalesforcePackageBuilder', () => {
                     'src/destructiveChangesPost2.xml'
                 ]);
 
-                const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
+                const filesAdded = normalizePath(Object.keys((await packageBuilder.build().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
-                const destructedClasses = packageBuilder.getPackage().getDestructiveChanges();
+                const destructedClasses = packageBuilder.build().getDestructiveChanges();
 
                 expect(destructedClasses).toEqual([
                     {
@@ -402,9 +402,9 @@ describe('SalesforcePackageBuilder', () => {
                     'src/destructiveChanges.xml'
                 ]);
 
-                const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
+                const filesAdded = normalizePath(Object.keys((await packageBuilder.build().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
-                const destructedClasses = packageBuilder.getPackage().getDestructiveChanges();
+                const destructedClasses = packageBuilder.build().getDestructiveChanges();
 
                 expect(filesAdded.length).toEqual(2);
                 expect(destructedClasses).toEqual([
@@ -429,7 +429,7 @@ describe('SalesforcePackageBuilder', () => {
                     'src/destructiveChangesPost.xml'
                 ]);
 
-                const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
+                const filesAdded = normalizePath(Object.keys((await packageBuilder.build().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
                 expect(filesAdded.length).toEqual(3);
@@ -445,9 +445,9 @@ describe('SalesforcePackageBuilder', () => {
                     'src/destructiveChangesSingle.xml'
                 ]);
 
-                const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
+                const filesAdded = normalizePath(Object.keys((await packageBuilder.build().generateArchive()).files));
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
-                const destructedClasses = packageBuilder.getPackage().getDestructiveChanges();
+                const destructedClasses = packageBuilder.build().getDestructiveChanges();
                 expect(destructedClasses).toEqual([
                     {
                         componentName: 'a',
@@ -467,7 +467,7 @@ describe('SalesforcePackageBuilder', () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
                 await packageBuilder.addFiles([ 'src' ]);
 
-                const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
+                const filesAdded = normalizePath([...packageBuilder.build().files()]);
                 const manifest = packageBuilder.getManifest();
 
                 expect(filesAdded).toEqual(expect.arrayContaining([
@@ -493,7 +493,7 @@ describe('SalesforcePackageBuilder', () => {
                 await packageBuilder.addFiles([ 'src/dashboards' ]);
 
                 const manifest = packageBuilder.getManifest();
-                const [ folder, dashBoard ] = [...packageBuilder.getPackage().sourceFiles()]
+                const [ folder, dashBoard ] = [...packageBuilder.build().sourceFiles()]
                     .sort((a,b) => a.packagePath.localeCompare(b.packagePath));
 
                 expect(folder.packagePath).toEqual('dashboards/MyFolder-meta.xml');
@@ -512,7 +512,7 @@ describe('SalesforcePackageBuilder', () => {
                 });
                 await packageBuilder.addFiles([ 'src' ]);
 
-                const buildPackage = packageBuilder.getPackage();
+                const buildPackage = packageBuilder.build();
                 const classMetaXml = buildPackage.getPackageData('classes/myClass.cls-meta.xml')?.data?.toString();
                 const triggeretaXml = buildPackage.getPackageData('triggers/myTrigger.trigger-meta.xml')?.data?.toString();
 
@@ -529,7 +529,7 @@ describe('SalesforcePackageBuilder', () => {
                 });
                 await packageBuilder.addFiles([ 'src' ]);
 
-                const buildPackage = packageBuilder.getPackage();
+                const buildPackage = packageBuilder.build();
                 const classMetaXml = buildPackage.getPackageData('classes/myClass.cls-meta.xml')?.data?.toString();
                 const triggeretaXml = buildPackage.getPackageData('triggers/myTrigger.trigger-meta.xml')?.data?.toString();
 
