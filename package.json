@@ -56,7 +56,6 @@
     "pnpm": {
         "patchedDependencies": {
             "jsforce@1.11.0": "patches/jsforce@1.11.0.patch",
-            "fast-glob@3.2.11": "patches/fast-glob@3.2.11.patch",
             "@oclif/command@1.8.16": "patches/@oclif__command@1.8.16.patch",
             "vlocity@1.14.18": "patches/vlocity@1.14.18.patch",
             "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch",

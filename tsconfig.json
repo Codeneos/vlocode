@@ -16,6 +16,7 @@
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
+        "isolatedModules": true,
         "paths": {
             "@vlocode/apex": ["./packages/apex/src"],
             "@vlocode/core": ["./packages/core/src"],

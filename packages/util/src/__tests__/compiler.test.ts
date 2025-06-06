@@ -48,10 +48,14 @@ describe('Compiler', () => {
 
         const context = { counter: 0 };
         let error: Error | undefined;
+        const originalConsoleWarn = console.warn;
+        console.warn = jest.fn();
         try {
             compiledFn(context, { mutableContext: true, allowUndefined: false });
         } catch (e) {
             error = e;
+        } finally {
+            console.warn = originalConsoleWarn;
         }
         expect(error).toBeDefined();
     });
