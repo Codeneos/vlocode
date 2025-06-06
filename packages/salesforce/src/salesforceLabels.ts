@@ -107,7 +107,7 @@ export class SalesforceLabels {
     }
 
     private async lookupLabels(labels: string[]) {
-        this.logger.info(`Resolving custom labels: %s`, labels);
+        this.logger.verbose(`Resolving custom labels: %s`, labels);
         const normalizedLabels = labels.map(label => substringAfter(label, '__'));
         const lookupQuery = new QueryBuilder('ExternalString', [ 'NamespacePrefix', 'Id', 'Name', 'Value', 'Language' ]).where.in('Name', normalizedLabels);
         const newLabels = new Map<string, CustomLabel>();

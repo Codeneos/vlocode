@@ -85,7 +85,7 @@ export class DescribeSchemaAccess {
 
         }, Math.min(objectNameChunks.length, this.metadataReadParallelism));
 
-        this.logger.info(`Described ${sobjectTypes.length} objects in ${timer}`);
+        this.logger.verbose(`Described ${sobjectTypes.length} objects in ${timer}`);
         return results;
     }
 
