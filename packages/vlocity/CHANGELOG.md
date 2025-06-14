@@ -4,6 +4,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+**Note:** Version bump only for package @vlocode/vlocity
+
 ## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/vlocity

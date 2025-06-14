@@ -4,6 +4,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+### Bug Fixes
+
+* do not print object label lists or describe details when not in verbose mode ([a1226b4](https://github.com/Codeneos/vlocode/commit/a1226b45c9237b24163b8f7e3a14cc33d785f387))
+* make getPackageMetadata backward compatible to resolve build errors ([150489d](https://github.com/Codeneos/vlocode/commit/150489db2f10fdee09b4752017c7c6fb23c67ba9))
+* update test cases to use getPackage() instead of build() for file retrieval ([182e0b9](https://github.com/Codeneos/vlocode/commit/182e0b9c393665f510101c7cc8b6297f1345b454))
+
+### Features
+
+* add new profile manipulation service which can persist profiles changes as delta ([7334499](https://github.com/Codeneos/vlocode/commit/7334499fd30bcb6deba25d872c400207d0974bde))
+* support token replacement after adding files to a package ([53d9f7a](https://github.com/Codeneos/vlocode/commit/53d9f7a078ff0a4fe48a0953c62673b34f201f46))
+
 ## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/salesforce

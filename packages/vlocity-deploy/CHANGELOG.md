@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+### Features
+
+* automatically add missing record type assignments during deployment ([627b2b2](https://github.com/Codeneos/vlocode/commit/627b2b2f95b926b6afb0b660cb03995480a4a654))
+* support for specific error handling in datapack specs ([67e2423](https://github.com/Codeneos/vlocode/commit/67e2423a965b5257b454caecccab06b82ff1faa9))
+
 ## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

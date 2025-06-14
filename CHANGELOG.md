@@ -4,6 +4,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+### Bug Fixes
+
+* add type annotations for imports in cachedFileSystem and logging modules ([a7d85c8](https://github.com/codeneos/vlocode/commit/a7d85c874d30766edb131a8ffe94bd532c6533fb))
+* correct typo in tsconfig include path for webpack ([61b0f6b](https://github.com/codeneos/vlocode/commit/61b0f6b7e52f580fc6d0d3cff4cbaa325331e664))
+* do not print object label lists or describe details when not in verbose mode ([a1226b4](https://github.com/codeneos/vlocode/commit/a1226b45c9237b24163b8f7e3a14cc33d785f387))
+* improve type definition for ArrayElement to allow non-readonly arrays ([d317530](https://github.com/codeneos/vlocode/commit/d317530eae772373f417429885d0599503c7e18c))
+* make getPackageMetadata backward compatible to resolve build errors ([150489d](https://github.com/codeneos/vlocode/commit/150489db2f10fdee09b4752017c7c6fb23c67ba9))
+* update test cases to use getPackage() instead of build() for file retrieval ([182e0b9](https://github.com/codeneos/vlocode/commit/182e0b9c393665f510101c7cc8b6297f1345b454))
+
+### Features
+
+* add new profile manipulation service which can persist profiles changes as delta ([7334499](https://github.com/codeneos/vlocode/commit/7334499fd30bcb6deba25d872c400207d0974bde))
+* automatically add missing record type assignments during deployment ([627b2b2](https://github.com/codeneos/vlocode/commit/627b2b2f95b926b6afb0b660cb03995480a4a654))
+* refactor logging to output channel to avoid issues with line breaks ([6e085fe](https://github.com/codeneos/vlocode/commit/6e085fe1d0b69b64e7003df046aeef2d2ba2ee55))
+* support for specific error handling in datapack specs ([67e2423](https://github.com/codeneos/vlocode/commit/67e2423a965b5257b454caecccab06b82ff1faa9))
+* support token replacement after adding files to a package ([53d9f7a](https://github.com/codeneos/vlocode/commit/53d9f7a078ff0a4fe48a0953c62673b34f201f46))
+
 ## [1.29.5](https://github.com/codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 ### Bug Fixes

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+### Bug Fixes
+
+* add type annotations for imports in cachedFileSystem and logging modules ([a7d85c8](https://github.com/Codeneos/vlocode/commit/a7d85c874d30766edb131a8ffe94bd532c6533fb))
+
 ## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/core

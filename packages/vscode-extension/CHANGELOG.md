@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+### Bug Fixes
+
+* correct typo in tsconfig include path for webpack ([61b0f6b](https://github.com/codeneos/vlocode/commit/61b0f6b7e52f580fc6d0d3cff4cbaa325331e664))
+
+### Features
+
+* refactor logging to output channel to avoid issues with line breaks ([6e085fe](https://github.com/codeneos/vlocode/commit/6e085fe1d0b69b64e7003df046aeef2d2ba2ee55))
+* support token replacement after adding files to a package ([53d9f7a](https://github.com/codeneos/vlocode/commit/53d9f7a078ff0a4fe48a0953c62673b34f201f46))
+
 ## [1.29.5](https://github.com/codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 **Note:** Version bump only for package vlocode

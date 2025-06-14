@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
+
+### Bug Fixes
+
+* improve type definition for ArrayElement to allow non-readonly arrays ([d317530](https://github.com/Codeneos/vlocode/commit/d317530eae772373f417429885d0599503c7e18c))
+
 ## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
 
 **Note:** Version bump only for package @vlocode/util
