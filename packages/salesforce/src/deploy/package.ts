@@ -634,8 +634,14 @@ export class SalesforcePackage {
      * @param type Type of the component
      * @param name Name of the component
      * @returns Parsed XML metadata associated to the component as defined in the package
-     */
-    public getPackageMetadata<T extends object = Record<string, any>>(component: SalesforcePackageComponent): T | undefined {
+     */    
+    public getPackageMetadata<T extends object = Record<string, any>>(component: SalesforcePackageComponent): T | undefined;      
+    public getPackageMetadata<T extends object = Record<string, any>>(type: string, name: string): T | undefined;
+    public getPackageMetadata<T extends object = Record<string, any>>(...args: unknown[]): T | undefined {
+        const component = typeof args[0] === 'string' 
+            ? { componentType: args[0], componentName: args[1] as string } 
+            : args[0] as SalesforcePackageComponent;
+
         const fsPaths = this.getComponentSourceFiles(component);
         if (fsPaths?.length) {
             const metaFile = fsPaths.length == 1 ? fsPaths[0] : fsPaths.find(f => f.toLowerCase().endsWith('.xml'));
