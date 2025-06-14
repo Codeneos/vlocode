@@ -17,6 +17,7 @@ import { SoapClient, SoapDebuggingHeader } from './soapClient';
 import { DeveloperLogs } from './developerLogs';
 import { QueryBuilder } from './queryBuilder';
 import { SalesforceBatchService } from './salesforceBatchService';
+import { SalesforceProfileService } from './salesforceProfileService';
 
 export interface OrganizationDetails {
     id: string;
@@ -44,13 +45,15 @@ export class SalesforceService implements SalesforceConnectionProvider {
     @injectable.property public readonly deploy: SalesforceDeployService;
     @injectable.property public readonly logs: DeveloperLogs;
     @injectable.property public readonly batch: SalesforceBatchService;
+    @injectable.property public readonly profiles: SalesforceProfileService;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly namespaceService: NamespaceService,
         private readonly queryService: QueryService,
         private readonly logger: Logger,
-        private readonly fs: FileSystem) {
+        private readonly fs: FileSystem
+    ) {
     }
 
     public dispose() {
@@ -351,7 +354,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
     public async getMetadataInfo(input: string | FileSystemUri | Array<string | FileSystemUri>): Promise<MetadataInfo | undefined | (MetadataInfo | undefined)[]> {
         const filePaths = (Array.isArray(input) ? input : [ input ]);
         const files = filePaths.map(filePath => typeof filePath === 'string' ? filePath : filePath.fsPath);
-        const sfPackage = (await new SalesforcePackageBuilder(SalesforcePackageType.retrieve).addFiles(files)).build();
+        const sfPackage = (await new SalesforcePackageBuilder(SalesforcePackageType.retrieve).addFiles(files)).getPackage();
         const infos = await mapAsyncParallel(files, async file => {
             const info = sfPackage.getSourceFileInfo(file);
             if (info) {
