@@ -198,7 +198,7 @@ export function deepClone<T>(value: T): T {
  * @returns The target object with the sources merged into it
  */
 export function merge(object: any, ...sources: any[]): any {
-    for (const source of sources.filter(s => s)) {
+    for (const source of sources.filter(s => s !== undefined && s !== null)) {
         for (const key of Object.keys(source)) {
             if (isObject(object[key]) && isObject(source[key])) {
                 merge(object[key], source[key]);
@@ -385,6 +385,9 @@ export const getErrorMessage: GetErrorMessage = Object.assign(
             const includeStack = typeof options?.includeStack === 'boolean' 
                 ? options.includeStack : getErrorMessage.defaults.includeStack
             return includeStack && err.stack ? err.stack.replace(/^Error: /i, '').trim() : err.message;
+        } 
+        if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
+            return err.message
         }
         return String(err);
     }, {
@@ -555,7 +558,7 @@ function hashObjectUpdate(hash: Hash, obj: object): Hash {
  * @param obj Object to remove undefined properties from
  * @returns New object with all properties which had a value of `undefined` removed
  */
-export function removeUndefinedProperties<T extends object>(obj: T, options?: { recusive?: boolean }): T {
+export function removeUndefinedProperties<T extends object>(obj: T, options?: { recursive?: boolean }): T {
     return filterObject(obj, (_key, value) => value !== undefined, options);
 }
 
@@ -569,10 +572,10 @@ export function removeUndefinedProperties<T extends object>(obj: T, options?: { 
  * @param predicate Predicate which when true means the property is included otherwise the property is excluded
  * @returns New object with only the properties for which the `predicate` returned a `true`ish value
  */
-export function filterObject<T extends object>(obj: T, predicate: (key: string, value: any, obj: T) => boolean, options?: { recusive?: boolean }): T {
+export function filterObject<T extends object>(obj: T, predicate: (key: string, value: any, obj: T) => boolean, options?: { recursive?: boolean }): T {
     return Object.entries(obj).reduce((acc, [key, value]) => {
         if (predicate(key, value, obj)) {
-            if (value !== null && typeof value === 'object' && options?.recusive) {
+            if (value !== null && typeof value === 'object' && options?.recursive) {
                 acc[key] = filterObject(value, predicate);
             } else {
                 acc[key] = value;
@@ -580,6 +583,25 @@ export function filterObject<T extends object>(obj: T, predicate: (key: string, 
         }
         return acc;
     }, {} as T);
+}
+
+/**
+ * Iterates over the properties of an object and invokes a callback function for each key-value pair.
+ * Optionally, the iteration can be performed recursively for nested objects.
+ *
+ * @template T - The type of the object being iterated.
+ * @param obj - The object to iterate over.
+ * @param callback - A function to be called for each key-value pair. Receives the key, value, and the original object as arguments.
+ * @param options - Optional settings for the iteration.
+ * @param options.recursive - If `true`, the function will recursively iterate over nested objects. Defaults to `false`.
+ */
+export function iterateObject<T extends object>(obj: T, callback: (key: string, value: any, obj: T) => void, options?: { recursive?: boolean }) {
+    Object.entries(obj).forEach(([key, value]) => {
+        callback(key, value, obj);
+        if (value !== null && typeof value === 'object' && options?.recursive) {
+            iterateObject(value, callback, options);
+        }
+    });
 }
 
 /**
