@@ -1,0 +1,26 @@
+diff --git a/lib/_tsc.js b/lib/_tsc.js
+index 90c732888e1ba080420e679975e02991d3bd6a02..db187753a33cd8b165b4a45560e8abb590fa6674 100644
+--- a/lib/_tsc.js
++++ b/lib/_tsc.js
+@@ -92390,7 +92390,7 @@ function getRawLiteral(factory2, node, currentSourceFile) {
+ }
+ 
+ // src/compiler/transformers/ts.ts
+-var USE_NEW_TYPE_METADATA_FORMAT = false;
++var USE_NEW_TYPE_METADATA_FORMAT = true;
+ function transformTypeScript(context) {
+   const {
+     factory: factory2,
+diff --git a/lib/typescript.js b/lib/typescript.js
+index c927ce990a58c626bc7cb7dea7cb9ee94b4784c5..a5de6de8b27a487ba7417a5bc6f98d0f7b106b57 100644
+--- a/lib/typescript.js
++++ b/lib/typescript.js
+@@ -97182,7 +97182,7 @@ function getRawLiteral(factory2, node, currentSourceFile) {
+ }
+ 
+ // src/compiler/transformers/ts.ts
+-var USE_NEW_TYPE_METADATA_FORMAT = false;
++var USE_NEW_TYPE_METADATA_FORMAT = true;
+ function transformTypeScript(context) {
+   const {
+     factory: factory2,

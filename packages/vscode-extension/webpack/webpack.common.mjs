@@ -43,6 +43,8 @@ const common = {
                     loader: 'ts-loader',
                     options: {
                         configFile: path.resolve('./webpack/tsconfig.json'),
+                        onlyCompileBundledFiles: true,
+                        projectReferences: true,
                         transpileOnly: process.env.CI == 'true' || process.env.CIRCLECI == 'true'
                     }
                 }],
@@ -76,7 +78,12 @@ const common = {
         new webpack.IgnorePlugin({
             resourceRegExp: /^canvas$/,
             contextRegExp: /jsdom$/,
-        })
+        }),
+        new webpack.WatchIgnorePlugin({
+            paths:[
+            /\.js$/,
+            /\.d\.[cm]ts$/
+        ]})
     ],
     node: {
         __dirname: false,

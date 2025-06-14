@@ -11,5 +11,5 @@
         "typeRoots": ["../node_modules/@types", "../types"]
     },
     "include": ["../src/**/*.ts", "../types/*.d.ts"],
-    "exclude": ["../src/__tests__/**/*.ts"]
+    "exclude": ["../src/**/*.test.ts"]
 }

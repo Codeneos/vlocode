@@ -51,7 +51,7 @@
         "ts-jest": "^29.3.4",
         "typedoc": "^0.24.8",
         "typedoc-plugin-rename-defaults": "^0.7.0",
-        "typescript": "5.1.6"
+        "typescript": "5.8.3"
     },
     "pnpm": {
         "patchedDependencies": {
@@ -62,7 +62,7 @@
             "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch",
             "@salesforce/core@2.37.1": "patches/@salesforce__core@2.33.1.patch",
             "@salesforce/core@3.31.18": "patches/@salesforce__core@3.31.18.patch",
-            "typescript@5.1.6": "patches/typescript@5.1.6.patch"
+            "typescript": "patches/typescript.patch"
         },
         "allowUnusedPatches": true,
         "overrides": {
@@ -139,7 +139,7 @@
         "@salesforce/core@^2": "2.37.1",
         "@types/jsforce": "1.9.42",
         "js-yaml": "^4.1.0",
-        "typescript": "5.1.6",
+        "typescript": "5.8.3",
         "xml2js": "^0.5.0",
         "jsonwebtoken": "^9.0.0",
         "braces": "^3.0.3",
