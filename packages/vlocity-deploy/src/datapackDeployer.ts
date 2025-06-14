@@ -77,6 +77,7 @@ export class DatapackDeployer {
         deployment.on('afterDeployRecord', records => this.afterDeployRecord(deployment, records));
         deployment.on('beforeDeployRecord', records => this.beforeDeployRecord(deployment, records));
         deployment.on('beforeRetryRecord', records => this.beforeRetryRecord(deployment, records));
+        deployment.on('recordError', record => this.onRecordError(deployment, record));
 
         const timerStart = new Timer();
         this.logger.info('Converting datapacks to Salesforce records...');
@@ -237,6 +238,27 @@ export class DatapackDeployer {
     }
 
     /**
+     * Handles errors encountered during the deployment of a specific datapack record.
+     * If the deployment has been cancelled, this method will return immediately without performing any actions.
+     * Otherwise, it invokes a specified function (`onRecordError`) to handle the error, 
+     * passing the problematic datapack record as an argument.
+     * 
+     * @param deployment - The current datapack deployment instance.
+     * @param datapackRecord - The specific datapack record that encountered an error during deployment.
+     * @returns A promise that resolves when the error handling process is complete.
+     */
+    private async onRecordError(deployment: DatapackDeployment, datapackRecord: DatapackDeploymentRecord) {
+        if (deployment.isCancelled) {
+            return;
+        }
+        await this.runSpecFunction('onRecordError', { 
+            args: [ [ datapackRecord ] ], 
+            ignoreErrors: true, 
+            errorSeverity: 'warn' 
+        });
+    }
+
+    /**
      * Performs additional tasks after the deployment of a datapack record.
      * If triggers are disabled in the deployment options, it sets the Vlocity trigger state to true.
      * Verifies the deployed field data for specific fields.
@@ -312,7 +334,7 @@ export class DatapackDeployer {
                     continue;
                 }
                 specParams[0] = records;
-            } else if ((specParams[0] as any) instanceof VlocityDatapack) {
+            } else if (specParams[0] instanceof VlocityDatapack) {
                 if (!this.evalFilter(filter, specParams[0] as VlocityDatapack)) {
                     continue;
                 }

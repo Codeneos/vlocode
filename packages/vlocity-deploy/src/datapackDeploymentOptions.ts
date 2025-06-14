@@ -101,4 +101,25 @@ export interface DatapackDeploymentOptions extends RecordBatchOptions {
      * @default false
      */
     standardRuntime?: boolean;
+    /**
+     * When enabled the deployment will attempt to assign record types to the Profile of the user performing the deployment.
+     * This is useful when deploying OmniStudio components that require specific record types to be assigned to the Profile of the user performing the deployment 
+     * which are not assigned by default.
+     * @default true
+     */
+    fixRecordTypeAssignment?: boolean;
+    /**
+     * When enabled the deployment will report datapacks that failed to deploy because a dependent datapack failed to deploy.
+     * This is useful to identify which datapacks failed to deploy because of a dependency failure but also results in more verbose deployment reports 
+     * that may not be useful in all cases.
+     * @default false
+     */
+    reportCascadeFailures?: boolean;
+    /**
+     * When enabled the deployment will try to lookup dependencies that are part of the deployment in parallel in multiple batches.
+     * Disabling this will result in a more sequential lookup of dependencies which may be useful when debugging deployment issues.
+     * Should be enabled for production deployments to improve performance.
+     * @default true
+     */
+    bulkDependencyResolution?: boolean;
 }

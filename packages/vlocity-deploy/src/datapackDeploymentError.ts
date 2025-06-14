@@ -1,4 +1,4 @@
-enum DatapackDeploymentErrorCode {
+export enum DatapackDeploymentErrorCode {
     DEPLOYMENT_ALREADY_STARTED = 101,
     DEPLOYMENT_FAILED = 102,
     DEPLOYMENT_UNKNOWN_STATUS = 103,
@@ -20,7 +20,7 @@ export class DatapackDeploymentError extends Error {
     public readonly errorCode: DatapackDeploymentErrorCodes;
     public readonly fields?: string[];
 
-    constructor(code: DatapackDeploymentErrorCodes, message: string) {
+    public constructor(code: DatapackDeploymentErrorCodes, message: string) {
         super(message);
         this.name = code;
         this.errorCode = code;

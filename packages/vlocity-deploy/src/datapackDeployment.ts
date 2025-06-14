@@ -55,8 +55,9 @@ type RecordPurgePredicate = (item: {
     record: DatapackDeploymentRecord
 }) => any;
 
-const datapackDeploymentDefaultOptions = {
+const datapackDeploymentDefaultOptions: Required<DatapackDeploymentOptions> = {
     useBulkApi: false,
+    bulkApiThreshold: 500,
     maxRetries: 1,
     chunkSize: 100,
     retryChunkSize: 5,
@@ -68,6 +69,15 @@ const datapackDeploymentDefaultOptions = {
     skipLwcActivation: false,
     useMetadataApi: false,
     reportCascadeFailures: false,
+    fixRecordTypeAssignment: true,
+    disableTriggers: false,
+    continueOnError: false,
+    strictOrder: false,
+    allowUnresolvedDependencies: false,
+    toolingApiTimeout: 120000,
+    parallelToolingDeployments: 4,
+    remoteScriptActivation: false,
+    standardRuntime: false,
 };
 
 /**
@@ -676,9 +686,9 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.logger.verbose(`Resolving record dependencies for ${datapacks.size} records`);
         const resolutionQueue = Iterable.transform(datapacks.values(), {
             filter: datapack => datapack.hasUnresolvedDependencies,
-            map: datapack => datapack.resolveDependencies(this).catch(err => {
+            map: datapack => datapack.resolveDependencies(this).catch(async err => {
                 datapacks.delete(datapack.sourceKey);
-                this.handleError(datapack, err);
+                await this.handleError(datapack, err);
             })
         });
 
@@ -692,14 +702,14 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
             if (unresolvedInternalKeys.length) {
                 datapacks.delete(datapack.sourceKey);
-                this.handleError(datapack, new Error('RECORD_CASCADE_FAILURE', `Parent record(s) failed: ${unresolvedInternalKeys.join(', ')}`));
+                await this.handleError(datapack, new Error('RECORD_CASCADE_FAILURE', `Parent record(s) failed: ${unresolvedInternalKeys.join(', ')}`));
             } else if (casecadeErrors.length) {
                 const distinctDatapacks = [...unique(casecadeErrors.map(key => this.records.get(key)!.datapackKey))]; 
                 datapacks.delete(datapack.sourceKey);
-                this.handleError(datapack, new Error('RECORD_CASCADE_FAILURE', `Parent datapacks(s) failed: ${distinctDatapacks.join(', ')}`));
+                await this.handleError(datapack, new Error('RECORD_CASCADE_FAILURE', `Parent datapacks(s) failed: ${distinctDatapacks.join(', ')}`));
             } else {
                 datapacks.delete(datapack.sourceKey);
-                this.handleError(datapack, new Error('RECORD_MISSING_DEPENDENCY', `Failed to resolve external dependencies: ${unresolvedExternalKeys.join(', ')}`));
+                await this.handleError(datapack, new Error('RECORD_MISSING_DEPENDENCY', `Failed to resolve external dependencies: ${unresolvedExternalKeys.join(', ')}`));
             }
         }
     }
@@ -773,13 +783,13 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                     this.logger.verbose(`Deployed ${datapackRecord.sourceKey}`);
                     this.deployed.push(datapackRecord);
                 } else if (!result.success) {
-                    datapackRecord.setError(result.error);
-                    if (this.isRetryable(result.error) && datapackRecord.retryCount < this.options.maxRetries) {
-                        datapackRecord.updateStatus(DeploymentStatus.Retry);
-                        this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error.message}`);
-                    } else {
-                        this.handleError(datapackRecord, result.error);
-                    }
+                    //atapackRecord.setError(result.error);
+                    //if (this.isRetryable(result.error)) {
+                    //    datapackRecord.retry({ incrementCounter: false });
+                    //    this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${result.error.message}`);
+                    //} else {
+                    await this.handleError(datapackRecord, result.error);
+                    //}
                 }
             }
 
@@ -818,13 +828,19 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         datapackRecord.addWarning(message);
     }
 
-    private handleError(datapackRecord: DatapackDeploymentRecord, error: RecordError | Error | string) {
+    private async handleError(datapackRecord: DatapackDeploymentRecord, error: RecordError | Error | string) {
         if (datapackRecord.isFailed) {
             // Do not report multiple errors for the same record
+            return;
         }
 
         datapackRecord.setFailed(error);
-        void this.emit('recordError', datapackRecord, { async: true });
+        await this.emit('recordError', datapackRecord, { async: false });
+
+        if (this.isRetryable(datapackRecord, error)) {
+            this.logger.warn(`Retry ${datapackRecord.sourceKey} with error: ${datapackRecord.errorMessage}`);
+            return;
+        }
 
         if (datapackRecord.isCascadeFailure && !this.options.reportCascadeFailures) {
             this.logger.verbose(`Cascade failure ${datapackRecord.sourceKey} - ${datapackRecord.errorMessage}`);
@@ -835,10 +851,15 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         this.errors.push(datapackRecord);
     }
 
-    private isRetryable(error: RecordError): boolean;
-    private isRetryable() {
-        // TODO: check which errors we should retry
-        return true;
+    private isRetryable(datapackRecord: DatapackDeploymentRecord, error: RecordError | Error | string): boolean {
+        if (datapackRecord.isPendingRetry) {
+            return true;
+        }
+        const isRecordError = typeof error === 'object' && 'fields' in error && 'statusCode' in error;
+        if (!isRecordError) {
+            return false;
+        }
+        return ++datapackRecord.retryCount < this.options.maxRetries;
     }
 
     private handleProgressReport({ processed, total }) {
@@ -877,7 +898,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
                 for (const {error, id} of result.filter(res => !res.success)) {
                     const errorMessage = `Unable to delete ${sobjectType} with id '${id}' -- ${error}`;
                     if (record) {
-                        this.handleError(record, errorMessage);
+                        await this.handleError(record, errorMessage);
                     } else {
                         this.logger.warn(errorMessage);
                     }

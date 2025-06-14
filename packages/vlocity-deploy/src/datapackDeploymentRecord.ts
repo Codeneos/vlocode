@@ -1,4 +1,4 @@
-import { Timer , Iterable, removeNamespacePrefix } from '@vlocode/util';
+import { Timer , Iterable, removeNamespacePrefix, getErrorMessage } from '@vlocode/util';
 import { RecordError } from '@vlocode/salesforce';
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference } from '@vlocode/vlocity';
 
@@ -33,7 +33,6 @@ export class DatapackDeploymentRecord {
     private _statusDetail?: string;
     private _error?: Error | RecordError;
     private _existingId?: string;
-    private _retryCount = 0;
     private _datapackAction: DeploymentAction = DeploymentAction.None;
 
     /**
@@ -41,6 +40,12 @@ export class DatapackDeploymentRecord {
      * to always create a new object using insert
      */
     public skipLookup: boolean;
+
+    /**
+     * Number of times the record has been retried for deployment.
+     * This is used to determine if the record should be skipped after a certain number of retries.
+     */
+    public retryCount: number = 0;
 
     /**
      * Namespace normalized SObjectName; contains the SObjectType without the namespace prefix.
@@ -161,10 +166,6 @@ export class DatapackDeploymentRecord {
         return this._unresolvedDependencies.size > 0;
     }
 
-    public get retryCount(): number {
-        return this._retryCount;
-    }
-
     public get action(): DeploymentAction {
         return this._datapackAction;
     }
@@ -247,11 +248,11 @@ export class DatapackDeploymentRecord {
                 break;
             case DeploymentStatus.Retry:
                 this._deployTimer.stop();
-                this._retryCount++;
                 break;
             case DeploymentStatus.Failed:
                 this._deployTimer.stop();
                 detail && this.setError(detail);
+                detail = getErrorMessage(detail, { includeStack: false });
                 break;
             case DeploymentStatus.Deployed:
                 this._deployTimer.stop();
@@ -260,6 +261,13 @@ export class DatapackDeploymentRecord {
         }
         this._status = status;
         this._statusDetail = detail?.toString();
+    }
+
+    public retry({ incrementCounter = true }) {
+        if (incrementCounter) {
+            this.retryCount++;
+        }
+        this.updateStatus(DeploymentStatus.Retry);
     }
 
     public setFailed(error: string | Error | RecordError) {
