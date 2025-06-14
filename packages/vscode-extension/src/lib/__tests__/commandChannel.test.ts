@@ -1,3 +1,5 @@
+import 'jest';
+
 import { CommandLogger } from '../commandLogger';
 
 describe('CommandLogger', () => {

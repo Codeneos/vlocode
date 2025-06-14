@@ -33,7 +33,10 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
         const classes = manifest.list('ApexClass');
         const pages = manifest.list('ApexPage');
         const fields = manifest.list('CustomField').map(field => {
-            const data = mdPackage.getPackageMetadata<CustomObjectMetadata>('CustomField', field);
+            const data = mdPackage.getPackageMetadata<CustomObjectMetadata>({ 
+                componentType: 'CustomField', 
+                componentName: field 
+            });
             return {
                 field,
                 metadata: asArray(data?.fields ?? []).find(f => f.fullName == field.split('.').pop())
@@ -96,7 +99,7 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
             }
             const profileDoc = await vscode.workspace.openTextDocument(path.resolve(file));
             const fullDocumentRange = new vscode.Range(new vscode.Position(0,0), new vscode.Position(profileDoc.lineCount, 0));
-            this.logger.info(`Updating profile ${profile.name}`);
+            this.logger.info(`Updating profile ${profile.developerName}`);
             profileChanges.replace(profileDoc.uri, fullDocumentRange, profile.toXml({ sort: false }));
             updatedProfiles.push(profile);
         }
@@ -152,7 +155,7 @@ export default class UpdateRelatedProfileCommand extends MetadataCommand {
         }
 
         if (selectionType.selectManually) {
-            const selectedProfile = await vscode.window.showQuickPick((await profiles).map(profile => ({ label: profile.profile.name, profile })), 
+            const selectedProfile = await vscode.window.showQuickPick((await profiles).map(profile => ({ label: profile.profile.developerName, profile })), 
                 { canPickMany: true, ignoreFocusOut: true, placeHolder: 'Which profiles should be updated?' });
             if (!selectedProfile?.length) {
                 return;
