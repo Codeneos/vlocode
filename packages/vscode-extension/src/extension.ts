@@ -25,7 +25,6 @@ import OnSavedEventHandler from './events/onFileSaved';
 import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
 import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
-import { VSCodeFileSystemAdapter } from './lib/fs/vscodeFileSystemAdapter';
 import { NamespaceService } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
@@ -145,8 +144,8 @@ class Vlocode {
         LogManager.setLogLevel(Container, LogLevel.verbose);
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
-        container.registerType(VSCodeFileSystemAdapter, [ FileSystem ], { priority: 100, lifecycle: LifecyclePolicy.singleton });
         container.registerType(VlocityNamespaceService, [ NamespaceService, VlocityNamespaceService ], { lifecycle: LifecyclePolicy.singleton });
+        container.registerType(NodeFileSystem, [ FileSystem ], { priority: 10, lifecycle: LifecyclePolicy.singleton });
 
         this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);
@@ -164,17 +163,7 @@ class Vlocode {
             this.service.enableSalesforceSupport(true);
         }
 
-        // Register switchable FS interface
-        const fsProxy = container.registerProxyService(FileSystem);
-        ConfigurationManager.onConfigChange(this.service.config, 'fsInterface', config => {
-            this.logger.verbose(`Setting FS interface to ${config.fsInterface}`);
-            config.fsInterface === 'vscode'
-                ? fsProxy.setInstance(container.create(VSCodeFileSystemAdapter))
-                : fsProxy.setInstance(container.create(NodeFileSystem));
-        }, { initial: true, noInitialTimeout: true });
-
         // register commands and windows
-        //this.service.commands.registerAll(Commands);
         this.service.registerDisposable(vscode.window.createTreeView('datapackExplorer', {
             treeDataProvider: new DatapackProvider(this.service),
             showCollapseAll: true

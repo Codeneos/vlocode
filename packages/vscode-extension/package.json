@@ -1044,9 +1044,10 @@
                             "vscode",
                             "native"
                         ],
-                        "default": "vscode",
+                        "deprecationMessage": "This setting is deprecated, Vlocode now always uses the native (Node) file system interface as it is generally faster and more reliable.",
+                        "default": "native",
                         "enumDescriptions": [
-                            "VSCode's built-in file system interface; this is the default and recommended option",
+                            "VSCode's built-in file system interface",
                             "Native file system interface through NodeJS's fs-module"
                         ],
                         "markdownDescription": "Change how the file system is accessed; the native file system interface is faster but might not work correctly on all platforms."
