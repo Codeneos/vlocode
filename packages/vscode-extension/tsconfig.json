@@ -8,7 +8,7 @@
         "baseUrl": "src",
         "types": ["node", "jest"]
     },
-    "include": ["src/**/*.ts", "weboack/**/*.ts", "types/**/*.ts"],
+    "include": ["src/**/*.ts", "webpack/**/*.ts", "types/**/*.ts"],
     "references": [
         { "path": "../util" },
         { "path": "../core" },
