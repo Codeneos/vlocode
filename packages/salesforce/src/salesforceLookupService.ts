@@ -1,5 +1,5 @@
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
-import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, Iterable, mapKeys } from '@vlocode/util';
+import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, mapKeys } from '@vlocode/util';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { NamespaceService } from './namespaceService';
@@ -148,7 +148,7 @@ export class SalesforceLookupService {
             : [...filters.reduce((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id', ...lookupFields ]))];
 
         // lookup records
-        const records = await this.lookup<T, K>(type, filters, fields as any, undefined, false);
+        const records = await this.lookup<T, K>(type, filters, fields as any, undefined, false, cancelToken);
 
         // map record results back to lookup requests
         while (records.length) {
@@ -159,7 +159,6 @@ export class SalesforceLookupService {
 
             for (const { index } of matchedFilters.filter(f => f.isMatch)) {
                 if (lookupResults[index]) {
-                    // @ts-expect-error TS does not understand lookupResults[index] is not undefined
                     lookupResults[index].push(record)
                 }
                 lookupResults[index] = [ record ];
@@ -196,7 +195,7 @@ export class SalesforceLookupService {
         return this.queryService.query(queryString, useCache, cancelToken);
     }
 
-    private async createWhereClause<T>(type: string, values: ObjectFilter<T> | undefined | null, relationshipName: string = '') : Promise<string> {
+    private async createWhereClause<T>(type: string, values: ObjectFilter<T> | undefined | null) : Promise<string> {
         const lookupFilters: any[] = [];
 
         // eslint-disable-next-line prefer-const
