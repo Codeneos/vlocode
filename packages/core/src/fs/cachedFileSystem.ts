@@ -1,5 +1,5 @@
 import { cache, clearCache } from '@vlocode/util';
-import { FileInfo, FileStat, FileSystem, StatsOptions, WriteOptions } from './fileSystem';
+import { type FileInfo, type FileStat, FileSystem, type StatsOptions, type WriteOptions } from './fileSystem';
 
 /**
  * Decorate any existing file system with caching functionality; caches the write and stat operations towards the target file system.
