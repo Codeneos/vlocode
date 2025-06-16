@@ -12,14 +12,23 @@ export class CustomObjectMapSpec implements DatapackDeploymentSpec {
 
     public afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         for (const record of records.filter(rec => rec.isSObjectOfType('CustomFieldMap__c'))) {
-            // Field maps are purged before deploy so looking them up would cause an error
-            record.skipLookup = true;
+            if (record.datapackKey.includes('CustomObjectMap__c')) {
+                // Field maps are purged before deploy so looking them up would cause an error
+                record.skipLookup = true;
+            }
         }
     }
 
     public async beforeDeploy(event: DatapackDeploymentEvent) {
         for (const record of event.getRecords('CustomObjectMap__c')) {
-            await this.purgeExistingMappings(record);
+            // Only when the ObjectMap has embedded field mappings
+            // the original field mappings in the org will be purged
+            const hasFieldMappings = event.deployment.getRecords(record.datapackKey).some(
+                rec => rec.isSObjectOfType('CustomFieldMap__c')
+            );
+            if (hasFieldMappings) {
+                await this.purgeExistingMappings(record);
+            }
         }
     }
 
