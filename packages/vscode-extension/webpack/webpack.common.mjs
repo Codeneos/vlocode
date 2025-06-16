@@ -151,7 +151,7 @@ const common = {
 const extension  = {
     entry: {
         'vlocode': './src/extension.ts',
-        'sass-compiler': '../vlocity-deploy/src/scss/forked/fork.ts'
+        'sass-compiler': '../vlocity-deploy/src/scss/sassCompilerProcess.ts'
     },
     name: 'vlocode',
     output: {

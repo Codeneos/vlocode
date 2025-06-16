@@ -1,2 +1,4 @@
-export * from './compiler';
-export * from './forked/compiler';
+export * from './interface';
+export * from './sassCompilerProxy';
+export * from './sassCompilerImpl';
+export * from './sassCompilerThreaded';

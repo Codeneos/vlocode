@@ -1,12 +1,9 @@
-import { existsSync } from 'fs';
-import { join } from 'path';
 
 import { CachedFileSystemAdapter, container, Logger, LogWriter, NodeFileSystem, FileSystem } from "@vlocode/core";
-import { Connection, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
+import { Connection, SalesforceConnectionProvider, SfdxConnectionProvider, JsForceConnectionProvider } from "@vlocode/salesforce";
 
 import { DatapackDeployer } from './datapackDeployer';
 import { DatapackDeploymentOptions } from './datapackDeploymentOptions';
-import { ForkedSassCompiler } from './scss';
 import { DatapackLoader, VlocityNamespaceService } from '@vlocode/vlocity';
 
 interface DatapackDeployOptions extends DatapackDeploymentOptions {
@@ -53,12 +50,6 @@ export async function deploy(input: string | string[], options: DatapackDeployOp
     // Setup dependencies
     localContainer.register(await new VlocityNamespaceService().initialize(localContainer.get(SalesforceConnectionProvider)));
     localContainer.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
-
-    // Setup packed SASS compiler when available
-    const packedSassCompiler = join(__dirname, '../sassCompiler.js');
-    if (existsSync(packedSassCompiler)) {
-        localContainer.register(localContainer.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
-    }
 
     // load datapacks
     input = Array.isArray(input) ? input : [ input ];

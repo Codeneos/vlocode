@@ -37,4 +37,3 @@ export abstract class SassCompiler {
     abstract compile(source: string, options?: SassCompileOptions): Promise<SassCompileResult>;
 }
 
-

@@ -6,16 +6,16 @@ import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce'
 import { forEachAsyncParallel, getErrorMessage, Timer } from '@vlocode/util';
 import { DeploymentStatus } from '../datapackDeploymentRecord';
 import { Container, Logger } from '@vlocode/core';
-import { OmniScriptActivator, OmniScriptDefinition } from '@vlocode/omniscript';
+import { OmniProcessRecord, OmniScriptActivator, OmniScriptDefinition } from '@vlocode/omniscript';
 
 @deploymentSpec({ recordFilter: /^OmniProcess$/i })
 export class OmniProcess implements DatapackDeploymentSpec {
 
     private readonly fields = {
         isProcedure: 'IsIntegrationProcedure',
-        lwcKey: 'WebComponentKey',
+        lwcKey: OmniProcessRecord.WebComponentKeyField,
         uiniqueName: 'UniqueName',
-        active: 'IsActive'
+        active: OmniProcessRecord.ActivationField
     } as const;
 
     public constructor(

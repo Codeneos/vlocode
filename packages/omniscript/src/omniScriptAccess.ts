@@ -372,8 +372,8 @@ export class OmniScriptAccess {
             query.filter({
                 [OmniProcessElementRecord.ScriptLookupField]: validIds,
                 [OmniProcessElementRecord.ScriptActiveField]: filter.active,
-                'Type': filter.type, 
-                'IsActive': filter.active,
+                Type: filter.type, 
+                IsActive: filter.active,
             }, { 
                 ignoreUndefined: true 
             });
