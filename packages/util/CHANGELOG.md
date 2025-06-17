@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.1](https://github.com/Codeneos/vlocode/compare/v1.31.0...v1.31.1) (2025-06-17)
+
+### Bug Fixes
+
+* inconsistent imports causing build errors in 1.31.0 ([db05d9a](https://github.com/Codeneos/vlocode/commit/db05d9a72fc73936023ed52685ee204dd5e5ad0d))
+
 # [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
 
 ### Bug Fixes
