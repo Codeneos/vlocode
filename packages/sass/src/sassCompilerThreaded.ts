@@ -136,8 +136,8 @@ export class SassCompilerThreaded implements SassCompiler {
         const compilerPaths = [
             ...(extraPaths ?? []),
             path.join(__dirname, 'sass-compiler.js'),
-            path.join(__dirname, 'fork.js'),
-            path.join(__dirname, 'fork.ts')
+            path.join(__dirname, 'bin.js'),
+            path.join(__dirname, 'bin.ts')
         ];
         for (const path of compilerPaths) {
             if (fs.existsSync(path)) {

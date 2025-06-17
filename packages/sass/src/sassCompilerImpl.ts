@@ -15,7 +15,7 @@ export class SassCompilerImpl implements SassCompiler {
             sourceMap: false,
             logger: this.logger,
             importers: [
-                new SassImporter(options?.importer?.includePaths ?? [ '.' ])
+                new SassImporter(options?.importer?.includePaths ?? [ '.' ]).bind()
             ]
         });
             

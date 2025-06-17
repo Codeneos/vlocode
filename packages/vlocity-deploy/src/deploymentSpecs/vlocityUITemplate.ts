@@ -4,9 +4,9 @@ import { Timer } from '@vlocode/util';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
-import { SassCompiler } from '../scss';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { RecordActivator } from './recordActivator';
+import { SassCompiler } from '@vlocode/sass';
 
 @deploymentSpec({ recordFilter: /^VlocityUITemplate__c$/i })
 export class VlocityUITemplate implements DatapackDeploymentSpec {
@@ -14,7 +14,8 @@ export class VlocityUITemplate implements DatapackDeploymentSpec {
     public constructor(
         private readonly activator: RecordActivator,
         private readonly logger: Logger,
-        private readonly sass: SassCompiler) {
+        private readonly sass: SassCompiler
+    ) {
     }
 
     /**

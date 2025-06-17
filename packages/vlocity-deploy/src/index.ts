@@ -5,7 +5,6 @@
  */
 export * from './deploymentSpecs';
 export * from './types';
-export * from './scss';
 export * from './convert';
 export * from './export';
 export * from './flexCard';

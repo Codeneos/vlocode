@@ -24,7 +24,7 @@ function send(payload: Message) {
 function compile(data: string, options?: SassCompileOptions) {
     return new SassCompilerImpl({
         warn: (message) => {
-            log(LogLevel.warn, ...message);
+            log(LogLevel.warn, message);
         }
     }).compile(data, options);
 }

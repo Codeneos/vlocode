@@ -61,4 +61,11 @@ export class SassImporter implements sass.Importer<"sync"> {
         }
         return null;
     }
+
+    public bind(): sass.Importer<"sync"> {
+        return {
+            canonicalize: this.canonicalize.bind(this),
+            load: this.load.bind(this)
+        };
+    }
 }

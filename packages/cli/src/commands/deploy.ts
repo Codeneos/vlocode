@@ -1,11 +1,10 @@
 import logSymbols from 'log-symbols';
-import { join } from 'path';
 import chalk from 'chalk';
 import { existsSync } from 'fs';
 import { stat } from 'fs/promises';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
-import { DatapackDeployer, ForkedSassCompiler, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
+import { DatapackDeployer, DatapackDeploymentOptions } from '@vlocode/vlocity-deploy';
 import { DatapackLoader } from '@vlocode/vlocity';
 import { groupBy, mapAsync, partition, pluralize, Timer } from '@vlocode/util';
 
@@ -160,11 +159,5 @@ export default class extends SalesforceCommand {
 
     protected async init(options: any) {
         await super.init(options);
-
-        // Setup SASS packed compiler when available (usually only when CLI is packed)
-        const packedSassCompiler = join(__dirname, '../sassCompiler.js');
-        if (existsSync(packedSassCompiler)) {
-            this.container.register(this.container.create(ForkedSassCompiler, join(__dirname, '../sassCompiler.js')));
-        }
     }
 }

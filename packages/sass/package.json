@@ -1,0 +1,61 @@
+{
+    "name": "@vlocode/sass",
+    "version": "1.30.0",
+    "description": "Vlocode SASS Compiler",
+    "keywords": [],
+    "main": "src/index.ts",
+    "bin": "src/bin.ts",
+    "publishConfig": {
+        "main": "dist/index.js",
+        "module": "dist/index.mjs",
+        "bin": "dist/bin.js",
+        "typings": "dist/index.d.ts"
+    },
+    "readme": "../SITE.md",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "clean": "shx rm -rf .rollup.cache lib dist coverage tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
+        "build": "rollup -c rollup.config.js",
+        "watch": "pnpm build --watch",
+        "prepublish": "pnpm build",
+        "prepack": "pnpm clean && pnpm build",
+        "test": "jest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Codeneos/vlocode.git"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "files": [
+        "dist/**/*.js",
+        "dist/**/*.d.ts",
+        "dist/**/*.json",
+        "!dist/**/*.test.js",
+        "!dist/**/*.test.d.ts",
+        "../SITE.md"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Codeneos/vlocode/issues"
+    },
+    "homepage": "https://github.com/Codeneos/vlocode/tree/main/packages/apex#readme",
+    "devDependencies": {
+        "@types/jest": "^29.5.11",
+        "@types/node": "~20.17",
+        "jest": "^29.7.0",
+        "shx": "^0.3.4",
+        "ts-jest": "^29.3.4",
+        "typescript": "5.8.3",
+        "sass": "^1.89.0"
+    },
+    "dependencies": {
+        "@vlocode/core": "workspace:*",
+        "@vlocode/util": "workspace:*"
+    },
+    "publisher": "curlybracket"
+}

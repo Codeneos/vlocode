@@ -70,10 +70,10 @@
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
+        "@vlocode/sass": "workspace:*",
         "fs-extra": "^11",
         "luxon": "^3.4.4",
-        "moment": "^2.29.4",
-        "sass": "^1.89.0"
+        "moment": "^2.29.4"
     },
     "publisher": "curlybracket",
     "gitHead": "f16fa9dcbf7ef17328047ecb07ab4a7e6a94140a"
