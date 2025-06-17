@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/vlocity-deploy",
-    "version": "1.30.0",
+    "version": "1.31.0",
     "description": "Hyper fast Salesforce/Vlocity datapack deployment library",
     "keywords": [
         "Vlocity",
@@ -68,9 +68,9 @@
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
+        "@vlocode/sass": "workspace:*",
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
-        "@vlocode/sass": "workspace:*",
         "fs-extra": "^11",
         "luxon": "^3.4.4",
         "moment": "^2.29.4"

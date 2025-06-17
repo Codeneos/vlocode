@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.31.0](https://github.com/Codeneos/vlocode/compare/v1.30.0...v1.31.0) (2025-06-17)
+
+### Bug Fixes
+
+* do not fail when external sass compiler can't be loaded, instead fallback to local compiler ([635270b](https://github.com/Codeneos/vlocode/commit/635270bfa9ac746986a06003a48f6f9e25a2a587))
+
 # [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
 
 **Note:** Version bump only for package @vlocode/omniscript

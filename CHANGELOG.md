@@ -4,6 +4,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.31.0](https://github.com/codeneos/vlocode/compare/v1.30.0...v1.31.0) (2025-06-17)
+
+### Bug Fixes
+
+* add missing rollup config ([f65d2a9](https://github.com/codeneos/vlocode/commit/f65d2a97bfe8eaec270a13e3853c9544fe793cda))
+* CLI does not build ([9c65c2d](https://github.com/codeneos/vlocode/commit/9c65c2d164215b1cc4dcff1d632546c3a6aa832a))
+* do not fail when external sass compiler can't be loaded, instead fallback to local compiler ([635270b](https://github.com/codeneos/vlocode/commit/635270bfa9ac746986a06003a48f6f9e25a2a587))
+
+### Features
+
+* drop vscode FS interface and instead use native `fs` module ([4c2a7ff](https://github.com/codeneos/vlocode/commit/4c2a7ff06a5f010c91d69d9cbb0acc9024ca5466))
+* segregate sass transpilation into stand alone module allowing for better isolation of functions ([9a23972](https://github.com/codeneos/vlocode/commit/9a239727a7f60e3c1206d56540b0430f09574c7c))
+* support for loading default matching keys from `matching-keys.json` file when present ([4e06d75](https://github.com/codeneos/vlocode/commit/4e06d7583e57f8cfed5cff6205b95884f9e2dcf4))
+
 # [1.30.0](https://github.com/codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
 
 ### Bug Fixes

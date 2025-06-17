@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.31.0](https://github.com/codeneos/vlocode/compare/v1.30.0...v1.31.0) (2025-06-17)
+
+### Bug Fixes
+
+* do not fail when external sass compiler can't be loaded, instead fallback to local compiler ([635270b](https://github.com/codeneos/vlocode/commit/635270bfa9ac746986a06003a48f6f9e25a2a587))
+
+### Features
+
+* drop vscode FS interface and instead use native `fs` module ([4c2a7ff](https://github.com/codeneos/vlocode/commit/4c2a7ff06a5f010c91d69d9cbb0acc9024ca5466))
+* segregate sass transpilation into stand alone module allowing for better isolation of functions ([9a23972](https://github.com/codeneos/vlocode/commit/9a239727a7f60e3c1206d56540b0430f09574c7c))
+
 # [1.30.0](https://github.com/codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
 
 ### Bug Fixes
