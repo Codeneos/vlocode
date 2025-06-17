@@ -492,9 +492,6 @@ importers:
       '@vlocode/util':
         specifier: workspace:*
         version: link:../util
-      sass:
-        specifier: ^1.89.0
-        version: 1.89.0
     devDependencies:
       '@types/jest':
         specifier: ^29.5.11
@@ -505,6 +502,9 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.17.50)(ts-node@10.9.2(@types/node@20.17.50)(typescript@5.8.3(patch_hash=24d0f58b6ccc436f82020144f0eb5612544e2e93891c50a0d20a74e7afca72be)))
+      sass:
+        specifier: ^1.89.0
+        version: 1.89.0
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -658,9 +658,6 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.17.50)(ts-node@10.9.2(@types/node@20.17.50)(typescript@5.8.3(patch_hash=24d0f58b6ccc436f82020144f0eb5612544e2e93891c50a0d20a74e7afca72be)))
-      sass:
-        specifier: ^1.89.0
-        version: 1.89.0
       shx:
         specifier: ^0.3.4
         version: 0.3.4
