@@ -1,5 +1,5 @@
-import { CancellationToken, CancellationTokenSource } from '@vlocode/util';
 import EventEmitter from 'events';
+import { CancellationToken, CancellationTokenSource } from './cancellationToken';
 
 export interface ProgressReporter<T> {
     (progress: T): unknown;

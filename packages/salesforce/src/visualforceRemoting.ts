@@ -1,8 +1,8 @@
 
 import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { HttpTransport, SalesforceConnection, SalesforceConnectionProvider } from '@vlocode/salesforce';
 import { stringEquals, substringAfterLast } from '@vlocode/util';
 import { URL } from 'url';
+import { HttpTransport, SalesforceConnection, SalesforceConnectionProvider } from './connection';
 
 interface VisualforceRemoteMethod {
     csrf: string;
