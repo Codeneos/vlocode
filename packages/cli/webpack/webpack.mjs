@@ -49,7 +49,7 @@ const common = {
         }),
         {
             cli: './src/index.ts',
-            sassCompiler: '../vlocity-deploy/src/scss/forked/fork.ts'
+            'sass-compiler': '../sass/src/bin.ts'
         }),
     module: {
         rules: [
