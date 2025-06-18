@@ -25,7 +25,7 @@ export class RecordTypeVisibility implements DatapackDeploymentSpec {
     }
 
     @cache({ scope: 'instance', cacheExceptions: true })
-    private addRecordTypeVisibility(recordTypeId: string,) {
+    private addRecordTypeVisibility(recordTypeId: string) {
         return this.profiles.addRecordTypeVisibility(recordTypeId);
     }
 }

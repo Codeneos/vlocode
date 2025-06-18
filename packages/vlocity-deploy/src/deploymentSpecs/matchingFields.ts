@@ -7,7 +7,7 @@ import { asArray } from '@vlocode/util';
 @deploymentSpec({ recordFilter: /.*/ })
 export class MatchingFieldsSpec implements DatapackDeploymentSpec {
 
-    private defaultMatchingKeyFieldsPath = 'matching-keys.json';
+    private matchingKeyFieldsPath = 'matching-keys.json';
     private defaultsInitialized = false;
 
     private upsertFields = {
@@ -36,13 +36,13 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
 
     constructor(
         private readonly fs: FileSystem,
-        private readonly logger: Logger,
+        private readonly logger: Logger
     ) {
     }
 
     public async afterRecordConversion(records: ReadonlyArray<DatapackDeploymentRecord>) {
         // Initialize defaults if not already done
-        await this.initializeDefaults();
+        await this.initializeMatchingKeys();
 
         // Ensure that all records have upsert fields set, either from the defaults or from the record itself
         for (const record of records) {
@@ -55,20 +55,20 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
         }
     }
 
-    private async initializeDefaults() {
+    private async initializeMatchingKeys() {
         if (this.defaultsInitialized) {
             return;
         }
 
         this.defaultsInitialized = true;
-        if (!this.fs.pathExists(this.defaultMatchingKeyFieldsPath)) {
+        if (!await this.fs.pathExists(this.matchingKeyFieldsPath)) {
             return;
         }
 
         try {
             // Load the matching key fields from the file
-            this.logger.verbose('Loading default matching key fields from: %s', this.defaultMatchingKeyFieldsPath);
-            const matchingKeyFields = JSON.parse(await this.fs.readFileAsString(this.defaultMatchingKeyFieldsPath));
+            this.logger.verbose('Loading default matching key fields from: %s', this.matchingKeyFieldsPath);
+            const matchingKeyFields = JSON.parse(await this.fs.readFileAsString(this.matchingKeyFieldsPath));
             for (const [sObjectType, fields] of Object.entries(matchingKeyFields)) {
                 const normalizedType = sObjectType.replace('%vlocity_namespace%__', '');
                 this.upsertFields[normalizedType] = asArray(fields).map(field => String(field));

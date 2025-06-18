@@ -23,3 +23,6 @@ export * from './omniDataTransform';
 // Multi purpose specs
 export * from './matchingFields';
 export * from './recordTypeVisibility';
+
+// Salesforce Contracts
+export * from './documentClauseSet';
