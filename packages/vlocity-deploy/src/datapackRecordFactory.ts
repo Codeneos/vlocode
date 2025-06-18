@@ -71,7 +71,7 @@ export class DatapackRecordFactory {
                             continue;
                         }
                         // Lookups and matching keys are treated the same
-                        if (field.type !== 'reference' && field.type !== 'string') {
+                        if (field.type !== 'reference' && !this.isStringLikeField(field)) {
                             this.reportWarning(record, `Skipping datapack property "${key}" -- cannot use lookup on non-string/reference fields`);
                             continue;
                         }
@@ -97,6 +97,13 @@ export class DatapackRecordFactory {
         }
 
         return records;
+    }
+
+    private isStringLikeField(field: Field) {
+        return field.type === 'string' ||
+             field.type === 'picklist' || 
+             field.type === 'multipicklist' ||
+             field.type === 'textarea'
     }
 
     private reportWarning(record: DatapackDeploymentRecord, message: string) {
