@@ -1,5 +1,5 @@
 import { Container, container, injectable, LifecyclePolicy, ServiceCtor } from "@vlocode/core";
-import { Iterable, lazy } from "@vlocode/util";
+import { lazy } from "@vlocode/util";
 import { DatapackFilter } from './datapackDeployer';
 import { DatapackDeploymentSpec } from './datapackDeploymentSpec';
 
@@ -9,36 +9,27 @@ interface SpecRegistryEntry {
     instance?: DatapackDeploymentSpec;
 }
 
+const InstanceSymbol = Symbol('Instance');
+
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeploymentSpecRegistry {
 
     /**
      * Get the current global {@link DatapackDeploymentSpecRegistry} instance registered in the root container
      */
-    declare static globalInstance: DatapackDeploymentSpecRegistry;
-    declare static globalInstanceCreated: boolean;
-    declare private static getUniqueKey: () => number;
+    public static get instance() {
+        if (DatapackDeploymentSpecRegistry[InstanceSymbol] === undefined) {
+            DatapackDeploymentSpecRegistry[InstanceSymbol] = container.create(DatapackDeploymentSpecRegistry);
+        }
+        return DatapackDeploymentSpecRegistry[InstanceSymbol];
+    }
 
     private readonly specs: SpecRegistryEntry[] = [];
 
-    static {
-        let globalInstance: DatapackDeploymentSpecRegistry;
-        let uniqueIndex = 0;
-        Object.defineProperties(DatapackDeploymentSpecRegistry, {
-            globalInstance: {
-                get: () => {
-                    if (!globalInstance) {
-                        globalInstance = container.create(DatapackDeploymentSpecRegistry);
-                    }
-                    return globalInstance;
-                },
-            },
-            globalInstanceCreated: { get: () => !!globalInstance },
-            getUniqueKey: { value: () => uniqueIndex++ }
-        });
-    }
-
     constructor(private readonly container: Container) {
+        for (const spec of DatapackDeploymentSpecRegistry[InstanceSymbol]?.specs ?? []) {
+            this.register(spec.filter, spec.type ?? spec.instance!);
+        }
     }
 
     /**
@@ -53,11 +44,7 @@ export class DatapackDeploymentSpecRegistry {
      * @returns Iterable
      */
     public *getSpecs() {
-        const specs = [ this.specs ];
-        if (this !== DatapackDeploymentSpecRegistry.globalInstance) {
-            specs.push(DatapackDeploymentSpecRegistry.globalInstance.specs);
-        }
-        for (const spec of Iterable.concat(...specs)) {
+        for (const spec of this.specs) {
             yield {
                 filter: spec.filter, 
                 spec: spec.instance ?? lazy( () => spec.instance = this.container.create(spec.type!) )
@@ -72,7 +59,7 @@ export class DatapackDeploymentSpecRegistry {
      * @param executor function executed
      */
     public static registerFunction<T extends keyof DatapackDeploymentSpec>(this: void, datapackType: string, fn: T, executor: DatapackDeploymentSpec[T]) {
-        DatapackDeploymentSpecRegistry.globalInstance.registerFunction(datapackType, fn, executor);
+        DatapackDeploymentSpecRegistry.instance.registerFunction(datapackType, fn, executor);
     }
 
     /**
@@ -81,7 +68,7 @@ export class DatapackDeploymentSpecRegistry {
      * @param spec Object matching the {@link DatapackDeploymentSpec}-shape
      */
     public static register(this: void, filter: DatapackFilter | string, spec: DatapackDeploymentSpec | ServiceCtor<DatapackDeploymentSpec>) {
-        DatapackDeploymentSpecRegistry.globalInstance.register(filter, spec);
+        DatapackDeploymentSpecRegistry.instance.register(filter, spec);
     }
 
     /**
@@ -122,7 +109,7 @@ export function deploymentSpec(filter: DatapackFilter) {
     const containerDecorator = injectable({ lifecycle: LifecyclePolicy.transient });
     return function (constructor: any) {
         constructor = !injectable.isDecorated(constructor) ? containerDecorator(constructor) : constructor;
-        DatapackDeploymentSpecRegistry.globalInstance.register(filter, constructor);
+        DatapackDeploymentSpecRegistry.instance.register(filter, constructor);
         return constructor;
     };
 }
