@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.2](https://github.com/Codeneos/vlocode/compare/v1.31.1...v1.31.2) (2025-06-18)
+
+### Bug Fixes
+
+* ensure deployment specs do not live longer then the deployment process and that each deployment re-instantiates the spec. ([0e60a07](https://github.com/Codeneos/vlocode/commit/0e60a0765beda771bc2808302e3804ea080ed9db))
+
+### Features
+
+* allow setting of IDs on PickLists and other text like field types ([439be52](https://github.com/Codeneos/vlocode/commit/439be52e6c3f40612876e0c1cb0815227cdf6dce))
+* support deploying document clause set from Salesforce Contracts ([4a1ee0d](https://github.com/Codeneos/vlocode/commit/4a1ee0d0735ccc60eb199c580fa933e34188ec97))
+
 ## [1.31.1](https://github.com/Codeneos/vlocode/compare/v1.31.0...v1.31.1) (2025-06-17)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy
