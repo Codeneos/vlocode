@@ -88,14 +88,14 @@ export class DatapackInfoService {
             }
 
             if (!info.sobjectType) {
-                this.logger.error(`Datapack configuration '${info.datapackType}' does not have a primary SObject type - set the PrimarySObjectType field in the VlocityDataPackConfiguration__mdt metadata object`);
+                this.logger.warn(`Datapack configuration '${info.datapackType}' does not have a primary SObject type - set the PrimarySObjectType field in the VlocityDataPackConfiguration__mdt metadata object`);
                 continue;
             }
 
             const sobject = await this.salesforce.schema.describeSObject(info.sobjectType, false) ||
             await this.salesforce.schema.describeSObject(this.salesforce.updateNamespace(`%vlocity_namespace%__${info.sobjectType}`), false);
             if (!sobject) {
-                this.logger.error(`Datapack configuration '${info.datapackType}' has an invalid SObject type '${info.sobjectType}'`);
+                this.logger.warn(`Datapack configuration '${info.datapackType}' has an invalid SObject type '${info.sobjectType}'`);
                 continue;
             }
             
