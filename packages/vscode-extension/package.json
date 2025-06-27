@@ -1,8 +1,8 @@
 {
     "name": "vlocode",
     "private": true,
-    "displayName": "Salesforce Vlocity Integration",
-    "description": "Salesforce and Vlocity development and deployment extension for VSCode",
+    "displayName": "Salesforce Industries & Omnistudio (Vlocity)",
+    "description": "Salesforce Industries, Omnistudio (Vlocity) development and deployment extension for VSCode",
     "version": "1.31.2",
     "license": "MIT",
     "icon": "resources/icon.png",
@@ -1032,10 +1032,12 @@
                     "vlocity.sfdxUsername": {
                         "type": "string",
                         "scope": "machine-overridable",
+                        "deprecationMessage": "Vlocode will from version 1.31.3 and higher read the Salesfocrce username from the SFDX project configuration file (sfdx-project.json) instead.",
                         "markdownDescription": "SFDX username; when this is specified the username, password, loginUrl and instanceUrl are ignored."
                     },
                     "vlocity.httpProxy": {
                         "type": "string",
+                        "deprecationMessage": "Vlocode useses VSCodes built-in proxy settings instead",
                         "description": "Optional HTTP proxy for connecting to Salesforce"
                     },
                     "vlocity.fsInterface": {
