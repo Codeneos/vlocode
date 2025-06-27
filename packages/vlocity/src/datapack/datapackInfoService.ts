@@ -143,7 +143,7 @@ export class DatapackInfoService {
         }
 
         // Find datapacks matching the sobjectType specified
-        // if not found match based on datapack type; this is not 100% correct but yield good results with the standard configiration
+        // if not found match based on datapack type; this is not 100% correct but yield good results with the standard configuration
         // TODO: analyze DR and based on that determine the SObject type
         const datapackInfo =
             definitions.find(dataPack => dataPack.source.sobjectType && objectRegex.test(removeNamespacePrefix(dataPack.source.sobjectType))) ||

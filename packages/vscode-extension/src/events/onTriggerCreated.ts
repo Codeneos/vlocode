@@ -8,7 +8,7 @@ export default class extends EventHandlerBase<vscode.Uri> {
 
     public get enabled() : boolean {
         const manageMetadata = this.vloService.config?.salesforce?.enabled && this.vloService.config.salesforce.manageMetaXmlFiles;
-        const orgSelected = !!this.vloService.config?.sfdxUsername;
+        const orgSelected = !!this.vloService.sfdxUsername;
         return !!manageMetadata && orgSelected;
     }
 
@@ -44,7 +44,7 @@ export default class extends EventHandlerBase<vscode.Uri> {
 
         try {
             await fs.writeFile(`${document.fsPath}-meta.xml`, metaXml, { flag: 'wx' });
-        } catch(e) {
+        } catch {
             // Ignore error; this fails if the meta file already exists
         }
     }

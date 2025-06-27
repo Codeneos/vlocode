@@ -109,12 +109,7 @@ export default class SelectOrgCommand extends CommandBase {
         } else {
             const selectedOrgInfo = selectedOrg.orgInfo || await this.authorizeNewOrg();    
             if (selectedOrgInfo) {
-                this.logger.log(`Connecting to: ${selectedOrgInfo.username}...`);
-                if (this.vlocode.config.sfdxUsername != selectedOrgInfo.username) {
-                    this.vlocode.config.sfdxUsername = selectedOrgInfo.username;
-                } else {
-                    await this.vlocode.initialize();
-                }
+                await this.vlocode.setUsername(selectedOrgInfo.username);
             }
         }
     }

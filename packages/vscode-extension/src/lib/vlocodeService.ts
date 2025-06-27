@@ -12,12 +12,13 @@ import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
 import CommandRouter from './commandRouter';
+import { SfdxConfigManager } from './sfdxConfigManager';
 
 @injectable({ lifecycle: LifecyclePolicy.singleton, provides: [SalesforceConnectionProvider, VlocodeService] })
 /**
  * Core service class for the Vlocode extension, responsible for managing Salesforce connections,
  * datapack services, and extension state.
- * 
+ *
  * This service:
  * - Manages connections to Salesforce orgs
  * - Initializes and provides access to Vlocity datapack services
@@ -25,7 +26,7 @@ import CommandRouter from './commandRouter';
  * - Handles activity tracking and progress reporting for long-running tasks
  * - Provides utilities for validating the workspace and Salesforce connectivity
  * - Manages OAuth token refresh when credentials expire
- * 
+ *
  * @implements {vscode.Disposable}
  * @implements {SalesforceConnectionProvider}
  */
@@ -35,23 +36,25 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private disposables: { dispose() : any }[] = [];
     private statusItems: { [id: string] : vscode.StatusBarItem } = {};
     private connector?: SalesforceConnectionProvider;
+    private sfUsername?: string;
     private initializePromise?: Promise<void>;
     private refreshOAuthTokensPromise?: Promise<boolean>;
     private errorHandlerMarker = Symbol('errorHandlerAttached');
 
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
-    private readonly activitiesChangedEmitter = new vscode.EventEmitter<VlocodeActivity[]>();
+    private readonly events = {
+        activitiesChanged: new vscode.EventEmitter<VlocodeActivity[]>(),
+        usernameChanged: new vscode.EventEmitter<string | undefined>(),
+    }
     @injectable.property private readonly nsService: VlocityNamespaceService;
 
     // Publics
     public readonly activities: ObservableArray<Observable<VlocodeActivity>> = observeArray([]);
-    public readonly onActivitiesChanged = this.activitiesChangedEmitter.event;
 
     // Properties
     private _datapackService?: VlocityDatapackService;
     public get datapackService(): VlocityDatapackService {
         if (!this._datapackService) {
-            console.debug(`Accessing VlocityDatapackService before it Vlocode is initialized from:\n`, new Error().stack);
             throw new Error('Vlocode is not initialized; VlocityDatapackService is null');
         }
         return this._datapackService;
@@ -60,17 +63,20 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private _salesforceService?: SalesforceService;
     public get salesforceService(): SalesforceService {
         if (!this._salesforceService) {
-            console.debug(`Accessing SalesforceService before it Vlocode is initialized from:\n`, new Error().stack);
             throw new Error('Vlocode is not initialized; SalesforceService is null');
         }
         return this._salesforceService;
+    }
+
+    public get sfdxUsername() : string | undefined {
+        return this.sfUsername;
     }
 
     /**
      * Validate that the Vlocode primary services are initailized.
      */
     public get isInitialized() {
-        return this._datapackService !== undefined && 
+        return this._datapackService !== undefined &&
             this._salesforceService !== undefined;
     }
 
@@ -82,17 +88,27 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this.config.salesforce.apiVersion;
     }
 
+    public get onActivitiesChanged() {
+        return this.events.activitiesChanged.event;
+    }
+
+    public get onUsernameChanged() {
+        return this.events.usernameChanged.event;
+    }
+
     // Ctor + Methods
     constructor(
         public readonly config: VlocodeConfiguration,
+        private readonly sfdxConfig: SfdxConfigManager,
         private readonly commandRouter: CommandRouter,
         private readonly logger: Logger
-    ) {
-        this.createConfigWatcher();
+    ) {        
+        this.updateExtensionStatus();
+        this.showApiVersionStatusItem();
+        this.initConfigWatcher();
     }
 
     public dispose() {
-        console.log('dispose service');
         this.disposables.forEach(disposable => disposable.dispose());
         this.disposables = [];
         if (this._datapackService) {
@@ -101,31 +117,43 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }
     }
 
+    public async setUsername(username: string | undefined) {
+        if (this.sfUsername === username) {
+            return;
+        }
+        this.sfUsername = username;
+        try {
+            this.logger.info(`Connecting to Salesforce as: ${username}`);
+            await this.initializeConnection();
+        } finally {
+            this.events.usernameChanged.fire(username);
+        }
+    }
+
     @preventParallel('initializePromise')
-    public async initialize() : Promise<void> {
+    public async initializeConnection() : Promise<void> {
         try {
             this.resetConnection();
             this.showStatus('$(sync~spin) Connecting to Salesforce...');
-            if (this.config.sfdxUsername) {
-                this._salesforceService = container.get(SalesforceService);
+            if (this.sfUsername) {
+                this._salesforceService = container.get(SalesforceService);                
                 this.showStatus('$(sync~spin) Initializing datapack services...');
                 await this.nsService.initialize(this._salesforceService);
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
                 await container.get(VlocityMatchingKeyService).initialize();
             }
-            this.updateExtensionStatus(this.config);
+            this.updateExtensionStatus();
         } catch (err) {
-            this.logger.debug(err);
             if (err?.message == 'NamedOrgNotFound') {
-                this.logger.error(`Unknown username/alias ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
-                this.showStatus(`$(error) Unknown Salesforce user - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+                this.logger.error(`Unknown username/alias ${this.sfUsername} -- select a different org or re-authenticate with the target org`);
+                this.showStatus(`$(error) Unknown Salesforce user - ${this.sfUsername}`, VlocodeCommand.selectOrg);
             } else if (err?.message == 'The org cannot be found') {
                 this.logger.error(err?.message);
-                this.showStatus(`$(error) Org not found - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+                this.showStatus(`$(error) Org not found - ${this.sfUsername}`, VlocodeCommand.selectOrg);
             } else if (this.isTokenExpiredError(err)) {
                 if (await this.handleAuthTokenExpiredError()) {
                     this.initializePromise = undefined;
-                    return this.initialize();
+                    return this.initializeConnection();
                 }
             } else if (err?.code == 'ENOTFOUND') {
                 this.logger.error(`Unable to reach Salesforce; are you connected to the internet?`);
@@ -150,7 +178,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this._datapackService = undefined;
         this._salesforceService = undefined;
 
-        this.updateExtensionStatus(this.config);
+        this.updateExtensionStatus();
     }
 
     public getDiagnostics(name : string): vscode.DiagnosticCollection {
@@ -168,14 +196,6 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             }
         );
     }
-
-    public onConnectionChange(handler: (newUsername: string) => any) {
-        return ConfigurationManager.onConfigChange(this.config, ['sfdxUsername'], config => {
-            if (config.sfdxUsername) {
-                handler(config.sfdxUsername!);
-            }
-        });
-    } 
 
     private showApiVersionStatusItem() : void {
         this.createUpdateStatusBarItem(
@@ -323,12 +343,12 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                     }
 
                     vscodeProgress.report( { message: state.message, increment: relativeIncrement } );
-                    
+
                     if (state.status !== undefined) {
                         activityRecord.status = state.status;
                     }
 
-                    if (relativeIncrement) {                        
+                    if (relativeIncrement) {
                         activityRecord.normalizedProgress += relativeIncrement;
                     }
                 }
@@ -417,10 +437,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
         if (!refreshed) {
             void vscode.window.showErrorMessage(
-                `Unable to connect to Salesforce, the refresh token for ${this.config.sfdxUsername} expired`
+                `Unable to connect to Salesforce, the refresh token for ${this.sfdxUsername} expired`
             );
-            this.logger.error(`Authorization token expired for ${this.config.sfdxUsername} -- select a different org or re-authenticate with the target org`);
-            this.showStatus(`$(key) Authorization expired - ${this.config.sfdxUsername}`, VlocodeCommand.selectOrg);
+            this.logger.error(`Authorization token expired for ${this.sfdxUsername} -- select a different org or re-authenticate with the target org`);
+            this.showStatus(`$(key) Authorization expired - ${this.sfdxUsername}`, VlocodeCommand.selectOrg);
         }
 
         return refreshed;
@@ -443,12 +463,12 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             return this.connector;
         }
 
-        if (!this.config.sfdxUsername) {
+        if (!this.sfdxUsername) {
             throw new Error('Cannot connect to Salesforce; no username specified in configuration');
         }
 
         this.connector = new SfdxConnectionProvider(
-            this.config.sfdxUsername, {
+            this.sfdxUsername, {
                 version: this.config.salesforce.apiVersion
             }
         );
@@ -458,7 +478,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
     private async promptRefreshOAuthToken(): Promise<boolean> {
         const action = await vscode.window.showWarningMessage(
-            `Authorization for ${this.config.sfdxUsername} has expired. Do you want to refresh it?`,
+            `Authorization for ${this.sfdxUsername} has expired. Do you want to refresh it?`,
             { title: 'Refresh', refresh: true },
             { title: 'Cancel', refresh: false }
         );
@@ -478,14 +498,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     @preventParallel()
     public refreshOAuthTokens() : Promise<void> {
         return this.withActivity({
-            progressTitle: `Refreshing ${this.config.sfdxUsername} org credentials...`,
+            progressTitle: `Refreshing ${this.sfdxUsername} org credentials...`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
             cancellable: true
         }, async (_, cancelationToken) => {
-            await sfdx.refreshOAuthTokens(this.config.sfdxUsername!, cancelationToken);
+            await sfdx.refreshOAuthTokens(this.sfdxUsername!, cancelationToken);
             this.resetConnection();
-            vscode.window.showInformationMessage(`Successfully refreshed ${this.config.sfdxUsername} org credentials`);
+            vscode.window.showInformationMessage(`Successfully refreshed ${this.sfdxUsername} org credentials`);
         });
     }
 
@@ -501,21 +521,21 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return (await vscode.workspace.fs.readFile(uri)).toString();
     }
 
-    private updateExtensionStatus(config: VlocodeConfiguration) {
+    private updateExtensionStatus() {
         if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length == 0) {
             this.setExtensionContext('orgSelected', false);
             return this.hideAllStatusBarItems();
         }
 
-        if (!config.sfdxUsername) {
+        if (!this.sfUsername) {
             this.setExtensionContext('orgSelected', false);
             return this.showStatus('$(gear) Select Salesforce org', VlocodeCommand.selectOrg);
         }
 
         this.setExtensionContext('orgSelected', true);
-        this.showStatus(`$(cloud-upload) Vlocode ${config.sfdxUsername}`, VlocodeCommand.selectOrg);
-        void sfdx.resolveAlias(config.sfdxUsername).then(userAliasOrName => {
-            if (this.getStatusText() !== `$(cloud-upload) Vlocode ${config.sfdxUsername}`) {
+        this.showStatus(`$(cloud-upload) Vlocode ${this.sfUsername}`, VlocodeCommand.selectOrg);
+        void sfdx.resolveAlias(this.sfUsername).then(userAliasOrName => {
+            if (this.getStatusText() !== `$(cloud-upload) Vlocode ${this.sfdxUsername}`) {
                 // Avoid overwriting more up to date status bar text during extension start-up
                 return;
             }
@@ -540,11 +560,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return disposable;
     }
 
-    private createConfigWatcher() {
-        this.updateExtensionStatus(this.config);
-        this.showApiVersionStatusItem();
+    private initConfigWatcher() {
         this.disposables.push(
-            ConfigurationManager.onConfigChange(this.config, [ 'sfdxUsername', 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
+            this.sfdxConfig.onChange(e => 'defaultusername' in e.changes && this.setUsername(e.changes.defaultusername)),
+            ConfigurationManager.onConfigChange(this.config, [ 'projectPath', 'customJobOptionsYaml' ], this.processConfigurationChange.bind(this)),
             ConfigurationManager.onConfigChange(this.config.salesforce, [ 'apiVersion' ], this.processConfigurationChange.bind(this))
         );
     }
@@ -552,17 +571,17 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private async processConfigurationChange() {
         this.showStatus('$(sync~spin) Processing config changes...', VlocodeCommand.selectOrg);
         this.showApiVersionStatusItem();
-        await this.initialize();
+        await this.initializeConnection();
     }
 
     @preventParallel()
     public async validateSalesforceConnectivity() : Promise<string | undefined> {
-        if (!this.config.sfdxUsername) {
+        if (!this.sfdxUsername) {
             const message = 'Select a Salesforce instance for this workspace to use Vlocode';
             const selectedAction = await vscode.window.showInformationMessage(message, 'Connect to Salesforce');
             if (selectedAction) {
                 await this.commands.execute(VlocodeCommand.selectOrg);
-                if (!this.config.sfdxUsername) {
+                if (!this.sfdxUsername) {
                     return 'Salesforce org selection cancelled';
                 }
             } else {
@@ -575,7 +594,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             await vscode.window.withProgress({
                 title: 'Vlocode: Initializing...',
                 location: vscode.ProgressLocation.Window
-            }, () => this.initialize());
+            }, () => this.initializeConnection());
         }
 
         if (!this.isInitialized) {

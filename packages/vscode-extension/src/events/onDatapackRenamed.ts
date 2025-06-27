@@ -7,19 +7,19 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
 
     public get enabled() : boolean {
         const manageMetadata = this.vloService.config?.salesforce?.enabled && this.vloService.config.salesforce.manageMetaXmlFiles;
-        const orgSelected = !!this.vloService.config?.sfdxUsername;
+        const orgSelected = !!this.vloService.sfdxUsername;
         return !!manageMetadata && orgSelected;
     }
 
     protected async handleEvent(event: vscode.FileRenameEvent): Promise<void> {
         const trx = new WorkspaceChangeSet(this.vloService);
 
-        // Handle of bundle LWC and Aura
+        // Handle datapack renames
         for (const file of event.files) {
             const fileStat = await vscode.workspace.fs.stat(file.newUri);
 
             if (fileStat.type === vscode.FileType.Directory) {
-                await this.handleRenamedDatapackFolder(file, trx);
+                //await this.handleRenamedDatapackFolder(file, trx);
             } else if (fileStat.type === vscode.FileType.File && this.isDatapackHeader(file)) {
                 await this.handleRenamedDatapackHeader(file, trx);
             }
@@ -37,9 +37,9 @@ export default class extends EventHandlerBase<vscode.FileRenameEvent> {
         }
     }
 
-    private async handleRenamedDatapackFolder(folder: vscode.FileRenameEvent['files'][0], trx: WorkspaceChangeSet) {
-        // TODO: implement me
-    }
+    // private async handleRenamedDatapackFolder(folder: vscode.FileRenameEvent['files'][0], trx: WorkspaceChangeSet) {
+    //     TODO: implement me
+    // }
 
     private async handleRenamedDatapackHeader(file: vscode.FileRenameEvent['files'][0], trx: WorkspaceChangeSet) {
         const datapackMatcher = /[/\\]([^/\\]+)_DataPack.json$/i;

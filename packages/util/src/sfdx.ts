@@ -2,6 +2,7 @@ import open from 'open';
 import * as fs from 'node:fs/promises';
 import * as salesforce from '@salesforce/core';
 import { CancellationToken } from './cancellationToken';
+import { deepClone, deepCompare, merge } from './object';
 
 export interface SalesforceAuthResult {
     orgId: string;
@@ -28,7 +29,16 @@ interface FileSystem {
 }
 
 export interface SfdxConfig {
+    name?: string;
+    namespace?: string;
+    sfdcLoginUrl?: string;
+    sourceApiVersion?: string;
     defaultusername?: string;
+    sourceBehaviorOptions?: string[];
+    packageDirectories?: {
+        path: string;
+        default?: boolean;
+    }[];
 }
 
 /**
@@ -436,20 +446,18 @@ export namespace sfdx {
         folderPath: string, 
         config: Partial<SfdxConfig>, 
         options: { fs: FileSystem, replace?: boolean } = { fs: fs }
-    ) : Promise<void> {
+    ) : Promise<boolean> {
         const currentConfig = await getConfig(folderPath, { fs: options.fs });
+        const newConfig = (!currentConfig?.config || options.replace) ? config 
+            : merge(deepClone(currentConfig?.config ?? {}), config);
 
-        if (currentConfig) {
-            const changed = Object.keys(config).some(key => currentConfig.config[key] !== config[key]);
-            if (!changed) {
-                // existing config is the same as the new config, nothing to do
-                return;
-            }
+        if (currentConfig?.config && deepCompare(currentConfig?.config, newConfig)) {
+            return false;
         }
 
         const configPath = currentConfig?.path ?? `${folderPath}/${defaultConfigPath}`;
-        const newConfig = options.replace ? config : { ...currentConfig?.config, ...config };
         await options.fs.writeFile(configPath, Buffer.from(JSON.stringify(newConfig, undefined, 2)));
+        return true
     }
 
     export async function removeOrg(username: string) {

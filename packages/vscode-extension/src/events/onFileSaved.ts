@@ -12,7 +12,7 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
     private readonly metadataDetector = container.get(MetadataDetector);
 
     public get enabled() : boolean {
-        if (!this.vloService.config.sfdxUsername) {
+        if (!this.vloService.sfdxUsername) {
             return false;
         }
         return this.vloService.config.deployOnSave ||

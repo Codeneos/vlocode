@@ -57,6 +57,14 @@ export class ConfigurationManager implements VscodeWorkspaceConfigProvider {
         return new Proxy({} as T, new ConfigProxyHandler<T>(configSectionName, this.overrideConfig, this));
     }
 
+    /**
+     * Retrieves the VS Code workspace configuration for a specified configuration section.
+     * If the configuration is not already cached, it initializes and caches it.
+     * Automatically reloads the configuration when it changes and invokes watchers for updated properties.
+     *
+     * @param configSectionName - The name of the configuration section to retrieve.
+     * @returns The workspace configuration for the specified section.
+     */
     public getVscodeConfiguration(configSectionName: string) {
         let workspaceConfig = this.loadedConfigSections.get(configSectionName);
         if (!workspaceConfig) {

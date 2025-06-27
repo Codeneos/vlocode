@@ -93,8 +93,8 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         { label: 'Clear ALL user trace flags', description: 'Disable logging and trace flags for all users', clear: 'all' },
     ];
 
-    private readonly clearCustomFlagsOption : vscode.QuickPickItem & { clear: string } = { 
-        label: 'Clear custom debug configurations', description: 'Delete all custom debug flag configurations from VSCode', clear: 'customFlags' 
+    private readonly clearCustomFlagsOption : vscode.QuickPickItem & { clear: string } = {
+        label: 'Clear custom debug configurations', description: 'Delete all custom debug flag configurations from VSCode', clear: 'customFlags'
     };
 
     private traceFlagsWatcherId: any | undefined;
@@ -105,9 +105,9 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
 
     constructor() {
         super();
-        this.vlocode.onConnectionChange(async () => {
+        this.vlocode.onUsernameChanged(async () => {
             this.currentTraceFlagsId = undefined;
-            if (this.traceFlagsWatcherId) {                
+            if (this.traceFlagsWatcherId) {
                 await this.createAndSetTraceFlags(this.currentDebugLevelName, this.currentDebugLevel);
             }
         });
@@ -118,8 +118,8 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
      */
     public async execute() {
         const customDebugLevelOptions = this.getCustomDebugLevels()?.map(level => ({ label: level.name, debugLevel: level}));
-        const debugLevelOptions: Array<{ label: string, debugLevel?: SalesforceDebugLevel & { name?: string }, clear?: string }> = [ 
-            ...this.debugLevelOptions, 
+        const debugLevelOptions: Array<{ label: string, debugLevel?: SalesforceDebugLevel & { name?: string }, clear?: string }> = [
+            ...this.debugLevelOptions,
             ...(customDebugLevelOptions?.length ? [ { label: '', kind: vscode.QuickPickItemKind.Separator }, ...customDebugLevelOptions ] : []),
             { label: '', kind: vscode.QuickPickItemKind.Separator },
             ...this.clearDebugOptions
@@ -152,7 +152,7 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
         }
 
         return this.vlocode.withActivity({
-            activityTitle: `Set log level ${debugLevelFlags.name ?? traceFlagsSelection.label}`, 
+            activityTitle: `Set log level ${debugLevelFlags.name ?? traceFlagsSelection.label}`,
             progressTitle: `Setting log level to: ${debugLevelFlags.name ?? traceFlagsSelection.label}`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,
@@ -192,9 +192,9 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
             traceFlags[field] = selected.label;
         }
 
-        const logLevelName = await vscode.window.showInputBox({ 
-            value: `Custom ${DateTime.now().toFormat('M/d/yyyy HH:mm:ss')}`, 
-            title: `Debug Flags Name`, 
+        const logLevelName = await vscode.window.showInputBox({
+            value: `Custom ${DateTime.now().toFormat('M/d/yyyy HH:mm:ss')}`,
+            title: `Debug Flags Name`,
             prompt: 'Name displayed in the debug level selection in vscode.'
         });
         if (!logLevelName) {

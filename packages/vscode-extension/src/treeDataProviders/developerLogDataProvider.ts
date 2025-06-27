@@ -4,12 +4,17 @@ import { DeveloperLog } from '@vlocode/salesforce';
 import { DateTime } from 'luxon';
 import { ConfigurationManager } from '../lib/config';
 import { VlocodeCommand } from '../constants';
-import { Logger , injectable } from '@vlocode/core';
+import { Logger, injectable } from '@vlocode/core';
 import BaseDataProvider from './baseDataProvider';
 import { DebugLogViewer } from '../lib/salesforce/debugLogViewer';
 
 /**
- * Provides a list of recently executed or executing activities 
+ * A Tree Data Provider for managing and displaying Salesforce Developer Logs in a VS Code extension.
+ * This class extends the `BaseDataProvider` and implements `vscode.Disposable` to provide functionality
+ * for fetching, displaying, and managing developer logs, including features like auto-refresh, filtering,
+ * and log visibility settings.
+ *
+ * @template DeveloperLog - The type of the developer log objects managed by this provider.
  */
 @injectable.singleton()
 export default class DeveloperLogDataProvider extends BaseDataProvider<DeveloperLog> implements vscode.Disposable {
@@ -32,11 +37,11 @@ export default class DeveloperLogDataProvider extends BaseDataProvider<Developer
     }
 
     private registerConfigListener() {
-        ConfigurationManager.onConfigChange(this.vlocode.config, ['sfdxUsername'], config => {
+        this.vlocode.onUsernameChanged(username => {
             this.lastRefresh = undefined;
             this.logs.splice(0);
             this.refresh();
-            if (config.sfdxUsername) {
+            if (username) {
                 void this.refreshLogs({ refreshView: true });
             }
         });

@@ -27,11 +27,11 @@ import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
 import { NamespaceService } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
-import { SfdxConfigWatcher } from './lib/sfdxConfigWatcher';
 
 import './commands';
 import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
 import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
+import { SfdxConfigManager } from './lib/sfdxConfigManager';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -208,14 +208,11 @@ class Vlocode {
         // watch for changes
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
         void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
-        void this.service.registerDisposable(container.create(SfdxConfigWatcher).initialize());
+        void this.service.registerDisposable(container.get(SfdxConfigManager).initialize());
 
         // track activation time
         this.logger.focus();
         __vlocodeStartTime && this.logger.info(`Vlocode activated in ${Date.now() - __vlocodeStartTime}ms`);
-
-        // Connect to SF
-        void this.service.initialize();
     }
 
     private deactivate() {

@@ -8,7 +8,6 @@ import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
 import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
-import { ConfigurationManager } from '../lib/config';
 import { QueryBuilder, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { randomUUID } from 'crypto';
 
@@ -30,7 +29,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     }
 
     protected initialize() {
-        ConfigurationManager.onConfigChange(this.vlocode.config, [ 'sfdxUsername' ], () => this.refresh());
+        this.vlocode.onUsernameChanged(() => this.onRefresh());
     }
 
     private async onExport(node: DatapackNode) {

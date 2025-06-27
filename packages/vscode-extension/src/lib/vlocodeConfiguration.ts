@@ -25,7 +25,7 @@ export abstract class VlocodeVlocityDeployConfiguration extends BaseConfiguratio
 
 export default abstract class VlocodeConfiguration extends BaseConfiguration {
     logLevel: 'info' | 'verbose' | 'debug';
-    sfdxUsername?: string;
+    //sfdxUsername?: string;
     projectPath?: string;
     customJobOptionsYaml?: string;
     parallelLimit?: number;

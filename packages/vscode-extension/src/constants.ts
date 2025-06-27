@@ -8,7 +8,7 @@ import packageJson from '../package.json';
 export const VERSION = packageJson.version;
 export const API_CLIENT_NAME = 'Vlocode SOAP client';
 export const CONFIG_SECTION = 'vlocity';
-export const CONFIG_FILE = '.vlocode';
+export const CONFIG_FILE = 'vlocode-config.json';
 export const OUTPUT_CHANNEL_NAME = 'Vlocode';
 export const NG_APP_NAME = 'Vlocode';
 export const LOG_DATE_FORMAT = 'HH:mm:ss.SSS';
