@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.3](https://github.com/Codeneos/vlocode/compare/v1.31.2...v1.31.3) (2025-06-27)
+
+### Features
+
+* remove Salesforce username from VSCode configuration and use username from SFDX project file instead ([953ab28](https://github.com/Codeneos/vlocode/commit/953ab286d51fba07cfe55632d89d2306838341aa))
+
 ## [1.31.1](https://github.com/Codeneos/vlocode/compare/v1.31.0...v1.31.1) (2025-06-17)
 
 ### Bug Fixes
