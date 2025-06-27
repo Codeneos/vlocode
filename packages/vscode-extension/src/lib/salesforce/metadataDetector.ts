@@ -1,35 +1,66 @@
 
-import { FileFilterFunction, FileFilterInfo } from '../../lib/workspaceContextDetector';
-import { container, injectable } from '@vlocode/core';
-import { fileSuffix, directoryName, fileName } from '@vlocode/util';
+import { injectable, FileSystem } from '@vlocode/core';
+import { fileSuffix } from '@vlocode/util'; // fileName is not used directly anymore
 import { MetadataRegistry } from '@vlocode/salesforce';
+import * as path from 'path';
+import { IFileDetector } from '../detectors/types';
 
 @injectable.singleton()
-export class MetadataDetector {
-    constructor(private readonly registry: MetadataRegistry) {
-    }
+export class MetadataDetector implements IFileDetector {
+    public readonly name = "salesforceMetadata";
 
-    public isMetadataFile(file: FileFilterInfo | string) {
-        if (typeof file === 'string') {
-            return this.isMetadataFile({ fullName: file, folderName: directoryName(file), name: fileName(file), siblings: new Array<any>() } as FileFilterInfo);
+    constructor(
+        private readonly registry: MetadataRegistry,
+        private readonly fs: FileSystem
+    ) { }
+
+    /**
+     * Checks if the given file path represents a Salesforce metadata file.
+     * This can be a -meta.xml file, a file whose suffix is registered in the MetadataRegistry,
+     * or a content file that has a corresponding -meta.xml sibling.
+     * @param filePath Absolute path to the file.
+     * @param fileSystem FileSystem instance (already available via injection as this.fs).
+     * @param projectRoot Optional. The root path of the project. If provided, metadata detection might be limited to files within this project.
+     * @returns True if the file is considered a metadata file, false otherwise.
+     */
+    public isApplicable(filePath: string, fileSystem: FileSystem, projectRoot?: string): boolean {
+        // fileSystem parameter is available as this.fs due to constructor injection, so we use this.fs.
+        // The projectRoot parameter is available if needed for more complex rules.
+        // For now, we only make sure this file is part of the project if projectRoot is passed.
+        if (projectRoot && !filePath.startsWith(path.resolve(projectRoot))) {
+            // If a projectRoot is specified, only consider files within that project.
+            // This check might be too simple if filePath is a relative path fragment from fs.watch
+            // However, detectionProcess.ts resolves it to an absolute path.
+            return false;
         }
-        if (file.name.endsWith('-meta.xml')) {
+
+        if (!filePath || typeof filePath !== 'string') {
+            return false;
+        }
+
+        const name = path.basename(filePath);
+
+        // 1. Is it a -meta.xml file itself?
+        if (name.endsWith('-meta.xml')) {
             return true;
         }
-        const metadataInfo = this.registry.getMetadataTypeBySuffix(fileSuffix(file.name));
-        if (metadataInfo) {
-            return true;
-        }
-        return file.siblings.some(f => {
-            if (f.name.endsWith('-meta.xml')) {
+
+        // 2. Is it a known metadata type by suffix? (e.g. .object, .layout)
+        //    This usually covers metadata types that don't have a separate -meta.xml file.
+        const suffix = fileSuffix(name);
+        if (suffix) {
+            const metadataInfo = this.registry.getMetadataTypeBySuffix(suffix);
+            if (metadataInfo) {
                 return true;
             }
-            return false;
-        });
-    }
+        }
 
-    public static filter(): FileFilterFunction {
-        const detector = container.get(MetadataDetector);
-        return detector.isMetadataFile.bind(detector);
+        // 3. Is it a content file with a sibling -meta.xml file? (e.g. MyClass.cls and MyClass.cls-meta.xml)
+        //    Use the injected this.fs for pathExistsSync.
+        if (this.fs.pathExistsSync(filePath + '-meta.xml')) {
+            return true;
+        }
+
+        return false;
     }
 }

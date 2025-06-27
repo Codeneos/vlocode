@@ -1,38 +1,27 @@
+import { injectable, FileSystem } from '@vlocode/core';
+import * as path from 'path';
+import { IFileDetector } from '../detectors/types';
 
-import { FileFilterFunction, FileFilterInfo } from '../../lib/workspaceContextDetector';
+@injectable.singleton()
+export class DatapackDetector implements IFileDetector {
+    public readonly name = "datapack";
 
-export class DatapackDetector {
-
-    private static datapacksFoundSymbol = Symbol('@hasDatapacks');
-
-    public static isDatapackFile(file: FileFilterInfo | string) {
-        return (typeof file !== 'string' ? file.name : file).endsWith('_DataPack.json');
+    constructor() {
+        // No FileSystem needed for this simple detector yet
     }
 
-    public static isDatapackFileFn(file: FileFilterInfo | string) {
-        if (typeof file === 'string') {
-            return DatapackDetector.isDatapackFile(file);
+    /**
+     * Checks if the given file path represents a Vlocity Datapack JSON file.
+     * This check is solely based on the file name ending with '_DataPack.json'.
+     * @param filePath Absolute path to the file.
+     * @param fileSystem FileSystem instance (not used by this detector).
+     * @param projectRoot Project root path (not used by this detector).
+     * @returns True if the file is a Datapack JSON file, false otherwise.
+     */
+    public isApplicable(filePath: string, fileSystem?: FileSystem, projectRoot?: string): boolean {
+        if (!filePath || typeof filePath !== 'string') {
+            return false;
         }
-
-        if (file.siblings[DatapackDetector.datapacksFoundSymbol]) {
-            return true;
-        }
-
-        if (file.name.endsWith('_DataPack.json')) {
-            file.siblings[DatapackDetector.datapacksFoundSymbol] = file.fullName;
-            return true;
-        }
-
-        const datapackFile = file.siblings.find(DatapackDetector.isDatapackFile);
-        if (datapackFile) { 
-            file.siblings[DatapackDetector.datapacksFoundSymbol] = datapackFile.fullName;
-            return true;
-        }
-
-        return false;
-    }
-
-    public static filter(): FileFilterFunction {
-        return DatapackDetector.isDatapackFileFn;
+        return path.basename(filePath).endsWith('_DataPack.json');
     }
 }

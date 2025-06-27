@@ -205,9 +205,20 @@ class Vlocode {
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',
             config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
 
-        // watch for changes
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
+        // Initialize the global detection process manager
+        WorkspaceContextDetector.globalInitialize(context, this.logger);
+        context.subscriptions.push({ dispose: () => WorkspaceContextDetector.globalDispose() });
+
+        // Create WorkspaceContextDetector instances for specific contexts
+        // The editorContextKey (first arg) will be prefixed with constants.CONTEXT_PREFIX by the detector itself.
+        // The associatedDetectorName (second arg) must match the 'name' property of an IFileDetector in detectionProcess.ts
+        this.service.registerDisposable(
+            container.create(WorkspaceContextDetector, 'hasDatapacks', DatapackDetector.name, this.logger)
+        );
+        this.service.registerDisposable(
+            container.create(WorkspaceContextDetector, 'hasSalesforceMetadata', MetadataDetector.name, this.logger)
+        );
+
         void this.service.registerDisposable(container.create(SfdxConfigWatcher).initialize());
 
         // track activation time
