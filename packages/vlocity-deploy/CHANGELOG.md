@@ -4,6 +4,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.4](https://github.com/Codeneos/vlocode/compare/v1.31.3...v1.31.4) (2025-07-03)
+
+**Note:** Version bump only for package @vlocode/vlocity-deploy
+
 ## [1.31.3](https://github.com/Codeneos/vlocode/compare/v1.31.2...v1.31.3) (2025-06-27)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy
@@ -17,6 +21,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * allow setting of IDs on PickLists and other text like field types ([439be52](https://github.com/Codeneos/vlocode/commit/439be52e6c3f40612876e0c1cb0815227cdf6dce))
+
 * support deploying document clause set from Salesforce Contracts ([4a1ee0d](https://github.com/Codeneos/vlocode/commit/4a1ee0d0735ccc60eb199c580fa933e34188ec97))
 
 ## [1.31.1](https://github.com/Codeneos/vlocode/compare/v1.31.0...v1.31.1) (2025-06-17)
@@ -32,6 +37,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * segregate sass transpilation into stand alone module allowing for better isolation of functions ([9a23972](https://github.com/Codeneos/vlocode/commit/9a239727a7f60e3c1206d56540b0430f09574c7c))
+
 * support for loading default matching keys from `matching-keys.json` file when present ([4e06d75](https://github.com/Codeneos/vlocode/commit/4e06d7583e57f8cfed5cff6205b95884f9e2dcf4))
 
 # [1.30.0](https://github.com/Codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
@@ -39,6 +45,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * automatically add missing record type assignments during deployment ([627b2b2](https://github.com/Codeneos/vlocode/commit/627b2b2f95b926b6afb0b660cb03995480a4a654))
+
 * support for specific error handling in datapack specs ([67e2423](https://github.com/Codeneos/vlocode/commit/67e2423a965b5257b454caecccab06b82ff1faa9))
 
 ## [1.29.5](https://github.com/Codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)

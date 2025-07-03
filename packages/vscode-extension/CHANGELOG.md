@@ -4,12 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.4](https://github.com/codeneos/vlocode/compare/v1.31.3...v1.31.4) (2025-07-03)
+
+**Note:** Version bump only for package vlocode
+
 ## [1.31.3](https://github.com/codeneos/vlocode/compare/v1.31.2...v1.31.3) (2025-06-27)
 
 ### Features
 
 * remove Salesforce username from VSCode configuration and use username from SFDX project file instead ([953ab28](https://github.com/codeneos/vlocode/commit/953ab286d51fba07cfe55632d89d2306838341aa))
+
 * update display name and description in package.json; add deprecation messages for SFDX username and HTTP proxy settings ([3eae998](https://github.com/codeneos/vlocode/commit/3eae998f44833ced5447b2a7789d5ca09d4c2f95))
+
 * update extension icons with thew SF industries sub-icon ([5eb138c](https://github.com/codeneos/vlocode/commit/5eb138c66e03dfeb4e45a702979065dfaab920f5))
 
 ## [1.31.2](https://github.com/codeneos/vlocode/compare/v1.31.1...v1.31.2) (2025-06-18)
@@ -29,6 +35,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * drop vscode FS interface and instead use native `fs` module ([4c2a7ff](https://github.com/codeneos/vlocode/commit/4c2a7ff06a5f010c91d69d9cbb0acc9024ca5466))
+
 * segregate sass transpilation into stand alone module allowing for better isolation of functions ([9a23972](https://github.com/codeneos/vlocode/commit/9a239727a7f60e3c1206d56540b0430f09574c7c))
 
 # [1.30.0](https://github.com/codeneos/vlocode/compare/v1.29.5...v1.30.0) (2025-06-14)
@@ -40,6 +47,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * refactor logging to output channel to avoid issues with line breaks ([6e085fe](https://github.com/codeneos/vlocode/commit/6e085fe1d0b69b64e7003df046aeef2d2ba2ee55))
+
 * support token replacement after adding files to a package ([53d9f7a](https://github.com/codeneos/vlocode/commit/53d9f7a078ff0a4fe48a0953c62673b34f201f46))
 
 ## [1.29.5](https://github.com/codeneos/vlocode/compare/v1.29.4...v1.29.5) (2025-05-26)
