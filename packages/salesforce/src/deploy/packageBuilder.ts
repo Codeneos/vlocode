@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
 import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals } from '@vlocode/util';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache } from '@vlocode/util';
 
 import { PackageManifest } from './maifest';
 import { SalesforcePackage, SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
@@ -111,7 +111,7 @@ class TokenReplacement {
     }
 }
 
-@injectable()
+@injectable.transient()
 export class SalesforcePackageBuilder {
 
     /**
@@ -164,6 +164,7 @@ export class SalesforcePackageBuilder {
      * @returns {this} The current instance for method chaining.
      */
     public rebuildPackage(token?: CancellationToken): Promise<this> {
+        clearCache(this.fs);
         const sources = this.mdPackage.files();
         if (sources.size === 0) {
             // There is no point in rebuilding the package when no files are added
