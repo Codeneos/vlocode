@@ -1,27 +1,15 @@
-import 'reflect-metadata'; // Required for TypeDI
-
 import * as fs from 'fs';
 import * as path from 'path';
-import { Container, Logger, FileSystem, ConsoleLogger } from '@vlocode/core';
-import { DatapackDetector } from './vlocity/datapackDetector';
-import { MetadataDetector } from './salesforce/metadataDetector';
-import { NodeFileSystem } from '@vlocode/fs';
 
-// Standard SFDX project file name
-const SFDX_PROJECT_FILE = 'sfdx-project.json';
-
-// Setup an isolated IoC container for this process
-const container = new Container();
-container.register(Logger, new ConsoleLogger()); // Reverted to ConsoleLogger
-container.register(FileSystem, NodeFileSystem);
-// Ensure DatapackDetector and MetadataDetector are injectable (e.g. @injectable.singleton())
-// and MetadataRegistry is also available in the container for MetadataDetector.
-import { IFileDetector } from './detectors/types';
+import { Logger, FileSystem, container, LogManager } from '@vlocode/core';
+import { DatapackDetector } from './detectors/datapackDetector';
+import { MetadataDetector } from './detectors/metadataDetector';
+import { IFileDetector } from './types';
 
 // Type for the cache: Map<path, Map<detectorName, Set<files>>>
 type DetectionCache = Map<string, Map<string, Set<string>>>;
 
-class DetectionProcess {
+export class DetectionProcess {
     private readonly detectors: IFileDetector[];
     private readonly nodeFs: typeof fs; // Direct access to Node's fs for fs.watch
     private readonly fileSystem: FileSystem; // Injected FileSystem for general file ops
@@ -29,13 +17,16 @@ class DetectionProcess {
 
     private watchedDirectories = new Map<string, fs.FSWatcher>();
     private detectedFilesCache: DetectionCache = new Map();
+    private ignoredPaths = [
+        '**/node_modules/**', '**/.git/**'
+    ];
 
     // Debounce timer for processing batch changes
     private debounceTimer: NodeJS.Timeout | null = null;
     private debounceQueue = new Set<string>(); // Root paths that changed
 
     constructor() {
-        this.logger = container.get(Logger);
+        this.logger = LogManager.get(DetectionProcess);
         this.fileSystem = container.get(FileSystem);
         this.nodeFs = fs;
 
@@ -177,7 +168,6 @@ class DetectionProcess {
         }
     }
 
-
     private stopWatching(dirPath: string) {
         const watcher = this.watchedDirectories.get(dirPath);
         if (watcher) {
@@ -202,13 +192,11 @@ class DetectionProcess {
                 return;
             }
 
-            const projectRoot = await this.findProjectRoot(dirPath);
-
-            for await (const entry of this.fileSystem.findFiles(dirPath, { recursive: true, ignore: ['**/node_modules/**', '**/.git/**'] })) {
+            for await (const entry of this.fileSystem.find(dirPath, { exclude: ['**/node_modules/**', '**/.git/**'] })) {
                 const fullPath = path.resolve(dirPath, entry);
                 if (await this.fileSystem.isFile(fullPath)) {
                     for (const detector of this.detectors) {
-                        if (await detector.isApplicable(fullPath, this.fileSystem, projectRoot)) {
+                        if (await detector.isApplicable(fullPath, dirPath)) {
                             pathResultsByDetector.get(detector.name)!.add(fullPath);
                         }
                     }
@@ -259,32 +247,5 @@ class DetectionProcess {
         }
         return true;
     }
-
-    private async findProjectRoot(currentPath: string): Promise<string | null> {
-        let dir = currentPath;
-        while (true) {
-            const projectFilePath = path.join(dir, SFDX_PROJECT_FILE);
-            if (await this.fileSystem.pathExists(projectFilePath)) {
-                return dir;
-            }
-            const parentDir = path.dirname(dir);
-            if (parentDir === dir) { // Reached the root of the file system
-                return null;
-            }
-            dir = parentDir;
-        }
-    }
 }
 
-// Initialize and run the detection process
-try {
-    const detectionProcess = new DetectionProcess();
-    detectionProcess.run();
-} catch (error) {
-    const logger = container.get(Logger) || new ConsoleLogger();
-    logger.error('Unhandled error during detection process initialization:', error);
-    if (process.send) {
-        process.send({ type: 'error', message: 'Critical error initializing detection process.', stack: (error as Error).stack });
-    }
-    process.exit(1);
-}

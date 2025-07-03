@@ -3,7 +3,7 @@ import { injectable, FileSystem } from '@vlocode/core';
 import { fileSuffix } from '@vlocode/util'; // fileName is not used directly anymore
 import { MetadataRegistry } from '@vlocode/salesforce';
 import * as path from 'path';
-import { IFileDetector } from '../detectors/types';
+import { IFileDetector } from '../types';
 
 @injectable.singleton()
 export class MetadataDetector implements IFileDetector {
@@ -23,7 +23,7 @@ export class MetadataDetector implements IFileDetector {
      * @param projectRoot Optional. The root path of the project. If provided, metadata detection might be limited to files within this project.
      * @returns True if the file is considered a metadata file, false otherwise.
      */
-    public isApplicable(filePath: string, fileSystem: FileSystem, projectRoot?: string): boolean {
+    public async isApplicable(filePath: string, projectRoot?: string) {
         // fileSystem parameter is available as this.fs due to constructor injection, so we use this.fs.
         // The projectRoot parameter is available if needed for more complex rules.
         // For now, we only make sure this file is part of the project if projectRoot is passed.
@@ -57,7 +57,7 @@ export class MetadataDetector implements IFileDetector {
 
         // 3. Is it a content file with a sibling -meta.xml file? (e.g. MyClass.cls and MyClass.cls-meta.xml)
         //    Use the injected this.fs for pathExistsSync.
-        if (this.fs.pathExistsSync(filePath + '-meta.xml')) {
+        if (await this.fs.pathExists(filePath + '-meta.xml')) {
             return true;
         }
 

@@ -37,7 +37,6 @@ export class VlocodeContext {
         this.recent = new RecentItems(this.globalState)
     }
 
-
     /**
      * Get the absolute path of a resource contained in the extension.
      *
@@ -46,6 +45,13 @@ export class VlocodeContext {
      */
     public asAbsolutePath(relativePath: string): string {
         return path.join(this.extensionPath, relativePath);
+    }
+
+    /**
+     * Get the currently initialized Vlocode context object
+     */
+    public static get current(): VlocodeContext {
+        return getInstance(VlocodeContext);
     }
 }
 
@@ -122,6 +128,7 @@ class RecentItems {
 
 /**
  * Get the currently initialized Vlocode context object
+ * @deprecated Use `VlocodeContext.current` instead
  */
 export function getContext() {
     return getInstance(VlocodeContext);

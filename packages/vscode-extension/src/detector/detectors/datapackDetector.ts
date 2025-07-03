@@ -1,8 +1,8 @@
-import { injectable, FileSystem } from '@vlocode/core';
+import { injectable } from '@vlocode/core';
 import * as path from 'path';
-import { IFileDetector } from '../detectors/types';
+import { IFileDetector } from '../types';
 
-@injectable.singleton()
+@injectable.transient()
 export class DatapackDetector implements IFileDetector {
     public readonly name = "datapack";
 
@@ -14,11 +14,9 @@ export class DatapackDetector implements IFileDetector {
      * Checks if the given file path represents a Vlocity Datapack JSON file.
      * This check is solely based on the file name ending with '_DataPack.json'.
      * @param filePath Absolute path to the file.
-     * @param fileSystem FileSystem instance (not used by this detector).
-     * @param projectRoot Project root path (not used by this detector).
      * @returns True if the file is a Datapack JSON file, false otherwise.
      */
-    public isApplicable(filePath: string, fileSystem?: FileSystem, projectRoot?: string): boolean {
+    public isApplicable(filePath: string): boolean {
         if (!filePath || typeof filePath !== 'string') {
             return false;
         }

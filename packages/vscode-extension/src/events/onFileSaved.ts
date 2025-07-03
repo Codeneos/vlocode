@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { VlocodeCommand } from '../constants';
 import { container } from '@vlocode/core';
 import { isPartOfDatapack } from '@vlocode/vlocity';
-import { MetadataDetector } from '../lib/salesforce/metadataDetector';
+import { MetadataDetector } from '../detector/detectors/metadataDetector';
 
 export default class extends EventHandlerBase<vscode.TextDocument> {
     private readonly ignoredPaths = [
@@ -36,13 +36,13 @@ export default class extends EventHandlerBase<vscode.TextDocument> {
 
         if (await isPartOfDatapack(document.fileName)) {
             return this.deployAsDatapack(document);
-        } else if(this.isSalesforceMetadata(document.fileName)) {
+        } else if(await this.isSalesforceMetadata(document.fileName)) {
             return this.deployAsMetadata(document);
         }
     }
 
-    private isSalesforceMetadata(fileName: string) {
-        if (this.metadataDetector.isMetadataFile(fileName)) {
+    private async isSalesforceMetadata(fileName: string) {
+        if (await this.metadataDetector.isApplicable(fileName)) {
             return true;
         }
 

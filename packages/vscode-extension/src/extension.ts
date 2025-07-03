@@ -11,8 +11,8 @@ import VlocodeService from './lib/vlocodeService';
 import VlocodeConfiguration from './lib/vlocodeConfiguration';
 import { getErrorMessage, lazy } from '@vlocode/util';
 import { WorkspaceContextDetector } from './lib/workspaceContextDetector';
-import { MetadataDetector } from './lib/salesforce/metadataDetector';
-import { DatapackDetector } from './lib/vlocity/datapackDetector';
+import { MetadataDetector } from './detector/detectors/metadataDetector';
+import { DatapackDetector } from './detector/detectors/datapackDetector';
 
 import DeveloperLogDataProvider from './treeDataProviders/developerLogDataProvider';
 import ActivityDataProvider from './treeDataProviders/activityDataProvider';

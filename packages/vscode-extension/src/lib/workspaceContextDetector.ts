@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
 import { Timer } from '@vlocode/util';
 import * as child_process from 'child_process';
+import { VlocodeContext } from './vlocodeContext';
 
 // Types expected from the forked detection process
 interface SingleDetectorUpdateMessage {
@@ -37,7 +38,7 @@ type ChildMessage =
  * Monitors workspaces using a forked process for Datapack and Salesforce metadata detection
  * and updates VS Code context variables.
  */
-@injectable({ lifecycle: LifecyclePolicy.transient })
+@injectable({ lifecycle: LifecyclePolicy.singleton })
 export class WorkspaceContextDetector implements vscode.Disposable {
 
     // Static members to manage the shared child process
@@ -46,7 +47,6 @@ export class WorkspaceContextDetector implements vscode.Disposable {
     private static childRestartAttempts = 0;
     private static readonly MAX_CHILD_RESTART_ATTEMPTS = 5;
     private static instances = new Set<WorkspaceContextDetector>();
-    private static extensionContext: vscode.ExtensionContext; // Required for path to detectionProcess.js
 
     /**
      * Global initialization for the shared detection process.
@@ -182,6 +182,76 @@ export class WorkspaceContextDetector implements vscode.Disposable {
         WorkspaceContextDetector.instances.add(this);
         this.logger.info(`WorkspaceContextDetector instance created for context key '${editorContextKey}' associated with detector '${associatedDetectorName}'`);
     }
+
+    private start() {
+        if (WorkspaceContextDetector.child) {
+            WorkspaceContextDetector.logger?.warn('Detection process already exists.');
+            return;
+        }
+
+        if (!WorkspaceContextDetector.extensionContext) {
+            WorkspaceContextDetector.logger?.error('Extension context not available for forking detection process.');
+            return;
+        }
+
+        const scriptPath = vscode.Uri.joinPath(VlocodeContext.current, 'out', 'detectionProcess.js').fsPath;
+        WorkspaceContextDetector.logger?.info(`Forking detection process: ${scriptPath}`);
+
+        WorkspaceContextDetector.child = child_process.fork(scriptPath, [], {
+            stdio: ['pipe', 'pipe', 'pipe', 'ipc'] // IPC channel
+        });
+
+        WorkspaceContextDetector.child.on('message', (message: ChildMessage) => {
+            // WorkspaceContextDetector.logger?.debug(`Received message from child: ${message.type}`);
+            switch (message.type) {
+                case 'ready':
+                    WorkspaceContextDetector.childReady = true;
+                    WorkspaceContextDetector.childRestartAttempts = 0; // Reset on successful start
+                    WorkspaceContextDetector.logger?.info('Detection process ready.');
+                    const workspaceFolders = vscode.workspace.workspaceFolders?.map(f => f.uri.fsPath) ?? [];
+                    if (workspaceFolders.length > 0 && WorkspaceContextDetector.child) {
+                        WorkspaceContextDetector.child.send({ type: 'watch', paths: workspaceFolders });
+                    }
+                    break;
+                case 'singleDetectorUpdate':
+                    for (const instance of WorkspaceContextDetector.instances) {
+                        if (instance.associatedDetectorName === message.detectorName) {
+                            instance.handleDetectedFiles(message.path, message.files);
+                        }
+                    }
+                    break;
+                case 'error':
+                    WorkspaceContextDetector.logger?.error(`Detection process error: ${message.message}`, message.stack);
+                    break;
+                // 'log' case removed
+                case 'pong':
+                    // WorkspaceContextDetector.logger?.debug('Received pong from detection process.');
+                    break;
+            }
+        });
+
+        WorkspaceContextDetector.child.on('error', (err) => {
+            WorkspaceContextDetector.logger?.error('Detection process failed to start or crashed:', err);
+            WorkspaceContextDetector.childReady = false;
+            WorkspaceContextDetector.child = undefined;
+            WorkspaceContextDetector.attemptRestart();
+        });
+
+        WorkspaceContextDetector.child.on('exit', (code, signal) => {
+            WorkspaceContextDetector.logger?.warn(`Detection process exited with code ${code}, signal ${signal}`);
+            WorkspaceContextDetector.childReady = false;
+            WorkspaceContextDetector.child = undefined;
+            if (code !== 0 && signal !== 'SIGTERM') { // Don't restart if exited cleanly or killed by us
+                WorkspaceContextDetector.attemptRestart();
+            }
+        });
+
+        // Pipe stdout/stderr from child to main logger
+        // Reverting STDOUT to .info for better visibility of ConsoleLogger output from child
+        WorkspaceContextDetector.child.stdout?.on('data', data => WorkspaceContextDetector.logger?.info(`[DetectorProc STDOUT]: ${data.toString().trim()}`));
+        WorkspaceContextDetector.child.stderr?.on('data', data => WorkspaceContextDetector.logger?.error(`[DetectorProc STDERR]: ${data.toString().trim()}`));
+    }
+
 
     public dispose() {
         WorkspaceContextDetector.instances.delete(this);
