@@ -45,6 +45,7 @@ export enum VlocodeCommand {
     updateAllProdAttribCommand  = 'vlocode.admin.updateAllProdAttribCommand',
     clearPlatformCache  = 'vlocode.admin.clearPlatformCache',
     deployMetadata  = 'vlocode.deployMetadata',
+    diffMetadata  = 'vlocode.diffMetadata',
     deployDeltaMetadata  = 'vlocode.deployDeltaMetadata',
     destroyMetadata  = 'vlocode.destroyMetadata',
     refreshMetadata  = 'vlocode.refreshMetadata',

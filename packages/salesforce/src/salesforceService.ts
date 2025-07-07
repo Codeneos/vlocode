@@ -20,18 +20,26 @@ import { SalesforceBatchService } from './salesforceBatchService';
 import { SalesforceProfileService } from './salesforceProfileService';
 
 export interface OrganizationDetails {
-    id: string;
-    name: string;
-    primaryContact: string;
-    instanceName: string;
-    isSandbox: boolean;
-    organizationType: string;
-    namespacePrefix: string;
+    readonly id: string;
+    readonly name: string;
+    readonly primaryContact: string;
+    readonly instanceName: string;
+    readonly isSandbox: boolean;
+    readonly organizationType: string;
+    readonly namespacePrefix: string;
 }
 
 export interface ApexTestCoverage {
-    coveredLines: number[];
-    uncoveredLines: number[];
+    readonly coveredLines: number[];
+    readonly uncoveredLines: number[];
+}
+
+export interface ApexClassInfo {
+    readonly id: string;
+    readonly name: string;
+    readonly namespacePrefix?: string;
+    readonly lengthWithoutComments: number;
+    readonly bodyCrc: number;
 }
 
 interface MetadataInfo { type: string; fullName: string; metadata: any; name: string; namespace?: string }
@@ -583,9 +591,9 @@ export class SalesforceService implements SalesforceConnectionProvider {
         }
     }
 
-    public async getApexCodeCoverage(apexClassName: string) : Promise<ApexTestCoverage>
+    public async getApexCodeCoverage(apexClassName: string) : Promise<ApexTestCoverage | undefined>
     public async getApexCodeCoverage(apexClassName: string[]) : Promise<ApexTestCoverage[]>
-    public async getApexCodeCoverage(apexClassName: string | string[]) : Promise<ApexTestCoverage | ApexTestCoverage[]> {
+    public async getApexCodeCoverage(apexClassName: string | string[]) : Promise<ApexTestCoverage | undefined | ApexTestCoverage[]> {
         const query = new QueryBuilder('ApexCodeCoverageAggregate', [ 'Coverage', 'ApexClassOrTrigger.Name' ]);
         if (Array.isArray(apexClassName)) {
             if (apexClassName.length == 0) {
@@ -621,5 +629,32 @@ export class SalesforceService implements SalesforceConnectionProvider {
             return results.get(apexClassName.toLowerCase())!;
         }
         return apexClassName.map(name => results.get(name.toLowerCase())!);
+    }
+
+    public async getApexClassInfo(apexClassName: string) : Promise<ApexClassInfo>;
+    public async getApexClassInfo(apexClassName: string[]) : Promise<ApexClassInfo[]>;
+    public async getApexClassInfo(apexClassName: string | string[]) : Promise<ApexClassInfo[] | ApexClassInfo> {
+        const connection = await this.getJsForceConnection();
+        const records: any[] = await connection.tooling.sobject('ApexClass').find(
+            { Name: Array.isArray(apexClassName) ? apexClassName : [ apexClassName ] },
+            [ 'Id', 'Name', 'BodyCrc', 'LengthWithoutComments', 'NamespacePrefix', 'ApiVersion' ]
+        );
+        const apexClassInfo = records.map(record => ({
+            id: record.Id,
+            name: record.Name,
+            namespacePrefix: record.NamespacePrefix,
+            lengthWithoutComments: record.LengthWithoutComments,
+            bodyCrc: record.BodyCrc
+        }));
+        return Array.isArray(apexClassName) ? apexClassInfo : apexClassInfo[0];
+    }
+
+    public async getApexClassBody(apexClassName: string) : Promise<string> {
+        const connection = await this.getJsForceConnection();
+        const record: any = await connection.tooling.sobject('ApexClass').findOne(
+            { Name: apexClassName },
+            [ 'Body' ]
+        );
+        return record?.Body;
     }
 }

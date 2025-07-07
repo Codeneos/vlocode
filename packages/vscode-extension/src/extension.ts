@@ -31,7 +31,9 @@ import { VlocityNamespaceService } from '@vlocode/vlocity';
 import './commands';
 import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvider';
 import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
+import { PushSourceLensProvider } from './codeLensProviders/pushSourceLensProvider';
 import { SfdxConfigManager } from './lib/sfdxConfigManager';
+import { SalesforceApexContentProvider } from 'contentProviders/salesforceApexContentProvider';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -200,6 +202,8 @@ class Vlocode {
 
         ExecuteApiLensProvider.register();
         TestCoverageLensProvider.register(this.service);
+        PushSourceLensProvider.register(this.service);
+        SalesforceApexContentProvider.register(this.service);
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',

@@ -15,6 +15,7 @@ module.exports = {
         ".vscode/**/*",
         ".vscode-test/**/*",
         "packages/vscode-extension/build",
+        "**/__mocks__/**/*",
         "jest.config.ts",
         "**/*/jest.config.ts"
     ],
