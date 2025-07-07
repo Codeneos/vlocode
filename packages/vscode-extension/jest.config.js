@@ -11,6 +11,7 @@ export default {
     '\\.yaml$': '<rootDir>/webpack/loaders/yaml.js'
   },
   moduleNameMapper: {
-    '^@vlocode/(.*)$': '<rootDir>/../$1/src'
+    '^@vlocode/(.*)$': '<rootDir>/../$1/src',
+    '^vscode$': '<rootDir>/src/__mocks__/vscode'
   }
 };
