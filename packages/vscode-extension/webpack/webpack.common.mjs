@@ -57,6 +57,10 @@ const common = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.html', '.json', '.yaml'],
+        modules: [
+            path.resolve(contextFolder, 'src'),
+            'node_modules'
+        ],
         alias: Object.fromEntries(
             workspacePackages.map(({ dir, packageJson }) => ([
                 packageJson.name,
