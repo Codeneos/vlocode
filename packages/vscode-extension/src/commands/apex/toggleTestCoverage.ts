@@ -2,7 +2,7 @@ import { VlocodeCommand } from '../../constants';
 import * as vscode from 'vscode';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { CommandBase } from '../../lib/commandBase';
-import { cache, substringBetweenLast } from '@vlocode/util';
+import { cache, clearCache, substringBetweenLast } from '@vlocode/util';
 
 /**
  * Represents a command for toggling test coverage
@@ -68,6 +68,7 @@ export default class ToggleApexTestCoverage extends CommandBase {
         if (this.coverageShowingFor.has(this.activeDocumentClassName.toLowerCase())) {
             return this.clearCoverageDecorations(this.activeDocumentClassName);
         }
+        clearCache(this);
         return this.showCoverageDecorations(this.activeDocumentClassName);
     }
 
