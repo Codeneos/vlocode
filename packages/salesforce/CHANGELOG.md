@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.5](https://github.com/Codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
+
+### Features
+
+* support for a new code lens that shows the status of an APEX class file compared to the org and allows to show the diff with the file in the org ([c1593ff](https://github.com/Codeneos/vlocode/commit/c1593ff4b3402007dd32f6dc14654766f8c85cc0))
+
 ## [1.31.4](https://github.com/Codeneos/vlocode/compare/v1.31.3...v1.31.4) (2025-07-03)
 
 ### Bug Fixes

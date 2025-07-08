@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.5](https://github.com/codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
+
+### Bug Fixes
+
+* clear cache of test coverage when running the command explicitly ([b9b8177](https://github.com/codeneos/vlocode/commit/b9b8177ccb981ef41e3efc672f5b204869f56c59))
+* webpack doesn't properly pickup files with absolute path ([982adf8](https://github.com/codeneos/vlocode/commit/982adf803cd891e6e0ec2c6503268c64f5da145c))
+
+### Features
+
+* support for a new code lens that shows the status of an APEX class file compared to the org and allows to show the diff with the file in the org ([c1593ff](https://github.com/codeneos/vlocode/commit/c1593ff4b3402007dd32f6dc14654766f8c85cc0))
+
 ## [1.31.4](https://github.com/codeneos/vlocode/compare/v1.31.3...v1.31.4) (2025-07-03)
 
 ### Bug Fixes
