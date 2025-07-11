@@ -43,7 +43,7 @@ export class DatapackExportQueries {
         const nameField = await this.schema.getNameField(datapack.sobjectType);
 
         if (!macthingKey.fields.length && nameField) {
-            macthingKey.fields.push(nameField);                       
+            macthingKey.fields.push(nameField);
         } else if (nameField) {
             query.select(nameField);
         }
@@ -58,7 +58,7 @@ export class DatapackExportQueries {
         } else {
             const missingMatchingKeys = new Array<string>();
 
-            for (const field of query.fields) {
+            for (const field of macthingKey.fields) {
                 const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field, false);
                 if (!fieldDescribe) {
                     this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
