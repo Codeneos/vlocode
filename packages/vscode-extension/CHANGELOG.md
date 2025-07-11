@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.6](https://github.com/codeneos/vlocode/compare/v1.31.5...v1.31.6) (2025-07-11)
+
+### Bug Fixes
+
+* open datapack in org incorrectly uses field list instead of matching key fields when building a matching condition ([be1d8b3](https://github.com/codeneos/vlocode/commit/be1d8b3d50c6be00eac4516576e68bf7c0fdcad5))
+
 ## [1.31.5](https://github.com/codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
 
 ### Bug Fixes

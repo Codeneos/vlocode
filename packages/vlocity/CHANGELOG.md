@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.6](https://github.com/Codeneos/vlocode/compare/v1.31.5...v1.31.6) (2025-07-11)
+
+### Features
+
+* segregate DocumentTemplates and DocumentTemplate datapacks based on the CLM or SFC being used ([b6f99ed](https://github.com/Codeneos/vlocode/commit/b6f99edbc40dacf412fdee2ca56c760db542e12f))
+
 ## [1.31.5](https://github.com/Codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
 
 **Note:** Version bump only for package @vlocode/vlocity

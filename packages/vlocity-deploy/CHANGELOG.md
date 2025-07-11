@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.6](https://github.com/Codeneos/vlocode/compare/v1.31.5...v1.31.6) (2025-07-11)
+
+### Features
+
+* always set a Global key for ContentVersion's when deploying in industries context even when missing from the datapack ([7d1a134](https://github.com/Codeneos/vlocode/commit/7d1a1349253f6143b56d16116b9c31397f61f440))
+* load override matching keys from `matching-keys.json` when present. Matching keys defined in this file always overrule matching keys defined in the org. ([ccd80b0](https://github.com/Codeneos/vlocode/commit/ccd80b054936f9e71202110a814794b84824dd09))
+* support deployment of DocumentTemplate SFC objects and auto activate them after deployment ([c898952](https://github.com/Codeneos/vlocode/commit/c898952a5916550c563507aa70f81aa5d50e8d49))
+
 ## [1.31.5](https://github.com/Codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy
