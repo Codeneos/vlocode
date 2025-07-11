@@ -6,6 +6,7 @@ import { DatapackDeploymentRecord, DeploymentAction } from '../datapackDeploymen
 import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { ContentVersionLookup } from './contentVersionLookup';
+import { VlocityDatapack } from '@vlocode/vlocity';
 
 @deploymentSpec({ recordFilter: /^ContentVersion$/i })
 export class ContentVersion implements DatapackDeploymentSpec {
@@ -14,6 +15,13 @@ export class ContentVersion implements DatapackDeploymentSpec {
         private readonly salesforceService: SalesforceService,
         private readonly contentVersionLookup: ContentVersionLookup,
         private readonly logger: Logger) {
+    }
+
+    public preprocess(datapack: VlocityDatapack) {
+        // Ensure that the global key is set to the Title field if not already set
+        if (!datapack.data['%vlocity_namespace%__GlobalKey__c']) {
+            datapack.data['%vlocity_namespace%__GlobalKey__c'] = datapack.data['Title'];
+        }
     }
 
     public afterDeploy(event: DatapackDeploymentEvent) {
