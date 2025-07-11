@@ -394,22 +394,25 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         }
     },
     DocumentTemplate: {
-        typeLabel: "Document Template",
+        typeLabel: "Document Templates (Industries CLM)",
         datapackType: "DocumentTemplate",
         source: {
             sobjectType: "%vlocity_namespace%__DocumentTemplate__c",
-            fieldList: ["Id", "Name"],
-            whereCondition: "%vlocity_namespace%__Status__c = 'Active'"
+            fieldList: ["Id", "Name"]
         }
     },
     DocumentTemplates: {
-        typeLabel: "Document Templates",
+        typeLabel: "Document Templates (Salesforce Contracts)",
         datapackType: "DocumentTemplates",
         source: {
             sobjectType: "DocumentTemplate",
-            fieldList: ["Id", "Name"],
-            whereCondition: "Status = 'Active'"
-        }
+            fieldList: ["Id", "Name", "VersionNumber", "Status"]
+        },
+        matchingKey: {
+            fields: [ 'GlobalKey' ],
+            returnField: 'Id'
+        },
+        displayName: (record: any) => `${record.Name} v${record.VersionNumber} (${record.Status})`,
     },
     EntityFilter: {
         typeLabel: "Entity Filter",
