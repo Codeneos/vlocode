@@ -57,7 +57,7 @@ describe('DatapackExportQueries', () => {
             expect(result).toStrictEqual(
                 `select Id, Name, LastModifiedDate, %vlocity_namespace%__Version__c, ` +
                 `%vlocity_namespace%__Active__c, %vlocity_namespace%__Author__c from %vlocity_namespace%__VlocityCard__c ` +
-                `where Name = 'Test' and %vlocity_namespace%__Version__c = null and %vlocity_namespace%__Active__c = 'false' and %vlocity_namespace%__Author__c = 'Vlocode'`
+                `where Name = 'Test' and %vlocity_namespace%__Version__c = null and %vlocity_namespace%__Author__c = 'Vlocode'`
             );
         });
     });
