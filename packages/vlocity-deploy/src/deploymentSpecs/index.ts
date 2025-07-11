@@ -26,3 +26,4 @@ export * from './recordTypeVisibility';
 
 // Salesforce Contracts
 export * from './documentClauseSet';
+export * from './standardDocumentTemplate';
