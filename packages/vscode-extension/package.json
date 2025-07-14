@@ -1294,7 +1294,8 @@
                 "extensions": [
                     ".sfhttp",
                     ".http"
-                ]
+                ],
+                "configuration": "./syntax/sfhttp-language.json"
             },
             {
                 "id": "xml",

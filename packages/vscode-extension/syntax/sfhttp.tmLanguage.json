@@ -1,36 +1,44 @@
 {
-    "name": "Salesforce http API",
     "scopeName": "source.sfhttp",
-    "patterns": [{ "include": "#method-and-headers" }],
+    "name": "Salesforce HTTP API",
+    "patterns": [
+        {
+            "name": "meta.request-line.sfhttp",
+            "match": "^(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\\s+([^\\s]+)",
+            "captures": {
+                "1": { "name": "keyword.control.http.method.sfhttp" },
+                "2": { "name": "string.unquoted.url.path.sfhttp" }
+            }
+        },
+        {
+            "name": "meta.header.sfhttp",
+            "match": "^([A-Za-z-]+):(\\s*)(.+)$",
+            "captures": {
+                "1": { "name": "keyword.other.http.header.name.sfhttp" },
+                "3": { "name": "string.unquoted.header.value.sfhttp" }
+            }
+        },
+        { "include": "#json-block" },
+        { "include": "#xml-block" },
+        { "include": "#graphql-block" }
+    ],
     "repository": {
-        "method-and-headers": {
-            "patterns": [{ "include": "#method-and-url" }, { "include": "#header" }],
-            "end": "\\r?\\n\\r?\\n"
+        "json-block": {
+            "begin": "^(?=\\s*[\\{\\[])",
+            "end": "^(?=\\s*$)",
+            "patterns": [{ "include": "source.json" }]
         },
-        "method-and-url": {
-            "captures": {
-                "1": { "name": "http.sf.method" },
-                "2": { "name": "http.sf.url" }
-            },
-            "match": "(?i)^(GET|POST|PUT|DELETE|PATCH) (.*)$\\n?",
-            "name": "meta.http.sf.method-url"
+        "xml-block": {
+            "begin": "^(?=\\s*<\\?*[^\\s>]+)",
+            "end": "^(?=\\s*$)",
+            "patterns": [{ "include": "text.xml" }]
         },
-        "header": {
-            "captures": {
-                "1": { "name": "http.sf.header.name" },
-                "2": { "name": "http.sf.header.value" }
-            },
-            "match": "(?i)^([a-z]+)[ ]*:[ ]*([a-z]+)$\\n?",
-            "name": "meta.http.sf.header"
-        },
-        "comment": {
-            "captures": {
-                "1": {
-                    "name": "http.sf.method.comment"
-                }
-            },
-            "match": "(//).*$\\n?",
-            "name": "comment.line.double-slash"
+        "graphql-block": {
+            "begin": "^(?=\\s*\\{\\s*(query|mutation|subscription)?\\s*\\{?)",
+            "end": "^(?=\\s*$)",
+            "patterns": [{ "include": "source.graphql" }]
         }
-    }
+    },
+    "fileTypes": ["sfhttp"],
+    "uuid": "3f1cda14-9d21-4b13-aaa4-2b9f57dbf6c0"
 }
