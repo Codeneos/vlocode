@@ -44,7 +44,7 @@ describe('SalesforceApexContentProvider', () => {
     describe('provideTextDocumentContent', () => {
         it('should return class body for valid class name URI', async () => {
             // Arrange
-            const uri = vscode.Uri.parse('apex://MyTestClass');
+            const uri = vscode.Uri.parse('apex://MyTestClass.cls');
             const expectedBody = 'public class MyTestClass { }';
             
             mockConnection.tooling.sobject().findOne.mockResolvedValue({
@@ -67,7 +67,7 @@ describe('SalesforceApexContentProvider', () => {
 
         it('should return class body for namespaced class URI', async () => {
             // Arrange
-            const uri = vscode.Uri.parse('apex://MyNamespace/MyTestClass');
+            const uri = vscode.Uri.parse('apex://MyNamespace/MyTestClass.cls');
             const expectedBody = 'public class MyTestClass { }';
             
             mockConnection.tooling.sobject().findOne.mockResolvedValue({
@@ -89,7 +89,7 @@ describe('SalesforceApexContentProvider', () => {
 
         it('should return error comment when class does not exist', async () => {
             // Arrange
-            const uri = vscode.Uri.parse('apex://NonExistentClass');
+            const uri = vscode.Uri.parse('apex://NonExistentClass.cls');
             
             mockConnection.tooling.sobject().findOne.mockResolvedValue(null);
 
@@ -121,7 +121,7 @@ describe('SalesforceApexContentProvider', () => {
 
         it('should handle cancellation token', async () => {
             // Arrange
-            const uri = vscode.Uri.parse('apex://MyTestClass');
+            const uri = vscode.Uri.parse('apex://MyTestClass.cls');
             const cancellationToken = {
                 isCancellationRequested: true,
                 onCancellationRequested: jest.fn()
@@ -138,7 +138,7 @@ describe('SalesforceApexContentProvider', () => {
 
         it('should use cache for subsequent calls with same URI', async () => {
             // Arrange
-            const uri = vscode.Uri.parse('apex://CachedClass');
+            const uri = vscode.Uri.parse('apex://CachedClass.cls');
             const expectedBody = 'public class CachedClass { }';
             
             mockConnection.tooling.sobject().findOne.mockResolvedValue({
@@ -161,7 +161,7 @@ describe('SalesforceApexContentProvider', () => {
     describe('clearCache', () => {
         it('should clear cache and refetch content', async () => {
             // Arrange
-            const uri = vscode.Uri.parse('apex://TestClass');
+            const uri = vscode.Uri.parse('apex://TestClass.cls');
             const expectedBody = 'public class TestClass { }';
             
             mockConnection.tooling.sobject().findOne.mockResolvedValue({

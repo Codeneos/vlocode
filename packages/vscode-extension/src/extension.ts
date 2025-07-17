@@ -34,6 +34,7 @@ import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensPr
 import { PushSourceLensProvider } from './codeLensProviders/pushSourceLensProvider';
 import { SfdxConfigManager } from './lib/sfdxConfigManager';
 import { SalesforceApexContentProvider } from 'contentProviders/salesforceApexContentProvider';
+import { VirtualContentProvider } from 'contentProviders/virtualApexContentProvider';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
@@ -204,6 +205,7 @@ class Vlocode {
         TestCoverageLensProvider.register(this.service);
         PushSourceLensProvider.register(this.service);
         SalesforceApexContentProvider.register(this.service);
+        VirtualContentProvider.register(this.service);
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',

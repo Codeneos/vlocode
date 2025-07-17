@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { HttpMethod, HttpRequestInfo } from '@vlocode/salesforce';
+import { HttpMethod, HttpRequestInfo, HttpResponse } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
 
 import { VlocodeCommand } from '../constants';
@@ -8,6 +8,8 @@ import { vscodeCommand } from '../lib/commandRouter';
 import { ApiRequestDocumentParser } from '../lib/salesforce/apiRequestDocumentParser';
 import MetadataCommand from './metadata/metadataCommand';
 import { QuickPick } from '../lib/ui/quickPick';
+import { container } from '@vlocode/core';
+import { VirtualContentProvider } from 'contentProviders/virtualApexContentProvider';
 
 @vscodeCommand(VlocodeCommand.execRestApi)
 export default class ExecuteRestApiCommand extends MetadataCommand {
@@ -143,28 +145,56 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
         });
 
         const timer = new Timer();
-        const response = await this.vlocode.withActivity({
-            progressTitle: `${request.method} ${request.url}...`,
-            location: vscode.ProgressLocation.Notification,
-            cancellable: false
-        }, async () => {
-            const connection = await this.salesforce.getJsForceConnection();
-            return connection.request(request);
-        });
+        let response: string |undefined = undefined;
+        try {
+             await this.vlocode.withActivity({
+                progressTitle: `${request.method} ${request.url}...`,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+                propagateExceptions: true
+            }, async () => {
+                const connection = await this.salesforce.getJsForceConnection();
+                response = await connection.request(request);                
+            });
+        } catch (error) {
+            void vscode.window.showErrorMessage(`API Request failed with error`);
+            response = error instanceof Error ? error.message : String(error);
+        }
+       
         this.logger.info(`${request.method} ${request.url} [${timer.stop()}]`);
         
-        const responseDocument = await vscode.workspace.openTextDocument({
-            language: typeof response === 'string' ? undefined : 'json',
-            content: typeof response === 'string' ? response : JSON.stringify(response, null, 4)
+        void container.get(VirtualContentProvider).showContent({
+            title: `${request.method} ${request.url}`,
+            ...this.createResonseDocument(response),
+            preserveFocus: true,
+            viewColumn: vscode.ViewColumn.Beside
         });
+    }
 
-        if (responseDocument) {
-            void vscode.window.showTextDocument(responseDocument, {
-                preview: true,
-                preserveFocus: true,
-                viewColumn: vscode.ViewColumn.Beside
-            });
+    private createResonseDocument(responseBody: unknown): { content: string, language?: string } {
+        if (typeof responseBody === 'string') {
+            const trimmed = responseBody.trim();
+            // Detect JSON
+            if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                try {
+                    const json = JSON.parse(trimmed);
+                    return { content: JSON.stringify(json, null, 4), language: 'json' };
+                } catch {
+                    // Not valid JSON, fall through
+                }
+            }
+            // Detect XML (very basic)
+            if (trimmed.startsWith('<') && trimmed.endsWith('>')) {
+                // Optionally, pretty print XML (not implemented here)
+                return { content: trimmed, language: 'xml' };
+            }
+            // Fallback: return as is
+            return { content: trimmed };
+        } else if (typeof responseBody === 'object' && responseBody !== null) {
+            // If already parsed as object, pretty print as JSON
+            return { content: JSON.stringify(responseBody, null, 4), language: 'json' };
         }
+        return { content: responseBody ? String(responseBody) : 'No response body', language: 'plaintext' };
     }
 }
 

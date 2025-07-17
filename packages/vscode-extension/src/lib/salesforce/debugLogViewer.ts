@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import { DateTime } from 'luxon';
 import { DeveloperLog } from '@vlocode/salesforce';
+import { container } from '@vlocode/core';
+import { VirtualContentProvider } from 'contentProviders/virtualApexContentProvider';
 
 export class DebugLogViewer {
 
@@ -28,24 +30,12 @@ export class DebugLogViewer {
 
     private async openLog(logBody: string, logFileName: string) {
         const formattedLog = this.formatLog(logBody);
-
-        if (this.developerLogsPath) {
-            const fullLogPath = path.join(this.developerLogsPath, logFileName);
-            await fs.ensureDir(this.developerLogsPath);
-            await fs.writeFile(fullLogPath, formattedLog);
-
-            const debugLog = await vscode.workspace.openTextDocument(fullLogPath);
-            if (debugLog) {
-                void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
-                void vscode.window.showTextDocument(debugLog, { preview: true });
-            }
-        } else {
-            const debugLog = await vscode.workspace.openTextDocument({ content: logBody });
-            if (debugLog) {
-                void vscode.languages.setTextDocumentLanguage(debugLog, 'apexlog');
-                void vscode.window.showTextDocument(debugLog, { preview: true });
-            }
-        }
+        void container.get(VirtualContentProvider).showContent({
+            title: logFileName,
+            content: formattedLog,
+            language: 'apexlog',
+            preview: true
+        });
     }
 
     private formatExecutionLog(log: string) {

@@ -23,7 +23,7 @@ import { cache, clearCache } from '@vlocode/util';
  * const content = await provider.provideTextDocumentContent(uri);
  * ```
  */
-@injectable()
+@injectable.singleton()
 export class SalesforceApexContentProvider implements vscode.TextDocumentContentProvider {
 
     constructor(
@@ -36,10 +36,15 @@ export class SalesforceApexContentProvider implements vscode.TextDocumentContent
      * 
      * @param service - An object that provides a `registerDisposable` method for managing disposables within the extension's lifecycle.
      */
-    public static register(service: { registerDisposable: (disposable: vscode.Disposable) => void }) {
+    public static register(service: { registerDisposable: (...disposable: vscode.Disposable[]) => void }) {
         const provider = container.get(SalesforceApexContentProvider);
         service.registerDisposable(
-            vscode.workspace.registerTextDocumentContentProvider('apex', provider)
+            vscode.workspace.registerTextDocumentContentProvider('apex', provider),
+            vscode.workspace.onDidChangeTextDocument(async (event) => {
+                if (event.document.uri.scheme === 'apex') {
+                    await vscode.languages.setTextDocumentLanguage(event.document, 'apex');
+                }
+            })
         );
     }
 
