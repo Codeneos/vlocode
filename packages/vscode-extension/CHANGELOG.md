@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.7](https://github.com/codeneos/vlocode/compare/v1.31.6...v1.31.7) (2025-07-17)
+
+### Bug Fixes
+
+* update URI parsing in SalesforceApexContentProvider tests to remove file extension ([6894cff](https://github.com/codeneos/vlocode/commit/6894cffea31fcb1a2af785e3d8005a98a4891de8))
+
+### Features
+
+* update grammar for sfhttp to support better color coding including of XML or JSON POST bodies ([277ad5c](https://github.com/codeneos/vlocode/commit/277ad5ce948ecd98546e0c3aa080f697892fc86d))
+* when opening API response or DebugLog's don't create temporary files but open them as virtual content instead ([b177453](https://github.com/codeneos/vlocode/commit/b1774535a0e9eecb16f045ec644bfb3744e70ed1))
+
 ## [1.31.6](https://github.com/codeneos/vlocode/compare/v1.31.5...v1.31.6) (2025-07-11)
 
 ### Bug Fixes
