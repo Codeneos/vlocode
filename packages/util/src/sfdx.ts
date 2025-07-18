@@ -28,17 +28,31 @@ interface FileSystem {
     writeFile(path: string, data: Buffer): Promise<void>;
 }
 
-export interface SfdxConfig {
+/**\
+ * SFDX project configuration interface.
+ */
+export interface SfdxProjectConfig {
     name?: string;
     namespace?: string;
     sfdcLoginUrl?: string;
     sourceApiVersion?: string;
-    defaultusername?: string;
     sourceBehaviorOptions?: string[];
     packageDirectories?: {
         path: string;
         default?: boolean;
     }[];
+}
+
+/**
+ * Deprecated sfdx-config interface.
+ */
+export interface SfdxConfig {
+    defaultusername?: string;
+}
+
+/** Salesforce CLI config */
+export interface SalesforceConfig extends Record<string, object | string | number | boolean | undefined> {
+    ['target-org']?: string;
 }
 
 /**
@@ -107,6 +121,11 @@ export namespace sfdx {
      * Default path to the SFDX config file relative to the workspace root folder.
      */
     export const defaultConfigPath = `.sfdx/sfdx-config.json`;
+
+    /**
+     * Default path to the SF config file relative to the workspace root folder.
+     */
+    export const sfConfigPath = `.sf/config.json`;
 
     /**
      * Default login URL to use when no login URL is specified.
@@ -404,10 +423,10 @@ export namespace sfdx {
      * @param options Options for the search
      * @returns The default username and the path to the config file from which it was loaded
      */
-    export async function getConfig(folderPath: string, options: { fs: FileSystem, limit?: number } = { fs: fs, limit: 2 })
-        : Promise<{ config: SfdxConfig, path: string } | undefined>
+    export async function getConfig<T extends object = SfdxConfig>(folderPath: string, options: { fs: FileSystem, limit?: number } = { fs: fs, limit: 2 })
+        : Promise<{ config: T, path: string } | undefined>
     {
-        let config: SfdxConfig | undefined;
+        let config: T | undefined;
         let configPath: string | undefined;
         let limit = options.limit ?? 2;
 
@@ -442,9 +461,9 @@ export namespace sfdx {
      * @param options Options to set the FS implementation to use
      * @returns Promise that resolves when the default username is updated
      */
-    export async function setConfig(
+    export async function setConfig<T extends object>(
         folderPath: string, 
-        config: Partial<SfdxConfig>, 
+        config: Partial<T>, 
         options: { fs: FileSystem, replace?: boolean } = { fs: fs }
     ) : Promise<boolean> {
         const currentConfig = await getConfig(folderPath, { fs: options.fs });

@@ -7,7 +7,7 @@ import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider
 import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
-import { Activity as ActivityTask, ActivityOptions, ActivityProgress, CancellableActivity, NoncancellableActivity as NonCancellableActivity, VlocodeActivity, VlocodeActivityStatus, ActivityProgressData } from '../lib/vlocodeActivity';
+import { Activity as ActivityTask, ActivityOptions, CancellableActivity, NoncancellableActivity as NonCancellableActivity, VlocodeActivity, VlocodeActivityStatus, ActivityProgressData } from '../lib/vlocodeActivity';
 import VlocodeConfiguration from './vlocodeConfiguration';
 import VlocityDatapackService from './vlocity/vlocityDatapackService';
 import { ConfigurationManager } from './config';
@@ -124,6 +124,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         this.sfUsername = username;
         try {
             this.logger.info(`Connecting to Salesforce as: ${username}`);
+            await this.sfdxConfig.update({ defaultusername: username });
             await this.initializeConnection();
         } finally {
             this.events.usernameChanged.fire(username);

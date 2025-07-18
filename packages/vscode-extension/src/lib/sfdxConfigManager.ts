@@ -14,14 +14,14 @@ import * as vscode from 'vscode';
  *                  the changes made, and the associated workspace folder.
  */
 @injectable.singleton()
-export class SfdxConfigManager implements vscode.Disposable {
+export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.Disposable {
 
     private watcher: vscode.FileSystemWatcher | undefined;
-    private configs = new Map<string, { config: SfdxConfig, path: string }>();
+    private configs = new Map<string, { config: T, path: string }>();
     private events = {
         change: new vscode.EventEmitter<{ 
-                config: SfdxConfig | undefined, 
-                changes: Partial<SfdxConfig>, 
+                config: T | undefined, 
+                changes: Partial<T>, 
                 workspace: vscode.WorkspaceFolder 
         }>()
     };
@@ -51,7 +51,7 @@ export class SfdxConfigManager implements vscode.Disposable {
      */
     public async initialize() {
         for (const workspace of vscode.workspace.workspaceFolders ?? []) {       
-            const sfdxConfig = await sfdx.getConfig(workspace.uri.fsPath);
+            const sfdxConfig = await sfdx.getConfig<T>(workspace.uri.fsPath);
             if (sfdxConfig) {
                 this.configs.set(workspace.uri.fsPath, sfdxConfig);
                 this.events.change.fire({
@@ -71,7 +71,7 @@ export class SfdxConfigManager implements vscode.Disposable {
      * @param setting - The key of the setting to retrieve.
      * @returns The value of the specified setting if it exists, or `undefined` if not found.
      */
-    public get<K extends keyof SfdxConfig>(setting: K): SfdxConfig[K] | undefined {
+    public get<K extends keyof T>(setting: K): T[K] | undefined {
         for (const config of this.configs.values()) {
             return config.config[setting];
         }
@@ -80,7 +80,7 @@ export class SfdxConfigManager implements vscode.Disposable {
     /**
      * Update the SFDX config with the Vlocode SFDX username for all workspaces.
      */
-    public async update(config: Partial<SfdxConfig>) {
+    public async update(config: Partial<T>) {
         for (const workspace of vscode.workspace.workspaceFolders ?? []) {
             await sfdx.setConfig(workspace.uri.fsPath, config);
         }
@@ -100,7 +100,7 @@ export class SfdxConfigManager implements vscode.Disposable {
                 return;
             }
 
-            const newConfig = await sfdx.getConfig(uri.fsPath.slice(0, -sfdx.defaultConfigPath.length));
+            const newConfig = await sfdx.getConfig<T>(uri.fsPath.slice(0, -sfdx.defaultConfigPath.length));
             const currentConfig = this.configs.get(workspace.uri.fsPath);
             const path = currentConfig?.path ?? currentConfig?.path;
             
@@ -139,8 +139,8 @@ export class SfdxConfigManager implements vscode.Disposable {
         }
     }
 
-    private getChangedProperties(oldConfig: SfdxConfig | undefined, newConfig: SfdxConfig | undefined): Partial<SfdxConfig> {
-        const changes: Partial<SfdxConfig> = {};
+    private getChangedProperties(oldConfig: T | undefined, newConfig: T | undefined): Partial<T> {
+        const changes: Partial<T> = {};
         const keys = new Set([ ...Object.keys(oldConfig ?? {}), ...Object.keys(newConfig?? {}) ]);
         for (const key of keys) {
             if (!deepCompare(oldConfig?.[key], newConfig?.[key])) {
