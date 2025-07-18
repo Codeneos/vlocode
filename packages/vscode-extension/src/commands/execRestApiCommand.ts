@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { HttpMethod, HttpRequestInfo, HttpResponse } from '@vlocode/salesforce';
+import { HttpMethod, HttpRequestInfo } from '@vlocode/salesforce';
 import { Timer } from '@vlocode/util';
 
 import { VlocodeCommand } from '../constants';
@@ -145,7 +145,7 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
         });
 
         const timer = new Timer();
-        let response: string |undefined = undefined;
+        let response: unknown = undefined;
         try {
              await this.vlocode.withActivity({
                 progressTitle: `${request.method} ${request.url}...`,
@@ -158,7 +158,11 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             });
         } catch (error) {
             void vscode.window.showErrorMessage(`API Request failed with error`);
-            response = error instanceof Error ? error.message : String(error);
+            if ('responseBody' in error) {
+                response = error.responseBody;
+            } else {
+                response = error;
+            }
         }
        
         this.logger.info(`${request.method} ${request.url} [${timer.stop()}]`);

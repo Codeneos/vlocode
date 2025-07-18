@@ -409,13 +409,20 @@ export class SalesforceConnection extends Connection {
         if (typeof response.body === 'object') {
             const error = asArray<any>(asArray(response.body)[0])[0];
             const errorCode = error?.errorCode ?? error?.code;
-            return new CustomError(error.message, { ...error, code: errorCode });
+            return new CustomError(error.message, { 
+                ...error, 
+                code: errorCode, 
+                errorCode,
+                statusCode: response.statusCode,
+                responseBody: response.body,
+            });
         }
 
         return new CustomError(String(response.body), {
             statusCode: response.statusCode,
             errorCode: `ERROR_HTTP_${response.statusCode}`,
-            name: `ERROR_HTTP_${response.statusCode}`
+            name: `ERROR_HTTP_${response.statusCode}`, 
+            responseBody: response.body
         });
     }
 
