@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.8](https://github.com/Codeneos/vlocode/compare/v1.31.7...v1.31.8) (2025-07-23)
+
+### Bug Fixes
+
+* vlocode doesn't update sf extension username ([aab9f12](https://github.com/Codeneos/vlocode/commit/aab9f12066371b3115686354d3e419e4129ea64e))
+
 ## [1.31.3](https://github.com/Codeneos/vlocode/compare/v1.31.2...v1.31.3) (2025-06-27)
 
 ### Features

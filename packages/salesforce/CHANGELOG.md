@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.8](https://github.com/Codeneos/vlocode/compare/v1.31.7...v1.31.8) (2025-07-23)
+
+### Bug Fixes
+
+* API 64.0 does not properly print deployment results ([c436e81](https://github.com/Codeneos/vlocode/commit/c436e813134db6ede43574ab2f5432b082e5d1c6))
+* execute REST API does not return failed API responses properly ([0deb817](https://github.com/Codeneos/vlocode/commit/0deb817d1da89d59fff22b3f34526bb8b933bda0))
+* spread component messages into allComponentMessages for proper aggregation ([f1a674b](https://github.com/Codeneos/vlocode/commit/f1a674bffe44783cab1cb2149d0c2b43957bec98))
+
 ## [1.31.5](https://github.com/Codeneos/vlocode/compare/v1.31.4...v1.31.5) (2025-07-08)
 
 ### Features
