@@ -288,8 +288,8 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
 
         if (!details.allComponentMessages) {
             details.allComponentMessages = [];
-            details.componentFailures && details.allComponentMessages.push(details.componentFailures);
-            details.componentSuccesses && details.allComponentMessages.push(details.componentSuccesses);
+            details.componentFailures && details.allComponentMessages.push(...details.componentFailures);
+            details.componentSuccesses && details.allComponentMessages.push(...details.componentSuccesses);
         }
 
         if (details.runTestResult?.failures) {
