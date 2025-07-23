@@ -35,7 +35,7 @@ export default abstract class MetadataCommand extends CommandBase {
     }
 
     protected outputDeployResult(components: SalesforcePackageComponent[], result: DeployResult) {
-        const deployMessages = mapBy(result.details?.allComponentMessages || [], message => `${message.componentType}/${message.fullName}`);
+        const deployMessages = mapBy(result.details?.allComponentMessages ?? [], message => `${message.componentType}/${message.fullName}`);
         const deployComponentStatus = components.map(
             component => {
                 const message = deployMessages.get(`${component.componentType}/${component.componentName}`);

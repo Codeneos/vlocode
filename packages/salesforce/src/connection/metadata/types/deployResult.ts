@@ -47,6 +47,9 @@ export interface DeployResult {
 export interface DeployResultDetails {
     componentFailures: Array<FailureDeployMessage>;
     componentSuccesses: Array<DeployMessage>;
+    /**
+     * @deprecated From API 64.0 allComponentMessages is not included in the response any more. 
+     */
     allComponentMessages: Array<DeployMessage | FailureDeployMessage>;
     runTestResult: RunTestsResult
 }

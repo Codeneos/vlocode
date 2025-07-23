@@ -286,6 +286,12 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
         details.componentFailures = details.componentFailures?.filter(failure => !this.isDependentClassError(failure));
         details.allComponentMessages = details.allComponentMessages?.filter(msg => !('problemType' in msg) || !this.isDependentClassError(msg));
 
+        if (!details.allComponentMessages) {
+            details.allComponentMessages = [];
+            details.componentFailures && details.allComponentMessages.push(details.componentFailures);
+            details.componentSuccesses && details.allComponentMessages.push(details.componentSuccesses);
+        }
+
         if (details.runTestResult?.failures) {
             details.runTestResult.failures = details.runTestResult?.failures?.filter(
                 failure => failure.message.includes('Dependent class is invalid')
