@@ -65,8 +65,8 @@ export default abstract class MetadataCommand extends CommandBase {
                 this.output.table(deployErrors, {
                     appendEmptyLine: true,
                     focus: true,
-                        maxCellWidth: {
-                        error: 60,
+                    maxCellWidth: {
+                        error: 80,
                         component: 30
                     }
                 });
