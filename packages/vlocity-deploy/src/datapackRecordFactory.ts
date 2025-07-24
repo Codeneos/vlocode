@@ -195,8 +195,9 @@ export class DatapackRecordFactory {
             }
             case 'string':
             default: {
+                const isPicklist = field.type === 'picklist' || field.type === 'multipicklist';
                 const stringValue = this.namespaceService.updateNamespace(this.convertValueToString(value));
-                if (stringValue.length > field.length) {
+                if (!isPicklist && stringValue.length > field.length) {
                     throw new Error(`Value length (${stringValue.length}) surpassed max length of field ${field.name} (max: ${field.length})`);
                 }
                 return stringValue;
