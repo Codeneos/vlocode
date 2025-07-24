@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.9](https://github.com/Codeneos/vlocode/compare/v1.31.8...v1.31.9) (2025-07-24)
+
+### Bug Fixes
+
+* skip picklist value length check as (standard) picklist fields can store longer values ([6b4cd86](https://github.com/Codeneos/vlocode/commit/6b4cd86bf4133537a54a2ed01afd0653c499c3ba))
+
 ## [1.31.8](https://github.com/Codeneos/vlocode/compare/v1.31.7...v1.31.8) (2025-07-23)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy
