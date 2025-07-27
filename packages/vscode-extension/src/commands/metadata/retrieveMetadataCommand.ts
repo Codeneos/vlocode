@@ -13,10 +13,10 @@ import { VlocodeCommand } from '../../constants';
 export default class RetrieveMetadataCommand extends MetadataCommand {
 
     public async execute() : Promise<void>  {
-        return this.exportWizard();
+        return this.retrieve();
     }
 
-    protected async exportWizard() : Promise<void>  {
+    protected async retrieve() : Promise<void>  {
         const metadataType = await this.showMetadataTypeSelection();
         if (!metadataType) {
             return; // selection cancelled;
@@ -71,8 +71,8 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
     protected async showMetadataTypeSelection() : Promise<MetadataType | undefined> {
         const metadataTypes = this.salesforce.getMetadataTypes()
             .map(type => ({
-                label: type.xmlName,
-                description: type.xmlName,
+                label: type.label,
+                description: type.name,
                 type: type
             })).sort((a,b) => a.label.localeCompare(b.label));
 
@@ -129,31 +129,42 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
                 void vscode.window.showWarningMessage('Decomposing metadata into SFDX format is currently not supported.');
             }
 
-            const unpackedFiles = new Array<string>();
+            const retrievedMetadata = new Array<{
+                    type: string;
+                    path: string;
+                }>();
+            const outputPaths = new Array<string>();
+                
             for (const file of result.getFiles()) {
                 try {
-                    const unpackTarget = path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.', this.vlocode.config.salesforce.exportFolder);
-                    await file.writeFile(unpackTarget);
-                    this.logger.log(`Exported ${file.archivePath}`);
-                    unpackedFiles.push(path.join(unpackTarget, file.archivePath));
+                    const unpackTarget = path.join(
+                        vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.', 
+                        this.vlocode.config.salesforce.exportFolder
+                    );
+                    const writtenFiles = await file.extractTo(path.join(unpackTarget, file.folderName));
+                    outputPaths.push(...writtenFiles);
+                    retrievedMetadata.push(
+                        ...writtenFiles.map(outputFile => ({
+                            type: file.componentType,
+                            path: path.relative(unpackTarget, outputFile)
+                        }))
+                    );
                 } catch(err) {
                     this.logger.error(`${file.componentName} -- ${err.message || err}`);
                 }
             }
 
-            const successMessage = `Successfully retrieved ${unpackedFiles.length} components`;
-            if (unpackedFiles.length == 1) {
-                void vscode.window.showInformationMessage(successMessage, 'Open')
-                    .then(value => value ? void vscode.window.showTextDocument(vscode.Uri.file(unpackedFiles[0])) : undefined);
-            } else {
-                void vscode.window.showInformationMessage(successMessage);
-            }
+            const successMessage = `Successfully retrieved ${outputPaths.length} components`;
+            void vscode.window.showInformationMessage(successMessage, 'Open')
+                .then(value => value ? void vscode.window.showTextDocument(vscode.Uri.file(outputPaths[0])) : undefined);
+
+            this.output.table(retrievedMetadata, { appendEmptyLine: true, focus: true });
         });
     }
 
     protected async showComponentSelection<T extends FileProperties>(records: T[]) : Promise<Array<T> | undefined> {
         const objectOptions =  records.map(record => ({
-            label: record.fullName,
+            label: decodeURIComponent(record.fullName),
             description: `last modified: ${record.lastModifiedByName} (${record.lastModifiedDate})`,
             record
         })).sort((a, b) => a.label.localeCompare(b.label));

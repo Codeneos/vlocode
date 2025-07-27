@@ -69,7 +69,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
 
                 // Extract each file into the appropriate source folder
                 for (const file of component.files) {
-                    await file.writeFile(sourceFolder);
+                    await file.extractTo(sourceFolder);
                 }
             }
 

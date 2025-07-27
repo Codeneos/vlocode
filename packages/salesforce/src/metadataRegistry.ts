@@ -27,6 +27,11 @@ export interface MetadataType extends RegistryMetadataType {
      * Array with the list of child XML fragments that match this metadata type
      */
     childXmlNames: string[];
+    /**
+     * Human readable label for the metadata type, used in UI and commands
+     * This is derived from the name of the metadata type and formatted to be more readable.
+     */
+    label: string;
 }
 
 @singletonMixin
@@ -44,6 +49,7 @@ export class MetadataRegistry {
             const metadataObject = registryEntry as MetadataType;
 
             metadataObject.xmlName = metadataObject.name;
+            metadataObject.label = this.formatLabel(metadataObject.name);
             metadataObject.childXmlNames = Object.values(metadataObject.children?.types ?? []).map(({ name }) => name);
             metadataObject.isBundle = metadataObject.strategies?.adapter == 'bundle' ||  metadataObject.name.endsWith('Bundle');
             metadataObject.hasContent = metadataObject.strategies?.adapter == 'matchingContentFile' ||
@@ -71,6 +77,28 @@ export class MetadataRegistry {
         for (const suffix of Object.keys(registryData.suffixes)) {
             this.suffixes.set(suffix.toLowerCase(), registryData.suffixes[suffix]);
         }
+    }
+
+    /**
+     * Converts a camelCase or PascalCase string to a proper label format
+     * @param name The name to format
+     * @returns The formatted label
+     */
+    private formatLabel(name: string): string {
+        if (!name) {
+            return '';
+        }
+
+        // Insert spaces before uppercase letters (except the first one)
+        // Handle sequences of uppercase letters properly (e.g., "XMLParser" -> "XML Parser")
+        const result = name
+            .replace(/([a-z])([A-Z])/g, '$1 $2') // Insert space between lowercase and uppercase
+            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Insert space between uppercase sequences and following lowercase
+            .replace(/([0-9])([A-Z])/g, '$1 $2') // Insert space between numbers and uppercase letters
+            .replace(/([a-zA-Z])([0-9])/g, '$1 $2'); // Insert space between letters and numbers
+
+        // Capitalize first letter and return
+        return result.charAt(0).toUpperCase() + result.slice(1);
     }
 
     public getUrlFormat(type: string) {

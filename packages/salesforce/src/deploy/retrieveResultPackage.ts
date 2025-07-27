@@ -2,10 +2,11 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import ZipArchive from 'jszip';
-import { directoryName, fileName as baseName , groupBy } from '@vlocode/util';
+import { groupBy } from '@vlocode/util';
 import { FileProperties, RetrieveResult } from '../connection';
 import { PackageManifest } from './maifest';
 import { SalesforcePackageComponentFile } from './package';
+import { MetadataExpander } from './metadataExpander';
 
 /**
  * Extends typings on the JSZipObject with internal _data object
@@ -94,12 +95,6 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     public readonly archivePath: string;
 
     /**
-     * If this file has an associated metadata XML file this is path to that file. 
-     * Undefined if no meta file exists that matches the source file.
-     */
-    public readonly metaFilePath?: string;
-
-    /**
      * Uncompressed size of the file in bytes.
      */
     public get fileSize() {
@@ -120,6 +115,32 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
         return this.file?._data?.crc32
     }
 
+    /**
+     * Gets the base name of the archive file path, excluding any directory components.
+     * 
+     * @returns The file name portion of the archive path.
+     */
+    public get fileName() {
+        return path.basename(this.archivePath);
+    }
+
+    /**
+     * Gets the relative path of the archive file.
+     * 
+     * @returns The directory name of the archive path specified by `this.archivePath`.
+     */
+    public get folderName() {
+        return path.dirname(this.archivePath);
+    }
+
+    /**
+     * Gets the full path of the file in the zip archive.
+     * @see {@link archivePath}
+     */
+    public get fullPath() {
+        return this.archivePath
+    }
+
     constructor(
         properties: FileProperties,
         private readonly file?: ZipArchive.JSZipObject)
@@ -131,25 +152,25 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     }
 
     /**
-     * Extracts the file to the target folder and optionally the meta file.
-     * @param {string} targetFolder Target folder to extract the file to.
-     * @param {object} [options] Additional options.
-     * @param {boolean} [options.fileOnly] If true only the file will be extracted, otherwise the full path will be used.
-     * @returns 
+     * Extracts and writes expanded metadata files to the specified target folder.
+     *
+     * This method uses the `MetadataExpander` to expand the current metadata object,
+     * then writes each expanded file to the given target directory. The method returns
+     * a list of the relative file paths that were written.
+     *
+     * @param targetFolder - The absolute or relative path to the folder where the expanded files will be written.
+     * @returns A promise that resolves to an array of file paths representing the files that were written.
      */
-    public writeFile(targetFolder: string, options?: { fileOnly?: boolean }): Promise<void> {
-        const targetPath = path.join(targetFolder,
-            options?.fileOnly 
-                ? path.basename(this.packagePath) 
-                : this.packagePath
-        );
-        return new Promise((resolve, reject) => {
-            fs.ensureDir(path.dirname(targetPath)).then(() => {
-                this.getFile().nodeStream().pipe(fs.createWriteStream(targetPath, { flags: 'w' }))
-                    .on('finish', () => resolve())
-                    .on('error', reject);
-            }).catch(reject);
-        });
+    public async extractTo(targetFolder: string) {
+        const expander = new MetadataExpander();
+        const result = await expander.expandMetadata(this);
+        const filesWritten: string[] = []
+        for (const [expandedFile, data] of Object.entries(result)) {
+            const expandedFilePath = path.join(targetFolder, expandedFile);
+            await fs.outputFile(expandedFilePath, data);
+            filesWritten.push(expandedFilePath);
+        }
+        return filesWritten;
     }
 
     /**
@@ -166,6 +187,15 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
      */
     public getStream(): NodeJS.ReadableStream {
         return this.getFile().nodeStream();
+    }
+
+    /**
+     * Reads and returns the contents as a Buffer.
+     * 
+     * @returns A promise that resolves to a Buffer containing the data.
+     */
+    public read(): Promise<Buffer> {
+        return this.getBuffer();
     }
 
     private getFile() {
@@ -270,7 +300,7 @@ export class RetrieveResultPackage {
      * Gets all files in the retrieve result package.
      * @returns A list of all files in the retrieve result package.
      */
-    public getFiles(): Array<RetrieveResultFile> {
+    public getFiles(predicate?: (file: RetrieveResultFile, index: number) => boolean): Array<RetrieveResultFile> {
         if (this.files) {
             return this.files;
         }
@@ -299,7 +329,7 @@ export class RetrieveResultPackage {
                 return files;
             }
         );
-        return this.files;
+        return predicate ? this.files.filter(predicate) : this.files;
     }
 
     /**
@@ -317,31 +347,40 @@ export class RetrieveResultPackage {
         return manifests.reduce((manifest, current) => manifest.merge(current));
     }
 
-    public async unpackFolder(packageFolder: string, targetPath: string) : Promise<void> {
-        const files = this.filterFiles(file => directoryName(file).endsWith(packageFolder.toLowerCase()));
-        if (!files) {
-            throw new Error(`The specified folder ${packageFolder} was not found in retrieved package or is empty`);
-        }
-        for (const file of files) {
-            await this.streamFileToDisk(file, path.join(targetPath, baseName(file.name)));
-        }
-    }
+    // /**
+    //  * @deprecated Use {@link RetrieveResultFile.extractTo} instead.
+    //  */
+    // public async unpackFolder(packageFolder: string, targetPath: string) : Promise<void> {
+    //     const files = await this.getFiles(file => file.folderName.endsWith(packageFolder.toLowerCase()));
+    //     if (!files) {
+    //         throw new Error(`The specified folder ${packageFolder} was not found in retrieved package or is empty`);
+    //     }
+    //     for (const file of files) {
+    //         await file.extractTo(targetPath);
+    //     }
+    // }
 
-    public unpackFile(packageFile: string, targetPath: string) : Promise<void> {
-        const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
-        if (!file) {
-            throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
-        }
-        return this.streamFileToDisk(file, targetPath);
-    }
+    // /**
+    //  * @deprecated Use {@link RetrieveResultFile.extractTo} instead.
+    //  */
+    // public unpackFile(packageFile: string, targetPath: string) : Promise<void> {
+    //     const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
+    //     if (!file) {
+    //         throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
+    //     }
+    //     return this.streamFileToDisk(file, targetPath);
+    // }
 
-    public unpackFileToFolder(packageFile: string, targetPath: string) : Promise<void> {
-        const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
-        if (!file) {
-            throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
-        }
-        return this.streamFileToDisk(file, path.join(targetPath, baseName(file.name)));
-    }
+    // /**
+    //  * @deprecated Use {@link RetrieveResultFile.extractTo} instead.
+    //  */
+    // public unpackFileToFolder(packageFile: string, targetPath: string) : Promise<void> {
+    //     const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
+    //     if (!file) {
+    //         throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
+    //     }
+    //     return this.streamFileToDisk(file, path.join(targetPath, baseName(file.name)));
+    // }
 
     private file(filter: string | ((file: string) => any)) : ZipArchive.JSZipObject | undefined {
         for (const archive of this.archives ?? []) {
@@ -354,7 +393,7 @@ export class RetrieveResultPackage {
         }
     }
 
-    private filterFiles(filter: (file: string) => any) : Array<ZipArchive.JSZipObject> {
+    private filterFiles(filter: (file: string) => any) {
         const files = new Array<ZipArchive.JSZipObject>();
         for (const archive of this.archives ?? []) {
             files.push(...archive.filter(filter));
