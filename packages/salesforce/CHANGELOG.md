@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.31.10](https://github.com/Codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
+
+### Bug Fixes
+
+* metadata isn't refreshed in the correct path and is missing -meta.xml. Also fix refresh of metadata doesn't include -meta.xml ([fa1589b](https://github.com/Codeneos/vlocode/commit/fa1589b11381f67f05390d9ec59a1fca88f112bd))
+
 ## [1.31.8](https://github.com/Codeneos/vlocode/compare/v1.31.7...v1.31.8) (2025-07-23)
 
 ### Bug Fixes
