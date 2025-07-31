@@ -7,6 +7,7 @@ import { FileProperties, RetrieveResult } from '../connection';
 import { PackageManifest } from './maifest';
 import { SalesforcePackageComponentFile } from './package';
 import { MetadataExpander } from './metadataExpander';
+import { container } from '@vlocode/core';
 
 /**
  * Extends typings on the JSZipObject with internal _data object
@@ -162,7 +163,7 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
      * @returns A promise that resolves to an array of file paths representing the files that were written.
      */
     public async extractTo(targetFolder: string) {
-        const expander = new MetadataExpander();
+        const expander = container.get(MetadataExpander);
         const result = await expander.expandMetadata(this);
         const filesWritten: string[] = []
         for (const [expandedFile, data] of Object.entries(result)) {
