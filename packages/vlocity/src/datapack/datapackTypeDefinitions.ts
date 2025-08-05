@@ -111,7 +111,7 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 orderBy: ["VersionNumber"]
             },
             salesforceUrl: {
-                'Standard Designer (Summer \'25)': (record: any) => `/apex/%vlocity_namespace%__integrationproceduredesigner?id=${record.Id}`,
+                'Standard Designer (Summer \'25)': (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${record.Id}`,
                 'LWC Designer': (record: any) => `/lightning/cmp/%vlocity_namespace%__OmniDesignerAuraWrapper?c__recordId=${record.Id}`,
                 'Classic Designer': (record: any) => `/apex/%vlocity_namespace%__omniscriptdesigner?id=${record.Id}`
             },
