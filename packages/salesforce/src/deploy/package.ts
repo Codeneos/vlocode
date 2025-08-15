@@ -6,6 +6,7 @@ import { FileSystem } from '@vlocode/core';
 import { PackageManifest } from './maifest';
 import { isPromise } from 'util/types';
 import { outputFile } from 'fs-extra';
+import { MetadataRegistry } from '../metadataRegistry';
 
 export interface SalesforcePackageComponent {
     componentType: string; // componentType
@@ -250,16 +251,20 @@ export class SalesforcePackage {
      * @returns Source file folder or undefined when not found
      */
     public getSourceFolder(componentType: string, componentName: string) {
+        const metadataInfo = MetadataRegistry.getMetadataType(componentType);
+        const decomposed = metadataInfo?.strategies?.decomposition !== undefined;
         for (const [fsPath, sourceFileInfo] of this.sourceFileToComponent.entries()) {
-            if (sourceFileInfo.componentType === componentType && 
-                sourceFileInfo.componentName === componentName) {
-                return directoryName(fsPath);
+            if (sourceFileInfo.componentType !== componentType) {
+                continue;
+            }
+            if (sourceFileInfo.componentName === componentName) {
+                return directoryName(fsPath, decomposed ? 2 : 1);
             }
         }
     }
 
     /**
-     * Get the name of the source file.
+     * Get the sources files associated with the specified component.
      * @param type XML Type
      * @param name Component name
      * @returns FS path from which the component was loaded or undefined when not loaded or not in the current package
@@ -531,7 +536,8 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get a flat array with the names of the components in this package prefixed with their type.
+     * Get a flat array with the names of the components in this package prefixed with their type separated by a slash.
+     * @returns Array of component names in the format <type>/<name>
      */
     public getComponentNames() {
         return Iterable.reduce(this.manifest.types(), (arr, type) => arr.concat(this.manifest.list(type).map(name => `${type}/${name}`)), new Array<string>());

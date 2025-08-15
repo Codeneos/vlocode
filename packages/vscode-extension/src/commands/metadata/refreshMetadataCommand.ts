@@ -46,7 +46,7 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             }
 
             if (result.retrieveCount == 0) {
-                throw new Error('None of the requested components could be found in the target org.');
+                throw new Error('Requested metadata does not exists in the target org.');
             }
 
             // Clear bundle folders so they are in-sync with what we get back from SF
@@ -63,7 +63,8 @@ export default class RefreshMetadataCommand extends MetadataCommand {
                 const sourceFolder = sfPackage.getSourceFolder(component.componentType, component.componentName);
 
                 if (!sourceFolder) {
-                    // Skip components that were not requested
+                    // Skip components that do not have a source folder
+                    this.logger.debug(`Unable to find source folder for: ${component.componentType} ${component.componentName}`);
                     continue;
                 }
 
@@ -74,7 +75,8 @@ export default class RefreshMetadataCommand extends MetadataCommand {
             }
 
             const componentsRequested = sfPackage.getComponentNames();
-            const componentsNotFound = except(componentsRequested, result.componentNames());
+            const componentsRetrieved = (await result.getManifest()).componentsNames();
+            const componentsNotFound = except(componentsRequested, componentsRetrieved);
 
             if (componentsNotFound.length > 0) {
                 this.logger.warn(`Unable to refresh the following components: ${componentsNotFound.join(', ')}`);

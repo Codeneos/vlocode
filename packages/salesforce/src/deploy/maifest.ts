@@ -64,6 +64,19 @@ export class PackageManifest {
     }
 
     /**
+     * Get all component names in this package as strings in the format `type/name`
+     * @example `ApexClass/MyClass`
+     * @return {string[]} Array of component names in the format `type/name`
+     */
+    public componentsNames() : string[] {
+        return Iterable.reduce(
+            this.metadataMembers.entries(), 
+            (arr, [type, members]) => arr.concat(Array.from(members).map(member => `${type}/${member}`)), 
+            new Array<string>()
+        );
+    }
+
+    /**
      * Merge another package into this package
      * @param other Other package to merge into this package
      * @returns This manifest with all members of the other package added

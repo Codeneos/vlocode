@@ -53,7 +53,7 @@ export function sanitizePath(pathStr: string, pathSeparator = path.sep) {
 export function fileExists(filePath: string) {
     try {
         return fs.existsSync(filePath);
-    } catch(err) {
+    } catch {
         return false;
     }
 }
@@ -68,16 +68,20 @@ export async function readDirectory(filePath: fs.PathLike) {
 /**
  * Platform agnostic method to get the folder name from a path string (dirname); returns the folder of the path treating both / as well as \\ as directory separators.
  * @param pathLike path like string
+ * @param depth Optional depth to go up in the path, defaults to 1 which returns the parent folder of the path
  * @returns Folder path of a path like string
  */
-export function directoryName(pathLike: string) {
+export function directoryName(pathLike: string, depth?: number) {
+    if (depth !== undefined && depth < 1) {
+        throw new Error(`Invalid depth ${depth} for directoryName, must be greater than 0`);
+    }
     const pathParts = pathLike.split(/[\\/]/g);
     if (pathParts.length == 1) {
         return '.';
     } else if (pathParts.length == 2 && (pathParts[0] == '/' || pathParts[0] == '\\')) {
         return path.sep;
     }
-    return pathParts.slice(0, -1).join(path.sep);
+    return pathParts.slice(0, -(depth ?? 1)).join(path.sep);
 }
 
 /**

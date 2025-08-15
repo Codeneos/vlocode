@@ -1,6 +1,8 @@
 import registryData from './registry/metadataRegistry.json';
+import { presetMap as registryPresets } from './registry/presets';
 import { MetadataType as RegistryMetadataType } from './registry/types';
-import { injectable, Logger, LogManager } from '@vlocode/core';
+
+import { injectable } from '@vlocode/core';
 import urlFormats from './metadataUrls.json';
 
 export interface MetadataUrlFormat {
@@ -34,14 +36,19 @@ export interface MetadataType extends RegistryMetadataType {
 }
 
 @injectable.singleton()
-class MetadataRegistryStore {
+class MetadataInfoStore {
     readonly registry = new Array<MetadataType>();
     readonly types = new Map<string, MetadataType>();
     readonly suffixes = new Map<string, string>();
 
-    constructor(logger: Logger = LogManager.get('MetadataRegistry')) {
+    public load(
+        data: { 
+            types?: RegistryMetadataType[], 
+            suffixes?: Record<string, string> 
+        }
+    ) {
         // Init metadata registry
-        for (const registryEntry of Object.values(registryData.types)) {
+        for (const registryEntry of (data.types ?? [])) {
             const metadataObject = registryEntry as MetadataType;
 
             metadataObject.xmlName = metadataObject.name;
@@ -53,25 +60,19 @@ class MetadataRegistryStore {
 
             // Store in registry
             this.registry.push(metadataObject);
-            if (this.types.has(metadataObject.name.toLowerCase())) {
-                logger.warn(`XML Name already in-use: ${metadataObject.name.toLowerCase()}`);
-                continue;
-            }
 
+            // Store in types map
             this.types.set(metadataObject.name.toLowerCase(), metadataObject);
             if (metadataObject.childXmlNames) {
                 metadataObject.childXmlNames.forEach(childType => {
-                    if (this.types.has(childType.toLowerCase())) {
-                        throw `XML Name already in-use: ${childType.toLowerCase()}`;
-                    }
                     this.types.set(childType.toLowerCase(), metadataObject);
                 });
             }
         }
 
         // Init case insensitive suffix to type map
-        for (const suffix of Object.keys(registryData.suffixes)) {
-            this.suffixes.set(suffix.toLowerCase(), registryData.suffixes[suffix]);
+        for (const [suffix, type] of Object.entries(data.suffixes ?? {})) {
+            this.suffixes.set(suffix.toLowerCase(), type);
         }
     }
 
@@ -111,9 +112,48 @@ export namespace MetadataRegistry {
     
     /**
      * Singleton instance of the metadata registry store
-     * @returns {MetadataRegistryStore} The singleton instance of the metadata registry store
+     * @returns {MetadataInfoStore} The singleton instance of the metadata registry store
      */
-    export const store = new MetadataRegistryStore();
+    export const store = new MetadataInfoStore();
+
+    // Load the metadata registry data
+    store.load({
+        types: Object.values(registryData.types) as RegistryMetadataType[],
+        suffixes: registryData.suffixes
+    });
+
+    /**
+     * Enable beta features in the metadata registry decomposition
+     * load presets and metadata into the store overriding the default values.
+     * @param presetName 
+     */
+    export function loadPresets(presetName: string) {
+        const preset = registryPresets.get(presetName);
+        if (!preset) {
+            throw new Error(`Metadata preset '${presetName}' not found`);
+        }
+        store.load({ 
+            types: Object.values(preset.types) as RegistryMetadataType[],
+            suffixes: preset.suffixes
+        });
+    }
+
+    /**
+     * Loads all experimental decomposition presets into the metadata registry.
+     */
+    export function loadAllPresets() {
+        for (const presetName of registryPresets.keys()) {
+            loadPresets(presetName);
+        }
+    }
+
+    /**
+     * List all available presets in the metadata registry.
+     * @returns 
+     */
+    export function getPresets() {
+        return Array.from(registryPresets.keys());
+    }
 
     /**
      * Get the URL format for a given metadata type
@@ -129,7 +169,7 @@ export namespace MetadataRegistry {
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
     export function getMetadataTypes() : MetadataType[] {
-        return this.registry;
+        return store.registry;
     }
 
     /**

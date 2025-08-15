@@ -2,12 +2,13 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import ZipArchive from 'jszip';
-import { groupBy } from '@vlocode/util';
+import { groupBy, substringBefore, XML } from '@vlocode/util';
 import { FileProperties, RetrieveResult } from '../connection';
 import { PackageManifest } from './maifest';
-import { SalesforcePackageComponentFile } from './package';
+import { SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
 import { MetadataExpander } from './metadataExpander';
 import { container } from '@vlocode/core';
+import { MetadataRegistry } from '../metadataRegistry';
 
 /**
  * Extends typings on the JSZipObject with internal _data object
@@ -74,6 +75,12 @@ export interface SalesforceRetrievedComponentFile extends SalesforcePackageCompo
     getBuffer(): Promise<Buffer> | Buffer;
 }
 
+/**
+ * Defines the properties of a file in a retrieve result package.
+ * This is used to represent files in the retrieve result package and provides methods to access the file
+ */
+export type RetrieveResultFileType = 'content' | 'metadata';
+
 export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     /**
      * Type of the component (e.g. ApexClass)
@@ -93,27 +100,27 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     /**
      * Path of the file in the zip archive; when a single package is retrieved this is the same as {@link packagePath}.
      */
-    public readonly archivePath: string;
+    public readonly archivePath: string;  
 
     /**
      * Uncompressed size of the file in bytes.
      */
     public get fileSize() {
-        return this.file?._data?.uncompressedSize ?? -1;
+        return this.contentFile?._data?.uncompressedSize ?? -1;
     }
 
     /**
      * Compressed size of the file in bytes.
      */
     public get compressedSize() {
-        return this.file?._data?.compressedSize ?? -1;
+        return this.contentFile?._data?.compressedSize ?? -1;
     }
 
     /**
      * CRC32 checksum of the file.
      */
     public get crc32() {
-        return this.file?._data?.crc32
+        return this.contentFile?._data?.crc32
     }
 
     /**
@@ -143,13 +150,15 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     }
 
     constructor(
-        properties: FileProperties,
-        private readonly file?: ZipArchive.JSZipObject)
-    {
-        this.componentName = properties.fullName.split('/').shift()!;
-        this.componentType = properties.type;
-        this.archivePath = properties.fileName;
-        this.packagePath = properties.fileName;
+        componentProperties: SalesforcePackageComponent,
+        fileProperties: FileProperties,
+        private readonly contentFile?: ZipArchive.JSZipObject,
+        private readonly metaFile?: ZipArchive.JSZipObject
+    ) {
+        this.componentName = componentProperties.componentName;
+        this.componentType = componentProperties.componentType;
+        this.archivePath = fileProperties.fileName;
+        this.packagePath = fileProperties.fileName;
     }
 
     /**
@@ -163,8 +172,7 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
      * @returns A promise that resolves to an array of file paths representing the files that were written.
      */
     public async extractTo(targetFolder: string) {
-        const expander = container.get(MetadataExpander);
-        const result = await expander.expandMetadata(this);
+        const result = await this.expandMetadataFiles();
         const filesWritten: string[] = []
         for (const [expandedFile, data] of Object.entries(result)) {
             const expandedFilePath = path.join(targetFolder, expandedFile);
@@ -175,11 +183,24 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
     }
 
     /**
+     * Expand the metadata file into its constituent parts, such as content and metadata files.
+     * This method uses the `MetadataExpander` to expand the metadata file and returns a
+     * record of the expanded files.
+     * @returns A record of expanded files where the keys are the file names and the values are the file contents as buffers.
+     */
+    public expandMetadataFiles() {
+        const expander = container.get(MetadataExpander);
+        return expander.expandMetadata(this);
+    }
+
+    /**
      * Gets a buffer of the file contents.
      * @returns {Promise<Buffer>} Buffer of the file contents.
      */
-    public getBuffer(): Promise<Buffer>{
-        return this.getFile().async('nodebuffer');
+    public getBuffer(type?: 'content'): Promise<Buffer>;
+    public getBuffer(type?: RetrieveResultFileType): Promise<Buffer> | undefined;
+    public getBuffer(type?: RetrieveResultFileType) {
+        return this.getSource(type)?.async('nodebuffer');
     }
 
     /**
@@ -187,24 +208,62 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
      * @returns {NodeJS.ReadableStream} Stream of the file contents.
      */
     public getStream(): NodeJS.ReadableStream {
-        return this.getFile().nodeStream();
+        return this.getSource().nodeStream();
     }
 
     /**
-     * Reads and returns the contents as a Buffer.
-     * 
-     * @returns A promise that resolves to a Buffer containing the data.
+     * @deprecated Use {@link content} instead to read the file contents or use {@link metadata} to get the file metadata as XML object.
      */
     public read(): Promise<Buffer> {
         return this.getBuffer();
     }
 
-    private getFile() {
-        const file = this.file;
-        if (!file) {
-            throw new Error('RetrieveResultFile is not associated with a file in the zip archive; Salesforce did not return the file contents.');
+    /**
+     * Returns the content of the file as a buffer.
+     */
+    public content(): Promise<Buffer> {
+        return this.getBuffer();
+    }
+
+    /**
+     * When metadata is split between content and meta files, this method returns the metadata associated to the content as (parsed) XML object.
+     * - If there are XML attributes they are grouped under the `@attributes` property. 
+     * - The type of the metadata is stored in the `@type` property.
+     * 
+     * **Note:** _This only returns metadata for components that have a separate content and metadata files._
+     */
+    public async metadata(): Promise<(object & { "@type": string }) | undefined> {
+        const metadata = await this.getBuffer('metadata');
+        if (!metadata) {
+            return undefined;
         }
-        return file;
+
+        try {
+            const result = XML.parse(metadata, { attributeNode: '@attributes' });
+            const typeNode = Object.keys(result).pop();
+            if (!typeNode) {
+                throw new Error(`No root node found in XML`);
+            }
+            return {
+                ...result[typeNode],
+            }
+        } catch (error) {
+            throw new Error(`Failed to parse metadata for ${this.componentType}/${this.componentName}: ${error.message}`);
+        }
+    }
+
+    private getSource(type?: 'content'): ZipArchive.JSZipObject;
+    private getSource(type?: RetrieveResultFileType): ZipArchive.JSZipObject | undefined;
+    private getSource(type?: RetrieveResultFileType) {
+        if (type === 'metadata') {
+            // Allow undefined type to return the content file by default
+            return this.metaFile;
+        }
+        
+        if (!this.contentFile) {
+            throw new Error(`Content file for ${this.componentType}/${this.componentName} not found in retrieve result package`);
+        }
+        return this.contentFile;
     }
 }
 
@@ -230,6 +289,7 @@ export class RetrieveResultPackage {
 
     private files: RetrieveResultFile[] | undefined;
     private archives: ZipArchive[] | undefined;
+    private manifest: PackageManifest | undefined;
 
     /**
      * Creates a new RetrieveResultPackage instance from a RetrieveResult object.
@@ -258,9 +318,8 @@ export class RetrieveResultPackage {
         } else {
             this.archives = other.archives;
         }
-        if (this.files) {
-            this.files = undefined;
-        }
+        this.files = undefined;
+        this.manifest = undefined;
         return this;
     }
 
@@ -273,7 +332,8 @@ export class RetrieveResultPackage {
             ...new Set(
                 this.result.fileProperties
                     .filter(fi => fi.type != 'Package')
-                    .map(fi => `${fi.type}/${fi.fullName.split('/').shift()}`)
+                    .map(fi => this.getComponentInfo(fi))
+                    .map(info => `${info.componentType}/${info.componentName}`)
             )
         ];
     }
@@ -285,13 +345,14 @@ export class RetrieveResultPackage {
     public components(): Array<RetrieveResultComponent<RetrieveResultFile>> {
         const resultsByType = groupBy(
             this.getFiles().filter(fi => fi.componentType != 'Package'), 
-            fi => `${fi.componentType}/${fi.componentName}`
+            fi => `${fi.componentType}:${fi.componentName}`
         );
         return Object.entries(resultsByType).map( ([key, files]) => {
+            const [componentType, componentName] = key.split(':');
             return {
                 fullName: key,
-                componentType: key.split('/')[0],
-                componentName: key.split('/')[1],
+                componentType,
+                componentName,
                 files: files
             };
         });
@@ -314,13 +375,15 @@ export class RetrieveResultPackage {
 
                 const sourceFile = this.file(fileProperties.fileName) || undefined;
                 const metaFile = this.file(`${fileProperties.fileName}-meta.xml`);
-                const files = [ new RetrieveResultFile(fileProperties, sourceFile) ];
+                const componentInfo = this.getComponentInfo(fileProperties);
+                const files = [ new RetrieveResultFile(componentInfo, fileProperties, sourceFile, metaFile) ];
 
                 if (metaFile) {
                     // Meta files are not returned by Salesforce, so we add them manually
                     // to the files list if they exist in the archive.
                     files.push(
                         new RetrieveResultFile(
+                            componentInfo,
                             { ...fileProperties, fileName: `${fileProperties.fileName}-meta.xml` },
                             metaFile
                         )
@@ -338,6 +401,9 @@ export class RetrieveResultPackage {
      * @returns The package manifest of the retrieve result.
      */
     public async getManifest() {
+        if (this.manifest) {
+            return this.manifest;
+        }
         const packageXmlSources = this.filterFiles(f => f.endsWith('package.xml'));
         if (!packageXmlSources.length) {
             throw new Error('Package.xml file mentioned in retrieve result was not found in zip archive');
@@ -345,43 +411,20 @@ export class RetrieveResultPackage {
         const manifests = await Promise.all(packageXmlSources.map(async packageXmlSource => {
             return PackageManifest.fromPackageXml(await packageXmlSource.async('nodebuffer'));
         }));
-        return manifests.reduce((manifest, current) => manifest.merge(current));
+        this.manifest = manifests.reduce((manifest, current) => manifest.merge(current));
+        return this.manifest;
     }
 
-    // /**
-    //  * @deprecated Use {@link RetrieveResultFile.extractTo} instead.
-    //  */
-    // public async unpackFolder(packageFolder: string, targetPath: string) : Promise<void> {
-    //     const files = await this.getFiles(file => file.folderName.endsWith(packageFolder.toLowerCase()));
-    //     if (!files) {
-    //         throw new Error(`The specified folder ${packageFolder} was not found in retrieved package or is empty`);
-    //     }
-    //     for (const file of files) {
-    //         await file.extractTo(targetPath);
-    //     }
-    // }
-
-    // /**
-    //  * @deprecated Use {@link RetrieveResultFile.extractTo} instead.
-    //  */
-    // public unpackFile(packageFile: string, targetPath: string) : Promise<void> {
-    //     const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
-    //     if (!file) {
-    //         throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
-    //     }
-    //     return this.streamFileToDisk(file, targetPath);
-    // }
-
-    // /**
-    //  * @deprecated Use {@link RetrieveResultFile.extractTo} instead.
-    //  */
-    // public unpackFileToFolder(packageFile: string, targetPath: string) : Promise<void> {
-    //     const file = this.file(file => file.toLowerCase().endsWith(packageFile.toLowerCase()));
-    //     if (!file) {
-    //         throw new Error(`The specified file ${packageFile} was not found in retrieved package`);
-    //     }
-    //     return this.streamFileToDisk(file, path.join(targetPath, baseName(file.name)));
-    // }
+    private getComponentInfo(fileProperties: FileProperties) {
+        const metadataType = MetadataRegistry.getMetadataType(fileProperties.type);
+        const componentProperties: SalesforcePackageComponent = {
+            componentName: metadataType?.folderType 
+                ? fileProperties.fullName 
+                : substringBefore(fileProperties.fullName, '/'),
+            componentType: fileProperties.type
+        };
+        return componentProperties;
+    }
 
     private file(filter: string | ((file: string) => any)) : ZipArchive.JSZipObject | undefined {
         for (const archive of this.archives ?? []) {
@@ -400,15 +443,5 @@ export class RetrieveResultPackage {
             files.push(...archive.filter(filter));
         }
         return files;
-    }
-
-    private streamFileToDisk(file: ZipArchive.JSZipObject, targetPath: string) : Promise<void> {
-        return new Promise((resolve, reject) => {
-            fs.ensureDir(path.dirname(targetPath)).then(() => {
-                file.nodeStream().pipe(fs.createWriteStream(targetPath, { flags: 'w' }))
-                    .on('finish', resolve)
-                    .on('error', reject);
-            }).catch(reject);
-        });
     }
 }

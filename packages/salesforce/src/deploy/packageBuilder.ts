@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
 import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
-import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache } from '@vlocode/util';
+import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache, stringEqualsIgnoreCase } from '@vlocode/util';
 
 import { PackageManifest } from './maifest';
 import { SalesforcePackage, SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
@@ -216,7 +216,7 @@ export class SalesforcePackageBuilder {
             const isFolderMetadata = stringEquals(metadataType.folderType, xmlName, { caseInsensitive: true });
             if (metadataType.name != xmlName && !isFolderMetadata) {
                 // Support for SFDX formatted source code
-                childMetadataFiles.push([ file, xmlName, metadataType]);
+                childMetadataFiles.push([ file, xmlName, metadataType ]);
                 continue;
             }
 
@@ -468,10 +468,11 @@ export class SalesforcePackageBuilder {
         }
 
         const childComponentName = this.getPackageComponentName(sourceFile, parentType);
-        const folderPerType = parentType.strategies?.decomposition === 'folderPerType';
+        const sourceFilePath = sourceFile.split(/\\|\//g);
+        const indexOfTypeFolder = sourceFilePath.findLastIndex(p => stringEqualsIgnoreCase(p, parentType.directoryName));
 
-        const parentComponentFolder = path.join(...sourceFile.split(/\\|\//g).slice(0, folderPerType ? -2 : -1));
-        const parentComponentName = path.basename(parentComponentFolder);
+        const parentComponentFolder = path.join(...sourceFilePath.slice(0, indexOfTypeFolder + 2));
+        const parentComponentName = sourceFilePath[indexOfTypeFolder + 1];
         const parentComponentMetaFile =  path.join(parentComponentFolder, `${parentComponentName}.${parentType.suffix}-meta.xml`);
         const parentPackagePath = await this.getPackagePath(parentComponentMetaFile, parentType);
 
@@ -494,7 +495,17 @@ export class SalesforcePackageBuilder {
             } else {
                 this.mdPackage.addManifestEntry(parentType.name, parentComponentName);
             }
-            this.mdPackage.addSourceMap(sourceFile, { componentType: fragmentType.name, componentName: `${parentComponentName}.${childComponentName}`, packagePath: parentPackagePath });
+            // Register source file as source for composed metadata
+            this.mdPackage.addSourceMap(sourceFile, { 
+                componentType: fragmentType.name,
+                componentName: `${parentComponentName}.${childComponentName}`, 
+                packagePath: parentPackagePath 
+            });
+            this.mdPackage.addSourceMap(parentComponentMetaFile, { 
+                componentType: parentType.name, 
+                componentName: parentComponentName, 
+                packagePath: parentPackagePath 
+            });
         }
 
         this.logger.verbose(`Added %s (%s.%s) as [%s]`, path.basename(sourceFile), parentComponentName, childComponentName, chalk.green(fragmentTypeName));
