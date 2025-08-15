@@ -44,6 +44,24 @@ export interface XMLParseOptions {
      * @default false
      */
     skipValidation?: boolean;
+    /**
+     * Defines the name of the node under which attributes in the JSON output are grouped.
+     * The default is `$` for attributes groups.
+     * 
+     * For example `{ attributeNode: '@attributes' }` with the following XML:
+     * ```xml
+     * <innerTag attr="value" />
+     * ```
+     * Will result in the following JSON:
+     * ```json
+     * "tag": {
+     *  "@attributes": {
+     *   "attr": "value"
+     *  }
+     * }
+     * ```
+     */
+    attributeNode?: string;
 }
 
 /**
@@ -74,8 +92,21 @@ export interface XMLStringfyOptions {
      */
     stripEmptyNodes?: boolean;
     /**
-     * Defines the prefix to use for attributes in the XML string.
-     * The default is `@` for attributes groups.
+     * Defines the name of the `node` to use for attributes in the XML string.
+     * The default is `$` for attributes groups.
+     * 
+     * For example `{ attributePrefix: '@attributes' }` with the following JSON:
+     * ```json
+     * "tag": {
+     *   "@attributes": {
+     *     "attr": "value"
+     *   }
+     * }
+     * ```
+     * Will result in the following XML:
+     * ```xml
+     * <innerTag attr="value" />
+     * ```
      */
     attributePrefix?: string;
 }
@@ -156,6 +187,7 @@ export namespace XML {
 
         const parserOptions : Partial<X2jOptions> = { 
             ...ParserDefaults, 
+            attributesGroupName: options.attributeNode ?? ParserDefaults.attributesGroupName,
             ignoreAttributes: options.ignoreAttributes ?? ParserDefaults.ignoreAttributes,
             trimValues: options.trimValues ?? ParserDefaults.trimValues,
             removeNSPrefix: options.ignoreNamespacePrefix ?? ParserDefaults.removeNSPrefix
@@ -209,7 +241,7 @@ export namespace XML {
 
         const builderOptions: Partial<XmlBuilderOptions> = {
             format: !!indentBy,
-            attributeNamePrefix: options?.attributePrefix ?? ParserDefaults.attributeNamePrefix,
+            attributeNamePrefix: ParserDefaults.attributeNamePrefix,
             attributesGroupName: options?.attributePrefix ?? ParserDefaults.attributesGroupName,
             suppressEmptyNode: options?.stripEmptyNodes === true,
             indentBy
