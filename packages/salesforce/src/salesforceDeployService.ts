@@ -33,7 +33,6 @@ export class SalesforceDeployService {
     constructor(...args: any[]);
     constructor(
         private readonly salesforce: SalesforceConnectionProvider,
-        private readonly metadataRegister: MetadataRegistry,
         private readonly logger: Logger) {
     }
 
@@ -175,7 +174,7 @@ export class SalesforceDeployService {
 
         while(types.length) {
             const typeName = types.shift()!;
-            const metadataInfo = this.metadataRegister.getMetadataType(typeName);
+            const metadataInfo = MetadataRegistry.getMetadataType(typeName);
             const currentGroup = metadataGroups.find(group => group.length < typesPerChunk) 
                 ?? (metadataGroups[metadataGroups.length] = []);
 

@@ -1,7 +1,6 @@
 import registryData from './registry/metadataRegistry.json';
 import { MetadataType as RegistryMetadataType } from './registry/types';
-import { singletonMixin } from '@vlocode/util';
-import { injectable, Logger } from '@vlocode/core';
+import { injectable, Logger, LogManager } from '@vlocode/core';
 import urlFormats from './metadataUrls.json';
 
 export interface MetadataUrlFormat {
@@ -34,17 +33,14 @@ export interface MetadataType extends RegistryMetadataType {
     label: string;
 }
 
-@singletonMixin
 @injectable.singleton()
-export class MetadataRegistry {
+class MetadataRegistryStore {
+    readonly registry = new Array<MetadataType>();
+    readonly types = new Map<string, MetadataType>();
+    readonly suffixes = new Map<string, string>();
 
-    private readonly registry = new Array<MetadataType>();
-    private readonly types = new Map<string, MetadataType>();
-    private readonly urlFormats = new Map<string, MetadataUrlFormat>();
-    private readonly suffixes = new Map<string, string>();
-
-    constructor(private readonly logger: Logger) {
-        // Init metadata
+    constructor(logger: Logger = LogManager.get('MetadataRegistry')) {
+        // Init metadata registry
         for (const registryEntry of Object.values(registryData.types)) {
             const metadataObject = registryEntry as MetadataType;
 
@@ -58,7 +54,7 @@ export class MetadataRegistry {
             // Store in registry
             this.registry.push(metadataObject);
             if (this.types.has(metadataObject.name.toLowerCase())) {
-                this.logger.warn(`XML Name already in-use: ${metadataObject.name.toLowerCase()}`);
+                logger.warn(`XML Name already in-use: ${metadataObject.name.toLowerCase()}`);
                 continue;
             }
 
@@ -79,7 +75,7 @@ export class MetadataRegistry {
         }
     }
 
-    /**
+     /**
      * Converts a camelCase or PascalCase string to a proper label format
      * @param name The name to format
      * @returns The formatted label
@@ -100,22 +96,46 @@ export class MetadataRegistry {
         // Capitalize first letter and return
         return result.charAt(0).toUpperCase() + result.slice(1);
     }
+}
 
-    public getUrlFormat(type: string) {
+/**
+ * Metadata registry for Salesforce metadata types.
+ * 
+ * This namespace provides access to bundled metadata type information, 
+ * URL formats, and utility methods for working with Salesforce metadata. 
+ * 
+ * The latest metadata types are loaded from Salesforce when the package is build, 
+ * the build date determines the API version of the metadata registry.
+ */
+export namespace MetadataRegistry {
+    
+    /**
+     * Singleton instance of the metadata registry store
+     * @returns {MetadataRegistryStore} The singleton instance of the metadata registry store
+     */
+    export const store = new MetadataRegistryStore();
+
+    /**
+     * Get the URL format for a given metadata type
+     * @param type Metadata type name or XML name
+     * @returns {MetadataUrlFormat} The URL format for the given metadata type
+     * @throws {Error} If the metadata type is not found
+     */
+    export function getUrlFormat(type: string) {
         return { ...urlFormats.$default, ...(urlFormats[type] ?? {}) };
     }
 
     /**
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
-    public getMetadataTypes() : MetadataType[] {
+    export function getMetadataTypes() : MetadataType[] {
         return this.registry;
     }
 
     /**
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
-    public getMetadataSuffixes() : string[] {
+    export function getMetadataSuffixes() : string[] {
         return [...Object.keys(registryData.suffixes)];
     }
 
@@ -124,8 +144,8 @@ export class MetadataRegistry {
      * @param suffix File suffix without .
      * @returns 
      */
-    public isMetadataSuffix(suffix: string) {
-        return this.suffixes.has(suffix.toLowerCase());
+    export function isMetadataSuffix(suffix: string) {
+        return store.suffixes.has(suffix.toLowerCase());
     }
 
     /**
@@ -133,8 +153,8 @@ export class MetadataRegistry {
      * @param type 
      * @returns 
      */
-    public getMetadataType(type: string) {
-        return this.types.get(type.toLowerCase());
+    export function getMetadataType(type: string) {
+        return store.types.get(type.toLowerCase());
     }
 
     /**
@@ -142,8 +162,8 @@ export class MetadataRegistry {
      * @param suffix File suffix without .
      * @returns 
      */
-    public getMetadataTypeBySuffix(suffix: string) : MetadataType | undefined {
-        const metadataType = this.suffixes.get(suffix.toLowerCase());
-        return metadataType ? this.getMetadataType(metadataType) : undefined;
+    export function getMetadataTypeBySuffix(suffix: string) : MetadataType | undefined {
+        const metadataType = store.suffixes.get(suffix.toLowerCase());
+        return metadataType ? getMetadataType(metadataType) : undefined;
     }
 }

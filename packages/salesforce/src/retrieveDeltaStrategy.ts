@@ -54,7 +54,6 @@ export class RetrieveDeltaStrategy {
 
     constructor(
         private readonly deployService: SalesforceDeployService,
-        private readonly metadataRegistry: MetadataRegistry,
         private readonly logger: Logger) {
     }
 
@@ -98,7 +97,7 @@ export class RetrieveDeltaStrategy {
      * @returns Returns true if the component has changed
      */
     private async isComponentChanged(mdPackage: SalesforcePackage, component: RetrieveResultComponent) {
-        const metadataType = this.metadataRegistry.getMetadataType(component.componentType);
+        const metadataType = MetadataRegistry.getMetadataType(component.componentType);
         if (!metadataType) {
             return true;
         }

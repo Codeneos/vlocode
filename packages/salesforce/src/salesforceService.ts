@@ -47,7 +47,6 @@ interface MetadataInfo { type: string; fullName: string; metadata: any; name: st
 @injectable({ lifecycle: LifecyclePolicy.singleton })
 export class SalesforceService implements SalesforceConnectionProvider {
 
-    @injectable.property public readonly metadataRegistry: MetadataRegistry;
     @injectable.property public readonly schema: SalesforceSchemaService;
     @injectable.property public readonly lookupService: SalesforceLookupService;
     @injectable.property public readonly deploy: SalesforceDeployService;
@@ -313,7 +312,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         if (metadataInfo?.fullName.includes('__mdt')) {
             metadataInfo.type = metadataInfo.type.replace('Custom', 'CustomMetadata');
         }
-        const metadataUrlFormat = metadataInfo && this.metadataRegistry.getUrlFormat(metadataInfo.type);
+        const metadataUrlFormat = metadataInfo && MetadataRegistry.getUrlFormat(metadataInfo.type);
 
         if (!metadataInfo || !metadataUrlFormat) {
             throw new Error(`Unable to resolve metadata type (is this a valid Salesforce metadata?) for: ${file}`);
@@ -366,7 +365,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
         const infos = await mapAsyncParallel(files, async file => {
             const info = sfPackage.getSourceFileInfo(file);
             if (info) {
-                const metadataInfo = this.metadataRegistry.getMetadataType(info.componentType)!;
+                const metadataInfo = MetadataRegistry.getMetadataType(info.componentType)!;
                 const metadataFile = !file.endsWith('.xml') && metadataInfo.hasContent && metadataInfo.suffix
                     ? [...sfPackage.getComponentFiles(info)].find(f => f.packagePath.endsWith(`.${metadataInfo.suffix}-meta.xml`))?.fsPath
                     : file;
@@ -527,14 +526,14 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * Get the list of supported metadata types for the current organization merged with static metadata from the SFDX registry
      */
     public getMetadataTypes() : MetadataType[] {
-        return this.metadataRegistry.getMetadataTypes();
+        return MetadataRegistry.getMetadataTypes();
     }
 
     /**
      * When the metadata type is a known metadata type return the type.
      */
     public getMetadataType(type: string) {
-        return this.metadataRegistry.getMetadataType(type);
+        return MetadataRegistry.getMetadataType(type);
     }
 
     /**

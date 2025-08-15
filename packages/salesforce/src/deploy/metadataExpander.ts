@@ -3,10 +3,12 @@ import { SalesforcePackageComponentFile } from './package';
 import { outputFile } from 'fs-extra';
 import { MetadataRegistry, MetadataType } from '../metadataRegistry';
 import { injectable } from '@vlocode/core';
-import { asArray, XML } from '@vlocode/util';
+import { asArray, substringBefore, XML } from '@vlocode/util';
+import * as mimeTypes from 'mime-db';
 
 interface MetadataFile extends SalesforcePackageComponentFile {
-    read(): Promise<Buffer>;
+    content(): Promise<Buffer>;
+    metadata(): Promise<(object & { "@type": string }) | undefined>;
 }
 
 interface OutputFile {
@@ -15,22 +17,50 @@ interface OutputFile {
 
 @injectable()
 export class MetadataExpander {
-    public constructor(private metadataRegistry: MetadataRegistry) {
-    }
 
     public async expandMetadata(metadata: MetadataFile): Promise<Record<string, Buffer>> {
-        const metadataContent = await metadata.read();
-        const type = this.metadataRegistry.getMetadataType(metadata.componentType);
+        const content = await metadata.content();
+        const type = MetadataRegistry.getMetadataType(metadata.componentType);
 
         if (type?.childXmlNames.length) {
-            return this.expandMetadataChildren(metadata.componentName, type, XML.parse(metadataContent));
+            return this.expandMetadataChildren(metadata.componentName, type, XML.parse(content));
         }
 
-        const basename = decodeURIComponent(path.basename(metadata.packagePath));
-        const appendMetaXml = this.shouldAppendMetaXml(metadata.packagePath, metadataContent);        
+        const metadataObj = await metadata.metadata();
+        if (!metadataObj) {
+            return this.expandContentAsMeta(metadata, content);
+        }
+        
+        if (metadataObj['@type'] === 'StaticResource') {
+            return this.expandStaticResource(metadata, content, metadataObj);
+        }
+
+        return this.expandAsContent(metadata, content);
+    }
+
+    private expandStaticResource(metadata: MetadataFile, content: Buffer, meta: object): Record<string, Buffer> {
+        const basename = this.baseName(metadata.packagePath);
+        const contentType = meta['contentType']?.toLowerCase();
+        const mimeType = mimeTypes[contentType];
+        const suffix = mimeType?.extensions?.[0] || 'resource';
+        return {
+            [`${basename}.${suffix}`]: content
+        };
+    }
+
+    private expandContentAsMeta(metadata: MetadataFile, content: Buffer): Record<string, Buffer> {
+        const basename = this.baseName(metadata.packagePath);
+        const appendMetaXml = this.shouldAppendMetaXml(metadata.packagePath, content);        
         const expandedName = appendMetaXml ? `${basename}-meta.xml` : basename;
         return {
-            [expandedName]: metadataContent
+            [expandedName]: content
+        };
+    }
+
+    private expandAsContent(metadata: MetadataFile, content: Buffer): Record<string, Buffer> {
+        const basename = this.baseName(metadata.packagePath);
+        return {
+            [basename]: content
         };
     }
 
@@ -71,5 +101,10 @@ export class MetadataExpander {
         // Check if the body starts with XML declaration
         const bodyString = body.toString('utf8', 0, Math.min(100, body.length));
         return bodyString.includes('<?xml');
+    }
+
+    private baseName(packagePath: string, removeSuffix?: boolean): string {
+        const basename = decodeURIComponent(path.basename(packagePath))
+        return removeSuffix ? substringBefore(basename, '.') : basename;
     }
 }

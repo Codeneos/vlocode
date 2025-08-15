@@ -126,7 +126,6 @@ export class SalesforcePackageBuilder {
     private readonly composedData = new Map<string, MetadataObject>();
     private readonly replacements = new Array<TokenReplacement>();
 
-    @injectable.property private readonly metadataRegistry: MetadataRegistry;
     @injectable.property private readonly logger: Logger;
 
     constructor(
@@ -664,7 +663,7 @@ export class SalesforcePackageBuilder {
     }
 
     private getMetadataType(xmlName: string) {
-        const metadataTypes = this.metadataRegistry.getMetadataTypes();
+        const metadataTypes = MetadataRegistry.getMetadataTypes();
         return metadataTypes.find(type => type.name == xmlName || type.childXmlNames?.includes(xmlName));
     }
 
@@ -679,7 +678,7 @@ export class SalesforcePackageBuilder {
         const folder = pathParts.pop();
         const parentFolder = pathParts.pop();
 
-        for (const type of this.metadataRegistry.getMetadataTypes()) {
+        for (const type of MetadataRegistry.getMetadataTypes()) {
             if (type.strictDirectoryName) {
                 if (type.isBundle) {
                     // match parent folder only for bundles
@@ -695,7 +694,7 @@ export class SalesforcePackageBuilder {
         // Suffix check
         const fileSuffix = this.getFileSuffix(file)?.toLocaleLowerCase();
         if (fileSuffix) {
-            return this.metadataRegistry.getMetadataTypeBySuffix(fileSuffix)?.name;
+            return MetadataRegistry.getMetadataTypeBySuffix(fileSuffix)?.name;
         }
     }
 
@@ -719,7 +718,7 @@ export class SalesforcePackageBuilder {
             }
         }
 
-        const metadataTypes = this.metadataRegistry.getMetadataTypes();
+        const metadataTypes = MetadataRegistry.getMetadataTypes();
         const xmlName = await this.getRootElementName(file);
 
         // Cannot detect certain metadata types properly so instead manually set the type
@@ -827,7 +826,7 @@ export class SalesforcePackageBuilder {
 
     private async getPackageComponentType(file: string, metadataType: MetadataType) {
         if (metadataType.folderContentType) {
-            return this.metadataRegistry.getMetadataType(metadataType.folderContentType)!.name;
+            return MetadataRegistry.getMetadataType(metadataType.folderContentType)!.name;
         }
         return metadataType.name;
     }
