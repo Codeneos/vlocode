@@ -223,6 +223,21 @@ export namespace XML {
     }
 
     /**
+     * Pretty print a XML string or buffer by parsing it and then converting it back to a string.
+     * This function is useful for normalizing XML strings and making them more readable.
+     * @param xml XML string or buffer to pretty print
+     * @param options Options to control the pretty printing behavior, see {@link XMLStringfyOptions} for details.
+     * @returns Pretty printed XML string
+     */
+    export function prettify(xml: string | Buffer, options?: XMLStringfyOptions) : string {
+        if (typeof xml !== 'string') {
+            xml = xml.toString();
+        }
+        const parsed = parse(xml, { trimValues: true, ignoreAttributes: false, ...options });
+        return stringify(parsed, { indent: 2, ...options });  
+    }
+
+    /**
      * Get the name of the root element of a XML string excluding the XML deceleration:
      * ```xml
      * <!-- Returns name of first none-comment root tag: rootTag -->
