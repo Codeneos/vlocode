@@ -15,7 +15,7 @@ export interface FlexCardDefinition {
     Type?: 'flex' | 'classic';
     UniqueName?: string;
     PropertySetConfig: string | object;
-    StylingConfiguration?: any;
+    StylingConfiguration?: string | object;
     Attachments?: any[];
     Label?: Record<string, string>;
 }
@@ -111,7 +111,7 @@ export namespace FlexCardDefinition {
             Type: 'flex',
             UniqueName: record.UniqueName,
             PropertySetConfig: asString(record.PropertySetConfig),
-            StylingConfiguration: asString(record.StylingConfiguration)
+            StylingConfiguration: parseAsJsonString(record.StylingConfiguration),
         };
     }
 
@@ -127,8 +127,27 @@ export namespace FlexCardDefinition {
             IsChildCard: record.IsChildCard,
             Type: record.CardType,
             PropertySetConfig: asString(record.Definition),
-            StylingConfiguration: asString(record.Styles)
+            StylingConfiguration: parseAsJsonString(record.Styles)
         };
+    }
+
+    // eslint-disable-next-line
+    function parseAsJsonString(data: string | object | undefined): string | undefined {
+        if (typeof data === 'string') {
+            try {
+                const parsed = JSON.parse(data);
+                if (typeof parsed === 'object') {
+                    return JSON.stringify(parsed);
+                }
+            } catch {
+                // If parsing fails, return the original string if it is not empty
+                return undefined;
+            }
+        }
+        if (typeof data === 'object' && data) {
+            return JSON.stringify(data);
+        }
+        return undefined;
     }
 }
 
