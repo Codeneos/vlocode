@@ -29,6 +29,13 @@ namespace utility {
     }
 }
 
+namespace window {
+    export function atob(name: string): string {
+        return Buffer.from(name, 'base64').toString('binary');
+    }
+}
+
+
 export namespace FlexCardDesigner {
     export let allLwcBundles: LightningComponentBundle[] = [];
     export let childCards: any[] = [];
