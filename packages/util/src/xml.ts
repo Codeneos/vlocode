@@ -202,7 +202,7 @@ export namespace XML {
     export function stringify(jsonObj: any, indent?: number | string, options?: XMLStringfyOptions) : string;
     export function stringify(jsonObj: any, indent?: number | string | XMLStringfyOptions, options?: XMLStringfyOptions) : string {        
         options = typeof indent === 'object' ? indent : options;
-        indent = typeof indent === 'object' ? undefined : (options?.indent ?? indent);
+        indent = typeof indent === 'object' ? options?.indent : indent;
         const indentBy = (indent && typeof indent !== 'object')
             ? (typeof indent === 'string' ? indent : ' '.repeat(indent))
             : undefined;
