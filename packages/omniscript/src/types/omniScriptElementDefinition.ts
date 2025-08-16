@@ -1,5 +1,5 @@
-import { OmniScriptBaseElementType, OmniScriptElementType, OmniScriptGroupElementType, OmniScriptInputChoiceElementType, OmniScriptInputElementType } from "./omniScriptElementType";
-import { OmniScriptBaseElementPropertySet } from "./omniScriptElementPropertySet";
+import { OmniScriptBaseElementType, OmniScriptElementType, OmniScriptGroupElementType, OmniScriptInputChoiceElementType, OmniScriptInputElementType, OmniScriptStepElementType, OmniScriptValidationElementType } from "./omniScriptElementType";
+import { OmniScriptBaseElementPropertySet, OmniScriptStepElementPropertySet, OmniScriptValidationElementPropertySet } from "./omniScriptElementPropertySet";
 
 export interface OmniScriptBaseElementDefinition<T extends OmniScriptElementType = OmniScriptBaseElementType> {
     type: T;
@@ -24,7 +24,7 @@ export interface OmniScriptBaseElementDefinition<T extends OmniScriptElementType
     }>
 }
 
-export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementDefinition<OmniScriptGroupElementType> {
+export interface OmniScriptGroupElementDefinition<T extends OmniScriptElementType = OmniScriptGroupElementType> extends OmniScriptBaseElementDefinition<T> {
     children: Array<{
         bHasAttachment: boolean,
         eleArray: Array<OmniScriptElementDefinition>;
@@ -35,6 +35,14 @@ export interface OmniScriptGroupElementDefinition extends OmniScriptBaseElementD
     propSetMap: OmniScriptBaseElementPropertySet;
     bAccordionOpen: boolean,
     bAccordionActive: boolean,
+}
+
+export interface OmniScriptStepElementDefinition extends OmniScriptGroupElementDefinition<OmniScriptStepElementType> {
+    propSetMap: OmniScriptStepElementPropertySet;
+}
+
+export interface OmniScriptValidationElementDefinition extends OmniScriptBaseElementDefinition<OmniScriptValidationElementType> {
+    propSetMap: OmniScriptValidationElementPropertySet;
 }
 
 export interface OmniScriptEmbeddedScriptPropertySet extends OmniScriptBaseElementPropertySet {
@@ -84,10 +92,12 @@ export interface OmniScriptChoiceElementDefinition extends OmniScriptInputElemen
 { }
 
 export type OmniScriptElementDefinition =
+    OmniScriptStepElementDefinition |
     OmniScriptGroupElementDefinition |
     OmniScriptEmbeddedScriptElementDefinition |
     OmniScriptInputElementDefinition |
     OmniScriptChoiceElementDefinition | 
+    OmniScriptValidationElementDefinition |
     OmniScriptBaseElementDefinition
     
 export function isChoiceScriptElement(def: OmniScriptElementDefinition): def is OmniScriptChoiceElementDefinition {

@@ -86,6 +86,11 @@ export interface OmniScriptProperties {
     }
 }
 
+export interface OmniScriptPickListOption {
+    name: string;
+    value: string;
+}
+
 export interface OmniScriptDefinition {
     userTimeZone: null,
     userProfile: string,
@@ -109,7 +114,8 @@ export interface OmniScriptDefinition {
     errorMsg: string;
     error: string;
     dMap: object;
-    sobjPL: object;
+    /** Picklist values by SObject type, key is the SObject.Field, value is an array of possible picklist values */
+    sobjPL: Record<string, OmniScriptPickListOption[] | ''>;
     depSOPL: object;
     /**
      * Record keyed  by the name of the custom APEX method that loads the picklist values. Custom APEX classes listed in this array will be invoked at the script
@@ -121,7 +127,7 @@ export interface OmniScriptDefinition {
      * }
      * ```
      */
-    cusPL: Record<string, ''>;
+    cusPL: Record<string, OmniScriptPickListOption[] | ''>;
     /**
      * Record keyed by the name of the custom APEX method that loads the picklist values. Custom APEX classes listed in this array will be invoked at the script
      * start to load picklist values instead of caching the values in the script definition at design time.
@@ -132,7 +138,7 @@ export interface OmniScriptDefinition {
      * }
      * ```
      */
-    depCusPL: Record<string, ''>;
+    depCusPL: Record<string, OmniScriptPickListOption[] | ''>;
     children: Array<OmniScriptElementDefinition>;
     bReusable: boolean;
     bpVersion: number;

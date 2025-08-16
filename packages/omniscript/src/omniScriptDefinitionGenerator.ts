@@ -3,7 +3,7 @@ import { NamespaceService, SalesforceLabels, SalesforceSchemaService } from '@vl
 import { groupBy, sortBy } from '@vlocode/util';
 import { VlocityDatapack, VlocityInterfaceInvoker } from '@vlocode/vlocity';
 
-import { OmniScriptDefinition, OmniScriptSpecification, isChoiceScriptElement, OmniScriptChoiceElementDefinition } from './types';
+import { OmniScriptDefinition, OmniScriptSpecification, isChoiceScriptElement, OmniScriptChoiceElementDefinition, OmniScriptPickListOption } from './types';
 import { OmniScriptDefinitionFactory } from './omniScriptDefinitionFactory';
 import { OmniScriptDefinitionBuilder } from './omniScriptDefinitionBuilder';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
@@ -61,9 +61,16 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             }
         }
 
-        // Add Labels and translate them to the current user language
+        // Resolve labels
         const labels = await this.labels.getCustomLabels(Object.keys(scriptDef.labelKeyMap));
-        scriptDef.labelKeyMap = Object.fromEntries(Object.values(labels).map(label => ([label.name, label.value])));
+
+        if (scriptBuilder.isMultiLanguage) {
+            // For multi-language scripts, do not resolve labels here, but rather let the script builder handle it
+            scriptDef.labelKeyMap = Object.fromEntries(Object.values(labels).map(label => [label.name, '']));
+        } else {
+            // For none multi-language scripts, resolve labels immediately to the user's active language
+            scriptDef.labelKeyMap = Object.fromEntries(Object.values(labels).map(label => ([label.name, label.value])));
+        }
 
         return scriptBuilder.build();
     }
@@ -102,13 +109,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
             }
 
             if (isChoiceScriptElement(definition)) {
-                if (builder.realtimePicklistSeed) {
-                    // Add ru time picklists to definition so they can be resolved at runtime
-                    builder.addRuntimePicklistSource(definition.propSetMap.optionSource, definition.propSetMap.controllingField);
-                } else {
-                    // Loading of picklist options can fail
-                    await this.loadOptions(builder, definition);
-                }
+                await this.setPicklistValues(builder, definition);
             }
 
             try {
@@ -138,37 +139,60 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         }
     }
 
-    private async loadOptions(builder: OmniScriptDefinitionBuilder, element: OmniScriptChoiceElementDefinition) {
+    private async setPicklistValues(builder: OmniScriptDefinitionBuilder, element: OmniScriptChoiceElementDefinition) {
         if (!element.propSetMap.optionSource.source) {
             return;
         }
 
+        if (builder.realtimePicklistSeed) {
+            // Add runtime picklists to definition so they can be resolved at runtime
+            builder.setPicklistValues(element.propSetMap.optionSource, element.propSetMap.controllingField, '');
+            return;
+        }
+
+        const picklistValues = await this.loadPicklistValues(builder, element);
+        if (!picklistValues) {
+            builder.setPicklistValues(element.propSetMap.optionSource, element.propSetMap.controllingField, picklistValues);
+            return;
+        }
+
+        if (element.propSetMap.controllingField.type && element.propSetMap.controllingField.element) {
+            element.propSetMap.dependency = picklistValues;
+        } else {
+            element.propSetMap.options = picklistValues;
+        }
+
+        // Stor as Global Picklist otherwise it will not render in standard runtime
+        builder.setPicklistValues(element.propSetMap.optionSource, element.propSetMap.controllingField, picklistValues);
+    }
+
+    private async loadPicklistValues(builder: OmniScriptDefinitionBuilder, element: OmniScriptChoiceElementDefinition) {
         if (element.propSetMap.optionSource.type === 'SObject') {
             this.logger.debug(`Loading picklist options for SObject field: ${element.propSetMap.optionSource.source}`);
             if (element.propSetMap.controllingField.type === 'SObject' && element.propSetMap.controllingField.element) {
-                element.propSetMap.dependency = await this.getDependentPicklistOptions(element.propSetMap.optionSource.source);
-            } else {
-                element.propSetMap.options = await this.getPicklistOptions(element.propSetMap.optionSource.source);
-            }
+                return this.getDependentPicklistOptions(element.propSetMap.optionSource.source);
+            } 
+            return this.getPicklistOptions(element.propSetMap.optionSource.source);
         }
 
         if (element.propSetMap.optionSource.type === 'Custom') {
-            if (element.propSetMap.controllingField.type === 'Custom' && element.propSetMap.controllingField.element) {
-                // Let Vlocity handle custom dependent picklist sources at runtime
-                builder.addRuntimePicklistSource(element.propSetMap.optionSource, element.propSetMap.controllingField);
-            } else if (element.propSetMap.optionSource.source?.includes('.')) {
+            if (element.propSetMap.controllingField.type === 'Custom' && 
+                element.propSetMap.controllingField.element
+            ) {
+                return undefined;
+            } 
+            
+            if (element.propSetMap.optionSource.source?.includes('.')) {
                 this.logger.debug(`Loading picklist options from Custom source: ${element.propSetMap.optionSource.source}`);
                 try {
                     const response = await this.genericInvoker.invoke(element.propSetMap.optionSource.source);
-                    if (!Array.isArray(response.options)) {
-                        element.propSetMap.options = [ { value: `Error ${element.propSetMap.optionSource.source} returned no options`, name: 'ERR' } ];
-                    } else {
-                        element.propSetMap.options = response.options;
-                    }
+                    if (!Array.isArray(response?.options)) {
+                        return [ { value: `Error ${element.propSetMap.optionSource.source} returned no options`, name: 'ERR' } ];
+                    } 
+                    return response.options;
                 } catch(err) {
                     // When loading of picklist elements fails instead delegate loading to be done at runtime
                     // to avoid blocking the script builder from generating the rest of the script definition
-                    builder.addRuntimePicklistSource(element.propSetMap.optionSource);
                     this.logger.warn(`Unable to load custom picklist options for script element "${element.name}":`, err);
                 }
             }
@@ -185,12 +209,12 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
         return true;
     }
 
-    private async getPicklistOptions(picklist: string) {
+    private async getPicklistOptions(picklist: string) : Promise<OmniScriptPickListOption[]> {
         const entries = await this.getActivePicklistEntries(picklist);
         return entries.map(entry => ({ value: entry.label ?? entry.value, name: entry.value }));
     }
 
-    private async getDependentPicklistOptions(picklist: string) {
+    private async getDependentPicklistOptions(picklist: string) : Promise<Record<string, OmniScriptPickListOption[]>> {
         const entries = await this.getActivePicklistEntries(picklist);
         return groupBy(entries, 'validFor', entry => ({ value: entry.label ?? entry.value, name: entry.value }));
     }

@@ -93,12 +93,18 @@ export class SalesforceLabels {
             if (language) {
                 const localizedLabel = label.localizations[language];
                 if (localizedLabel) {
-                    return [key, { name: label.developerName, value: localizedLabel, language: language }]
+                    return [key, { 
+                        name: label.name, 
+                        fullName: label.developerName,
+                        value: localizedLabel, 
+                        language: language 
+                    }]
                 }
             }
             return [key, 
                 { 
-                    name: label.developerName, 
+                    name: label.name, 
+                    fullName: label.developerName,
                     value: label.localizations[label.language] ?? label.value, 
                     language: label.language 
                 }

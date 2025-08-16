@@ -20,6 +20,10 @@ export type OmniScriptInputElementType =
 
 export type OmniScriptInputChoiceElementType = 'Radio' | 'Select' | 'Multi-select';
 
+export type OmniScriptStepElementType = 'Step';
+
+export type OmniScriptValidationElementType = 'Validation';
+
 export type OmniScriptActionElementType = 
     'Calculation Action' |
     'DataRaptor Extract Action' |
@@ -47,7 +51,6 @@ export type OmniScriptActionElementType =
 
 export type OmniScriptGroupElementType = 
     'Block' | 
-    'Step' | 
     'Loop Block' | 
     'Conditional Block' | 
     'Try Catch Block' | 
@@ -70,7 +73,6 @@ export type OmniScriptBaseElementType =
     'Set Errors' |
     'Set Values' |
     'Submit' |
-    'Validation' |
     'Custom Lightning Web Component' |
     'Cache Block' |
     'Radio Group';
@@ -80,8 +82,10 @@ export type OmniScriptBaseElementType =
  */
 export type OmniScriptElementType = 
     OmniScriptInputElementType | 
+    OmniScriptValidationElementType | 
     OmniScriptActionElementType |
     OmniScriptInputChoiceElementType | 
+    OmniScriptStepElementType |
     OmniScriptGroupElementType |
     OmniScriptBaseElementType |
     'OmniScript';

@@ -35,6 +35,14 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     }
 
     /**
+     * Determines whether the script definition supports multiple languages.
+     * Returns `true` if the `bpLang` property matches "MultiLanguage" or "Multi-Language" (case-insensitive).
+     */
+    public get isMultiLanguage() {
+        return /^Multi-?Language$/i.test(this.scriptDef.bpLang);
+    }
+
+    /**
      * True if picklists are to be loaded at script startup; otherwise false and the generator is expected to load the picklists at design time.
      * In which case picklists labels are in the same language as the activating user
      */
@@ -57,26 +65,37 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         this.embeddedTemplates.set(template.name, template);
     }
 
-    /**
-     * Add a custom picklist controller to the script definition. This controller is invoked at the start of the script to load the picklist values.
-     * @param controller Name of the controller to add in the following format: `<controller>.<method>`
-     */
     public addRuntimePicklistSource(
         optionSource: { type: 'SObject' | 'Custom' | 'Manual' | 'Image', source: string }, 
-        controllingField?: { type?: 'SObject' | 'Custom' | 'None', source: string, element: string}) 
-    {
+        controllingField?: { type?: 'SObject' | 'Custom' | 'None', source: string, element: string } | undefined
+    ) {
+        this.setPicklistValues(optionSource, controllingField, '');
+    }
+
+    /**
+     * Sets the design time picklist values for the specified option source.
+     * This is used to set the picklist values for the script definition at design time.
+     * @param optionSource 
+     * @param values 
+     * @returns 
+     */
+    public setPicklistValues(
+        optionSource: { type: 'SObject' | 'Custom' | 'Manual' | 'Image', source: string }, 
+        controllingField?: { type?: 'SObject' | 'Custom' | 'None', source: string, element: string } | undefined,
+        values?: { value: string, name: string }[] | ''
+    ) {
         if (!optionSource.source) {
             return;
         }
 
         if (controllingField?.type === 'SObject' && controllingField.source) {
-            this.scriptDef.depSOPL[`${optionSource.source}/${controllingField.source}`] = '';
+            this.scriptDef.depSOPL[`${optionSource.source}/${controllingField.source}`] = values ?? '';
         } else if (controllingField?.type === 'Custom' && controllingField.source) { 
-            this.scriptDef.depCusPL[`${controllingField?.element}/${controllingField.source}`] = '';
+            this.scriptDef.depCusPL[`${controllingField.element}/${controllingField.source}`] = values ?? '';
         } else if (optionSource.type === 'Custom') {
-            this.scriptDef.cusPL[optionSource.source] = '';
+            this.scriptDef.cusPL[optionSource.source] = values ?? '';
         } else if (optionSource.type === 'SObject') {
-            this.scriptDef.sobjPL[optionSource.source] = '';
+            this.scriptDef.sobjPL[optionSource.source] = values ?? '';
         }
     }
 
@@ -102,6 +121,10 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
     public addElement(id: string, element: OmniScriptElementDefinition, options?: AddElementOptions) {
         // Validate if the element can be added
         this.validateElement(element, options);
+
+        // Add labels to the script definition
+        this.addElementLabels(element);
+
         this.elements.set(id, element);
 
         if (element.propSetMap?.HTMLTemplateId) {
@@ -136,10 +159,6 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
             element.offSet = 0;
         }
 
-        if (element.propSetMap?.label) {
-            this.scriptDef.labelKeyMap[element.propSetMap.label] = element.propSetMap.label;
-        }
-
         if (options?.parentElementId) {
             try {
                 this.group(options.parentElementId).addElement(element);
@@ -161,6 +180,39 @@ export class OmniScriptDefinitionBuilder implements Iterable<OmniScriptElementDe
         }
 
         this.addElementHandlers[element.type]?.(id, element, options);
+    }
+
+    private addElementLabels(element: OmniScriptElementDefinition) {
+        if (element.propSetMap) {
+            for (const [key, value] of Object.entries(element.propSetMap)) {
+                if (!value || typeof value !== 'string') {
+                    // Skip null and non-string values
+                    continue;
+                }
+                if (/(label|message)$/i.test(key)) {
+                    // All label and message keys are registered in the label key map
+                    this.addLabel(value);
+                }
+            }
+        }
+
+        if (element.type === 'Step' && element.propSetMap.instruction) {
+            this.addLabel(element.propSetMap.instruction);
+        }
+
+        if (element.type === 'Validation' && element.propSetMap.messages) {
+            for (const msg of Object.values(element.propSetMap.messages)) { 
+                this.addLabel(msg.text);
+            }
+        }
+    }
+
+    private addLabel(labelName: string | undefined) {
+        if (!labelName || labelName.includes(' ')) {
+            // If a label key includes a space, it is not a valid label key and should not be added
+            return;
+        }
+        this.scriptDef.labelKeyMap[labelName] = labelName;
     }
 
     /**
