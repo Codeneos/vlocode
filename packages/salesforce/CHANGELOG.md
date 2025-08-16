@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
+
+### Bug Fixes
+
+* labels in MultiLanguage OmniScript are not added properly to the OmniScript definition ([83f9ea8](https://github.com/Codeneos/vlocode/commit/83f9ea81ee050fd31d229afef971e6f6812d8ae9))
+
+### Features
+
+* enhanced support for metadata refresh and export in decomposed source format ([5daeb09](https://github.com/Codeneos/vlocode/commit/5daeb0977ee4418415ca61ae5847d38bcb0416f5))
+* expand static resources with the proper file extension based on the contents mime type ([e2ff339](https://github.com/Codeneos/vlocode/commit/e2ff339cece4bd3ef118e5ad52511d075e14c5ef))
+* support refreshing Salesforce metadata in SF(DX) format ([b2309c1](https://github.com/Codeneos/vlocode/commit/b2309c1cfd6a7a155b4261d3169f2359d1f3489e))
+
 ## [1.31.10](https://github.com/Codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
 
 ### Bug Fixes

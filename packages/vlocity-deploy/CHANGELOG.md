@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
+
+### Bug Fixes
+
+* atob function from window namespace is not stubbed in FlexCardDesigner ([f8267a3](https://github.com/Codeneos/vlocode/commit/f8267a3c4a1a357076cc831fcf70032ecaebcbf3))
+* FlexCard compilation error when StylingConfiguration was defined as empty string ([9318034](https://github.com/Codeneos/vlocode/commit/9318034d4d73ff15149ea2da19dd5f3692d878e1))
+* FlexCards public properties were not getting exposed through the Meta XML causing deployment errors for components (flexi-pages) that would try to set public properties ([aba0d26](https://github.com/Codeneos/vlocode/commit/aba0d260c87cfd430eb5b1823cf600708576900b))
+* labels in MultiLanguage OmniScript are not added properly to the OmniScript definition ([83f9ea8](https://github.com/Codeneos/vlocode/commit/83f9ea81ee050fd31d229afef971e6f6812d8ae9))
+
 ## [1.31.10](https://github.com/Codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

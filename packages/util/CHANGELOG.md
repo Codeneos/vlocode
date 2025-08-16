@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
+
+### Bug Fixes
+
+* indent is ignored when passed in as option through XML.stringify ([bfbaee4](https://github.com/Codeneos/vlocode/commit/bfbaee4f6949746edbdd9da77df9f0d11e0e5681))
+
+### Features
+
+* add new prettify function to reformat XML as pretty printed output ([889aefd](https://github.com/Codeneos/vlocode/commit/889aefdaed2a9ec9b8fb3b3fdd2a71256bea8e65))
+* enhanced support for metadata refresh and export in decomposed source format ([5daeb09](https://github.com/Codeneos/vlocode/commit/5daeb0977ee4418415ca61ae5847d38bcb0416f5))
+* extend documentation of attribute parsing and support setting attributeNode while reading XML ([08f607f](https://github.com/Codeneos/vlocode/commit/08f607fa52e0af66b8e375fe779890e21404a3f3))
+
 ## [1.31.8](https://github.com/Codeneos/vlocode/compare/v1.31.7...v1.31.8) (2025-07-23)
 
 ### Bug Fixes

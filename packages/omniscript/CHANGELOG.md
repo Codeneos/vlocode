@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
+
+### Bug Fixes
+
+* labels in MultiLanguage OmniScript are not added properly to the OmniScript definition ([83f9ea8](https://github.com/Codeneos/vlocode/commit/83f9ea81ee050fd31d229afef971e6f6812d8ae9))
+
 ## [1.31.10](https://github.com/Codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
 
 **Note:** Version bump only for package @vlocode/omniscript

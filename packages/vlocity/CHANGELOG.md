@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
+
+### Bug Fixes
+
+* OmniScript doesn't open in correct editor when using open-in-org command ([61ae903](https://github.com/Codeneos/vlocode/commit/61ae9036cf60b28faeaceef6a74978f1e32bfef1))
+
 ## [1.31.10](https://github.com/Codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
 
 **Note:** Version bump only for package @vlocode/vlocity

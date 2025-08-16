@@ -4,6 +4,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.32.0](https://github.com/codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
+
+### Bug Fixes
+
+* atob function from window namespace is not stubbed in FlexCardDesigner ([f8267a3](https://github.com/codeneos/vlocode/commit/f8267a3c4a1a357076cc831fcf70032ecaebcbf3))
+* FlexCard compilation error when StylingConfiguration was defined as empty string ([9318034](https://github.com/codeneos/vlocode/commit/9318034d4d73ff15149ea2da19dd5f3692d878e1))
+* FlexCards public properties were not getting exposed through the Meta XML causing deployment errors for components (flexi-pages) that would try to set public properties ([aba0d26](https://github.com/codeneos/vlocode/commit/aba0d260c87cfd430eb5b1823cf600708576900b))
+* indent is ignored when passed in as option through XML.stringify ([bfbaee4](https://github.com/codeneos/vlocode/commit/bfbaee4f6949746edbdd9da77df9f0d11e0e5681))
+* labels in MultiLanguage OmniScript are not added properly to the OmniScript definition ([83f9ea8](https://github.com/codeneos/vlocode/commit/83f9ea81ee050fd31d229afef971e6f6812d8ae9))
+* OmniScript doesn't open in correct editor when using open-in-org command ([61ae903](https://github.com/codeneos/vlocode/commit/61ae9036cf60b28faeaceef6a74978f1e32bfef1))
+
+### Features
+
+* add new prettify function to reformat XML as pretty printed output ([889aefd](https://github.com/codeneos/vlocode/commit/889aefdaed2a9ec9b8fb3b3fdd2a71256bea8e65))
+* enhanced support for metadata refresh and export in decomposed source format ([5daeb09](https://github.com/codeneos/vlocode/commit/5daeb0977ee4418415ca61ae5847d38bcb0416f5))
+* expand static resources with the proper file extension based on the contents mime type ([e2ff339](https://github.com/codeneos/vlocode/commit/e2ff339cece4bd3ef118e5ad52511d075e14c5ef))
+* extend documentation of attribute parsing and support setting attributeNode while reading XML ([08f607f](https://github.com/codeneos/vlocode/commit/08f607fa52e0af66b8e375fe779890e21404a3f3))
+* support refreshing Salesforce metadata in SF(DX) format ([b2309c1](https://github.com/codeneos/vlocode/commit/b2309c1cfd6a7a155b4261d3169f2359d1f3489e))
+
 ## [1.31.10](https://github.com/codeneos/vlocode/compare/v1.31.9...v1.31.10) (2025-07-28)
 
 ### Bug Fixes
