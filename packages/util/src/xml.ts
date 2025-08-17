@@ -217,7 +217,7 @@ export namespace XML {
         return visitObject(new XMLParser(parserOptions).parse(xml, !options.skipValidation), (prop, value, target) => {
             if (typeof value === 'object') {
                 // Parse nil as null as per XML spec
-                if (value['$']?.['nil'] === true) {
+                if (parserOptions.attributesGroupName && value[parserOptions.attributesGroupName]?.['nil'] === true) {
                     target[prop] = null;
                 }
             }
