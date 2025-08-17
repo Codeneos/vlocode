@@ -41,6 +41,15 @@ describe('SalesforceApexContentProvider', () => {
         provider = new SalesforceApexContentProvider(mockConnectionProvider, mockLogger);
     });
 
+    // Mock timers to control async behavior
+    beforeAll(() => {        
+        jest.useFakeTimers();
+    });
+
+    afterAll(() => {
+        jest.useRealTimers();
+    });
+
     describe('provideTextDocumentContent', () => {
         it('should return class body for valid class name URI', async () => {
             // Arrange
@@ -55,6 +64,7 @@ describe('SalesforceApexContentProvider', () => {
 
             // Act
             const result = await provider.provideTextDocumentContent(uri);
+            jest.runAllTimers(); // Ensure all promises are resolved
 
             // Assert
             expect(result).toBe(expectedBody);
@@ -78,6 +88,7 @@ describe('SalesforceApexContentProvider', () => {
 
             // Act
             const result = await provider.provideTextDocumentContent(uri);
+            jest.runAllTimers(); // Ensure all promises are resolved
 
             // Assert
             expect(result).toBe(expectedBody);
@@ -95,6 +106,7 @@ describe('SalesforceApexContentProvider', () => {
 
             // Act
             const result = await provider.provideTextDocumentContent(uri);
+            jest.runAllTimers(); // Ensure all promises are resolved
 
             // Assert
             expect(result).toContain('// Error fetching Apex class');
@@ -113,6 +125,7 @@ describe('SalesforceApexContentProvider', () => {
 
             // Act
             const result = await provider.provideTextDocumentContent(uri);
+            jest.runAllTimers(); // Ensure all promises are resolved
 
             // Assert
             expect(result).toContain('// Error fetching Apex class');
@@ -129,6 +142,7 @@ describe('SalesforceApexContentProvider', () => {
 
             // Act
             const result = await provider.provideTextDocumentContent(uri, cancellationToken);
+            jest.runAllTimers(); // Ensure all promises are resolved
 
             // Assert
             expect(result).toContain('// Error fetching Apex class');
@@ -150,6 +164,7 @@ describe('SalesforceApexContentProvider', () => {
             // Act
             const result1 = await provider.provideTextDocumentContent(uri);
             const result2 = await provider.provideTextDocumentContent(uri);
+            jest.runAllTimers(); // Ensure all promises are resolved
 
             // Assert
             expect(result1).toBe(expectedBody);
