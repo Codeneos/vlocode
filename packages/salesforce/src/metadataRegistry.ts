@@ -109,6 +109,10 @@ class MetadataInfoStore {
  * the build date determines the API version of the metadata registry.
  */
 export namespace MetadataRegistry {
+    /**
+     * XML namespace used for Salesforce metadata XML files
+     */
+    export const xmlNamespace = 'http://soap.sforce.com/2006/04/metadata';
     
     /**
      * Singleton instance of the metadata registry store

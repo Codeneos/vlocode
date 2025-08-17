@@ -24,7 +24,7 @@ export class MetadataExpander {
         const type = MetadataRegistry.getMetadataType(metadata.componentType);
 
         if (type?.childXmlNames.length) {
-            return this.expandMetadataChildren(metadata.componentName, type, XML.parse(content));
+            return this.expandMetadataChildren(metadata.componentName, type, content);
         }
 
         if (type?.name === 'StaticResource') {
@@ -55,7 +55,9 @@ export class MetadataExpander {
         };
     }
 
-    private expandMetadataChildren(name: string, type: MetadataType, metadata: object): Record<string, Buffer> {
+    private expandMetadataChildren(name: string, type: MetadataType, content: Buffer): Record<string, Buffer> {
+        const attributeNode = '$';
+        const metadata = XML.parse(content, { attributeNode });
         const expandedMetadata: Record<string, Buffer> = {};
 
         if (!type.children) {
@@ -71,7 +73,21 @@ export class MetadataExpander {
                     throw new Error(`Missing unique identifier for child type ${childType.name} in metadata ${type.name}`);
                 }
                 const childFileName = path.posix.join(name, childType.directoryName, `${childName}.${childType.suffix}-meta.xml`);
-                expandedMetadata[childFileName] = Buffer.from(XML.stringify({ [childType.name]: childItem}, 4));
+                const childXml = XML.stringify(
+                    { 
+                        [childType.name]: {
+                            ...childItem,
+                            [attributeNode]: metadata[attributeNode] ?? {
+                                xmlns: MetadataRegistry.xmlNamespace
+                            }
+                        }                        
+                    }, 
+                    {
+                        indent: 4,
+                        attributePrefix: attributeNode
+                    }
+                );
+                expandedMetadata[childFileName] = Buffer.from(childXml);
             }
 
             if (childContent) {
