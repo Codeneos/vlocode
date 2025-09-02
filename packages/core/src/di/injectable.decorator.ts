@@ -1,17 +1,26 @@
 import 'reflect-metadata';
 import { asArray } from '@vlocode/util';
-import { container, ServiceType, LifecyclePolicy, ServiceOptions } from './container';
+import { container, ObjectType, LifecyclePolicy, ServiceOptions } from './container';
 import { randomUUID } from 'crypto';
+import { deprecate } from 'util';
+import { inject } from './inject.decorator';
 
 export interface DependencyOptions extends Partial<ServiceOptions> {
     /** List of components that is provided by this class  */
-    provides?: Array<ServiceType> | ServiceType;
+    provides?: Array<ObjectType> | ObjectType;
 }
 
-export const DesignTimeParameters = Symbol('[[DesignTimeParameters]]');
 export const InjectableDecorated = Symbol('[[Injectable]]');
 export const InjectableIdentity = Symbol('[[InjectableIdentity]]');
 export const InjectableOriginalCtor = Symbol('[[InjectableOriginalCtor]]');
+
+export interface InjectableDecorator {
+    <T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions): (ctor: T) => any;
+    transient: (options?: Omit<DependencyOptions, 'lifecycle'>) => any;
+    singleton: (options?: Omit<DependencyOptions, 'lifecycle'>) => any;
+    isDecorated: (serviceType: ObjectType) => boolean;
+    property: typeof inject;
+}
 
 /**
  * Register a class as injectable component into the application container.
@@ -22,7 +31,10 @@ export const InjectableOriginalCtor = Symbol('[[InjectableOriginalCtor]]');
  *
  * @param options Constructions options for the service
  */
-export const injectable = Object.assign(function injectable<T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions) : (ctor: T) => any {
+export const injectable: InjectableDecorator = Object.assign(    
+function injectable<T extends { new(...args: any[]): InstanceType<T> }>(
+    options?: DependencyOptions
+) : (ctor: T) => any {
     const services = asArray(options?.provides ?? []);
 
     return function(ctor: T) {
@@ -32,21 +44,19 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
             static [InjectableDecorated] = true;
             static [InjectableOriginalCtor] = ctor;
             constructor(...args: any[]) {
-                container.resolveParameters(ctor, args);
+                //container.resolveParameters(ctor, args);
                 super(...args);
-                container.resolveProperties(this);
+                //container.resolveProperties(this);
             }
         };
         ctor[InjectableIdentity] = classProto[InjectableIdentity];
 
-        for (const serviceType of services) {
-            container.registerType(ctor as any, serviceType, options);
+        if (services) {
+            container.add(ctor, { ...options, provides: services });
         }
 
-        // Register this dependency in the main container
-        // only when the dependency has a name; otherwise it cannot be registered
         if (ctor.name) {
-            container.registerType(ctor, ctor, options);
+            container.add(ctor, { ...options, provides: undefined });
         }
 
         // Register dependency metadata on new class ctor
@@ -73,41 +83,25 @@ export const injectable = Object.assign(function injectable<T extends { new(...a
         return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.singleton } );
     },
     /**
-     * Defines the property as injectable that is resolved during instantiation of the class
-     * @param target Target
-     * @param propertyKey Property name
-     */
-    property: function(target: any, propertyKey: string) {
-        const properties = (Reflect.getMetadata('service:properties', target) ?? []).concat([ propertyKey ]);
-        Reflect.defineMetadata('service:properties', properties, target);
-    },
-    /**
-     * Resolve parameter to a specific service type
-     * @param serviceType 
-     * @returns 
-     */
-    param: function (serviceType: ServiceType) {
-        return function(target: object, propertyKey: undefined, parameterIndex: number) {
-            const serviceName = typeof serviceType === 'string' ? serviceType : (serviceType.prototype?.constructor?.name ?? serviceType.name);
-            Reflect.defineMetadata(`dependency:inject:${parameterIndex}`, serviceName, target);
-        };
-    },
-    /**
      * Check if a class-type is decorated with the {@link injectable} decorator.
      * @param serviceType class or constructor like object
      * @returns `true` if the class is decorated otherwise `false`
      */
-    isDecorated: function (serviceType: ServiceType) {
+    isDecorated: function (serviceType: ObjectType) {
         return serviceType[InjectableDecorated] !== null;
-    }
+    },
+    /**
+     * Property injection decorator
+     */
+    property: inject
 });
 
 /**
- * Do not onject
- * @param target 
+ * Marks a parameter as ignored for dependency injection.
+ * @param target Target 
  * @param propertyKey 
  * @param parameterIndex 
  */
 export function ignore(target: object, propertyKey: string | symbol, parameterIndex: number) {
-    Reflect.defineMetadata(`dependency:inject:${parameterIndex}:ignore`, true, target);
+    Reflect.defineMetadata(`dependency:inject:parameter:${parameterIndex}:ignore`, true, target);
 }

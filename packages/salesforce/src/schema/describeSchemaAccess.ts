@@ -1,4 +1,4 @@
-import { Logger, injectable, DeferredWorkQueue, WorkItemResult } from '@vlocode/core';
+import { Logger, injectable, DeferredWorkQueue, WorkItemResult, inject } from '@vlocode/core';
 import { cache, forEachAsyncParallel, getObjectProperty, setObjectProperty, Timer, visitObject } from '@vlocode/util';
 import { SalesforceConnectionProvider } from '../connection';
 import { DescribeSObjectResult, Field } from '../types';
@@ -14,7 +14,7 @@ export class DescribeSchemaAccess {
     private readonly metadataReadChunkSize = 10;
     private readonly metadataReadParallelism = 25;
     private readonly deferredProcessor = new DeferredWorkQueue(this.describeBulk, this);
-    @injectable.property private readonly logger!: Logger;
+    @inject(Logger) private readonly logger!: Logger;
 
     private arrayNormalizedFields = [
         'fields', 

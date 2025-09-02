@@ -1,4 +1,4 @@
-import { Logger, injectable, DeferredWorkQueue, WorkItemResult } from '@vlocode/core';
+import { Logger, injectable, DeferredWorkQueue, WorkItemResult, inject } from '@vlocode/core';
 import { cache, forEachAsyncParallel, mapKeys, Timer } from '@vlocode/util';
 import { QueryBuilder } from '../queryBuilder';
 import { EntityDefinition } from './types/entityDefinition';
@@ -78,7 +78,7 @@ export class ToolingApiSchemaAccess {
     ];
 
     private readonly deferredProcessor = new DeferredWorkQueue(this.getEntityDefinitions, this);
-    @injectable.property private readonly logger!: Logger;
+    @inject(Logger) private readonly logger!: Logger;
 
     constructor(private readonly queryService: QueryService, private readonly schemaStore: SchemaDataStore) {
     }

@@ -1,5 +1,5 @@
 import * as jsforce from 'jsforce';
-import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
+import { Container, container, FileSystem, injectable, LifecyclePolicy, Logger, inject } from '@vlocode/core';
 import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, Timer, FileSystemUri, CancellationToken, asArray, groupBy, isSalesforceId, filterUndefined, AwaitableAsyncGenerator } from '@vlocode/util';
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
@@ -47,12 +47,12 @@ interface MetadataInfo { type: string; fullName: string; metadata: any; name: st
 @injectable({ lifecycle: LifecyclePolicy.singleton })
 export class SalesforceService implements SalesforceConnectionProvider {
 
-    @injectable.property public readonly schema: SalesforceSchemaService;
-    @injectable.property public readonly lookupService: SalesforceLookupService;
-    @injectable.property public readonly deploy: SalesforceDeployService;
-    @injectable.property public readonly logs: DeveloperLogs;
-    @injectable.property public readonly batch: SalesforceBatchService;
-    @injectable.property public readonly profiles: SalesforceProfileService;
+    @inject(SalesforceSchemaService) public readonly schema: SalesforceSchemaService;
+    @inject(SalesforceLookupService) public readonly lookupService: SalesforceLookupService;
+    @inject(SalesforceDeployService) public readonly deploy: SalesforceDeployService;
+    @inject(DeveloperLogs) public readonly logs: DeveloperLogs;
+    @inject(SalesforceBatchService) public readonly batch: SalesforceBatchService;
+    @inject(SalesforceProfileService) public readonly profiles: SalesforceProfileService;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,

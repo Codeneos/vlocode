@@ -1,4 +1,4 @@
-import { Container, Logger, container, injectable } from '@vlocode/core';
+import { Container, Logger, container, injectable, inject } from '@vlocode/core';
 import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
@@ -50,8 +50,8 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         (field, name) => !!field.relationshipName && removeNamespacePrefix(field.relationshipName).toLowerCase().replace('__r', '') === name.toLowerCase(),
     ];
 
-    @injectable.property private readonly logger: Logger;
-    @injectable.property private readonly nsService: NamespaceService;
+    @inject(Logger) private readonly logger: Logger;
+    @inject(NamespaceService) private readonly nsService: NamespaceService;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,

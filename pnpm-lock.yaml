@@ -74,9 +74,6 @@ patchedDependencies:
   jsforce@1.11.0:
     hash: d7c067d28cb8b546e1ba6c504cf6b847231a0eef1dd287dd183c6f3038a96b0a
     path: patches/jsforce@1.11.0.patch
-  typescript:
-    hash: 24d0f58b6ccc436f82020144f0eb5612544e2e93891c50a0d20a74e7afca72be
-    path: patches/typescript.patch
   vlocity@1.14.18:
     hash: ce2baf6c266b30863dabc3f026eb5887f112c87d14c589dd355ac7e68f126596
     path: patches/vlocity@1.14.18.patch

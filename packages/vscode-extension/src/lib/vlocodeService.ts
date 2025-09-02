@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import chalk from 'chalk';
 
-import { Logger, injectable ,container, LifecyclePolicy } from '@vlocode/core';
+import { Logger, injectable ,container, LifecyclePolicy, inject } from '@vlocode/core';
 import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
@@ -46,7 +46,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         activitiesChanged: new vscode.EventEmitter<VlocodeActivity[]>(),
         usernameChanged: new vscode.EventEmitter<string | undefined>(),
     }
-    @injectable.property private readonly nsService: VlocityNamespaceService;
+    @inject(VlocityNamespaceService) private readonly nsService: VlocityNamespaceService;
 
     // Publics
     public readonly activities: ObservableArray<Observable<VlocodeActivity>> = observeArray([]);

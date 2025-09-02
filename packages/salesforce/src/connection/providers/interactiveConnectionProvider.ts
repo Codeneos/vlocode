@@ -1,7 +1,7 @@
 import { sfdx } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 import { SfdxConnectionProvider } from './sfdxConnectionProvider';
-import { injectable, Logger } from '@vlocode/core';
+import { injectable, Logger, inject } from '@vlocode/core';
 import { SalesforceConnection, SalesforceConnectionOptions } from '../salesforceConnection';
 
 @injectable.singleton()
@@ -9,7 +9,7 @@ export class InteractiveConnectionProvider implements SalesforceConnectionProvid
 
     private sfdxProvider: SalesforceConnectionProvider;
     private userName: string;
-    @injectable.property private logger!: Logger;
+    @inject(Logger) private logger!: Logger;
 
     constructor(private readonly instanceUrl: string, private readonly options?: SalesforceConnectionOptions) {
     }

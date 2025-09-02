@@ -1,5 +1,7 @@
 import 'jest';
-import { Logger, container, Container, LifecyclePolicy, injectable } from '../';
+import { Logger, container, Container, LifecyclePolicy, inject } from '../';
+import { ServiceImplCircular } from './container.test.circular';
+import { CircularRef } from './container.test.circular.ref';
 
 describe('container', () => {
 
@@ -16,54 +18,47 @@ describe('container', () => {
         bar() { return Promise.resolve('foo'); }
     }
 
-    @injectable()
-    class ServiceImplCircular {
-        public id = 0;
-        static instanceCounter = 0;
-        constructor(public child: CircularRef) {
-            this.id = ++ServiceImplCircular.instanceCounter;
-        }
-    }
-
-    @injectable()
-    class CircularRef {
-        constructor(public parent: ServiceImplCircular) {
-        }
-    }
-
     class InjectableProps {
-        @injectable.property public service: ServiceImpl;
+        @inject(() => ServiceImpl) public service: ServiceImpl;
     }
 
-    beforeAll(() =>  container.registerAs(Logger.null, Logger));
+    class InjectablePropsNoType {
+        @inject() public service: ServiceImpl;
+    }
 
-    describe('register', () => {
-        it('class instance without metadata should register as itself', () => {
+    class NamedDependencyProps {
+        @inject("MyCustomService") public customService: ServiceImpl;
+    }
+
+    beforeAll(() => container.add(Logger.null));
+
+    describe('add', () => {
+        it('class instance without metadata should add as itself', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
 
             // Act
-            testContainer.register(new ServiceImpl());
+            testContainer.add(new ServiceImpl());
 
             // Assert
             expect(testContainer['instances'].get('ServiceImpl')).not.toBeUndefined();
         });
-        it('class instance should register it\'s prototype as well', () => {
+        it('class instance should add it\'s prototype as well', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
 
             // Act
-            testContainer.register(new ServiceImpl());
+            testContainer.add(new ServiceImpl());
 
             // Assert
             expect(testContainer['instances'].get('ServiceShape')).not.toBeUndefined();
         });
-        it('class instance should register it\'s prototype->prototype as well', () => {
+        it('class instance should add it\'s prototype->prototype as well', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
 
             // Act
-            testContainer.register(new ServiceImpl());
+            testContainer.add(new ServiceImpl());
 
             // Assert
             expect(testContainer['instances'].get('BaseShape')).not.toBeUndefined();
@@ -71,12 +66,12 @@ describe('container', () => {
     });
 
     describe('resolve', () => {
-        it('should prefer active instance over registered type', () => {
+        it('should prefer active instance over added type', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
             const activeInstance = new ServiceImpl();
-            testContainer.registerType(ServiceImpl, [ServiceImpl, BaseShape, ServiceShape]);
-            testContainer.register(activeInstance);
+            testContainer.add(ServiceImpl, { provides: [ServiceImpl, BaseShape, ServiceShape] });
+            testContainer.add(activeInstance);
 
             // Act + Assert
             expect(testContainer.resolve(BaseShape)).toBe(activeInstance);
@@ -86,7 +81,7 @@ describe('container', () => {
         it('should create multiple instance when lifecycle is transient', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
-            testContainer.registerType(ServiceImpl, [ServiceImpl, BaseShape, ServiceShape], { lifecycle: LifecyclePolicy.transient });
+            testContainer.add(ServiceImpl, { provides: [ServiceImpl, BaseShape, ServiceShape], lifecycle: LifecyclePolicy.transient });
 
             // Act
             const results = [testContainer.resolve(ServiceImpl), testContainer.resolve(ServiceImpl)];
@@ -99,7 +94,7 @@ describe('container', () => {
         it('should create single instance when lifecycle is singleton', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
-            testContainer.registerType(ServiceImpl, [ServiceImpl, BaseShape, ServiceShape], { lifecycle: LifecyclePolicy.singleton });
+            testContainer.add(ServiceImpl, { provides: [ServiceImpl, BaseShape, ServiceShape], lifecycle: LifecyclePolicy.singleton });
 
             // Act
             const results = [testContainer.resolve(ServiceImpl), testContainer.resolve(ServiceImpl)];
@@ -118,7 +113,7 @@ describe('container', () => {
             testContainer.resolve(ServiceImpl);
 
             // Assert
-            expect(factory).toBeCalledTimes(2);
+            expect(factory).toHaveBeenCalledTimes(2);
         });
         it('should call factory method 1 once when for singleton factories', () => {
             // Arrange
@@ -131,13 +126,13 @@ describe('container', () => {
             testContainer.resolve(ServiceImpl);
 
             // Assert
-            expect(factory).toBeCalledTimes(1);
+            expect(factory).toHaveBeenCalledTimes(1);
         });
         it('should resolve circular references without creating duplicate service instances', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
-            testContainer.registerType(ServiceImplCircular, [ServiceImplCircular], { lifecycle: LifecyclePolicy.singleton });
-            testContainer.registerType(CircularRef, [CircularRef], { lifecycle: LifecyclePolicy.singleton });
+            testContainer.add(ServiceImplCircular, { lifecycle: LifecyclePolicy.singleton });
+            testContainer.add(CircularRef, { lifecycle: LifecyclePolicy.singleton });
 
             // Act
             const result = testContainer.resolve(ServiceImplCircular)!;
@@ -155,8 +150,8 @@ describe('container', () => {
         it('should resolve injectable properties on non-injectable class', () => {
             // Arrange
             const testContainer = new Container(Logger.null);
-            testContainer.registerType(ServiceImpl, [ServiceImpl, BaseShape, ServiceShape]);
-
+            testContainer.add(ServiceImpl, { provides:  [ServiceImpl, BaseShape, ServiceShape] });
+            
             // Act
             const instance = testContainer.create(InjectableProps);
 
@@ -164,5 +159,33 @@ describe('container', () => {
             expect(instance.service).not.toBeUndefined();
             expect(instance.service).toBeInstanceOf(ServiceImpl);
         });
+
+        it('should resolve injectable properties using @inject() without parameters', () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+            testContainer.add(ServiceImpl, { provides:  [ServiceImpl, BaseShape, ServiceShape] });
+
+            // Act
+            const instance = testContainer.create(InjectablePropsNoType);
+
+            // Assert
+            expect(instance.service).not.toBeUndefined();
+            expect(instance.service).toBeInstanceOf(ServiceImpl);
+        });
+
+        // it('should resolve named dependencies using @inject("DEP_NAME") syntax', () => {
+        //     // Arrange
+        //     const testContainer = new Container(Logger.null);
+        //     const customService = new ServiceImpl();
+        //     testContainer.add(customService, "MyCustomService");
+
+        //     // Act
+        //     const instance = testContainer.create(NamedDependencyProps);
+
+        //     // Assert
+        //     expect(instance.customService).not.toBeUndefined();
+        //     expect(instance.customService).toBe(customService);
+        //     expect(instance.customService).toBeInstanceOf(ServiceImpl);
+        // });
     });    
 });

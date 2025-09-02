@@ -1,4 +1,4 @@
-import { Logger , injectable } from '@vlocode/core';
+import { Logger , injectable, inject } from '@vlocode/core';
 import { SalesforceConnectionProvider, NamespaceService, SalesforceConnection } from '@vlocode/salesforce';
 import { mapGetOrCreate, Timer } from '@vlocode/util';
 import chalk from 'chalk';
@@ -7,7 +7,7 @@ import * as constants from './constants';
 @injectable.singleton({ provides: [NamespaceService, VlocityNamespaceService] })
 export class VlocityNamespaceService extends NamespaceService {
 
-    @injectable.property private readonly logger: Logger
+    @inject(Logger) private readonly logger: Logger
     private readonly vlocityNamespaceCache = new Map<string, Promise<string> | string>();
 
     constructor(private vlocityNamespace: string | null = null) {

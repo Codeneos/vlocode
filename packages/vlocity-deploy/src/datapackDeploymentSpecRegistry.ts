@@ -1,11 +1,11 @@
-import { Container, container, injectable, LifecyclePolicy, ServiceCtor } from "@vlocode/core";
+import { Container, container, injectable, LifecyclePolicy, TypeConstructor } from "@vlocode/core";
 import { lazy } from "@vlocode/util";
 import { DatapackFilter } from './datapackDeployer';
 import { DatapackDeploymentSpec } from './datapackDeploymentSpec';
 
 interface SpecRegistryEntry {
     readonly filter: DatapackFilter;
-    type?: ServiceCtor<DatapackDeploymentSpec>;
+    type?: TypeConstructor<DatapackDeploymentSpec>;
     instance?: DatapackDeploymentSpec;
 }
 
@@ -67,7 +67,7 @@ export class DatapackDeploymentSpecRegistry {
      * @param filter filter that determines when this datapack is applied
      * @param spec Object matching the {@link DatapackDeploymentSpec}-shape
      */
-    public static register(this: void, filter: DatapackFilter | string, spec: DatapackDeploymentSpec | ServiceCtor<DatapackDeploymentSpec>) {
+    public static register(this: void, filter: DatapackFilter | string, spec: DatapackDeploymentSpec | TypeConstructor<DatapackDeploymentSpec>) {
         DatapackDeploymentSpecRegistry.instance.register(filter, spec);
     }
 
@@ -86,7 +86,7 @@ export class DatapackDeploymentSpecRegistry {
      * @param filter filter that determines when this datapack is applied
      * @param spec Object matching the {@link DatapackDeploymentSpec}-shape
      */
-    public register(filter: DatapackFilter | string, spec: DatapackDeploymentSpec | ServiceCtor<DatapackDeploymentSpec>) {
+    public register(filter: DatapackFilter | string, spec: DatapackDeploymentSpec | TypeConstructor<DatapackDeploymentSpec>) {
         if (typeof filter === 'string') {
             filter = { datapackFilter: filter };
         }

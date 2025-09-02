@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
+import { Logger, injectable, LifecyclePolicy, inject } from '@vlocode/core';
 import { CancellationToken } from '@vlocode/util';
 
 import { SalesforceConnectionProvider } from './connection';
@@ -50,7 +50,7 @@ export class QueryService {
     private queryCacheEnabled = true;
     private queryCacheDefault = false;
 
-    @injectable.property private readonly logger: Logger;
+    @inject(Logger) private readonly logger: Logger;
 
     constructor(private readonly connectionProvider: SalesforceConnectionProvider, private readonly nsService?: NamespaceService) {
     }
