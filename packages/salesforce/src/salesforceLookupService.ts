@@ -1,4 +1,4 @@
-import { Logger, injectable, LifecyclePolicy } from '@vlocode/core';
+import { Logger, injectable, LifecyclePolicy, inject } from '@vlocode/core';
 import { asArray, joinLimit, isSalesforceId, CancellationToken, groupBy, mapKeys } from '@vlocode/util';
 import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
@@ -20,8 +20,8 @@ type LookupFilter<T> = ObjectFilter<T> | Array<ObjectFilter<T> | string> | strin
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class SalesforceLookupService {
 
-    @injectable.property private readonly logger: Logger;
-    @injectable.property private readonly nsService: NamespaceService;
+    @inject(Logger) private readonly logger: Logger;
+    @inject(NamespaceService) private readonly nsService: NamespaceService;
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,

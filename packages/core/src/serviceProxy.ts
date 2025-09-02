@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { ServiceGuidSymbol } from "./container";
+import { ServiceGuidSymbol } from "./di/container";
 
 export const serviceProxyMarker = Symbol('Container:Lazy');
 export const proxyTarget = Symbol('Container:LazyTarget');

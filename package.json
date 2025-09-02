@@ -65,8 +65,7 @@
             "vlocity@1.14.18": "patches/vlocity@1.14.18.patch",
             "@types/jsforce@1.9.42": "patches/@types__jsforce@1.9.42.patch",
             "@salesforce/core@2.37.1": "patches/@salesforce__core@2.33.1.patch",
-            "@salesforce/core@3.31.18": "patches/@salesforce__core@3.31.18.patch",
-            "typescript": "patches/typescript.patch"
+            "@salesforce/core@3.31.18": "patches/@salesforce__core@3.31.18.patch"
         },
         "allowUnusedPatches": true,
         "overrides": {

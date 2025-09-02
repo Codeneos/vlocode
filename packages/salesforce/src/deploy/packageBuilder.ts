@@ -2,7 +2,7 @@ import * as path from 'path';
 import chalk from 'chalk';
 import ZipArchive from 'jszip';
 
-import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container } from '@vlocode/core';
+import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container, inject } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache, stringEqualsIgnoreCase } from '@vlocode/util';
 
 import { PackageManifest } from './maifest';
@@ -126,7 +126,7 @@ export class SalesforcePackageBuilder {
     private readonly composedData = new Map<string, MetadataObject>();
     private readonly replacements = new Array<TokenReplacement>();
 
-    @injectable.property private readonly logger: Logger;
+    @inject(Logger) private readonly logger: Logger;
 
     constructor(
         public readonly type: SalesforcePackageType = SalesforcePackageType.deploy,
