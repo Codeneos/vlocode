@@ -16,7 +16,7 @@ export class CustomError extends Error {
      */
     public readonly code?: string;
 
-    constructor(message: string, options?: ErrorOptions | Error) {
+    constructor(message: string, options?: ErrorOptions | Error)  {
         super(message, { cause: options?.cause });
         if (options) {
             if (options['code'] && !options['name']) {

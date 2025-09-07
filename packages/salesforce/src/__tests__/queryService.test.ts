@@ -50,7 +50,7 @@ describe('queryService', () => {
         };
     }
 
-    beforeAll(() => container.registerAs(Logger.null, Logger));
+    beforeAll(() => container.add(Logger.null));
 
     describe('#query', () => {
         const testRecord = {

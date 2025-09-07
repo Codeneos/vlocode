@@ -5,7 +5,6 @@ export default {
     'src/**/*.{ts}',
     '!**/node_modules/**'
   ],
-  testRegex: "(\\.)(test)\\.[jt]sx?$",
   transform: {
     '^.+\\.ts$': ['ts-jest', { esModuleInterop: true, isolatedModules: true }],
     '\\.yaml$': '<rootDir>/webpack/loaders/yaml.js'

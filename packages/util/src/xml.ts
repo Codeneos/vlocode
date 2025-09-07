@@ -343,7 +343,7 @@ export namespace XML {
         if (Buffer.isBuffer(xml)) {
             xml = xml.toString('utf-8');
         }
-        return path.split(/\.|:/).reduce((node, tagWithIndex) => {
+        return path.split(/\.|:/).reduce((node: Node | undefined, tagWithIndex: string) => {
             const [tag, index] = tagWithIndex.split('|');
             let childNodeIndex = 0;
             return node && Array.from(node.childNodes).find(child => 

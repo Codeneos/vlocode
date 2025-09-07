@@ -1,6 +1,6 @@
 import { inject } from "../di/inject.decorator";
 import { injectable } from "../di/injectable.decorator";
-import { CircularRef } from "./container.test.circular.ref";
+import { CircularRef } from "./container.circular.ref";
 
 @injectable()
 export class ServiceImplCircular {

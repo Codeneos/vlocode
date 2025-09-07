@@ -1,13 +1,22 @@
 import 'reflect-metadata';
-import { singleton, Iterable, arrayMapPush, getParameterTypes, getPropertyType } from '@vlocode/util';
+import { singleton, Iterable, arrayMapPush, getParameterTypes, getPropertyType, asArray, isConstructor } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from '../logging';
 import { createServiceProxy, serviceIsResolved, proxyTarget, isServiceProxy, ProxyTarget } from '../serviceProxy';
-import { InjectableDecorated, InjectableIdentity } from './injectable.decorator';
 import { randomUUID } from 'crypto';
 import * as symbols from './container.symbols';
 
-export interface TypeConstructor<T extends object = object> { new(...args: any[]): T }
+export type TypeConstructor<T = any> = { 
+    new(...args: any[]): T;
+    [symbols.DecoratedCtor]?: DecoratedTypeConstructor<T>;
+};
+
+export type DecoratedTypeConstructor<T = any> = TypeConstructor<T> & {
+    [symbols.OriginalCtor]: TypeConstructor<T>;
+    [symbols.IsDecorated]: boolean;
+    [symbols.TypeIdentity]: string;
+};
+
 export type ObjectType<T extends object = object> = { name: string; prototype: T } | string;
 export type LazyObjectType<T extends object = object> = () => ObjectType<T>;
 export type TypeFactory<T extends object = object> = () => T;
@@ -49,9 +58,8 @@ export interface ServiceOptions {
     priority: number;
 }
 
-
 const defaultServiceOptions: Readonly<ServiceOptions> = Object.seal({
-    lifecycle: LifecyclePolicy.transient,
+    lifecycle: LifecyclePolicy.singleton,
     priority: 0
 });
 
@@ -66,20 +74,30 @@ const uniqueNameConfig: uniqueNamesGeneratorConfig = {
  * Stack of container instances used for resolution. When a container resolves a dependency, 
  * it pushes itself onto the stack allowing for nested resolutions using the same container as context.
  */
-const resolutionStack = new Array<Container>();
+const scopes = new Array<Container>();
 
 /**
- * Dependency injection container that can create objects marked with the {@link injectable} and automatically resolving their dependencies.
+ * The DI container can be used to register and resolve dependencies automatically. It supports constructor injection
+ * and property injection of dependencies. There are two built-in lifecycle policies: {@link LifecyclePolicy.singleton} and {@link LifecyclePolicy.transient}. 
  *
- * To use the container mark any class with the {@link injectable}-decorator. {@link injectable} allows specifying the lifecycle policy of the
- * object which determines if the container will create a new instance or use the existing instance of the class registered in the container.
+ * The DI framework uses two decorators to mark classes and properties as injectable:
+ * - {@link injectable} to mark a class as injectable
+ * - {@link inject} to mark a property or constructor parameter as injectable
+ * 
+ * When creating a class through the container, constructor parameters will automatically be resolved by type. When creating
+ * a class outside of the container, constructor parameters will __not__ be resolved.
+ * 
+ * Injectable properties are resolved lazily when they are first accessed and are cached for subsequent access on a unique symbol on the instance for which they are resolved. Resolution of injectable properties uses the container that created the instance. If the instance was created outside of a container, the root container is used to try and resolve the dependency.
+ * 
+ * When the container cannot resolve a dependency it will return `undefined` for properties and constructor parameters marked with {@link injectable.property} or {@link inject} decorator.
+ * 
+ * The DI framework requires the following tsconfig settings to be enabled:
+ * - `emitDecoratorMetadata: true` (required to emit type metadata for decorated classes and properties)
+ * - `experimentalDecorators: true` (required to use decorators at all)
+ * - `useDefineForClassFields: false` (required in order to use inject)
  *
- * The container resolves all undefined constructor parameters and all properties marked with  {@link injectable.property}.
- *
- * Circular references are supported and handled by using a lzy resolution proxy.
- *
- * Usage:
- * ```typescript
+ * @example:
+ * ```
  * @injectable()
  * class Bar {
  *    constructor(private foo: Foo) {
@@ -104,8 +122,8 @@ const resolutionStack = new Array<Container>();
  *    }
  * }
  *
- * container.get(Foo).helloBar(); // prints 'Hello!'
- * container.get(Foo).bar.helloFooBar(); // prints 'Hello!'
+ * container.new(Foo).helloBar(); // prints 'Hello!'
+ * container.new(Foo).bar.helloFooBar(); // prints 'Hello!'
  * ```
  */
 export class Container {
@@ -119,8 +137,8 @@ export class Container {
      * Get's the current container instance from which dependencies are resolved.
      * Set during resolution phase allowing child entities to be resolved from the same context as their parent.
      */
-    public static get context(): Container {
-        return resolutionStack.length > 0 ? resolutionStack[0] : this.root;
+    public static get scope(): Container {
+        return scopes.length > 0 ? scopes[0] : this.root;
     }
 
     private readonly instances = new Map<string, any>();
@@ -146,7 +164,7 @@ export class Container {
      * by default and contains all services by default.
      */
     public get isRoot() {
-        return this[symbols.ContainerRoot] === true;
+        return this === Container.root;
     }
 
     /**
@@ -170,7 +188,7 @@ export class Container {
      * by default dependency resolution is first attempted using the providers, factories and registered service instance in the new container;
      * if that fails it resolution is delegated to the parent until the root container which will throw an exception in case it cannot resolve the requested module.
      */
-    public new(options?: { isolated?: boolean }): Container {
+    public create(options?: { isolated?: boolean }): Container {
         return new Container(this.logger, options?.isolated ? undefined : this);
     }
 
@@ -181,7 +199,7 @@ export class Container {
         this.factories.clear();
         this.providers.clear();
 
-        for (const instance of this.instances) {
+        for (const instance of this.instances.values()) {
             // eslint-disable-next-line @typescript-eslint/dot-notation -- does not compile with TS as dispose is an optional member
             if (typeof instance['dispose'] === 'function') {
                 // eslint-disable-next-line @typescript-eslint/dot-notation
@@ -193,79 +211,80 @@ export class Container {
     }
 
     /**
-     * Resolve requested service to an implementation.
-     * @param service Service type for which to resolve a concrete class
+     * Resolve requested type to a concrete implementation.
+     * @param type Service type for which to resolve a concrete class
      * @param receiver Class ctor for which we are resolving this
      */
     public resolve<T extends object>(
-        service: ObjectType<T>, 
+        type: ObjectType<T> | LazyObjectType<T>, 
         receiver?: new (...args: any[]) => object,
         resolver: Container = this
     ) : T | undefined {
-        const serviceName = this.getServiceName(service);
+        const typeName = this.getTypeName(type);
 
-        if (serviceName === 'Object') {
+        if (typeName === 'Object') {
             return undefined;
         }
 
-        if (typeof service !== 'string' && Object.getPrototypeOf(this) === service.prototype) {
+        if (typeof type !== 'string' && Object.getPrototypeOf(this) === type.prototype) {
             return resolver as unknown as T;
         }
 
-        const provider = this.providers.get(serviceName);
+        // Delegate creation to provider
+        const provider = this.providers.get(typeName);
         if (provider && receiver) {
             return provider(receiver);
         }
 
         // return existing instance
-        const currentInstance = this.instances.get(serviceName);
+        const currentInstance = this.instances.get(typeName);
         if (currentInstance) {
             return currentInstance;
         }
 
-        // Note factories are likely not required any more - consider dropping this concept for now
-        const factory = this.factories.get(serviceName);
+        // Produce new instance using factory
+        const factory = this.factories.get(typeName);
         if (factory) {
             // Fabricate new
             const instance = factory.new() as T;
             if (factory.lifecycle === LifecyclePolicy.singleton) {
-                resolver.add(instance, { provides: [ service ] });
+                resolver.add(instance, { provides: [ type ] });
             }
             return instance;
         }
 
         // resolve from types
-        const type = this.serviceTypes.get(serviceName)?.[0];
-        if (type) {
+        const implementingType = this.serviceTypes.get(typeName)?.[0];
+        if (implementingType) {
             // Circular reference check
-            const circularReference = this.resolveStack.includes(type.ctor.name);
-            const instance = createServiceProxy<T>(() => this.resolve<T>(service, receiver, resolver) as any, type.ctor.prototype);
+            const circularReference = this.resolveStack.includes(implementingType.ctor.name);
+            const instance = createServiceProxy<T>(() => this.resolve<T>(type, receiver, resolver) as any, implementingType.ctor.prototype);
             if (circularReference) {
-                this.logger.verbose(`(${resolver.containerGuid}) Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${type.ctor.name}`);
+                this.logger.verbose(`(${resolver.containerGuid}) Resolving circular reference as lazy: ${this.resolveStack.join('->')}->${implementingType.ctor.name}`);
                 return instance;
             }
 
-            this.resolveStack.push(type.ctor.name);
-            let serviceInstance = resolver.createInstance(type.ctor) as T;
+            this.resolveStack.push(implementingType.ctor.name);
+            let serviceInstance = resolver.createInstance(implementingType.ctor) as T;
             if (this.useInstanceProxies) {
                 instance[proxyTarget].setInstance(serviceInstance);
                 serviceInstance = instance;
             }
             this.resolveStack.pop();
 
-            if (type.options?.lifecycle === LifecyclePolicy.singleton) {
-                resolver.add(serviceInstance, { provides: [ service ] });
+            if (implementingType.options?.lifecycle === LifecyclePolicy.singleton) {
+                resolver.add(serviceInstance, { provides: [ type ] });
             }
             return serviceInstance;
         }
 
         // probe parent
         if (this.parent) {
-            return this.parent.resolve(service, receiver, resolver);
+            return this.parent.resolve(type, receiver, resolver);
         }
 
         // Cannot resolve this
-        this.logger.warn(`(${resolver.containerGuid}) Unable to resolve implementation for ${serviceName} requested by ${receiver?.name}`);
+        this.logger.warn(`(${resolver.containerGuid}) Unable to resolve implementation for ${typeName} requested by ${receiver?.name}`);
     }
 
     /**
@@ -275,29 +294,20 @@ export class Container {
     public get<T extends object>(service: ObjectType<T>) : T {
         const instance = this.resolve(service);
         if (instance === undefined) {
-            throw new Error(`Unable to resolve implementation for ${this.getServiceName(service)}`);
+            throw new Error(`Unable to resolve implementation for ${this.getTypeName(service)}`);
         }
         return instance;
     }
 
     /**
      * Create a new instance of a type resolving constructor parameters as dependencies using the container. 
-     * The returned class is not registered in the container as dependency.
+     * The returned class is not added in the container even when the lifecycle policy is singleton.
      * @param ctor Constructor/Type to instantiate
      * @param params Constructor params provided
      * @returns New instance of an object who's dependencies are resolved by the container
      */
-    public create<T extends { new(...args: any[]): any }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>): InstanceType<T> {
+    public new<T extends TypeConstructor>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>): InstanceType<T> {
         return this.createInstance(ctor, params);
-    }
-
-    /**
-     * Create a new instance of a type resolving constructor parameters as dependencies using the container and register it as a dependency.
-     * @param ctor Constructor/Type to instantiate
-     * @param params Constructor params provided
-     */
-    public createAndAdd<T extends { new(...args: any[]): any }>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>): void {
-        this.add(this.createInstance(ctor, params));
     }
 
     /**
@@ -305,14 +315,23 @@ export class Container {
      * in the container as dependency.
      * @param ctor Constructor type/prototype class definition
      */
-    private createInstance<T extends { new(...args: any[]): any }>(ctor: T, args: Array<any> = []): InstanceType<T>  {
+    private createInstance<T extends TypeConstructor | DecoratedTypeConstructor>(ctor: T, args: Array<any> = []): InstanceType<T>  {
         // Get argument types
-        const instanceGuid = this.generateServiceGuid(ctor);
-        const resolvedArgs = ctor[InjectableDecorated] ? args : this.resolveParameters(ctor, args, instanceGuid);
-        const instance = this.decorateWithServiceGuid(new ctor(...resolvedArgs), instanceGuid);
-        Object.defineProperty(instance, symbols.Container, { value: this, enumerable: false, writable: false, configurable: false });
-        Object.setPrototypeOf(instance, ctor.prototype);
-        return this.resolveProperties(instance);
+        scopes.push(this);
+        try {
+            const typeCtor: TypeConstructor = (ctor[symbols.OriginalCtor] ?? ctor);
+            const instanceGuid = this.generateServiceGuid(typeCtor);
+            const resolvedArgs = this.resolveParameters(typeCtor, args, instanceGuid);
+            const instance = this.decorateWithServiceGuid(
+                new typeCtor(...resolvedArgs), 
+                instanceGuid
+            );
+            Object.defineProperty(instance, symbols.Container, { value: this, enumerable: false, writable: false, configurable: false });
+            Object.setPrototypeOf(instance, ctor.prototype);
+            return this.resolveProperties(instance);
+        } finally {
+            scopes.pop();
+        }
     }
 
     /**
@@ -320,25 +339,23 @@ export class Container {
      * @param ctor Constructor type to decorate
      * @returns Decorated constructor type
      */
-    public decorateType<T extends object>(ctor: TypeConstructor<T>):  TypeConstructor<T> {
-        if (ctor[InjectableIdentity]) {
-            return ctor[InjectableIdentity];
+    public decorateType<T extends object>(ctor: TypeConstructor<T>, serviceTypes: Array<ObjectType> = []):  DecoratedTypeConstructor<T> {
+        if (ctor[symbols.DecoratedCtor]) {
+            return ctor[symbols.DecoratedCtor];
         }
-        const context = this;
-        const identity = randomUUID();
-        const classProto = class extends (ctor as any) {
-            static [symbols.TypeIdentity] = identity;
+        const decoratedType: DecoratedTypeConstructor<T> = class extends (ctor as any) {
+            static [symbols.TypeIdentity] = randomUUID();
             static [symbols.IsDecorated] = true;
             static [symbols.OriginalCtor] = ctor;
-            static [symbols.Container] = context;
-            constructor(...args: any[]) {
-                context.resolveParameters(ctor, args);
-                super(...args);
-                context.resolveProperties(this);
+            static [symbols.ServiceTypes] = serviceTypes;
+            // @ts-ignore
+            constructor(...args: ConstructorParameters<TypeConstructor<T>>) {
+                return Container.scope.createInstance(ctor, args);
             }
-        };
-        ctor[symbols.DecoratedCtor] = classProto;
-        ctor[symbols.TypeIdentity] = identity;
+        } as any;   
+        ctor[symbols.DecoratedCtor] = decoratedType;
+        Object.defineProperty(decoratedType, 'name', { value: ctor.name, configurable: false, writable: false });
+        return decoratedType;//Object.defineProperty(decoratedType, 'name', { value: ctor.name, configurable: false, writable: false });
     }
 
     /**
@@ -373,11 +390,11 @@ export class Container {
         }
 
         for (let i = 0; i < paramTypes.length; i++) {
-            const ignored = this.getInjectMetadata(`${i}:ignore`, ctor);
+            const ignored = this.getMetadata(`${symbols.InjectParameterPrefix}:${i}:ignore`, ctor);
             if (ignored === true || args[i] !== undefined) {
                 continue;
             }
-            const injectedType = this.getInjectType(`parameter:${i}`, ctor);
+            const injectedType = this.getInjectType(symbols.InjectedParameters, ctor, i.toString());
             const paramType = injectedType ?? paramTypes[i];
         
             if (paramType) {
@@ -396,55 +413,83 @@ export class Container {
      * @param instance Instance object
      * @returns instance
      */
-    public resolveProperties<T>(instance: T): T {
+    public resolveProperties<T extends object>(instance: T): T {
         const prototype = Object.getPrototypeOf(instance);
-        const properties: string[] = this.getMetadata('service:properties', prototype) ?? [];
+        const properties: string[] = this.getMetadata(symbols.InjectedProperties, prototype) ?? [];
+
         for (const property of properties) {
-            if (instance[property] !== undefined) {
-                // Skip already resolved properties
-                continue;
-            }
-
-            // Check for named dependency first
-            const injectedType = this.getInjectType(`property:${property}`, prototype);
-            const reflectedType = getPropertyType(prototype, property);
-            const propertyType = injectedType ?? reflectedType;
-
-            if (!injectedType && !reflectedType) {
-                throw new Error(
-                    'Class transpiled WITHOUT emitting required decorated metadata; ' + 
-                    'ensure the class is decorated with @Injectable() and tsconfig has "emitDecoratorMetadata": true'
-                );
-            } 
-            
-            if (!propertyType) {
-                throw new Error(`@inject used without specifying a type for: ${property}`);
-            }
-
-            const resolvedPropertyValue = this.resolve(propertyType, prototype.constructor);
-            if (resolvedPropertyValue) {
-                instance[property] = resolvedPropertyValue;
-                this.trackServiceDependencies(instance[symbols.ServiceGuid], resolvedPropertyValue);
+            const instanceDescriptor = Object.getOwnPropertyDescriptor(instance, property);
+            if (instanceDescriptor && !(symbols.InjectedPropertyKey in instanceDescriptor)) {
+                delete instance[property];
             }
         }
+
         return instance;
     }
 
-    private getInjectType(key: string, target: TypeConstructor): TypeConstructor | undefined {
-        const injectedType = this.getInjectMetadata(key, target);
-        if (typeof injectedType === 'function') {
+    /**
+     * Internal function to get the property descriptor for an injectable property; used by the {@link inject} decorator.
+     * @param propertyKey Key of the property to get the descriptor for 
+     * @returns Defined property descriptor
+     */
+    public getInjectablePropertyDescriptor(propertyKey: string | symbol) {
+        const propertySymbol = Symbol(`__di_inject_${String(propertyKey)}`);
+        return {
+            [symbols.InjectedPropertyKey]: propertyKey,
+            configurable: false,
+            enumerable: true,
+            get() {
+                if (!this[propertySymbol]) {
+                    this[propertySymbol] = (this[symbols.Container] ?? container).resolveProperty(this, propertyKey);
+                }
+                return this[propertySymbol];
+            },
+            set() {
+                throw new Error(`Cannot set injected property ${String(propertyKey)}`);
+            }
+        };
+    }
+
+    /**
+     * Resolve a single property on an instance
+     * @param instance The instance containing the property
+     * @param property The name of the property to resolve
+     * @returns The resolved property value
+     */
+    public resolveProperty(instance: object, property: string | symbol, options?: { trackAsDependency?: boolean }): any {
+        // Check for named dependency first
+        const prototype = Object.getPrototypeOf(instance);
+        const injectedType = this.getInjectType(symbols.InjectedProperties, prototype, property);
+        const reflectedType = getPropertyType(prototype, property);
+        const propertyType = injectedType ?? reflectedType;
+
+        if (!propertyType) {
+            throw new Error(
+                'Class transpiled WITHOUT emitting required decorated metadata; ' + 
+                'ensure the class is decorated with @Injectable() and tsconfig has "emitDecoratorMetadata": true ' +
+                'or specify the type in the @inject(<TYPE>) decorator'
+            );
+        }
+
+        const resolvedPropertyValue = this.resolve(propertyType, prototype.constructor);
+
+        if (options?.trackAsDependency && instance[symbols.ServiceGuid]) {
+            this.trackServiceDependencies(instance[symbols.ServiceGuid], resolvedPropertyValue);
+        }
+
+        return resolvedPropertyValue;
+    }
+
+    private getInjectType(key: string | symbol, target: TypeConstructor, property?: string | symbol): TypeConstructor | undefined {
+        const injectedType = this.getMetadata(key, target, property);
+        if (typeof injectedType === 'function' && injectedType.prototype === undefined) {
             return injectedType();
         }
         return injectedType;
     }
 
-    private getInjectMetadata(key: string, target: TypeConstructor): any {
-        return this.getMetadata(`dependency:inject:${key}`, target);
-    }
-
-    private getMetadata(key: string, target: TypeConstructor): any {
-        const keys = Reflect.getMetadataKeys(target);
-        return Reflect.getMetadata(key, target);
+    private getMetadata(key: string | symbol, target: TypeConstructor, property?: string | symbol): any {
+        return property ? Reflect.getMetadata(key, target, property) : Reflect.getMetadata(key, target);
     }
 
     private generateServiceGuid(ctor: any) {
@@ -474,14 +519,15 @@ export class Container {
     }
 
     /**
-     * Register a new service instance or type in this container.
+     * Register a new service instance or type in this container. 
+     * If the added entity is an instance it will be treated as singleton even if the lifecycle is transient.
      * @param instanceOrType the service instance
      * @param options optional service options
      * @returns 
      */
     public add<T extends object, I extends T = T>(
         instanceOrType: TypeConstructor<I> | I, 
-        options?: Partial<ServiceOptions & { provides: Array<ObjectType<I>> }>
+        options?: Partial<ServiceOptions & { provides: Array<ObjectType<T>> }>
     ) {
         if (typeof instanceOrType === 'function') {
             // If the instance is a class constructor, register it as a provider
@@ -491,15 +537,32 @@ export class Container {
         }
     }
 
+    /**
+     * Use the specified instance to provided the specified service types.
+     * If an existing service is already registered for a type, it will be replaced with the new instance.
+     * @param instanceOrType the service instance
+     * @param types the service types to provide
+     * @returns 
+     */
+    public use(
+        instance: object,
+        types?: Array<ObjectType> | ObjectType
+    ) {
+        return this.add(instance, { 
+            lifecycle: LifecyclePolicy.singleton, 
+            provides: types ? asArray(types) : undefined
+        });
+    }
+
     private addInstance<T extends object, I extends T = T>(
         instanceOrType: I, 
-        options?: Partial<ServiceOptions & { provides: Array<ObjectType<I>> }>
+        options?: Partial<ServiceOptions & { provides: Array<ObjectType<T>> }>
     ) {
         const resolvedServices = options?.provides ?? this.getServicesFromInstance(instanceOrType);
         this.decorateWithServiceGuid(instanceOrType);
 
         for (const service of Array.isArray(resolvedServices) ? resolvedServices : [ resolvedServices ]) {
-            const providedService = this.getServiceName(service);
+            const providedService = this.getTypeName(service);
             const providedServices: Set<string> = instanceOrType[this.servicesProvided] || (instanceOrType[this.servicesProvided] = new Set());
 
             // Do not register duplicates;
@@ -522,11 +585,15 @@ export class Container {
         type: TypeConstructor<I>, 
         options?: Partial<ServiceOptions & { provides: Array<ObjectType<I>> }>
     ) {        
+        if (type[symbols.IsDecorated]) {
+            type = type[symbols.OriginalCtor];
+        }
+        
         const resolvedServices = options?.provides ?? this.getServicesFromType(type);
         const serviceOptions = { ...defaultServiceOptions, ...options };
 
         for (const service of Iterable.asIterable(resolvedServices)) {
-            const providedService = this.getServiceName(service);
+            const providedService = this.getTypeName(service);
             this.logger.debug(`(${this.containerGuid}) Add service type for: ${providedService}`);
             arrayMapPush(this.serviceTypes, providedService, { ctor: type, options: serviceOptions });
             this.serviceTypes.get(providedService)?.sort((a, b) => (b.options?.priority ?? 0) - (a.options?.priority ?? 0));
@@ -534,13 +601,13 @@ export class Container {
     }
 
     private getServicesFromInstance(instance: object): Array<ObjectType> {
-        return this.getServicesFromType(instance);
+        return this.getServicesFromType(Object.getPrototypeOf(instance).constructor);
     }
 
-    private getServicesFromType(type: TypeConstructor | object): Array<ObjectType> {
+    private getServicesFromType(type: TypeConstructor): Array<ObjectType> {
         const providedServices = new Set<ObjectType>();
-        for (const prototype of this.getPrototypes('prototype' in type ? type.prototype : type)) {
-            const provides = this.getMetadata('service:provides', prototype.constructor) as Array<ObjectType>;
+        for (const prototype of this.getPrototypes(type)) {
+            const provides: Array<ObjectType> | undefined = prototype.constructor[symbols.ServiceTypes];
             if (provides?.length) {
                 provides.forEach(s => providedServices.add(s));
             } else if (prototype) {
@@ -552,6 +619,9 @@ export class Container {
 
     private getPrototypes(instance: TypeConstructor | object) {
         const prototypes = new Array<{ constructor: new (...args: any[]) => object }>();
+        if (typeof instance === 'function') {
+            prototypes.push(instance = instance.prototype);
+        }
         while (Object.getPrototypeOf(instance) && Object.getPrototypeOf(instance) !== Object.prototype) {
             prototypes.push(instance = Object.getPrototypeOf(instance));
         }
@@ -563,7 +633,12 @@ export class Container {
      * create a new instances instead of reusing the existing one.
      * @param instance the instance to remove
      */
-    public removeInstance(instance: object) {
+    public removeInstance(instance: unknown) {
+        if (!instance || typeof instance !== 'object') {
+            // instance is already removed or not an object
+            return;
+        }
+
         const instanceGuid = instance[symbols.ServiceGuid];
         if (!instanceGuid) {
             // Prevent double unregister
@@ -608,25 +683,10 @@ export class Container {
      */
     public registerFactory<T extends object, I extends T = T>(services: ObjectType<T> | Array<ObjectType<T>>, factory: TypeFactory<I>, lifecycle: LifecyclePolicy = LifecyclePolicy.transient) {
         for (const service of Array.isArray(services) ? services : [ services ]) {
-            this.logger.debug(`(${this.containerGuid}) Register factory for: ${this.getServiceName(service)}`);
-            this.factories.set(this.getServiceName(service), { new: factory, lifecycle });
+            this.logger.debug(`(${this.containerGuid}) Register factory for: ${this.getTypeName(service)}`);
+            this.factories.set(this.getTypeName(service), { new: factory, lifecycle });
         }
     }
-
-    // /**
-    //  * Registers a type in the container as provider of services; type specified is dynamically created when required injecting any resolving any dependency required
-    //  * @param type Type to register
-    //  * @param services list of services to register
-    //  * @param serviceOptions options including lifecycle policy of the service
-    //  */
-    // public registerType<T extends object, I extends T = T>(type: ServiceCtor<I>, services: ServiceType<T> | Array<ServiceType<T>>, serviceOptions?: Partial<ServiceOptions>) {
-    //     const options = Object.assign({}, defaultServiceOptions, serviceOptions) as ServiceOptions;
-    //     for (const service of Iterable.asIterable(services)) {
-    //         this.logger.debug(`(${this.containerGuid}) Register service type for: ${this.getServiceName(service)}`);
-    //         arrayMapPush(this.serviceTypes, this.getServiceName(service), { ctor: type, options });
-    //         this.serviceTypes.get(this.getServiceName(service))?.sort((a, b) => (b.options?.priority ?? 0) - (a.options?.priority ?? 0));
-    //     }
-    // }
 
     /**
      * Register a service proxy that can be manually set with a concrete instance later on.
@@ -640,7 +700,7 @@ export class Container {
      * @returns ProxyTarget instance that can be used to set the concrete instance
      */
     public registerProxyService<T extends object>(type: { name: string; prototype: T }): ProxyTarget<T> {
-        const serviceName = this.getServiceName(type);
+        const serviceName = this.getTypeName(type);
         const instance = createServiceProxy<T>(() => {
                 if (!instance[proxyTarget].instance) {
                     throw new Error(
@@ -654,21 +714,30 @@ export class Container {
     }
 
     public registerProvider<T extends object, I extends T = T>(service: ObjectType<T>, provider: (receiver: any) => I | Promise<I> | undefined) {
-        this.logger.debug(`(${this.containerGuid}) Register provider for: ${this.getServiceName(service)}`);
-        this.providers.set(this.getServiceName(service), provider);
+        this.logger.debug(`(${this.containerGuid}) Register provider for: ${this.getTypeName(service)}`);
+        this.providers.set(this.getTypeName(service), provider);
     }
 
-    private getServiceName<T extends object>(service: ObjectType<T>) {
+    private getTypeName(service: unknown): string {
+        if (isConstructor(service)) {
+            return service.name;
+        }
+        if (typeof service === 'function') {
+            return this.getTypeName(service());
+        }
         if (typeof service === 'string') {
             return service;
         }
-        return service.name;
+        throw new Error(`Cannot determine type name: ${service}`);
     }
 }
 
 /**
  * Root container; by default all services are contained in there
- */
+ */ 
 export const container = singleton(Container);
-container[symbols.ContainerRoot] = true;
-Object.defineProperty(container, 'root', { get: () => container, writable: false, configurable: false });
+Object.defineProperties(
+    Container, { 
+        root: { value: container, writable: false, configurable: false },
+    }
+);

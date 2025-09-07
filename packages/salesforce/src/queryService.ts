@@ -50,9 +50,13 @@ export class QueryService {
     private queryCacheEnabled = true;
     private queryCacheDefault = false;
 
-    @inject(Logger) private readonly logger: Logger;
+    @inject() private readonly logger: Logger;
+    @inject() private readonly nsService: NamespaceService;
 
-    constructor(private readonly connectionProvider: SalesforceConnectionProvider, private readonly nsService?: NamespaceService) {
+    constructor(
+        @inject(() => SalesforceConnectionProvider) private readonly connectionProvider: SalesforceConnectionProvider, 
+    ) {
+        this.logger.verbose('Query service initialized');
     }
 
     /**

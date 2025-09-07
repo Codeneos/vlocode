@@ -2,7 +2,7 @@ import { LogWriter, LogEntry, LogLevel } from '..';
 import chalk from 'chalk';
 import { DateTime } from 'luxon';
 
-export class FancyConsoleWriterOptions { 
+export interface FancyConsoleWriterOptions { 
     formatMessage: boolean; 
     useColor: boolean; 
     dateFormat: string;

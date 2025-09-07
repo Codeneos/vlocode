@@ -14,7 +14,8 @@ import { basename } from 'path';
 export default class RefreshMetadataCommand extends MetadataCommand {
 
     public execute(...args: any[]): Promise<void> {
-        return this.refreshMetadata.apply(this, [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)]);
+        const selectedFiles = (args[1] || [args[0] || this.currentOpenDocument]) as vscode.Uri[];
+        return this.refreshMetadata(selectedFiles);
     }
 
     protected async refreshMetadata(selectedFiles: vscode.Uri[]) {

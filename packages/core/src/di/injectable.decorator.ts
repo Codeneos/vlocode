@@ -1,25 +1,58 @@
 import 'reflect-metadata';
 import { asArray } from '@vlocode/util';
-import { container, ObjectType, LifecyclePolicy, ServiceOptions } from './container';
-import { randomUUID } from 'crypto';
-import { deprecate } from 'util';
+import { container, ObjectType, LifecyclePolicy, ServiceOptions, TypeConstructor } from './container';
 import { inject } from './inject.decorator';
+import { IsDecorated, ServiceTypes } from './container.symbols';
 
 export interface DependencyOptions extends Partial<ServiceOptions> {
     /** List of components that is provided by this class  */
     provides?: Array<ObjectType> | ObjectType;
 }
 
-export const InjectableDecorated = Symbol('[[Injectable]]');
-export const InjectableIdentity = Symbol('[[InjectableIdentity]]');
-export const InjectableOriginalCtor = Symbol('[[InjectableOriginalCtor]]');
-
+/**
+ * Decorator interface for marking classes as injectable and configuring their lifecycle in the DI container.
+ * Provides methods for transient and singleton lifecycles, as well as utilities for property and parameter injection.
+ */
 export interface InjectableDecorator {
+    /**
+     * Decorates a class as injectable, registering it with the DI container.
+     * @param options Optional dependency options, such as lifecycle and provided services.
+     * @returns A class decorator function.
+     */
     <T extends { new(...args: any[]): InstanceType<T> }>(options?: DependencyOptions): (ctor: T) => any;
+
+    /**
+     * Decorates a class as injectable with a transient lifecycle (new instance per resolution).
+     * @param options Optional dependency options, excluding lifecycle.
+     * @returns A class decorator function.
+     */
     transient: (options?: Omit<DependencyOptions, 'lifecycle'>) => any;
+
+    /**
+     * Decorates a class as injectable with a singleton lifecycle (single shared instance).
+     * @param options Optional dependency options, excluding lifecycle.
+     * @returns A class decorator function.
+     */
     singleton: (options?: Omit<DependencyOptions, 'lifecycle'>) => any;
+
+    /**
+     * Checks if a class type is decorated with the injectable decorator.
+     * @param serviceType The class or constructor to check.
+     * @returns True if decorated, false otherwise.
+     */
     isDecorated: (serviceType: ObjectType) => boolean;
+
+    /**
+     * Property injection decorator (deprecated, use `@inject` instead).
+     * @deprecated Use `@inject` instead
+     */
     property: typeof inject;
+
+    /**
+     * Parameter injection decorator (deprecated, use `@inject` instead).
+     * @deprecated Use `@inject` instead
+     */
+    param: typeof inject;
 }
 
 /**
@@ -32,68 +65,36 @@ export interface InjectableDecorator {
  * @param options Constructions options for the service
  */
 export const injectable: InjectableDecorator = Object.assign(    
-function injectable<T extends { new(...args: any[]): InstanceType<T> }>(
+function injectable<T extends TypeConstructor>(
     options?: DependencyOptions
 ) : (ctor: T) => any {
-    const services = asArray(options?.provides ?? []);
+    // Validate services provided are valid and existing
+    const providedServices = options?.provides ? asArray(options?.provides) : undefined;
+    if (providedServices?.length === 0) {
+        throw new Error('The "provides" option must specify at least one service-type when provided.');
+    }
 
     return function(ctor: T) {
-        // @ts-ignore ctor extension is valid here if when there is no intersection
-        const classProto = class extends ctor {
-            static [InjectableIdentity] = randomUUID();
-            static [InjectableDecorated] = true;
-            static [InjectableOriginalCtor] = ctor;
-            constructor(...args: any[]) {
-                //container.resolveParameters(ctor, args);
-                super(...args);
-                //container.resolveProperties(this);
-            }
-        };
-        ctor[InjectableIdentity] = classProto[InjectableIdentity];
-
-        if (services) {
-            container.add(ctor, { ...options, provides: services });
+        if (providedServices?.includes(ctor)) {
+            providedServices.push(ctor);
         }
-
-        if (ctor.name) {
-            container.add(ctor, { ...options, provides: undefined });
-        }
-
-        // Register dependency metadata on new class ctor
-        Reflect.defineMetadata('service:provides', services, ctor);
-
-        // Ensure our newly created dependency shares the same class name as the parent,
-        return Object.defineProperty(classProto, 'name', { value: ctor.name, configurable: false, writable: false });
+        // Register services in root di container
+        container.add(ctor, { ...options, provides: providedServices });
+        // Register service types on the class
+        //return container.decorateType(ctor, providedServices ?? [ ctor ]);
     };
 }, {
-    /**
-     * Define as injectable with transient lifecycle
-     * @param options Constructions options for the service
-     * @returns 
-     */
     transient: function(options?: Omit<DependencyOptions, 'lifecycle'>) {
-        return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.transient } );
+        return (this as any)({ ...(options ?? {}), lifecycle: LifecyclePolicy.transient } );
     },
-    /**
-     * Define as injectable with Single instance lifecycle
-     * @param options Constructions options for the service
-     * @returns 
-     */
     singleton: function(options?: Omit<DependencyOptions, 'lifecycle'>) {
-        return this({ ...(options ?? {}), lifecycle: LifecyclePolicy.singleton } );
+        return (this as any)({ ...(options ?? {}), lifecycle: LifecyclePolicy.singleton } );
     },
-    /**
-     * Check if a class-type is decorated with the {@link injectable} decorator.
-     * @param serviceType class or constructor like object
-     * @returns `true` if the class is decorated otherwise `false`
-     */
     isDecorated: function (serviceType: ObjectType) {
-        return serviceType[InjectableDecorated] !== null;
+        return serviceType[IsDecorated] !== null;
     },
-    /**
-     * Property injection decorator
-     */
-    property: inject
+    property: inject,
+    param: inject,
 });
 
 /**

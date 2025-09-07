@@ -1,5 +1,5 @@
 import 'jest';
-import { objectEquals, flattenObject, getObjectProperty, getObjectValues, setObjectProperty, sortProperties, merge } from '../object';
+import { objectEquals, flattenObject, getObjectProperty, getObjectValues, setObjectProperty, sortProperties, merge, isConstructor } from '../object';
 
 describe('util', () => {
     describe('#getValues', () => {
@@ -250,6 +250,32 @@ describe('util', () => {
             };
             merge(object, other, merge);
             expect(object).toStrictEqual({ 'a': { 'b': { 'c': [2,2] } } });
+        });
+    });
+    describe('#isConstructor', () => {
+        it('should return true for constructor functions', () => {
+            class TestClass {}
+            expect(isConstructor(TestClass)).toBe(true);
+        });
+        it('should return false for arrow functions', () => {
+            const testFunc = () => {};
+            expect(isConstructor(testFunc)).toBe(false);
+        });
+        it('should return false for static class functions', () => {
+            class TestClass {
+                static testMethod() {}
+            }
+            expect(isConstructor(TestClass.testMethod)).toBe(false);
+        });
+        it('should return false for class functions', () => {
+            class TestClass {
+                testMethod() {}
+            }
+            expect(isConstructor(TestClass.prototype.testMethod)).toBe(false);
+        });
+        it('should return false for built-in functions', () => {
+            expect(isConstructor(Math)).toBe(false);
+            expect(isConstructor(Reflect)).toBe(false);
         });
     });
 });

@@ -182,8 +182,8 @@ export namespace WorkspaceEdit {
                 continue;
             }
             const range = new vscode.Range(
-                this.getPositionAt(source, match.index),
-                this.getPositionAt(source, match.index + match[0].length)
+                getPositionAt(source, match.index),
+                getPositionAt(source, match.index + match[0].length)
             );
             yield new vscode.TextEdit(range, newText);
         }

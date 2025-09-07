@@ -21,7 +21,7 @@ export abstract class SalesforceCommand extends Command {
         return this.container.get(SalesforceConnectionProvider).getJsForceConnection();
     }
 
-    protected container = container.new();
+    protected container = container.create();
 
     protected async init(options: any) {
         // Prep dependencies
@@ -31,19 +31,19 @@ export abstract class SalesforceCommand extends Command {
         }
 
         if (options.replaySession) {
-            this.container.registerAs(new JsForceConnectionProvider(new SalesforceConnection({
+            this.container.add(new JsForceConnectionProvider(new SalesforceConnection({
                 transport: new ReplayTransport(SessionDataStore.loadSession(options.replaySession))
-            })), SalesforceConnectionProvider);
+            })));
         } else if (options.user) {
-            this.container.registerAs(new SfdxConnectionProvider(options.user), SalesforceConnectionProvider);
+            this.container.add(new SfdxConnectionProvider(options.user));
         } else {
-            this.container.registerAs(new InteractiveConnectionProvider(`https://${options.instance}`), SalesforceConnectionProvider);
+            this.container.add(new InteractiveConnectionProvider(`https://${options.instance}`));
         }
 
         // Setup Namespace replacer
-        this.container.registerAs(await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider)), NamespaceService);
+        this.container.add(await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider)));
 
         // Setup a Cached file system for loading datapacks
-        this.container.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
+        this.container.add(new CachedFileSystemAdapter(new NodeFileSystem()));
     }
 }

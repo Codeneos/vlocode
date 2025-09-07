@@ -65,7 +65,7 @@ export class Task<TResult, TProgress = unknown> implements TaskPromise<TResult, 
 
     private events = new EventEmitter();
     private cancellationTokenSource = new CancellationTokenSource();
-    private taskPromise: Promise<unknown>;
+    private taskPromise: Promise<any>;
     private taskStatus: TaskStatus = TaskStatus.executing;
 
     public get isRunning() : boolean {

@@ -101,7 +101,7 @@ export default class extends SalesforceCommand {
 
         // Create deployment
         const deployTimer = new Timer();
-        const deployment = await this.container.create(DatapackDeployer).createDeployment(datapacks, deployOptions);
+        const deployment = await this.container.new(DatapackDeployer).createDeployment(datapacks, deployOptions);
         await deployment.start();
 
         // done!!

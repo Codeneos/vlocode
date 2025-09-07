@@ -136,7 +136,7 @@ export class OmniUiCard implements DatapackDeploymentSpec {
                     } else {
                         await this.activator.activate(record.recordId, { toolingApi: true, ...options });
                     }
-                } catch(err) {
+                } catch (err: any) {
                     this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${getErrorMessage(err)}`);
                     record.updateStatus(DeploymentStatus.Failed, err.message || err);
                 }
@@ -148,7 +148,7 @@ export class OmniUiCard implements DatapackDeploymentSpec {
             const timer = new Timer();
             this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
             const mergedPackage = packages.reduce((p, c) => p.merge(c));
-            await this.container.create(SalesforceDeployService, undefined, Logger.null).deployPackage(mergedPackage);
+            await this.container.new(SalesforceDeployService, undefined, Logger.null).deployPackage(mergedPackage);
             this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }

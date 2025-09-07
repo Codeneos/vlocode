@@ -68,7 +68,7 @@
         "nugget": "^2.2.0",
         "shx": "^0.3.4",
         "ts-jest": "^29.3.4",
-        "typescript": "5.8.3"
+        "typescript": "5.9.2"
     },
     "dependencies": {
         "@vlocode/core": "workspace:*",

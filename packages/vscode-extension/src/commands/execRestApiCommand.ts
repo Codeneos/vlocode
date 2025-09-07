@@ -158,7 +158,7 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
             });
         } catch (error) {
             void vscode.window.showErrorMessage(`API Request failed with error`);
-            if ('responseBody' in error) {
+            if (typeof error === 'object' && error && 'responseBody' in error) {
                 response = error.responseBody;
             } else {
                 response = error;

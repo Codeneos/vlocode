@@ -453,7 +453,7 @@ export class HttpTransport implements Transport {
                     return decoder(responseBuffer, encoding);
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             this.logger.warn(`Failed to parse response of type ${contentType}: ${err?.message ?? err}`);
         }
 

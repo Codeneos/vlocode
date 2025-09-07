@@ -277,12 +277,12 @@ export namespace sfdx {
                         alias: allAliases[0] || undefined,
                         aliases: allAliases
                     };
-                } catch(err) {
+                } catch (err) {
                     logger.warn(`Error while reading SFDX auth for "${username}"`, err);
                 }
             }
-        } catch(err) {
-            logger.warn(`Error while listing SFDX info: ${err.message || err}`);
+        } catch (err: any) {
+            logger.warn(`Error while listing SFDX info: ${err?.message || err}`);
         }
     }
 
@@ -402,8 +402,8 @@ export namespace sfdx {
             const connection = await salesforce.Connection.create({ authInfo });
             const org = await salesforce.Org.create({ connection });
             return org;
-        } catch (err) {
-            if (err.name == 'NamedOrgNotFound') {
+        } catch (err: any) {
+            if (err?.name == 'NamedOrgNotFound') {
                 throw new Error(`The specified alias "${usernameOrAlias}" does not exists; resolve this error by register the alias using SFDX or try connecting using the username instead`)
             }
             throw err;
@@ -438,8 +438,8 @@ export namespace sfdx {
             try {
                 configPath = `${folderPath}/${defaultConfigPath}`
                 config = JSON.parse((await options.fs.readFile(configPath)).toString('utf8'));
-            } catch (err) {
-                if (err.code !== 'ENOENT') {
+            } catch (err: any) {
+                if (err?.code !== 'ENOENT') {
                     throw err;
                 }
             }

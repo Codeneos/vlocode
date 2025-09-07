@@ -168,7 +168,7 @@ export class ToolingApiSchemaAccess {
             const chunkQuery = query.clone().filter({ [field]: chunk });
             const normalizedResults = await chunkQuery.executeTooling<T>(this.queryService);
             results.push(...normalizedResults);
-        } catch(err) {
+        } catch (err: any) {
             // For some objects we get unknown errors even when the query is fine
             // to avoid excluding specific objects we try to isolate the object causing the issue
             const connectionReset = err?.message?.includes('read ECONNRESET');
@@ -204,7 +204,7 @@ export class ToolingApiSchemaAccess {
             return obj.records.map(this.normalize, this);
         }
 
-        const normalized = mapKeys(obj, (key: string) => `${key[0].toLowerCase()}${key.substring(1)}`);
+        const normalized = mapKeys(obj, (key) => `${key[0].toLowerCase()}${String(key).substring(1)}`);
         for (const key of Object.keys(normalized)) {
             if (Array.isArray(normalized[key])) {
                 normalized[key] = normalized[key].map(this.normalize, this);

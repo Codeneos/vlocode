@@ -62,7 +62,7 @@
         "shx": "^0.3.4",
         "ts-jest": "^29.3.4",
         "ts-json-schema-generator": "^2.3.0",
-        "typescript": "5.8.3"
+        "typescript": "5.9.2"
     },
     "dependencies": {
         "@vlocode/core": "workspace:*",

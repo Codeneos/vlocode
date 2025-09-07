@@ -19,7 +19,7 @@ export class DatapackDeploymentSpecRegistry {
      */
     public static get instance() {
         if (DatapackDeploymentSpecRegistry[InstanceSymbol] === undefined) {
-            DatapackDeploymentSpecRegistry[InstanceSymbol] = container.create(DatapackDeploymentSpecRegistry);
+            DatapackDeploymentSpecRegistry[InstanceSymbol] = container.new(DatapackDeploymentSpecRegistry);
         }
         return DatapackDeploymentSpecRegistry[InstanceSymbol];
     }
@@ -47,7 +47,7 @@ export class DatapackDeploymentSpecRegistry {
         for (const spec of this.specs) {
             yield {
                 filter: spec.filter, 
-                spec: spec.instance ?? lazy( () => spec.instance = this.container.create(spec.type!) )
+                spec: spec.instance ?? lazy( () => spec.instance = this.container.new(spec.type!) )
             };
         }
     }

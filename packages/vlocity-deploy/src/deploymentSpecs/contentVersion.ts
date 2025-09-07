@@ -93,7 +93,7 @@ export class ContentVersion implements DatapackDeploymentSpec {
     private calculateVersionDataChecksum(record: DatapackDeploymentRecord) {
         try {
             return createHash('md5').update(Buffer.from(record.value('VersionData'), 'base64')).digest("hex");
-        } catch(err) {
+        } catch (err: any) {
             record.addWarning(`Unable to digest md5 checksum due to crypto error: ${err.message}`);
         }
     }

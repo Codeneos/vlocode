@@ -199,7 +199,7 @@ export function cacheFunction<T extends (...args: any[]) => any>(targetFn: T, tt
         targetFn[cacheOptionsProperty] = ttlOrOptions;
     }
 
-    const cachedFunction = function(...args: any[]) {
+    const cachedFunction = function(this: T, ...args: any[]) {
         const cache = getCacheStore(this, targetFn, options);
         const key = args.reduce((checksum: string, arg: unknown) => checksum.concat(serializeArgument(arg)), `${storePrefix}:`);
         const cacheEntry = cache.get(key);

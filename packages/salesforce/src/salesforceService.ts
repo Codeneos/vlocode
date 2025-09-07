@@ -47,12 +47,12 @@ interface MetadataInfo { type: string; fullName: string; metadata: any; name: st
 @injectable({ lifecycle: LifecyclePolicy.singleton })
 export class SalesforceService implements SalesforceConnectionProvider {
 
-    @inject(SalesforceSchemaService) public readonly schema: SalesforceSchemaService;
-    @inject(SalesforceLookupService) public readonly lookupService: SalesforceLookupService;
-    @inject(SalesforceDeployService) public readonly deploy: SalesforceDeployService;
-    @inject(DeveloperLogs) public readonly logs: DeveloperLogs;
-    @inject(SalesforceBatchService) public readonly batch: SalesforceBatchService;
-    @inject(SalesforceProfileService) public readonly profiles: SalesforceProfileService;
+    @inject() public readonly schema: SalesforceSchemaService;
+    @inject() public readonly lookupService: SalesforceLookupService;
+    @inject() public readonly deploy: SalesforceDeployService;
+    @inject() public readonly logs: DeveloperLogs;
+    public readonly batch: SalesforceBatchService;
+    @inject() public readonly profiles: SalesforceProfileService;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
@@ -429,7 +429,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
             namespace: r.NamespacePrefix,
             name: r.Name,
             size: r.BodyLength,
-            getBody: async function() {
+            getBody: async function(this: any) {
                 if (!this._body) {
                     this._body = await connection.request(r.Body);
                 }

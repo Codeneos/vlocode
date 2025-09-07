@@ -85,7 +85,7 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
                     } else {
                         await this.activator.activate(record.recordId, { toolingApi: true });
                     }
-                } catch(err) {
+                } catch (err: any) {
                     this.logger.error(`Failed to deploy LWC component for ${record.datapackKey} -- ${getErrorMessage(err)}`);
                     record.updateStatus(DeploymentStatus.Failed, err.message || err);
                 }
@@ -96,7 +96,7 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
         if (packages.length) {
             const timer = new Timer();
             this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
-            await this.container.create(SalesforceDeployService, undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
+            await this.container.new(SalesforceDeployService, undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
             this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }

@@ -229,9 +229,9 @@ export default class SetTraceFlagsCommand extends MetadataCommand {
 
         try {
             await this.salesforce.logs.extendTraceFlags(this.currentTraceFlagsId, this.traceFlagsDuration);
-        } catch(err) {
-            // If deleted
-            if (err.name === 'INVALID_ID_FIELD') {
+        } catch (error) {
+            const errorCode = (error as any)?.name;
+            if (errorCode === 'INVALID_ID_FIELD') {
                 await this.createAndSetTraceFlags(this.currentDebugLevelName, this.currentDebugLevel);
             }
         }

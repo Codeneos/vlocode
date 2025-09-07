@@ -65,7 +65,7 @@ export class HookManager<T extends object> {
             return hookTarget;
         }
         hookTarget[this.cacheSymbol] = {};
-        return new Proxy(hookTarget, {
+        return new Proxy<A>(hookTarget, {
             get: this.proxyGetHandler.bind(this)
         });
     }

@@ -31,34 +31,34 @@ interface DatapackDeployOptions extends DatapackDeploymentOptions {
  * @returns An promise of the deployment object containing the deployment results
  */
 export async function deploy(input: string | string[], options: DatapackDeployOptions) {
-    const localContainer = container.new();
+    const localContainer = container.create();
 
     if (options.logger) {
-        localContainer.register(new Logger(undefined, '@vlocode/vlocity-deploy', options.logger));
+        localContainer.add(new Logger(undefined, '@vlocode/vlocity-deploy', options.logger));
     } else if(!localContainer.get(Logger)) {
-        localContainer.register(Logger.null);
+        localContainer.add(Logger.null);
     }
 
     if (options.jsforceConnection) {
-        localContainer.registerAs(new JsForceConnectionProvider(options.jsforceConnection), SalesforceConnectionProvider);
+        localContainer.add(new JsForceConnectionProvider(options.jsforceConnection), { provides: [ SalesforceConnectionProvider ] });
     } else if (options.sfdxUser) {
-        localContainer.registerAs(new SfdxConnectionProvider(options.sfdxUser, undefined), SalesforceConnectionProvider);
+        localContainer.add(new SfdxConnectionProvider(options.sfdxUser, undefined), { provides: [ SalesforceConnectionProvider ] });
     } else {
         throw new Error('Set either set options.sfdxUser -or- options.jsforceConnection otherwise');
     }
 
     // Setup dependencies
-    localContainer.register(await new VlocityNamespaceService().initialize(localContainer.get(SalesforceConnectionProvider)));
-    localContainer.registerAs(new CachedFileSystemAdapter(new NodeFileSystem()), FileSystem);
+    localContainer.add(await new VlocityNamespaceService().initialize(localContainer.get(SalesforceConnectionProvider)));
+    localContainer.add(new CachedFileSystemAdapter(new NodeFileSystem()), { provides: [ FileSystem ] });
 
     // load datapacks
     input = Array.isArray(input) ? input : [ input ];
-    const datapackLoader = localContainer.create(DatapackLoader);
+    const datapackLoader = localContainer.new(DatapackLoader);
     const datapacks = (await Promise.all(input.map(i => datapackLoader.loadDatapacksFromFolder(i)))).flat(1);
     if (datapacks.length == 0) {
         throw new Error(`No datapacks found in specified folders: ${input}`);
     }
 
     // Create deployment
-    return await localContainer.create(DatapackDeployer).deploy(datapacks, options);
+    return await localContainer.new(DatapackDeployer).deploy(datapacks, options);
 }

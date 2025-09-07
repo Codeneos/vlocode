@@ -1,5 +1,5 @@
     import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
-import { injectable, Logger } from '@vlocode/core';
+import { inject, injectable, Logger } from '@vlocode/core';
 import { spreadAsync, timeout, Timer } from '@vlocode/util';
 
 import { OmniProcessRecord, OmniScriptDefinition, OmniScriptRecord, OmniScriptSpecification } from './types';
@@ -73,8 +73,8 @@ export class OmniScriptActivator {
         private readonly salesforceService: SalesforceService,
         private readonly scriptAccess: OmniScriptAccess,
         private readonly lwcCompiler: OmniScriptLwcCompiler,
-        @injectable.param(ScriptDefinitionProvider) private readonly definitionProvider: OmniScriptDefinitionProvider,
-        @injectable.param(OmniScriptDefinitionGenerator) private readonly definitionGenerator: OmniScriptDefinitionProvider,
+        @inject(ScriptDefinitionProvider) private readonly definitionProvider: OmniScriptDefinitionProvider,
+        @inject(OmniScriptDefinitionGenerator) private readonly definitionGenerator: OmniScriptDefinitionGenerator,
         private readonly logger: Logger
     ) {
     }

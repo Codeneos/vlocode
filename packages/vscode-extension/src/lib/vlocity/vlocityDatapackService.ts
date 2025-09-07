@@ -9,7 +9,7 @@ import { Logger, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
-import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals } from '@vlocode/util';
+import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals, getErrorMessage } from '@vlocode/util';
 import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
@@ -499,9 +499,9 @@ export default class VlocityDatapackService implements vscode.Disposable {
                 postJobApex: customSettings.postJobApex,
                 customQueries: customSettings.queries
             };
-        } catch(err) {
+        } catch (err) {
             void vscode.window.showErrorMessage(`Failed to parse custom YAML file: ${yamlFile}`, 'See details').then(() => this.logger.focus());
-            this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${err.message || err}`);
+            this.logger.error(`Failed to parse custom YAML file: ${yamlFile}/nError: ${getErrorMessage(err)}`);
         }
     }
 

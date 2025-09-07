@@ -12,8 +12,8 @@ export interface TerminalWriterOptions {
 
 export class TerminalWriter implements LogWriter {
 
-    private writeEmitter : vscode.EventEmitter<string>;
-    private closeEmitter : vscode.EventEmitter<void>;
+    private writeEmitter?: vscode.EventEmitter<string>;
+    private closeEmitter?: vscode.EventEmitter<void>;
     private currentTerminal? : vscode.Terminal;
     private terminalWatchdog? : any;
     private isOpened = false;
@@ -103,7 +103,7 @@ export class TerminalWriter implements LogWriter {
     public close() {
         this.isOpened = false;
         if (this.currentTerminal) {
-            this.closeEmitter.fire();
+            this.closeEmitter!.fire();
             this.currentTerminal.dispose();
             this.currentTerminal = undefined;
         }
@@ -138,7 +138,7 @@ export class TerminalWriter implements LogWriter {
             }
 
             const formattedMessage = `${logPrefix} ${logLevelName} ${messageBody}`;
-            this.writeEmitter.fire(formattedMessage + TERMINAL_EOL);
+            this.writeEmitter!.fire(formattedMessage + TERMINAL_EOL);
         }
     }
 

@@ -1,7 +1,7 @@
 import 'jest';
 import { Logger, container, Container, LifecyclePolicy, inject } from '../';
-import { ServiceImplCircular } from './container.test.circular';
-import { CircularRef } from './container.test.circular.ref';
+import { ServiceImplCircular } from './container.circular';
+import { CircularRef } from './container.circular.ref';
 
 describe('container', () => {
 
@@ -19,10 +19,17 @@ describe('container', () => {
     }
 
     class InjectableProps {
+        name: string = 'InjectableProps';
+        @inject(ServiceImpl) public service: ServiceImpl;
+    }
+
+    class InjectablePropsLazy { 
+        name: string = 'InjectablePropsLazy';
         @inject(() => ServiceImpl) public service: ServiceImpl;
     }
 
     class InjectablePropsNoType {
+        name: string = 'InjectablePropsNoType';
         @inject() public service: ServiceImpl;
     }
 
@@ -153,7 +160,24 @@ describe('container', () => {
             testContainer.add(ServiceImpl, { provides:  [ServiceImpl, BaseShape, ServiceShape] });
             
             // Act
-            const instance = testContainer.create(InjectableProps);
+            const instance = testContainer.new(InjectableProps);
+
+            // Assert
+            expect(instance.service).not.toBeUndefined();
+            expect(instance.service).toBeInstanceOf(ServiceImpl);
+        });
+
+        it('should resolve lazy injectable properties on non-injectable class', () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+            testContainer.add(ServiceImpl, { provides:  [ServiceImpl, BaseShape, ServiceShape] });
+
+            const type = Logger;
+            const lazyType2 = () => { return Logger };
+            const lazyType1 = function a () { return Logger };
+            
+            // Act
+            const instance = testContainer.new(InjectablePropsLazy);
 
             // Assert
             expect(instance.service).not.toBeUndefined();
@@ -166,7 +190,8 @@ describe('container', () => {
             testContainer.add(ServiceImpl, { provides:  [ServiceImpl, BaseShape, ServiceShape] });
 
             // Act
-            const instance = testContainer.create(InjectablePropsNoType);
+            const a = new InjectablePropsNoType();
+            const instance = testContainer.new(InjectablePropsNoType);
 
             // Assert
             expect(instance.service).not.toBeUndefined();

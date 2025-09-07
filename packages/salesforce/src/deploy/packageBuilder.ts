@@ -263,7 +263,7 @@ export class SalesforcePackageBuilder {
         const mdPackage = this.mdPackage;
         mdPackage.generateMissingMetaFiles();
         const deltaStrategy: DeltaPackageStrategy<T> = typeof strategy === 'function' || !strategy 
-            ? (Container.get(this) ?? container).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
+            ? (Container.get(this) ?? container).new(strategy ?? RetrieveDeltaStrategy as any) : strategy;
 
         const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
         const changedComponentSet = new Set(changedComponents.map(c => `${c.componentType}/${c.componentName}`));
@@ -614,7 +614,7 @@ export class SalesforcePackageBuilder {
     ) {
         const mdPackage = await this.build();
         const deltaStrategy = typeof strategy === 'function' || !strategy 
-            ? (Container.get(this) ?? container).create(strategy ?? RetrieveDeltaStrategy as any) : strategy;
+            ? (Container.get(this) ?? container).new(strategy ?? RetrieveDeltaStrategy as any) : strategy;
         const changedComponents = await deltaStrategy.getChangedComponents(mdPackage, options);
         const deltaPackage = new SalesforcePackage(this.apiVersion);
 

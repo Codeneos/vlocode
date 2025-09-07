@@ -224,14 +224,14 @@ export function makeRetryable<T extends (...args: Parameters<T>) => Promise<Awai
  * @returns MethodDecorator
  */
 export function preventParallel<T extends (...args: TArgs[]) => Promise<TReturn>, TArgs = any, TReturn = any>(variableName?: string | symbol): MethodDecorator {
-    return function<K = T>(target: any, name: string | symbol, descriptor: TypedPropertyDescriptor<K>): TypedPropertyDescriptor<K> | void {
+    return function<K = T>(this: T, target: any, name: string | symbol, descriptor: TypedPropertyDescriptor<K>): TypedPropertyDescriptor<K> | void {
         const value = descriptor.value;
         if (typeof value !== 'function') {
             return;
         }
 
         const variableStore = variableName ?? Symbol(`preventParallel-${String(name)}`);
-        const decoratedMethod = function(...args: TArgs[]) {
+        const decoratedMethod = function(this: any, ...args: TArgs[]) {
             if (this[variableStore] !== undefined) {
                 return this[variableStore];
             }
@@ -261,7 +261,7 @@ export function thenablePromise<T extends (...args: TArgs[]) => Promise<TReturn>
             return;
         }
 
-        const decoratedMethod = function(...args: TArgs[]) {
+        const decoratedMethod = function(this: any, ...args: TArgs[]) {
             const callback = args.length && typeof args[args.length - 1] === 'function' 
                 ? args.pop() as (...args: any[]) => any
                 : undefined;

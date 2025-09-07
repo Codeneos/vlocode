@@ -139,7 +139,7 @@ export namespace Iterable {
      */
     export function transform<T, K = T>(itr: Iterable<T>, transformer: { map?(item: T, index: number): K; filter?(item: T, index: number): any }): Iterable<K> {
         const indexSymbol = Symbol('index');
-        const iteratorNextTransformer = function() {
+        const iteratorNextTransformer = function(this: Iterator<T>) {
             // eslint-disable-next-line no-constant-condition
             while(true) {
                 const value = this.next();
@@ -168,7 +168,7 @@ export namespace Iterable {
                     throw: iterator.throw?.bind(iterator)
                 };
             }
-        };
+        } as Iterable<K>;
     }
 
     export function reduce<T, S = T>(itr: Iterable<T>, reduceFunction: (prev: S, item: T) => S, init: S) : S;

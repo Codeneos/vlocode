@@ -38,12 +38,12 @@ export default class GenerateLwcCommand extends DatapackCommand {
 
     private async compile(datapack: VlocityDatapack, options?: { useStandardRuntime?: boolean }) {      
         if (datapack.datapackType === 'OmniScript') {
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
-            return container.create(OmniScriptLwcCompiler).compile(definition, options);
+            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
+            return container.new(OmniScriptLwcCompiler).compile(definition, options);
         }
         if (datapack.datapackType === 'FlexCard') {
             const definition = FlexCardDefinition.fromDatapack(datapack);
-            return container.create(FlexCardLwcCompiler).compile(definition, options);
+            return container.new(FlexCardLwcCompiler).compile(definition, options);
         }
         throw new Error(`Unsupported datapack type: ${datapack.datapackType}`);
     }
@@ -70,8 +70,8 @@ export default class GenerateLwcCommand extends DatapackCommand {
                     }
                     result.push({ datapack: datapack.key, file: outputFilePath });
                 }
-            } catch (error) {
-                this.logger.error(`Datapack LWC generation failed:`, error.stack);                
+            } catch (error: any) {
+                this.logger.error(`Datapack LWC generation failed:`, error);                
                 result.push({ datapack: datapack.key, file: `ERROR ${getErrorMessage(error)}` });
             }            
         }

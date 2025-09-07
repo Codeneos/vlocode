@@ -27,14 +27,14 @@ describe('DatapackDeployment', () => {
     }
 
     beforeAll(() => {
-        container.registerAs(Logger.null, Logger);
-        container.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
+        container.add(Logger.null);
+        container.add(new VlocityNamespaceService('vlocity_cmt'));
     });
 
     describe('hasPendingDependencies', () => {
         it('should not return true for records with undeployed dependencies', () => {
             // Arrange
-            const deployment = container.create(DatapackDeployment);
+            const deployment = container.new(DatapackDeployment);
             const recordA1 = mockDatapackRecord( { sourceKey: 'A/1', datapackKey: 'A' });
             const recordA2 = mockDatapackRecord( { sourceKey: 'A/2', datapackKey: 'A' });
             const recordB1 = mockDatapackRecord( { sourceKey: 'B/1', datapackKey: 'B' });
@@ -58,7 +58,7 @@ describe('DatapackDeployment', () => {
         /* eslint-disable no-constant-condition */
         it('with [strictOrder: false] should return records ordered by dependencies', () => {
             // Arrange
-            const deployment = container.create(DatapackDeployment, { strictOrder: false });
+            const deployment = container.new(DatapackDeployment, { strictOrder: false });
             const recordA1 = mockDatapackRecord( { sourceKey: 'A/1', datapackKey: 'A' });
             const recordA2 = mockDatapackRecord( { sourceKey: 'A/2', datapackKey: 'A' });
             const recordB1 = mockDatapackRecord( { sourceKey: 'B/1', datapackKey: 'B' });
@@ -91,7 +91,7 @@ describe('DatapackDeployment', () => {
         });
         it('with [strictOrder: true] should not deploy dependent records until all records in datapack are deployed', () => {
             // Arrange
-            const deployment = container.create(DatapackDeployment, { strictOrder: true });
+            const deployment = container.new(DatapackDeployment, { strictOrder: true });
             const recordA1 = mockDatapackRecord( { sourceKey: 'A/1', datapackKey: 'A' });
             const recordA2 = mockDatapackRecord( { sourceKey: 'A/2', datapackKey: 'A' });
             const recordB1 = mockDatapackRecord( { sourceKey: 'B/1', datapackKey: 'B' });
@@ -129,7 +129,7 @@ describe('DatapackDeployment', () => {
             // but none of the records in the datapack depend on each other
 
             // Arrange
-            const deployment = container.create(DatapackDeployment, { strictOrder: true });
+            const deployment = container.new(DatapackDeployment, { strictOrder: true });
 
             const recordA1 = mockDatapackRecord( { sourceKey: 'A/1', datapackKey: 'A' });
             const recordA2 = mockDatapackRecord( { sourceKey: 'A/2', datapackKey: 'A' });
@@ -168,7 +168,7 @@ describe('DatapackDeployment', () => {
             // otherwise the deployment will fail due to circular dependencies with strictOrder enabled
 
             // Arrange
-            const deployment = container.create(DatapackDeployment, { strictOrder: true });
+            const deployment = container.new(DatapackDeployment, { strictOrder: true });
 
             const recordA1 = mockDatapackRecord( { sourceKey: 'A/1', datapackKey: 'A' });
             const recordA2 = mockDatapackRecord( { sourceKey: 'A/2', datapackKey: 'A' });
@@ -217,7 +217,7 @@ describe('DatapackDeployment', () => {
     describe('hasCircularDependencies', () => {
         it('should return path when circular dependencies (A->B->A) exist', () => {
             // Arrange
-            const deployment = container.create(DatapackDeployment);
+            const deployment = container.new(DatapackDeployment);
             const recordA = mockDatapackRecord( { sourceKey: 'A', datapackKey: 'A' });	
             const recordB = mockDatapackRecord( { sourceKey: 'B', datapackKey: 'B' });
 
@@ -236,7 +236,7 @@ describe('DatapackDeployment', () => {
         });
         it('should return true when a deep circular dependencies (A->B->C->A) exist', () => {
             // Arrange
-            const deployment = container.create(DatapackDeployment);
+            const deployment = container.new(DatapackDeployment);
             const recordA = mockDatapackRecord( { sourceKey: 'A', datapackKey: 'A' });	
             const recordB = mockDatapackRecord( { sourceKey: 'B', datapackKey: 'B' });
             const recordC = mockDatapackRecord( { sourceKey: 'C', datapackKey: 'C' });
