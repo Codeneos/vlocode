@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getDocumentBodyAsString, mapBy } from '@vlocode/util';
+import { getDocumentBodyAsString, getErrorMessage, mapBy } from '@vlocode/util';
 import { CommandBase } from '../../lib/commandBase';
 import { DeployResult, SalesforcePackage, SalesforcePackageComponent, SalesforceService } from '@vlocode/salesforce';
 
@@ -130,8 +130,8 @@ export default abstract class MetadataCommand extends CommandBase {
                     this.addError(localPath, range, failure.problem);
                     return;
                 }
-            } catch(e) {
-                this.logger.error(`Problem matcher error: ${e.message || e}`);
+            } catch (error) {
+                this.logger.error(`Problem matcher error: %s`, getErrorMessage(error));
             }
         }
 

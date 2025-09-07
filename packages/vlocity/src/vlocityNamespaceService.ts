@@ -7,7 +7,7 @@ import * as constants from './constants';
 @injectable.singleton({ provides: [NamespaceService, VlocityNamespaceService] })
 export class VlocityNamespaceService extends NamespaceService {
 
-    @inject(Logger) private readonly logger: Logger
+    @inject() private readonly logger: Logger
     private readonly vlocityNamespaceCache = new Map<string, Promise<string> | string>();
 
     constructor(private vlocityNamespace: string | null = null) {

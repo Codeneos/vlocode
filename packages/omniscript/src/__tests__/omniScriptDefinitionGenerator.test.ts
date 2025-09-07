@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import { Logger, container } from '@vlocode/core';
 import { filterObject } from '@vlocode/util';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
-import { SalesforceConnectionProvider, NamespaceService, SalesforceConnection, SessionDataStore } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, SalesforceConnection, SessionDataStore } from '@vlocode/salesforce';
 
 import { MockTransport } from './mocks/mockTransport';
 import { OmniScriptDefinitionBuilder } from '../omniScriptDefinitionBuilder';
@@ -26,23 +26,24 @@ describe('OmniScriptDefinitionGenerator', () => {
         const transportMock = new MockTransport(sessionData);
         const connection = new SalesforceConnection({ version: '55.0', transport: transportMock });
 
+        transportMock.addQueryResponse(/from\+OmniProcess\+where/ig, [ ]);
         transportMock.addQueryResponse(/from\+vlocity_cmt__OmniScript__c\+where/ig, [ scriptRecord ]);
         transportMock.addQueryResponse(/from\+vlocity_cmt__Element__c\+where/ig, elementRecords);
 
-        container.registerAs(Logger.null, Logger);
-        container.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
-        container.registerAs({
+        container.add(Logger.null);
+        container.add(new VlocityNamespaceService('vlocity_cmt'));
+        container.add({
             getJsForceConnection: () => {
                 return Promise.resolve(connection);
             },
             getApiVersion: () => '55.0'
-        } as any, SalesforceConnectionProvider);
+        } as any, { provides: [ SalesforceConnectionProvider ] });
     });
 
     describe('#getScriptDefinition', () => {
         it('should set base script properties according to record definition', async () => {
             // test
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId)
+            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId)
 
             // assert
             expect(definition.sOmniScriptId).toBe(scriptId);
@@ -57,7 +58,7 @@ describe('OmniScriptDefinitionGenerator', () => {
         });
         it('should populate rMap for all repeat, multi-select and radio elements', async () => {
             // test
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId);
+            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId);
 
             // assert
             expect(Object.keys(definition.rMap).sort()).toStrictEqual([
@@ -72,7 +73,7 @@ describe('OmniScriptDefinitionGenerator', () => {
         });
         it('should add root elements in the correct order and index', async () => {
             // test
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId)
+            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId)
 
             // assert
             const selectElement = new OmniScriptDefinitionBuilder(definition).findElement('Select1');
@@ -93,7 +94,7 @@ describe('OmniScriptDefinitionGenerator', () => {
         });
         it('should pre-populate picklist values for choice elements', async () => {
             // test
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId)
+            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId)
 
             // assert
             const propertiesToValidate = [ "type", "name", "indexInParent", "level", "offSet" ];
@@ -124,7 +125,7 @@ describe('OmniScriptDefinitionGenerator', () => {
             // it should always pass unless the elements JSON file is changed
             // Vlocity version: 900.449 (CMT Winter 2022)
             const expectedDefinition = readJsonSync(path.join(__dirname, './data/omniscript-definition.json'));
-            const definition = await container.create(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId);
+            const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinition(scriptId);
             definition.lwcId = 'xxx';
 
             // assert

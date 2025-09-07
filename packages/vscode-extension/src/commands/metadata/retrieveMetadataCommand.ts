@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { unique} from '@vlocode/util';
+import { getErrorMessage, unique} from '@vlocode/util';
 import { DescribeGlobalSObjectResult, FileProperties, MetadataType, PackageManifest } from '@vlocode/salesforce';
 import MetadataCommand from './metadataCommand';
 import { vscodeCommand } from '../../lib/commandRouter';
@@ -149,8 +149,8 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
                             path: path.relative(unpackTarget, outputFile)
                         }))
                     );
-                } catch(err) {
-                    this.logger.error(`${file.componentName} -- ${err.message || err}`);
+                } catch (err) {
+                    this.logger.error(`${file.componentName} -- ${getErrorMessage(err)}`);
                 }
             }
 

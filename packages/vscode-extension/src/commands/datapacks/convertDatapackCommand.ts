@@ -50,7 +50,7 @@ export default class ConvertDatapackCommand extends DatapackCommand {
 
     protected async convertAndExpandDatapack(datapack: VlocityDatapack) : Promise<VlocityDatapack> {
         // convert the datapack
-        const converter = container.create(OmniStudioConverter);
+        const converter = container.new(OmniStudioConverter);
         const omnistudioDatapack = converter.convertDatapack(datapack);
 
         // execute rename and expand into new folder structure

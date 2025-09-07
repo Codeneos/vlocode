@@ -1551,7 +1551,7 @@
         "tsconfig-paths-webpack-plugin": "^3.5.2",
         "tsx": "^4.19.4",
         "type-fest": "^2.12.2",
-        "typescript": "5.8.3",
+        "typescript": "5.9.2",
         "vlocity": "1.14.18",
         "vscode-languageclient": "^8.1.0",
         "webpack": "^5.99.9",

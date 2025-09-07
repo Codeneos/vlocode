@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as constants from '../constants';
 import { LogManager, injectable, container } from '@vlocode/core';
 import { DatapackInfoService, getDatapackTypeDefinition, DatapackTypeDefinition } from '@vlocode/vlocity';
-import { groupBy, normalizeSalesforceName, clearCache, lazy, pluralize } from '@vlocode/util';
+import { groupBy, normalizeSalesforceName, clearCache, lazy, pluralize, getErrorMessage } from '@vlocode/util';
 
 import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
@@ -97,7 +97,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
             const nodes = await this.getNodes(node);
             return nodes.sort(nodeSorter);
         } catch (err) {
-            return [ new DatapackErrorNode(err.message) ];
+            return [ new DatapackErrorNode(getErrorMessage(err)) ];
         }
     }
 

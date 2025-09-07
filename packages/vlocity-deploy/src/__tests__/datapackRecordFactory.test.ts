@@ -5,7 +5,7 @@ import * as path from 'path';
 import datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore,  } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore, SalesforceSchemaService,  } from '@vlocode/salesforce';
 import { VlocityDatapack, VlocityNamespaceService, VlocityMatchingKeyService, VlocityMatchingKey } from '@vlocode/vlocity';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 
@@ -33,20 +33,21 @@ describe('datapackRecordFactory', () => {
         } as any) as VlocityMatchingKeyService;
     }
 
-    beforeAll(() =>  container.registerAs(Logger.null, Logger));
+    beforeAll(() =>  container.add(Logger.null));
 
     it('should convert datapack to multiple deployable records', async () => {
         // Arrange
         const schemaDataFile = path.join(__dirname, './data/schema.json');
-        const testContainer = container.new();
+        const testContainer = container.create();
 
-        testContainer.registerAs(mockConnectionProvider([]), SalesforceConnectionProvider);
-        testContainer.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
-        testContainer.register(await new SchemaDataStore().loadFromFile(schemaDataFile));
-        testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);
+        testContainer.use(mockConnectionProvider([]), SalesforceConnectionProvider);
+        testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
+        testContainer.use(await new SchemaDataStore().loadFromFile(schemaDataFile));
+        testContainer.use(mockMatchingKeyService(), VlocityMatchingKeyService);
+        //testContainer.add(SalesforceSchemaService);
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
-        const sut = testContainer.create(DatapackRecordFactory);
+        const sut = testContainer.new(DatapackRecordFactory);
 
         // Act
         const records = await sut.createRecords(datapack);
@@ -165,7 +166,7 @@ describe('datapackRecordFactory', () => {
 
     it('should stringify convert JSON object', async () => {
         // Arrange
-        const testContainer = container.new();
+        const testContainer = container.create();
 
         const datapackData = {
             "StringField__c": {
@@ -221,13 +222,13 @@ describe('datapackRecordFactory', () => {
             } ]
         };
 
-        testContainer.registerAs(mockConnectionProvider([]), SalesforceConnectionProvider);
-        testContainer.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
-        testContainer.register(await new SchemaDataStore().load(schemaData));
-        testContainer.registerAs(mockMatchingKeyService(), VlocityMatchingKeyService);
+        testContainer.add(mockConnectionProvider([]), { provides: [ SalesforceConnectionProvider ] });
+        testContainer.add(new VlocityNamespaceService('vlocity_cmt'), { provides: [ NamespaceService ] });
+        testContainer.add(await new SchemaDataStore().load(schemaData), { provides: [ SchemaDataStore ] });
+        testContainer.add(mockMatchingKeyService(), { provides: [ VlocityMatchingKeyService ] });
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
-        const sut = testContainer.create(DatapackRecordFactory);
+        const sut = testContainer.new(DatapackRecordFactory);
 
         // Act
         const records = await sut.createRecords(datapack);

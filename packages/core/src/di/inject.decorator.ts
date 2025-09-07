@@ -1,5 +1,7 @@
 import 'reflect-metadata';
-import { LazyObjectType, ObjectType } from './container';
+import { Container, container, LazyObjectType, ObjectType } from './container';
+import * as symbols from './container.symbols';
+import { getPropertyType, isConstructor } from '@vlocode/util';
 
 /**
  * Handles property injection by registering the property and storing service type metadata.
@@ -7,21 +9,28 @@ import { LazyObjectType, ObjectType } from './container';
  * @param propertyKey The property name
  * @param serviceType Optional service type for named dependencies
  */
-function injectProperty(target: any, propertyKey: string | symbol, serviceType?: ObjectType | LazyObjectType): void {
+function injectProperty(target: any, propertyKey: string | symbol, serviceType?: ObjectType | LazyObjectType): PropertyDescriptor {
     const prototype = target.constructor?.prototype ?? target;
-    const properties = (Reflect.getMetadata('service:properties', prototype) ?? []).concat([propertyKey]);
-    Reflect.defineMetadata('service:properties', properties, prototype);
 
-    // Store the service type for this property if provided
-    if (serviceType) {
-        const serviceName = 
-            typeof serviceType === 'string' || 
-            typeof serviceType === 'function' 
-                ? serviceType 
-                : (serviceType.prototype?.constructor?.name ?? serviceType.name);
-        Reflect.defineMetadata(`dependency:inject:property:${String(propertyKey)}`, serviceName, prototype);
-    }
-    // If no serviceType is provided, the container will use the property's design:type metadata
+    // Mark as injected property for container resolution
+    const properties = (Reflect.getMetadata(symbols.InjectedProperties, prototype) ?? []).concat([propertyKey]);
+    Reflect.defineMetadata(symbols.InjectedProperties, properties, prototype);
+
+    // Set type using metadata-reflect if no service type is provided
+    Reflect.defineMetadata(symbols.InjectedProperties, getType(serviceType), prototype, propertyKey);
+
+    // Create a property descriptor that resolves the property on first access
+    const propertySymbol = Symbol(`__di_inject_${String(propertyKey)}`);
+    return {
+        configurable: true,
+        enumerable: true,
+        get() {
+            if (!this[propertySymbol]) {
+                this[propertySymbol] = (this[symbols.Container] ?? container).resolveProperty(this, propertyKey);
+            }
+            return this[propertySymbol];
+        }
+    };
 }
 
 /**
@@ -31,12 +40,19 @@ function injectProperty(target: any, propertyKey: string | symbol, serviceType?:
  * @param serviceType The service type to inject
  */
 function injectParameter(target: object, parameterIndex: number, serviceType: ObjectType | LazyObjectType): void {
-    const serviceName = 
-        typeof serviceType === 'string' || 
-        typeof serviceType === 'function' 
-            ? serviceType 
-            : (serviceType.prototype?.constructor?.name ?? serviceType.name);
-    Reflect.defineMetadata(`dependency:inject:parameter:${parameterIndex}`, serviceName, target);
+    Reflect.defineMetadata(symbols.InjectedParameters, getType(serviceType), target, parameterIndex.toString());
+}
+
+/**
+ * Gets the type of a service for injection.
+ * @param type The type to get
+ * @returns The service type
+ */
+function getType(type: unknown) {
+    if (isConstructor(type)) {
+        return type.prototype.constructor.name ?? type.name;
+    }
+    return type;
 }
 
 /**
@@ -44,48 +60,29 @@ function injectParameter(target: object, parameterIndex: number, serviceType: Ob
  * @param serviceType The service type to inject
  * @returns A decorator function
  */
-function createInjectDecorator(serviceType: ObjectType | LazyObjectType): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => void {
+function createInjectDecorator(serviceType?: ObjectType | LazyObjectType): PropertyDecorator | ParameterDecorator {
     return function(target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) {
         if (typeof parameterIndex === 'number') {
             // Parameter decorator
-            injectParameter(target, parameterIndex, serviceType);
+            if (serviceType === undefined) {
+                throw new Error(`Type must be provided when using @inject on constructor parameters. Missing for parameter #${parameterIndex} of ${target.constructor.name}`);
+            }
+            return injectParameter(target, parameterIndex, serviceType);
         } else if (typeof propertyKey === 'string' || typeof propertyKey === 'symbol') {
             // Property decorator
-            injectProperty(target, propertyKey, serviceType);
+            return injectProperty(target, propertyKey, serviceType);
         }
     };
 }
 
 /**
- * Marks a parameter for dependency injection or defines a property as injectable.
- * @param serviceTypeOrTarget Service type for parameter injection or target object for property injection
- * @param propertyKey Property name (for property injection)
- * @param parameterIndex Parameter index (for parameter injection)
+ * Marks a property or constructor parameter as injectable.
+ * Can be used as a property or parameter decorator.
+ * @param serviceType The service type to inject (optional)
+ * @returns A property or parameter decorator
  */
-export function inject(): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => void;
-export function inject(serviceType: ObjectType | LazyObjectType): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => void;
-export function inject(target: any, propertyKey: string | symbol): void;
-export function inject(serviceTypeOrTarget?: ObjectType | LazyObjectType | any, propertyKey?: string | symbol | undefined, parameterIndex?: number) {
-    if (typeof propertyKey === 'string' || typeof propertyKey === 'symbol') {
-        // Property decorator - called with (target, propertyKey)
-        injectProperty(serviceTypeOrTarget, propertyKey);
-    } else if (typeof parameterIndex === 'number') {
-        // Parameter decorator execution - called with (target, propertyKey, parameterIndex)
-        // This case shouldn't happen with the current overloads, but kept for completeness
-        const serviceType = serviceTypeOrTarget as ObjectType;
-        injectParameter(serviceTypeOrTarget, parameterIndex, serviceType);
-    } else if (serviceTypeOrTarget) {
-        return createInjectDecorator(serviceTypeOrTarget);
-    } else {
-        // Factory for decorator without service type - called with no parameters
-        return function(target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) {
-            if (typeof parameterIndex === 'number') {
-                // Parameter decorator - this case needs the service type, so we can't handle it without parameters
-                throw new Error('@inject() decorator on parameters requires a service type to be specified');
-            } else if (typeof propertyKey === 'string' || typeof propertyKey === 'symbol') {
-                // Property decorator without explicit service type
-                injectProperty(target, propertyKey);
-            }
-        };
-    }
+export function inject(): PropertyDecorator;
+export function inject(serviceType: ObjectType | LazyObjectType): (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) => any;
+export function inject(serviceType?: ObjectType | LazyObjectType) {
+    return createInjectDecorator(serviceType);
 }

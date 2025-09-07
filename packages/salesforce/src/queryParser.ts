@@ -1,5 +1,4 @@
-import { container } from "@vlocode/core";
-import { lazy } from "@vlocode/util";
+import { inject, injectable, LifecyclePolicy } from "@vlocode/core";
 import assert from "assert";
 import { NamespaceService } from './namespaceService';
 
@@ -73,10 +72,10 @@ export interface SalesforceQueryData {
     securityEnforced?: boolean;
 }
 
+@injectable({ lifecycle: LifecyclePolicy.transient })
 export class QueryFormatter {
 
-    constructor(private readonly namespace: NamespaceService = lazy(() => container.get(NamespaceService))) {
-    }
+    @inject() private readonly namespace: NamespaceService;
 
     /**
      * Format structured query data into a SOQL query that can be executed against Salesforce.

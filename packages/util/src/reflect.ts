@@ -21,7 +21,7 @@ export function getParameterTypes(ctor: any) : any[] | undefined {
  * Get the design:typeinfo using Reflect.getMetadata for the specified prototype and property.
  * @param ctor type-constructor 
  */
-export function getPropertyType(type: any, propertyKey: string) : string | undefined {
+export function getPropertyType(type: any, propertyKey: string | symbol) : string | undefined {
     const PropertyKey = Reflect.getMetadata('design:type', type, propertyKey);
     if (PropertyKey) {
         return PropertyKey;

@@ -7,8 +7,8 @@ import { SalesforceConnection, SalesforceConnectionOptions } from '../salesforce
 @injectable.singleton()
 export class InteractiveConnectionProvider implements SalesforceConnectionProvider {
 
-    private sfdxProvider: SalesforceConnectionProvider;
-    private userName: string;
+    private sfdxProvider?: SalesforceConnectionProvider;
+    private userName?: string;
     @inject(Logger) private logger!: Logger;
 
     constructor(private readonly instanceUrl: string, private readonly options?: SalesforceConnectionOptions) {
@@ -18,7 +18,7 @@ export class InteractiveConnectionProvider implements SalesforceConnectionProvid
         if (this.sfdxProvider === undefined) {
             await this.initialize();
         }
-        return this.sfdxProvider.getJsForceConnection();
+        return this.sfdxProvider!.getJsForceConnection();
     }
 
     public async initialize() {
@@ -37,10 +37,10 @@ export class InteractiveConnectionProvider implements SalesforceConnectionProvid
     }
 
     public isProductionOrg() {
-        return this.sfdxProvider?.isProductionOrg();
+        return Promise.resolve(this.sfdxProvider!.isProductionOrg());
     }
 
     public getApiVersion() {
-        return this.sfdxProvider?.getApiVersion();
+        return this.sfdxProvider!.getApiVersion();
     }
 }

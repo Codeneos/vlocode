@@ -105,7 +105,7 @@ export class SalesforceUserPermissions {
         metadata? : UserPermissionMetadata
     ) {
         this.metadata = Object.fromEntries(
-            Object.keys(this.profileSorter).map((key: keyof UserPermissionMetadata) => [ key, [] ])
+            Object.keys(this.profileSorter).map(key => [key, []])
         ) as unknown as Required<UserPermissionMetadata>;
 
         if (metadata?.fullName && metadata?.fullName !== this.developerName) {
@@ -164,7 +164,7 @@ export class SalesforceUserPermissions {
      * @param data - A partial object containing user permission metadata to merge.
      */
     public mergeWith(data: Partial<UserPermissionMetadata>) {
-        const normalizedKeys = new Map(Object.keys(this.metadata).map((key: keyof UserPermissionMetadata) => [ key.toLowerCase(), key ]));
+        const normalizedKeys = new Map(Object.keys(this.metadata).map(key => [ key.toLowerCase(), key ]));
 
         for (const [key, value] of Object.entries(data).filter(([,value]) => !!value)) {
             const modelProp = normalizedKeys.get(key.toLowerCase());

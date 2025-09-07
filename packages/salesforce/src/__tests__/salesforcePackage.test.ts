@@ -33,7 +33,7 @@ describe('SalesforcePackageBuilder', () => {
         'src/classes/MyClassTest2.cls-meta.xml': buildMetadataXml('ApexClass', apiVersion),
     });
 
-    beforeAll(() =>  container.registerAs(Logger.null, Logger));
+    beforeAll(() =>  container.add(Logger.null));
 
     describe('#getTestClasses', () => {
         it('should return classes annotated as test', () => {

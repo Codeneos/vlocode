@@ -1,7 +1,6 @@
 import 'jest';
 
 import { Logger, container } from '@vlocode/core';
-import { NamespaceService } from '@vlocode/salesforce';
 import { VlocityDatapack, VlocityNamespaceService } from '@vlocode/vlocity';
 import { DatapackDeployer, DatapackFilter } from '../datapackDeployer';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
@@ -9,8 +8,8 @@ import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 describe('datapackDeployer', () => {
 
     beforeAll(() => {
-        container.registerAs(Logger.null, Logger);
-        container.registerAs(new VlocityNamespaceService('vlocity_cmt'), NamespaceService);
+        container.add(Logger.null);
+        container.add(new VlocityNamespaceService('vlocity_cmt'));
     });
 
     function createDatapack(type: string, data: any) {
@@ -22,7 +21,7 @@ describe('datapackDeployer', () => {
     describe('#evalFilter', () => {
         it('if datapack type mismatch and record regex match should return true', () => {
             // arrange
-            const testContainer = container.new();
+            const testContainer = container.create();
             const datapack = createDatapack('random', {
                 "Name": "Test",
                 "VlocityDataPackType": "SObject",
@@ -35,11 +34,11 @@ describe('datapackDeployer', () => {
             }
 
             // test
-            expect(testContainer.create(DatapackDeployer)['evalFilter'](filter, datapack)).toBe(true);
+            expect(testContainer.new(DatapackDeployer)['evalFilter'](filter, datapack)).toBe(true);
         });
         it('filter without namespace and record type with namespace should return true', () => {
             // arrange
-            const testContainer = container.new();
+            const testContainer = container.create();
             const record = new DatapackDeploymentRecord(
                 'DataRaptor',
                 'vlocity_cmt__DRBundle__c',
@@ -52,13 +51,13 @@ describe('datapackDeployer', () => {
             }
 
             // test
-            expect(testContainer.create(DatapackDeployer)['evalFilter'](filter, record)).toBe(true);
+            expect(testContainer.new(DatapackDeployer)['evalFilter'](filter, record)).toBe(true);
         });
     });
     describe('#filterApplicableRecords', () => {
         it('with record filter should remove records no matching filter', () => {
             // arrange
-            const testContainer = container.new();
+            const testContainer = container.create();
             const matchedRecord = new DatapackDeploymentRecord('', 'vlocity_cmt__DRBundle__c', '', '', [], {});
             const mismatchedRecord = new DatapackDeploymentRecord('', 'vlocity_cmt__DRItem__c', '', '', [], {});
             const filter: DatapackFilter = {
@@ -66,11 +65,11 @@ describe('datapackDeployer', () => {
             }
 
             // test
-            expect(testContainer.create(DatapackDeployer)['filterApplicableRecords'](filter, [ matchedRecord, mismatchedRecord ])).toEqual([ matchedRecord ]);
+            expect(testContainer.new(DatapackDeployer)['filterApplicableRecords'](filter, [ matchedRecord, mismatchedRecord ])).toEqual([ matchedRecord ]);
         });
         it('with datapack filter should remove records no matching filter', () => {
             // arrange
-            const testContainer = container.new();
+            const testContainer = container.create();
             const matchedRecord = new DatapackDeploymentRecord('OmniScript', '', '', '', [], {});
             const mismatchedRecord = new DatapackDeploymentRecord('DataRaptor', '', '', '', [], {});
             const filter: DatapackFilter = {
@@ -78,7 +77,7 @@ describe('datapackDeployer', () => {
             }
 
             // test
-            expect(testContainer.create(DatapackDeployer)['filterApplicableRecords'](filter, [ matchedRecord, mismatchedRecord ])).toEqual([ matchedRecord ]);
+            expect(testContainer.new(DatapackDeployer)['filterApplicableRecords'](filter, [ matchedRecord, mismatchedRecord ])).toEqual([ matchedRecord ]);
         });
     });
 });

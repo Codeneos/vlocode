@@ -93,7 +93,7 @@ export class OmniScriptDefinitionFactory {
     }
 
     private createFromMapping<TRec, TOut extends object = object>(record: TRec, recordMapping: DefinitionRecordMapping<TRec>): TOut {
-        const definition = {} as TOut;
+        const definition: Record<string, any> = {};
         for (const [field, def] of Object.entries(recordMapping)) {
             if (typeof def === 'function') {
                 definition[field] = def(record, field);
@@ -103,7 +103,7 @@ export class OmniScriptDefinitionFactory {
                 definition[field] = deepClone(def);
             }
         }
-        return definition;
+        return definition as TOut;
     }
 
     private parseAsJson<T>(record: T, field: keyof T): object | null {

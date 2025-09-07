@@ -62,7 +62,7 @@ export default class extends SalesforceCommand {
 
         // Run activator for all scripts and activate the latest version of each script found
         const activateTimer = new Timer();
-        const activator = this.container.create(OmniScriptActivator);
+        const activator = this.container.new(OmniScriptActivator);
         const errors = new Array<{ script: string, error: any }>();
 
         // eslint-disable-next-line no-constant-condition
@@ -151,7 +151,7 @@ export default class extends SalesforceCommand {
     }
 
     private async getScripts(scriptFilter: any): Promise<Map<string, ScriptActivationInfo> | undefined> {
-        const lookup = this.container.create(OmniScriptAccess);
+        const lookup = this.container.new(OmniScriptAccess);
         const scripts = await lookup.filter(scriptFilter);
 
         if (!scripts.length) {

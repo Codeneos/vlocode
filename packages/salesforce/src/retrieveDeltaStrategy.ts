@@ -179,7 +179,7 @@ export class RetrieveDeltaStrategy {
         return this.compareStrategies.default;
     }
 
-    private isBinaryEqual(this: void, a: Buffer | string, b: Buffer | string): boolean {
+    private isBinaryEqual(a: Buffer | string, b: Buffer | string): boolean {
         // binary comparison
         const bufferA = typeof a === 'string' ? Buffer.from(a) : a;
         const bufferB = typeof b === 'string' ? Buffer.from(b) : b;

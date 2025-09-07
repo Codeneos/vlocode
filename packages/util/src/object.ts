@@ -24,7 +24,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
             return target;
         }
         if (typeof target[name] === 'function') {
-            return function(...args: any) {
+            return function(this: T, ...args: any) {
                 const returnValue = target[name].apply(this, args);
                 return returnValue === target ? this : returnValue;
             };
@@ -105,7 +105,7 @@ export class PropertyTransformHandler<T extends object> implements ProxyHandler<
                     return target;
                 }
                 if (typeof target[name] === 'function') {
-                    return function(...args: any) {
+                    return function(this: any, ...args: any) {
                         const returnValue = target[name].apply(this, args);
                         return returnValue === target ? this : returnValue;
                     };
@@ -279,7 +279,7 @@ export function flattenObject<T extends object>(values: T, flattenPredicate?: (o
             }
         }
         return Object.assign(acc, { [objectKey]: value });
-    }, {});
+    }, {} as T);
 }
 
 /**
@@ -461,7 +461,8 @@ export function objectEquals(
         return true;
     }
 
-    const objectEqualityFn: typeof objectEquals = options?.objectCompare ?? objectEquals;
+    const objectEqualityFn: (a?: any, b?: any, options?: ObjectEqualsOptions) => boolean 
+        = options?.objectCompare ?? objectEquals;
 
     if (Array.isArray(a) && Array.isArray(b)) {
         if (!options?.ignoreExtraElements && a.length !== b.length) {
@@ -690,4 +691,60 @@ export function caseInsensetive<T extends object>(target: T): T {
         }
         return name;
     });
+}       
+
+const isConstructorSymbol = Symbol('isConstructor');
+
+/**
+ * Type representing a constructor function that can be called with `new` to create an instance of type T
+ */
+export type Construtable<T> = (new (...args: any) => T) & {
+    name: string;
+    prototype: {
+        constructor: Construtable<T>
+    };
+};
+
+/** 
+ * Determine if the specified target is a constructor function that can be called with `new`
+ * @param target Target to check
+ * @returns true if the target is a constructor function otherwise false
+ */
+export function isConstructor(target: unknown): target is Construtable<any> {
+    if (typeof target !== 'function') {
+        return false;
+    }
+
+    if (target[isConstructorSymbol] !== undefined) {
+        return target[isConstructorSymbol];
+    }
+
+    let isExtendable: boolean;
+    try {
+        const str = String(target.prototype.constructor);
+        isExtendable = (class extends (target as any) { }) !== undefined;
+    } catch {
+        isExtendable = false;
+    }
+
+    Object.defineProperty(target, isConstructorSymbol, {
+        value: isExtendable,
+        configurable: false,
+        enumerable: false,
+        writable: false
+    });
+    return isExtendable;
+}   
+
+/**
+ * Determine if the specified target is an arrow function. 
+ * Determines if the target is a function and if it has no prototype.
+ * @param target Target to check
+ * @returns true if the target is an arrow function otherwise false
+ */
+export function isArrowFunction(target: unknown): target is (...args: any[]) => any {
+    if (typeof target !== 'function') {
+        return false;
+    }
+    return target.prototype === undefined;
 }

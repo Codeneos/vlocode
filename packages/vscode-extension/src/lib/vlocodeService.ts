@@ -144,7 +144,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 await container.get(VlocityMatchingKeyService).initialize();
             }
             this.updateExtensionStatus();
-        } catch (err) {
+        } catch (err: any) {
             if (err?.message == 'NamedOrgNotFound') {
                 this.logger.error(`Unknown username/alias ${this.sfUsername} -- select a different org or re-authenticate with the target org`);
                 this.showStatus(`$(error) Unknown Salesforce user - ${this.sfUsername}`, VlocodeCommand.selectOrg);

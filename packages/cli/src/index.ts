@@ -129,7 +129,7 @@ class CLI {
                 [...CLI.options, ...commandClass.options].forEach(option => command.addOption(option));
 
                 command.action(async (...args) => {
-                    const commandInstance = container.create(commandClass);
+                    const commandInstance = container.new(commandClass);
                     commandInstance.options = args.slice(0, -1).pop();
                     commandInstance.args = args.slice(0, -2);
 

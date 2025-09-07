@@ -58,7 +58,7 @@ export class DatapackLoader {
                 headerFile: datapackHeader,
                 projectFolder: getExportProjectFolder(datapackHeader)
             });
-        } catch(error) {
+        } catch (error: any) {
             if (bubbleExceptions) {
                 throw new CustomError(`Error loading datapack ${fileName(datapackHeader)}: ${getErrorMessage(error, { includeStack: false })}`, error);
             }

@@ -102,7 +102,7 @@ export class SalesforceBatchService {
             try {
                 this.logger.info(`Aborting batch job ${id}...`);
                 await this.salesforceService.executeAnonymous(`System.abortJob('${id}');`);
-            } catch (err) {
+            } catch (err: any) {
                 throw new CustomError(`Unable to abort batch job with ID ${id}`, err);
             }
         }
@@ -214,7 +214,7 @@ export class SalesforceBatchService {
             progress: job.jobItemsProcessed ?? 0,
             total: job.totalJobItems ?? 0,
             // @ts-ignore ts(2322) -- allow toString to be added to the object
-            toString() {
+            toString(this: any) {
                 return `${this.apexClass} (${this.id}) -- ${progressText} [${(this.elapsedTime / 1000).toFixed(1)}s]`;
             }
         };

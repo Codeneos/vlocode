@@ -1,6 +1,7 @@
 export default {
   preset: 'ts-jest',
   roots: [ 'src' ],
+  testRegex: "(\\.)(test)\\.[jt]sx?$",
   collectCoverageFrom: [
     'src/**/*.{ts}',
     '!**/node_modules/**'

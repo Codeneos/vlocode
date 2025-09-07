@@ -7,7 +7,7 @@ import { Iterable } from './iterable';
  * @param array Array to flatten
  * @param depth Depth to flat to
  */
-export function flatten<T>(array: T[], depth: number = 1) : T {
+export function flatten<T>(array: T[], depth: number = 1) : T[] {
     depth = isNaN(depth) ? 1 : Number(depth);
     // @ts-ignore
     return depth ? array.reduce((acc: T[], cur: T[] | T) => {
@@ -17,7 +17,7 @@ export function flatten<T>(array: T[], depth: number = 1) : T {
             acc.push(cur);
         }
         return acc;
-    }, []) : array as T;
+    }, []) : array;
 }
 
 /**

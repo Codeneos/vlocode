@@ -32,8 +32,9 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
 
     public execute(command: VlocodeCommand, ...args: any[]): Promise<void> {
+        const files: vscode.Uri[] = [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)];
         return this.deployMetadata.apply(this, [
-            args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2), 
+            files,
             { delta: command === VlocodeCommand.deployDeltaMetadata }
         ]);
     }
@@ -102,7 +103,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     private async buildDeployPackage(files: Iterable<(vscode.Uri | string)>, options?: { delta?: boolean }) {
-        const packageBuilder = container.create(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
+        const packageBuilder = container.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
         await packageBuilder.addFiles(files);
         if (packageBuilder.getPackageComponents().length === 0) {
             return;

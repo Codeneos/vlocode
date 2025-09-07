@@ -6,9 +6,9 @@ import { JsForceConnectionProvider, SalesforceConnectionProvider } from '../conn
 describe('JsForceConnectionProvider', () => {
     describe('#create', () => {
         it('should register as SalesforceConnectionProvider in container', () => {
-            const isolatedContainer = container.new({ isolated: true });
+            const isolatedContainer = container.create({ isolated: true });
             const provider = new JsForceConnectionProvider({} as unknown as any);
-            isolatedContainer.register(provider);
+            isolatedContainer.add(provider);
             expect(provider).toBeInstanceOf(SalesforceConnectionProvider);
             expect(isolatedContainer.get(SalesforceConnectionProvider)).toBe(provider);
             expect(isolatedContainer.get(JsForceConnectionProvider)).toBe(provider);

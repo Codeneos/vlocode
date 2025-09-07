@@ -4,6 +4,8 @@ import { Container, container, Logger, LogManager } from '@vlocode/core';
 import { Command } from '../lib/command';
 import { CommandOptions } from './commandRouter';
 import { SalesforceService } from '@vlocode/salesforce';
+import { get } from 'http';
+import { getErrorMessage } from '@vlocode/util';
 
 export class CommandExecutor implements Command {
 
@@ -48,7 +50,7 @@ export class CommandExecutor implements Command {
             console.error(err);
             this.logger.error(`${this.name}:`, err);
             this.logger.focus();
-            void vscode.window.showErrorMessage(err.message || err);
+            void vscode.window.showErrorMessage(getErrorMessage(err) || 'An unexpected error occurred, please check the output panel for details');
         }
     }
 

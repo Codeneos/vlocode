@@ -1,6 +1,6 @@
 
 import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
-import { Logger, injectable, container, LifecyclePolicy, Container } from '@vlocode/core';
+import { Logger, injectable, container, LifecyclePolicy, Container, inject } from '@vlocode/core';
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
 import { DatapackDeployment } from './datapackDeployment';
@@ -35,8 +35,8 @@ export type DatapackFilter =
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeployer {
 
-    private readonly container: Container;
-    private readonly specRegistry: DatapackDeploymentSpecRegistry;
+    @inject() private readonly container: Container;
+    @inject() private readonly specRegistry: DatapackDeploymentSpecRegistry;
 
     /**
      * List of Vlocity global identifier field names that need verification after deployment.
@@ -54,11 +54,8 @@ export class DatapackDeployer {
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly objectLookupService: SalesforceLookupService,
         private readonly schemaService: SalesforceSchemaService,
-        private readonly logger: Logger,
-        creatingContainer?: Container
+        private readonly logger: Logger
     ) {
-        this.container = (creatingContainer ?? container).new();
-        this.specRegistry = this.container.get(DatapackDeploymentSpecRegistry)
     }
 
     /**
@@ -67,9 +64,9 @@ export class DatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        this.container.register(this.container.create(QueryService, this.connectionProvider).setQueryCache({ enabled: false }));
-        const deployment = this.container.create(DatapackDeployment, options);
-        const recordFactory = this.container.create(DatapackRecordFactory);
+        this.container.add(this.container.new(QueryService, this.connectionProvider).setQueryCache({ enabled: false }));
+        const deployment = this.container.new(DatapackDeployment, options);
+        const recordFactory = this.container.new(DatapackRecordFactory);
 
         // Hook up event handlers
         deployment.on('afterDeployGroup', group => this.afterDeployRecordGroup(deployment, group));
@@ -90,7 +87,7 @@ export class DatapackDeployer {
                 const records = await recordFactory.createRecords(datapack);
                 await this.runSpecFunction('afterRecordConversion', { args: [ records ], ignoreErrors: options?.continueOnError, errorSeverity: 'error' });
                 deployment.add(...records);
-            } catch(err) {
+            } catch (err: any) {
                 const errorMessage = `Error while loading Datapack '${datapack.headerFile}' -- ${getErrorMessage(err)}`;
                 if (!options?.continueOnError) {
                     throw new CustomError(errorMessage, err);
@@ -349,7 +346,9 @@ export class DatapackDeployer {
             }
 
             try {
-                await specFunction.apply(spec, specParams) as ReturnType<E>;
+                // Cast to any to avoid TypeScript complains about incompatible 
+                // 'this' contexts for the union of possible spec function signatures
+                await (specFunction as any).apply(spec, specParams) as ReturnType<E>;
             } catch(err) {
                 if (!options?.ignoreErrors) {
                     throw err;

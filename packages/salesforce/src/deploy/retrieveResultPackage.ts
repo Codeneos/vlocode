@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import ZipArchive from 'jszip';
-import { groupBy, substringBefore, XML } from '@vlocode/util';
+import { getErrorMessage, groupBy, substringBefore, XML } from '@vlocode/util';
 import { FileProperties, RetrieveResult } from '../connection';
 import { PackageManifest } from './maifest';
 import { SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
@@ -248,7 +248,7 @@ export class RetrieveResultFile implements SalesforceRetrievedComponentFile {
                 ...result[typeNode],
             }
         } catch (error) {
-            throw new Error(`Failed to parse metadata for ${this.componentType}/${this.componentName}: ${error.message}`);
+            throw new Error(`Failed to parse metadata for ${this.componentType}/${this.componentName}: ${getErrorMessage(error)}`);
         }
     }
 

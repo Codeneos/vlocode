@@ -127,7 +127,7 @@ export class WorkspaceOverrideConfiguration {
                 getAffectedConfigurationProperties: () => changedProperties
             });
         } catch (err) {
-            this.logger.error(`Error while reading override config from ${configPath.fsPath}:`, err.message);
+            this.logger.error(`Error while reading override config from ${configPath.fsPath}:`, err);
         }
     }
 

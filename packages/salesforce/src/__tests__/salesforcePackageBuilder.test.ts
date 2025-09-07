@@ -66,7 +66,7 @@ describe('SalesforcePackageBuilder', () => {
         'src/dashboards/MyFolder/Board.dashboard-meta.xml': buildXml('Dashboard', { name: 'Board' }),
     });
 
-    beforeAll(() =>  container.registerAs(Logger.null, Logger));
+    beforeAll(() =>  container.add(Logger.null));
 
     describe('#addFiles', () => {
         describe('#lwcComponent', () => {

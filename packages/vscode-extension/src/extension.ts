@@ -49,6 +49,7 @@ class VlocityLogFilter {
     ];
 
     constructor() {
+        // @ts-ignore
         return this.filter.bind(this);
     }
 
@@ -147,8 +148,8 @@ class Vlocode {
         LogManager.setLogLevel(Container, LogLevel.verbose);
         container.registerProvider(Logger, LogManager.get.bind(LogManager));
         container.registerFactory(VlocodeConfiguration, () => ConfigurationManager.load<VlocodeConfiguration>(constants.CONFIG_SECTION), LifecyclePolicy.singleton);
-        container.registerType(VlocityNamespaceService, [ NamespaceService, VlocityNamespaceService ], { lifecycle: LifecyclePolicy.singleton });
-        container.registerType(NodeFileSystem, [ FileSystem ], { priority: 10, lifecycle: LifecyclePolicy.singleton });
+        container.add(VlocityNamespaceService);
+        container.add(NodeFileSystem);
 
         this.service = container.get(VlocodeService);
         context.subscriptions.push(this.service);
@@ -212,8 +213,8 @@ class Vlocode {
             config => vscode.commands.executeCommand('setContext', `${constants.CONTEXT_PREFIX}.conditionalContextMenus`, config.conditionalContextMenus), { initial: true });
 
         // watch for changes
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
-        void this.service.registerDisposable(container.create(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
+        void this.service.registerDisposable(container.new(WorkspaceContextDetector, 'datapacks', DatapackDetector.filter()).initialize());
+        void this.service.registerDisposable(container.new(WorkspaceContextDetector, 'metadata', MetadataDetector.filter()).initialize());
         void this.service.registerDisposable(container.get(SfdxConfigManager).initialize());
 
         // track activation time

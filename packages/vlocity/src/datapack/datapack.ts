@@ -134,7 +134,7 @@ export class VlocityDatapack implements ManifestEntry, ObjectEntry {
         if (typeof data === 'string') {
             try {
                 this.data = JSON.parse(data);
-            } catch (err) {
+            } catch (err: any) {
                 throw Error(`Unable to parse datapack JSON: ${err.message || err}`);
             }
         } else if (typeof data === 'object') {

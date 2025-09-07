@@ -47,8 +47,8 @@ export default class extends SalesforceCommand {
         const definitions = await this.loadDefinitions(this.options.exportDefinitions);
         this.container.get(DatapackExportDefinitionStore).load(definitions);
 
-        const exporter = this.container.create(DatapackExporter);
-        const expander = this.container.create(DatapackExpander);
+        const exporter = this.container.new(DatapackExporter);
+        const expander = this.container.new(DatapackExpander);
 
         for (const id of ids) {
             const result = await exporter.exportObject(id);
@@ -73,7 +73,7 @@ export default class extends SalesforceCommand {
 
     private async getIds() {
         if (this.options.query) {
-            const queryService = this.container.create(QueryService);
+            const queryService = this.container.new(QueryService);
             const records = await queryService.query(this.options.query);
             if (records.length === 0) {
                 throw new Error(`No records found for the specified query: ${this.options.query}`);

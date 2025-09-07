@@ -50,12 +50,13 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         (field, name) => !!field.relationshipName && removeNamespacePrefix(field.relationshipName).toLowerCase().replace('__r', '') === name.toLowerCase(),
     ];
 
-    @inject(Logger) private readonly logger: Logger;
-    @inject(NamespaceService) private readonly nsService: NamespaceService;
+    @inject() private readonly logger: Logger;
+    @inject() private readonly nsService: NamespaceService;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
-        private readonly schemaAccess: CompositeSchemaAccess) {
+        private readonly schemaAccess: CompositeSchemaAccess
+    ) {
     }
 
     public dispose() {
@@ -83,7 +84,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
      */
     public async isSObjectDefined(type: string) {
         try {
-            return await this.schemaAccess.getEntityDefinition(this.nsService?.updateNamespace(type)) !== undefined
+            return await this.schemaAccess.getEntityDefinition(this.nsService.updateNamespace(type)) !== undefined
         } catch {
             return false;
         }
@@ -96,7 +97,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
      */
      public async isSObjectFieldDefined(type: string, field: string) {
         try {
-            return await this.schemaAccess.getFieldDefinition(this.nsService?.updateNamespace(type), this.nsService?.updateNamespace(field)) !== undefined
+            return await this.schemaAccess.getFieldDefinition(this.nsService.updateNamespace(type), this.nsService.updateNamespace(field)) !== undefined
         } catch {
             return false;
         }
@@ -111,7 +112,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound = true) : Promise<DescribeSObjectResult | undefined> {
         try {
-            const result = await this.schemaAccess.describe(this.nsService?.updateNamespace(type));
+            const result = await this.schemaAccess.describe(this.nsService.updateNamespace(type));
             if (result === undefined) {
                 throw Error(`No such object with name ${type} exists in this Salesforce instance`);
             }
@@ -212,7 +213,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         const resolved = new Array<Field>();
 
         // Resolve a full Field path
-        for (const fieldName of fieldPath.split('.').map(fn => this.nsService?.updateNamespace(fn) ?? fn)) {
+        for (const fieldName of fieldPath.split('.').map(fn => this.nsService.updateNamespace(fn) ?? fn)) {
             const result = await this.describeSObject(type, throwWhenNotFound);
             const field = this.getMatchingField(result?.fields ?? [], fieldName);
 

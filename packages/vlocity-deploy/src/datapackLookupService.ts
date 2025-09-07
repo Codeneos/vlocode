@@ -292,7 +292,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
 
     private fieldEquals(record: object, field: string, filterValue: any): boolean {
         // TODO: normalize filter object so namespace updates on field names are not required
-        const recordValue = this.namespaceService.updateNamespace(field).split('.').reduce((o, p) => o?.[p], record);
+        const recordValue: unknown = this.namespaceService.updateNamespace(field).split('.').reduce((o, p) => o?.[p], record);
         if (recordValue == filterValue) {
             return true;
         }
