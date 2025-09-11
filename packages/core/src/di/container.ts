@@ -50,7 +50,7 @@ export interface ServiceOptions {
      */
     lifecycle: LifecyclePolicy;
     /**
-     * Optional priority that determines the preferred implementation when multiple implementations are available;
+     * Optional ordinal priority that determines the preferred implementation when multiple implementations are available;
      * a higher number is preferred over a lower number. Services are registered with a priority of 0 by default.
      *
      * _Note: Negative numbers are allowed and supported_
@@ -273,7 +273,7 @@ export class Container {
             this.resolveStack.pop();
 
             if (implementingType.options?.lifecycle === LifecyclePolicy.singleton) {
-                resolver.add(serviceInstance, { provides: [ type ] });
+                resolver.addInstance(serviceInstance, implementingType.options);
             }
             return serviceInstance;
         }
