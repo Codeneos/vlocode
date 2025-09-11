@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-import { Container, container, LazyObjectType, ObjectType } from './container';
+import { container, LazyObjectType, ObjectType } from './container';
 import * as symbols from './container.symbols';
-import { getPropertyType, isConstructor } from '@vlocode/util';
+import { isConstructor } from '@vlocode/util';
 
 /**
  * Handles property injection by registering the property and storing service type metadata.
