@@ -471,7 +471,7 @@ export class SalesforcePackageBuilder {
         const sourceFilePath = sourceFile.split(/\\|\//g);
         const indexOfTypeFolder = sourceFilePath.findLastIndex(p => stringEqualsIgnoreCase(p, parentType.directoryName));
 
-        const parentComponentFolder = path.join(...sourceFilePath.slice(0, indexOfTypeFolder + 2));
+        const parentComponentFolder = [...sourceFilePath.slice(0, indexOfTypeFolder + 2)].join(path.sep);
         const parentComponentName = sourceFilePath[indexOfTypeFolder + 1];
         const parentComponentMetaFile =  path.join(parentComponentFolder, `${parentComponentName}.${parentType.suffix}-meta.xml`);
         const parentPackagePath = await this.getPackagePath(parentComponentMetaFile, parentType);
