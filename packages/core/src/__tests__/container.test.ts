@@ -212,5 +212,124 @@ describe('container', () => {
         //     expect(instance.customService).toBe(customService);
         //     expect(instance.customService).toBeInstanceOf(ServiceImpl);
         // });
-    });    
+    });
+
+    describe('removeInstance', () => {
+        class ServiceA {
+            public id = 'A';
+        }
+
+        class ServiceB {
+            constructor(@inject(ServiceA) public serviceA: ServiceA) {
+                this.id = 'B';
+            }
+            public id: string;
+        }
+
+        class ServiceC {
+            constructor(@inject(ServiceA) public serviceA: ServiceA) {
+                this.id = 'C';
+            }
+            public id: string;
+        }
+
+        it('should cascade remove dependent instances when removing a shared dependency', () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+            const instanceA = new ServiceA();
+            
+            testContainer.add(instanceA);
+            const instanceB = testContainer.new(ServiceB);
+            const instanceC = testContainer.new(ServiceC);
+            
+            // Add the dependent instances to the container so they get tracked
+            testContainer.add(instanceB);
+            testContainer.add(instanceC);
+            
+            // Verify instances are created and registered
+            expect(instanceB.serviceA).toBe(instanceA);
+            expect(instanceC.serviceA).toBe(instanceA);
+            expect(testContainer['instances'].has('ServiceA')).toBe(true);
+            expect(testContainer['instances'].has('ServiceB')).toBe(true);
+            expect(testContainer['instances'].has('ServiceC')).toBe(true);
+
+            // Act
+            testContainer.removeInstance(instanceA);
+
+            // Assert
+            expect(testContainer['instances'].has('ServiceA')).toBe(false);
+            expect(testContainer['instances'].has('ServiceB')).toBe(false);
+            expect(testContainer['instances'].has('ServiceC')).toBe(false);
+        });
+
+        it('should handle circular dependencies during removal', () => {
+            // Arrange
+            const testContainer = new Container(Logger.null);
+            const instanceA = new ServiceA();
+            
+            testContainer.add(instanceA);
+            const instanceB = testContainer.new(ServiceB);
+            const instanceC = testContainer.new(ServiceC);
+            
+            // Add the dependent instances to the container
+            testContainer.add(instanceB);
+            testContainer.add(instanceC);
+
+            // Act
+            testContainer.removeInstance(instanceA);
+
+            // Assert - all should be removed
+            expect(testContainer['instances'].has('ServiceA')).toBe(false);
+            expect(testContainer['instances'].has('ServiceB')).toBe(false);
+            expect(testContainer['instances'].has('ServiceC')).toBe(false);
+        });
+    });
+
+    describe('container injection', () => {
+        class ServiceWithContainerProperty {
+            @inject(Container) public container: Container;
+        }
+
+        class ServiceWithContainerParameter {
+            constructor(@inject(Container) public container: Container) {}
+        }
+
+        it('should inject the creating container for Container-typed properties', () => {
+            // Arrange
+            const rootContainer = new Container(Logger.null);
+            const childContainer = rootContainer.create();
+
+            // Act
+            const instance = childContainer.new(ServiceWithContainerProperty);
+
+            // Assert
+            expect(instance.container).toBe(childContainer);
+            expect(instance.container).not.toBe(rootContainer);
+        });
+
+        it('should inject the creating container for Container-typed constructor parameters', () => {
+            // Arrange
+            const rootContainer = new Container(Logger.null);
+            const childContainer = rootContainer.create();
+
+            // Act
+            const instance = childContainer.new(ServiceWithContainerParameter);
+
+            // Assert
+            expect(instance.container).toBe(childContainer);
+            expect(instance.container).not.toBe(rootContainer);
+        });
+
+        it('should fallback to root container when instance was created outside any container', () => {
+            // Arrange
+            const rootContainer = new Container(Logger.null);
+            const instance = new ServiceWithContainerProperty();
+
+            // Act
+            const injectedContainer = instance.container;
+
+            // Assert
+            expect(injectedContainer).toBe(rootContainer);
+        });
+    });
 });
