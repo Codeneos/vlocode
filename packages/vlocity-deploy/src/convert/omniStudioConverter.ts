@@ -3,7 +3,8 @@ import { RecordFactory } from '@vlocode/salesforce';
 import { cache, fileName, filterUndefined, removeNamespacePrefix } from '@vlocode/util';
 import { OmniSObjectMappings } from './omniStudioMappings';
 import { isDatapackRecord, VlocityDatapack } from '@vlocode/vlocity';
-import { ILogger, injectable, LogManager } from '@vlocode/core';
+import { injectable, LogManager } from '@vlocode/core';
+import type { ILogger } from '@vlocode/core';
 import path from 'path';
 
 @injectable.singleton()
