@@ -4,7 +4,7 @@ import { mapGetOrCreate, Timer } from '@vlocode/util';
 import chalk from 'chalk';
 import * as constants from './constants';
 
-@injectable.singleton({ provides: [NamespaceService, VlocityNamespaceService] })
+@injectable.singleton({ priority: 10 })
 export class VlocityNamespaceService extends NamespaceService {
 
     @inject() private readonly logger: Logger
