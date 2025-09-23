@@ -1,4 +1,3 @@
-// Easier debugging with source maps
 import * as vscode from 'vscode';
 import vlocityPackageManifest from 'vlocity/package.json';
 
@@ -33,8 +32,8 @@ import { ExecuteApiLensProvider } from './codeLensProviders/executeApiLensProvid
 import { TestCoverageLensProvider } from './codeLensProviders/testCoverageLensProvider';
 import { PushSourceLensProvider } from './codeLensProviders/pushSourceLensProvider';
 import { SfdxConfigManager } from './lib/sfdxConfigManager';
-import { SalesforceApexContentProvider } from 'contentProviders/salesforceApexContentProvider';
-import { VirtualContentProvider } from 'contentProviders/virtualApexContentProvider';
+import { SalesforceApexContentProvider } from './contentProviders/salesforceApexContentProvider';
+import { VirtualContentProvider } from './contentProviders/virtualApexContentProvider';
 
 /**
  * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
