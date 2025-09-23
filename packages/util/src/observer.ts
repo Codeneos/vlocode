@@ -1,7 +1,4 @@
-import { optionalRequire } from 'optional-require';
-
-import type * as vscodeModule from 'vscode';
-const vscode: typeof vscodeModule = optionalRequire('vscode');
+import { EventEmitter, Event } from "./events";
 
 export interface PropertyChangedEventArgs {
     property: symbol | string | number;
@@ -9,7 +6,7 @@ export interface PropertyChangedEventArgs {
     oldValue?: any;
 }
 
-export type Observable<T extends object> = T & { onPropertyChanged: vscodeModule.Event<PropertyChangedEventArgs> } & vscodeModule.Disposable;
+export type Observable<T extends object> = T & { onPropertyChanged: Event<PropertyChangedEventArgs>; dispose?: () => void };
 
 export interface ArrayChangedEventArgs<T> {
     type: 'add' | 'remove' | 'replace';
@@ -18,14 +15,14 @@ export interface ArrayChangedEventArgs<T> {
     oldValues?: T[];
 }
 
-export type ObservableArray<T> = Array<T> & { onArrayChanged: vscodeModule.Event<ArrayChangedEventArgs<T>> } & vscodeModule.Disposable;
+export type ObservableArray<T> = Array<T> & { onArrayChanged: Event<ArrayChangedEventArgs<T>>; dispose?: () => void };
 
 /**
  * Creates an observer that watches all properties in the target objects, when ever a change is detected it fires the change event triggers
  * @param obj
  */
 export function observeObject<T extends object>(obj: T) : Observable<T> {
-    const eventEmitter = new vscode.EventEmitter<PropertyChangedEventArgs>();
+    const eventEmitter = new EventEmitter<PropertyChangedEventArgs>();
     return new Proxy(obj, {
         get(target, property) {
             if (property === 'onPropertyChanged') {
@@ -33,8 +30,8 @@ export function observeObject<T extends object>(obj: T) : Observable<T> {
             } else if (property === 'dispose') {
                 return function () {
                     eventEmitter.dispose();
-                    if (target[property]) {
-                        target[property]();
+                    if (typeof target['dispose'] === 'function') {
+                        target['dispose']();
                     }
                 };
             }
@@ -65,7 +62,7 @@ export function observeObject<T extends object>(obj: T) : Observable<T> {
  * @param obj
  */
 export function observeArray<T>(obj: T[]) : ObservableArray<T> {
-    const eventEmitter = new vscode.EventEmitter<ArrayChangedEventArgs<T>>();
+    const eventEmitter = new EventEmitter<ArrayChangedEventArgs<T>>();
 
     const decoratedArrayFunctions = {
         push: function(...args: T[]) {
@@ -96,7 +93,12 @@ export function observeArray<T>(obj: T[]) : ObservableArray<T> {
             if (property === 'onArrayChanged') {
                 return eventEmitter.event;
             } else if (property === 'dispose') {
-                return eventEmitter.dispose.bind(eventEmitter);
+                return function () {
+                    eventEmitter.dispose();
+                    if (typeof (target as any).dispose === 'function') {
+                        (target as any).dispose();
+                    }
+                };
             } else if (typeof decoratedArrayFunctions[property] === 'function' ) {
                 return decoratedArrayFunctions[property];
             }
