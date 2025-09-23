@@ -166,7 +166,7 @@ describe('AsyncQueryIterator', () => {
             for await (const record of sut) {
                 results.push(record);
             }
-        } catch(err) {
+        } catch(err: any) {
             errors.push(err);
         }        
 

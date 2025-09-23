@@ -1,7 +1,9 @@
-import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions, XMLValidator } from 'fast-xml-parser';
+import { XMLParser, XMLBuilder, XMLValidator } from 'fast-xml-parser';
 import { DOMParser, LiveNodeList, Node } from '@xmldom/xmldom';
 import { visitObject } from './object';
 
+type X2jOptions = Required<ConstructorParameters<typeof XMLParser>>[0];
+type XmlBuilderOptions = Required<ConstructorParameters<typeof XMLBuilder>>[0];
 export interface XMLParseOptions {
     /**
      * When true the parser will trim white spaces values of text nodes. When not set defaults to true.

@@ -66,12 +66,15 @@ describe('SalesforcePackageBuilder', () => {
         'src/dashboards/MyFolder/Board.dashboard-meta.xml': buildXml('Dashboard', { name: 'Board' }),
     });
 
-    beforeAll(() =>  container.add(Logger.null));
+    beforeAll(() => {
+        container.add(Logger.null);
+        container.add(mockFs);
+    });
 
     describe('#addFiles', () => {
         describe('#lwcComponent', () => {
             it('should add all related parts when adding the meta file', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml']);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -90,7 +93,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('test');
             });
             it('should add all related parts when adding the HTML file', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.html']);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -109,7 +112,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('test');
             });
             it('should add all related parts when adding a the JS file', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.js']);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -128,7 +131,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('test');
             });
             it('should add all related parts when adding a component folder ', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/lwc/test' ]);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -147,7 +150,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('test');
             });
             it('should not add the same file multiple times when adding all bundled files', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([
                     'src/lwc',
                     'src/lwc/test/test.html',
@@ -174,7 +177,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#auraComponent', () => {
             it('cmp file should add all related parts', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/aura/test/test.cmp']);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -192,7 +195,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('test');
             });
             it('JS file should add all related parts', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/aura/test/testController.js']);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -210,7 +213,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].members[0]).toEqual('test');
             });
             it('component folder should add all related parts', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/aura/test' ]);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -230,7 +233,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#apexClass', () => {
             it('should add all class file when only meta selected', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/classes/myClass.cls']);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -249,7 +252,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#customObject', () => {
             it('should add all fragments of an object as separate entries in manifest', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c']);
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
 
@@ -260,7 +263,7 @@ describe('SalesforcePackageBuilder', () => {
                 ]);
             });
             it('should merge source from fragments into parent', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c']);
 
                 const sfPackage = await packageBuilder.getPackage().generateArchive();
@@ -287,7 +290,7 @@ describe('SalesforcePackageBuilder', () => {
                 });
             });
             it('should add parent tag without content when deploying fragment', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/objects/PetersCustomObject__c/fields']);
 
                 const manifest = packageBuilder.getManifest().toJson(apiVersion);
@@ -323,8 +326,9 @@ describe('SalesforcePackageBuilder', () => {
                     'main/default/app/settings/Address.settings': buildXml('AddressSettings'),
                     'main/default/app/settings/BusinessHours.settings': buildXml('BusinessHoursSettings'),
                 });
-
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, settingsFsMock);
+                const localContainer = container.create();
+                localContainer.add(settingsFsMock);
+                const packageBuilder = localContainer.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([
                     'main/default/app/settings/Account.settings',
                     'main/default/app/settings/Address.settings',
@@ -352,7 +356,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#destructiveChanges', () => {
             it('should add destructive changes to deployment as-is', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/destructiveChangesPost.xml' ]);
 
                 const filesAdded = normalizePath(Object.keys((await packageBuilder.getPackage().generateArchive()).files));
@@ -363,7 +367,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types.length).toEqual(0);
             });
             it('should merge multiple destructive changes into single package file', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([
                     'src/destructiveChangesPost.xml',
                     'src/destructiveChangesPost2.xml'
@@ -397,7 +401,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types.length).toEqual(0);
             });
             it('should merge default destructive changes as pre', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([
                     'src/destructiveChanges.xml'
                 ]);
@@ -422,7 +426,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types.length).toEqual(0);
             });
             it('should merge multiple destructive changes types in 2 separate files', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([
                     'src/destructiveChanges.xml',
                     'src/destructiveChangesPre.xml',
@@ -440,7 +444,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types.length).toEqual(0);
             });
             it('should correctly parse destructive changes with just one component', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([
                     'src/destructiveChangesSingle.xml'
                 ]);
@@ -464,7 +468,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#mixed', () => {
             it('should add all deployable objects', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src' ]);
 
                 const filesAdded = normalizePath([...packageBuilder.getPackage().files()]);
@@ -489,7 +493,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#dashboards', () => {
             it('should add dashboards folders with -meta.xml suffix', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/dashboards' ]);
 
                 const manifest = packageBuilder.getManifest();
@@ -504,7 +508,7 @@ describe('SalesforcePackageBuilder', () => {
         });
         describe('#replacements', () => {
             it('should apply replacements when defined as RegEx', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 packageBuilder.addReplacement({
                     token: /<(apiVersion)>[0-9]{2}.0<\/apiVersion>/g,
                     replacement: '<$1>75.0</$1>',
@@ -520,7 +524,7 @@ describe('SalesforcePackageBuilder', () => {
                 expect(triggeretaXml).toEqual('<?xml version="1.0" encoding="UTF-8"?><ApexTrigger xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>75.0</apiVersion></ApexTrigger>');
             });
             it('should apply replacements only to matching metadata types', async () => {
-                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion, mockFs);
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 packageBuilder.addReplacement({
                     token: /<(apiVersion)>[0-9]{2}.0<\/apiVersion>/g,
                     replacement: '<$1>75.0</$1>',

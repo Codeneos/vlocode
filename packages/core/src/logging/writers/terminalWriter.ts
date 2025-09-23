@@ -2,6 +2,7 @@ import type * as vscode from 'vscode';
 import chalk from 'chalk';
 import { DateTime } from 'luxon';
 import { LogLevel, LogWriter, LogEntry } from '../../logging';
+import { EventEmitter } from '@vlocode/util';
 
 const TERMINAL_EOL = '\r\n';
 const LOG_DATE_FORMAT = 'HH:mm:ss.SSS';
@@ -61,17 +62,18 @@ export class TerminalWriter implements LogWriter {
         this.closeEmitter = new this.vscode.EventEmitter<void>();
         this.terminalWatchdog = setTimeout(this.checkTerminalState.bind(this), 5000);
         this.isOpened = false;
+        const pty: vscode.Pseudoterminal = {
+            onDidWrite: this.writeEmitter.event,
+            onDidClose: this.closeEmitter.event,
+            close: this.close.bind(this),
+            open: this.open.bind(this),
+            handleInput: () => { /* do not handle input */ }
+        };
         this.currentTerminal = this.vscode.window.createTerminal({
             name: this.name,
             iconPath: this.options?.iconPath,
-            pty: {
-                onDidWrite: this.writeEmitter.event,
-                onDidClose: this.closeEmitter.event,
-                close: this.close.bind(this),
-                open: this.open.bind(this),
-                handleInput: () => { /* do not handle input */ }
-            }
-        });
+            pty
+        } as vscode.TerminalOptions);
 
         return this.currentTerminal;
     }
