@@ -3,9 +3,10 @@
 **/*
 !CHANGELOG.md
 !LICENSE
-!out
+!dist
 !syntax/**/*.json
 !resources/**/*.png
 !resources/**/*.gif
 !resources/**/*.svg
 !package.json
+!loader.mjs
