@@ -9,7 +9,9 @@ import { PackageManifest } from './maifest';
 import { SalesforcePackage, SalesforcePackageComponent, SalesforcePackageComponentFile } from './package';
 import { MetadataRegistry, MetadataType } from '../metadataRegistry';
 import { RetrieveDeltaStrategy } from '../retrieveDeltaStrategy';
-import { Minimatch } from 'minimatch';
+import { SalesforcePackageBuilderPlugin } from './packageBuilderPlugin';
+import { ReplacementDetail, TokenReplacementPlugin } from './plugins/tokenReplacementPlugin';
+import { TypeScriptCompilerPlugin } from './plugins/typescriptCompilerPlugin';
 
 export enum SalesforcePackageType {
     /**
@@ -50,108 +52,165 @@ interface MetadataObject {
     data: Record<string, unknown>;
 }
 
-interface ReplacementDetail {
-    /**
-     * Token to replace in the file content, all text matching this token will be replaced with the replacement value.
-     */
-    token: string | RegExp;
-    /**
-     * Replacement value or function to generate replacement value
-     */
-    replacement: string | ((file: string, data: string | Buffer) => string);
-    /**
-     * Match file pattern to apply the replacement to.
-     */
-    files?: string | string[];
-    /**
-     * Match metadata type to apply the replacement to.
-     */
-    types?: string | string[];
-}
+/**
+ * Represents a single file or component included in a Salesforce deployment package.
+ *
+ * This type merges the metadata defined by `SalesforcePackageComponentFile` with the
+ * actual file payload under the `data` property.
+ *
+ * @remarks
+ * - The `data` property holds the file contents and is required.
+ * - Provide a `Buffer` for binary files (images, archives, compiled assets) and a `string`
+ *   for text files (XML, Apex, metadata files). Strings are treated as text content (typically UTF-8).
+ * - Consumers should write or transmit `data` exactly as provided; no additional encoding is assumed.
+ *
+ * @public
+ *
+ * @example
+ * ```ts
+ * // Binary file example
+ * const pngEntry: SalesforcePackageEntry = {
+ *   ...componentMeta,
+ *   data: Buffer.from([0x89, 0x50, 0x4E, 0x47])
+ * };
+ *
+ * // Text file example
+ * const xmlEntry: SalesforcePackageEntry = {
+ *   ...componentMeta,
+ *   data: '<ApexClass>...</ApexClass>'
+ * };
+ * ```
+ */
+export type SalesforcePackageEntry = SalesforcePackageComponentFile & { data: Buffer | string, fsPath?: string };
 
-class TokenReplacement {
-    private filePatterns?: Minimatch[];
-    private metadataTypes?: string[];
-
-    constructor(public detail: ReplacementDetail) {
-        const filePatterns = detail.files 
-            ? (Array.isArray(detail.files) ? detail.files : [ detail.files ])
-            : undefined;
-        const metadataTypes = detail.types 
-            ? (Array.isArray(detail.types) ? detail.types : [ detail.types ]) 
-            : undefined;
-        this.filePatterns = filePatterns?.map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
-        this.metadataTypes = metadataTypes?.map(pattern => pattern.toLocaleLowerCase());
-    }
-    
-    public async isMatch(entry: SalesforcePackageComponentFile) {
-        if (this.filePatterns) {
-            if (!this.filePatterns.some(pattern => pattern.match(entry.packagePath))) {
-                return false;
-            }
-        }
-        if (this.metadataTypes) {
-            const metadataType = entry.componentType.toLocaleLowerCase();
-            if (!this.metadataTypes.includes(metadataType)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public async apply(data: Buffer | string, file: string) {
-        const replacementValue = typeof this.detail.replacement === 'function' 
-            ? this.detail.replacement(file, data) 
-            : this.detail.replacement;
-
-        if (typeof data === 'string') {
-            return data.replace(this.detail.token, replacementValue);
-        }
-        return Buffer.from(data.toString().replace(this.detail.token, replacementValue));
-    }
-}
 
 @injectable.transient()
+/**
+ * SalesforcePackageBuilder
+ *
+ * High-level builder for constructing Salesforce metadata packages (SalesforcePackage) from a set of
+ * filesystem sources. The builder:
+ * - discovers metadata types and related meta files,
+ * - handles SFDX-style source formats and classic metadata package formats,
+ * - composes fragmented metadata (child elements merged into parent metadata),
+ * - bundles resources (Aura/LWC and StaticResource folders) and compresses folder-based static resources,
+ * - applies plugin-based transformations to package entries (for token replacement, filtering, or custom transformations),
+ * - supports creating deploy/retrieve/destructive packages and generating delta packages via pluggable strategies.
+ *
+ * Usage
+ * - Construct with the desired package type (deploy | retrieve | destruct) and optional API version.
+ * - Add files or directories via addFiles. The builder recursively expands directories and resolves
+ *   content/meta file pairs. For SFDX fragmented sources the builder will merge fragments into composed
+ *   parent metadata before adding them to the package.
+ * - Plugins can be registered with addPlugin to transform or filter package entries. For backwards
+ *   compatibility a TokenReplacementPlugin instance is always present as the first plugin.
+ * - Call build() to obtain the SalesforcePackage. build() will regenerate missing meta files and will
+ *   trigger a rebuild when replacement tokens or other conditions require a re-run.
+ *
+ * Key behaviors and notes
+ * - The builder normalizes paths and deduplicates parsed files to avoid double-processing.
+ * - It recognizes and respects metadata type configuration from the MetadataRegistry (folders, bundles,
+ *   folder-content types, suffixes, strict directory names, decomposition/child types).
+ * - For bundle metadata (Aura, LWC, etc.) the builder collects all files in the bundle folder and adds them
+ *   as component sources. For StaticResource bundles it compresses the folder into a zip and adds the binary.
+ * - Child fragments (decomposed XML files) are merged into a composed representation of the parent metadata
+ *   (composedData) and persisted into the package before returning the final SalesforcePackage.
+ * - When operating in destructive mode the builder records destructive change entries rather than adding binary/data.
+ * - getDeltaPackage and removeUnchanged accept a DeltaPackageStrategy or its constructor to compute changed
+ *   components and build a package containing only those changes.
+ * - CancellationToken arguments are honored for long running operations such as addFiles and rebuildPackage.
+ *
+ * Concurrency and caching
+ * - The builder is not safe for concurrent modifications from multiple callers. Treat a builder instance as
+ *   single-threaded: do not call mutating APIs concurrently.
+ * - Internal file resolution helpers (findMetaFile, findContentFile) are cached for performance.
+ *
+ * Plugins
+ * - The plugin system is ordered: the built-in TokenReplacementPlugin is always the first plugin and can
+ *   be supplemented by additional SalesforcePackageBuilderPlugin implementations using addPlugin().
+ * - Plugins receive a SalesforcePackageEntry and may return a transformed entry or undefined to leave it unchanged.
+ * - addPlugin appends plugins; it does not deduplicate or validate duplicates — callers are responsible for that.
+ *
+ * Rebuild behavior
+ * - When changes require a full package recomposition (for example when replacement tokens are added after files
+ *   have been parsed) the builder will mark itself for rebuild. Calling build() will trigger rebuildPackage() when required.
+ * - rebuildPackage resets parsed file state and composed metadata, and re-adds the previously added files.
+ *
+ * Examples
+ * - Basic build (deploy):
+ *   const builder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, '56.0');
+ *   await builder.addFiles(['src/classes', 'src/triggers']);
+ *   const pkg = await builder.build();
+ *   const manifest = pkg.getManifest();
+ *
+ * - Add plugin:
+ *   builder.addPlugin(new MyCustomPlugin());
+ *
+ * - Create delta package:
+ *   const delta = await builder.getDeltaPackage(MyDeltaStrategy, { since: lastDeploymentDate });
+ *
+ * Tags
+ * @public
+ * @remarks
+ * - Prefer build() over the legacy getPackage() accessor: build() will regenerate missing meta files and will
+ *   perform a rebuild when necessary.
+ * - addReplacement is deprecated; use TokenReplacementPlugin via addPlugin instead.
+ * @see SalesforcePackage
+ * @see SalesforcePackageBuilderPlugin
+ * @see DeltaPackageStrategy
+ */
 export class SalesforcePackageBuilder {
 
     /**
      * Default API version to use when no version is specified.
      */
-    public static defaultApiVersion = '60.0';
+    public static defaultApiVersion = '64.0';
 
     private mdPackage: SalesforcePackage;
     private rebuildRequired = false;
-    private readonly fs: FileSystem;
     private readonly parsedFiles = new Set<string>();
     private readonly composedData = new Map<string, MetadataObject>();
-    private readonly replacements = new Array<TokenReplacement>();
+    private readonly plugins: [ TokenReplacementPlugin, ...SalesforcePackageBuilderPlugin[] ] = [
+        // For backwards compatibility the token replacement plugin is always the first plugin
+        new TokenReplacementPlugin(),
+        new TypeScriptCompilerPlugin()
+    ];
 
     @inject(Logger) private readonly logger: Logger;
+    @inject(FileSystem) private readonly fs: FileSystem;
 
     constructor(
         public readonly type: SalesforcePackageType = SalesforcePackageType.deploy,
-        public readonly apiVersion: string = SalesforcePackageBuilder.defaultApiVersion,
-        fs?: FileSystem
+        public readonly apiVersion: string = SalesforcePackageBuilder.defaultApiVersion
     ) {
-        this.fs = fs ? new CachedFileSystemAdapter(fs) : fs!;
         this.mdPackage = new SalesforcePackage(this.apiVersion);
+        this.plugins.push(new TokenReplacementPlugin());
     }
 
     /**
-     * Add a replacement token to the package builder. When building the package the token will be replaced with the replacement value.
-     * Replacements are applied to all files in the package and can target specific files or metadata types or be applied globally.
-     * @usage
-     * ```typescript
-     * builder.addReplacement({
-     *    token: `$CURRENT_USER`
-     *    metadataTypes:
-     * });
-     * @remark Avoid applying replacements globally as they can have unintended side effects.
-     * @param replacement 
+     * @deprecated Add the {@link TokenReplacementPlugin} using `{@link addPlugin}` and add replacements to the plugin instead of using this method.
      */
     public addReplacement(replacement: ReplacementDetail) {
-        this.replacements.push(new TokenReplacement(replacement));
-        this.rebuildRequired = true;
+        this.plugins[0].add(replacement);
+    }
+
+
+    /**
+     * Extend the package builder with custom functionality by registering a plugin. Plugins 
+     * are used to modify package entries during the build process, allowing for custom transformations,
+     * as well as filtering or adding new entries.
+     *
+     * The provided SalesforcePackageBuilderPlugin instance is appended to the builder's internal
+     * plugin list and will be considered during subsequent package build operations.
+     * 
+     * This method does not perform deduplication or validation of the plugin; callers are
+     * responsible for avoiding duplicate registrations if that is undesired.
+     *
+     * @param plugin - The plugin to register with the package builder.
+     * @returns void
+     */
+    public addPlugin(plugin: SalesforcePackageBuilderPlugin) {
+        this.plugins.push(plugin);
     }
 
     /**
@@ -298,7 +357,7 @@ export class SalesforcePackageBuilder {
     }
 
     private async* getFiles(files: Iterable<FilePath>, token?: CancellationToken): AsyncGenerator<string> {
-        const fileNames = Iterable.map(files, file => typeof file !== 'string' ? file.fsPath : file);
+        const fileNames = [...Iterable.map(files, file => typeof file !== 'string' ? file.fsPath : file)];
 
         // Build zip archive for all expanded file; filter out files already parsed
         // Note use posix path separators when building package.zip
@@ -384,28 +443,21 @@ export class SalesforcePackageBuilder {
         if (this.type === SalesforcePackageType.destruct) {
             this.mdPackage.addDestructiveChange(componentType, componentName);
         } else {
-            const packageEntry = {
+            let packageEntry: SalesforcePackageEntry = {
                 componentType,
                 componentName,
                 packagePath: await this.getPackagePath(file, metadataType),
                 data: await this.fs.readFile(file),
-                fsPath: file
             };
-            await this.applyReplacements(packageEntry);
-            this.mdPackage.add(packageEntry);
+            for (const plugin of this.plugins) {
+                packageEntry = await plugin.transformEntry?.(packageEntry) ?? packageEntry;
+            }
+            this.mdPackage.add({ ...packageEntry, fsPath: file });
         }
-
+        
         this.logger.verbose(`Added %s (%s) as [%s]`, path.basename(file), componentName, chalk.green(metadataType.name));
     }
-
-    private async applyReplacements(entry: SalesforcePackageComponentFile & { data: Buffer | string }) {
-        for (const replacement of this.replacements) {
-            if (await replacement.isMatch(entry)) {
-                entry.data = await replacement.apply(entry.data, entry.packagePath);
-            }
-        }
-    }
-
+    
     /**
      * Add compressed static resource bundle to the package; compresses all the resources in the folder into a zip file but does not add
      * the meta-data file for the resource folder.
@@ -501,11 +553,14 @@ export class SalesforcePackageBuilder {
                 componentName: `${parentComponentName}.${childComponentName}`, 
                 packagePath: parentPackagePath 
             });
-            this.mdPackage.addSourceMap(parentComponentMetaFile, { 
-                componentType: parentType.name, 
-                componentName: parentComponentName, 
-                packagePath: parentPackagePath 
-            });
+            // Ensure parent meta file is also registered as source for the composed metadata
+            if (await this.fs.pathExists(parentComponentMetaFile)) {
+                this.mdPackage.addSourceMap(parentComponentMetaFile, { 
+                    componentType: parentType.name, 
+                    componentName: parentComponentName, 
+                    packagePath: parentPackagePath 
+                });
+            }
         }
 
         this.logger.verbose(`Added %s (%s.%s) as [%s]`, path.basename(sourceFile), parentComponentName, childComponentName, chalk.green(fragmentTypeName));
@@ -806,9 +861,9 @@ export class SalesforcePackageBuilder {
 
         const isMetaFile = baseName !== contentName;
         const packageFolder = this.getPackageFolder(file, metadataType);
-        const expectedSuffix = isMetaFile ? `${metadataType.suffix}-meta.xml` : `${metadataType.suffix}`;
+        const expectedSuffix = metadataType.suffix ? (isMetaFile ? `${metadataType.suffix}-meta.xml` : `${metadataType.suffix}`) : undefined;
 
-        if (metadataType.folderContentType) {
+        if (metadataType.folderContentType) {   
             // For folder metadata the meta file name should match the folder name
             return path.posix.join(packageFolder, `${substringBeforeLast(contentName,'.')}-meta.xml`);
         }
@@ -827,7 +882,7 @@ export class SalesforcePackageBuilder {
                     return path.posix.join(packageFolder, `${contentFile.split(/\\|\//g).pop()!}-meta.xml`);
                 }
             }
-        } else if (metadataType.suffix && !file.endsWith(expectedSuffix)) {
+        } else if (expectedSuffix && !file.endsWith(expectedSuffix)) {
             // for non-document source files should match the metadata suffix
             return path.posix.join(packageFolder, `${this.stripFileExtension(contentName, 1)}.${expectedSuffix}`);
         }
