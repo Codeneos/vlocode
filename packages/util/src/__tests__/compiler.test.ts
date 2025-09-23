@@ -50,7 +50,7 @@ describe('Compiler', () => {
         let error: Error | undefined;
         try {
             compiledFn(context, { mutableContext: true, allowUndefined: false });
-        } catch (e) {
+        } catch (e: any) {
             error = e;
         }
         expect(error).toBeDefined();
@@ -65,7 +65,7 @@ describe('Compiler', () => {
         let error: Error | undefined;
         try {
             compiledFn(context, { mutableContext: true, allowUndefined: true });
-        } catch (e) {
+        } catch (e: any) {
             error = e;
         }
         expect(error).toBeUndefined();

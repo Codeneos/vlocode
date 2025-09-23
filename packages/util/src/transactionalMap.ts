@@ -32,20 +32,20 @@ export class TransactionalMap<K, V> implements Map<K, V> {
         return this;
     }
 
-    entries(): IterableIterator<[K, V]> {
+    entries(): MapIterator<[K, V]> {
         return this.getConstant().entries();
     }
     
 
-    keys(): IterableIterator<K> {
+    keys(): MapIterator<K> {
         return this.getConstant().keys();
     }
 
-    values(): IterableIterator<V> {
+    values(): MapIterator<V> {
         return this.getConstant().values();
     }
 
-    [Symbol.iterator](): IterableIterator<[K, V]> {
+    [Symbol.iterator](): MapIterator<[K, V]> {
         return this.getConstant()[Symbol.iterator]();
     }
 

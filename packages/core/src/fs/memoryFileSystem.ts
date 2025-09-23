@@ -1,5 +1,5 @@
 import { Volume as MemFs } from 'memfs';
-import { Volume } from 'memfs/lib/volume';
+import { Volume } from 'memfs';
 import { NodeFileSystem } from './nodeFileSystem';
 
 /**

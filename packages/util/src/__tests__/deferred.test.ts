@@ -15,7 +15,7 @@ describe('DeferredPromise', () => {
 
         try {
             await deferred;
-        } catch (error) {
+        } catch (error: any) {
             expect(error).toBeInstanceOf(Error);
             expect(error.message).toBe('Something went wrong');
         }
