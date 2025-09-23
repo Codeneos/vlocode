@@ -2,7 +2,8 @@ import { sfdx } from '@vlocode/util';
 import { SalesforceConnectionProvider } from './salesforceConnectionProvider';
 import { SfdxConnectionProvider } from './sfdxConnectionProvider';
 import { injectable, Logger, inject } from '@vlocode/core';
-import { SalesforceConnection, SalesforceConnectionOptions } from '../salesforceConnection';
+import { SalesforceConnection } from '../salesforceConnection';
+import type { SalesforceConnectionOptions } from '../salesforceConnection';
 
 @injectable.singleton()
 export class InteractiveConnectionProvider implements SalesforceConnectionProvider {
