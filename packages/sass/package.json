@@ -46,12 +46,10 @@
     "homepage": "https://github.com/Codeneos/vlocode/tree/main/packages/apex#readme",
     "devDependencies": {
         "@types/jest": "^29.5.11",
-        "@types/node": "~20.17",
         "jest": "^29.7.0",
-        "sass": "^1.89.0",
+        "sass": "^1.93.0",
         "shx": "^0.3.4",
-        "ts-jest": "^29.3.4",
-        "typescript": "5.9.2"
+        "ts-jest": "^29.3.4"
     },
     "dependencies": {
         "@vlocode/core": "workspace:*",
