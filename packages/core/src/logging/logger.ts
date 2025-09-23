@@ -31,7 +31,7 @@ export class Logger {
     /**
      * Null logger, logs straight to /dev/null
      */
-    static readonly null: Logger = new (class extends Logger {
+    static readonly null: Logger = new (class extends this {
         constructor() {
             super(undefined, '/dev/null');
         }
