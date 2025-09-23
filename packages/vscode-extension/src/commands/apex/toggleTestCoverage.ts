@@ -3,6 +3,8 @@ import * as vscode from 'vscode';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { CommandBase } from '../../lib/commandBase';
 import { cache, clearCache, substringBetweenLast } from '@vlocode/util';
+import { container } from '@vlocode/core/src/di/container';
+import { ApexSourceStatus } from 'lib/salesforce/apexSourceStatus';
 
 /**
  * Represents a command for toggling test coverage
@@ -31,6 +33,10 @@ export default class ToggleApexTestCoverage extends CommandBase {
 
     private get activeDocument() {
         return vscode.window.activeTextEditor?.document;
+    }
+
+    private get sourceStatus() {
+        return container.get(ApexSourceStatus);
     }
 
     private get activeDocumentClassName() {
@@ -91,13 +97,28 @@ export default class ToggleApexTestCoverage extends CommandBase {
 
         const coverageDetails = await this.getCoverage(apexClassName);
         if (!coverageDetails || !coverageDetails.coveredLines.length && !coverageDetails.uncoveredLines.length) {
+            this.coverageShowingFor.delete(apexClassName.toLowerCase());
             void vscode.window.showWarningMessage(`No test coverage data available for ${apexClassName}.`);
             return;
         }
 
+        const sourceStatus = await this.sourceStatus.classStatus(document);
+        if (sourceStatus !== 'synced') {
+            this.coverageShowingFor.delete(apexClassName.toLowerCase());
+            const result = await vscode.window.showWarningMessage(
+                `APEX class ${apexClassName} is not in sync with the org.`,
+                { title: 'Push APEX class to Org' }
+            );
+            if (result) {
+                void vscode.commands.executeCommand(VlocodeCommand.deployMetadata, document.uri);
+            }
+            return;
+        }
+
         const maxLine = Math.max(...coverageDetails.coveredLines, ...coverageDetails.uncoveredLines) - 1;
-        if (maxLine > document.lineCount) {
-            void vscode.window.showWarningMessage(`Coverage data for ${apexClassName} is out of sync.`);
+        if (maxLine >= document.lineCount) {
+            this.coverageShowingFor.delete(apexClassName.toLowerCase());
+            void vscode.window.showWarningMessage(`Coverage data is out of sync, re-executed your unit tests.`);
             return;
         }
 
@@ -125,6 +146,6 @@ export default class ToggleApexTestCoverage extends CommandBase {
      */
     @cache({ ttl: 60 * 5 })
     private getCoverage(className: string) {
-        return this.vlocode.salesforceService.getApexCodeCoverage(className)
+        return this.sourceStatus.codeCoverage(className);
     }
 }
