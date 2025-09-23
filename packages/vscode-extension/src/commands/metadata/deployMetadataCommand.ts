@@ -8,6 +8,7 @@ import { ActivityProgress } from '../../lib/vlocodeActivity';
 import { vscodeCommand } from '../../lib/commandRouter';
 import MetadataCommand from './metadataCommand';
 import { container } from '@vlocode/core';
+import { DateTime } from 'luxon';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -32,7 +33,7 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
 
     public execute(command: VlocodeCommand, ...args: any[]): Promise<void> {
-        const files: vscode.Uri[] = [args[1] || [args[0] || this.currentOpenDocument], ...args.slice(2)];
+        const files: vscode.Uri[] = args[1] || [args[0] || this.currentOpenDocument];
         return this.deployMetadata.apply(this, [
             files,
             { delta: command === VlocodeCommand.deployDeltaMetadata }
@@ -104,7 +105,18 @@ export default class DeployMetadataCommand extends MetadataCommand {
 
     private async buildDeployPackage(files: Iterable<(vscode.Uri | string)>, options?: { delta?: boolean }) {
         const packageBuilder = container.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
+
+        // Add generic replacements
+        const connection = await this.vlocode.getJsForceConnection();
+        packageBuilder.addReplacement({ token: /%BUILD_?DATE%/i, replacement: DateTime.now().toISO() });
+        packageBuilder.addReplacement({ token: /%INSTANCE_?URL%/i, replacement: connection.instanceUrl });
+        packageBuilder.addReplacement({ token: /%USER_?EMAIL%/i, replacement: (await connection.identity()).email });
+        packageBuilder.addReplacement({ token: /%USER_?NAME%/i, replacement: (await connection.identity()).username });
+        packageBuilder.addReplacement({ token: /%ORG_?ID%/i, replacement: (await connection.identity()).organization_id });
+
+        // Add files to package
         await packageBuilder.addFiles(files);
+
         if (packageBuilder.getPackageComponents().length === 0) {
             return;
         }
