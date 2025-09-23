@@ -47,7 +47,7 @@ export class DatapackDeploymentSpecRegistry {
         for (const spec of this.specs) {
             yield {
                 filter: spec.filter, 
-                spec: spec.instance ?? lazy( () => spec.instance = this.container.new(spec.type!) )
+                spec: spec.instance ?? this.container.newDeferred(spec.type!)
             };
         }
     }
@@ -106,9 +106,8 @@ export class DatapackDeploymentSpecRegistry {
  * @param filter filter that determines to which datapacks or sobject-records this deployment spec applies
  */
 export function deploymentSpec(filter: DatapackFilter) {
-    const containerDecorator = injectable({ lifecycle: LifecyclePolicy.transient });
     return function (constructor: any) {
-        constructor = !injectable.isDecorated(constructor) ? containerDecorator(constructor) : constructor;
+        container.add(constructor, { lifecycle: LifecyclePolicy.transient });
         DatapackDeploymentSpecRegistry.instance.register(filter, constructor);
         return constructor;
     };
