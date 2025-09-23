@@ -3,7 +3,22 @@ import { LogLevel } from '@vlocode/core';
 
 import type { SassCompileOptions } from './interface';
 import { SassCompilerImpl } from './sassCompilerImpl';
-import { Message } from './sassCompilerThreaded';
+import type { Message } from './sassCompilerThreaded';
+
+/**
+ * Track if the process is exiting to prevent multiple exit calls
+ */
+let lastMessageTime = Date.now();
+const keepAlive = setInterval(() => {
+    if (Date.now() - lastMessageTime > 30000) {
+        console.error('SASS compiler did not receive any messages within 30 seconds, exiting');
+        clearInterval(keepAlive);
+    }
+}, 3000);
+
+process.once('SIGINT', () => clearInterval(keepAlive));
+process.once('SIGTERM', () => clearInterval(keepAlive));
+process.on('message', () => lastMessageTime = Date.now());
 
 /**
  * Send a message from the fork the parent process
@@ -72,9 +87,8 @@ async function handleMessage(type: string, data: any) {
             return compile(data.data, data.options);
         }
         case 'exit': {
-            process.exit();
-        }
-        // eslint-disable-next-line no-fallthrough -- `process.exit` never returns therefore a fallthrough is impossible
+            clearTimeout(keepAlive);
+        } break;
         default: {
             throw new Error(`Received unknown message type ${type} from host`);
         }
@@ -86,6 +100,7 @@ async function handleMessage(type: string, data: any) {
  * compiling sass into css
  */
 void (async () => {
+    console.log('SASS compiler started');
     for await (const message of getMessageLoop()) {
         try {
             const result = await handleMessage(message.type, message.payload);
@@ -95,4 +110,3 @@ void (async () => {
         }
     }
 })();
-

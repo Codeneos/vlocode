@@ -17,7 +17,7 @@
     },
     "scripts": {
         "clean": "shx rm -rf .rollup.cache lib dist coverage tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
-        "build": "rollup -c rollup.config.js",
+        "build": "tsdown -c tsdown.config.ts",
         "watch": "pnpm build --watch",
         "prepublish": "pnpm build",
         "prepack": "pnpm clean && pnpm build",
