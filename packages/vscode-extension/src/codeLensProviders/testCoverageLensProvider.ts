@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
-import { ApexTestCoverage } from '@vlocode/salesforce';
 import { cache } from '@vlocode/util';
+import { ApexSourceStatus, ApexTestCoverage } from 'lib/salesforce/apexSourceStatus';
 
 /**
  * Provides a code lens to show the test coverage for the current class
@@ -17,7 +17,10 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
         { pattern: '**/*.{cls}' },
         { language: 'apex' }
     ];
-    private readonly regex = /^[a-z ]*class ([a-z0-9]+)/i;
+
+    private get sourceStatus() {
+        return container.get(ApexSourceStatus);
+    }
 
     constructor(private readonly vlocode: VlocodeService) {
     }
@@ -29,22 +32,8 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
         );
     }
 
-    private getClassName(document: vscode.TextDocument) {
-        if (!document.uri.path.endsWith('.cls')) {
-            return;
-        }
-
-        for (let i = 0; i < Math.min(document.lineCount, 30); i++) {
-            const line = document.lineAt(i);
-            const match = line.text.match(this.regex);
-            if (match) {
-                return { range: line.range, className: match[1] }
-            }
-        }
-    }
-
     public async provideCodeLenses(document: vscode.TextDocument) {
-        const details = this.getClassName(document);
+        const details = this.sourceStatus.classNameFromDocument(document);
         if (!details) {
             return;
         }
@@ -59,7 +48,7 @@ export class TestCoverageLensProvider implements vscode.CodeLensProvider<TestCov
 
     @cache({ ttl: 30 })
     private getCoverage(className: string) {
-        return this.vlocode.salesforceService.getApexCodeCoverage(className)
+        return this.sourceStatus.codeCoverage(className)
     }
 
     public async resolveCodeLens(codeLens: TestCoverageCodeLens) {
