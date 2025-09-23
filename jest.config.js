@@ -8,6 +8,6 @@ export default {
   coverageReporters: [ 'lcov' ],
   reporters: ['default', 'jest-sonar', ['jest-junit', { outputDirectory: 'coverage' }] ],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { esModuleInterop: true, isolatedModules: true }]
+    '^.+\\.ts$': ['ts-jest', { esModuleInterop: true }]
   }
 };
