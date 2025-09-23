@@ -17,27 +17,29 @@
             },
             "problemMatcher": [
                 {
-                    "fileLocation": "absolute",
-                    "owner": "typescript",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}/packages/vscode-extension"
+                    ],
+                    "owner": "tsdown",
                     "pattern": [
                         {
-                            "regexp": "\\[tsl\\] ERROR in (.*)?\\((\\d+),(\\d+)\\)",
+                            "regexp": "(Warning|Error|Info): (.*)$",
+                            "message": 2,
+                            "severity": 1
+                        },
+                        {
+                            "regexp": "^\\s*╭─\\[\\s*([^:]+):(\\d+):(\\d+)\\s*\\]",
                             "file": 1,
                             "line": 2,
                             "column": 3
-                        },
-                        {
-                            "regexp": "\\s*TS\\d+:\\s*(.*)",
-                            "message": 1
                         }
                     ],
-                    "severity": "error",
-                    "source": "ts",
                     "background": {
-                        "beginsPattern": "starting...",
-                        "endsPattern": "finished"
+                        "beginsPattern": "Build start$",
+                        "endsPattern": "Build complete in \\d+ms$"
                     }
-                }
+                },
             ]
         },
         {

@@ -24,7 +24,7 @@
                 "--verbose",
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
             ],
-            "outFiles": ["${workspaceFolder}/packages/vscode-extension/out/**/*.js"],
+            "outFiles": ["${workspaceFolder}/packages/vscode-extension/dist/**/*.js"],
             "pauseForSourceMap": true,
             "skipFiles": ["<node_internals>/**/*", "async_hooks.js", "inspector_async_hook.js"],
             "preLaunchTask": "build-extension",
@@ -189,6 +189,15 @@
             "name": "Debug: Build (extension)",
             "request": "launch",
             "runtimeArgs": ["run-script", "build-webpack-dev"],
+            "cwd": "${workspaceRoot}/packages/vscode-extension",
+            "runtimeExecutable": "npm",
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node"
+        },
+        {
+            "name": "Debug: Bundle (extension)",
+            "request": "launch",
+            "runtimeArgs": ["run-script", "bundle"],
             "cwd": "${workspaceRoot}/packages/vscode-extension",
             "runtimeExecutable": "npm",
             "skipFiles": ["<node_internals>/**"],
