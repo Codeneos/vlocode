@@ -3,8 +3,7 @@ import * as vscode from 'vscode';
 import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
-import { cache } from '@vlocode/util';
-import { crc32 } from 'zlib';
+import { ApexSourceStatus } from 'lib/salesforce/apexSourceStatus';
 
 
 @injectable()
@@ -31,7 +30,10 @@ export class PushSourceLensProvider implements vscode.CodeLensProvider<PushSourc
         { pattern: '**/*.{cls}' },
         { language: 'apex' }
     ];
-    private readonly regex = /^[a-z ]*class ([a-z0-9]+)/i;
+
+    private get sourceStatus() {
+        return container.get(ApexSourceStatus);
+    }
 
     constructor(private readonly vlocode: VlocodeService) {
     }
@@ -43,45 +45,12 @@ export class PushSourceLensProvider implements vscode.CodeLensProvider<PushSourc
         );
     }
 
-    private getClassName(document: vscode.TextDocument) {
-        if (!document.uri.path.endsWith('.cls')) {
-            return;
-        }
-
-        for (let i = 0; i < Math.min(document.lineCount, 30); i++) {
-            const line = document.lineAt(i);
-            const match = line.text.match(this.regex);
-            if (match) {
-                return { range: line.range, className: match[1] }
-            }
-        }
-    }
-
-    private isCrcMatch(document: vscode.TextDocument, expectedCrc: number) {
-        const classBody = document.getText();
-        if (crc32(Buffer.from(classBody, 'utf8')) >>> 0 === expectedCrc) {
-            return true;
-        }
-
-        const normalizedText = classBody
-            .replace(/\r\n/g, '\n')
-            .replace(/\r/g, '\n')
-            .trim();
-            
-        return crc32(Buffer.from(normalizedText, 'utf8')) >>> 0 === expectedCrc;
-    }
-
-    @cache({ ttl: 30 })
-    public async isSycned(document: vscode.TextDocument, className: string) {
-        const orgClassInfo = await this.vlocode.salesforceService.getApexClassInfo(className);
-        if (!orgClassInfo) {
-            return false;
-        }
-        return this.isCrcMatch(document, orgClassInfo.bodyCrc);
+    public async isSynced(document: vscode.TextDocument) {
+        return (await this.sourceStatus.classStatus(document)) === 'synced';
     }
 
     public provideCodeLenses(document: vscode.TextDocument) {
-        const details = this.getClassName(document);
+        const details = this.sourceStatus.classNameFromDocument(document);
         if (!details) {
             return;
         }
@@ -96,10 +65,10 @@ export class PushSourceLensProvider implements vscode.CodeLensProvider<PushSourc
             return undefined;
         }
 
-        const isScyned = await this.isSycned(codeLens.document, codeLens.className);
+        const isSynced = await this.isSynced(codeLens.document);
 
         if (codeLens.vloCommand === VlocodeCommand.diffMetadata) {
-            return isScyned ? undefined : codeLens.resolve({
+            return isSynced ? undefined : codeLens.resolve({
                 title: 'Diff with Org',
                 command: VlocodeCommand.diffMetadata,
                 arguments: [codeLens.document.uri]
@@ -108,7 +77,7 @@ export class PushSourceLensProvider implements vscode.CodeLensProvider<PushSourc
 
         if (codeLens.vloCommand === VlocodeCommand.deployMetadata) {
             return codeLens.resolve({
-                title: isScyned ? 'Source in-sync' : 'Push to Org',
+                title: isSynced ? 'Source in-sync' : 'Push to Org',
                 command: VlocodeCommand.deployMetadata,
                 arguments: [codeLens.document.uri]
             });
