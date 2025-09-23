@@ -1,4 +1,4 @@
-import { Logger, injectable } from '@vlocode/core';
+import { LifecyclePolicy, Logger, injectable } from '@vlocode/core';
 import { deepCompare, sfdx, SfdxConfig } from '@vlocode/util';
 import * as vscode from 'vscode';
 
@@ -13,7 +13,7 @@ import * as vscode from 'vscode';
  * @event `changed` - Emitted when the SFDX configuration changes. Provides the updated configuration, 
  *                  the changes made, and the associated workspace folder.
  */
-@injectable.singleton()
+@injectable({ lifecycle: LifecyclePolicy.singleton })
 export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.Disposable {
 
     private watcher: vscode.FileSystemWatcher | undefined;
@@ -49,7 +49,7 @@ export class SfdxConfigManager<T extends object = SfdxConfig> implements vscode.
      * 
      * @return {Promise<SfdxConfigManager>} A promise that resolves to the SfdxConfigManager instance.
      */
-    public async initialize() {
+    public async initialize(): Promise<SfdxConfigManager> {
         for (const workspace of vscode.workspace.workspaceFolders ?? []) {       
             const sfdxConfig = await sfdx.getConfig<T>(workspace.uri.fsPath);
             if (sfdxConfig) {
