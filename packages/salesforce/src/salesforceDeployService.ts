@@ -30,10 +30,10 @@ export interface RetrieveManifestOptions {
 @injectable()
 export class SalesforceDeployService {
 
-    constructor(...args: any[]);
     constructor(
         private readonly salesforce: SalesforceConnectionProvider,
-        private readonly logger: Logger) {
+        private readonly logger: Logger
+    ) {
     }
 
     /**
