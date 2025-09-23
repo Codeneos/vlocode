@@ -61,7 +61,7 @@ export interface SalesforceConfig extends Record<string, object | string | numbe
  * any of the standard SF extensions is used in parallel
  */
 try {
-    salesforce.envVars.setString('SF_DISABLE_LOG_FILE', 'true');
+    process.env.SFDX_DISABLE_LOG_FILE = 'true';
     salesforce.Logger.root().then(logger => {
         logger.useMemoryLogging();
     });
