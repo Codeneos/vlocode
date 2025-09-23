@@ -1,7 +1,5 @@
-import { injectable } from "@vlocode/core";
 import { visitObject } from "@vlocode/util";
 
-@injectable.singleton()
 export class NamespaceService {
     /**
      * Replaces a namespace place holder with the actual namespace in the target org
