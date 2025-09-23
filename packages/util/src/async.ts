@@ -372,6 +372,14 @@ export class AwaitableAsyncGenerator<T> implements AsyncGenerator<T>, Promise<T[
         return this.getGenerator();
     }
 
+    public [Symbol.dispose](): void {
+        return this.generator[Symbol.dispose]?.();
+    }
+
+    public [Symbol.asyncDispose](): Promise<void> {
+        return Promise.resolve(this.generator[Symbol.asyncDispose]?.());
+    }
+
     // Promise implementation uses lazy initialization of promise result
     public then<TResult1 = T[], TResult2 = never>(
         onfulfilled?: ((value: T[]) => TResult1 | PromiseLike<TResult1>) | null | undefined,
