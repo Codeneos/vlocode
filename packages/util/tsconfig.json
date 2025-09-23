@@ -2,8 +2,6 @@
     "extends": "../../tsconfig",
     "compilerOptions": {
         "composite": true,
-
-        "moduleResolution": "node",
         "outDir": "dist",
         "rootDir": "src",
         "declaration": true,
