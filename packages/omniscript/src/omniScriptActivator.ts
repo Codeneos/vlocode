@@ -1,11 +1,11 @@
-    import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
+import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
 import { inject, injectable, Logger } from '@vlocode/core';
 import { spreadAsync, timeout, Timer } from '@vlocode/util';
 
 import { OmniProcessRecord, OmniScriptDefinition, OmniScriptRecord, OmniScriptSpecification } from './types';
 import { OmniScriptLwcCompiler } from './omniScriptLwcCompiler';
 import { ScriptDefinitionProvider } from './scriptDefinitionProvider';
-import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
+import type { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 import { OmniScriptDefinitionGenerator } from './omniScriptDefinitionGenerator';
 import { OmniScriptAccess } from './omniScriptAccess';
 
