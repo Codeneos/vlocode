@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { asArray } from '@vlocode/util';
 import { container, ObjectType, LifecyclePolicy, ServiceOptions, TypeConstructor } from './container';
 import { inject } from './inject.decorator';
-import { IsDecorated, ServiceTypes } from './container.symbols';
+import { IsDecorated, ServiceTypes, InjectParameterPrefix } from './container.symbols';
 
 export interface DependencyOptions extends Partial<ServiceOptions> {
     /** List of components that is provided by this class  */
@@ -75,7 +75,7 @@ function injectable<T extends TypeConstructor>(
     }
 
     return function(ctor: T) {
-        if (providedServices?.includes(ctor)) {
+        if (providedServices && !providedServices.includes(ctor)) {
             providedServices.push(ctor);
         }
         // Register services in root di container
@@ -91,7 +91,7 @@ function injectable<T extends TypeConstructor>(
         return (this as any)({ ...(options ?? {}), lifecycle: LifecyclePolicy.singleton } );
     },
     isDecorated: function (serviceType: ObjectType) {
-        return serviceType[IsDecorated] !== null;
+        return serviceType[IsDecorated] === true;
     },
     property: inject,
     param: inject,
@@ -104,5 +104,5 @@ function injectable<T extends TypeConstructor>(
  * @param parameterIndex 
  */
 export function ignore(target: object, propertyKey: string | symbol, parameterIndex: number) {
-    Reflect.defineMetadata(`dependency:inject:parameter:${parameterIndex}:ignore`, true, target);
+    Reflect.defineMetadata(`${InjectParameterPrefix}:${parameterIndex}:ignore`, true, target);
 }

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { singleton, Iterable, arrayMapPush, getParameterTypes, getPropertyType, asArray, isConstructor } from '@vlocode/util';
+import { singleton, arrayMapPush, getParameterTypes, getPropertyType, asArray, isConstructor, lazy } from '@vlocode/util';
 import { uniqueNamesGenerator, Config as uniqueNamesGeneratorConfig, adjectives, animals } from 'unique-names-generator';
 import { LogManager } from '../logging';
 import { createServiceProxy, serviceIsResolved, proxyTarget, isServiceProxy, ProxyTarget } from '../serviceProxy';
@@ -198,6 +198,7 @@ export class Container {
     public dispose() {
         this.factories.clear();
         this.providers.clear();
+        this.serviceDependencies.clear();
 
         for (const instance of this.instances.values()) {
             // eslint-disable-next-line @typescript-eslint/dot-notation -- does not compile with TS as dispose is an optional member
@@ -311,6 +312,23 @@ export class Container {
     }
 
     /**
+     * Create a new instance of the given type, with construction wrapped in a deferred initializer.
+     *
+     * The type and any provided partial constructor arguments are forwarded to the container's
+     * createInstance method. The actual construction is wrapped with `lazy(...)` so the creation logic
+     * is executed by the lazy initializer; this method invokes that initializer and returns the created
+     * instance.
+     *
+     * @typeParam T - The constructor type to instantiate.
+     * @param ctor - The constructor (class or function) to instantiate.
+     * @param params - A partial array of constructor arguments that will be forwarded to createInstance.
+     * @returns The constructed instance of the specified constructor type.
+     */
+    public newDeferred<T extends TypeConstructor>(ctor: T, ...params: PartialArray<ConstructorParameters<T>>): InstanceType<T> {
+        return lazy(() => this.createInstance(ctor, params));
+    }
+
+    /**
      * Creates a new instance of the specified type resolving dependencies using the current container context. The returned class is not registered
      * in the container as dependency.
      * @param ctor Constructor type/prototype class definition
@@ -343,7 +361,8 @@ export class Container {
         if (ctor[symbols.DecoratedCtor]) {
             return ctor[symbols.DecoratedCtor];
         }
-        const decoratedType: DecoratedTypeConstructor<T> = class extends (ctor as any) {
+        
+        const DecoratedClass = class extends (ctor as any) {
             static [symbols.TypeIdentity] = randomUUID();
             static [symbols.IsDecorated] = true;
             static [symbols.OriginalCtor] = ctor;
@@ -352,10 +371,10 @@ export class Container {
             constructor(...args: ConstructorParameters<TypeConstructor<T>>) {
                 return Container.scope.createInstance(ctor, args);
             }
-        } as any;   
-        ctor[symbols.DecoratedCtor] = decoratedType;
-        Object.defineProperty(decoratedType, 'name', { value: ctor.name, configurable: false, writable: false });
-        return decoratedType;//Object.defineProperty(decoratedType, 'name', { value: ctor.name, configurable: false, writable: false });
+        } as any;
+        
+        Object.defineProperty(DecoratedClass, 'name', { value: ctor.name, configurable: false, writable: false });
+        return ctor[symbols.DecoratedCtor] = DecoratedClass;
     }
 
     /**
@@ -389,7 +408,8 @@ export class Container {
             throw new Error(`Cannot resolve parameters of an object without design time decoration: ${ctor.name}`);
         }
 
-        for (let i = 0; i < paramTypes.length; i++) {
+        const paramCount = paramTypes.length;
+        for (let i = 0; i < paramCount; i++) {
             const ignored = this.getMetadata(`${symbols.InjectParameterPrefix}:${i}:ignore`, ctor);
             if (ignored === true || args[i] !== undefined) {
                 continue;
@@ -493,13 +513,12 @@ export class Container {
     }
 
     private generateServiceGuid(ctor: any) {
-        const serviceName = typeof ctor === 'function' ? ctor.name : Object.getPrototypeOf(ctor).constructor.name;
-        return `${serviceName}-${uniqueNamesGenerator(uniqueNameConfig)}`;
+        return `${ctor.name}-${uniqueNamesGenerator(uniqueNameConfig)}`;
     }
 
     private decorateWithServiceGuid<T>(instance: T, guid?: string): T {
         if (!instance[symbols.ServiceGuid]) {
-            instance[symbols.ServiceGuid] = guid ?? this.generateServiceGuid(instance);
+            instance[symbols.ServiceGuid] = guid || this.generateServiceGuid((instance as any).constructor);
         }
         return instance;
     }
@@ -510,6 +529,10 @@ export class Container {
      * @param dependsOn instance of the dependency
      */
     private trackServiceDependencies(serviceGuid: string, dependsOn: object) {
+        if (!dependsOn || typeof dependsOn !== 'object') {
+            return;
+        }
+        
         const dependencyGuid = dependsOn[symbols.ServiceGuid];
         if (isServiceProxy(dependsOn) && !dependsOn[serviceIsResolved]) {
             dependsOn[proxyTarget].once('resolved', instance => this.trackServiceDependencies(serviceGuid, instance));
@@ -558,10 +581,11 @@ export class Container {
         instanceOrType: I, 
         options?: Partial<ServiceOptions & { provides: Array<ObjectType<T>> }>
     ) {
-        const resolvedServices = options?.provides ?? this.getServicesFromInstance(instanceOrType);
+        const resolvedServices = new Set(options?.provides ?? this.getServicesFromInstance(instanceOrType));
+        resolvedServices.add(Object.getPrototypeOf(instanceOrType).constructor);
         this.decorateWithServiceGuid(instanceOrType);
 
-        for (const service of Array.isArray(resolvedServices) ? resolvedServices : [ resolvedServices ]) {
+        for (const service of resolvedServices) {
             const providedService = this.getTypeName(service);
             const providedServices: Set<string> = instanceOrType[this.servicesProvided] || (instanceOrType[this.servicesProvided] = new Set());
 
@@ -589,10 +613,11 @@ export class Container {
             type = type[symbols.OriginalCtor];
         }
         
-        const resolvedServices = options?.provides ?? this.getServicesFromType(type);
+        const resolvedServices = new Set(options?.provides ?? this.getServicesFromType(type));
+        resolvedServices.add(type);
         const serviceOptions = { ...defaultServiceOptions, ...options };
 
-        for (const service of Iterable.asIterable(resolvedServices)) {
+        for (const service of resolvedServices) {
             const providedService = this.getTypeName(service);
             this.logger.debug(`(${this.containerGuid}) Add service type for: ${providedService}`);
             arrayMapPush(this.serviceTypes, providedService, { ctor: type, options: serviceOptions });
@@ -608,24 +633,19 @@ export class Container {
         const providedServices = new Set<ObjectType>();
         for (const prototype of this.getPrototypes(type)) {
             const provides: Array<ObjectType> | undefined = prototype.constructor[symbols.ServiceTypes];
-            if (provides?.length) {
-                provides.forEach(s => providedServices.add(s));
-            } else if (prototype) {
-                providedServices.add(prototype.constructor);
-            }
+            provides?.forEach(s => providedServices.add(s));
+            providedServices.add(prototype.constructor);
         }
-        return [...providedServices].filter(s => !!(typeof s === 'string' ? s : s.name));
+        return [...providedServices];
     }
 
-    private getPrototypes(instance: TypeConstructor | object) {
-        const prototypes = new Array<{ constructor: new (...args: any[]) => object }>();
+    private *getPrototypes(instance: TypeConstructor | object) {
         if (typeof instance === 'function') {
-            prototypes.push(instance = instance.prototype);
+            instance = instance.prototype;
         }
         while (Object.getPrototypeOf(instance) && Object.getPrototypeOf(instance) !== Object.prototype) {
-            prototypes.push(instance = Object.getPrototypeOf(instance));
+            yield instance = Object.getPrototypeOf(instance);
         }
-        return prototypes;
     }
 
     /**
@@ -650,19 +670,22 @@ export class Container {
         instance[this.servicesProvided]?.clear();
         instance[symbols.ServiceGuid] = undefined;
 
-        const activeInstanceByGuid = new Map([...this.instances.values()].map(i => [ i[symbols.ServiceGuid], i ]));
-        const dependentServices = this.serviceDependencies.get(instanceGuid);
-
+        // Remove from instances map
         for (const [service, activeInstance] of this.instances.entries()) {
             if (activeInstance === instance) {
                 this.instances.delete(service);
             }
         }
 
+        // Remove dependent services
+        const dependentServices = this.serviceDependencies.get(instanceGuid);
         for (const dependentServiceGuid of dependentServices ?? []) {
-            const dependentInstance = activeInstanceByGuid.get(dependentServiceGuid);
-            if (dependentInstance) {
-                this.removeInstance(dependentInstance);
+            // Find the dependent instance
+            for (const activeInstance of this.instances.values()) {
+                if (activeInstance[symbols.ServiceGuid] === dependentServiceGuid) {
+                    this.removeInstance(activeInstance);
+                    break;
+                }
             }
         }
 
@@ -723,7 +746,9 @@ export class Container {
             return service.name;
         }
         if (typeof service === 'function') {
-            return this.getTypeName(service());
+            // Handle lazy types directly
+            const resolved = service();
+            return typeof resolved === 'string' ? resolved : resolved.name;
         }
         if (typeof service === 'string') {
             return service;
