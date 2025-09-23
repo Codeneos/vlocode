@@ -250,3 +250,90 @@ export interface EventEmitting<T extends Events<T> = UntypedEvents> {
     removeListener<K extends keyof T>(event: K, listener: EventListener<K, T>): this;
     removeAllListeners<K extends keyof T>(event?: K): this;
 }
+
+/**
+ * Event type returned by {@link EventEmitter.event}
+ */
+export interface Event<T> {
+    (listener: (e: T) => any, thisArgs?: any): () => void;
+}
+
+/**
+ * Lightweight event emitter implementation
+ * 
+ * @example
+ * ```ts
+const emitter = new EventEmitter<{ hello: string }>();
+emitter.on('hello', (params) => console.log('Hello', params));
+emitter.fire({ hello: 'world' }); // prints "Hello world"
+emitter.fire({ hello: 'again' }); // prints "Hello again"
+emitter.dispose();
+emitter.fire({ hello: 'again' }); // does nothing as emitter is disposed
+ * ```
+ */
+export class EventEmitter<T> {
+    // store listener entries as objects for clearer association of thisArg
+    private listeners: Record<string, { 
+            listener: (e: T) => any; 
+            thisArg?: any 
+        }> = {};
+    private disposed = false;
+
+    /**
+     * Event to subscribe to for listening to events
+     */
+    public get event(): Event<T> {
+        return this.listen.bind(this);
+    }
+
+    /**
+     * Register a listener that listens for events being fired by the emitter
+     * @param listener Listener to register
+     * @param thisArg Optional thisArg to use when calling the listener
+     * @returns A function that can be called to unregister the listener
+     */
+    public listen(listener: (e: T) => any, thisArg?: any) {
+        if (this.disposed) {
+            return () => {};
+        }
+
+        const id = Symbol().toString();
+        this.listeners[id] = { listener, thisArg };
+
+        return () => {
+            delete this.listeners[id];
+        };
+    }
+
+    /**
+     * Fire an event to all registered listeners with the provided data
+     * @param data Data to pass to the event listeners
+     * @param options Options for firing the event
+     * @returns void
+     */
+    public fire(data: T, options?: { throwErrors?: boolean }): void {
+        if (this.disposed) {
+            return;
+        }
+        
+        for (const { listener, thisArg } of Object.values(this.listeners)) {
+            try {
+                listener.call(thisArg, data);
+            } catch (error) {
+                if (options?.throwErrors) {
+                    throw error;
+                }
+            }
+        }
+    }
+
+    /**
+     * Dispose the event emitter and clear all listeners. 
+     * After calling dispose the emitter is no longer usable and all calls to {@link EventEmitter.fire} 
+     * or {@link EventEmitter.listen} will be ignored.
+     */
+    public dispose(): void {
+        this.disposed = true;
+        this.listeners = {};
+    }
+}
