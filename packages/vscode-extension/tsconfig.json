@@ -1,14 +1,22 @@
 {
     "extends": "../../tsconfig",
     "compilerOptions": {
+        "module": "preserve",
+        "target": "es2022",
+        "moduleResolution": "Bundler",
         "outDir": "lib",
         "sourceMap": true,
         "declaration": false,
         "allowArbitraryExtensions": true,
         "baseUrl": "src",
-        "types": ["node", "jest"]
+        "types": ["node", "jest"],
+        "typeRoots": [
+            "./types",
+            "./node_modules/@types",
+            "../../node_modules/@types"
+        ]
     },
-    "include": ["src/**/*.ts", "webpack/**/*.ts", "types/**/*.ts"],
+    "include": ["src/**/*.ts", "build/**/*.ts", "webpack/**/*.ts", "tsdown/**/*.ts" ],
     "references": [
         { "path": "../util" },
         { "path": "../core" },

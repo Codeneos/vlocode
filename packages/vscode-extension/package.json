@@ -69,7 +69,7 @@
         "workspaceContains:**/.vlocode",
         "workspaceContains:**/*.cls"
     ],
-    "main": "./out/vlocode",
+    "main": "./loader.mjs",
     "contributes": {
         "viewsContainers": {
             "activitybar": [
@@ -1503,17 +1503,14 @@
         ]
     },
     "scripts": {
-        "build": "pnpm pre-build && tsc -b",
-        "build-webpack": "pnpm pre-build && webpack --config webpack/webpack.prod.mjs --env extension",
-        "build-webpack-dev": "pnpm pre-build && webpack --config webpack/webpack.dev.mjs --env extension",
-        "watch": "webpack --watch --config webpack/webpack.dev.mjs --env extension",
-        "watch-prod": "webpack --watch --config webpack/webpack.prod.mjs --env extension",
+        "build": "pnpm pre-build && tsdown -c tsdown/tsdown.config.ts",
+        "watch": "pnpm build --watch",
         "pack": "vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
-        "pre-build": "tsx build/buildCommands.ts ./package.json ./commands.yaml",
-        "clean": "shx rm -rf ./out ./.ts-temp './src/**/*.{d.ts,ts.map,js.map,js}'",
+        "pre-build": "tsx build/commands.ts ./package.json ./commands.yaml",
+        "clean": "shx rm -rf ./dist ./.ts-temp './src/**/*.{d.ts,ts.map,js.map,js}'",
         "publish": "vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
-        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build-webpack"
+        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build"
     },
     "devDependencies": {
         "@types/copy-webpack-plugin": "^8.0.1",
@@ -1522,7 +1519,6 @@
         "@types/js-yaml": "^4.0.2",
         "@types/jsforce": "^1.9.38",
         "@types/luxon": "^3.3.0",
-        "@types/node": "~20.17",
         "@types/vscode": "^1.95.0",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
@@ -1532,6 +1528,9 @@
         "@vlocode/vlocity-deploy": "workspace:*",
         "@vscode/test-electron": "^2.3.8",
         "@vscode/vsce": "^3.4.1",
+        "acorn": "^8.15.0",
+        "acorn-walk": "^8.3.4",
+        "acron": "^1.0.5",
         "chalk": "^4.1.2",
         "copy-webpack-plugin": "^9.1.0",
         "esbuild-loader": "^4.3.0",
@@ -1543,6 +1542,7 @@
         "jsforce": "^1.11.0",
         "log-symbols": "^4.0.0",
         "luxon": "^3.4.4",
+        "mv": "^2.1.1",
         "open": "^8.2.1",
         "reflect-metadata": "^0.1.13",
         "shx": "^0.3.4",
@@ -1551,7 +1551,6 @@
         "tsconfig-paths-webpack-plugin": "^3.5.2",
         "tsx": "^4.19.4",
         "type-fest": "^2.12.2",
-        "typescript": "5.9.2",
         "vlocity": "1.14.18",
         "vscode-languageclient": "^8.1.0",
         "webpack": "^5.99.9",
