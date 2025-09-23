@@ -1,12 +1,13 @@
 import { cache, clearCache } from '@vlocode/util';
 import { type FileInfo, type FileStat, FileSystem, type StatsOptions, type WriteOptions } from './fileSystem';
+import { inject } from '../di/inject.decorator';
 
 /**
  * Decorate any existing file system with caching functionality; caches the write and stat operations towards the target file system.
  * The methods `readDirectory` and `findFiles` are not cached and will be redirected to the base file system.
  */
 export class CachedFileSystemAdapter extends FileSystem {
-    constructor(private readonly innerFs: FileSystem) {
+    constructor(@inject(FileSystem) private readonly innerFs: FileSystem) {
         super();
     }
 
