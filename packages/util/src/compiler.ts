@@ -1,4 +1,4 @@
-import * as vm from 'vm';
+import { Script, createContext }from 'node:vm';
 import { singleton } from './singleton';
 import { cache } from './cache';
 import { unique } from './collection';
@@ -36,13 +36,13 @@ class Compiler {
             compiledFn = new Function('context', `with (context) { ${code}; }`) as typeof compiledFn;
         } else {
             const resultVar = '_' + randomUUID().replace(/-/g, '');
-            const script = new vm.Script(`${resultVar} = (() => { with (context) { ${code}; } })()`);
+            const script = new Script(`${resultVar} = (() => { with (context) { ${code}; } })()`);
             compiledFn = (context) => {
                 const scriptContext = {
                     context,
                     [resultVar]: undefined
                 };
-                vm.createContext(scriptContext);
+                createContext(scriptContext);
                 script.runInContext(scriptContext);
                 return scriptContext[resultVar];
             } 
