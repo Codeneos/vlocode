@@ -1,6 +1,5 @@
 import type { Plugin } from 'rolldown';
 
-
 /**
  * A plugin that patches file-type libraries that use eval("require") to just use require directly
  * This is needed as eval is not supported in esbuild/rolldown builds

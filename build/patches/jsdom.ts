@@ -1,5 +1,4 @@
 import type { Plugin } from 'rolldown';
-import { readFile } from 'fs/promises';
 
 /**
  * Rolldown plugin that patches jsdom's XMLHttpRequest implementation to avoid

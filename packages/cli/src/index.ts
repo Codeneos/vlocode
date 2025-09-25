@@ -4,11 +4,10 @@ import * as path from 'path';
 import { Command, Option } from 'commander';
 import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
+import { Module } from 'vm';
 
-// @ts-ignore
-const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
-// @ts-ignore
-const buildInfo: Record<string, string> = typeof __webpack_build_info__ === 'object' ? __webpack_build_info__ : {
+// // @ts-ignore
+const buildInfo: Record<string, string> = {
     ...JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8')),
     buildDate: new Date().toISOString()
 };
@@ -60,7 +59,6 @@ class CLI {
 
     constructor(private commandsFolder: string) {
         this.logger.verbose(this.versionString);
-        debugger; // eslint-disable-line no-debugger
         this.program = new Command()
             .name(CLI.programName)
             .description(CLI.description)
@@ -79,7 +77,7 @@ class CLI {
     public run(argv: any[] = process.argv) {
         try {
             this.program.parse(argv);
-        } catch(err) {
+        } catch(err: any) {
             this.logger.error(err.message ?? err);
         }
     }
@@ -94,14 +92,26 @@ class CLI {
         }
     }
 
-    public loadCommands(folder: string = '.') {
-        const fullFolderPath = path.join(__dirname, this.commandsFolder, folder);
-        for (const file of readdirSync(fullFolderPath, { withFileTypes: true } )) {
-            if (file.isFile() && file.name.endsWith('.js')) {
-                this.registerCommand(this.program, path.join(fullFolderPath, file.name));
+    public async loadCommands(options: string | { [file: string]: { default: unknown } } = '.') {
+        if (typeof options === 'string') {
+            await this.loadCommandsFolder(options);
+        } else {
+            this.logger.debug(`Loading ${Object.keys(options).length} command(s) from build manifest`);
+            for (const [name, module] of Object.entries(options)) {
+                await this.registerCommand(this.program, { name, module });
             }
         }
         return this;
+    }
+
+    public async loadCommandsFolder(folder: string = '.') {
+        const fullFolderPath = path.join(__dirname, this.commandsFolder, folder);
+        for (const file of readdirSync(fullFolderPath, { withFileTypes: true } )) {
+            if (file.isFile() && /.m?js$/.test(file.name)) {
+                await this.loadCommand(this.program, path.join(fullFolderPath, file.name));
+            }
+        }
+        return this; 
     }
 
     private generateCommandName(commandFile: string) {
@@ -113,50 +123,77 @@ class CLI {
             .toLowerCase();
     }
 
-    private registerCommand(parentCommand: Command, commandFile: string) {
+    private async loadCommand(parentCommand: Command, commandFile: string) {
         try {
-            // @ts-ignore
-            const commandModule = nodeRequire(commandFile);
+            const commandModule = await import(commandFile);
+            this.logger.debug(`Loaded command module from: ${commandFile}`);
+            await this.registerCommand(parentCommand, { module: commandModule, name: this.generateCommandName(commandFile) });
+        } catch (err: any) {
+            this.logger.error(`Failed to load command from ${commandFile}: ${err.message}`);
+        }
+    }
 
-            if (commandModule.default) {
-                this.logger.debug(`Loading command from: ${commandFile}`);
+    private async registerCommand(parentCommand: Command, options: { module: any, name?: string }) {
+        try {
+            const commandName = options.name ?? options.module.name
+            const commandClass = options.module;
 
-                const commandName = this.generateCommandName(commandFile)
-                const commandClass = commandModule.default;
-                const command = parentCommand.command(commandName).description(commandClass.description);
-
-                commandClass.args.forEach(arg => command.addArgument(arg));
-                [...CLI.options, ...commandClass.options].forEach(option => command.addOption(option));
-
-                command.action(async (...args) => {
-                    const commandInstance = container.new(commandClass);
-                    commandInstance.options = args.slice(0, -1).pop();
-                    commandInstance.args = args.slice(0, -2);
-
-                    try {
-                        this.init(commandInstance.options);
-                        await commandInstance.init?.(commandInstance.options);
-                        return await commandInstance.run(...args);
-                    } catch(err) {
-                        if (commandInstance.options.debug && err instanceof Error) {
-                            this.logger.error(err.message, '\n', err.stack);
-                        } else {
-                            this.logger.error(err.message ?? err);
-                        }
-                        process.exit(1);
-                    } finally {
-                        process.exit(0);
-                    }
-                });
-
-                return command;
+            if (!this.isValidCommand(commandClass)) {
+                this.logger.error(`Skipping invalid command module: ${commandName}`);
+                return;
             }
 
-        } catch(err) {
-            this.logger.error(`Unable to load command: ${commandFile}\n\n`, err.stack);
+            const command = parentCommand.command(commandName).description(commandClass.description);
+
+            commandClass.args.forEach(arg => command.addArgument(arg));
+            [...CLI.options, ...commandClass.options].forEach(option => command.addOption(option));
+
+            command.action(async (...args) => {
+                const commandInstance = container.new(commandClass);
+                commandInstance.options = args.slice(0, -1).pop();
+                commandInstance.args = args.slice(0, -2);
+
+                try {
+                    this.init(commandInstance.options);
+                    await commandInstance.init?.(commandInstance.options);
+                    return await commandInstance.run(...args);
+                } catch(err: any) {
+                    if (commandInstance.options.debug && err instanceof Error) {
+                        this.logger.error(err.message, '\n', err.stack);
+                    } else {
+                        this.logger.error(err.message ?? err);
+                    }
+                    process.exit(1);
+                } finally {
+                    process.exit(0);
+                }
+            });
+
+            return command;
+        } catch(err: any) {
+            this.logger.error(`Unable to load command: ${options.name}\n\n`, err.stack);
         }
+    }
+
+    private isValidCommand(commandClass: any) {
+        if (typeof commandClass !== 'function') {
+            this.logger.error(`Invalid command module, no default export found in ${commandClass}`);
+            return false;
+        }
+
+        if (typeof commandClass.prototype.run !== 'function') {
+            this.logger.error(`Invalid command class exported from ${commandClass}, missing run() method`);
+            return false;
+        }
+        
+        if (typeof commandClass.description !== 'string') {
+            this.logger.error(`Invalid command class exported from ${commandClass}, missing static description property`);
+            return false;
+        }
+
+        return true;
     }
 }
 
 // Run
-new CLI('./commands').loadCommands().run();
+(await new CLI('./commands').loadCommands(/*=COMMANDS*/)).run();
