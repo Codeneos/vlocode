@@ -1509,6 +1509,7 @@
         "pre-build": "tsx build/commands.ts ./package.json ./commands.yaml",
         "clean": "shx rm -rf ./dist ./.ts-temp './src/**/*.{d.ts,ts.map,js.map,js}'",
         "publish": "vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
+        "publish:beta": "vsce publish --pre-release --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
         "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build"
     },
