@@ -49,7 +49,12 @@ commands:
       - get_version
       - run:
           name: "Pack extension"
-          command: pnpm pack-extension ${PRERELEASE}
+          command: |
+            VERSION=$(cat .version)
+            [[ $VERSION =~ "-" ]] && PRERELEASE="--pre-release" || PRERELEASE=""
+            # When VERSION contains a hyphen it's a semver prerelease (e.g. 1.2.0-beta.1) and we pass --pre-release so VSCode Marketplace marks it as Preview
+            echo "Packing extension version $VERSION ${PRERELEASE:+(pre-release)}"
+            pnpm pack-extension ${PRERELEASE}
       - persist_to_workspace:
           root: .
           paths: [ "packages/vscode-extension/*.vsix" ]
@@ -59,7 +64,8 @@ commands:
           name: Get Version
           command: |
             VERSION=$(node -p "require('./lerna.json').version")
-            [[ $VERSION =~ "-" ]] && PRERELEASE="--pre-release"
+            # Mark prerelease when version contains a hyphen (e.g. 1.2.3-beta.0); CircleCI run steps are isolated so we persist only the version
+            [[ $VERSION =~ "-" ]] && echo "Detected pre-release version ${VERSION}" || echo "Detected release version ${VERSION}"
             echo ${VERSION} > .version
       - persist_to_workspace:
           root: .
@@ -113,7 +119,17 @@ jobs:
       - checkout_install
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
       - run: pnpm run --filter @vlocode/* build
-      - run: pnpm lerna publish from-package --force-publish --no-push --yes
+      - run:
+          name: "Publish npm packages (stable or beta)"
+          command: |
+            VERSION=$(node -p "require('./lerna.json').version")
+            if [[ $VERSION =~ '-' ]]; then
+              echo "Detected prerelease version ${VERSION}; publishing with dist-tag 'beta'"
+              pnpm lerna publish from-package --dist-tag beta --force-publish --no-push --yes
+            else
+              echo "Detected stable version ${VERSION}; publishing with default 'latest' tag"
+              pnpm lerna publish from-package --force-publish --no-push --yes
+            fi
   github-release:
     docker:
       - image: cibuilds/github:0.13
