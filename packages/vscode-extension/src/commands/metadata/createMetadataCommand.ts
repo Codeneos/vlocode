@@ -16,6 +16,7 @@ import { VlocodeCommand } from '../../constants';
  */
 @vscodeCommand(VlocodeCommand.createApexClass, { params: [ 'apexClass' ] })
 @vscodeCommand(VlocodeCommand.createLwc, { params: [ 'lwc' ] })
+@vscodeCommand(VlocodeCommand.createMetadataCommand)
 @vscodeCommand(VlocodeCommand.createOmniscriptLwc, { params: [ 'omniscriptLwc' ] })
 export default class CreateMetadataCommand extends MetadataCommand {
 
@@ -97,6 +98,24 @@ export default class CreateMetadataCommand extends MetadataCommand {
         const workspaceFolders = vscode.workspace.workspaceFolders.map(ws => sanitizePath(ws.uri.fsPath, path.posix.sep));
         const patterns = workspaceFolders.map(ws => path.posix.join(ws, '**', newItemType.folderName));
         const targetFolders: string[] = await fg.glob(patterns, { onlyDirectories: true, absolute: true });
+
+        if (targetFolders.length === 0) {
+            const folderSelection = await vscode.window.showOpenDialog({
+                defaultUri: undefined,
+                openLabel: `Create here...`,
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                title: 'Select the folder for the new item',
+            });
+
+            if (!folderSelection?.length) {
+                void vscode.window.showWarningMessage('Item creation cancelled, no target folder selected');
+                return undefined;
+            }
+
+            return path.join(folderSelection[0].fsPath, newItemType.folderName);
+        }
 
         if (targetFolders.length == 1) {
             return targetFolders[0];
