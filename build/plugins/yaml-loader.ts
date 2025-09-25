@@ -10,7 +10,7 @@ export default function (): Plugin {
                 try {
                     const content = readFileSync(id, 'utf8');
                     const parsed = load(content);
-                    return `export default ${JSON.stringify(parsed)};`;
+                    return `module.exports = ${JSON.stringify(parsed, undefined, 4)};`;
                 } catch (error) {
                     this.error(`Failed to parse YAML file ${id}: ${error}`);
                 }
