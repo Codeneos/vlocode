@@ -1503,7 +1503,7 @@
         ]
     },
     "scripts": {
-        "build": "pnpm pre-build && tsdown -c tsdown/tsdown.config.ts",
+        "build": "pnpm pre-build && tsdown -c tsdown.config.mts",
         "watch": "pnpm build --watch",
         "pack": "vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "pre-build": "tsx build/commands.ts ./package.json ./commands.yaml",
