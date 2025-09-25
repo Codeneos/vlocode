@@ -1,12 +1,11 @@
 import { defineConfig } from 'tsdown'
 import { globSync } from 'fs'
 
-import yaml from './plugins/yaml-loader.js';
-import fileTypesPatch from './patches/file-types.js';
-import vlocityPatch from './patches/vlocity.js';
-import dtracePatch from './patches/dtrace.js';
-import jsdomPatch from './patches/jsdom.js';
-
+import yaml from '../../build/plugins/yaml-loader.js';
+import fileTypesPatch from '../../build/patches/file-types.js';
+import vlocityPatch from '../../build/patches/vlocity.js';
+import dtracePatch from '../../build/patches/dtrace.js';
+import jsdomPatch from '../../build/patches/jsdom.js';
 
 /**
  * Entry points for the VSCode extension and related tools
@@ -26,9 +25,9 @@ export const packageExternals = [
 export default defineConfig({
   entry: entryPoints,
   target: 'esnext',
-  watch: [
-    ...globSync('../*/src')
-  ],
+  // watch: [
+  //   ...globSync('../*/src')
+  // ],
   external: [...packageExternals],
   outDir: './dist',
   format: 'esm',
