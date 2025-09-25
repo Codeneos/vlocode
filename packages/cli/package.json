@@ -12,8 +12,9 @@
         "vlocode": "bin/run"
     },
     "main": "src/index.ts",
+    "type": "module",
     "publishConfig": {
-        "main": "dist/cli.js"
+        "main": "dist/cli.mjs"
     },
     "readme": "./README.md",
     "directories": {
@@ -23,10 +24,9 @@
         "node": ">=20.0.0"
     },
     "scripts": {
-        "watch": "webpack --watch --config webpack/webpack.mjs",
-        "build": "webpack --config webpack/webpack.mjs",
-        "pack": "pnpm run prepublish && pnpm run pack-only",
-        "prepublish": "pnpm run clean && pnpm run build && tsc",
+        "watch": "tsdown -c tsdown.config.ts --watch",
+        "build": "tsdown -c tsdown.config.ts",
+        "prepublish": "pnpm run clean && pnpm run build",
         "pack-only": "pnpm pack",
         "clean": "shx rm -rf ./dist ./lib ./.ts-temp './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'"
     },

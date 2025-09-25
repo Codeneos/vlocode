@@ -7,5 +7,9 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": ["src/**/*"]
+    "include": [
+        "src/**/*",
+        "../../build/**/*.ts",
+        "tsdown.config.ts"
+    ]
 }
