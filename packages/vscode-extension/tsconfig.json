@@ -8,6 +8,8 @@
         "sourceMap": true,
         "declaration": false,
         "allowArbitraryExtensions": true,
+        "allowImportingTsExtensions": true,
+        "noEmit": true,
         "baseUrl": "src",
         "types": ["node", "jest"],
         "typeRoots": [
@@ -16,7 +18,11 @@
             "../../node_modules/@types"
         ]
     },
-    "include": ["src/**/*.ts", "build/**/*.ts", "webpack/**/*.ts", "tsdown/**/*.ts" ],
+    "include": [
+        "src/**/*.ts", 
+        "../../build/**/*.ts", 
+        "tsdown.config.mts" 
+    ],
     "references": [
         { "path": "../util" },
         { "path": "../core" },
