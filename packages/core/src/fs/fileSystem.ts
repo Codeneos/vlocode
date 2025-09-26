@@ -1,7 +1,7 @@
-import { spreadAsync } from '@vlocode/util';
+import { directoryName, spreadAsync } from '@vlocode/util';
 import * as fs from 'fs'
 import fg, { FileSystemAdapter } from 'fast-glob';
-import path from 'path';
+import { join } from 'path/posix';
 
 export interface StatsOptions {
     /**
@@ -152,12 +152,9 @@ export abstract class FileSystem {
      * @param options write options
      */
     public async outputFile(path: string, body?: Buffer | string, options?: OutputOptions) {
-        if (!await this.pathExists(path)) {
-            let currentPath = '';
-            for (const folder of path.split(/[/\\]/).filter(folder => !!folder).slice(0, -1)) {
-                currentPath = currentPath ? `${currentPath}/${folder}` : folder;
-                await this.createDirectory(currentPath);
-            }
+        const parentFolder = directoryName(path);
+        if (parentFolder && !await this.pathExists(parentFolder)) {
+            await this.createDirectory(parentFolder);
         }
         const fileBody = typeof body === 'string' || body === undefined
             ? Buffer.from(body ?? '', options?.encoding ?? 'utf-8')
@@ -208,7 +205,7 @@ export abstract class FileSystem {
                 if (typeof file !== 'string') {
                     continue;
                 }
-                yield cwdStr ? path.posix.join(cwdStr, file) : file;
+                yield cwdStr ? join(cwdStr, file) : file;
                 if (limit !== undefined && --limit === 0) {
                     return;
                 }
@@ -241,6 +238,7 @@ export abstract class FileSystem {
 
     /**
      * Create a new directory at the specified path. No error should be thrown when the directory already exists.
+     * Operations should be idempotent and recursive, so when creating a directory /a/b/c and /a or /a/b do not exists, these should be created as well.
      * @param path path to the directory to create
      */
     public abstract createDirectory(path: string): Promise<void>;
