@@ -35,21 +35,30 @@ namespace window {
     }
 }
 
+export interface FlexCardDesignerOptions { 
+    allLwcBundles?: LightningComponentBundle[]; 
+    childCards?: any[]; 
+    nsPrefix?: string; 
+    lwcPrefix?: string; 
+    isInsidePackge?: boolean; 
+    isStdRuntime?: boolean; 
+    offPlatform?: boolean;
+    apiVersion?: number;
+}
 
 export namespace FlexCardDesigner {
-    export let allLwcBundles: LightningComponentBundle[] = [];
-    export let childCards: any[] = [];
-    export let nsPrefix = "c";
     export let lwcPrefix = "cf";
-    export let isInsidePackge = true;
-    export let isStdRuntime = false;
-
+    let allLwcBundles: LightningComponentBundle[] = [];
+    let childCards: any[] = [];
+    let nsPrefix = "c";
+    let isInsidePackge = true;
+    let isStdRuntime = false;
     const exposedAPIPrefix = "cf";
     let renderedElementCount = "";
     let styleDefinition = {};
     const DOWNLOAD_OFF_PLATFORM_MODE = "downloadoffplatform";
     let downloadMode = "";
-    export const defaultXmlConfig = {
+    const defaultXmlConfig = {
         targetConfigs: `<targetConfig targets="lightning__AppPage">
                         <property name="debug" type="Boolean"/>
                         <property name="recordId" type="String"/>
@@ -75,6 +84,17 @@ export namespace FlexCardDesigner {
     const requiredPermissionsError = "Required Permissions are missing";
 
     let actionElementsSlotObject = {};
+
+    export function configure(options: FlexCardDesignerOptions) {
+        allLwcBundles = options.allLwcBundles ?? allLwcBundles;
+        childCards = options.childCards ?? childCards;
+        nsPrefix = options.nsPrefix ?? nsPrefix;
+        lwcPrefix = options.lwcPrefix ?? lwcPrefix;
+        isInsidePackge = options.isInsidePackge ?? isInsidePackge;
+        isStdRuntime = options.isStdRuntime ?? isStdRuntime;
+        downloadMode = options.offPlatform ? DOWNLOAD_OFF_PLATFORM_MODE : "";
+        defaultXmlConfig.api = options.apiVersion ?? defaultXmlConfig.api;
+    }
 
     //HTML
     function generateStateHtml(cardDef, index, theme, isactive, item) {
