@@ -33,19 +33,24 @@ export default defineConfig({
   format: 'esm',
   sourcemap: true,
   shims: true,
-  minify: false,
+  minify: true,
   treeshake: false,
   env: {
     NODE_ENV: 'production',
-    DEBUG: false
+    DEBUG: false,
+    SF_DISABLE_LOG_FILE: true
   },
   nodeProtocol: true,
   tsconfig: './tsconfig.json',
   inputOptions: {
     keepNames: true,
+    checks: {
+      eval: false,
+    }
   },
   outputOptions: {
     chunkFileNames: '[hash:23].mjs',
+    legalComments: 'none'
   },
   plugins: [
     yaml(), 
