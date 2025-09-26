@@ -122,7 +122,7 @@ export class CommandLogger {
         this.outputLine(seperator);
         rows.forEach(row => this.outputTableRow(row, columnWidths));
 
-        if (options?.appendEmptyLine) {
+        if (options?.appendEmptyLine !== false) {
             this.lineBreak();
         }
 
