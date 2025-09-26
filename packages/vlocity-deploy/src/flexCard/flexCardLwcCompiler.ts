@@ -3,7 +3,7 @@ import { SalesforceService, SalesforcePackage, LightningComponentBundle } from '
 import { injectable, Logger } from '@vlocode/core';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 import { cache, Timer, XML } from '@vlocode/util';
-import { FlexCardDesigner } from './flexCardDesignerUtil';
+import { FlexCardDesigner, FlexCardDesignerOptions } from './flexCardDesignerUtil';
 import { FlexCardDefinition, FlexCardDefinitionAccess } from './flexCardDefinition';
 import { DateTime } from 'luxon';
 
@@ -30,39 +30,53 @@ export class FlexCardLwcCompiler {
         private readonly namespaceService: VlocityNamespaceService,
         private readonly logger: Logger
     ) {
-
-    }
-
-    @cache({ ttl: 60, scope: 'instance' })
-    private async initializeLwcGenerator() { 
-        // This method is cached to only load card and LWC data once per 60 seconds
-        this.logger.verbose('Initializing LWC Flex Card Compiler'); 
-        const timer = new Timer();
-        const deployedLwcBundles = await this.getDeployedLwcBundles();
-        const cards = await this.cardAccess.getFlexCardDefinitions();
-        this.logger.info(`Pre-loaded ${cards.size} Flex Cards and ${deployedLwcBundles.length} LWC bundles in ${timer.stop()}`); 
-
-        FlexCardDesigner.nsPrefix = this.namespaceService.getNamespace();
-        FlexCardDesigner.isInsidePackge = FlexCardDesigner.nsPrefix !== '';        
-        FlexCardDesigner.allLwcBundles = deployedLwcBundles;
-        FlexCardDesigner.childCards = [...cards.values()].filter(card => card.IsChildCard === true);
-        return FlexCardDesigner;
     }
 
     /**
-     * Compiles an OmniScript into LWC components
-     * @param scriptDefinition Definition of the OmniScript to compile
-     * @param options Options to control the compilation
-     * @returns 
+     * Compiles a FlexCard definition into LWC files and returns the component name and compiled resources.
+     *
+     * Initializes the LWC generator using namespace and runtime settings derived from internal services and the
+     * provided options, determines the component name (either from options.lwcName or derived from the card), and
+     * invokes the generator to produce LWC files for the card. Only generated files whose filepath contains a '/'
+     * are returned as compiled resources.
+     *
+     * @param card - The FlexCardDefinition to compile.
+     * @param options - Optional compilation settings:
+     *   - lwcName: explicit LWC component name to use instead of deriving one from the card.
+     *   - useStandardRuntime: when true, use the standard LWC runtime.
+     *   - apiVersion: API version to use for generator initialization (coerced to a Number); if omitted the service default is used.
+     *
+     * @returns A promise that resolves to an object with:
+     *   - name: the LWC component name used for generation.
+     *   - resources: an array of CompiledResource objects ({ name: string; source: string }) produced from generated files
+     *     whose filepaths include a '/'.
+     *
+     * @remarks
+     * - The LWC generator is initialized with:
+     *     - nsPrefix: current namespace from namespaceService.getNamespace()
+     *     - isInsidePackge: true when a namespace is present
+     *     - isStdRuntime: boolean derived from options.useStandardRuntime
+     *     - apiVersion: Number(options?.apiVersion ?? salesforceService.getApiVersion())
+     * - The method delegates actual file generation to the generator's generateLWCFiles method and maps its output to the
+     *   returned resources.
+     * - Filepaths are returned as provided by the generator; only those containing '/' are considered resources here.
+     *
+     * @throws Will reject the returned promise if generator initialization or file generation fails, or if required services are unavailable.
      */
     public async compile(card: FlexCardDefinition, options?: FlexCardCompileOptions): Promise<{ name: string, resources: Array<CompiledResource> }> {
-        // Get the name of the component or generate it and compile the OS
-        const compiler = await this.initializeLwcGenerator();
-        compiler.isStdRuntime = !!options?.useStandardRuntime;
-        compiler.defaultXmlConfig.api = Number(options?.apiVersion ?? this.salesforceService.getApiVersion());
+        // Get the name of the component or generate it and compile the FC
+        const compiler = await this.initializeLwcGenerator({
+            nsPrefix: this.namespaceService.getNamespace(),
+            isInsidePackge: this.namespaceService.getNamespace() !== '',
+            isStdRuntime: !!options?.useStandardRuntime,
+            apiVersion: Number(options?.apiVersion ?? this.salesforceService.getApiVersion()),
+        });
         const name = options?.lwcName ?? this.getLwcName(card);
         const metaObject = this.getCardMeta(card);        
-        const files: Array<{filepath: string, source: string }> = compiler.generateLWCFiles(name, card, 'card', null, metaObject);
+        const files: Array<{
+                filepath: string, 
+                source: string 
+            }> = compiler.generateLWCFiles(name, card, 'card', null, metaObject);
 
         return { 
             name: name, 
@@ -73,6 +87,30 @@ export class FlexCardLwcCompiler {
                     source: file.source,
                 })
             )
+        };
+    }
+
+    private async initializeLwcGenerator(options: FlexCardDesignerOptions) {
+        FlexCardDesigner.configure({
+            ...options,
+            ...(await this.loadBundlesAndCards())
+        });
+        return FlexCardDesigner;
+    }
+
+    @cache({ ttl: 120, scope: 'instance' })
+    private async loadBundlesAndCards() {
+        this.logger.verbose('Initializing LWC Flex Card Compiler resources'); 
+        const timer = new Timer();
+        const [deployedLwcBundles, cards] = await Promise.all([
+            this.getDeployedLwcBundles(),
+            this.cardAccess.getFlexCardDefinitions()
+        ]);
+        this.logger.info(`Pre-loaded ${cards.size} Flex Cards and ${deployedLwcBundles.length} LWC bundles in ${timer.stop()}`); 
+
+        return { 
+            allLwcBundles: deployedLwcBundles, 
+            childCards: [...cards.values()].filter(card => card.IsChildCard === true)
         };
     }
 
