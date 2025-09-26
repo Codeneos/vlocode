@@ -1,8 +1,8 @@
 import 'jest';
 
-import { SalesforceSchemaService } from '@vlocode/salesforce';
-import { VlocityMatchingKey, VlocityMatchingKeyService } from '@vlocode/vlocity';
-import { Logger } from '@vlocode/core';
+import { NamespaceService, SalesforceSchemaService } from '@vlocode/salesforce';
+import { VlocityMatchingKey, VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
+import { container, Logger } from '@vlocode/core';
 import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
 
 describe('DatapackExportQueries', () => {
@@ -34,6 +34,10 @@ describe('DatapackExportQueries', () => {
             },
         } as any) as SalesforceSchemaService;
     }
+
+    beforeAll(() => {
+        container.add(new VlocityNamespaceService('%vlocity_namespace%'));
+    });
 
     describe('getQuery', () => {
         it('should use null when nummeric fields are empty string', async () => {
