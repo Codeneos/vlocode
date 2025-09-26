@@ -53,6 +53,7 @@ export default class GenerateLwcCommand extends DatapackCommand {
         const jsMetaFiles: string[] = [];
         const fs = container.get(FileSystem);
         const result: { datapack: string, file: string }[] = [];
+        const workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(outputFolder))?.uri.fsPath ?? process.cwd();
 
         for (const datapack of datapacks) {
             try {
@@ -68,7 +69,8 @@ export default class GenerateLwcCommand extends DatapackCommand {
                     if (resource.name.endsWith('.js-meta.xml')) {
                         jsMetaFiles.push(outputFilePath);
                     }
-                    result.push({ datapack: datapack.key, file: outputFilePath });
+
+                    result.push({ datapack: datapack.key, file: relative(workspace, outputFilePath) });
                 }
             } catch (error: any) {
                 this.logger.error(`Datapack LWC generation failed:`, error);                
