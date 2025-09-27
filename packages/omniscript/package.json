@@ -27,7 +27,8 @@
         "bundle": "node ../../scripts/esbuild.mjs --entrypoint ./src/index.ts",
         "watch": "pnpm bundle --watch",
         "pack": "pnpm pack",
-        "prepublish": "pnpm build"
+        "prepublish": "pnpm build",
+        "test": "jest"
     },
     "repository": {
         "type": "git",
