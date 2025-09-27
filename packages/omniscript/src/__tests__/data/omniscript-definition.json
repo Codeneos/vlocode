@@ -8,7 +8,22 @@
     "testTemplates": "",
     "templateList": [],
     "sOmniScriptId": "a2C0E00000604rnUAA",
-    "sobjPL": {},
+    "sobjPL": {
+        "vlocity_cmt__OmniScript__c.vlocity_cmt__OmniProcessType__c": [
+            {
+                "name": "OmniScript",
+                "value": "OmniScript"
+            },
+            {
+                "name": "Integration Procedure",
+                "value": "Integration Procedure"
+            },
+            {
+                "name": "Test Procedure",
+                "value": "Test Procedure"
+            }
+        ]
+    },
     "RPBundle": "",
     "rMap": {
         "Text2": "",
@@ -211,7 +226,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "elementValueMap": {
                     "Value": "Name"
                 },
@@ -264,7 +282,10 @@
                 "remoteTimeout": 30000,
                 "remoteMethod": "",
                 "remoteClass": "",
-                "showPersistentComponent": [true, true],
+                "showPersistentComponent": [
+                    true,
+                    true
+                ],
                 "instruction": "<p>Step Instruction</p>",
                 "completeMessage": "Are you sure you want to complete the script?",
                 "completeLabel": "Complete",
@@ -1087,7 +1108,10 @@
                 "remoteTimeout": 30000,
                 "remoteMethod": "",
                 "remoteClass": "",
-                "showPersistentComponent": [false, false],
+                "showPersistentComponent": [
+                    false,
+                    false
+                ],
                 "instruction": "",
                 "completeMessage": "Are you sure you want to complete the script?",
                 "completeLabel": "Complete",
@@ -1697,7 +1721,9 @@
                                     "source": "",
                                     "type": ""
                                 },
-                                "options": [{}],
+                                "options": [
+                                    {}
+                                ],
                                 "helpText": "",
                                 "help": false,
                                 "defaultValue": null,
@@ -2040,7 +2066,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "elementValueMap": {},
                 "controlWidth": 12
             },
@@ -2062,7 +2091,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "elementErrorMap": {},
                 "validationRequired": "Step",
                 "controlWidth": 12
@@ -2092,7 +2124,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2137,7 +2172,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2195,7 +2233,10 @@
                 "label": "DocuSignEnvelopeAction1",
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2242,7 +2283,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2294,7 +2338,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2348,7 +2395,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "skipElements": [],
                 "previousWidth": 3,
                 "previousLabel": "Previous",
@@ -2401,7 +2451,10 @@
                 "sendJSONPath": "",
                 "type": "Apex",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2448,7 +2501,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2500,7 +2556,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,
@@ -2554,7 +2613,10 @@
                 "wpm": false,
                 "HTMLTemplateId": "",
                 "show": null,
-                "showPersistentComponent": [null, null],
+                "showPersistentComponent": [
+                    null,
+                    null
+                ],
                 "redirectPreviousWidth": 3,
                 "redirectPreviousLabel": "Previous",
                 "redirectNextWidth": 3,

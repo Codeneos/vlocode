@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import { Logger, container } from '@vlocode/core';
 import { filterObject } from '@vlocode/util';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
-import { SalesforceConnectionProvider, SalesforceConnection, SessionDataStore } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, SalesforceConnection, SessionDataStore, SchemaDataStore } from '@vlocode/salesforce';
 
 import { MockTransport } from './mocks/mockTransport';
 import { OmniScriptDefinitionBuilder } from '../omniScriptDefinitionBuilder';
@@ -20,6 +20,7 @@ describe('OmniScriptDefinitionGenerator', () => {
     const scriptId = 'a2C0E00000604rnUAA';
     const scriptRecord = readJsonSync(path.join(__dirname, './data/omniscript-record.json'));
     const elementRecords = readJsonSync(path.join(__dirname, './data/omniscript-elements.json'));
+    const schemaStore = path.join(__dirname, './data/schema.json');
 
     beforeAll(async () => {
         const sessionData = SessionDataStore.loadSession(path.join(__dirname, './data/definition-generation.json'));
@@ -32,6 +33,7 @@ describe('OmniScriptDefinitionGenerator', () => {
 
         container.add(Logger.null);
         container.add(new VlocityNamespaceService('vlocity_cmt'));
+        container.add(await new SchemaDataStore().loadFromFile(schemaStore));
         container.add({
             getJsForceConnection: () => {
                 return Promise.resolve(connection);

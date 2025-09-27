@@ -38,6 +38,140 @@
             }
         }
     },
+    "5d30dbd0613180aa8d0074406c2710ba387b6d61": {
+        "index": 13,
+        "count": 1,
+        "hash": "5d30dbd0613180aa8d0074406c2710ba387b6d61",
+        "request": {
+            "method": "GET",
+            "url": "/services/data/v55.0/sobjects",
+            "headers": {
+                "disableFeedTracking": true,
+                "content-type": "application/json; charset=utf-8"
+            }
+        },
+        "response": {
+            "statusCode": 200,
+            "statusMessage": "OK",
+            "headers": {
+                "x-content-type-options": "nosniff",
+                "x-xss-protection": "1; mode=block",
+                "x-robots-tag": "none",
+                "content-type": "no-parse",
+                "vary": "Accept-Encoding",
+                "content-encoding": "gzip",
+                "transfer-encoding": "chunked"
+            },
+            "body": {
+                "encoding": "UTF-8",
+                "maxBatchSize": 200,
+                "sobjects": [
+                    {
+                        "name": "vlocity_cmt__OmniScript__c",
+                        "label": "Vlocity OmniScript",
+                        "labelPlural": "Vlocity OmniScripts",
+                        "custom": true,
+                        "customSetting": false,
+                        "activateable": false,
+                        "createable": true,
+                        "deletable": true,
+                        "deprecatedAndHidden": false,
+                        "feedEnabled": false,
+                        "hasSubtypes": false,
+                        "isSubtype": false,
+                        "keyPrefix": "a2C",
+                        "layoutable": true,
+                        "mergeable": false,
+                        "mruEnabled": true,
+                        "queryable": true,
+                        "replicateable": true,
+                        "retrieveable": true,
+                        "searchable": true,
+                        "triggerable": true,
+                        "undeletable": false,
+                        "updateable": true,
+                        "urls": {
+                            "compactLayouts": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c/describe/compactLayouts",
+                            "rowTemplate": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c/{ID}",
+                            "approvalLayouts": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c/describe/approvalLayouts",
+                            "quickActions": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c/quickActions",
+                            "describe": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c/describe",
+                            "layouts": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c/describe/layouts",
+                            "sobject": "/services/data/v55.0/sobjects/vlocity_cmt__OmniScript__c"
+                        }
+                    },
+                    {
+                        "name": "vlocity_cmt__Element__c",
+                        "label": "Vlocity Element",
+                        "labelPlural": "Vlocity Elements",
+                        "custom": true,
+                        "customSetting": false,
+                        "activateable": false,
+                        "createable": true,
+                        "deletable": true,
+                        "deprecatedAndHidden": false,
+                        "feedEnabled": false,
+                        "hasSubtypes": false,
+                        "isSubtype": false,
+                        "keyPrefix": "a1Q",
+                        "layoutable": true,
+                        "mergeable": false,
+                        "mruEnabled": true,
+                        "queryable": true,
+                        "replicateable": true,
+                        "retrieveable": true,
+                        "searchable": true,
+                        "triggerable": true,
+                        "undeletable": false,
+                        "updateable": true,
+                        "urls": {
+                            "compactLayouts": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c/describe/compactLayouts",
+                            "rowTemplate": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c/{ID}",
+                            "approvalLayouts": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c/describe/approvalLayouts",
+                            "quickActions": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c/quickActions",
+                            "describe": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c/describe",
+                            "layouts": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c/describe/layouts",
+                            "sobject": "/services/data/v55.0/sobjects/vlocity_cmt__Element__c"
+                        }
+                    },
+                    {
+                        "name": "vlocity_cmt__VlocityUITemplate__c",
+                        "label": "Vlocity UI Template",
+                        "labelPlural": "Vlocity UI Templates",
+                        "custom": true,
+                        "customSetting": false,
+                        "activateable": false,
+                        "createable": true,
+                        "deletable": true,
+                        "deprecatedAndHidden": false,
+                        "feedEnabled": false,
+                        "hasSubtypes": false,
+                        "isSubtype": false,
+                        "keyPrefix": "a42",
+                        "layoutable": true,
+                        "mergeable": false,
+                        "mruEnabled": true,
+                        "queryable": true,
+                        "replicateable": true,
+                        "retrieveable": true,
+                        "searchable": true,
+                        "triggerable": true,
+                        "undeletable": false,
+                        "updateable": true,
+                        "urls": {
+                            "compactLayouts": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c/describe/compactLayouts",
+                            "rowTemplate": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c/{ID}",
+                            "approvalLayouts": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c/describe/approvalLayouts",
+                            "quickActions": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c/quickActions",
+                            "describe": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c/describe",
+                            "layouts": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c/describe/layouts",
+                            "sobject": "/services/data/v55.0/sobjects/vlocity_cmt__VlocityUITemplate__c"
+                        }
+                    }
+                ]
+            }
+        }
+    },
     "8b35b0ba87c7df4261ef73445f96c947de3dce79": {
         "index": 1,
         "count": 1,
@@ -220,6 +354,40 @@
                         "DefaultImplementation": null
                     }
                 ]
+            }
+        }
+    },
+    "e06ab0191556ed2c0f70121f2dbf5c0b039cb740": {
+        "index": 14,
+        "count": 1,
+        "hash": "e06ab0191556ed2c0f70121f2dbf5c0b039cb740",
+        "request": {
+            "method": "GET",
+            "url": "/services/data/v55.0/tooling/query?q=select+NamespacePrefix%2C+Id%2C+Name%2C+Value%2C+Language+from+ExternalString+where+Name+in+%28%27SetValues2%27%2C%27Previous%27%2C%27Next%27%2C%27Cancel%27%2C%27Complete%27%2C%27Step2%27%2C%27SetValues1%27%2C%27SetErrors1%27%2C%27Done%27%2C%27Continue%27%2C%27Abort%27%2C%27DataRaptorExtractAction2%27%2C%27EmailAction1%27%2C%27DocuSignEnvelopeAction1%27%2C%27Delete%27%2C%27DeleteAction1%27%2C%27IntegrationProcedureAction1%27%2C%27ReviewAction1%27%2C%27HTTPAction1%27%2C%27PosttoObjectAction1%27%2C%27PDFAction1%27%2C%27MatrixAction1%27%2C%27NavigateAction1%27%2C%27New%27%2C%27DoneAction1%27%2C%27<p>Headline1<%2Fp>%27%2C%27TextBlockInDataJsonlabel%27%2C%27Block2%27%2C%27TextBlock2%27%2C%27ActionBlock1%27%2C%27Aggregate1%27%2C%27Edit%27%2C%27EditBlock1%27%2C%27Formula1%27%2C%27Fetch%27%2C%27FilterBlock1%27%2C%27Geolocation1%27%2C%27InputBlock1%27%2C%27Checkbox1%27%2C%27TypeAhead1%27%2C%27Currency1%27%2C%27RadioGroup1%27%2C%27CustomLWC2%27%2C%27Date1%27%2C%27Radio2%27%2C%27Radio+2+Label+Key+Long+String%27%2C%27Show+Radio+3%27%2C%27Date%2FTime1%27%2C%27Radio+3+Label+Key+Long+String%27%2C%27Radio+3+Label+Key+Long+String+2%27%2C%27Disclosure1%27%2C%27Email1%27%2C%27File1%27%2C%27Lookup1%27%2C%27Multi-select1%27%2C%27Select1%27%2C%27OmniScript%27%2C%27Integration+Procedure%27%2C%27Test+Procedure%27%2C%27Radio1%27%2C%27Radio1Label%27%2C%27RadioAutoAdvance%27%2C%27Text1%27%2C%27TextArea1%27%2C%27URL1%27%2C%27Time1%27%2C%27Text2%27%2C%27Block5%27%2C%27Block4%27%2C%27TextBlock5%27%2C%27Block3%27%2C%27TextBlock3%27%29",
+            "headers": {
+                "content-type": "application/json; charset=utf-8",
+                "disableFeedTracking": true
+            }
+        },
+        "response": {
+            "statusCode": 200,
+            "statusMessage": "OK",
+            "headers": {
+                "x-content-type-options": "nosniff",
+                "x-xss-protection": "1; mode=block",
+                "x-robots-tag": "none",
+                "content-type": "no-parse",
+                "vary": "Accept-Encoding",
+                "content-encoding": "gzip",
+                "transfer-encoding": "chunked"
+            },
+            "body": {
+                "size": 0,
+                "totalSize": 0,
+                "done": true,
+                "queryLocator": null,
+                "entityTypeName": "ExternalString",
+                "records": []
             }
         }
     },
