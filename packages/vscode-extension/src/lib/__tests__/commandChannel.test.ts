@@ -78,7 +78,8 @@ describe('CommandLogger', () => {
             columns: ['name', 'desc'],
             labels: { name: 'Name', desc: 'Description' },
             columnWidths: 10,
-            format: { name: v => v, desc: v => v }
+            format: { name: v => v, desc: v => v },
+            appendEmptyLine: false
         });
 
         expect(outputLines[2]).toBe('Al          Short     ');
