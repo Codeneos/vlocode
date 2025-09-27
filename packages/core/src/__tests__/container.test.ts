@@ -322,14 +322,13 @@ describe('container', () => {
 
         it('should fallback to root container when instance was created outside any container', () => {
             // Arrange
-            const rootContainer = new Container(Logger.null);
             const instance = new ServiceWithContainerProperty();
 
             // Act
             const injectedContainer = instance.container;
 
             // Assert
-            expect(injectedContainer).toBe(rootContainer);
+            expect(injectedContainer).toBe(container);
         });
     });
 });

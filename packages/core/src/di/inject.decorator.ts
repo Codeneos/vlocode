@@ -49,9 +49,6 @@ function injectParameter(target: object, parameterIndex: number, serviceType: Ob
  * @returns The service type
  */
 function getType(type: unknown) {
-    if (isConstructor(type)) {
-        return type.prototype.constructor.name ?? type.name;
-    }
     return type;
 }
 
