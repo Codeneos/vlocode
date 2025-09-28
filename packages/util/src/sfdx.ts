@@ -60,15 +60,13 @@ export interface SalesforceConfig extends Record<string, object | string | numbe
  * the SFDX log file in vlocode libraries as it can causes locks when the SFDX CLI or 
  * any of the standard SF extensions is used in parallel
  */
-try {
-    process.env.SFDX_DISABLE_LOG_FILE = 'true';
-    process.env.SF_DISABLE_LOG_FILE = 'true';
-    salesforce.Logger.root().then(logger => {
-        logger.useMemoryLogging();
-    });
-} catch {
-    // Ignore errors while updating SFDX logger
-}
+process.env.SFDX_DISABLE_LOG_FILE = 'true';
+process.env.SF_DISABLE_LOG_FILE = 'true';
+salesforce.Logger?.root().then(logger => {
+    logger.useMemoryLogging();
+}).catch(err => {
+    console.error('Error while setting SFDX logger to memory logging', err);
+});
 
 export interface SalesforceOAuth2LoginOptions {
     /**
