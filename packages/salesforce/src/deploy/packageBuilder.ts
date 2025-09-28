@@ -173,7 +173,7 @@ export class SalesforcePackageBuilder {
     private readonly plugins: [ TokenReplacementPlugin, ...SalesforcePackageBuilderPlugin[] ] = [
         // For backwards compatibility the token replacement plugin is always the first plugin
         new TokenReplacementPlugin(),
-        new TypeScriptCompilerPlugin()
+        new TypeScriptCompilerPlugin({ mode: 'transform' })
     ];
 
     @inject(Logger) private readonly logger: Logger;
