@@ -25,6 +25,15 @@
         "industries",
         "vlocity"
     ],
+    "files": [
+        "loader.mjs",
+        "dist/**/*.{mjs,js}",
+        "resources/**/*.{png,gif,svg}",
+        "syntax/**/*.json",
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE"
+    ],
     "repository": "https://github.com/codeneos/vlocode.git",
     "bugs": {
         "url": "https://github.com/Codeneos/vlocode/issues",

@@ -31,7 +31,7 @@ export default defineConfig({
   external: [...packageExternals],
   outDir: './dist',
   format: 'esm',
-  sourcemap: true,
+  sourcemap: process.env.CI !== 'true',
   shims: true,
   minify: true,
   treeshake: false,
