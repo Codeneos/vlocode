@@ -15,9 +15,9 @@ describe('TypeScriptCompilerPlugin', () => {
             'src/lwc/sample/sample.ts': 'export const answer: number = 42;'
         });
 
-    const builder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, '58.0');
-    // Inject memory FS into container (override FileSystem binding) if not already
-    container.add(fs);
+        const builder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, '58.0');
+        // Inject memory FS into container (override FileSystem binding) if not already
+        container.add(fs);
         builder.addPlugin(new TypeScriptCompilerPlugin());
         await builder.addFiles(['src/lwc/sample/sample.ts']);
 
@@ -25,5 +25,43 @@ describe('TypeScriptCompilerPlugin', () => {
         const jsEntry = pkg.getPackageData('lwc/sample/sample.js');
         expect(jsEntry).toBeTruthy();
         expect(jsEntry!.data?.toString()).toContain('export const answer');
+    });
+
+    it('transpiles (transform) .ts class with constructor properties', async () => {
+        const tsSample = 
+`export class Sample {
+    constructor(private name: string) {
+        this.name = name;
+    }
+    getName(): string {
+        return this.name;
+    }
+}`;
+        const expectedJs = 
+`export class Sample {
+    name;
+    constructor(name){
+        this.name = name;
+        this.name = name;
+    }
+    getName() {
+        return this.name;
+    }
+}`;
+
+        const fs = new MemoryFileSystem({
+            'src/lwc/sample/sample.ts-meta.xml': '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>58.0</apiVersion></LightningComponentBundle>',
+            'src/lwc/sample/sample.ts': tsSample
+        });
+
+        const builder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, '58.0');
+        container.add(fs);
+        builder.addPlugin(new TypeScriptCompilerPlugin( { mode: 'transform' } ));
+        await builder.addFiles(['src/lwc/sample/sample.ts']);
+
+        const pkg = await builder.build();
+        const jsEntry = pkg.getPackageData('lwc/sample/sample.js');
+        expect(jsEntry).toBeTruthy();
+        expect(jsEntry!.data?.toString()).toContain(expectedJs);
     });
 });
