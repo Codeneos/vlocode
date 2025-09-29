@@ -4,6 +4,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-1](https://github.com/Codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
+
+### Bug Fixes
+
+* change ILogger import to type import for better compatibility ([0ec27b7](https://github.com/Codeneos/vlocode/commit/0ec27b79727ab1d0fb8be5d28558df1a11014448))
+* update spec instance retrieval to use newDeferred for improved lazy loading of deployment specs (plugins) ([be1a6b1](https://github.com/Codeneos/vlocode/commit/be1a6b10e82f581a7bbc65236864f0f41538a0c6))
+
+### Features
+
+* **flexcard:** make FlexCardDesigner configurable and lazy-init LWC generator resources ([b7ee5be](https://github.com/Codeneos/vlocode/commit/b7ee5beec885cd7855059ed711c6a128fa58b05e))
+
 # [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
 ### Bug Fixes

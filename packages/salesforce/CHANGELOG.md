@@ -4,6 +4,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-1](https://github.com/Codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
+
+### Bug Fixes
+
+* change import of SalesforceConnectionOptions to type import for isolatedModules: true ([ee4ada3](https://github.com/Codeneos/vlocode/commit/ee4ada3b22c7a8974cf2eab1bcb629d4385d92f5))
+* do not register NamespaceService as injectable as it is a base type ([15cdca2](https://github.com/Codeneos/vlocode/commit/15cdca2c409339cfdaf25cb8130670a66876d171))
+* ensure metadata expansion sets the XML namespace ([2e45c6b](https://github.com/Codeneos/vlocode/commit/2e45c6b40c21b481353069dff3f0f4ec9ae59953))
+* errors in build system due to tsdown migration ([77f4125](https://github.com/Codeneos/vlocode/commit/77f4125ac379c000b17cdd00bcfc1b5fd222bf2d))
+* source file re-assembly fails on mac tdue to missing `\` for absolute paths ([096bef0](https://github.com/Codeneos/vlocode/commit/096bef0a0354038a9b7ee0ec994cbb40ba531fd0))
+
+### Features
+
+* implement plugin architecture for Salesforce package builder with token replacement and TypeScript compilation capabilities ([5fd3571](https://github.com/Codeneos/vlocode/commit/5fd3571fcfeb4960637c8c0be6b62d7ffa616b51))
+* introduce new ApexSourceStatus class for managing Apex class synchronization status with an org allowing for a more object oriented approach for class checks in Vlocode extension ([80811d7](https://github.com/Codeneos/vlocode/commit/80811d7c87820e93bac022701898625c6329c251))
+* **tests:** add test for TypeScript class transpilation with constructor properties ([e6ca849](https://github.com/Codeneos/vlocode/commit/e6ca849ee5a080733512907b34b09c0be21b527e))
+
 # [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
 ### Bug Fixes

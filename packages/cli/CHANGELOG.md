@@ -4,6 +4,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-1](https://github.com/Codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
+
+**Note:** Version bump only for package @vlocode/cli
+
 # [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
 **Note:** Version bump only for package @vlocode/cli

@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-1](https://github.com/Codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
+
+### Bug Fixes
+
+* add dependency injection for inner file system in CachedFileSystemAdapter constructor ([ffb4fab](https://github.com/Codeneos/vlocode/commit/ffb4fab242a6d23738489ef95c92b109912b0be8))
+* errors in build system due to tsdown migration ([77f4125](https://github.com/Codeneos/vlocode/commit/77f4125ac379c000b17cdd00bcfc1b5fd222bf2d))
+* logger.null dynamic inline class breaks when bundled by tsdown ([1454517](https://github.com/Codeneos/vlocode/commit/1454517e6984ddf3460fb2e7852afdd92a357bfb))
+* **tests:** update fallback container test to use the correct container instance ([843e5bc](https://github.com/Codeneos/vlocode/commit/843e5bc8a0bf7104b4a229de2ea844c33e3104fe))
+* update devDependencies for @types/vscode and memfs ([7f9eda8](https://github.com/Codeneos/vlocode/commit/7f9eda8df6afdb33c71ab680040237c38e6271bd))
+
+### Features
+
+* add tests for removeInstance and container injection behavior ([e4632ca](https://github.com/Codeneos/vlocode/commit/e4632ca693aa4df1320dd00c129b2a278b1e87e0))
+* **fs:** use directoryName helper and posix join for FileSystem operations ([a7eeb08](https://github.com/Codeneos/vlocode/commit/a7eeb085b909e255285070cd6e506e9ebe82700e))
+
 # [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
 **Note:** Version bump only for package @vlocode/core

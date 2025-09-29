@@ -141,7 +141,7 @@ jobs:
           command: |
             VERSION=$(cat ./artifacts/.version)
             NOTES=$(cat ./artifacts/release-notes.md)
-            [[ $VERSION =~ "-" ]] && PRERELEASE="--pre-release"
+            [[ $VERSION =~ "-" ]] && PRERELEASE="--prerelease"
             ghr ${PRERELEASE} \
               -t ${GITHUB_TOKEN} \
               -b "${NOTES}" \

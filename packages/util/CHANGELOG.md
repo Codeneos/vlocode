@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-1](https://github.com/Codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
+
+### Bug Fixes
+
+* errors in build system due to tsdown migration ([77f4125](https://github.com/Codeneos/vlocode/commit/77f4125ac379c000b17cdd00bcfc1b5fd222bf2d))
+* **sfdx:** improve error handling for SFDX logger memory logging setup ([910d747](https://github.com/Codeneos/vlocode/commit/910d747713548f2459453ea127ca176dae4c23d7))
+* update environment variable setting for disabling SFDX log file ([a923378](https://github.com/Codeneos/vlocode/commit/a923378d30138a3a5e29f7b88ceb8399431af555))
+* XML parser did not properly detect null values when using a custom attribute group node ([d36e478](https://github.com/Codeneos/vlocode/commit/d36e4789b9edfeb0b504a5fad2450dc3330689ed))
+
+### Features
+
+* add Symbol.dispose and Symbol.asyncDispose methods to AwaitableAsyncGenerator ([192b38e](https://github.com/Codeneos/vlocode/commit/192b38eec7c3bd1afc5cd02a50e864fbba75866f))
+* enable isolatedModules and strict mode by default for all packages ([fe057b8](https://github.com/Codeneos/vlocode/commit/fe057b8b19c86a53c8b3a0058120599420e31c09))
+* implement lightweight event emitter with listener management ([7415660](https://github.com/Codeneos/vlocode/commit/741566090f5cd21748fef89c9c65d3fa093cef6a))
+
 # [1.32.0](https://github.com/Codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
 ### Bug Fixes

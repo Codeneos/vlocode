@@ -4,6 +4,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-1](https://github.com/codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
+
+### Bug Fixes
+
+* correct file array construction in DeleteMetadataCommand to avoid unnecessary nesting ([33dbce7](https://github.com/codeneos/vlocode/commit/33dbce70d8a45490bb7868d3eede570a56821764))
+* correct import paths for SalesforceApexContentProvider and VirtualContentProvider for proper module resolution with tsdown ([4337b03](https://github.com/codeneos/vlocode/commit/4337b033f36e4dc2f3f13520de1060a0289c0b8f))
+* **package:** update files array in package.json and adjust sourcemap setting in tsdown.config.mts ([f504bd2](https://github.com/codeneos/vlocode/commit/f504bd26799faf8a9e9395caa5fd331c46702515))
+* settingsKey is undefined error when exporting datapacks in strict mode ([6537c6e](https://github.com/codeneos/vlocode/commit/6537c6ee81b16eb6787a22995df62a4b60331f67))
+* update build script to use correct tsdown configuration file extension ([dae68ca](https://github.com/codeneos/vlocode/commit/dae68ca6c2bd4b9411061855f55cd609c7b9bb98))
+* update imports and add VlocityNamespaceService to container in DatapackExportQueries tests ([44d8e8c](https://github.com/codeneos/vlocode/commit/44d8e8ccbc2b0a16513cd34e6e70e32901c4ab67))
+* update injectable decorator to use lifecycle policy and enhance type annotations in SfdxConfigManager ([00f43d5](https://github.com/codeneos/vlocode/commit/00f43d522f643820c48768e4e66dcfb7460efdbb))
+* update output file paths to be relative to the workspace in LWC generation ([22710b9](https://github.com/codeneos/vlocode/commit/22710b97eb489c1a705c4e34911ac22f3b955c9c))
+* **vscode:** ensure table output appends an empty line by default ([75ae99e](https://github.com/codeneos/vlocode/commit/75ae99e946b2a82279bef3b99b5fa4e5d4ce7ba6))
+* **vscode:** remove .vscodeignore file as it is no longer needed ([cbb8246](https://github.com/codeneos/vlocode/commit/cbb824607a46c6d8010388fef83ef704c202c40e))
+* YAML imported into none ECMA modules returned `default` instead ([2b591ab](https://github.com/codeneos/vlocode/commit/2b591ab1b1e0990ecdd572576c674f2a850e6142))
+
+### Features
+
+* add dynamic token replacements in deploy package for build date, instance URL, user email, name, and org ID ([6c7d2db](https://github.com/codeneos/vlocode/commit/6c7d2db42c258215ba3f03e2ad1ecf9403944ea4))
+* add folder selection dialog for target folder in CreateMetadataCommand ([cb42d15](https://github.com/codeneos/vlocode/commit/cb42d155a820092f82ca368c30aea096d29765be))
+* introduce new ApexSourceStatus class for managing Apex class synchronization status with an org allowing for a more object oriented approach for class checks in Vlocode extension ([80811d7](https://github.com/codeneos/vlocode/commit/80811d7c87820e93bac022701898625c6329c251))
+* migrate Vlocode extension build system to tsdown/rolldown ([493cc51](https://github.com/codeneos/vlocode/commit/493cc51ac3b0e50989843fcc8ab5924303bd4ec8))
+* support for beta releases ([0ff03a1](https://github.com/codeneos/vlocode/commit/0ff03a1d26ad430e090f3a58d90eec77fd4758f6))
+
 # [1.32.0](https://github.com/codeneos/vlocode/compare/v1.31.10...v1.32.0) (2025-08-16)
 
 ### Features
