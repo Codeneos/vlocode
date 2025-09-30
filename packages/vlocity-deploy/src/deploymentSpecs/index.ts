@@ -20,6 +20,9 @@ export * from './omniProcess';
 export * from './omniUiCard';
 export * from './omniDataTransform';
 
+// Standard Salesforce components
+export * from './decisionMatrix';
+
 // Multi purpose specs
 export * from './matchingFields';
 export * from './recordTypeVisibility';

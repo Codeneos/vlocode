@@ -38,6 +38,18 @@ export class MatchingFieldsSpec implements DatapackDeploymentSpec {
                 "%vlocity_namespace%__DestinationSObjectType__c",
                 "%vlocity_namespace%__SourceFieldName__c",
                 "%vlocity_namespace%__SourceSObjectType__c",
+            ],
+            CalculationMatrixVersion: [
+                "VersionNumber",
+                "CalculationMatrixId"
+            ],
+            CalculationProcedureVersion: [
+                "VersionNumber",
+                "CalculationProcedureId"
+            ],
+            CalculationMatrixColumn: [
+                "CalculationMatrixId",
+                "Name"
             ]
         } 
     };
