@@ -249,10 +249,14 @@ export class FlexCardDefinitionAccess {
             });
         }
 
-        return query.execute<OmniUiCardRecord>(this.salesforceService);
+        try {
+            return await query.execute<OmniUiCardRecord>(this.salesforceService);
+        } catch (error) {
+            return []; // Ignore errors (e.g. object not found) and return empty result
+        }
     }
 
-    private queryVlocityCardRecords(card?: FlexCardIdentifier): Promise<VlocityCardRecord[]> {
+    private async queryVlocityCardRecords(card?: FlexCardIdentifier): Promise<VlocityCardRecord[]> {
         const query = new QueryBuilder('%vlocity_namespace%__VlocityCard__c').select(...FlexCardDefinition.VlocityCardFields)
             .sortBy('%vlocity_namespace%__Version__c', 'desc');
 
@@ -270,6 +274,10 @@ export class FlexCardDefinitionAccess {
             });
         }
 
-        return query.execute<VlocityCardRecord>(this.salesforceService);
+        try {
+            return await query.execute<VlocityCardRecord>(this.salesforceService);
+        } catch (error) {
+            return []; // Ignore errors (e.g. object not found) and return empty result
+        }
     }
 }
