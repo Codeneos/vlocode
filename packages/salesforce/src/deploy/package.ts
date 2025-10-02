@@ -588,7 +588,7 @@ export class SalesforcePackage {
     }
 
     private getFileData(data: SalesforcePackageFileData, options?: { fs?: FileSystem }) {
-        if (data.data) {
+        if (data.data !== undefined) {
             return data.data;
         }
         if (data.fsPath) {

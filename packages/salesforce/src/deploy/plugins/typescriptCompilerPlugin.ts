@@ -70,7 +70,7 @@ export class TypeScriptCompilerPlugin implements SalesforcePackageBuilderPlugin 
         return {
             ...entry,
             packagePath: entry.packagePath.replace(/\.ts$/i, '.js'),
-            data: jsSource
+            data: jsSource || '/** Empty file after stripping types **/;'
         };
 	}
 }
