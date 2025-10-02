@@ -49,7 +49,7 @@ export const OmniScriptMapping: ObjectMapping = {
         "IsMetadataCacheDisabled": "%vlocity_namespace%__DisableMetadataCache__c",
         "ResponseCacheType": "%vlocity_namespace%__ProcedureResponseCacheType__c",
         "IsIntegrationProcedure": "%vlocity_namespace%__IsProcedure__c",
-        "IsOmniScriptEmbeddable": "%vlocity_namespace%__IsProcedure__c",
+        "IsOmniScriptEmbeddable": "%vlocity_namespace%__IsReusable__c",
         "IsWebCompEnabled": "%vlocity_namespace%__IsLwcEnabled__c",
         "Language": "%vlocity_namespace%__Language__c",
         "OmniProcessKey": "%vlocity_namespace%__ProcedureKey__c",
