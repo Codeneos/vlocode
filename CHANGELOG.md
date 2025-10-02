@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-2](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-1...v1.40.0-beta-2) (2025-10-02)
+
+### Bug Fixes
+
+* handle undefined data in getFileData and provide default for empty jsSource in TypeScriptCompilerPlugin ([188d12d](https://github.com/codeneos/vlocode/commit/188d12db176b3485cf827ba54e3c9cfc6e9b6b5a))
+
 # [1.40.0-beta-1](https://github.com/codeneos/vlocode/compare/v1.32.0...v1.40.0-beta-1) (2025-09-29)
 
 ### Bug Fixes
