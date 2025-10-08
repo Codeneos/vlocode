@@ -261,7 +261,7 @@ export class OmniScriptAccess {
         return [...scriptIds];
     }
 
-    private queryOmniProcessRecords(script?: OmniScriptIdentifier, options?: { limit?: number }): Promise<OmniProcessRecord[]> {
+    private async queryOmniProcessRecords(script?: OmniScriptIdentifier, options?: { limit?: number }): Promise<OmniProcessRecord[]> {
         const query = new QueryBuilder(OmniProcessRecord.SObjectType).select(...OmniProcessRecord.Fields)
             .sortBy('VersionNumber', 'desc');
 
@@ -283,10 +283,14 @@ export class OmniScriptAccess {
             query.limit(options?.limit);
         }
 
-        return query.execute<OmniProcessRecord>(this.salesforceService);
+        try {
+            return await query.execute<OmniProcessRecord>(this.salesforceService);
+        } catch (error) {
+            return []; // Ignore errors (e.g. object not found) and return empty result
+        }
     }
 
-    private queryOmniScriptRecords(script?: OmniScriptIdentifier, options?: { limit?: number }): Promise<OmniScriptRecord[]> {
+    private async queryOmniScriptRecords(script?: OmniScriptIdentifier, options?: { limit?: number }): Promise<OmniScriptRecord[]> {
         const query = new QueryBuilder(OmniScriptRecord.SObjectType).select(...OmniScriptRecord.Fields)
             .sortBy('%vlocity_namespace%__Version__c', 'desc');
 
@@ -309,7 +313,11 @@ export class OmniScriptAccess {
             query.limit(options?.limit);
         }
 
-        return query.execute<OmniScriptRecord>(this.salesforceService);
+        try {
+            return await query.execute<OmniScriptRecord>(this.salesforceService);
+        } catch (error) {
+            return []; // Ignore errors (e.g. object not found) and return empty result
+        }
     }
 
     /**
