@@ -77,8 +77,9 @@ export class MetadataExpander {
                     { 
                         [childType.name]: {
                             ...childItem,
-                            [attributeNode]: metadata[attributeNode] ?? {
-                                xmlns: MetadataRegistry.xmlNamespace
+                            [attributeNode]: {
+                                xmlns: MetadataRegistry.xmlNamespace,
+                                ...metadata[attributeNode]
                             }
                         }                        
                     }, 
