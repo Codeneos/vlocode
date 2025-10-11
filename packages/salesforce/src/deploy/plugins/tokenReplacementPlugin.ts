@@ -1,3 +1,4 @@
+import { isUtf8 } from "node:buffer";
 import { Minimatch } from "minimatch";
 import type { SalesforcePackageComponentFile } from "../package";
 import type { SalesforcePackageBuilderPlugin } from "../packageBuilderPlugin";
@@ -143,10 +144,18 @@ export class TokenReplacementPlugin implements SalesforcePackageBuilderPlugin {
      * @returns The transformed package entry.
      */
     public async transformEntry(entry: SalesforcePackageEntry) {
+        // Only apply replacements on UTF8 or ASCII text
+        if (!this.isText(entry)) {
+            return;
+        }
         for (const replacement of this.replacements) {
             if (await replacement.isMatch(entry)) {
                 entry.data = await replacement.apply(entry.data, entry.packagePath);
             }
         }
+    }
+
+    private isText(entry: SalesforcePackageEntry) {
+        return typeof entry.data === 'string' || isUtf8(entry.data);
     }
 }
