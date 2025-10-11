@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-3](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
+
+### Bug Fixes
+
+* apply token replacements only on UTF8 or ASCII text entries ([9256eaf](https://github.com/Codeneos/vlocode/commit/9256eaf3670fa94b032050c0caef55cb8fcab4a4))
+* ensure proper merging of metadata attributes in expandMetadataChildren ([6845c17](https://github.com/Codeneos/vlocode/commit/6845c17626e385396e9aff15dc77802eebad239c))
+
 # [1.40.0-beta-2](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-1...v1.40.0-beta-2) (2025-10-02)
 
 ### Bug Fixes

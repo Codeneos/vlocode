@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-3](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
+
+### Bug Fixes
+
+* correct mapping for IsOmniScriptEmbeddable to use IsReusable ([b7fe62d](https://github.com/Codeneos/vlocode/commit/b7fe62d8e90c5328f89462f6b126005bf45c65e1))
+* handle errors in query execution and return empty results for FlexCardDefinitionAccess ([1215f3a](https://github.com/Codeneos/vlocode/commit/1215f3a563396a913f2e7637f38e62aea5cd5869))
+
 # [1.40.0-beta-2](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-1...v1.40.0-beta-2) (2025-10-02)
 
 **Note:** Version bump only for package @vlocode/vlocity-deploy

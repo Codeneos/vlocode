@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-3](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
+
+### Bug Fixes
+
+* handle errors in query execution and return empty results for OmniProcess and OmniScript records ([44e3994](https://github.com/Codeneos/vlocode/commit/44e399485e810be11dbf3984b95a75aede93a7ec))
+
 # [1.40.0-beta-2](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-1...v1.40.0-beta-2) (2025-10-02)
 
 **Note:** Version bump only for package @vlocode/omniscript

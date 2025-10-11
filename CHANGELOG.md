@@ -4,6 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-3](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
+
+### Bug Fixes
+
+* apply token replacements only on UTF8 or ASCII text entries ([9256eaf](https://github.com/codeneos/vlocode/commit/9256eaf3670fa94b032050c0caef55cb8fcab4a4))
+* correct mapping for IsOmniScriptEmbeddable to use IsReusable ([b7fe62d](https://github.com/codeneos/vlocode/commit/b7fe62d8e90c5328f89462f6b126005bf45c65e1))
+* ensure proper merging of metadata attributes in expandMetadataChildren ([6845c17](https://github.com/codeneos/vlocode/commit/6845c17626e385396e9aff15dc77802eebad239c))
+* handle errors in query execution and return empty results for FlexCardDefinitionAccess ([1215f3a](https://github.com/codeneos/vlocode/commit/1215f3a563396a913f2e7637f38e62aea5cd5869))
+* handle errors in query execution and return empty results for OmniProcess and OmniScript records ([44e3994](https://github.com/codeneos/vlocode/commit/44e399485e810be11dbf3984b95a75aede93a7ec))
+
 # [1.40.0-beta-2](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-1...v1.40.0-beta-2) (2025-10-02)
 
 ### Bug Fixes
