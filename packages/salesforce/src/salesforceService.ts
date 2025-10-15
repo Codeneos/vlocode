@@ -39,8 +39,15 @@ export class SalesforceService implements SalesforceConnectionProvider {
     @inject() public readonly lookupService: SalesforceLookupService;
     @inject() public readonly deploy: SalesforceDeployService;
     @inject() public readonly logs: DeveloperLogs;
-    public readonly batch: SalesforceBatchService;
     @inject() public readonly profiles: SalesforceProfileService;
+
+    _batch: SalesforceBatchService;
+    public get batch() {
+        if (!this._batch) {
+            this._batch = (Container.get(this) ?? container).new(SalesforceBatchService);
+        }
+        return this._batch;
+    }
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
