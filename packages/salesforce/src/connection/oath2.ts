@@ -52,8 +52,8 @@ export class SalesforceOAuth2 {
             handleCookies: false,
             // OAuth endpoints do not support gzip encoding
             useGzipEncoding: false,
-            instanceUrl: options.loginUrl,
-            baseUrl: `${options.loginUrl}/services/oauth2`
+            instanceUrl: this.loginUrl,
+            baseUrl: `${this.loginUrl}/services/oauth2`
         }, LogManager.get(SalesforceOAuth2));
 
         this.clientId = options.clientId;
