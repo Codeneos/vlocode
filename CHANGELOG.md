@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-4](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-3...v1.40.0-beta-4) (2025-11-10)
+
+### Bug Fixes
+
+* batch service unavailable when packaged with ocx ([04e4b27](https://github.com/codeneos/vlocode/commit/04e4b27c7047c86682a5e0267f4e1754e0e1a0fa))
+* omniScripts compiled for standard runtime do not correctly set language property ([db23e45](https://github.com/codeneos/vlocode/commit/db23e45c27bdd5662e554800e6cd6f945f34f8f8))
+* update instance and base URL references to use class properties ([d1a411e](https://github.com/codeneos/vlocode/commit/d1a411ef9e600085bd6d247e76725b8f0ff8dffe))
+
 # [1.40.0-beta-3](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
 
 ### Bug Fixes

@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-beta-4](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-3...v1.40.0-beta-4) (2025-11-10)
+
+### Bug Fixes
+
+* omniScripts compiled for standard runtime do not correctly set language property ([db23e45](https://github.com/Codeneos/vlocode/commit/db23e45c27bdd5662e554800e6cd6f945f34f8f8))
+
 # [1.40.0-beta-3](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-2...v1.40.0-beta-3) (2025-10-11)
 
 ### Bug Fixes
