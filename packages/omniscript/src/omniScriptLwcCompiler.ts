@@ -29,18 +29,33 @@ interface OmniCompiler {
      * @param addRuntimeNamespace When in a package org, runtimeNamespace allows the use of packed LWC components.
      * @param namespace The namespace of the package
      */
-    compileActivated(componentName: string, scriptDefinition: OmniScriptDefinition, hidden: boolean, addRuntimeNamespace: boolean, namespace: string): Promise<CompiledResource[]>
+    compileActivated(
+        componentName: string, 
+        scriptDefinition: OmniScriptDefinition, 
+        hidden: boolean, 
+        addRuntimeNamespace: boolean, 
+        namespace: string
+    ): Promise<CompiledResource[]>
     
     /**
      * Creates a list of LWC components from an OmniScripts for the Core Runtime
      * @param componentName Name of the LWC component to be generated
      * @param type Type of the OmniScript
      * @param subType Subtype of the OmniScript
+     * @param language Language of the OmniScript
      * @param scriptId Id of the OmniScript
      * @param addRuntimeNamespace When in a package org, runtimeNamespace allows the use of packed LWC components.
      * @param namespace The namespace of the package
      */
-    compileForCoreRuntime(componentName: string, type: string, subType: string, scriptId: string, addRuntimeNamespace: boolean, namespace: string): Promise<CompiledResource[]>
+    compileForCoreRuntime(
+        componentName: string, 
+        type: string, 
+        subType: string, 
+        language: string, 
+        scriptId: string, 
+        addRuntimeNamespace: boolean, 
+        namespace: string
+    ): Promise<CompiledResource[]>
 }
 
 /**
@@ -124,7 +139,16 @@ export class OmniScriptLwcCompiler {
         const compiler = await this.getCompiler();
         const resources = !options?.useStandardRuntime 
             ? await compiler.compileActivated(componentName, scriptDefinition, false, true, namespace)
-            : await compiler.compileForCoreRuntime(componentName, scriptDefinition.bpType, scriptDefinition.bpSubType, scriptDefinition.sOmniScriptId, true, namespace);
+            //lwcName, type, subType, language, sId, addRuntimeNamespace, namespace
+            : await compiler.compileForCoreRuntime(
+                componentName, 
+                scriptDefinition.bpType, 
+                scriptDefinition.bpSubType, 
+                scriptDefinition.bpLang, 
+                scriptDefinition.sOmniScriptId, 
+                true, 
+                namespace
+            );
         return { 
             name: componentName, 
             resources
