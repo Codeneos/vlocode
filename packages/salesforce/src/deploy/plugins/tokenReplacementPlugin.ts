@@ -145,7 +145,7 @@ export class TokenReplacementPlugin implements SalesforcePackageBuilderPlugin {
      */
     public async transformEntry(entry: SalesforcePackageEntry) {
         // Only apply replacements on UTF8 or ASCII text
-        if (!this.isText(entry)) {
+        if (this.isBinary(entry)) {
             return;
         }
         for (const replacement of this.replacements) {
@@ -155,7 +155,21 @@ export class TokenReplacementPlugin implements SalesforcePackageBuilderPlugin {
         }
     }
 
-    private isText(entry: SalesforcePackageEntry) {
-        return typeof entry.data === 'string' || isUtf8(entry.data);
+    private isBinary(entry: SalesforcePackageEntry) {
+        if (entry.fsPath?.endsWith('.xml') || entry.packagePath.endsWith('.xml')) {
+            return false;
+        }
+
+        if (entry.componentType ===  'StaticResource' || 
+            entry.componentType ===  'ContentAsset' || 
+            entry.componentType ===  'Document') {
+            return true;
+        }
+
+        if (typeof entry.data === 'string') {
+            return false;
+        }
+
+        return !isUtf8(entry.data);
     }
 }

@@ -33,7 +33,7 @@ export default defineConfig({
   format: 'esm',
   sourcemap: process.env.CI !== 'true',
   shims: true,
-  minify: true,
+  minify: false,
   treeshake: false,
   env: {
     NODE_ENV: 'production',
