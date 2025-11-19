@@ -272,6 +272,7 @@ export class OmniScriptAccess {
                 Id: script.id,
                 Type: script.type, 
                 SubType: script.subType, 
+                Language: script.language,
                 VersionNumber: script.version, 
                 IsActive: script.active
             }, { 
