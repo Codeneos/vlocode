@@ -1,11 +1,10 @@
 import { defineConfig } from 'tsdown'
-import { globSync } from 'fs'
 
-import yaml from '../../build/plugins/yaml-loader.js';
-import fileTypesPatch from '../../build/patches/file-types.js';
-import vlocityPatch from '../../build/patches/vlocity.js';
-import dtracePatch from '../../build/patches/dtrace.js';
-import jsdomPatch from '../../build/patches/jsdom.js';
+import yaml from '../../build/plugins/yaml-loader.ts';
+import fileTypesPatch from '../../build/patches/file-types.ts';
+import vlocityPatch from '../../build/patches/vlocity.ts';
+import dtracePatch from '../../build/patches/dtrace.ts';
+import jsdomPatch from '../../build/patches/jsdom.ts';
 
 /**
  * Entry points for the VSCode extension and related tools
@@ -43,12 +42,12 @@ export default defineConfig({
   nodeProtocol: true,
   tsconfig: './tsconfig.json',
   inputOptions: {
-    keepNames: true,
     checks: {
       eval: false,
     }
   },
   outputOptions: {
+    keepNames: true,
     chunkFileNames: '[hash:23].mjs',
     legalComments: 'none'
   },
