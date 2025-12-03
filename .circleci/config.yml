@@ -112,6 +112,20 @@ jobs:
             VERSION=$(cat ./artifacts/.version)
             [[ $VERSION =~ "-" ]] && PRERELEASE="--pre-release"
             pnpx vsce publish -p "$VSCE_TOKEN" ${PRERELEASE} --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
+  publish-ovsx-extension:
+    docker:
+      - image: cimg/node:lts-browsers
+    steps:
+      - checkout_install
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: "Publish extension on open-vsx.org"
+          command: |
+            VERSION=$(cat ./artifacts/.version)
+            [[ $VERSION =~ "-" ]] && PRERELEASE="--pre-release"
+            pnpx ovsx publish -p "$OVSX_TOKEN" ${PRERELEASE} --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
+
   publish-npm-packages:
     docker:
       - image: cimg/node:lts-browsers
@@ -179,6 +193,11 @@ workflows:
             - github-release
       - publish-vsc-extension:
           context: vsce
+          filters: *filters-publish
+          requires:
+            - publish-approval
+      - publish-ovsx-extension:
+          context: ovsx
           filters: *filters-publish
           requires:
             - publish-approval
