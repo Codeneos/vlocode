@@ -1,23 +1,26 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        "module": "commonjs",
         "baseUrl": "./",
         "paths": {
+            "@vlocode/apex": ["packages/apex/src"],
             "@vlocode/core": ["packages/core/src"],
+            "@vlocode/omniscript": ["packages/omniscript/src"],
             "@vlocode/salesforce": ["packages/salesforce/src"],
+            "@vlocode/sass": ["packages/sass/src"],
             "@vlocode/util": ["packages/util/src"],
             "@vlocode/vlocity": ["packages/vlocity/src"],
-            "@vlocode/vlocity-deploy": ["packages/vlocity-deploy/src"],
-            "@vlocode/omniscript": ["packages/omniscript/src"]
+            "@vlocode/vlocity-deploy": ["packages/vlocity-deploy/src"]
         }
     },
     "include": [
+        "packages/apex/src",
         "packages/core/src",
+        "packages/omniscript/src",
         "packages/util/src",
         "packages/salesforce/src",
         "packages/vlocity/src",
         "packages/vlocity-deploy/src",
-        "packages/omniscript/src"
+        "packages/sass/src"
     ]
 }
