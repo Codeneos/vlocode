@@ -60,7 +60,7 @@ type DatapackExportOptions = Omit<ExportContext, 'parent'>;
  * Definitions for the export and expand process are stored in the {@link DatapackExportDefinitionStore} which is a singleton and can be accessed 
  * from the container using `contaioner.get(DatapackExportDefinitionStore)`.
  * 
- * @usage
+ * @example
  * ```typescript
  * const exporter = container.get(DatapackExporter);
  * // Export a datapack into an object, this object can be written to a JSON file as is

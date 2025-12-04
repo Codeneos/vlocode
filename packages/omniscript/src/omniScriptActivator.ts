@@ -232,7 +232,7 @@ export class OmniScriptActivator {
 
     /**
      * Deletes the OmniScriptDefinition__c records for the specified OmniScript
-     * @param input OmniScript to clean the script definitions for
+     * @param script OmniScript to clean the script definitions for
      */
     private async deleteScriptDefinition(script: OmniScriptRecord) {
         const results = await this.salesforceService.deleteWhere(
@@ -275,7 +275,7 @@ export class OmniScriptActivator {
 
     /**
      * Get the LWC component bundle as metadata package for the specified OmniScript
-     * @param id Id of the OmniScript
+     * @param input Id or definition of the OmniScript
      * @returns Deployable Metadata package
      */
     public async compileToPackage(input: string | OmniScriptDefinition, options?: OmniScriptLwcCompileOptions) {

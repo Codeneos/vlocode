@@ -91,7 +91,7 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
     /**
      * Get the first record of the specified SObject type, checks for both NS prefixed and non-prefixed records if the sobjectType does not have a prefix.
      * Does not replace namespace placeholders. The matching is case-sensitive
-     * @see {@link DatapackDeploymentRecord.isMatch} for the matching logic
+    * {@link DatapackDeploymentRecord.isMatch} for the matching logic
      * @param sobjectType Type of sobject to look for as string or Regular expression
      */
     public getRecordOfType(sobjectType: string | RegExp) : DatapackDeploymentRecord | undefined {
@@ -101,7 +101,7 @@ export class DatapackDeploymentRecordGroup implements Iterable<DatapackDeploymen
     /**
      * Get akk records of the specified SObject type, checks for both NS prefixed and non-prefixed records if the sobjectType does not have a prefix.
      * Does not replace namespace placeholders. The matching is case-sensitive
-     * @see {@link DatapackDeploymentRecord.isMatch} for the matching logic
+    * {@link DatapackDeploymentRecord.isMatch} for the matching logic
      * @param sobjectType Type of sobject to look for as string or Regular expression
      */
     public getRecordsOfType(sobjectType: string | RegExp) : DatapackDeploymentRecord[] {

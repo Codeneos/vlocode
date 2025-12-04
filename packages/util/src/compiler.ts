@@ -99,7 +99,7 @@ class Compiler {
  * Compiles the specified code as sandboxed function. The compiled function can be executed with a context object.
  * Optionally the context object can be mutable, allowing the compiled code to modify the context object.
  *
- * @usage
+ * @example
  * ```typescript
  * const context = { counter: 0 };
  * const code = 'return context.coounter++;';

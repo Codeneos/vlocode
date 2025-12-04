@@ -5,7 +5,7 @@ import { filterAsyncParallel, mapAsyncParallel } from '@vlocode/util';
 
 /**
  * Gets a list of datapack headers 
- * @param file Path to the file to check
+ * @param paths Path(s) to the file(s) to check
  */
 export async function getDatapackHeaders(paths: string[] | string, recursive: boolean = false) : Promise<string[]> {
     const folderSet = await mapAsyncParallel(Array.isArray(paths) ? paths : [paths] , async pathStr => {
@@ -31,7 +31,7 @@ export async function getDatapackHeaders(paths: string[] | string, recursive: bo
 
 /**
  * Simple datapack key resolution based on the folder structure
- * @param file Datapack header file path
+ * @param datapackHeaderPath Datapack header file path
  */
 export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackType: string; key: string } {
     const dirname = path.dirname(datapackHeaderPath);
@@ -44,7 +44,7 @@ export function getDatapackManifestKey(datapackHeaderPath: string) : { datapackT
 
 /**
  * Resolve the project folder of the datapack assuming the standard 2-level structure
- * @param file Datapack header file path
+ * @param datapackHeaderPath Datapack header file path
  */
 export function getExportProjectFolder(datapackHeaderPath: string) : string {
     const dirname = path.dirname(datapackHeaderPath);

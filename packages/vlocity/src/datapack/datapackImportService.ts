@@ -79,8 +79,8 @@ export class DatapackImportService {
      * This method retrieves the specified multipack, applies an optional filter to its datapacks,
      * imports the filtered datapacks, activates them, and updates their status to 'Complete'.
      * 
-     * @param multipackName - The name of the multipack to install.
-     * @param predicate - Optional. A predicate function to filter which datapacks to import.
+    * @param multipackName - The name of the multipack to install.
+    * @param options - Optional runtime options to control installation. Use `options.predicate` to provide a filter function to decide which datapacks to import.
      * @returns A promise that resolves to the import progress status of the datapacks.
      */
     public async installMultipack(

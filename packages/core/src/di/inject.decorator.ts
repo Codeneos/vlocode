@@ -37,7 +37,7 @@ function injectProperty(target: any, propertyKey: string | symbol, serviceType?:
  * Handles parameter injection by storing service type metadata.
  * @param target The target object
  * @param parameterIndex The parameter index
- * @param serviceType The service type to inject
+ * Optional service type to inject when using the decorator as a parameter decorator.
  */
 function injectParameter(target: object, parameterIndex: number, serviceType: ObjectType | LazyObjectType): void {
     Reflect.defineMetadata(symbols.InjectedParameters, getType(serviceType), target, parameterIndex.toString());
@@ -75,7 +75,7 @@ function createInjectDecorator(serviceType?: ObjectType | LazyObjectType): Prope
 /**
  * Marks a property or constructor parameter as injectable.
  * Can be used as a property or parameter decorator.
- * @param serviceType The service type to inject (optional)
+ * Optional service type to inject (when used as parameter decorator)
  * @returns A property or parameter decorator
  */
 export function inject(): PropertyDecorator;

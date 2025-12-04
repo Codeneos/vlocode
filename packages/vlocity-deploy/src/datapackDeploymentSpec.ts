@@ -34,7 +34,7 @@ export interface DeploymentSpecExecuteOptions<TArgs extends unknown[] = unknown[
  *
  * Implementers can implement any of the specified functions in this interface, all functions are optional and only the implemented functions are executed.
  *
- * For many standard datapacks spec logic is implemented under the {@link ./deploymentSpecs} folder.
+ * For many standard datapacks spec logic is implemented under the `./deploymentSpecs` folder.
  */
 export interface DatapackDeploymentSpec {
 
@@ -131,8 +131,7 @@ export interface DatapackDeploymentSpec {
     /**
      * Executed when a record fails to deploy; this hook point can be used to run any logic that should be executed
      * when a record fails to deploy such as updating the record values or changing the upsert fields.
-     * @param event DatapackDeploymentRecord that failed to deploy
-     * @param error Error that caused the record to fail; this can be a standard error or a {@link RecordError} object
+    * @param event DatapackDeploymentRecord(s) that failed to deploy
      */
     onRecordError?(event: ReadonlyArray<DatapackDeploymentRecord>): Promise<unknown> | unknown;
 }

@@ -476,10 +476,14 @@ export class DatapackDeploymentRecord {
 
     /**
      * Retrieves the unresolved dependencies of the datapack deployment record.
-     * @param type - The type of dependencies to retrieve. Can be 'lookup', 'matching', or 'all'. Default is 'all'.
      * @returns An array of unresolved dependencies.
      */    
     public getUnresolvedDependencies(): { field: string; dependency: VlocityDatapackReference; }[]       
+    /**
+     * Retrieves the unresolved dependencies of the datapack deployment record.
+     * @param type - The type of dependencies to retrieve. Can be 'lookup', 'matching', or 'all'. Default is 'all'.
+     * @returns An array of unresolved dependencies.
+     */    
     public getUnresolvedDependencies(type: 'all'): { field: string; dependency: VlocityDatapackReference; }[]       
     public getUnresolvedDependencies(type: 'lookup') : { field: string; dependency: VlocityDatapackLookupReference; }[]     
     public getUnresolvedDependencies(type: 'matching') : { field: string; dependency: VlocityDatapackMatchingReference; }[]    

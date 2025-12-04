@@ -89,7 +89,7 @@ const scopes = new Array<Container>();
  * 
  * Injectable properties are resolved lazily when they are first accessed and are cached for subsequent access on a unique symbol on the instance for which they are resolved. Resolution of injectable properties uses the container that created the instance. If the instance was created outside of a container, the root container is used to try and resolve the dependency.
  * 
- * When the container cannot resolve a dependency it will return `undefined` for properties and constructor parameters marked with {@link injectable.property} or {@link inject} decorator.
+ * When the container cannot resolve a dependency it will return `undefined` for properties and constructor parameters marked with {@link inject} decorator.
  * 
  * The DI framework requires the following tsconfig settings to be enabled:
  * - `emitDecoratorMetadata: true` (required to emit type metadata for decorated classes and properties)
@@ -563,7 +563,7 @@ export class Container {
     /**
      * Use the specified instance to provided the specified service types.
      * If an existing service is already registered for a type, it will be replaced with the new instance.
-     * @param instanceOrType the service instance
+     * @param instance the service instance
      * @param types the service types to provide
      * @returns 
      */

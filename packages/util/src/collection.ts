@@ -22,7 +22,7 @@ export function flatten<T>(array: T[], depth: number = 1) : T[] {
 
 /**
  * Get unique values from an Array based on the specified function which returns the key or object making the item unique
- * @param arr Array
+ * @param itr Iterable
  * @param uniqueKeyFunc Filter that determines uniqueness of an item
  */
 export function *unique<T, K, M = T>(itr: Iterable<T>, uniqueKeyFunc?: (item: T) => K, mapFunc?: (item: T) => M) : Generator<M> {

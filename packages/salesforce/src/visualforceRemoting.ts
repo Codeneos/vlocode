@@ -177,9 +177,8 @@ export class VisualforceRemoting {
     }
 
     /**
-     * EXecutes the specified remote APEX method using an APEX remoting call.
-     * @param remoteClass Class to call
-     * @param remoteMethod Method to call
+     * Executes the specified remote APEX method using an APEX remoting call.
+     * @param method Remote method signature or string describing the class and method (e.g. 'Class.method' or 'ns.Class.method')
      * @param params Optional list of params to pass to the call
      */
     public async invoke(method: RemoteMethodSignature | string, params?: unknown[]): Promise<VisualforceRemotingResponse> {

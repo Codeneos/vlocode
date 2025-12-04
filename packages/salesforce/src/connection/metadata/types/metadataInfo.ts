@@ -21,7 +21,7 @@ export interface SalesforceMetadata {
      * For example, for the custom field component `MyCustomObject__c.MyCustomField__c` 
      * and the namespace `MyNS`, the full name is `MyNS__MyCustomObject__c.MyCustomField__c`.
      * 
-     * @note _A namespace prefix is a 1-character to 15-character alphanumeric identifier 
+    * @remarks _A namespace prefix is a 1-character to 15-character alphanumeric identifier 
      * that distinguishes your package and its contents from other publishers’ packages. 
      * For more information, see "Register a Namespace" in Salesforce Help._
      */

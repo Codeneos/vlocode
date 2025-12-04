@@ -10,7 +10,8 @@ import unidecode from 'unidecode';
  * Compares strings for equality; by default comparisons are case insensitive
  * @param a String a
  * @param b String b
- * @param caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
+ * @param options Options or boolean indicating whether the comparison is case insensitive
+ * @param options.caseInsensitive When `options` is an object, set to `true` to perform a case-insensitive comparison
  */
 export function stringEquals(a : string | undefined | null, b: string | undefined | null, options?: { caseInsensitive: boolean } | boolean) : boolean {
     if (a === b) {
@@ -50,13 +51,13 @@ export function stringEqualsIgnoreCase(a : string | undefined | null, b: string 
 }
 
 /**
- * Checks if the specified string {@link a} ends with the specified string {@link based}.
+ * Checks if the specified string `a` ends with the specified string `b`.
  * By default the comparison is case sensitive unless specified otherwise by setting the `caseInsensitive` option to `true`.
  * If either string is null or undefined returns `false`.
  * @param a String a
  * @param b String b
  * @param options Options
- * @param options.caseInsensitive Wether or not to do a case insensitive or case-sensitive comparison
+ * @param options.caseInsensitive Whether or not to do a case insensitive or case-sensitive comparison
  */
 export function endsWith(a: string | undefined | null, b: string | undefined | null, options?: { caseInsensitive: boolean }): boolean {
     if (a === null || a === undefined) {

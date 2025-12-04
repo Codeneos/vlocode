@@ -547,7 +547,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
     /**
      * Resolve a dependency either based on the records we are deploying -or- pass it on to the lookup resolver.
-     * @param dependency Dependency
+     * @param dependency Dependency to resolve
+     * @param datapackRecord Datapack record that owns the dependency
      */
     public resolveDependency(dependency: VlocityDatapackReference, datapackRecord: DatapackDeploymentRecord) : Promise<string | undefined> {
         const record = this.resolveDependencyFromDeployment(dependency, datapackRecord);
@@ -558,8 +559,8 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
     }
 
     /**
-     * Resolve a dependency either based on the records we are deploying -or- pass it on to the lookup resolver.
-     * @param dependency Dependency
+     * Resolve the dependencies either based on the records we are deploying -or- pass them on to the lookup resolver.
+     * @param dependencies Dependency resolution requests to resolve
      */
     public async resolveDependencies(dependencies: DependencyResolutionRequest[]) {
         const unresolvedDependencies: (DependencyResolutionRequest & { index: number })[] = [];

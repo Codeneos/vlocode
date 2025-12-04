@@ -45,16 +45,16 @@ export class DatapackLookupService implements DatapackDependencyResolver {
     }
 
     /**
-     * Resolve the record if od a dependency in Salesforce; returns the real record ID of a decency.
-     * @param dependency Dependency who's ID to resolve
+     * Resolve the record if of a dependency in Salesforce; returns the real record ID of a dependency.
+     * @param dependency Dependency whose ID to resolve
      */
     public async resolveDependency(dependency: VlocityDatapackReference, datapackRecord: DatapackDeploymentRecord): Promise<string | undefined> {
         return (await this.resolveDependencies([ { datapackRecord , dependency } ]))[0].resolution;
     }
 
     /**
-     * Resolve the record if od a dependency in Salesforce; returns the real record ID of a decency.
-     * @param dependency Dependency who's ID to resolve
+     * Resolve the records for a set of dependencies in Salesforce; returns the real record IDs for each dependency.
+     * @param dependencies Array of dependency resolution requests
      */
     public async resolveDependencies(dependencies: DependencyResolutionRequest[]): Promise<Array<{ resolution: string | undefined }>> {
         const lookupResults = new Array<string | undefined>();
@@ -97,8 +97,8 @@ export class DatapackLookupService implements DatapackDependencyResolver {
 
     /**
      * Bulk lookup of records in Salesforce using the current matching key configuration;
-     * @param records Array of Records to lookup; note the index of the record corresponds to the index in the result array
-     * @returns Array with all IDs found in Salesforce; array index matches the order of the records as provided
+     * @param datapackRecords Array of Records to lookup; note the index of the datapackRecords corresponds to the index in the result array
+     * @returns Array with all IDs found in Salesforce; array index matches the order of the datapackRecords as provided
      */
     public async lookupIds(datapackRecords: DatapackDeploymentRecord[], cancelToken?: CancellationToken): Promise<Array<string | undefined>>;
     public async lookupIds(datapackRecords: DatapackDeploymentRecord[]): Promise<Array<string | undefined>> {

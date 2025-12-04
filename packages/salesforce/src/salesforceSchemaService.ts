@@ -106,9 +106,13 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
     /**
      * Describes an SObject and all it's fields using the Describe-API; any object not accessible for the current user will be return undefined.
      * @param type SObject type
-     * @param throwWhenNotFound throw an error when the Object is not found instead of returning undefined
      */
     public async describeSObject(type: string) : Promise<DescribeSObjectResult>
+    /**
+     * Describes an SObject and all it's fields using the Describe-API; any object not accessible for the current user will be return undefined.
+     * @param type SObject type
+     * @param throwWhenNotFound throw an error when the Object is not found instead of returning undefined
+     */
     public async describeSObject(type: string, throwWhenNotFound: boolean | false) : Promise<DescribeSObjectResult | undefined>
     public async describeSObject(type: string, throwWhenNotFound = true) : Promise<DescribeSObjectResult | undefined> {
         try {

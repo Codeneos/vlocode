@@ -139,7 +139,7 @@ export class SalesforceConnection extends Connection {
     /**
      * Create instance of a {@link SalesforceConnection} from any existing JS Force type connection; replacing the connection prototype and initializing local variables.
      *
-     * If the {@link connection} is already of type SalesforceConnection does not reinitialize the variables and returns the connection as is.
+    * If the `connection` is already of type SalesforceConnection does not reinitialize the variables and returns the connection as is.
      *
      * @param connection JS Force Connection to use as base
      * @param options Extra options that control initialization of the connection
@@ -217,7 +217,7 @@ export class SalesforceConnection extends Connection {
      * }]
      * ```
      *
-     * @param batchRequests Collection of subrequests to execute.
+    * @param requests Collection of subrequests to execute.
      * @param haltOnError Controls whether a batch continues to process after a subrequest fails. The default is false.
      * If the value is false and a subrequest in the batch doesn’t complete, Salesforce attempts to execute the subsequent subrequests in the batch.
      * If the value is true and a subrequest in the batch doesn’t complete due to an HTTP response in the 400 or 500 range, Salesforce halts execution. It returns an HTTP 412 status code and a BATCH_PROCESSING_HALTED error message for each subsequent subrequest. The top-level request to /composite/batch returns HTTP 200, and the hasErrors property in the response is set to true.

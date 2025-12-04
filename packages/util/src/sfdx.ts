@@ -70,7 +70,7 @@ salesforce.Logger?.root().then(logger => {
 
 export interface SalesforceOAuth2LoginOptions {
     /**
-     * Login URL to use for the login request, defaults to {@link defaultLoginUrl} when not specified.
+    * Login URL to use for the login request, defaults to {@link sfdx.defaultLoginUrl} when not specified.
      */
     instanceUrl?: string;
     /**
@@ -301,8 +301,10 @@ export namespace sfdx {
 
     /**
      * Update the currently stored access token for a username in the local SFDX configuration store
-     * @param usernameOrAlias Salesforce username or SFDX alias
-     * @param accessToken New access token to store for the specified username
+    * @param usernameOrAlias Salesforce username or SFDX alias
+    * @param tokens Object containing optional tokens to update
+    * @param tokens.accessToken New access token to store for the specified username
+    * @param tokens.refreshToken New refresh token to store for the specified username
      */
     export async function updateTokens(usernameOrAlias: string, tokens: { accessToken?: string, refreshToken?: string }): Promise<void> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
@@ -323,7 +325,7 @@ export namespace sfdx {
     /**
      * Save the specified org details to the local SFDX configuration store.
      * 
-     * If the specified {@link details} contains a username that is already known to SFDX the details will be merged.
+    * If the specified `details` contains a username that is already known to SFDX the details will be merged.
      * 
      * @param details details to save
      * @param options additional options
@@ -347,7 +349,7 @@ export namespace sfdx {
     }
 
     /**
-     * Resolves the username for an SFDX alias, if the specified {@link alias} cannot be mapped back to a valid Salesforce username returns `undefined`.
+    * Resolves the username for an SFDX alias, if the specified `alias` cannot be mapped back to a valid Salesforce username returns `undefined`.
      * @param alias SFDX Alias to resolve to a Salesforce username
      */
     export async function resolveUsername(alias: string) : Promise<string | undefined> {
@@ -357,7 +359,7 @@ export namespace sfdx {
 
     /**
      * Returns the alias for a username, if no alias is set returns the username.
-     * @param userName username to resolve the alias for
+    * @param username username to resolve the alias for
      */
     export async function resolveAlias(username: string) : Promise<string> {
         const stateAggregator = await salesforce.StateAggregator.getInstance();
@@ -378,7 +380,7 @@ export namespace sfdx {
 
     /**
      * @deprecated Use the appropriate Salesforce connection provider instead
-     * @param usernameOrAlias Username or SFDX alias for the username
+     * @param username Username for the SFDX org
      */
     export async function getSfdxForceConnection(username: string) : Promise<salesforce.Connection> {
         const org = await getOrg(username);

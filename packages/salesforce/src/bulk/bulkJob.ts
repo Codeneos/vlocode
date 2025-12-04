@@ -84,7 +84,7 @@ export interface BulkJobInfo {
     readonly totalProcessingTime: number;
     /**
      * The number of records already processed.
-     * @note This property is of type int in API version 46.0 and earlier.
+    * @remarks This property is of type int in API version 46.0 and earlier.
      */
     numberRecordsProcessed: number;
     /**

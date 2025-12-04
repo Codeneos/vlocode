@@ -105,7 +105,6 @@ export class SalesforcePackage {
      * Create a new metadata package
      * @param apiVersion API version of the package
      * @param packageDir the package directory, either package or an empty string
-     * @param fs The file system to use for loading files, can be undefined if you only add files already loaded
      */
     constructor(
         public readonly apiVersion: string,
@@ -247,7 +246,7 @@ export class SalesforcePackage {
     /**
      * Get source folder containing the specified component.
      * @param componentType Type of the component
-     * @param componentName Name of the component
+     * @param componentName Name of the component, or its full name in the form `<type>/<name>`
      * @returns Source file folder or undefined when not found
      */
     public getSourceFolder(componentType: string, componentName: string) {
@@ -264,9 +263,8 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get the sources files associated with the specified component.
-     * @param type XML Type
-     * @param name Component name
+    * Get the sources files associated with the specified component.
+    * @param component Component containing `componentType` and `componentName` to find sources for
      * @returns FS path from which the component was loaded or undefined when not loaded or not in the current package
      */
     public getComponentSourceFiles(component: SalesforcePackageComponent) {
@@ -436,7 +434,7 @@ export class SalesforcePackage {
 
     /**
      * Get all package paths for the specified component. Use this method to get all files in the package for a specific component. 
-     * Use get {@see getPackageData} to get the actual data for the package path at the specified path.
+         * Use {@link getPackageData} to get the actual data for the package path at the specified path.
      * @param component Component to get package paths for
      */
     public getPackagePaths(component: SalesforcePackageComponent): Array<string> {
@@ -480,13 +478,14 @@ export class SalesforcePackage {
     }
 
     /**
-     * Get a component in the package filtered by component name getting the first component that matches the name ignore the component type.
-     * If the specified component name is a full name the type will be extracted from the full name (format: <type>/<name>) and used to filter the component.
-     * If the component does not exist in the package the files property will be an empty array.
-     * @param componentName Name of the component
-     * @returns Component matching the specified component name in the package and it's respective files
-     */
+    * Get a component in the package filtered by component name getting the first component that matches the name ignore the component type.
+    * If the specified component name is a full name the type will be extracted from the full name (format: <type>/<name>) and used to filter the component.
+    * If the component does not exist in the package the files property will be an empty array.
+    * @param componentNameOrFullName Name of the component
+    * @returns Component matching the specified component name in the package and it's respective files
+    */
     public getComponent(componentNameOrFullName: string): SalesforcePackageComponent & { files: SalesforcePackageFileData[] };
+    
     /**
      * Get a component in the package filtered by component type and name.
      * If the component does not exist in the package the files property will be an empty array.
@@ -637,10 +636,13 @@ export class SalesforcePackage {
 
     /**
      * Try to read the metadata associated to the specified component.
-     * @param type Type of the component
-     * @param name Name of the component
+     * @param component Component to get metadata from
      * @returns Parsed XML metadata associated to the component as defined in the package
      */    
+    /**
+     * Try to read the metadata associated to the specified component by type and name.
+     * @returns Parsed XML metadata associated to the component as defined in the package
+     */
     public getPackageMetadata<T extends object = Record<string, any>>(component: SalesforcePackageComponent): T | undefined;      
     public getPackageMetadata<T extends object = Record<string, any>>(type: string, name: string): T | undefined;
     public getPackageMetadata<T extends object = Record<string, any>>(...args: unknown[]): T | undefined {

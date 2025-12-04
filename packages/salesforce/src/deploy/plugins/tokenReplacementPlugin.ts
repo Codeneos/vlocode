@@ -118,13 +118,13 @@ export class TokenReplacementPlugin implements SalesforcePackageBuilderPlugin {
     /**
      * Add a replacement token to the package builder. When building the package the token will be replaced with the replacement value.
      * Replacements are applied to all files in the package and can target specific files or metadata types or be applied globally.
-     * @usage
+    * @example
      * ```typescript
      * builder.addReplacement({
      *    token: `$CURRENT_USER`
      *    metadataTypes:
      * });
-     * @remark Avoid applying replacements globally as they can have unintended side effects.
+    * @remarks Avoid applying replacements globally as they can have unintended side effects.
      * @param replacement 
      */
     public add(replacement: ReplacementDetail | [string, string | ((file: string, data: string | Buffer) => string)]) {

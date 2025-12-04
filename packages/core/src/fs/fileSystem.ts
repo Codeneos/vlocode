@@ -174,7 +174,7 @@ export abstract class FileSystem {
      * 
      * When a depth is specified, the search does not go deeper than the specified depth.
      * 
-     * @param globPatterns Glob patterns to match
+    * @param patterns Glob patterns to match
      * @param options find options
      * @returns Async iterable of matching files and or folders
      * @example

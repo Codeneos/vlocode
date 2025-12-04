@@ -222,7 +222,7 @@ export class OmniScriptLwcCompiler {
 
     /**
      * Generated the LWC component name from the OmniScript definition
-     * @param scriptDefinition Definition of the OmniScript for which to generate the name
+     * @param script Definition of the OmniScript for which to generate the name
      */
     private getLwcName(script: OmniScriptSpecification) {
         const cpType = String(script.type).charAt(0).toLowerCase() + String(script.type).slice(1);

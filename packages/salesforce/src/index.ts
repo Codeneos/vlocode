@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  * @module @vlocode/salesforce
- * @description Salesforce connectivity and utility library exposing classes and methods to interface with Salesforce. Includes Bulk API, Metadata API, SOAP API and REST API as well as Query and Deployment services.
+ * Salesforce connectivity and utility library exposing classes and methods to interface with Salesforce. Includes Bulk API, Metadata API, SOAP API and REST API as well as Query and Deployment services.
  */
  export * from './bulk';
  export * from './connection';

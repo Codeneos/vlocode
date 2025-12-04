@@ -59,7 +59,7 @@ export class RetrieveDeltaStrategy {
 
     /**
      * Gets a list of components that have changed since the last deployment.
-     * @param metadataPackage Package to get changed components for.
+    * @param mdPackage Package to get changed components for.
      */
     public async getChangedComponents(mdPackage: SalesforcePackage, options: {
             deltaTypes?: string[];

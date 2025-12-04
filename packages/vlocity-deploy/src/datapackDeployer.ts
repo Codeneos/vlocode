@@ -282,7 +282,7 @@ export class DatapackDeployer {
 
     /**
      * Event handler running before the deployment
-     * @param datapackRecords Datapacks being deployed
+     * @param datapackGroups Datapacks being deployed
      */
     private async beforeDeployRecordGroup(deployment: DatapackDeployment, datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
         if (deployment.isCancelled) {
@@ -297,7 +297,7 @@ export class DatapackDeployer {
 
     /**
      * Event handler running after the deployment
-     * @param datapackRecords Datapacks that have been deployed
+     * @param datapackGroups Datapacks that have been deployed
      */
     private async afterDeployRecordGroup(deployment: DatapackDeployment, datapackGroups: Iterable<DatapackDeploymentRecordGroup>) {
         if (deployment.isCancelled) {
@@ -312,9 +312,8 @@ export class DatapackDeployer {
 
     /**
      * Run a datapack spec function and await the result
-     * @param datapackType Datapack type
      * @param eventType Event/function type to run
-     * @param args Arguments
+     * @param options Options for executing the spec (args, ignoreErrors, errorSeverity)
      */
     private async runSpecFunction<T extends keyof DatapackDeploymentSpec, E extends Required<DatapackDeploymentSpec>[T]>(eventType: T, options: DeploymentSpecExecuteOptions<Parameters<E>>) {
         for (const { spec, filter } of this.specRegistry.getSpecs()) {

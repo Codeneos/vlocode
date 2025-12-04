@@ -38,7 +38,7 @@ export class SalesforceDeployService {
 
     /**
      * Deploy the specified SalesforcePackage into the target org
-     * @param manifest Destructive changes to apply
+    * @param sfPackage Salesforce package to deploy
      * @param options Optional deployment options to use
      * @param token A cancellation token to stop the process
      */
@@ -49,8 +49,8 @@ export class SalesforceDeployService {
     /**
      * Deploy a package file, buffer or stream to Salesforce async and returns once the deployment is completed.
      * @param zipInput zip file, buffer or stream to deploy
-     * @param options additional deploy options
-     * @param progressOptions progress options
+    * @param options additional deploy options
+    * @param progress Progress reporter for deployment status
      */
     private async deploy(zipInput: Stream | Buffer | string | ZipArchive, options?: DeployOptions, progress?: DeploymentProgress, token?: CancellationToken) : Promise<DeployResult> {
         let checkInterval = 1000;

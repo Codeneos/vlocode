@@ -8,7 +8,7 @@ export interface StackFrame {
 
 /**
  * Gets a single stack frame from the current call stack.
- * @param stackFrame The frame number to get
+ * @param frameNumber The frame number to get
  * @returns A stack frame object that describes the request stack frame or undefined when the stack frame does not exist
  */
 export function getStackFrameDetails(frameNumber: number) : StackFrame | undefined {

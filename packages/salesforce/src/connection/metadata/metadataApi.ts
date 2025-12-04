@@ -146,8 +146,7 @@ export class MetadataApi implements DeploymentApi {
 
     /**
      * Reads metadata entries synchronously.
-     * @param type Metadata type name
-     * @param fullNames list of metadata types
+    * @param type Metadata type name
      */
     public read<K extends keyof MetadataTypes>(type: K, fullNames: string[]) : Promise<MetadataTypes[K][]>;
     public read<K extends keyof MetadataTypes>(type: K, fullNames: string) : Promise<MetadataTypes[K]>;
@@ -176,7 +175,6 @@ export class MetadataApi implements DeploymentApi {
     /**
      * Reads ALL metadata entries of a specific type synchronously and yields the results. 
      * @param type Metadata type name
-     * @param fullNames list of metadata types
      */
     public async *readAll<K extends keyof MetadataTypes>(type: K) : AsyncGenerator<MetadataTypes[K], any, undefined> {
         const metadata = await this.list( { type } );

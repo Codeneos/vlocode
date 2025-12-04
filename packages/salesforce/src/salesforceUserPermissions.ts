@@ -329,7 +329,7 @@ export class SalesforceUserPermissions {
      * Otherwise, it adds a new record type visibility entry to the metadata.
      *
      * @param recordTypeName - The name of the record type to set visibility for.
-     * @param visibility - The visibility status to set for the record type. Defaults to `true`.
+    * @param visible - The visibility status to set for the record type. Defaults to `true`.
      */
     public setRecordTypeVisibility(recordTypeName: string | { objectType: string, name: string }, visible: boolean = true) {
         const recordType = typeof recordTypeName === 'string' ? recordTypeName : `${recordTypeName.objectType}.${recordTypeName.name}`;
@@ -375,18 +375,11 @@ export class SalesforceUserPermissions {
     }
 
     /**
-     * Update an arbitrary property on the profile object. 
+     * Update entries on an array property of the profile object.
      * If the new value is different than the current value, the change will be tracked.
-     * @param target The object to update
      * @param key Property name to update
-     * @param value Value to set the property to
+     * @param value Value to set on the array property
      */
-    // private update<T extends object, K extends keyof T>(target: T, key: K, value: typeof target[K]) {
-    //     if (target[key] !== value) {
-    //         this.#hasChanges = true;
-    //         target[key] = value;
-    //     }
-    // }
 
     protected update<
         K extends keyof UserPermissionMetadata

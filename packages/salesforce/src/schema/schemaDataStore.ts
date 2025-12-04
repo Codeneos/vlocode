@@ -23,8 +23,7 @@ export class SchemaDataStore {
 
     /**
      * Add Salesforce table schema data to the store so it can be accessed at any time.
-     * @param info CustomObjectMetadata 
-     * @param describe related SObject describe results
+    * @param describe Describe result for the SObject
      */
     public addDescribe(describe: DescribeSObjectResult) {
         this.mergeStoreData(this.objectInfo, describe.name, { describe });

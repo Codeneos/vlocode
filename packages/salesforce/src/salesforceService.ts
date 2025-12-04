@@ -208,9 +208,10 @@ export class SalesforceService implements SalesforceConnectionProvider {
     /**
      * Update one or more records in Salesforce using the ID field as foreign key; by default uses the standard collections api but switches to bulk API when there.
      * @remarks For more control ove the operation users can also directly create a record batch offering more control.
-     * @param type Record types to updated; all data should have an ID field
-     * @param records record data and references
-     * @param cancelToken optional cancellation token
+    * @param type Record types to updated; all data should have an ID field
+    * @param records record data and references
+    * @param options Optional record batch options
+    * @param options.cancelToken Optional cancellation token
      */
     public update(type: string, records: Array<{ id: string; [key: string]: unknown }>, options?: RecordBatchOptions & { cancelToken?: CancellationToken }) {
         const batch = new RecordBatch(this.schema, { useBulkApi: false, chunkSize: 100, ...options });

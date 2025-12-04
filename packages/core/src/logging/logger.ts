@@ -50,32 +50,32 @@ export class Logger {
     }
 
     /**
-     * @see {@link Logger.write}
+     * {@link Logger.write}
      */
     public log(...args: any[]) : void { this.write(LogLevel.info, ...args); }
 
     /**
-     * @see {@link Logger.write}
+     * {@link Logger.write}
      */
     public info(...args: any[]) : void { this.write(LogLevel.info, ...args); }
 
     /**
-     * @see {@link Logger.write}
+     * {@link Logger.write}
      */
     public verbose(...args: any[]) : void { this.write(LogLevel.verbose, ...args); }
 
     /**
-     * @see {@link Logger.write}
+     * {@link Logger.write}
      */
     public warn(...args: any[]) : void { this.write(LogLevel.warn, ...args); }
 
     /**
-     * @see {@link Logger.write}
+     * {@link Logger.write}
      */
     public error(...args: any[]) : void { this.write(LogLevel.error, ...args); }
 
     /**
-     * @see {@link Logger.write}
+     * {@link Logger.write}
      */
     public debug(...args: any[]) : void { this.write(LogLevel.debug, ...args); }
 

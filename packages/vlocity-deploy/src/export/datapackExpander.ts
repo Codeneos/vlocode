@@ -21,7 +21,7 @@ type FieldRef = ObjectRef & { field: string };
  * Represents a Datapack Expander that expand an exported datapack into a list of files that can be written to the file system or a zip archive.
  * The expander can be used to expand a single datapack or a list of datapacks.
  *
- * @usage
+ * @example
  * ```typescript
  * const expander = container.create(DatapackExpander);
  * const result = expander.expandDatapack(datapack);

@@ -133,9 +133,9 @@ export class QueryService {
 
     /**
      * Format the value of a field to match the Salesforce object schema value so it can be inserted or uploaded
-     * @param type SObject Type
-     * @param fieldName Field Name
-     * @param options Extra options such as wrapping and escaping; both default to true
+    * @param value The value to format
+    * @param field Field metadata describing the field type
+    * @param options Extra options such as wrapping and escaping; both default to true
      */
     public static formatFieldValue(value: any, field: { type: FieldType }, options = { wrapStrings: true, escapeStrings: true }) : string {
         // TODO: should not be here!

@@ -119,7 +119,7 @@ export class SoapClient {
      * Make SOAP request.
      * @param method method name
      * @param request request body as JSON object
-     * @param debuggingHeader debugging header
+     * @param options Optional call options; include `debuggingHeader` to enable SOAP debugging
      * @returns
      */
     public request<T = object>(method: string, request: object, options?: SoapRequestOptions) : Promise<SoapClientResponse<T>> {

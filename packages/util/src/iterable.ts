@@ -4,9 +4,8 @@ type UnpackIterable<I> = I extends Iterable<infer T> ? T : never;
 export namespace Iterable {
 
     /**
-     * flatten iterable
-     * @param array Array to flatten
-     * @param depth Depth to flat to
+     * Flatten iterable
+     * @param itr Iterable to flatten
      */
     export function flatten<T>(itr: RecursiveIterable<T>): Iterable<UnpackIterable<T>> {
         return {
@@ -48,8 +47,10 @@ export namespace Iterable {
     }
 
     /**
-     * Merge two or more iterators together into a single iterable.
-     * @param itrs iterators to merge
+     * Merge iterator values into a string similar to @see Array.prototype.join
+     * @param itr Iterator
+     * @param mapFunc Optional mapping function
+     * @param seperator Separator string
      */
     export function join<T, K>(itr: Iterable<T>, mapFunc?: (item: T, index: number) => K, seperator?: string): string {
         const tragte: Iterable<unknown> = mapFunc ? Iterable.map(itr, mapFunc) : itr;
@@ -57,7 +58,7 @@ export namespace Iterable {
     }
 
     /**
-     * Merge two or more iterators together into a single iterable.
+     * Merge multiple iterators together into a single iterable.
      * @param itrs iterators to merge
      */
     export function concat<T>(...itrs: (Iterable<T> | undefined)[]): Iterable<T> {

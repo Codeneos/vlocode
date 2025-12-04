@@ -5,8 +5,8 @@ const singletonSymbol = Symbol('$singleton');
 
 /**
  * Simple function that registers any instance of a class as single and creates it when it is not existing. Instances are stored as globals which is the closest we can get to a real singleton. *
- * @param indent The unique identifier under which this property can be accessed.
- * @param factory The factory method that creates the instance when it does not exist.
+ * @param type The constructor type to create/get singleton for
+ * @param args Optional constructor arguments that will be passed to the constructor when creating the instance
  */
 export function singleton<T extends new(...args: any) => InstanceType<T>>(type: T, ...args: ConstructorParameters<T>) : InstanceType<T> {
     const ident = type.name;

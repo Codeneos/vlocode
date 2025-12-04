@@ -9,7 +9,7 @@ export interface XMLParseOptions {
      * When true the parser will trim white spaces values of text nodes. When not set defaults to true.
      * When false all whitespace characters from the text node are preserved.
      *
-     * @remark `\r\n` is normalized to `\n`
+    * @remarks `\r\n` is normalized to `\n`
      * @default true
      */
     trimValues?: boolean;
@@ -74,7 +74,7 @@ export interface XMLParseOptions {
 export interface XMLStringfyOptions {
     /**
      * When true the parser will ignore attributes and only parse the node name and value.
-     * @remark `\r\n` is normalized to `\n`
+    * @remarks `\r\n` is normalized to `\n`
      * @default true
      */
     trimValues?: boolean;
@@ -229,10 +229,16 @@ export namespace XML {
     /**
      * Convert JSON object into XML string
      * @param jsonObj JSOn Object
-     * @param indent Indent level; if set pretty prints the XML otherwise omits pretty prtining
+     * @param options Options for stringifying the XML
      * @returns
      */
     export function stringify(jsonObj: any, options?: XMLStringfyOptions) : string;
+    /**
+     * Convert JSON object into XML string with an optional indent (number or string). When an indent is specified the XML will be pretty printed.
+     * @param jsonObj JSOn Object
+     * @param indent Indent level; if set pretty prints the XML otherwise omits pretty printing
+     * @param options Additional stringify options
+     */
     export function stringify(jsonObj: any, indent?: number | string, options?: XMLStringfyOptions) : string;
     export function stringify(jsonObj: any, indent?: number | string | XMLStringfyOptions, options?: XMLStringfyOptions) : string {        
         options = typeof indent === 'object' ? indent : options;

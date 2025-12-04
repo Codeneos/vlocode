@@ -43,7 +43,7 @@ export interface IngestJobInfo extends BulkJobInfo {
     readonly apiActiveProcessingTime: number;
     /**
      * The number of records that were not processed successfully in this job.
-     * @note This property is of type int in API version 46.0 and earlier.
+    * @remarks This property is of type int in API version 46.0 and earlier.
      */
     readonly numberRecordsFailed: number;
 
@@ -87,7 +87,7 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
     /**
      * Maximum size in bytes after which the ingest job data is split into multiple chunks. Defaults to 100MB.
-     * @see {@link BulkIngestJob.chunkDataSize}
+    * {@link BulkIngestJob.chunkDataSize}
      */
     public chunkDataSize: number = BulkIngestJob.chunkDataSize;
 

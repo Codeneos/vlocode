@@ -185,10 +185,15 @@ export class HttpTransport implements Transport {
     /**
      * Make a HTTP request to the specified URL
      * @param info Request information
-     * @param options deprecated
      * @returns Promise with the response
      */    
     public httpRequest(info: HttpRequestInfo): Promise<HttpResponse>;       
+    /**
+     * Make a HTTP request to the specified URL with optional legacy options argument
+     * @param info Request information
+     * @param options Deprecated options object (unused)
+     * @returns Promise with the response
+     */
     public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse>;
     public httpRequest(info: HttpRequestInfo): Promise<HttpResponse> {
         const url = this.parseUrl(info.url);

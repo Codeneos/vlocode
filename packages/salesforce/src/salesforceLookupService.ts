@@ -62,14 +62,22 @@ export class SalesforceLookupService {
     }
 
     /**
-     * Lookup records in the target org by their record ID
-     * @param ids Iterable list of IDs
-     * @param lookupFields Fields to lookup, any fields that do not exist on the object type are ignored. In case `all` or undefined all fields are retrieved.
+     * Looks up a single record by ID.
+     * @param id The ID of the record to lookup
+     * @param lookupFields Fields to lookup; when `all` or undefined all fields are fetched
      * @param useCache Optionally use the query cache for retrieving the request records
-     * @param cancelToken Optional cancellation token to signal the method that it should quite as soon as possible.
-     * @returns Records in a Map keyed by their record ID
+     * @param cancelToken Optional cancellation token to signal the method that it should quit as soon as possible.
+     * @returns The record or undefined if it doesn't exist
      */
     public async lookupById<K extends PropertyKey>(id: string, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<{ Id: string }, K> | undefined>;
+    /**
+     * Lookup multiple records by ID and returns their values mapped by record ID
+     * @param ids Iterable list of IDs
+     * @param lookupFields Fields to lookup; when `all` or undefined all fields are fetched
+     * @param useCache Optionally use the query cache for retrieving the request records
+     * @param cancelToken Optional cancellation token to signal the method that it should quit as soon as possible.
+     * @returns Records in a Map keyed by their record ID
+     */
     public async lookupById<K extends PropertyKey>(ids: Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<Map<string, QueryResult<{ Id: string }, K>>>;
     public async lookupById<K extends PropertyKey>(ids: string | Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<{ Id: string }, K> | undefined | Map<string, QueryResult<{ Id: string }, K>>> {
         if (typeof ids === 'string') {

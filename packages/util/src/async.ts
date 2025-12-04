@@ -43,7 +43,7 @@ export function isThenable(value: any): value is PromiseLike<any> {
  * @param callback Callback function
  * @param timeout The time in ms if after which the callback did not return a true-ish value is expired
  * @param interval The interval at which to execute the callback
- * @param rejectionMessage Optional rejection message when the specified time in ms expired without the callback being resolved
+ * @param options.rejectionMessage Optional rejection message when the specified time in ms expired without the callback being resolved
  * @returns Promise
  */
 export async function poll<T>(callback: () => OptionalPromise<T | undefined>, timeout: number, interval: number = 50, options?: { rejectionMessage?: string, resolveOnTimeout?: boolean }): Promise<T> {
@@ -114,7 +114,7 @@ export function resumeOnce<A, E extends string | symbol>(
 
 /**
  * Helper method to support old NodeJS callback style on promises
- * @param this the promise object
+ * @param promise the promise object
  * @param callback the callback to register
  * @returns Promise object on which the callback is integrated
  */

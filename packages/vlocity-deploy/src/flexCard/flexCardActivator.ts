@@ -95,7 +95,7 @@ export class FlexCardActivator {
 
     /**
      * Activate the LWC component for the specified FlexCard regardless of the script is LWC enabled or not.
-     * @param id Id of the FlexCard for which to activate the LWC component
+    * @param input Id or FlexCard descriptor of the FlexCard for which to activate the LWC component
      */
     public async activateLwc(input: FlexCardIdentifier, options?: Omit<FlexCardActivationOptions, 'skipLwc'>) {
         const card = await this.lookup.findCardDefinition(input);
@@ -104,7 +104,7 @@ export class FlexCardActivator {
 
     /**
      * Get the LWC component bundle as metadata package for the specified FlexCard
-     * @param id Id of the FlexCard
+    * @param input Id or FlexCard descriptor of the FlexCard
      * @returns Deployable Metadata package
      */
     public async getMetadataPackage(input: FlexCardIdentifier) {

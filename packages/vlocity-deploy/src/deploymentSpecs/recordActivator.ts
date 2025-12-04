@@ -20,10 +20,10 @@ export class RecordActivator {
     }
 
     /**
-     * Activate the specified records of 1 specified.
-     * @param records Iterable array of records which will be activated; if the {@link recordType} is
-     * @param activator Activator function executed for each record
-     * @param recordType Optional record type filter; if set only records of the normalized record type matching will be activated
+    * Activate the specified records of one type.
+    * @param records Iterable array of records which will be activated; if the `options.recordType` is set the activator is limited to that type
+    * @param activator Activator function executed for each record
+    * @param options Optional execution options, including `recordType` filter and optional `chunkSize`.
      */
     public async activateRecords(
         records: Iterable<DeployedDatapackDeploymentRecord>, 

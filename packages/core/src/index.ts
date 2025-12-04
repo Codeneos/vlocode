@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  * @module @vlocode/core
- * @description Vlocode's core module contains core functionality such as the IoC container framework, log manager and FS abstraction layer. 
+ * Vlocode's core module contains core functionality such as the IoC container framework, log manager and FS abstraction layer.
  */
 export * from './di/container';
 export * from './di/injectable.decorator';

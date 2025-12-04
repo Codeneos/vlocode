@@ -93,7 +93,7 @@ export class SalesforceBatchService {
     }
 
     /**
-     * Aborts a running APEX job with the specified ID, get batch jobs IDs using @see {@link getBatchJobs}, @see {@link getActiveBatchJobs} or @see {@link getActiveBatchJobsOfType}.
+    * Aborts a running APEX job with the specified ID, get batch jobs IDs using {@link getBatchJobs}, {@link getActiveBatchJobs} or {@link getActiveBatchJobsOfType}.
      * Does no return an error when an job cannot be aborted but does log a warning.
      * @param ids IDs of the jobs to abort
      */
@@ -222,8 +222,8 @@ export class SalesforceBatchService {
 
     /**
      * Execute a batch class and return the ID of the scheduled batch job or throws an error when the job cannot be scheduled.
-     * @param className Class name
-     * @param params constructor arguments passed to the batch class constructor
+    * @param className Class name
+    * @param options Options for executing the batch (params are passed to the constructor)
      * @returns
      */
     public async executeBatch(className: string, options?: BatchExecuteOptions) {
@@ -251,7 +251,7 @@ export class SalesforceBatchService {
     }
 
     /**
-     * Execute a batch class and returns an awaitable promise, shortcut for @see {@link executeBatch} and @see {@link awaitBatchJob}
+    * Execute a batch class and returns an awaitable promise, shortcut for {@link executeBatch} and {@link awaitBatchJob}
      * @param className Class name
      * @param options Batch execute and await options
      * @returns
@@ -262,7 +262,7 @@ export class SalesforceBatchService {
 
     /**
      * Await the completion of a batch class and optionally log it's progress
-     * @param batchId Id of the batch job to await
+    * @param filter Id of the batch job to await or filter condition
      */
     public async awaitBatchJob(filter: string | QueryFilterCondition, options?: BatchAwaitOptions | BatchAwaitOptions['progressReport']) {
         const start = Date.now();

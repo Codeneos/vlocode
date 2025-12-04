@@ -134,7 +134,7 @@ export class FlexCardLwcCompiler {
 
     /**
      * Compile an OmniScript into a deployable Salesforce Tooling record
-     * @param scriptDefinition Definition of the OmniScript to compile
+    * @param card Definition of the FlexCard to compile
      * @param options Options to control the compilation
      * @returns 
      */
@@ -177,7 +177,7 @@ export class FlexCardLwcCompiler {
 
     /**
      * Compile and package an OmniScript into a deployable Metadata package
-     * @param scriptDefinition Definition of the OmniScript to compile
+    * @param card Definition of the FlexCard to compile
      * @param options Options to control the compilation and bundling
      * @returns 
      */
@@ -199,7 +199,7 @@ export class FlexCardLwcCompiler {
 
     /**
      * Generated the LWC component name from the OmniScript definition
-     * @param scriptDefinition Definition of the OmniScript for which to generate the name
+    * @param card Definition of the FlexCard for which to generate the name
      */
     public getLwcName(card: FlexCardDefinition) {
         const cardName = card.IsActive ? card.Name : [card.Name, (card.VersionNumber ?? 'legacy'), card.AuthorName].join('_');
