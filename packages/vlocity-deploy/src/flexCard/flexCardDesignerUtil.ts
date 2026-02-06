@@ -1,5 +1,6 @@
 /* eslint-disable */
-import { LightningComponentBundle } from "@vlocode/salesforce";
+import { LightningComponentBundle, SalesforceLabels } from "@vlocode/salesforce";
+import { container } from "@vlocode/core";
 import { deepClone, XML } from "@vlocode/util";
 
 namespace lodash {
@@ -916,6 +917,7 @@ export namespace FlexCardDesigner {
         });
         return sessionHandler;
     }
+
     function getCustomLabelTrackVariable(customLabels) {
         if (customLabels && Object.keys(customLabels).length > 0) {
             let variableString = "@track Label={";
@@ -1184,7 +1186,7 @@ export namespace FlexCardDesigner {
     }
 
     //get all components files
-    export function generateLWCFiles(lwcComponentName, item, type, mode = null, metaObject) {
+    export async function generateLWCFiles(lwcComponentName, item, type, mode = null, metaObject) {
         let files: any[] = [];
         let jsSource, defSource, htmlSource, cssSource, styleDefSource, xmlSource;
         let actualNsPrefix = nsPrefix; //for restoring nsPrefix later
@@ -1204,7 +1206,7 @@ export namespace FlexCardDesigner {
         let cardRecordId = item.Id;
         if (type === "card" && !isStdRuntime) {
             htmlSource = generateCardHtml(layoutDefinition, theme, item);
-            jsSource = generateCardJs(lwcComponentName, theme, item.Label, layoutDefinition, cardRecordId, customCssAttachmentId);
+            jsSource = generateCardJs(lwcComponentName, theme, await getCustomLabelsFromCardDefinition(item), layoutDefinition, cardRecordId, customCssAttachmentId);
             cssSource = typeof item.StylingConfiguration === "string" ? JSON.parse(item.StylingConfiguration).customStyles ? JSON.parse(item.StylingConfiguration).customStyles : "/*Custom Styles*/" : item.StylingConfiguration ? item.StylingConfiguration.customStyles ? item.StylingConfiguration.customStyles : "/*Custom Styles*/" : "/*Custom Styles*/";
             defSource = generateDefinition(item);
             styleDefSource = generataStyleDefinition();
@@ -1278,6 +1280,20 @@ export namespace FlexCardDesigner {
             nsPrefix = actualNsPrefix; //to restore nsPrefix
         }
         return files;
+    }
+
+    async function getCustomLabelsFromCardDefinition(cardDef) {
+        if (cardDef.Label) {
+            return cardDef.Label;
+        }
+
+        const labelRegex = /\{(Label\.[^}]+)\}/g;
+        const matches = [...JSON.stringify(cardDef).matchAll(labelRegex)].map(m => m[1].substring(6)); // Extract "Label.namespace.labelName" or "Label.labelName"
+        const labelKeys = Array.from(new Set(matches));
+        const salesforceLabelsService = container.get(SalesforceLabels);
+        return Object.fromEntries(
+            Object.entries(await salesforceLabelsService.getCustomLabels(labelKeys)).map(([key, label]) =>[key, label.value]
+        ));
     }
 
     function getDevNamefromCardname(cardName) {

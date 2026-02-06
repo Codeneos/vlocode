@@ -22,9 +22,13 @@ export default class GenerateLwcCommand extends DatapackCommand {
 
     private async executeWithSelection(selectedFiles: vscode.Uri[]) : Promise<void> {
         const datapacks = (await this.loadDatapacks(selectedFiles))
-            .filter(datapack => datapack.datapackType === 'OmniScript' || datapack.datapackType === 'FlexCard');
+            .filter(
+                datapack => datapack.datapackType === 'OmniScript' ||
+                datapack.datapackType === 'FlexCard' ||
+                (datapack.datapackType === 'VlocityCard' && datapack.data['%vlocity_namespace%__CardType__c'] === 'flex')
+            );
         if (datapacks.length === 0) {
-            throw new Error('Selected file is not a Vlocity OmniScript DataPack');
+            throw new Error('Selected file is not a Vlocity OmniScript or FlexCard DataPack');
         }
 
         const outputFolder = await this.promptOutputPathSelection();
@@ -41,7 +45,7 @@ export default class GenerateLwcCommand extends DatapackCommand {
             const definition = await container.new(OmniScriptDefinitionGenerator).getScriptDefinitionFromDatapack(datapack);
             return container.new(OmniScriptLwcCompiler).compile(definition, options);
         }
-        if (datapack.datapackType === 'FlexCard') {
+        if (datapack.datapackType === 'FlexCard' || datapack.datapackType === 'VlocityCard') {
             const definition = FlexCardDefinition.fromDatapack(datapack);
             return container.new(FlexCardLwcCompiler).compile(definition, options);
         }

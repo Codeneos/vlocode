@@ -288,9 +288,14 @@ export class SalesforcePackageBuilder {
             }
 
             if (metadataType.isBundle) {
-                // Only Aura and LWC are bundled at this moment
+                // Experience Bundle, Digital Experience Bundles, Only Aura and LWC are bundled at this moment
                 // Classic metadata package all related files
-                await this.addBundledSources(path.dirname(file), metadataType);
+                if (metadataType.id === 'experiencebundle' && file.endsWith('-meta.xml')) {
+                    await this.addBundledSources(file.replace(/-meta\.xml$/ig, '').split('.').shift()!, metadataType);
+                }
+                else {
+                    await this.addBundledSources(path.dirname(file), metadataType);
+                }
             }
 
             // add source
@@ -421,13 +426,16 @@ export class SalesforcePackageBuilder {
         return false;
     }
 
-    private async addBundledSources(bundleFolder: string, metadataType: MetadataType) {
+    private async addBundledSources(bundleFolder: string, metadataType: MetadataType, componentName?: string) {
         const bundleFiles = await this.fs.readDirectory(bundleFolder);
-        const componentName = bundleFolder.split(/\\|\//g).pop()!;
+        componentName = componentName ?? bundleFolder.split(/\\|\//g).pop();
         for (const file of bundleFiles) {
             const fullPath = path.join(bundleFolder, file.name);
             if (file.isFile() && this.addParsedFile(fullPath)) {
                 await this.addSingleSourceFile(fullPath, metadataType, componentName);
+            }
+            if (file.isDirectory()) {
+               await this.addBundledSources(fullPath, metadataType, componentName);
             }
         }
     }
@@ -821,6 +829,9 @@ export class SalesforcePackageBuilder {
         const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
 
         if (metadataType.isBundle) {
+            if (metadataType.id == 'experiencebundle' || metadataType.id == 'digitalexperiencebundle') {
+                return sourceFileName.split('.').shift()!;
+            }
             return metaFile.split(/\\|\//g).slice(-2).shift()!;
         }
 
@@ -848,7 +859,7 @@ export class SalesforcePackageBuilder {
         }
 
         if (metadataType.isBundle && componentPackageFolder) {
-            const componentName = fullSourcePath.split(/\\|\//g).slice(-2).shift()!;
+            const componentName = this.getPackageComponentName(fullSourcePath, metadataType);
             return path.posix.join(componentPackageFolder, componentName);
         }
 

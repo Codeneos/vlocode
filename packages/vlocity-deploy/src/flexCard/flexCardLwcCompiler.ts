@@ -76,7 +76,7 @@ export class FlexCardLwcCompiler {
         const files: Array<{
                 filepath: string, 
                 source: string 
-            }> = compiler.generateLWCFiles(name, card, 'card', null, metaObject);
+            }> = await compiler.generateLWCFiles(name, card, 'card', null, metaObject);
 
         return { 
             name: name, 

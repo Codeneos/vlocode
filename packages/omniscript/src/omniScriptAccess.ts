@@ -71,6 +71,14 @@ export class OmniScriptAccess {
     ) {        
     }
 
+    private async hasOmniProcessSObject() {
+        return await this.schema.isSObjectDefined(OmniProcessRecord.SObjectType);
+    }
+
+    private async hasOmniScriptSObject() {
+        return await this.schema.isSObjectDefined(OmniScriptRecord.SObjectType);
+    }
+    
     /**
      * Filter OmniScripts based on specified criteria. This method searches across both 
      * OmniProcess and OmniScript SObjects and returns matching records.
@@ -106,11 +114,15 @@ export class OmniScriptAccess {
     public async filter(filter?: OmniScriptIdentifier, options?: OmniScriptFilterOptions): Promise<OmniScriptRecord[]>;
     public async filter(filter?: OmniScriptIdentifier, options?: OmniScriptFilterOptions): Promise<OmniScriptRecord[]> {
         const scripts: OmniScriptRecord[] = [];
-        for (const record of await this.queryOmniProcessRecords(filter)) {
-            scripts.push(OmniScriptRecord.fromProcess(record));
+        if (await this.hasOmniProcessSObject()) {
+            for (const record of await this.queryOmniProcessRecords(filter)) {
+                scripts.push(OmniScriptRecord.fromProcess(record));
+            }
         }
-        for (const record of await this.queryOmniScriptRecords(filter)) {
-            scripts.push(OmniScriptRecord.fromScript(record));
+        if (await this.hasOmniScriptSObject()) {
+            for (const record of await this.queryOmniScriptRecords(filter)) {
+                scripts.push(OmniScriptRecord.fromScript(record));
+            }
         }
         return options?.withElements ? this.attachElements(scripts) : scripts;
     }
@@ -158,12 +170,12 @@ export class OmniScriptAccess {
             criteria.id = undefined;
         }
         
-        const processRecords = await this.queryOmniProcessRecords(id, { limit: 1 });
+        const processRecords = await this.hasOmniProcessSObject() ? await this.queryOmniProcessRecords(id, { limit: 1 }) : [];
         if (processRecords.length) {
             scriptRecord = OmniScriptRecord.fromProcess(processRecords[0]);
         }
 
-        const scriptRecords = await this.queryOmniScriptRecords(id, { limit: 1 });
+        const scriptRecords = await this.hasOmniScriptSObject() ? await this.queryOmniScriptRecords(id, { limit: 1 }) : [];
         if (scriptRecords.length) {
             scriptRecord = OmniScriptRecord.fromScript(scriptRecords[0]);
         }

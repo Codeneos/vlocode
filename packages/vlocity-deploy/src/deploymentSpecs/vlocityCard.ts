@@ -6,6 +6,7 @@ import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymen
 import { forEachAsyncParallel, getErrorMessage, Iterable, Timer } from '@vlocode/util';
 import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
 import { FlexCardActivator } from '../flexCard/flexCardActivator';
+import { RecordActivator } from './recordActivator';
 import { Container, Logger } from '@vlocode/core';
 
 @deploymentSpec({ recordFilter: /^VlocityCard__c$/i })
@@ -13,6 +14,7 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: FlexCardActivator,
+        private readonly recordActivator: RecordActivator,
         private readonly logger: Logger,
         private readonly container: Container,
     ) { }
@@ -71,7 +73,13 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
 
     public async afterDeploy(event: DatapackDeploymentEvent) {
         const packages = new Array<SalesforcePackage>();
-
+        await this.recordActivator.activateRecords(
+            Iterable.filter(
+                event.getDeployedRecords('VlocityCard__c'),
+                record => record.value('CardType__c') !== 'flex' 
+            ),
+            () => ({ Active__c: true })
+        );
         await forEachAsyncParallel(
             Iterable.filter(
                 event.getDeployedRecords('VlocityCard__c'), 

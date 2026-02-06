@@ -1,5 +1,5 @@
 import { injectable } from "@vlocode/core";
-import { QueryBuilder, RecordFactory, SalesforceService } from "@vlocode/salesforce";
+import { QueryBuilder, RecordFactory, SalesforceSchemaService, SalesforceService } from "@vlocode/salesforce";
 import { asString } from "@vlocode/util";
 import { VlocityDatapack } from "@vlocode/vlocity";
 
@@ -33,15 +33,15 @@ interface OmniUiCardRecord {
 }
 
 interface VlocityCardRecord {
-    Name: string;
-    Id: string;
-    Author: string;
-    Active: boolean;
-    Version: number;
-    IsChildCard: boolean;
-    CardType: 'flex' | 'classic';
-    Definition: string | object;
-    Styles?: string;
+    name: string;
+    id: string;
+    author: string;
+    active: boolean;
+    version: number;
+    isChildCard: boolean;
+    cardType: 'flex' | 'classic';
+    definition: string | object;
+    styles?: string;
 }
 
 export namespace FlexCardDefinition {
@@ -119,15 +119,15 @@ export namespace FlexCardDefinition {
         return {
             SObjectType: '%vlocity_namespace%__VlocityCard__c',
             ActivationField: '%vlocity_namespace%__Active__c',
-            Name: record.Name,
-            Id: record.Id,
-            VersionNumber: record.Version,
-            AuthorName: record.Author,
-            IsActive: record.Active === undefined ? true : record.Active,
-            IsChildCard: record.IsChildCard,
-            Type: record.CardType,
-            PropertySetConfig: asString(record.Definition),
-            StylingConfiguration: parseAsJsonString(record.Styles)
+            Name: record.name,
+            Id: record.id,
+            VersionNumber: record.version,
+            AuthorName: record.author,
+            IsActive: record.active === undefined ? true : record.active,
+            IsChildCard: record.isChildCard,
+            Type: record.cardType,
+            PropertySetConfig: asString(record.definition),
+            StylingConfiguration: parseAsJsonString(record.styles)
         };
     }
 
@@ -156,7 +156,15 @@ export type FlexCardIdentifier = string | { name: string, isChildCard?: boolean,
 @injectable.singleton()
 export class FlexCardDefinitionAccess {
 
-    constructor(private readonly salesforceService: SalesforceService) {        
+    constructor(private readonly salesforceService: SalesforceService, private readonly salesforceSchemaService: SalesforceSchemaService) {      
+    }
+
+    private async hasOmniUiCardSObject() {
+        return await this.salesforceSchemaService.isSObjectDefined('OmniUiCard');
+    }
+
+    private async hasVlocityCardSObject() {
+        return await this.salesforceSchemaService.isSObjectDefined('%vlocity_namespace%__VlocityCard__c');
     }
 
     /**
@@ -174,11 +182,15 @@ export class FlexCardDefinitionAccess {
      */
     public async getFlexCardDefinitions(criteria?: FlexCardIdentifier): Promise<Map<string, FlexCardDefinition>> {
         const cards: FlexCardDefinition[] = [];
-        for (const record of await this.queryOmniCardRecords(criteria)) {
-            cards.push(FlexCardDefinition.fromOmniCard(record));
+        if (await this.hasOmniUiCardSObject()) {
+            for (const record of await this.queryOmniCardRecords(criteria)) {
+                cards.push(FlexCardDefinition.fromOmniCard(record));
+            }
         }
-        for (const record of await this.queryVlocityCardRecords(criteria)) {
-            cards.push(FlexCardDefinition.fromVlocityCard(record));
+        if (await this.hasVlocityCardSObject()) {
+            for (const record of await this.queryVlocityCardRecords(criteria)) {
+                cards.push(FlexCardDefinition.fromVlocityCard(record));
+            }
         }
         const cardsByName = new Map<string, FlexCardDefinition>();
         for (const card of cards) {
@@ -200,11 +212,15 @@ export class FlexCardDefinitionAccess {
      */
     public async filterCardDefinitions(filter?: FlexCardIdentifier): Promise<FlexCardDefinition[]> {
         const cards: FlexCardDefinition[] = [];
-        for (const record of await this.queryOmniCardRecords(filter)) {
-            cards.push(FlexCardDefinition.fromOmniCard(record));
+        if (await this.hasOmniUiCardSObject()) {
+            for (const record of await this.queryOmniCardRecords(filter)) {
+                cards.push(FlexCardDefinition.fromOmniCard(record));
+            }
         }
-        for (const record of await this.queryVlocityCardRecords(filter)) {
-            cards.push(FlexCardDefinition.fromVlocityCard(record));
+        if (await this.hasVlocityCardSObject()) {
+            for (const record of await this.queryVlocityCardRecords(filter)) {
+                cards.push(FlexCardDefinition.fromVlocityCard(record));
+            }
         }
         return cards;
     }
@@ -218,16 +234,19 @@ export class FlexCardDefinitionAccess {
      * @throws Error when no FlexCard record is found for the provided identifier
      */
     public async findCardDefinition(id: FlexCardIdentifier): Promise<FlexCardDefinition> {
-        const omniCardRecords = await this.queryOmniCardRecords(id);
-        if (omniCardRecords.length) {
-            return FlexCardDefinition.fromOmniCard(omniCardRecords[0]);
+        if (await this.hasOmniUiCardSObject()) {
+            const omniCardRecords = await this.queryOmniCardRecords(id);
+            if (omniCardRecords.length) {
+                return FlexCardDefinition.fromOmniCard(omniCardRecords[0]);
+            }
         }
 
-        const vlocityCardRecords = await this.queryVlocityCardRecords(id);
-        if (vlocityCardRecords.length) {
-            return FlexCardDefinition.fromVlocityCard(vlocityCardRecords[0]);
+        if (await this.hasVlocityCardSObject()) {
+            const vlocityCardRecords = await this.queryVlocityCardRecords(id);
+            if (vlocityCardRecords.length) {
+                return FlexCardDefinition.fromVlocityCard(vlocityCardRecords[0]);
+            }
         }
-
         throw new Error(`No FlexCard record found for ID: ${JSON.stringify(id)}`);
     }
 
