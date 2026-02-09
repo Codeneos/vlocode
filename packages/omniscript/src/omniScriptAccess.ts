@@ -64,6 +64,9 @@ interface OmniScriptFindOptions {
  */
 export class OmniScriptAccess {
 
+    private isOmniProcessSObjectExists?: boolean = undefined;
+    private isOmniScriptSObjectExists?: boolean = undefined;
+
     constructor(
         private readonly salesforceService: SalesforceService, 
         private readonly lookupService: SalesforceLookupService,
@@ -72,11 +75,17 @@ export class OmniScriptAccess {
     }
 
     private async hasOmniProcessSObject() {
-        return await this.schema.isSObjectDefined(OmniProcessRecord.SObjectType);
+        if (this.isOmniProcessSObjectExists === undefined) {
+            this.isOmniProcessSObjectExists = await this.schema.isSObjectDefined(OmniProcessRecord.SObjectType);
+        }
+        return this.isOmniProcessSObjectExists;
     }
 
     private async hasOmniScriptSObject() {
-        return await this.schema.isSObjectDefined(OmniScriptRecord.SObjectType);
+        if (this.isOmniScriptSObjectExists === undefined) {
+            this.isOmniScriptSObjectExists = await this.schema.isSObjectDefined(OmniScriptRecord.SObjectType);
+        }
+        return this.isOmniScriptSObjectExists;
     }
     
     /**

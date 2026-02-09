@@ -156,15 +156,24 @@ export type FlexCardIdentifier = string | { name: string, isChildCard?: boolean,
 @injectable.singleton()
 export class FlexCardDefinitionAccess {
 
+    private isOmniUiCardSObjectExists?: boolean = undefined;
+    private isVlocityCardSObjectExists?: boolean = undefined;
+
     constructor(private readonly salesforceService: SalesforceService, private readonly salesforceSchemaService: SalesforceSchemaService) {      
     }
 
     private async hasOmniUiCardSObject() {
-        return await this.salesforceSchemaService.isSObjectDefined('OmniUiCard');
+        if (this.isOmniUiCardSObjectExists === undefined) {
+            this.isOmniUiCardSObjectExists = await this.salesforceSchemaService.isSObjectDefined('OmniUiCard');
+        }
+        return this.isOmniUiCardSObjectExists;
     }
-
+    
     private async hasVlocityCardSObject() {
-        return await this.salesforceSchemaService.isSObjectDefined('%vlocity_namespace%__VlocityCard__c');
+        if (this.isVlocityCardSObjectExists === undefined) {
+            this.isVlocityCardSObjectExists = await this.salesforceSchemaService.isSObjectDefined('%vlocity_namespace%__VlocityCard__c');
+        }
+        return this.isVlocityCardSObjectExists;
     }
 
     /**
