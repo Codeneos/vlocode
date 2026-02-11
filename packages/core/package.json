@@ -61,7 +61,6 @@
         "fast-glob": "^3.3.3",
         "luxon": "^3.4.4",
         "memfs": "^4.43.0",
-        "minimatch": "^10.0.1",
         "reflect-metadata": "^0.1.13",
         "unique-names-generator": "^4.6.0"
     },

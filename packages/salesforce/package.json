@@ -77,7 +77,7 @@
         "jsforce": "1.11.0",
         "jszip": "^3.7.0",
         "luxon": "^3.4.4",
-        "minimatch": "^10.0.1",
+        "minimatch": "^10.1.2",
         "tough-cookie": "^4.1.2"
     },
     "publisher": "curlybracket",
