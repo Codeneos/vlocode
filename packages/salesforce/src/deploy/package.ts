@@ -213,7 +213,7 @@ export class SalesforcePackage {
             componentType = componentType.componentType;
         }
         if (!componentName) {
-            throw new Error(`Component name cannot be empty when adding metadata to a package`);
+            throw  new Error(`Component name cannot be empty when adding metadata to a package`);
         }
         if (!componentType) {
             throw new Error(`Component type cannot be empty when adding metadata to a package`);

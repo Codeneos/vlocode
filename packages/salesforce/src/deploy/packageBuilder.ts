@@ -1,6 +1,7 @@
 import * as path from 'path';
 import chalk from 'chalk';
 import ZipArchive from 'jszip';
+import { Minimatch } from 'minimatch';
 
 import { Logger, injectable, CachedFileSystemAdapter , FileSystem, Container, container, inject } from '@vlocode/core';
 import { cache, substringAfterLast , Iterable, XML, CancellationToken, FileSystemUri, substringBeforeLast, stringEquals, clearCache, stringEqualsIgnoreCase } from '@vlocode/util';
@@ -175,6 +176,19 @@ export class SalesforcePackageBuilder {
         new TokenReplacementPlugin(),
         new TypeScriptCompilerPlugin({ mode: 'transform' })
     ];
+
+    /** 
+     * Generic ignore patterns for common unwanted files and directories. 
+     * TODO: load this from .forceignore when present on the fs
+     * */
+    private ignorePatterns = [
+        '**/.DS_Store',
+        '**/.sf',
+        '**/.sfdx',
+        '**/lwc/**/__test__/**',
+        '**/lwc/**/jsconfig.json',
+        '**/lwc/**/tsconfig.json',
+    ].map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
 
     @inject(Logger) private readonly logger: Logger;
     @inject(FileSystem) private readonly fs: FileSystem;
@@ -369,6 +383,12 @@ export class SalesforcePackageBuilder {
             }
 
             if (!this.addParsedFile(file)) {
+                continue;
+            }
+
+            // Ignore files matching ignore patterns
+            if (this.ignorePatterns.some(pattern => pattern.match(file))) {
+                this.logger.verbose(`Ignoring file ${file} matching global ignore patterns`);
                 continue;
             }
 
