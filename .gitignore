@@ -3,6 +3,7 @@ node_modules
 retire-cache
 *.vsix
 .*
+.DS_Store
 !.gitignore
 !.github
 testReports

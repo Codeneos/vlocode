@@ -40,6 +40,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private initializePromise?: Promise<void>;
     private refreshOAuthTokensPromise?: Promise<boolean>;
     private errorHandlerMarker = Symbol('errorHandlerAttached');
+    private isManagedPackageInstalled?: boolean;
 
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly events = {
@@ -55,7 +56,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private _datapackService?: VlocityDatapackService;
     public get datapackService(): VlocityDatapackService {
         if (!this._datapackService) {
-            throw new Error('Vlocode is not initialized; VlocityDatapackService is null');
+            throw new Error('Industries or Omnistudio is not found on the target org; datapack services are not available');
         }
         return this._datapackService;
     }
@@ -63,7 +64,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private _salesforceService?: SalesforceService;
     public get salesforceService(): SalesforceService {
         if (!this._salesforceService) {
-            throw new Error('Vlocode is not initialized; SalesforceService is null');
+            throw new Error('Vlocode is yet not initialized...');
         }
         return this._salesforceService;
     }
@@ -76,8 +77,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
      * Validate that the Vlocode primary services are initailized.
      */
     public get isInitialized() {
-        return this._datapackService !== undefined &&
-            this._salesforceService !== undefined;
+        return this._salesforceService !== undefined;
     }
 
     public get commands() : CommandRouter {
@@ -140,8 +140,11 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this._salesforceService = container.get(SalesforceService);                
                 this.showStatus('$(sync~spin) Initializing datapack services...');
                 await this.nsService.initialize(this._salesforceService);
+                this.isManagedPackageInstalled = this.nsService.isManagedPackageInstalled();
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
-                await container.get(VlocityMatchingKeyService).initialize();
+                if (this.isManagedPackageInstalled) {
+                    await container.get(VlocityMatchingKeyService).initialize();
+                }
             }
             this.updateExtensionStatus();
         } catch (err: any) {

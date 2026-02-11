@@ -37,7 +37,7 @@
                     ],
                     "background": {
                         "beginsPattern": "Build start$",
-                        "endsPattern": "Build complete in \\d+ms$"
+                        "endsPattern": "((Build complete)|Rebuilt) in \\d+ms.$"
                     }
                 },
             ]
@@ -76,7 +76,7 @@
                     ],
                     "background": {
                         "beginsPattern": "Build start$",
-                        "endsPattern": "Build complete in \\d+ms$"
+                        "endsPattern": "((Build complete)|Rebuilt) in \\d+ms.$"
                     }
                 },
             ]

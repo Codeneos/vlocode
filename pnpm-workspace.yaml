@@ -3,7 +3,6 @@ packages:
   - '!**/test/**'
 
 publicHoistPattern:
-  - 'ts-node'
   - 'eslint'
   - 'tslib'
   - 'eslint-config-*'
@@ -14,7 +13,10 @@ publicHoistPattern:
   - 'rollup'
 
 resolutionMode: highest
-
 dedupeDirectDeps: true
-
 preferWorkspacePackages: true
+shellEmulator: true
+strictPeerDependencies: true
+
+catalog:
+  typescript: "5.9.3"
