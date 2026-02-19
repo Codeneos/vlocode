@@ -1,6 +1,9 @@
 import { visitObject } from "@vlocode/util";
 
-export class NamespaceService {
+export abstract class NamespaceService {
+
+    public abstract getNamespace(): string | undefined;
+
     /**
      * Replaces a namespace place holder with the actual namespace in the target org
      * @param namespacedString 

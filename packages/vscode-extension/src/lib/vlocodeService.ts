@@ -40,7 +40,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private initializePromise?: Promise<void>;
     private refreshOAuthTokensPromise?: Promise<boolean>;
     private errorHandlerMarker = Symbol('errorHandlerAttached');
-    private isManagedPackageInstalled?: boolean;
+
+    private isOmnistudioInstalled?: boolean;
+    private isVlocityInstalled?: boolean;
 
     private readonly diagnostics: { [key : string] : vscode.DiagnosticCollection } = {};
     private readonly events = {
@@ -140,9 +142,10 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this._salesforceService = container.get(SalesforceService);                
                 this.showStatus('$(sync~spin) Initializing datapack services...');
                 await this.nsService.initialize(this._salesforceService);
-                this.isManagedPackageInstalled = this.nsService.isManagedPackageInstalled();
+                this.isOmnistudioInstalled = /omnistudio/ig.test(this.nsService.getNamespace() ?? '');
+                this.isVlocityInstalled = /vlocity/ig.test(this.nsService.getNamespace() ?? '');
                 this._datapackService = await container.get(VlocityDatapackService).initialize();
-                if (this.isManagedPackageInstalled) {
+                if (this.isVlocityInstalled) {
                     await container.get(VlocityMatchingKeyService).initialize();
                 }
             }

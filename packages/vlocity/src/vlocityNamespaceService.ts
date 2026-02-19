@@ -24,15 +24,6 @@ export class VlocityNamespaceService extends NamespaceService {
     }
 
     /**
-     * Checks if the vlocity managed package is installed by checking if a namespace is available   
-     * @returns true if the vlocity managed package is installed, false otherwise
-     */
-    public isManagedPackageInstalled() {
-        this.checkInitialized();
-        return this.vlocityNamespace !== null;
-    }
-
-    /**
      * Replace the name space with a placeholder string
      * @param name text to update
      */
@@ -80,6 +71,7 @@ export class VlocityNamespaceService extends NamespaceService {
             this.logger.info(`Initialized Omnistudio namespace to ${chalk.bold(namespace)} [${timer.stop()}]`);
         }
 
+        this.isInitialized = true;
         return namespace;
     }
 
