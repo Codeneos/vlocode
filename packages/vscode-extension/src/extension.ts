@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import * as vscode from 'vscode';
 import vlocityPackageManifest from 'vlocity/package.json';
 
@@ -24,7 +25,6 @@ import OnSavedEventHandler from './events/onFileSaved';
 import { ApexLogSymbolProvider } from './symbolProviders/apexLogSymbolProvider';
 import OnMetadataRenamed from './events/onMetadataRenamed';
 import OnDatapackRenamed from './events/onDatapackRenamed';
-import { NamespaceService } from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
 
 import './commands';

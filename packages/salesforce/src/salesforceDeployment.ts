@@ -25,6 +25,7 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     private lastPrintedLogStamp = 0;
     private pollCount = 0;
     private nextProgressTimeoutId: NodeJS.Timeout;
+    private lastLoggedErrorCount = 0;
 
     /**
      * Interval in milliseconds in which data is reported back on the `progress` event
@@ -220,8 +221,10 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     }
 
     private async checkDeployment() {
-        const status = await this.connection.metadata.checkDeployStatus(this.deploymentId, true);
-        this.lastStatus = this.processDeployResult(status);
+        const status = this.processDeployResult(
+            await this.connection.metadata.checkDeployStatus(this.deploymentId, true)
+        );
+        this.lastStatus = status;
 
         // Reduce polling frequency for long running deployments
         if (this.pollCount++ > 10 && this.checkInterval < 5000) {
@@ -235,6 +238,15 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
                 `Deployment ${status.id} -- ${status.status} ` +
                 `${status.numberComponentsTotal ? `(${status.numberComponentsDeployed ?? 0}/${status.numberComponentsTotal ?? 0})` : ''}` +
                 `${status.numberComponentErrors ? ` -- Errors ${status.numberComponentErrors}` : ''}`);
+
+            const currentErrorCount = status.numberComponentErrors ?? 0;
+            if (currentErrorCount !== this.lastLoggedErrorCount) {
+                const newFailures: FailureDeployMessage[] = status.details?.componentFailures.slice(currentErrorCount) ?? [];
+                for (const failure of newFailures) {
+                    this.logger.error(this.formatFailureMessage(failure));
+                }
+                this.lastLoggedErrorCount = currentErrorCount;
+            }
 
             if (status.numberComponentsTotal !== undefined) {
                 void this.emit('progress', {
@@ -304,5 +316,14 @@ export class SalesforceDeployment extends AsyncEventEmitter<SalesforceDeployment
     private isDependentClassError(failure: FailureDeployMessage) {
         return failure.lineNumber === -1 && failure.columnNumber === -1 && 
             failure.problem.includes('Dependent class is invalid');
+    }
+
+    private formatFailureMessage(failure: FailureDeployMessage) {
+        const location = failure.fileName
+            ? `${failure.fileName}${failure.lineNumber != null ? `:${failure.lineNumber}` : ''}${failure.columnNumber != null ? `:${failure.columnNumber}` : ''}`
+            : failure.fullName ?? failure.componentType;
+
+        const prefix = failure.problemType === 'Warning' ? 'Warning' : 'Error';
+        return `${prefix} in ${failure.componentType ?? 'component'} ${failure.fullName ?? ''}${location ? ` (${location})` : ''}: ${failure.problem}`.trim();
     }
 }
