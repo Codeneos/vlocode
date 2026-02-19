@@ -2,6 +2,7 @@ import 'jest';
 import { Logger, container, Container, LifecyclePolicy, inject } from '../';
 import { ServiceImplCircular } from './container.circular';
 import { CircularRef } from './container.circular.ref';
+import { wrap } from '@vlocode/util';
 
 describe('container', () => {
 
@@ -196,6 +197,42 @@ describe('container', () => {
             // Assert
             expect(instance.service).not.toBeUndefined();
             expect(instance.service).toBeInstanceOf(ServiceImpl);
+        });
+
+        it('should support combining @wrap with @inject on a property', () => {
+            abstract class WrappedServiceShape {
+                public abstract name(): string;
+            }
+
+            class WrappedServiceImpl extends WrappedServiceShape {
+                public name(): string {
+                    return 'base';
+                }
+            }
+
+            class WrappedServiceAdapter extends WrappedServiceShape {
+                constructor(private readonly inner: WrappedServiceShape) {
+                    super();
+                }
+
+                public name(): string {
+                    return `wrapped:${this.inner.name()}`;
+                }
+            }
+
+            class ServiceWithWrappedInjectedProperty {
+                @wrap(WrappedServiceAdapter)
+                @inject(WrappedServiceShape)
+                public service: WrappedServiceShape;
+            }
+
+            const testContainer = new Container(Logger.null);
+            testContainer.add(WrappedServiceImpl, { provides: [WrappedServiceShape] });
+
+            const instance = testContainer.new(ServiceWithWrappedInjectedProperty);
+
+            expect(instance.service).toBeInstanceOf(WrappedServiceAdapter);
+            expect(instance.service.name()).toBe('wrapped:base');
         });
 
         // it('should resolve named dependencies using @inject("DEP_NAME") syntax', () => {

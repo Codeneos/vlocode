@@ -33,4 +33,5 @@ export * from './timedMap';
 export * from './timer';
 export * from './transactionalMap';
 export * from './validate';
+export * from './wrap';
 export * from './xml';
