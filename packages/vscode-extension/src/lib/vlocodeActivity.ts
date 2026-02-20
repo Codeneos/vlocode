@@ -70,7 +70,8 @@ export interface ActivityOptions {
      */
     hidden?: boolean;
     /**
-     * Task runner throws exceptions back to so they can be caught by the called
+     * Task runner throws exceptions back to so they can be caught by the called.
+     * Defaults to `true` 
      */
     propagateExceptions?: boolean;
 }

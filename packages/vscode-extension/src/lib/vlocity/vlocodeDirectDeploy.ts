@@ -118,7 +118,7 @@ export class VlocodeDirectDeployment implements VlocityDeploy {
         }
 
         if (casecadeFailedDatapacks.length) {
-            this.logger.warn(`Partially deployed due to depedency errors (${casecadeFailedDatapacks.length}):`);
+            this.logger.warn(`Partially deployed due to dependency errors (${casecadeFailedDatapacks.length}):`);
             Iterable.forEach(casecadeFailedDatapacks, (key, i) => {
                 this.logger.warn(` ${i + 1}. ${key}`);
             });

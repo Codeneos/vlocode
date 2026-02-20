@@ -104,7 +104,7 @@ export default class RetrieveMetadataCommand extends MetadataCommand {
         this.logger.info(`Retrieving ${manifest.count()} components`);
 
         await this.vlocode.withActivity({
-            activityTitle: `Retrieve ${manifest.count()} metatdata components`,
+            activityTitle: `Retrieve ${manifest.count()} metadata components`,
             progressTitle: `Retrieving ${manifest.count()} components...`,
             location: vscode.ProgressLocation.Notification,
             propagateExceptions: true,

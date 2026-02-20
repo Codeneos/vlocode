@@ -102,7 +102,7 @@ export function resumeOnce<A, E extends string | symbol>(
         let isTimeout = false;
         timeout && wait(timeout).then(() => {
             isTimeout = true;
-            reject(new Error(`Event '${String(eventName)}' not emmited within the set timeout of ${timeout}ms`));
+            reject(new Error(`Event '${String(eventName)}' not emitted within the set timeout of ${timeout}ms`));
         });
         emitter.once(eventName, (...args: A[]) => {
             if (!isTimeout) {

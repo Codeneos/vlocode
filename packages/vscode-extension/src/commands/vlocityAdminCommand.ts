@@ -31,7 +31,7 @@ export class VlocityAdminCommand extends CommandBase {
             name: VlocodeCommand.refreshProductHierarchy
         },        
         {
-            title: 'Product catagory data maintenance',
+            title: 'Product category data maintenance',
             icon: 'group-by-ref-type',
             detail: 'This job will populate product category data for all products.',
             command: { batchSize: 200, methodName: 'startProductCategoryDataBatchJobs' }
@@ -39,7 +39,7 @@ export class VlocityAdminCommand extends CommandBase {
         {
             title: 'Clear Managed Platform Cache',
             icon: 'trashcan',
-            detail: 'This will clear platform cache partion',
+            detail: 'This will clear platform cache partition',
             command: { methodName: 'clearPlatformCache' },
             name: VlocodeCommand.clearPlatformCache
         },

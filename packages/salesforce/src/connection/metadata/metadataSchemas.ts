@@ -15287,13 +15287,13 @@ export const Operations: Record<string, Operation | undefined> = {
     },
     'checkDeployStatus': {		
         name: 'checkDeployStatus', 
-        description: 'Check the current status of an asyncronous deploy call.', 
+        description: 'Check the current status of an asynchronous deploy call.', 
         request: CheckDeployStatusSchema, 
         response: CheckDeployStatusResponseSchema, 
     },
     'checkRetrieveStatus': {		
         name: 'checkRetrieveStatus', 
-        description: 'Check the current status of an asyncronous deploy call.', 
+        description: 'Check the current status of an asynchronous retrieve call.', 
         request: CheckRetrieveStatusSchema, 
         response: CheckRetrieveStatusResponseSchema, 
     },

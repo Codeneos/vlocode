@@ -150,8 +150,8 @@ export class DatapackLookupService implements DatapackDependencyResolver {
         if (duplicateLookups.length) {
             duplicateLookups.flat().forEach(lookup => {
                 lookup.reportWarning(
-                    `Current matching key field configuration causes 2 datapack SObjects to execute an indentical lookup;` + 
-                    `delete the matching key from the org or update it so that it uniquely indentifies a records`
+                    `Current matching key field configuration causes 2 datapack SObjects to execute an identical lookup;` + 
+                    `delete the matching key from the org or update it so that it uniquely identifies a record`
                 );
                 // Do not do a lookup for this record
                 remove(lookupRequests, l => l.index === lookup.index);

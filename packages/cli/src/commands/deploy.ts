@@ -30,7 +30,7 @@ export default class extends SalesforceCommand {
             `delete embedded dependencies with matching keys after the primary datapack record is deployed. ` +
             `By default Vlocode will only delete child records that do not have a matching key configuration, ` +
             `with this flag Vlocode will delete all child records that have a lookup relationships to the primary datapack record. ` +
-            `For example; when deploying a Product2 datapack this flag will delete all child item records found in the targer org with a lookup to the Product2 datapack that is deployed.`
+            `For example; when deploying a Product2 datapack this flag will delete all child item records found in the target org with a lookup to the Product2 datapack that is deployed.`
         ).default(false),
         new Option('--lookup-failed', 'lookup dependencies that fail to deploy in the org').default(false),
         new Option('--allow-unresolved', 
@@ -41,7 +41,7 @@ export default class extends SalesforceCommand {
         new Option('--retry-count <count>', 'the number of times a record deployment is retried before failing it').default(1),
         new Option('--bulk-api', 
             'use the Salesforce bulk API to update and insert records' +
-            'Using the Bulk API for deployments is signifcantly slower comapred to the standard Salesforce API and should only be used ' +
+            'Using the Bulk API for deployments is significantly slower compared to the standard Salesforce API and should only be used ' +
             'to reduce the number of call outs made during the deployment'
         ).default(false),
         new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
@@ -50,7 +50,7 @@ export default class extends SalesforceCommand {
             `By default Vlocode determines deployment order based on record level dependencies, ` +
             `this allows for more optimal chunking improving the overall speed of the deployment. ` +
             `By setting this option to true Vlocode also enforces that any datapack that is dependent on another datapack is deployed after the datapack it depends on. ` +
-            `This reduces deployment speed but can improve comaptibility, enable this option when you experience issues with deployment order.`
+            `This reduces deployment speed but can improve compatibility, enable this option when you experience issues with deployment order.`
         ).default(false),
         new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
         new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),

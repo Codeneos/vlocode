@@ -9,6 +9,7 @@ import { vscodeCommand } from '../../lib/commandRouter';
 import MetadataCommand from './metadataCommand';
 import { container } from '@vlocode/core';
 import { DateTime } from 'luxon';
+import { TokenReplacementPlugin } from '@vlocode/salesforce/src/deploy/plugins/tokenReplacementPlugin';
 
 /**
  * Command for handling addition/deploy of Metadata components in Salesforce
@@ -71,7 +72,11 @@ export default class DeployMetadataCommand extends MetadataCommand {
  
     protected async deployMetadata(selectedFiles: vscode.Uri[], options?: { delta?: boolean }) {
         // build package
-        const sfPackage = await this.buildDeployPackage(selectedFiles, options);
+        const sfPackage = await this.vlocode.withActivity({
+            progressTitle: `Building package...`,
+            hidden: true
+        }, this.buildDeployPackage(selectedFiles, options));
+        
         if (!sfPackage) {
             return void vscode.window.showWarningMessage('No deployable components found in the selected files');
         }
@@ -104,15 +109,20 @@ export default class DeployMetadataCommand extends MetadataCommand {
     }
 
     private async buildDeployPackage(files: Iterable<(vscode.Uri | string)>, options?: { delta?: boolean }) {
-        const packageBuilder = container.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion());
-
-        // Add generic replacements
+        const packageBuilder = container.new(SalesforcePackageBuilder, SalesforcePackageType.deploy, this.vlocode.getApiVersion())
         const connection = await this.vlocode.getJsForceConnection();
-        packageBuilder.addReplacement({ token: /%BUILD_?DATE%/i, replacement: DateTime.now().toISO() });
-        packageBuilder.addReplacement({ token: /%INSTANCE_?URL%/i, replacement: connection.instanceUrl });
-        packageBuilder.addReplacement({ token: /%USER_?EMAIL%/i, replacement: (await connection.identity()).email });
-        packageBuilder.addReplacement({ token: /%USER_?NAME%/i, replacement: (await connection.identity()).username });
-        packageBuilder.addReplacement({ token: /%ORG_?ID%/i, replacement: (await connection.identity()).organization_id });
+        const identity = await connection.identity();
+
+        // Setup token replacement plugin\
+        packageBuilder.addPlugin(
+            new TokenReplacementPlugin([
+                { token: /%BUILD_?DATE%/i, replacement: DateTime.now().toISO() },
+                { token: /%INSTANCE_?URL%/i, replacement: connection.instanceUrl },
+                { token: /%USER_?EMAIL%/i, replacement: identity.email },
+                { token: /%USER_?NAME%/i, replacement: identity.username },
+                { token: /%ORG_?ID%/i, replacement: identity.organization_id }
+            ])
+        );
 
         // Add files to package
         await packageBuilder.addFiles(files);
@@ -120,10 +130,13 @@ export default class DeployMetadataCommand extends MetadataCommand {
         if (packageBuilder.getPackageComponents().length === 0) {
             return;
         }
+
         const savedDocuments = await this.saveOpenDocuments(packageBuilder.getPackageFiles());
         if (savedDocuments.length !== 0) {
+            // Rebuild package to ensure we have the latest version of the files after saving
             await packageBuilder.rebuildPackage();
         }
+
         if (options?.delta) {
             await packageBuilder.removeUnchanged(RetrieveDeltaStrategy);
         }

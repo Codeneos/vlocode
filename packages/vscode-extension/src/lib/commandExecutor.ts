@@ -75,7 +75,7 @@ export class CommandExecutor implements Command {
         const productionWarning = await vscode.window.showWarningMessage(
             'Make changes to production org?',
             {
-                detail: 'You are about to make changes to the currently selected production org. It is not recommended to direcly make changes to a production org from vscode, doing so may cause instability for end-users. Are you sure you want to continue?',
+                detail: 'You are about to make changes to the currently selected production org. It is not recommended to directly make changes to a production org from vscode, doing so may cause instability for end-users. Are you sure you want to continue?',
                 modal: true,
             }, 'Yes', 'No'
         );
