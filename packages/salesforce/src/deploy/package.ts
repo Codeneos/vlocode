@@ -7,6 +7,8 @@ import { PackageManifest } from './maifest';
 import { isPromise } from 'util/types';
 import { outputFile } from 'fs-extra';
 import { MetadataRegistry } from '../metadataRegistry';
+import type { FileProperties, RetrieveResult } from '../connection';
+import { RetrieveResultPackage } from './retrieveResultPackage';
 
 export interface SalesforcePackageComponent {
     componentType: string; // componentType
@@ -41,6 +43,10 @@ type SalesforcePackageBufferOptions = {
 };
 
 export class SalesforcePackage {
+    private static readonly localRetrieveUserId = '000000000000000AAA';
+    private static readonly localRetrieveUserName = 'vlocode';
+    private static readonly localRetrieveDate = '1970-01-01T00:00:00.000Z';
+    private static readonly localRetrieveResultId = 'vlocode-local-retrieve';
 
     /**
      * Get the metadata mainfest for this package
@@ -668,6 +674,82 @@ export class SalesforcePackage {
         }
 
         return packageZip;
+    }
+
+    /**
+     * Converts this package into a RetrieveResultPackage instance.
+     * @param options Optional conversion options
+     */
+    public async toRetrieveResultPackage(options?: { fs?: FileSystem }): Promise<RetrieveResultPackage> {
+        const archive = await this.generateArchive(options);
+        const fileProperties = this.getRetrieveFileProperties();
+        const result: RetrieveResult = {
+            done: true,
+            success: true,
+            status: 'Succeeded',
+            fileProperties,
+            id: SalesforcePackage.localRetrieveResultId,
+            messages: [],
+            zipFile: ''
+        };
+        return new RetrieveResultPackage(result, true, archive);
+    }
+
+    private getRetrieveFileProperties(): FileProperties[] {
+        const packageXmlEntry = this.newRetrieveFileProperties({
+            id: '0',
+            type: 'Package',
+            fileName: 'package.xml',
+            fullName: 'package'
+        });
+
+        const packagePaths = Array.from(this.packageData.keys()).sort((a, b) => a.localeCompare(b));
+        const packagePathSet = new Set(packagePaths);
+        const retrieveFiles = packagePaths
+            .filter(packagePath => !SalesforcePackage.isRetrieveArtifact(packagePath))
+            .filter(packagePath => !SalesforcePackage.isCompanionMetaFile(packagePath, packagePathSet))
+            .map((packagePath, index) => {
+                const entry = this.packageData.get(packagePath);
+                if (!entry) {
+                    throw new Error(`Package data missing for path ${packagePath}`);
+                }
+                return this.newRetrieveFileProperties({
+                    id: `${index + 1}`,
+                    type: entry.componentType,
+                    fileName: path.posix.join(this.packageDir, packagePath),
+                    fullName: entry.componentName
+                });
+            });
+
+        return [ packageXmlEntry, ...retrieveFiles ];
+    }
+
+    private newRetrieveFileProperties(args: { id: string; type: string; fileName: string; fullName: string }): FileProperties {
+        return {
+            id: args.id,
+            type: args.type,
+            createdById: SalesforcePackage.localRetrieveUserId,
+            createdByName: SalesforcePackage.localRetrieveUserName,
+            createdDate: SalesforcePackage.localRetrieveDate,
+            fileName: args.fileName,
+            fullName: args.fullName,
+            lastModifiedById: SalesforcePackage.localRetrieveUserId,
+            lastModifiedByName: SalesforcePackage.localRetrieveUserName,
+            lastModifiedDate: SalesforcePackage.localRetrieveDate
+        };
+    }
+
+    private static isRetrieveArtifact(packagePath: string) {
+        return packagePath === 'destructiveChangesPre.xml' ||
+            packagePath === 'destructiveChangesPost.xml';
+    }
+
+    private static isCompanionMetaFile(packagePath: string, packagePathSet: Set<string>) {
+        if (!packagePath.endsWith('-meta.xml')) {
+            return false;
+        }
+        const basePackagePath = packagePath.slice(0, -'-meta.xml'.length);
+        return packagePathSet.has(basePackagePath);
     }
 
     private getFileData(data: SalesforcePackageFileData, options?: { fs?: FileSystem }) {
