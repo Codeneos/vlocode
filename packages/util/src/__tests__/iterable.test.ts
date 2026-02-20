@@ -30,8 +30,8 @@ describe('iterable', () => {
         });
     });
 
-    describe('#conact', () => {
-        it('should conact iterables into one', () => {
+    describe('#concat', () => {
+        it('should concat iterables into one', () => {
             const itr = Iterable.concat(new Set([ 1 ]), new Set([ 2 ]));
             expect([...itr]).toEqual([1,2]);
         });

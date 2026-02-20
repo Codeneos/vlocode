@@ -159,11 +159,11 @@ describe('QueryParser', () => {
         });
     });
     describe('#parseFieldsList', () => {
-        it('should parse well formated field list', () => {
+        it('should parse well formatted field list', () => {
             expect(QueryParser.parseFieldsList(`Id, Name, CustomField__c, CustomField__r.Name`))
                 .toStrictEqual([ 'Id', 'Name', 'CustomField__c', 'CustomField__r.Name' ]);
         });
-        it('should parse densly formated field list', () => {
+        it('should parse densely formatted field list', () => {
             expect(QueryParser.parseFieldsList(`Id,Name,CustomField__c,CustomField__r.Name`))
                 .toStrictEqual([ 'Id', 'Name', 'CustomField__c', 'CustomField__r.Name' ]);
         });

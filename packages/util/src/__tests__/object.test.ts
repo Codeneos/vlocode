@@ -80,7 +80,7 @@ describe('util', () => {
             const result = sortProperties(obj);
             strictEqualWithOrder(result, { b: '2', c: '1' });
         });
-        it('should sort nummeric properties', () => {
+        it('should sort numeric properties', () => {
             const obj = Object.freeze({ c: '1', 1: '2', 0: '3', 10: '4' });
             const result = sortProperties(obj);
             strictEqualWithOrder(result, { 0: '3', 1: '2', 10: '4', c: '1' });
