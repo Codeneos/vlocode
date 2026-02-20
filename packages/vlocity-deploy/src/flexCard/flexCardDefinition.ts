@@ -21,15 +21,15 @@ export interface FlexCardDefinition {
 }
 
 interface OmniUiCardRecord {
-    Name: string;
-    Id: string;
-    AuthorName: string;
-    VersionNumber: number;
-    IsActive: boolean;
-    OmniUiCardType?: 'parent' | 'child';
-    UniqueName?: string;
-    PropertySetConfig: string | object;
-    StylingConfiguration?: string;
+    name: string;
+    id: string;
+    authorName: string;
+    versionNumber: number;
+    isActive: boolean;
+    omniUiCardType?: 'parent' | 'child';
+    uniqueName?: string;
+    propertySetConfig: string | object;
+    stylingConfiguration?: string;
 }
 
 interface VlocityCardRecord {
@@ -102,16 +102,16 @@ export namespace FlexCardDefinition {
         return {
             SObjectType: 'OmniUiCard',
             ActivationField: 'IsActive',
-            Name: record.Name,
-            Id: record.Id,
-            VersionNumber: record.VersionNumber,
-            AuthorName: record.AuthorName,
-            IsActive: record.IsActive === undefined ? true : record.IsActive,
-            IsChildCard: record.OmniUiCardType === 'child',
+            Name: record.name,
+            Id: record.id,
+            VersionNumber: record.versionNumber,
+            AuthorName: record.authorName,
+            IsActive: record.isActive === undefined ? true : record.isActive,
+            IsChildCard: record.omniUiCardType === 'child',
             Type: 'flex',
-            UniqueName: record.UniqueName,
-            PropertySetConfig: asString(record.PropertySetConfig),
-            StylingConfiguration: parseAsJsonString(record.StylingConfiguration),
+            UniqueName: record.uniqueName,
+            PropertySetConfig: asString(record.propertySetConfig),
+            StylingConfiguration: parseAsJsonString(record.stylingConfiguration),
         };
     }
 
