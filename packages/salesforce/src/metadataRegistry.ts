@@ -35,6 +35,8 @@ export interface MetadataType extends RegistryMetadataType {
     label: string;
 }
 
+type MetadataDecomposition = RegistryMetadataType;
+
 @injectable.singleton()
 class MetadataInfoStore {
     readonly registry = new Array<MetadataType>();
@@ -119,12 +121,31 @@ export namespace MetadataRegistry {
      * @returns {MetadataInfoStore} The singleton instance of the metadata registry store
      */
     export const store = new MetadataInfoStore();
+    let decompositionMapByType = new WeakMap<MetadataType, Map<string, MetadataDecomposition>>();
+    let decompositionOrderByType = new WeakMap<MetadataType, Map<string, number>>();
 
     // Load the metadata registry data
     store.load({
         types: Object.values(registryData.types) as RegistryMetadataType[],
         suffixes: registryData.suffixes
     });
+
+    function refreshDecompositionIndex() {
+        decompositionMapByType = new WeakMap<MetadataType, Map<string, MetadataDecomposition>>();
+        decompositionOrderByType = new WeakMap<MetadataType, Map<string, number>>();
+        for (const metadataType of store.registry) {
+            const decompositionMap = new Map<string, MetadataDecomposition>();
+            const decompositionOrder = new Map<string, number>();
+            let index = 0;
+            for (const decomposition of Object.values(metadataType.children?.types ?? {})) {
+                decompositionMap.set(decomposition.name, decomposition as MetadataDecomposition);
+                decompositionOrder.set(decomposition.name, index++);
+            }
+            decompositionMapByType.set(metadataType, decompositionMap);
+            decompositionOrderByType.set(metadataType, decompositionOrder);
+        }
+    }
+    refreshDecompositionIndex();
 
     /**
      * Enable beta features in the metadata registry decomposition
@@ -140,6 +161,7 @@ export namespace MetadataRegistry {
             types: Object.values(preset.types) as RegistryMetadataType[],
             suffixes: preset.suffixes
         });
+        refreshDecompositionIndex();
     }
 
     /**
@@ -209,5 +231,19 @@ export namespace MetadataRegistry {
     export function getMetadataTypeBySuffix(suffix: string) : MetadataType | undefined {
         const metadataType = store.suffixes.get(suffix.toLowerCase());
         return metadataType ? getMetadataType(metadataType) : undefined;
+    }
+
+    /**
+     * Gets the decomposition details for a child XML name within a metadata type.
+     */
+    export function getDecomposition(metadataType: MetadataType, childXmlName: string) {
+        return decompositionMapByType.get(metadataType)?.get(childXmlName);
+    }
+
+    /**
+     * Gets the decomposition order index for a child XML name within a metadata type.
+     */
+    export function getDecompositionIndex(metadataType: MetadataType, childXmlName: string) {
+        return decompositionOrderByType.get(metadataType)?.get(childXmlName) ?? Number.MAX_SAFE_INTEGER;
     }
 }

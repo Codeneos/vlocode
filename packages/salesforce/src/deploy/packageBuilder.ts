@@ -276,7 +276,7 @@ export class SalesforcePackageBuilder {
                 continue;
             }
 
-            const metadataType = xmlName && this.getMetadataType(xmlName);
+            const metadataType = xmlName && MetadataRegistry.getMetadataType(xmlName);
             if (!xmlName || !metadataType) {
                 const isInStaticResourceFolder = file.split(/\/|\\/).includes('staticresources');
                 if (!isInStaticResourceFolder) {
@@ -359,10 +359,9 @@ export class SalesforcePackageBuilder {
                 return metaTypeCompare;
             }
 
-            const decompositions = Object.values(parentTypeA.children?.types ?? []);
-            if (decompositions) {
-                const decompositionIndexA = decompositions.findIndex(({name}) => name === fragmentTypeA);
-                const decompositionIndexB = decompositions.findIndex(({name}) => name === fragmentTypeB);
+            const decompositionIndexA = MetadataRegistry.getDecompositionIndex(parentTypeA, fragmentTypeA);
+            const decompositionIndexB = MetadataRegistry.getDecompositionIndex(parentTypeB, fragmentTypeB);
+            if (decompositionIndexA !== decompositionIndexB) {
                 return decompositionIndexA - decompositionIndexB;
             }
 
@@ -433,7 +432,7 @@ export class SalesforcePackageBuilder {
      * @returns Returns true when the file is nto yet parsed; returns false when the file is already parsed.
      */
     private addParsedFile(file: string){
-        const normalizedFileName = file.split(/\\|\//g).join('/');
+        const normalizedFileName = file.replace(/\\/g, '/');
         if (!this.parsedFiles.has(normalizedFileName)) {
             this.parsedFiles.add(normalizedFileName);
             return true;
@@ -533,7 +532,7 @@ export class SalesforcePackageBuilder {
      */
     private async mergeChildSourceWithParent(sourceFile: string, fragmentTypeName: string, parentType: MetadataType) {
         // Get metadata type for a source file
-        const fragmentType = Object.values(parentType.children?.types ?? []).find(d => d.name === fragmentTypeName);// ?.decompositions.find(d => d.metadataName == xmlName);
+        const fragmentType = MetadataRegistry.getDecomposition(parentType, fragmentTypeName);
         if (!fragmentType) {
             this.logger.error(`No decomposition configuration for: ${chalk.green(sourceFile)} (${fragmentTypeName})`);
             return;
@@ -594,7 +593,7 @@ export class SalesforcePackageBuilder {
      */
     private async mergeMetadataFragment(packagePath: string, fragmentFile: string, metadataType: MetadataType) {
         const [[fragmentTag, fragmentMetadata]] = Object.entries(XML.parse(await this.fs.readFileAsString(fragmentFile), { trimValues: true }));
-        const decomposition = Object.values(metadataType.children?.types ?? []).find(d => d.name === fragmentTag);
+        const decomposition = MetadataRegistry.getDecomposition(metadataType, fragmentTag);
 
         if (!decomposition) {
             this.logger.error(`No decomposition configuration for: ${chalk.green(fragmentFile)} (${fragmentTag})`);
@@ -746,11 +745,6 @@ export class SalesforcePackageBuilder {
      */
     public getManifest(types?: string[]): PackageManifest {
         return this.mdPackage.getManifest(types);
-    }
-
-    private getMetadataType(xmlName: string) {
-        const metadataTypes = MetadataRegistry.getMetadataTypes();
-        return metadataTypes.find(type => type.name == xmlName || type.childXmlNames?.includes(xmlName));
     }
 
     private async getComponentType(file: string) : Promise<string| undefined> {
