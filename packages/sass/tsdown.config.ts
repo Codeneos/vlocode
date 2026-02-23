@@ -12,7 +12,7 @@ const config = {
   },
   nodeProtocol: true,
   tsconfig: './tsconfig.json',
-  inputOptions: {
+  outputOptions: {
     keepNames: true,
   },
 };

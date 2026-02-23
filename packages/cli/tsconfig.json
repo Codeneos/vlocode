@@ -10,6 +10,6 @@
     "include": [
         "src/**/*",
         "../../build/**/*.ts",
-        "tsdown.config.ts"
+        "tsdown.config.mts"
     ]
 }

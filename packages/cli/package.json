@@ -24,8 +24,8 @@
         "node": ">=20.0.0"
     },
     "scripts": {
-        "watch": "tsdown -c tsdown.config.ts --watch",
-        "build": "tsdown -c tsdown.config.ts",
+        "watch": "tsdown -c tsdown.config.mts --watch",
+        "build": "tsdown -c tsdown.config.mts",
         "prepublish": "pnpm run clean && pnpm run build",
         "pack-only": "pnpm pack",
         "clean": "shx rm -rf ./dist ./lib ./.ts-temp './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'"

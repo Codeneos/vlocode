@@ -1,11 +1,11 @@
-import { defineConfig, UserConfig } from 'tsdown'
+import { defineConfig } from 'tsdown'
 
-import yaml from '../../build/plugins/yaml-loader.js';
-import fileTypesPatch from '../../build/patches/file-types.js';
-import vlocityPatch from '../../build/patches/vlocity.js';
-import dtracePatch from '../../build/patches/dtrace.js';
-import jsdomPatch from '../../build/patches/jsdom.js';
-import commands from './build/commands.js';
+import yaml from '../../build/plugins/yaml-loader.ts';
+import fileTypesPatch from '../../build/patches/file-types.ts';
+import vlocityPatch from '../../build/patches/vlocity.ts';
+import dtracePatch from '../../build/patches/dtrace.ts';
+import jsdomPatch from '../../build/patches/jsdom.ts';
+import commands from './build/commands.ts';
 
 /**
  * Entry points for the VSCode extension and related tools
@@ -32,6 +32,7 @@ export default defineConfig({
   shims: true,
   minify: false,
   treeshake: false,
+  inlineOnly: false,
   env: {
     NODE_ENV: 'production',
     DEBUG: false
@@ -39,11 +40,11 @@ export default defineConfig({
   nodeProtocol: true,
   tsconfig: './tsconfig.json',
   inputOptions: {
-    keepNames: true,
     preserveEntrySignatures: 'strict',
-    experimental: {
-      strictExecutionOrder: true
-    }
+  },
+  outputOptions: {
+    keepNames: true,
+    strictExecutionOrder: true,
   },
   plugins: [
     commands(),

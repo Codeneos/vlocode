@@ -1,6 +1,6 @@
 import { directoryName, spreadAsync } from '@vlocode/util';
 import * as fs from 'fs'
-import fg, { FileSystemAdapter } from 'fast-glob';
+import fg, { type FileSystemAdapter } from 'fast-glob';
 import { join } from 'path/posix';
 
 export interface StatsOptions {
