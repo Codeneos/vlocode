@@ -1,6 +1,6 @@
-import { defineConfig } from 'tsdown'
+import { defineConfig, type UserConfig } from 'tsdown'
 
-const config = {
+const config: UserConfig = {
   sourcemap: true,
   shims: true,
   minify: false,
@@ -15,6 +15,7 @@ const config = {
   outputOptions: {
     keepNames: true,
   },
+  inlineOnly: false
 };
 
 export default defineConfig([
