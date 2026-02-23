@@ -4,6 +4,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-rc.1](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
+
+### Bug Fixes
+
+* do not report error when Vlocity package is missing to allow use of Vlocode without vlocity ([70a4f84](https://github.com/codeneos/vlocode/commit/70a4f847f405eb76e64c0e7ee0118431b19f477d))
+* for longer deployments report errors during deployment instead of only at the end. ([f13346b](https://github.com/codeneos/vlocode/commit/f13346bcacecf05b209ecd4ff721aac3ba3213c6))
+* omniScript access does to check for language when deploying scripts. When a script is both deployed as IP as well as an OmniScript it will only activate the IP or the OmniScript not both. ([3ff1bdb](https://github.com/codeneos/vlocode/commit/3ff1bdbc263189703c5594ab8805abaa9dbc26d2))
+* package builder does not ignore common hidden files causing errors while deploying static resources ([688e492](https://github.com/codeneos/vlocode/commit/688e492712dc0ecd404b58063ff2279948d23b10))
+* TokenReplacement plugin does not skip binary ([3fa2bb6](https://github.com/codeneos/vlocode/commit/3fa2bb6f528f4700f09240f07c9fa0d3fb1a9d22))
+* typedoc fails to generate documentation ([50d103f](https://github.com/codeneos/vlocode/commit/50d103f5f4025d0e1d888566f3486c690e020945))
+* typo in unit tests strings ([8fcf971](https://github.com/codeneos/vlocode/commit/8fcf971ea95079a4b169d500e9774538ced2613a))
+
+### Features
+
+* add new wrap decorator that can be used to wrap properties with decorators. It is not called decorate as there is an existing decorator which is used on classes ([b5430b6](https://github.com/codeneos/vlocode/commit/b5430b6e5cfa764c528c907c9dec5b275fba45de))
+* add support for OpenVSX.org publishing into the pipeline (see [#427](https://github.com/codeneos/vlocode/issues/427)) ([12fa0a5](https://github.com/codeneos/vlocode/commit/12fa0a5cb9224275d28ceb4ee33e2360bc2a1f9a))
+* allow creation of a retrieve package from a build package to allow conversion of source code ([cadc341](https://github.com/codeneos/vlocode/commit/cadc3419556d30672ad126928949cac318713910))
+* optimize package builder to increase package building speed when dealing with manu decomposed metadata types ([f93318a](https://github.com/codeneos/vlocode/commit/f93318a608f4818c8285f3737cbe31ed4a397e24))
+* support creating a SalesforcePackage from a zip file buffer. This allows loading of previously generated build artifacts for propegation for SOX compliant build pipelines ([e4c88ee](https://github.com/codeneos/vlocode/commit/e4c88ee1d7e098d30ec1a5f53bb74ad773344f1c))
+
 # [1.40.0-beta-4](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-3...v1.40.0-beta-4) (2025-11-10)
 
 ### Bug Fixes

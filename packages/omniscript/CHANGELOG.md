@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.40.0-rc.1](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
+
+### Bug Fixes
+
+* omniScript access does to check for language when deploying scripts. When a script is both deployed as IP as well as an OmniScript it will only activate the IP or the OmniScript not both. ([3ff1bdb](https://github.com/Codeneos/vlocode/commit/3ff1bdbc263189703c5594ab8805abaa9dbc26d2))
+
 # [1.40.0-beta-4](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-3...v1.40.0-beta-4) (2025-11-10)
 
 ### Bug Fixes
