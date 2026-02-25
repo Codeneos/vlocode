@@ -8,8 +8,9 @@ on:
 permissions:
   contents: write
 
-env:
-  NODE_VERSION: '22'
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   package:
@@ -19,31 +20,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir ~/.pnpm-store
-
-      - name: Install OS dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y libsecret-1-dev
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Resolve version
         id: version
-        shell: bash
         run: |
           VERSION=$(node -p "require('./lerna.json').version")
           [[ "$VERSION" =~ "-" ]] && echo "Detected pre-release version $VERSION" || echo "Detected release version $VERSION"
@@ -51,7 +32,6 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Pack extension
-        shell: bash
         run: |
           VERSION=$(cat .version)
           PRERELEASE=""
@@ -60,8 +40,7 @@ jobs:
           pnpm pack-extension ${PRERELEASE}
 
       - name: Generate release notes
-        run: |
-          node -e "const fs = require('node:fs'); fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
+        run: node -e "const fs = require('node:fs'); fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
@@ -85,7 +64,6 @@ jobs:
 
       - name: Determine release flags
         id: flags
-        shell: bash
         run: |
           VERSION=$(cat artifacts/.version)
           if [[ "$VERSION" =~ "-" ]]; then
@@ -96,17 +74,15 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag: v${{ steps.flags.outputs.version }}
           name: Version ${{ steps.flags.outputs.version }}
-          bodyFile: artifacts/release-notes.md
-          artifacts: artifacts/packages/vscode-extension/*.vsix
+          body_path: artifacts/release-notes.md
+          files: artifacts/packages/vscode-extension/*.vsix
           prerelease: ${{ steps.flags.outputs.prerelease }}
-          allowUpdates: true
-          replacesArtifacts: true
-          removeArtifacts: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          append_body: false
+          make_latest: true
+          fail_on_unmatched_files: true
 
   publish-approval:
     runs-on: ubuntu-latest
@@ -131,27 +107,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir ~/.pnpm-store
-
-      - name: Install OS dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y libsecret-1-dev
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -162,7 +119,6 @@ jobs:
       - name: Publish extension on VSCode Marketplace
         env:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
-        shell: bash
         run: |
           VERSION=$(cat artifacts/.version)
           PRERELEASE=""
@@ -179,27 +135,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir ~/.pnpm-store
-
-      - name: Install OS dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y libsecret-1-dev
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -210,7 +147,6 @@ jobs:
       - name: Publish extension on Open VSX
         env:
           OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
-        shell: bash
         run: |
           VERSION=$(cat artifacts/.version)
           PRERELEASE=""
@@ -225,27 +161,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir ~/.pnpm-store
-
-      - name: Install OS dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y libsecret-1-dev
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Configure npm auth
         env:
@@ -256,7 +173,6 @@ jobs:
         run: pnpm run --filter @vlocode/* build
 
       - name: Publish npm packages
-        shell: bash
         run: |
           VERSION=$(node -p "require('./lerna.json').version")
           if [[ "$VERSION" =~ '-' ]]; then

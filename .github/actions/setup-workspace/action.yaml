@@ -1,0 +1,47 @@
+name: Setup Workspace
+
+description: Setup pnpm + Node.js and install project dependencies
+
+inputs:
+  node-version:
+    description: Node.js version
+    required: false
+    default: '22'
+  install-os-deps:
+    description: Install required OS packages
+    required: false
+    default: 'true'
+  install-deps:
+    description: Install workspace dependencies
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        run_install: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    - name: Configure pnpm store
+      shell: bash
+      run: pnpm config set store-dir ~/.pnpm-store
+
+    - name: Install OS dependencies
+      if: ${{ inputs.install-os-deps == 'true' }}
+      shell: bash
+      run: |
+        sudo apt update
+        sudo apt-get install -y libsecret-1-dev
+
+    - name: Install dependencies
+      if: ${{ inputs.install-deps == 'true' }}
+      shell: bash
+      run: pnpm install --frozen-lockfile

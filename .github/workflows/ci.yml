@@ -1,45 +1,28 @@
-name: Validate
+name: CI
 
 on:
+  pull_request: {}
   push:
     branches:
-      - '**'
-    tags:
-      - '**'
-  workflow_dispatch: {}
+      - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-test-quality:
+  validate:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Configure pnpm store
-        run: pnpm config set store-dir ~/.pnpm-store
-
-      - name: Install OS dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y libsecret-1-dev
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Build
         run: pnpm build
@@ -50,22 +33,30 @@ jobs:
       - name: Lint
         run: pnpm lint -o eslint-report.json --format json || true
 
+      - name: Check Sonar token availability
+        id: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: '[[ -n "$SONAR_TOKEN" ]] && echo "enabled=true" >> "$GITHUB_OUTPUT" || echo "enabled=false" >> "$GITHUB_OUTPUT"'
+
       - name: SonarCloud Scan
+        if: ${{ steps.sonar.outputs.enabled == 'true' }}
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Upload test result (junit)
-        if: always()
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: junit
+          name: test-results
           path: coverage/junit.xml
           if-no-files-found: warn
+          retention-days: 14
 
       - name: Upload coverage artifacts
-        if: always()
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-artifacts
@@ -74,3 +65,4 @@ jobs:
             coverage/lcov.info
             eslint-report.json
           if-no-files-found: warn
+          retention-days: 14

@@ -2,7 +2,8 @@ name: Update Documentation
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -22,20 +23,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
         with:
-          version: 10
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm i --frozen-lockfile
+          node-version: '20'
+          install-os-deps: 'false'
 
       - name: Generate Documentation
         run: pnpm run docs
