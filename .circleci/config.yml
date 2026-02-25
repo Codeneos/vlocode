@@ -91,7 +91,8 @@ jobs:
       - checkout_install
       - build
       - test
-      - codequality
+      # This is broken due to an issues with the SonarCloud orb
+      #- codequality
   package:
     docker:
       - image: cimg/node:lts-browsers

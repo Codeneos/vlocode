@@ -1,37 +1,268 @@
-name: Create release
+name: Release
 
 on:
-  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '22'
 
 jobs:
-  release:
-
+  package:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '14.x'  
-    # Install deps, bump version and build the package
-    - run: npm ci
-    - run: npm run bump
-    - name: Get release version
-      run: echo "::set-env name=PACKAGE_VERSION::$(node -p \"require('./package.json').version\")"
-    - run: npm run package  
-    # Create tag so it can be publihsed
-    - name: Create tag
-      uses: tvdias/github-tagger@v0.0.1
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        tag: "v${{ env.PACKAGE_VERSION }}"
-    # Create the release
-    - name: Draft release
-      uses: ncipollo/release-action@v1
-      with:
-        name: "Version ${{ env.PACKAGE_VERSION }}"
-        artifact: '*.vsix'
-        artifactErrorsFailBuild: true
-        allowUpdates: true
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag: "v${{ env.PACKAGE_VERSION }}"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Configure pnpm store
+        run: pnpm config set store-dir ~/.pnpm-store
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./lerna.json').version")
+          [[ "$VERSION" =~ "-" ]] && echo "Detected pre-release version $VERSION" || echo "Detected release version $VERSION"
+          echo "$VERSION" > .version
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Pack extension
+        shell: bash
+        run: |
+          VERSION=$(cat .version)
+          PRERELEASE=""
+          [[ "$VERSION" =~ "-" ]] && PRERELEASE="--pre-release"
+          echo "Packing extension version $VERSION ${PRERELEASE:+(pre-release)}"
+          pnpm pack-extension ${PRERELEASE}
+
+      - name: Generate release notes
+        run: |
+          node -e "const fs = require('node:fs'); fs.writeFileSync('./release-notes.md', fs.readFileSync('./CHANGELOG.md').toString().match(/(##? \[(.*?))## \[/s)[1])"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            .version
+            release-notes.md
+            packages/vscode-extension/*.vsix
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: package
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts
+
+      - name: Determine release flags
+        id: flags
+        shell: bash
+        run: |
+          VERSION=$(cat artifacts/.version)
+          if [[ "$VERSION" =~ "-" ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.flags.outputs.version }}
+          name: Version ${{ steps.flags.outputs.version }}
+          bodyFile: artifacts/release-notes.md
+          artifacts: artifacts/packages/vscode-extension/*.vsix
+          prerelease: ${{ steps.flags.outputs.prerelease }}
+          allowUpdates: true
+          replacesArtifacts: true
+          removeArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-approval:
+    runs-on: ubuntu-latest
+    needs:
+      - package
+      - github-release
+    # Configure required reviewers on this environment to mirror CircleCI manual approval.
+    environment:
+      name: release-publish
+
+    steps:
+      - name: Await approval
+        run: echo "Release artifacts are ready for publishing."
+
+  publish-vsc-extension:
+    runs-on: ubuntu-latest
+    needs:
+      - publish-approval
+      - package
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Configure pnpm store
+        run: pnpm config set store-dir ~/.pnpm-store
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts
+
+      - name: Publish extension on VSCode Marketplace
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
+        shell: bash
+        run: |
+          VERSION=$(cat artifacts/.version)
+          PRERELEASE=""
+          [[ "$VERSION" =~ "-" ]] && PRERELEASE="--pre-release"
+          pnpx vsce publish -p "$VSCE_TOKEN" ${PRERELEASE} --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
+
+  publish-ovsx-extension:
+    runs-on: ubuntu-latest
+    needs:
+      - publish-approval
+      - package
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Configure pnpm store
+        run: pnpm config set store-dir ~/.pnpm-store
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts
+
+      - name: Publish extension on Open VSX
+        env:
+          OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+        shell: bash
+        run: |
+          VERSION=$(cat artifacts/.version)
+          PRERELEASE=""
+          [[ "$VERSION" =~ "-" ]] && PRERELEASE="--pre-release"
+          pnpx ovsx publish -p "$OVSX_TOKEN" ${PRERELEASE} --packagePath "./artifacts/packages/vscode-extension/vlocode-${VERSION}.vsix"
+
+  publish-npm-packages:
+    runs-on: ubuntu-latest
+    needs: publish-approval
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Configure pnpm store
+        run: pnpm config set store-dir ~/.pnpm-store
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure npm auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+
+      - name: Build npm packages
+        run: pnpm run --filter @vlocode/* build
+
+      - name: Publish npm packages
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./lerna.json').version")
+          if [[ "$VERSION" =~ '-' ]]; then
+            echo "Detected prerelease version ${VERSION}; publishing with dist-tag 'beta'"
+            pnpm lerna publish from-package --dist-tag beta --force-publish --no-push --yes
+          else
+            echo "Detected stable version ${VERSION}; publishing with default 'latest' tag"
+            pnpm lerna publish from-package --force-publish --no-push --yes
+          fi

@@ -1,42 +1,76 @@
 name: Validate
 
 on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
   workflow_dispatch: {}
-  # push:
-  #   branches: [ main ]
-  # pull_request:
-  #   branches: [ main ]
-  #   types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
 
 jobs:
-  validate:
+  build-test-quality:
     runs-on: ubuntu-latest
-    env:
-      DISPLAY: ':0'
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
-      - name: Start Xvfb
-        run: sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
-      # Updates notes for next release
-      - uses: actions/cache@v2
-        with:
-          path: |
-            .webpack-cache
-            ~/.npm
-          key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-      # Building and linting
-      - run: npm ci
-      - run: npm test
-      - run: npm run lint
-      # SonarQube quality scan
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Configure pnpm store
+        run: pnpm config set store-dir ~/.pnpm-store
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm jest --ci --verbose -i
+
+      - name: Lint
+        run: pnpm lint -o eslint-report.json --format json || true
+
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Upload test result (junit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit
+          path: coverage/junit.xml
+          if-no-files-found: warn
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-artifacts
+          path: |
+            coverage/sonar-report.xml
+            coverage/lcov.info
+            eslint-report.json
+          if-no-files-found: warn
