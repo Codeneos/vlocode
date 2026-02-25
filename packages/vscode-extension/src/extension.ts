@@ -1,4 +1,4 @@
-import 'source-map-support/register';
+// import 'source-map-support/register';
 import * as vscode from 'vscode';
 import vlocityPackageManifest from 'vlocity/package.json';
 
