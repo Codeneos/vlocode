@@ -23,7 +23,7 @@ This CLI is built as showcase for the _[@vlocode/vlocity-deploy](https://www.npm
 
 ## How to install
 
-The Vlocode CLI is packaged as a dependency-free CLI with a bit of help from Webpack making it _very_ fast to install. This also allows Vlocode CLI to be easily integrated in any CI/CD setup and helps guarantee consistent behavior as all dependencies (and their dependencies) are pinned.
+The Vlocode CLI is packaged as a dependency-free CLI with a bundled output build, making it _very_ fast to install. This also allows Vlocode CLI to be easily integrated in any CI/CD setup and helps guarantee consistent behavior as all dependencies (and their dependencies) are pinned.
 
 > **Note**
 > You should not depend on this package if you intend to use it as library, instead depend on **@vlocode/vlocity-deploy** which is the underlying library that implements all deployment logic.

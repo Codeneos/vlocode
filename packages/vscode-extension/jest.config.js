@@ -7,7 +7,7 @@ export default {
   ],
   transform: {
     '^.+\\.ts$': ['ts-jest', { esModuleInterop: true, isolatedModules: true }],
-    '\\.yaml$': '<rootDir>/webpack/loaders/yaml.js'
+    '\\.yaml$': '<rootDir>/jest/yaml-transformer.cjs'
   },
   moduleNameMapper: {
     '^@vlocode/(.*)$': '<rootDir>/../$1/src',

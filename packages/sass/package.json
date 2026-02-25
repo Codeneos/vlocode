@@ -16,7 +16,7 @@
         "node": ">=20.0.0"
     },
     "scripts": {
-        "clean": "shx rm -rf .rollup.cache lib dist coverage tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
+        "clean": "shx rm -rf lib dist coverage tsconfig.tsbuildinfo './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'",
         "build": "tsdown -c tsdown.config.ts",
         "watch": "pnpm build --watch",
         "prepublish": "pnpm build",

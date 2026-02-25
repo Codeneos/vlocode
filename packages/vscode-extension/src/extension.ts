@@ -36,8 +36,8 @@ import { SalesforceApexContentProvider } from './contentProviders/salesforceApex
 import { VirtualContentProvider } from './contentProviders/virtualApexContentProvider';
 
 /**
- * Start time of the extension set when the extension is packed by webpack when the entry point is loaded
- * by VSCode. This is used to determine the startup time of the extension.
+ * Start time of the extension set when the bundled entrypoint is loaded by VSCode.
+ * This is used to determine the startup time of the extension.
  */
 declare const __vlocodeStartTime: number | undefined;
 
