@@ -20,7 +20,8 @@
         "email": "peter@curlybracket.nl"
     },
     "engines": {
-        "node": ">=22.0.0",
+        "node": ">=24.0.0",
+        "npm": ">=11.5.1",
         "pnpm": ">=9.0.0"
     },
     "devDependencies": {

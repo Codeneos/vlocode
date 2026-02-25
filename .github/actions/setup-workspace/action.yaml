@@ -6,7 +6,7 @@ inputs:
   node-version:
     description: Node.js version
     required: false
-    default: '22'
+    default: '24'
   install-os-deps:
     description: Install required OS packages
     required: false

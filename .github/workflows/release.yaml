@@ -190,6 +190,9 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
 
+      - name: Verify npm version
+        run: node -e "const v=require('node:child_process').execSync('npm --version').toString().trim(); const [M,m,p]=v.split('.').map(Number); if (M<11 || (M===11 && (m<5 || (m===5 && p<1)))) { console.error(`npm ${v} is too old, require >=11.5.1`); process.exit(1); }"
+
       - name: Build npm packages
         run: pnpm run --filter @vlocode/* build
 
