@@ -10,7 +10,7 @@ inputs:
   install-os-deps:
     description: Install required OS packages
     required: false
-    default: 'true'
+    default: 'false'
   install-deps:
     description: Install workspace dependencies
     required: false
