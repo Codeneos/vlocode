@@ -4,6 +4,18 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Version bump type
+        required: true
+        type: choice
+        options: [patch, minor, major]
+      prerelease:
+        description: Create a prerelease version (rc)
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -13,7 +25,61 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  version-and-tag:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      release_ref: ${{ steps.release-ref.outputs.ref }}
+
+    steps:
+      - name: Checkout
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup workspace
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: ./.github/actions/setup-workspace
+
+      - name: Configure git author
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Version and tag with lerna
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          BUMP_TYPE: ${{ inputs.bump_type }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          VERSION_ARG="$BUMP_TYPE"
+          if [[ "$PRERELEASE" == "true" ]]; then
+            case "$BUMP_TYPE" in
+              patch|minor|major) VERSION_ARG="pre$BUMP_TYPE" ;;
+              *) exit 1 ;;
+            esac
+            pnpm lerna version "$VERSION_ARG" --preid rc --message "[skip-main-ci] chore(release): publish %s" --yes
+          else
+            pnpm lerna version "$VERSION_ARG" --message "[skip-main-ci] chore(release): publish %s" --yes
+          fi
+
+      - name: Push commit and tags
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: git push origin HEAD --follow-tags
+
+      - name: Resolve release ref
+        id: release-ref
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "ref=refs/tags/v$(node -p "require('./lerna.json').version")" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
+          fi
+
   package:
+    needs: version-and-tag
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
@@ -22,6 +88,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-and-tag.outputs.release_ref }}
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace

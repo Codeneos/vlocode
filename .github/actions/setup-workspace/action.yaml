@@ -30,10 +30,6 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
 
-    - name: Configure pnpm store
-      shell: bash
-      run: pnpm config set store-dir ~/.pnpm-store
-
     - name: Install OS dependencies
       if: ${{ inputs.install-os-deps == 'true' }}
       shell: bash
