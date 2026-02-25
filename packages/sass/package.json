@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/sass",
-    "version": "1.40.0-rc.1",
+    "version": "1.40.1-rc.0",
     "description": "Vlocode SASS Compiler",
     "keywords": [],
     "main": "src/index.ts",

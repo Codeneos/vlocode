@@ -4,6 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.40.1-rc.0](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.1-rc.0) (2026-02-25)
+
+### Bug Fixes
+
+* typo in unit tests strings ([8fcf971](https://github.com/Codeneos/vlocode/commit/8fcf971ea95079a4b169d500e9774538ced2613a))
+
+### Features
+
+* add new wrap decorator that can be used to wrap properties with decorators. It is not called decorate as there is an existing decorator which is used on classes ([b5430b6](https://github.com/Codeneos/vlocode/commit/b5430b6e5cfa764c528c907c9dec5b275fba45de))
+
 # [1.40.0-rc.1](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
 
 ### Bug Fixes

@@ -4,6 +4,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.40.1-rc.0](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.1-rc.0) (2026-02-25)
+
+### Bug Fixes
+
+* add type definition for UserConfig in tsdown configuration ([97c8d91](https://github.com/Codeneos/vlocode/commit/97c8d91492755a81538b4b81040103d3c23754fc))
+* build failing due to tsdown upgrade ([29799b8](https://github.com/Codeneos/vlocode/commit/29799b8b1c136e8b69c93cafdedfd233d419419c))
+
 # [1.40.0-rc.1](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
 
 **Note:** Version bump only for package @vlocode/sass

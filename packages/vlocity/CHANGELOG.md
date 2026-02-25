@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.40.1-rc.0](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.1-rc.0) (2026-02-25)
+
+### Bug Fixes
+
+* do not report error when Vlocity package is missing to allow use of Vlocode without vlocity ([70a4f84](https://github.com/Codeneos/vlocode/commit/70a4f847f405eb76e64c0e7ee0118431b19f477d))
+
 # [1.40.0-rc.1](https://github.com/Codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
 
 ### Bug Fixes

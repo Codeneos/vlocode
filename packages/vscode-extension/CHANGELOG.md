@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.40.1-rc.0](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.1-rc.0) (2026-02-25)
+
+### Bug Fixes
+
+* do not report error when Vlocity package is missing to allow use of Vlocode without vlocity ([70a4f84](https://github.com/codeneos/vlocode/commit/70a4f847f405eb76e64c0e7ee0118431b19f477d))
+* for longer deployments report errors during deployment instead of only at the end. ([f13346b](https://github.com/codeneos/vlocode/commit/f13346bcacecf05b209ecd4ff721aac3ba3213c6))
+* TokenReplacement plugin does not skip binary ([3fa2bb6](https://github.com/codeneos/vlocode/commit/3fa2bb6f528f4700f09240f07c9fa0d3fb1a9d22))
+
+### Features
+
+* add support for OpenVSX.org publishing into the pipeline (see [#427](https://github.com/codeneos/vlocode/issues/427)) ([12fa0a5](https://github.com/codeneos/vlocode/commit/12fa0a5cb9224275d28ceb4ee33e2360bc2a1f9a))
+
 # [1.40.0-rc.1](https://github.com/codeneos/vlocode/compare/v1.40.0-beta-4...v1.40.0-rc.1) (2026-02-23)
 
 ### Bug Fixes
