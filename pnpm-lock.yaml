@@ -189,10 +189,10 @@ importers:
   packages/apex:
     dependencies:
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       antlr4ng:
         specifier: ^3.0.14
@@ -238,25 +238,25 @@ importers:
         specifier: ^4.0.2
         version: 4.0.9
       '@vlocode/apex':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../apex
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/omniscript':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../omniscript
       '@vlocode/salesforce':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../salesforce
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       '@vlocode/vlocity':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../vlocity
       '@vlocode/vlocity-deploy':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../vlocity-deploy
       chalk:
         specifier: ^4.1.2
@@ -286,7 +286,7 @@ importers:
   packages/core:
     dependencies:
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       chalk:
         specifier: ^4.1.2
@@ -329,16 +329,16 @@ importers:
   packages/omniscript:
     dependencies:
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/salesforce':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../salesforce
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       '@vlocode/vlocity':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../vlocity
       jsdom:
         specifier: ^24.1.1
@@ -363,10 +363,10 @@ importers:
   packages/salesforce:
     dependencies:
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       chalk:
         specifier: ^4.1.2
@@ -427,10 +427,10 @@ importers:
   packages/sass:
     dependencies:
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
     devDependencies:
       '@types/jest':
@@ -495,13 +495,13 @@ importers:
   packages/vlocity:
     dependencies:
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/salesforce':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../salesforce
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       chalk:
         specifier: ^4.1.2
@@ -523,22 +523,22 @@ importers:
   packages/vlocity-deploy:
     dependencies:
       '@vlocode/core':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../core
       '@vlocode/omniscript':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../omniscript
       '@vlocode/salesforce':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../salesforce
       '@vlocode/sass':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../sass
       '@vlocode/util':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../util
       '@vlocode/vlocity':
-        specifier: 1.41.0
+        specifier: workspace:*
         version: link:../vlocity
       fs-extra:
         specifier: '11'
