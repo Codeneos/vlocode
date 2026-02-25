@@ -199,7 +199,7 @@ jobs:
           PRERELEASE: ${{ needs.package.outputs.prerelease }}
         run: |
           if [[ "$PRERELEASE" == "true" ]]; then
-            pnpm lerna publish from-package --dist-tag beta --force-publish --no-push --yes
+            pnpm lerna publish from-package --dist-tag beta --force-publish --no-push --ignore-scripts --yes
           else
-            pnpm lerna publish from-package --force-publish --no-push --yes
+            pnpm lerna publish from-package --force-publish --no-push --ignore-scripts --yes
           fi
