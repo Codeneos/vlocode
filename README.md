@@ -60,7 +60,7 @@ This runs `lerna version prerelease --preid beta` which:
 2. Updates `lerna.json` + individual `package.json` versions (e.g. `1.34.0-beta.0`)
 3. Commits the changes and creates a git tag `v1.34.0-beta.0`
 
-Push the tag to trigger the CircleCI `release` workflow:
+Push the tag to trigger the GitHub Actions `Release` workflow:
 
 ```shell
 git push origin HEAD --follow-tags
@@ -68,10 +68,10 @@ git push origin HEAD --follow-tags
 
 ### Publishing flow (CI)
 
-The existing CircleCI pipeline detects prerelease versions (hyphen in the version) and automatically:
+The GitHub Actions release workflow detects prerelease versions (hyphen in the version) and automatically:
 
 - passes `--pre-release` to the extension packaging & publish steps
-- passes `--pre-release` to the GitHub release creation (via `ghr`)
+- marks the GitHub Release as pre-release when the version contains a hyphen
 - publishes all `@vlocode/*` npm packages with the `beta` dist-tag (so they don't overwrite `latest`)
 
 ### Consuming beta npm packages
@@ -108,4 +108,4 @@ pnpm release-minor   # or release-patch / manual lerna version command
 git push origin HEAD --follow-tags
 ```
 
-CircleCI will package without the prerelease flag and publish a normal release.
+GitHub Actions will package without the prerelease flag and publish a normal release.

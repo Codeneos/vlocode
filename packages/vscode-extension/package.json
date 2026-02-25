@@ -42,8 +42,8 @@
     "badges": [
         {
             "description": "CI Build Status",
-            "url": "https://circleci.com/gh/Codeneos/vlocode/tree/main.svg?style=svg",
-            "href": "https://circleci.com/gh/Codeneos/vlocode/tree/main"
+            "url": "https://github.com/Codeneos/vlocode/actions/workflows/ci.yml/badge.svg",
+            "href": "https://github.com/Codeneos/vlocode/actions/workflows/ci.yml"
         },
         {
             "description": "Written in Typescript",

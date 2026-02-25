@@ -110,6 +110,11 @@ jobs:
 
   publish-npm-packages:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+
     needs:
       - publish-approval
       - package
@@ -130,6 +135,8 @@ jobs:
         run: pnpm run --filter @vlocode/* build
 
       - name: Publish npm packages
+        env:
+          NPM_CONFIG_PROVENANCE: "true"
         run: |
           VERSION=$(node -p "require('./lerna.json').version")
           if [[ "$VERSION" =~ '-' ]]; then
