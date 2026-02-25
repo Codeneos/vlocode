@@ -177,7 +177,7 @@
         "count": 1,
         "hash": "8b35b0ba87c7df4261ef73445f96c947de3dce79",
         "request": {
-            "url": "/services/data/v55.0/tooling/query?q=select+fields%28standard%29%2C+%28select+FieldId%2C+IsRestrictedDelete%2C+IsCascadeDelete%2C+JunctionIdListNames+from+ChildRelationships%29%2C+%28select+Name+from+Layouts%29+from+EntityDefinition+where+IsDeprecatedAndHidden+%3D+false+and+IsEverCreatable+%3D+true+and+IsQueryable+%3D+true+and+KeyPrefix+%21%3D+null+and+QualifiedApiName+in+%28%27vlocity_cmt__OmniScript__c%27%29",
+            "url": "/services/data/v55.0/tooling/query?q=select+fields%28standard%29%2C+isFlsEnabled%2C+%28select+FieldId%2C+IsRestrictedDelete%2C+IsCascadeDelete%2C+JunctionIdListNames+from+ChildRelationships%29%2C+%28select+Name+from+Layouts%29+from+EntityDefinition+where+IsDeprecatedAndHidden+%3D+false+and+IsEverCreatable+%3D+true+and+IsQueryable+%3D+true+and+KeyPrefix+%21%3D+null+and+QualifiedApiName+in+%28%27vlocity_cmt__OmniScript__c%27%29",
             "method": "GET",
             "headers": {
                 "content-type": "application/json; charset=utf-8",
@@ -3496,7 +3496,7 @@
         "count": 1,
         "hash": "db0064f337d7f0345627ef319e8c432d9e10d757",
         "request": {
-            "url": "/services/data/v55.0/tooling/query?q=select+fields%28standard%29%2C+ValueType.DeveloperName%2C+EntityDefinition.DurableId+from+FieldDefinition+where+EntityDefinition.QualifiedApiName+in+%28%27vlocity_cmt__OmniScript__c%27%29",
+            "url": "/services/data/v55.0/tooling/query?q=select+fields%28standard%29%2C+isFlsEnabled%2C+ValueType.DeveloperName%2C+EntityDefinition.DurableId+from+FieldDefinition+where+EntityDefinition.QualifiedApiName+in+%28%27vlocity_cmt__OmniScript__c%27%29",
             "method": "GET",
             "headers": {
                 "content-type": "application/json; charset=utf-8",
@@ -20121,6 +20121,88 @@
                         "Description": "The type of Omni Process: OmniScript, Integration Procedure or Test Procedure."
                     }
                 ]
+            }
+        }
+    }
+,
+    "added-omniprocess-entity-isfls": {
+        "index": 15,
+        "count": 1,
+        "hash": "",
+        "request": {
+            "method": "GET",
+            "url": "/services/data/v55.0/tooling/query?q=select+fields%28standard%29%2C+isFlsEnabled%2C+%28select+FieldId%2C+IsRestrictedDelete%2C+IsCascadeDelete%2C+JunctionIdListNames+from+ChildRelationships%29%2C+%28select+Name+from+Layouts%29+from+EntityDefinition+where+IsDeprecatedAndHidden+%3D+false+and+IsEverCreatable+%3D+true+and+IsQueryable+%3D+true+and+KeyPrefix+%21%3D+null+and+QualifiedApiName+in+%28%27OmniProcess%27%29",
+            "headers": {
+                "content-type": "application/json; charset=utf-8",
+                "disableFeedTracking": true
+            }
+        },
+        "response": {
+            "statusCode": 200,
+            "statusMessage": "OK",
+            "headers": {
+                "x-content-type-options": "nosniff",
+                "x-xss-protection": "1; mode=block",
+                "x-robots-tag": "none",
+                "content-type": "no-parse",
+                "vary": "Accept-Encoding",
+                "content-encoding": "gzip",
+                "transfer-encoding": "chunked"
+            },
+            "body": {
+                "size": 1,
+                "totalSize": 1,
+                "done": true,
+                "queryLocator": null,
+                "entityTypeName": "EntityDefinition",
+                "records": [
+                    {
+                        "attributes": {
+                            "type": "EntityDefinition",
+                            "url": "/services/data/v55.0/tooling/sobjects/EntityDefinition/01I0Y000000oprc"
+                        },
+                        "DurableId": "01I0Y000000oprc",
+                        "QualifiedApiName": "OmniProcess",
+                        "KeyPrefix": "0jN",
+                        "IsQueryable": true,
+                        "IsEverCreatable": true,
+                        "IsDeprecatedAndHidden": false
+                    }
+                ]
+            }
+        }
+    },
+    "added-omniprocess-field-isfls": {
+        "index": 16,
+        "count": 1,
+        "hash": "",
+        "request": {
+            "method": "GET",
+            "url": "/services/data/v55.0/tooling/query?q=select+fields%28standard%29%2C+isFlsEnabled%2C+ValueType.DeveloperName%2C+EntityDefinition.DurableId+from+FieldDefinition+where+EntityDefinition.QualifiedApiName+in+%28%27OmniProcess%27%29",
+            "headers": {
+                "content-type": "application/json; charset=utf-8",
+                "disableFeedTracking": true
+            }
+        },
+        "response": {
+            "statusCode": 200,
+            "statusMessage": "OK",
+            "headers": {
+                "x-content-type-options": "nosniff",
+                "x-xss-protection": "1; mode=block",
+                "x-robots-tag": "none",
+                "content-type": "no-parse",
+                "vary": "Accept-Encoding",
+                "content-encoding": "gzip",
+                "transfer-encoding": "chunked"
+            },
+            "body": {
+                "size": 0,
+                "totalSize": 0,
+                "done": true,
+                "queryLocator": null,
+                "entityTypeName": "FieldDefinition",
+                "records": []
             }
         }
     }
