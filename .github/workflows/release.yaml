@@ -140,6 +140,7 @@ jobs:
         run: echo "Release artifacts are ready for publishing."
 
   publish-extensions:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -198,7 +199,7 @@ jobs:
           PRERELEASE: ${{ needs.package.outputs.prerelease }}
         run: |
           if [[ "$PRERELEASE" == "true" ]]; then
-            pnpm lerna publish from-package --dist-tag beta --access public --force-publish --no-push --yes
+            pnpm lerna publish from-package --dist-tag beta --force-publish --no-push --yes
           else
-            pnpm lerna publish from-package --access public --force-publish --no-push --yes
+            pnpm lerna publish from-package --force-publish --no-push --yes
           fi
