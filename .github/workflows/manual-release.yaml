@@ -59,9 +59,9 @@ jobs:
 
           echo "Running lerna version $VERSION_ARG"
           if [[ "$PRERELEASE" == "true" ]]; then
-            pnpm lerna version "$VERSION_ARG" --preid rc --yes
+            pnpm lerna version "$VERSION_ARG" --preid rc --message "[skip-main-ci] chore(release): publish $VERSION_ARG" --yes
           else
-            pnpm lerna version "$VERSION_ARG" --yes
+            pnpm lerna version "$VERSION_ARG" --message "[skip-main-ci] chore(release): publish $VERSION_ARG" --yes
           fi
 
       - name: Push commit and tags
