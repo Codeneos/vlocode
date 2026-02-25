@@ -60,7 +60,6 @@
         "@vlocode/vlocity-deploy": "workspace:*",
         "chalk": "^4.1.2",
         "commander": "^11.1.0",
-        "esbuild": "^0.25.4",
         "glob": "^11.0.2",
         "jest": "^29.7.0",
         "js-yaml": "^4.1.0",
