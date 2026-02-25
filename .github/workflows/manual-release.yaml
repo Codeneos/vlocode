@@ -1,0 +1,68 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Version bump type
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      prerelease:
+        description: Create a prerelease version (rc)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manual-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version-and-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Version and tag with lerna
+        env:
+          BUMP_TYPE: ${{ inputs.bump_type }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          VERSION_ARG="$BUMP_TYPE"
+          if [[ "$PRERELEASE" == "true" ]]; then
+            case "$BUMP_TYPE" in
+              patch) VERSION_ARG="prepatch" ;;
+              minor) VERSION_ARG="preminor" ;;
+              major) VERSION_ARG="premajor" ;;
+              *) echo "Unsupported bump type: $BUMP_TYPE" && exit 1 ;;
+            esac
+          fi
+
+          echo "Running lerna version $VERSION_ARG"
+          if [[ "$PRERELEASE" == "true" ]]; then
+            pnpm lerna version "$VERSION_ARG" --preid rc --yes
+          else
+            pnpm lerna version "$VERSION_ARG" --yes
+          fi
+
+      - name: Push commit and tags
+        run: git push origin HEAD --follow-tags
