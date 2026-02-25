@@ -14,7 +14,8 @@
     "main": "src/index.ts",
     "type": "module",
     "publishConfig": {
-        "main": "dist/cli.mjs"
+        "main": "dist/cli.mjs",
+        "access": "public"
     },
     "readme": "./README.md",
     "directories": {

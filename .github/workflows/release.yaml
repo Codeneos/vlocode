@@ -12,7 +12,7 @@ on:
         type: choice
         options: [patch, minor, major]
       prerelease:
-        description: Create a prerelease version (rc)
+        description: Mark this release as prerelease
         required: true
         default: false
         type: boolean
@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_ref: ${{ steps.release-ref.outputs.ref }}
+      prerelease: ${{ steps.release-ref.outputs.prerelease }}
 
     steps:
       - name: Checkout
@@ -52,18 +53,8 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           BUMP_TYPE: ${{ inputs.bump_type }}
-          PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          VERSION_ARG="$BUMP_TYPE"
-          if [[ "$PRERELEASE" == "true" ]]; then
-            case "$BUMP_TYPE" in
-              patch|minor|major) VERSION_ARG="pre$BUMP_TYPE" ;;
-              *) exit 1 ;;
-            esac
-            pnpm lerna version "$VERSION_ARG" --preid rc --message "[skip-main-ci] chore(release): publish %s" --yes
-          else
-            pnpm lerna version "$VERSION_ARG" --message "[skip-main-ci] chore(release): publish %s" --yes
-          fi
+          pnpm lerna version "$BUMP_TYPE" --message "[skip-main-ci] chore(release): publish %s" --yes
 
       - name: Push commit and tags
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -74,8 +65,14 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "ref=refs/tags/v$(node -p "require('./lerna.json').version")" >> "$GITHUB_OUTPUT"
+            echo "prerelease=${{ inputs.prerelease }}" >> "$GITHUB_OUTPUT"
           else
             echo "ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
+            if [[ "${GITHUB_REF#refs/tags/v}" =~ "-" ]]; then
+              echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
   package:
@@ -98,11 +95,8 @@ jobs:
         id: meta
         run: |
           VERSION=$(node -p "require('./lerna.json').version")
-          PRERELEASE=false
-          [[ "$VERSION" =~ "-" ]] && PRERELEASE=true
-          [[ "$PRERELEASE" == "true" ]] && echo "Detected pre-release version $VERSION" || echo "Detected release version $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${{ needs.version-and-tag.outputs.prerelease }}" >> "$GITHUB_OUTPUT"
 
       - name: Pack extension
         run: |
@@ -201,12 +195,10 @@ jobs:
       - name: Publish npm packages
         env:
           NPM_CONFIG_PROVENANCE: "true"
+          PRERELEASE: ${{ needs.package.outputs.prerelease }}
         run: |
-          VERSION=$(node -p "require('./lerna.json').version")
-          if [[ "$VERSION" =~ '-' ]]; then
-            echo "Detected prerelease version ${VERSION}; publishing with dist-tag 'beta'"
-            pnpm lerna publish from-package --dist-tag beta --force-publish --no-push --yes
+          if [[ "$PRERELEASE" == "true" ]]; then
+            pnpm lerna publish from-package --dist-tag beta --access public --force-publish --no-push --yes
           else
-            echo "Detected stable version ${VERSION}; publishing with default 'latest' tag"
-            pnpm lerna publish from-package --force-publish --no-push --yes
+            pnpm lerna publish from-package --access public --force-publish --no-push --yes
           fi
