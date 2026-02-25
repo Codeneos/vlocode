@@ -26,9 +26,9 @@
     },
     "devDependencies": {
         "@arethetypeswrong/core": "^0.18.2",
-        "@lerna-lite/cli": "^3.8.0",
-        "@lerna-lite/publish": "^3.8.0",
-        "@lerna-lite/version": "^3.8.0",
+        "@lerna-lite/cli": "^4.11.3",
+        "@lerna-lite/publish": "^4.11.3",
+        "@lerna-lite/version": "^4.11.3",
         "@oxc-project/runtime": "^0.112.0",
         "@types/fs-extra": "^11",
         "@types/jest": "^29.5.11",
