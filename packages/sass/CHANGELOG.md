@@ -4,6 +4,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.41.2](https://github.com/Codeneos/vlocode/compare/v1.41.1...v1.41.2) (2026-02-26)
+
+### Bug Fixes
+
+* faulty publishConfig in package.json for sass module ([dae4286](https://github.com/Codeneos/vlocode/commit/dae4286d882efccde0e9ae88ee4e9dc0c76a6f94))
+
 ## [1.41.1](https://github.com/Codeneos/vlocode/compare/v1.41.0...v1.41.1) (2026-02-26)
 
 **Note:** Version bump only for package @vlocode/sass
