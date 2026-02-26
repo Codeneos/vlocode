@@ -9,6 +9,12 @@ interface OAuth2TokenResponse  {
     refresh_token: string;
 }
 
+interface OAuth2AccessTokenResponse {
+    id?: string;
+    instance_url?: string;
+    access_token: string;
+}
+
 interface SalesforceOAuth2Options {
     loginUrl?: string;
     authzServiceUrl?: string;
@@ -57,7 +63,7 @@ export class SalesforceOAuth2 {
         }, LogManager.get(SalesforceOAuth2));
 
         this.clientId = options.clientId;
-        this.clientSecret = options.clientSecret!;
+        this.clientSecret = options.clientSecret ?? '';
         this.redirectUri = options.redirectUri;
     }
 
@@ -118,6 +124,25 @@ export class SalesforceOAuth2 {
         };
         if (this.clientSecret) {
             params.client_secret = this.clientSecret;
+        }
+        return this.post(params);
+    }
+
+    /**
+     * Requests a new access token using OAuth2 Client Credentials grant.
+     * @param scope Optional OAuth scope
+     */
+    public clientCredentialsToken(scope?: string): Promise<OAuth2AccessTokenResponse> {
+        if (!this.clientSecret) {
+            throw new Error('Client secret is required for OAuth2 Client Credentials flow');
+        }
+        const params: Record<string, string> = {
+            grant_type: 'client_credentials',
+            client_id: this.clientId,
+            client_secret: this.clientSecret
+        };
+        if (scope?.trim()) {
+            params.scope = scope.trim();
         }
         return this.post(params);
     }

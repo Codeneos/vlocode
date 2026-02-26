@@ -84,6 +84,15 @@ export interface SalesforceOAuth2LoginOptions {
     clientId?: string;
 }
 
+/**
+ * Options for the OAuth2 client credentials flow, which can be used to request an access token using only a client ID and client secret without user interaction.
+ */
+export interface SalesforceClientCredentialsLoginOptions extends SalesforceOAuth2LoginOptions {
+    clientId: string;
+    clientSecret: string;
+    scope?: string;
+}
+
 export interface DeviceLoginFlow {
     /**
      * User code to display to the user that must be entered on the device login page ({@link verificationUrl}) to approve the login request.
@@ -201,6 +210,63 @@ export namespace sfdx {
         }
 
         return result;
+    }
+
+    /**
+     * Login to Salesforce using the OAuth2 Client Credentials flow.
+     * Validates the returned access token through {@link salesforce.AuthInfo.create}.
+     *
+     * @param options Options for the client credentials flow
+     * @returns The authentication result
+     */
+    export async function clientCredentialsLogin(options: SalesforceClientCredentialsLoginOptions) : Promise<SalesforceAuthResult> {
+        const loginUrl = options.instanceUrl ?? defaultLoginUrl;
+        const tokenResponse = await fetch(`${loginUrl}/services/oauth2/token`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: options.clientId,
+                client_secret: options.clientSecret,
+                ...(options.scope?.trim() ? { scope: options.scope.trim() } : {})
+            }).toString()
+        });
+
+        const tokenPayload = await tokenResponse.json() as Record<string, unknown>;
+        if (!tokenResponse.ok || typeof tokenPayload.access_token !== 'string') {
+            throw new Error(`OAuth client credentials login failed: ${
+                String(tokenPayload.error_description ?? tokenPayload.error ?? tokenResponse.statusText)
+            }`);
+        }
+
+        const authInfo = await salesforce.AuthInfo.create({
+            accessTokenOptions: {
+                accessToken: tokenPayload.access_token,
+                instanceUrl: typeof tokenPayload.instance_url === 'string' ? tokenPayload.instance_url : loginUrl,
+                loginUrl
+            }
+        });
+
+        const fields = authInfo.getFields(true);
+        if (!fields.orgId || !fields.accessToken || !fields.instanceUrl || !fields.username) {
+            throw new Error('OAuth client credentials login returned incomplete auth information');
+        }
+
+        const authResult: SalesforceAuthResult = {
+            orgId: fields.orgId,
+            accessToken: fields.accessToken,
+            instanceUrl: fields.instanceUrl,
+            loginUrl: fields.loginUrl ?? loginUrl,
+            username: fields.username,
+            clientId: options.clientId,
+            clientSecret: options.clientSecret,
+            // Client Credentials does not return refresh tokens.
+            refreshToken: 'client_credentials'
+        };
+        await saveOrg(authResult, { alias: options.alias });
+        return authResult;
     }
 
     export async function refreshOAuthTokens(usernameOrAlias: string, cancelToken?: CancellationToken) : Promise<SalesforceAuthResult> {

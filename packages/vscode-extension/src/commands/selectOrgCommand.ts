@@ -44,13 +44,17 @@ export default class SelectOrgCommand extends CommandBase {
     }, {
         label: '$(shield) Device Login Flow',
         type: 'device',
-        detail: 'A device code will be generated that can be used to authorize the org manually from the browser.'
+        detail: 'A device code will be generated that can be used to authorize the org manually from the browser (ECA/CA required).'
+    }, {
+        label: '$(server-process) OAuth2 Client Credentials Flow',
+        type: 'client_credentials',
+        detail: 'Authenticate using OAuth2 Client Credentials flow (ECA/CA required)'
     }];
 
     private readonly salesforceUrlValidator = (url?: string) : string | undefined => {
-        const urlRegex = /(^http(s){0,1}:\/\/[^/]+\.[a-z]+(:[0-9]+|)$)|(^\s*$)/i;
+        const urlRegex = /^(https?:\/\/)?(.+)\.salesforce\.com$/i;
         if (url && !urlRegex.test(url)) {
-            return 'Please specify a valid domain URL starting with https or http';
+            return 'Please specify a valid domain URL, ommit the trailing slash (e.g. https://vlocode--sandbox.salesforce.com or vlocode--sandbox.salesforce.com)';
         }
     };
 
@@ -145,40 +149,91 @@ export default class SelectOrgCommand extends CommandBase {
 
     protected async authorizeNewOrg() : Promise<SalesforceAuthResult | undefined> {
         const flowType = await vscode.window.showQuickPick(this.authFlows,
-            { placeHolder: 'Select the authorization flows you want use' });
+            { placeHolder: 'Select the authorization flows you want use' }
+        );
 
         if (!flowType) {
             return;
         }
 
-        const newOrgType = await vscode.window.showQuickPick(this.salesforceOrgTypes,
-            { placeHolder: 'Select the type of org you want to authorize' });
+        const newOrgType = flowType.type === 'client_credentials' || await vscode.window.showQuickPick(this.salesforceOrgTypes,
+            { placeHolder: 'Select the type of org you want to authorize' }
+        );
 
         if (!newOrgType) {
             return;
         }
 
-        const instanceUrl = newOrgType.instanceUrl || await vscode.window.showInputBox({
-            placeHolder: 'Enter the login URL of the instance the org lives on',
-            validateInput: this.salesforceUrlValidator
+        const instanceUrl = newOrgType !== true ? newOrgType.instanceUrl : await this.promptInstanceUrl();
+        if (!instanceUrl) {
+            return;
+        }
+
+        const alias = await vscode.window.showInputBox({
+            placeHolder: 'Enter an org alias or use the default alias',
+            ignoreFocusOut: true
+        });
+
+        if (flowType.type === 'web') {
+            return this.authorizeWebLogin({ instanceUrl, alias });
+        } else if (flowType.type === 'client_credentials') {
+            return this.authorizeClientCredentialsLogin({ instanceUrl, alias });
+        } else {
+            return this.authorizeDeviceLogin({ instanceUrl, alias });
+        }
+    }
+
+    private async promptInstanceUrl() : Promise<string | undefined> {
+        const instanceUrl = await vscode.window.showInputBox({
+            placeHolder: 'Enter the Salesforce instance URL (e.g. vlocode--sandbox.salesforce.com or vlcode.my.salesforce.com)',
+            validateInput: this.salesforceUrlValidator,
+            ignoreFocusOut: true
         });
 
         if (!instanceUrl) {
             return;
         }
 
-        const alias = await vscode.window.showInputBox({
-            placeHolder: 'Enter an org alias or use the default alias (Press \'Enter\' to confirm or \'Escape\' to cancel)'
-        });
+        return instanceUrl.startsWith('http') ? instanceUrl : `https://${instanceUrl}`;
+    }
 
-        if (flowType.type === 'web') {
-            return this.authorizeWebLogin({ instanceUrl, alias });
-        } else {
-            return this.authorizeDeviceLogin({ instanceUrl, alias });
+    protected async authorizeClientCredentialsLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceAuthResult | undefined> {
+        const clientId = await vscode.window.showInputBox({
+            placeHolder: 'Enter the Client Id (Consumer Key) of the  External Client/Connected App',
+            ignoreFocusOut: true
+        });
+        if (!clientId) {
+            return;
         }
+
+        const clientSecret = await vscode.window.showInputBox({
+            placeHolder: 'Enter the Client Secret (Consumer Secret) of the External Client/Connected App',
+            ignoreFocusOut: true
+        });
+        if (!clientSecret) {
+            return;
+        }
+
+        // Request Access token and refresh token using the client credentials flow
+        const authInfo = await this.vlocode.withActivity({
+            location: vscode.ProgressLocation.Notification,
+            progressTitle: 'Authorizing org using OAuth2 Client Credentials flow',
+            cancellable: false
+        }, sfdx.clientCredentialsLogin({ ...options, clientId, clientSecret }));
+
+        return this.processAuthinfo(authInfo, options);
     }
 
     protected async authorizeDeviceLogin(options: { instanceUrl: string, alias?: string }) : Promise<SalesforceAuthResult | undefined> {
+        const clientId = await vscode.window.showInputBox({
+            placeHolder: 'Enter the ClientId (Consumer Key) of the ECA/CA to use for authorization (Press \'Enter\' to confirm or \'Escape\' to cancel)',
+            ignoreFocusOut: true
+        });
+
+        if (!clientId) {
+            return;
+        }
+
         const authInfo = await this.vlocode.withActivity({
             location: vscode.ProgressLocation.Notification,
             progressTitle: 'Salesforce Device Login',
@@ -186,7 +241,7 @@ export default class SelectOrgCommand extends CommandBase {
         }, async (progress, token) => {
             // Request Code and URL 
             progress.report({ message: 'Requesting device login...' });
-            const deviceLogin = await sfdx.deviceLogin(options);
+            const deviceLogin = await sfdx.deviceLogin({ ...options, clientId });
             if (token?.isCancellationRequested) {
                 return;
             }

@@ -455,14 +455,17 @@ export class SalesforceConnection extends Connection {
      * @returns Refreshed token
      */
     public async refreshAccessToken(): Promise<string> {
-        if (!this.refreshToken) {
-            throw new Error('Unable to refresh access token for connections without a refresh token');
+        const usesClientCredentials = !this.refreshToken || this.refreshToken === 'client_credentials';
+        if (usesClientCredentials && (!this.oauth2?.clientId || !this.oauth2?.clientSecret)) {
+            throw new Error('Unable to refresh access token for connections without a refresh token or OAuth client credentials');
         }
 
-        const tokens = await this.oauth2.refreshToken(this.refreshToken);
+        const tokens = usesClientCredentials
+            ? await this.oauth2.clientCredentialsToken()
+            : await this.oauth2.refreshToken(this.refreshToken!);
         this.accessToken = tokens.access_token;
 
-        if (this.instanceUrl !== tokens.instance_url) {
+        if (tokens.instance_url && this.instanceUrl !== tokens.instance_url) {
             this.instanceUrl = tokens.instance_url;
             if (this._transport instanceof HttpTransport) {
                 this._transport.options.instanceUrl = this.instanceUrl;
@@ -470,8 +473,10 @@ export class SalesforceConnection extends Connection {
             }
         }
 
-        const [userId, organizationId] = tokens.id.split("/");
-        this.userInfo = { id: userId, organizationId, url: tokens.id };
+        if (tokens.id) {
+            const [userId, organizationId] = tokens.id.split("/");
+            this.userInfo = { id: userId, organizationId, url: tokens.id };
+        }
 
         //this.logger.debug(`token refresh complete`);
         // Note: this event is not currently already emmited by the the base connection
