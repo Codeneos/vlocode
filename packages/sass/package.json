@@ -6,10 +6,9 @@
     "main": "src/index.ts",
     "bin": "src/bin.ts",
     "publishConfig": {
-        "main": "dist/index.js",
+        "main": "dist/index.cjs",
         "module": "dist/index.mjs",
-        "bin": "dist/bin.js",
-        "typings": "dist/index.d.ts",
+        "bin": "dist/sass-compiler.cjs",
         "access": "public"
     },
     "readme": "../SITE.md",
@@ -33,8 +32,8 @@
         "email": "peter@curlybracket.nl"
     },
     "files": [
-        "dist/**/*.js",
-        "dist/**/*.d.ts",
+        "dist/*.{cjs,mjs}",
+        "dist/*.d.{cts,mts}",
         "dist/**/*.json",
         "!dist/**/*.test.js",
         "!dist/**/*.test.d.ts",
