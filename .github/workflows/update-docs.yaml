@@ -1,9 +1,14 @@
 name: Update Documentation
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
+  workflow_run:
+    workflows: ['Release']
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -18,6 +23,7 @@ jobs:
   build:
     name: Build Docs
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
 
     steps:
       - name: Checkout repository
