@@ -4,6 +4,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.41.1](https://github.com/codeneos/vlocode/compare/v1.41.0...v1.41.1) (2026-02-26)
+
+### Bug Fixes
+
+* when industries/vlocity is not installed avoid loading industries specific components and warn the user instead of throwing a hard error ([4b5f3e7](https://github.com/codeneos/vlocode/commit/4b5f3e79f2f1c0728bf7de41478ce532e608f514))
+
+### Features
+
+* support for connecting using OAuth2 Client Credentials when an ECA has been setup in the target org ([43f3180](https://github.com/codeneos/vlocode/commit/43f318095649677f5ef6879a845a60764e3b3bf8))
+
 # [1.41.0](https://github.com/codeneos/vlocode/compare/v1.40.1-rc.0...v1.41.0) (2026-02-25)
 
 **Note:** Version bump only for package vlocode
