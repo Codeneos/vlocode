@@ -141,7 +141,6 @@ jobs:
         run: echo "Release artifacts are ready for publishing."
 
   publish-extensions:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
