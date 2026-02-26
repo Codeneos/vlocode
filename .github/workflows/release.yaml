@@ -178,10 +178,13 @@ jobs:
     needs:
       - publish-approval
       - package
+      - version-and-tag
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-and-tag.outputs.release_ref }}
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
