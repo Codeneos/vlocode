@@ -140,13 +140,17 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
             this.showStatus('$(sync~spin) Connecting to Salesforce...');
             if (this.sfUsername) {
                 this._salesforceService = container.get(SalesforceService);                
-                this.showStatus('$(sync~spin) Initializing datapack services...');
+                this.showStatus('$(sync~spin) Initializing SF services...');
                 await this.nsService.initialize(this._salesforceService);
                 this.isOmnistudioInstalled = /omnistudio/ig.test(this.nsService.getNamespace() ?? '');
                 this.isVlocityInstalled = /vlocity/ig.test(this.nsService.getNamespace() ?? '');
-                this._datapackService = await container.get(VlocityDatapackService).initialize();
                 if (this.isVlocityInstalled) {
+                    this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
+                    this._datapackService = await container.get(VlocityDatapackService).initialize();
                     await container.get(VlocityMatchingKeyService).initialize();
+                } else {
+                    vscode.window.showWarningMessage('Vlocity managed package not found on the target org; datapack services will not be available');
+                    this.logger.warn('Salesforce Industries Managed package not found on the target org; datapack services will not be available');
                 }
             }
             this.updateExtensionStatus();
@@ -606,10 +610,6 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
 
         if (!this.isInitialized) {
             return 'Vlocode failed to initialize within the given time; check the debug console for possible errors';
-        }
-
-        if (!await this.datapackService.isVlocityPackageInstalled()) {
-            return 'Vlocity not installed on this Salesforce instance; select a different Salesforce instance or install Vlocity';
         }
     }
 
