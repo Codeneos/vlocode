@@ -112,15 +112,15 @@ export class SalesforceApexContentProvider implements vscode.TextDocumentContent
             throw new Error('Request was cancelled');
         }
 
-        // Build the query filter
-        const filter: any = { Name: className };
+        // Build the query filter with explicit $eq operators to prevent NoSQL injection
+        const filter: any = { Name: { $eq: className } };
         
         // Add namespace filter if provided
         if (namespace) {
-            filter.NamespacePrefix = namespace;
+            filter.NamespacePrefix = { $eq: namespace };
         } else {
             // When no namespace is specified, look for classes without namespace prefix (null)
-            filter.NamespacePrefix = null;
+            filter.NamespacePrefix = { $eq: null };
         }
 
         try {
