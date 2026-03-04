@@ -1,6 +1,6 @@
 import { DescribeSObjectResult, Field, SalesforceLookupService, SalesforceSchemaService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship } from "./exportDefinitions";
-import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, VlocityMatchingKeyService } from "@vlocode/vlocity";
+import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { forEachAsyncParallel, formatString, mapAsyncParallel, Timer } from "@vlocode/util";
 import { Logger, injectable } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
@@ -103,7 +103,7 @@ export class DatapackExporter {
         private readonly expander: DatapackExpander,
         private readonly lookupService: SalesforceLookupService,
         private readonly schema: SalesforceSchemaService,
-        private readonly vlocityMatchingKeys: VlocityMatchingKeyService,
+        private readonly vlocityMatchingKeys: DatapackMatchingKeyService,
         private readonly logger: Logger,
     ) {
         this.logger = logger.distinct();
@@ -232,7 +232,7 @@ export class DatapackExporter {
                     return;
                 }
 
-                if (this.definitions.isEmbeddedLookup(datapack, field.name)) {
+                if (this.definitions.isEmbeddedObject(datapack, field.name)) {
                     value = await this.buildSObject(datapack, value);
                 } else {
                     value = await this.buildLookup(datapack, value);

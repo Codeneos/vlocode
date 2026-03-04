@@ -50,7 +50,8 @@ export class DatapackInfoService {
 
     constructor(
         public readonly logger: Logger,
-        private readonly salesforce: SalesforceService) {
+        private readonly salesforce: SalesforceService
+    ) {
     }
 
     /**
@@ -74,8 +75,8 @@ export class DatapackInfoService {
         const orgConfigs = new Map([...customConfiguration, ...standardConfiguration].map(record => [
             record.DeveloperName.toLowerCase(),
             { 
-                sobjectType: record.primarySObjectType, 
-                datapackType: record.developerName
+                sobjectType: record.PrimarySObjectType, 
+                datapackType: record.DeveloperName
             }
         ]) as Array<[string, VlocityDatapackDefinition]>);
         

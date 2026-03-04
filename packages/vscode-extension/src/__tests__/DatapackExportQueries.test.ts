@@ -1,7 +1,7 @@
 import 'jest';
 
 import { NamespaceService, SalesforceSchemaService } from '@vlocode/salesforce';
-import { VlocityMatchingKey, VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
+import { VlocityMatchingKey, DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 import { container, Logger } from '@vlocode/core';
 import { DatapackExportQueries } from '../lib/vlocity/datapackExportQueries';
 
@@ -14,7 +14,7 @@ describe('DatapackExportQueries', () => {
                 fields: fields,
                 returnField: 'Id',
             }) as VlocityMatchingKey
-        } as any) as VlocityMatchingKeyService;
+        } as any) as DatapackMatchingKeyService;
     }
 
     function mockSchemaService(fieldTypes?: Record<string, string>, nameField: string = 'Name') {

@@ -1,7 +1,7 @@
 import { Logger, injectable } from '@vlocode/core';
 import { cache, removeNamespacePrefix } from '@vlocode/util';
-import { SalesforceSchemaService, SalesforceLookupService } from '@vlocode/salesforce';
-import { DatapackInfoService } from './datapack';
+import { SalesforceService } from '@vlocode/salesforce';
+import { DatapackInfoService } from './datapackInfoService';
 
 export interface VlocityMatchingKey {
     readonly sobjectType: string;
@@ -18,13 +18,12 @@ interface DRMatchingKeyRecord {
 }
 
 @injectable.singleton()
-export class VlocityMatchingKeyService {
+export class DatapackMatchingKeyService {
 
     constructor(
         private readonly logger: Logger,
         private readonly datapackInfo: DatapackInfoService,
-        private readonly schema: SalesforceSchemaService,
-        private readonly lookup: SalesforceLookupService) {
+        private readonly salesforce: SalesforceService) {
     }
 
     @cache({ unwrapPromise: true, cacheExceptions: true })
@@ -38,7 +37,7 @@ export class VlocityMatchingKeyService {
     }
 
     /**
-     * Gets the VlocityMatchingKey object for the specified datapack or SObject type
+     * Gets the matching key definition for the specified datapack or SObject type.
      * @param type The datapack type or SObject type for which to get the matching key record
      */
     public async getMatchingKeyDefinition(type: string) : Promise<VlocityMatchingKey> {
@@ -87,7 +86,7 @@ export class VlocityMatchingKeyService {
     private async queryMatchingKeys(): Promise<Array<VlocityMatchingKey>> {
         this.logger.verbose('Querying matching keys from Salesforce');
 
-        const matchingKeyResults: DRMatchingKeyRecord[] = await this.lookup.lookup('%vlocity_namespace%__DRMatchingKey__mdt', undefined, 'all');
+        const matchingKeyResults: DRMatchingKeyRecord[] = await this.salesforce.lookup('%vlocity_namespace%__DRMatchingKey__mdt', undefined, 'all');
         const matchingKeyObjects = await Promise.all(matchingKeyResults.map(async record => {
             const fields = record.matchingKeyFields.split(',').map(s => s.trim()).reverse();
             const validFields = await this.validateMatchingKeyFields(record.objectAPIName, fields);
@@ -108,11 +107,11 @@ export class VlocityMatchingKeyService {
         const resolvedFields = new Array<string>();
 
         for (const field of fields) {
-            const fieldDescribe = await this.schema.describeSObjectField(sobjectType, field, false);
+            const fieldDescribe = await this.salesforce.schema.describeSObjectField(sobjectType, field, false);
             if (fieldDescribe) {
                 resolvedFields.push(fieldDescribe.name);
             } else {
-                if (!await this.schema.isSObjectFieldDefined(sobjectType, field)) {
+                if (!await this.salesforce.schema.isSObjectFieldDefined(sobjectType, field)) {
                     this.logger.warn(`${sobjectType}: matching key field '${field}' is not accessible -- update the profile of the current user to fix this warning`);
                 } else {
                     this.logger.error(`${sobjectType}: matching key field '${field}' does not exist -- remove this field from the matching key definitions in Salesforce to fix this error`);

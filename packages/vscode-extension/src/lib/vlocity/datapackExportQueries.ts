@@ -1,6 +1,6 @@
 import { injectable, Logger } from "@vlocode/core";
 import {  NamespaceService, QueryBuilder, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
-import { DatapackTypeDefinitions, VlocityMatchingKeyService } from "@vlocode/vlocity";
+import { DatapackTypeDefinitions, DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { ObjectEntry } from './vlocityDatapackService';
 import { deepClone, removeNamespacePrefix } from '@vlocode/util';
 
@@ -8,7 +8,7 @@ import { deepClone, removeNamespacePrefix } from '@vlocode/util';
 export class DatapackExportQueries {
 
     constructor(
-        private readonly matchingKeys: VlocityMatchingKeyService,
+        private readonly matchingKeys: DatapackMatchingKeyService,
         private readonly schema: SalesforceSchemaService, 
         private readonly logger: Logger) {
     }

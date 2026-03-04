@@ -1,7 +1,7 @@
 import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
 import { LogManager, injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
 import { last, isSalesforceId, CancellationToken, filterKeys, groupBy, unique, count, remove } from '@vlocode/util';
-import { VlocityNamespaceService, VlocityMatchingKeyService, VlocityDatapackReference } from '@vlocode/vlocity';
+import { VlocityNamespaceService, DatapackMatchingKeyService, VlocityDatapackReference } from '@vlocode/vlocity';
 import { DateTime } from 'luxon';
 import * as constants from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
@@ -37,7 +37,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
 
     constructor(
         private readonly namespaceService: VlocityNamespaceService,
-        private readonly matchingKeyService: VlocityMatchingKeyService,
+        private readonly matchingKeyService: DatapackMatchingKeyService,
         private readonly lookupService: SalesforceLookupService,
         private readonly schema: SalesforceSchemaService,
         private readonly logger = LogManager.get(DatapackLookupService)) {

@@ -5,7 +5,7 @@ import { isSalesforceId } from '@vlocode/util';
 import { DateTime } from 'luxon';
 import { DATAPACK_RESERVED_FIELDS } from './constants';
 import { DatapackDeploymentRecord } from './datapackDeploymentRecord';
-import { VlocityDatapack, VlocityMatchingKeyService } from '@vlocode/vlocity';
+import { VlocityDatapack, DatapackMatchingKeyService } from '@vlocode/vlocity';
 import { randomUUID } from 'crypto';
 
 @injectable()
@@ -21,7 +21,7 @@ export class DatapackRecordFactory {
     constructor(
         private readonly namespaceService: NamespaceService,
         private readonly schemaService: SalesforceSchemaService,
-        private readonly matchingKeyService: VlocityMatchingKeyService,
+        private readonly matchingKeyService: DatapackMatchingKeyService,
         private readonly logger: Logger) {
     }
 
@@ -228,4 +228,3 @@ export class DatapackRecordFactory {
         return `${value}`;
     }
 }
-

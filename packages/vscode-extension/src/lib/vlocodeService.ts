@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { Logger, injectable ,container, LifecyclePolicy, inject } from '@vlocode/core';
 import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
-import { VlocityMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
+import { DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 
 import { CONFIG_SECTION, CONTEXT_PREFIX, VlocodeCommand } from '../constants';
 import { Activity as ActivityTask, ActivityOptions, CancellableActivity, NoncancellableActivity as NonCancellableActivity, VlocodeActivity, VlocodeActivityStatus, ActivityProgressData } from '../lib/vlocodeActivity';
@@ -147,7 +147,7 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 if (this.isVlocityInstalled) {
                     this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
                     this._datapackService = await container.get(VlocityDatapackService).initialize();
-                    await container.get(VlocityMatchingKeyService).initialize();
+                    await container.get(DatapackMatchingKeyService).initialize();
                 } else {
                     vscode.window.showWarningMessage('Vlocity managed package not found on the target org; datapack services will not be available');
                     this.logger.warn('Salesforce Industries Managed package not found on the target org; datapack services will not be available');

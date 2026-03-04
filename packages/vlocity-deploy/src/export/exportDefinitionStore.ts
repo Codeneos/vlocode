@@ -139,7 +139,7 @@ export class DatapackExportDefinitionStore {
         return this.get(item, 'ignoreFields')?.includes(field) === true;
     }
 
-    public isEmbeddedLookup(item: ObjectRef, field: string) {
+    public isEmbeddedObject(item: ObjectRef, field: string) {
         return this.get(item, "embeddedLookupFields")?.includes(field) === true;
     }
 

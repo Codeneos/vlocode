@@ -72,7 +72,7 @@ export class DatapackExportDefinitionValidator {
             }
         }
 
-        for (const fieldName of definition.embeddedLookupFields ?? []) {
+        for (const fieldName of definition.embeddedObjects ?? []) {
             const field = this.findField(describe, fieldName);
             if (field && field.referenceTo?.length) {
                 errors.push({

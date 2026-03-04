@@ -6,7 +6,7 @@ import datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
 import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore, SalesforceSchemaService,  } from '@vlocode/salesforce';
-import { VlocityDatapack, VlocityNamespaceService, VlocityMatchingKeyService, VlocityMatchingKey } from '@vlocode/vlocity';
+import { VlocityDatapack, VlocityNamespaceService, DatapackMatchingKeyService, VlocityMatchingKey } from '@vlocode/vlocity';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 
 describe('datapackRecordFactory', () => {
@@ -30,7 +30,7 @@ describe('datapackRecordFactory', () => {
                 fields: [ 'Name' ],
                 returnField: 'Id',
             }) as VlocityMatchingKey
-        } as any) as VlocityMatchingKeyService;
+        } as any) as DatapackMatchingKeyService;
     }
 
     beforeAll(() =>  container.add(Logger.null));
@@ -43,7 +43,7 @@ describe('datapackRecordFactory', () => {
         testContainer.use(mockConnectionProvider([]), SalesforceConnectionProvider);
         testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
         testContainer.use(await new SchemaDataStore().loadFromFile(schemaDataFile));
-        testContainer.use(mockMatchingKeyService(), VlocityMatchingKeyService);
+        testContainer.use(mockMatchingKeyService(), DatapackMatchingKeyService);
         //testContainer.add(SalesforceSchemaService);
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
@@ -225,7 +225,7 @@ describe('datapackRecordFactory', () => {
         testContainer.add(mockConnectionProvider([]), { provides: [ SalesforceConnectionProvider ] });
         testContainer.add(new VlocityNamespaceService('vlocity_cmt'), { provides: [ NamespaceService ] });
         testContainer.add(await new SchemaDataStore().load(schemaData), { provides: [ SchemaDataStore ] });
-        testContainer.add(mockMatchingKeyService(), { provides: [ VlocityMatchingKeyService ] });
+        testContainer.add(mockMatchingKeyService(), { provides: [ DatapackMatchingKeyService ] });
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
         const sut = testContainer.new(DatapackRecordFactory);

@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import vlocity from 'vlocity';
 
 import { Logger, injectable } from '@vlocode/core';
-import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, VlocityMatchingKeyService } from '@vlocode/vlocity';
+import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, DatapackMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
 import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals, getErrorMessage } from '@vlocode/util';
@@ -186,7 +186,7 @@ export default class VlocityDatapackService implements vscode.Disposable {
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly config: VlocodeConfiguration,
         private readonly salesforceService: SalesforceService,
-        private readonly matchingKeyService: VlocityMatchingKeyService,
+        private readonly matchingKeyService: DatapackMatchingKeyService,
         private readonly loader: DatapackLoader,
         private readonly exportQueries: DatapackExportQueries
     ) {
