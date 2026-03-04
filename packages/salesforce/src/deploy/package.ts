@@ -386,6 +386,21 @@ export class SalesforcePackage {
     }
 
     /**
+     * Get a list of all final package components (files) in the package instead of the decomposed source files. 
+     * This is useful when you want to get the actual files that will be included in the package instead of the source files from which they were generated.
+     * @param predicate Optional predicate to filter the components
+     */
+    public *packageFiles(predicate?: ((entry: SalesforcePackageComponent) => boolean) | string ) {
+        for (const [packagePath, component] of this.packageData) {
+            if (!predicate || (typeof predicate === 'string' ? 
+                component.componentType === predicate : predicate(component))
+            ) {
+                yield component;
+            }
+        }
+    }
+
+    /**
      * Get the source file for any package path in the package.
      * @param packagePath package path
      * @returns Source file FS path
