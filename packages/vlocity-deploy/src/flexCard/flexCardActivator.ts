@@ -1,4 +1,4 @@
-import { SalesforceService, SalesforceDeployService } from '@vlocode/salesforce';
+import { SalesforceService } from '@vlocode/salesforce';
 import { injectable, Logger } from '@vlocode/core';
 import { timeout, Timer } from '@vlocode/util';
 
@@ -133,8 +133,7 @@ export class FlexCardActivator {
 
     private async deployLwcWithMetadataApi(card: FlexCardDefinition, options?: FlexCardCompileOptions) {
         const sfPackage = await this.lwcCompiler.compileToPackage(card, options);
-        const deployService = new SalesforceDeployService(this.salesforceService, Logger.null);
-        const result = await deployService.deployPackage(sfPackage);
+        const result = await this.salesforceService.deploy.deployPackage(sfPackage);
         if (!result.success) {
             throw new Error(`FlexCard LWC Component deployment failed: ${result.details?.componentFailures.map(failure => failure.problem)}`);
         }

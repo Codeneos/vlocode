@@ -1,4 +1,4 @@
-import { QueryFormatter, QueryService, SalesforceQueryData } from '@vlocode/salesforce';
+import { QueryFormatter, SalesforceQueryData, SalesforceService } from '@vlocode/salesforce';
 import { injectable } from '@vlocode/core';
 import { OmniScriptDefinition, OmniScriptSpecification } from './types';
 import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
@@ -6,7 +6,7 @@ import { OmniScriptDefinitionProvider } from './omniScriptDefinitionProvider';
 @injectable.singleton()
 export class ScriptDefinitionProvider implements OmniScriptDefinitionProvider {
     constructor(
-        private readonly queryService: QueryService
+        private readonly salesforce: SalesforceService
     ) { }
 
     /**
@@ -39,7 +39,7 @@ export class ScriptDefinitionProvider implements OmniScriptDefinitionProvider {
             }
         }
 
-        const records = await this.queryService.query(QueryFormatter.format(query), false);
+        const records = await this.salesforce.data.query(QueryFormatter.format(query), false);
 
         if (records.length == 0) {
             throw new Error(`Specified OmniScript doesn't exists or isn't activated, activate the OmniScript before compiling it`);

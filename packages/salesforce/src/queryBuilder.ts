@@ -1,9 +1,12 @@
 import { container } from '@vlocode/core';
 import { deepClone, flattenObject, Iterable } from '@vlocode/util';
-import { SalesforceConnectionProvider } from './connection';
 import { QueryService } from './queryService';
 import { QueryFormatter, QueryParser, SalesforceQueryData } from './queryParser';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+
+export interface QueryExecutor {
+    query(query: string): Promise<any[]>;
+}
 
 class QueryBuilderData {
     constructor(protected readonly query: SalesforceQueryData) {
@@ -29,30 +32,12 @@ class QueryBuilderData {
         return this.query.sobjectType;
     }
 
-    public execute<T = any>(executor?: SalesforceConnectionProvider | { query(q: string): Promise<T[]> }) : Promise<T[]> {
+    public execute<T = any>(executor?: QueryExecutor) : Promise<T[]> {
         if (!executor) {
             return this.execute(container.get(QueryService));
         }
 
-        if (typeof executor['query'] === 'function') {
-            return executor['query'](this.getQuery());
-        }
-
-        // @ts-ignore executor is JsForceConnectionProvider
-        return new QueryService(executor).query(this.getQuery());
-    }
-
-    public async executeTooling<T = any>(executor?: SalesforceConnectionProvider | { queryTooling(q: string): Promise<T[]> }) : Promise<T[]> {
-        if (!executor) {
-            return this.execute(container.get(QueryService));
-        }
-
-        if (typeof executor['queryTooling'] === 'function') {
-            return executor['queryTooling'](this.getQuery());
-        }
-
-        // @ts-ignore executor is JsForceConnectionProvider
-        return new QueryService(executor).queryTooling(this.getQuery());
+        return executor.query(this.getQuery());
     }
 }
 

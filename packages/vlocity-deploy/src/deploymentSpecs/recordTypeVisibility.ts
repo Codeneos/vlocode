@@ -1,13 +1,13 @@
 import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
-import { SalesforceProfileService } from '@vlocode/salesforce';
+import { SalesforceService } from '@vlocode/salesforce';
 import { cache } from '@vlocode/util';
 
 @deploymentSpec({ recordFilter: /.*/ })
 export class RecordTypeVisibility implements DatapackDeploymentSpec {
 
-    constructor(private readonly profiles: SalesforceProfileService) {
+    constructor(private readonly salesforce: SalesforceService) {
     }
 
     public async onRecordError([ record ]: ReadonlyArray<DatapackDeploymentRecord>) {
@@ -26,6 +26,6 @@ export class RecordTypeVisibility implements DatapackDeploymentSpec {
 
     @cache({ scope: 'instance', cacheExceptions: true })
     private addRecordTypeVisibility(recordTypeId: string) {
-        return this.profiles.addRecordTypeVisibility(recordTypeId);
+        return this.salesforce.profiles.addRecordTypeVisibility(recordTypeId);
     }
 }

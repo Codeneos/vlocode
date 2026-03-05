@@ -1,5 +1,5 @@
 
-import { QueryService, SalesforceLookupService, SalesforceSchemaService, RecordBatch, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
+import { SalesforceService, RecordBatch, SalesforceConnectionProvider, Field } from '@vlocode/salesforce';
 import { Logger, injectable, container, LifecyclePolicy, Container, inject } from '@vlocode/core';
 import { Timer, groupBy, Iterable, CancellationToken, forEachAsyncParallel, isReadonlyArray, removeNamespacePrefix, CustomError, getErrorMessage } from '@vlocode/util';
 import { NAMESPACE_PLACEHOLDER } from './constants';
@@ -52,8 +52,7 @@ export class DatapackDeployer {
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
-        private readonly objectLookupService: SalesforceLookupService,
-        private readonly schemaService: SalesforceSchemaService,
+        private readonly salesforce: SalesforceService,
         private readonly logger: Logger
     ) {
     }
@@ -64,7 +63,7 @@ export class DatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        this.container.add(this.container.new(QueryService, this.connectionProvider).setQueryCache({ enabled: false }));
+        this.container.get(SalesforceService).data.cache.configure({ enabled: false });
         const deployment = this.container.new(DatapackDeployment, options);
         const recordFactory = this.container.new(DatapackRecordFactory);
 
@@ -120,11 +119,11 @@ export class DatapackDeployer {
     private async setVlocityTriggerState(newTriggerState: boolean) {
         const timer = new Timer();
         const connection = await this.connectionProvider.getJsForceConnection();
-        const triggerSetupObject = await this.schemaService.describeSObject(`${NAMESPACE_PLACEHOLDER}__TriggerSetup__c`);
-        const triggerOnField = await this.schemaService.describeSObjectField(triggerSetupObject.name, 'IsTriggerOn__c');
+        const triggerSetupObject = await this.salesforce.schema.describeSObject(`${NAMESPACE_PLACEHOLDER}__TriggerSetup__c`);
+        const triggerOnField = await this.salesforce.schema.describeSObjectField(triggerSetupObject.name, 'IsTriggerOn__c');
 
         const allTriggersName = 'AllTriggers';
-        const allTriggerSetup = await this.objectLookupService.lookupSingle(triggerSetupObject.name, { Name: allTriggersName }, [ 'Id', 'Name', triggerOnField.name ]);
+        const allTriggerSetup = await this.salesforce.data.lookupSingle(triggerSetupObject.name, { Name: allTriggersName }, [ 'Id', 'Name', triggerOnField.name ]);
 
         if (!allTriggerSetup) {
             // Triggers not setup; create new record to disable all triggers
@@ -145,11 +144,11 @@ export class DatapackDeployer {
      */
     private async verifyDeployedFieldData(records: Iterable<DatapackDeploymentRecord>, fieldNames: string[]) {
         const deployedRecordsByType = groupBy(Iterable.filter(records, r => r.isDeployed), r => r.sobjectType);
-        const recordBatch = new RecordBatch(this.schemaService, { useBulkApi: false, chunkSize: 100 });
+        const recordBatch = new RecordBatch(this.salesforce.schema, { useBulkApi: false, chunkSize: 100 });
 
         for (const [sobjectType, records] of Object.entries(deployedRecordsByType)) {
             const fields = (await Promise.all(
-                fieldNames.map(name => this.schemaService.describeSObjectField(sobjectType, name, false))
+                fieldNames.map(name => this.salesforce.schema.describeSObjectField(sobjectType, name, false))
             )).filter(f => !!f) as Array<Field>;
 
             if (!fields.length) {
@@ -158,7 +157,7 @@ export class DatapackDeployer {
 
             this.logger.verbose(`Verifying org-data after deployment on ${sobjectType} fields [${fields.map(f => f.name).join(', ')}] for ${records.length} record(s)`);
             const deployedData = new Map(records.map(r => [r.recordId as string, r]));
-            const orgData = await this.objectLookupService.lookupById(deployedData.keys(), fields.map(f => f.name), false);
+            const orgData = await this.salesforce.data.lookupById(deployedData.keys(), fields.map(f => f.name), false);
 
             for (const result of orgData.values()) {
                 const mismatchedFieldData = fields.map(field => ({

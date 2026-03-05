@@ -1,4 +1,4 @@
-import { SalesforceSchemaService, DescribeSObjectResult } from "@vlocode/salesforce";
+import { SalesforceService, DescribeSObjectResult } from "@vlocode/salesforce";
 import { DatapackExportDefinition } from "./exportDefinitions";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 
@@ -17,10 +17,10 @@ export class DatapackExportDefinitionValidator {
 
     /**
      * Creates an instance of DatapackExportDefinitionValidator.
-     * @param schema - The Salesforce schema service.
+     * @param salesforce - The Salesforce service facade.
      */
     constructor(
-        private readonly schema: SalesforceSchemaService
+        private readonly salesforce: SalesforceService
     ) {
     }
 
@@ -44,7 +44,7 @@ export class DatapackExportDefinitionValidator {
      */
     public async validate(definition: DatapackExportDefinition) {
         const errors = new Array<ExportDefinitionError>();
-        const describe = await this.schema.describeSObject(definition.objectType);
+        const describe = await this.salesforce.schema.describeSObject(definition.objectType);
 
         if (!describe) {
             errors.push({
@@ -56,7 +56,7 @@ export class DatapackExportDefinitionValidator {
             return errors;
         }
 
-        for (const property of ['matchingFields', 'ignoreFields', 'embeddedLookupFields'] as const) {
+        for (const property of ['matchingKeyFields', 'ignoreFields', 'embeddedObjects'] as const) {
             const fields = definition[property];
             if (!fields) {
                 continue;
@@ -74,7 +74,8 @@ export class DatapackExportDefinitionValidator {
 
         for (const fieldName of definition.embeddedObjects ?? []) {
             const field = this.findField(describe, fieldName);
-            if (field && field.referenceTo?.length) {
+            const isLookupField = Array.isArray(field?.referenceTo) && field.referenceTo.length > 0;
+            if (field && !isLookupField) {
                 errors.push({
                     message: `Field ${fieldName} is incorrectly configured as lookup, actual field type: ${field.type}`,
                     type: 'INVALID_FIELD',
@@ -95,7 +96,7 @@ export class DatapackExportDefinitionValidator {
      * @returns An array of invalid field names.
      */
     public getInvalidFields(describe: DescribeSObjectResult, fields: string[]) {
-        return fields.filter(field => this.findField(describe, field));
+        return fields.filter(field => !this.findField(describe, field));
     }
 
     /**

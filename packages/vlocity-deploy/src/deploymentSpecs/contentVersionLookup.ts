@@ -1,5 +1,5 @@
 import { DeferredWorkQueue, injectable, LifecyclePolicy, WorkItemResult } from '@vlocode/core';
-import { SalesforceLookupService } from '@vlocode/salesforce';
+import { SalesforceService } from '@vlocode/salesforce';
 import { cache } from '@vlocode/util';
 
 interface ContentVersionRecord {
@@ -16,7 +16,7 @@ export class ContentVersionLookup {
 
     private readonly lookupQueue = new DeferredWorkQueue<string, ContentVersionRecord>((ids) => this.lookupProcessor(ids));
 
-    public constructor(private readonly lookupService: SalesforceLookupService) {
+    public constructor(private readonly salesforce: SalesforceService) {
     }
 
     /**
@@ -34,7 +34,7 @@ export class ContentVersionLookup {
 
     private async lookupProcessor(ids: string[]) {
         const lookupFilters = ids.map(id => ({ id }));
-        const results = await this.lookupService.lookup('ContentVersion', lookupFilters, ['id', 'ContentDocumentId', 'VersionNumber', 'Checksum']);
+        const results = await this.salesforce.data.lookup('ContentVersion', lookupFilters, ['id', 'ContentDocumentId', 'VersionNumber', 'Checksum']);
 
         return ids.map<WorkItemResult<ContentVersionRecord>>(id => ({
             status: 'fulfilled',

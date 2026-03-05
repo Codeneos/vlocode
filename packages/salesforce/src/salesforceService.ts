@@ -4,10 +4,10 @@ import { cache, evalTemplate, mapAsyncParallel, XML, substringAfter, fileName, T
 
 import { HttpMethod, HttpRequestInfo, SalesforceConnectionProvider } from './connection';
 import { SalesforcePackageBuilder, SalesforcePackageType } from './deploy/packageBuilder';
-import { QueryService, QueryResult } from './queryService';
+import { QueryResult } from './queryService';
 import { RecordBatch, RecordBatchOptions } from './recordBatch';
 import { SalesforceDeployService } from './salesforceDeployService';
-import { SalesforceLookupService } from './salesforceLookupService';
+import { SalesforceDataService } from './salesforceDataService';
 import { SalesforceProfile } from './salesforceProfile';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { SObjectRecord } from './types';
@@ -36,10 +36,25 @@ interface MetadataInfo { type: string; fullName: string; metadata: any; name: st
 export class SalesforceService implements SalesforceConnectionProvider {
 
     @inject() public readonly schema: SalesforceSchemaService;
-    @inject() public readonly lookupService: SalesforceLookupService;
     @inject() public readonly deploy: SalesforceDeployService;
     @inject() public readonly logs: DeveloperLogs;
     @inject() public readonly profiles: SalesforceProfileService;
+
+    private _data?: SalesforceDataService;
+    public get data() {
+        if (!this._data) {
+            this._data = (Container.get(this) ?? container).new(SalesforceDataService, { type: 'data' });
+        }
+        return this._data;
+    }
+
+    private _tooling?: SalesforceDataService;
+    public get tooling() {
+        if (!this._tooling) {
+            this._tooling = (Container.get(this) ?? container).new(SalesforceDataService, { type: 'tooling' });
+        }
+        return this._tooling;
+    }
 
     _batch: SalesforceBatchService;
     public get batch() {
@@ -52,7 +67,6 @@ export class SalesforceService implements SalesforceConnectionProvider {
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly namespaceService: NamespaceService,
-        private readonly queryService: QueryService,
         private readonly logger: Logger,
         private readonly fs: FileSystem
     ) {
@@ -61,11 +75,9 @@ export class SalesforceService implements SalesforceConnectionProvider {
     public dispose() {
         const owner = Container.get(this) ?? container;
         owner.removeInstance(this.schema);
-        owner.removeInstance(this.lookupService);
         owner.removeInstance(this.deploy);
         owner.removeInstance(this.logs);
         owner.removeInstance(this.batch);
-        owner.removeInstance(this.queryService);
     }
 
     public async isProductionOrg() : Promise<boolean> {
@@ -129,7 +141,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
 
     @cache()
     public async getInstalledPackages() {
-        const connection = await this.queryService.queryTooling(
+        const connection = await this.tooling.query(
             new QueryBuilder('InstalledSubscriberPackage', [
                 'SubscriberPackageVersion.MinorVersion',
                 'SubscriberPackageVersion.MajorVersion',
@@ -170,9 +182,15 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param query SOQL Query to execute
      */
     public async query<T extends Partial<SObjectRecord>>(query: string, useCache?: boolean) : Promise<T[]> {
-        return this.queryService.query(
-            this.namespaceService.updateNamespace(query), useCache
-        );
+        return this.data.query(query, useCache);
+    }
+
+    /**
+     * Update query cache behavior for the current Salesforce service instance.
+     */
+    public setQueryCache(options: { enabled: boolean, default?: boolean }) {
+        this.data.cache.configure(options);
+        return this;
     }
 
     /**
@@ -184,9 +202,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param useCache use the query cache
      */
     public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
-        return this.lookupService.lookup(
-            this.namespaceService.updateNamespace(type), filter, lookupFields, limit, useCache
-        );
+        return this.data.lookup(type, filter, lookupFields, limit, useCache);
     }
 
     /**

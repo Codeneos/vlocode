@@ -1,9 +1,24 @@
-import { injectable, LifecyclePolicy, Logger } from '@vlocode/core';
+import { injectable, LifecyclePolicy, Logger, inject } from '@vlocode/core';
 import { CancellationToken, CustomError, wait } from '@vlocode/util';
 import { QueryBuilder, QueryFilterCondition } from './queryBuilder';
-import { QueryService } from './queryService';
-import { SalesforceService } from './salesforceService';
 import { DateTime } from 'luxon';
+
+interface SalesforceBatchServiceProvider {
+    tooling: {
+        query<T extends object = object, K extends PropertyKey = string>(query: string): Promise<Array<T & { [P in K]: any }>>;
+    };
+    executeAnonymous(code: string, options?: {
+        rollbackOnError?: boolean;
+        logLevels?: Record<string, string>;
+    }): Promise<{
+        success: boolean;
+        compiled?: boolean;
+        compileProblem?: string;
+        exceptionMessage?: string;
+        debugLog?: string;
+    }>;
+    getConnectedUserInfo(): Promise<{ id: string }>;
+}
 
 export type SalesforceBatchStatus = 'Processing' | 'Aborted' | 'Queued' | 'Completed';
 
@@ -87,8 +102,7 @@ export interface BatchExecuteOptions {
 export class SalesforceBatchService {
 
     constructor(
-        private readonly salesforceService: SalesforceService,
-        private readonly queryService: QueryService,
+        @inject('SalesforceService') private readonly salesforceService: SalesforceBatchServiceProvider,
         private readonly logger: Logger) {
     }
 
@@ -187,7 +201,7 @@ export class SalesforceBatchService {
             query.and.equals('ApexClass.Name', filter);
         }
 
-        return query.executeTooling<SalesforceBatchJob>(this.queryService);
+        return query.execute<SalesforceBatchJob>(this.salesforceService.tooling);
     }
 
     /**

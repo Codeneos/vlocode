@@ -61,7 +61,7 @@ export default class OpenSalesforceCommand extends DatapackCommand {
 
         if (typeDefinition && typeDefinition.salesforceUrl) {
             const objectQuery = new QueryBuilder(deepClone(typeDefinition.source)).limit(1).where.equals('Id', objectId);
-            const objectData = record ?? (await this.salesforce.query(objectQuery.toString()))[0];
+            const objectData = record ?? (await this.salesforce.data.query(objectQuery.toString()))[0];
             salesforceUrl = await this.getObjectUrl(objectData, typeDefinition);
         } else {
             salesforceUrl = await this.getObjectNativeUrl(objectId)

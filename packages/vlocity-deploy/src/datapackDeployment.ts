@@ -1,5 +1,5 @@
 import { Logger, LifecyclePolicy, injectable } from '@vlocode/core';
-import { SalesforceConnectionProvider, RecordBatch, SalesforceSchemaService, SalesforceService, RecordError } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, RecordBatch, SalesforceService, RecordError } from '@vlocode/salesforce';
 import { Timer, AsyncEventEmitter, mapGetOrCreate, Iterable, CancellationToken, setMapAdd, groupBy, count, withDefaults, unique, arrayMapPush, substringBefore } from '@vlocode/util';
 import { DatapackLookupService } from './datapackLookupService';
 import { DatapackDependencyResolver, DependencyResolutionRequest, DependencyResolutionResult } from './datapackDependencyResolver';
@@ -161,7 +161,6 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
         options: DatapackDeploymentOptions | undefined,
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly lookupService: DatapackLookupService,
-        private readonly schemaService: SalesforceSchemaService,
         private readonly salesforceService: SalesforceService,
         private readonly logger: Logger
     ) {
@@ -645,7 +644,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * @param cancelToken Cancellation token to signal the process if a cancellation is initiated
      */
     private async createDeploymentBatch(records: Map<string, DatapackDeploymentRecord>, cancelToken?: CancellationToken) {
-        const batch = new RecordBatch(this.schemaService, this.options);
+        const batch = new RecordBatch(this.salesforceService.schema, this.options);
         const recordStatuses = this.options.deltaCheck ? await this.getRecordSyncStatus(records.values(), cancelToken) : undefined;
 
         for (const [ref, record] of records.entries()) {

@@ -1,4 +1,4 @@
-import { Field, SalesforceLookupService, SalesforceSchemaService } from '@vlocode/salesforce';
+import { Field, SalesforceService } from '@vlocode/salesforce';
 import { LogManager, injectable, LifecyclePolicy, DistinctLogger, Logger } from '@vlocode/core';
 import { last, isSalesforceId, CancellationToken, filterKeys, groupBy, unique, count, remove } from '@vlocode/util';
 import { VlocityNamespaceService, DatapackMatchingKeyService, VlocityDatapackReference } from '@vlocode/vlocity';
@@ -38,8 +38,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
     constructor(
         private readonly namespaceService: VlocityNamespaceService,
         private readonly matchingKeyService: DatapackMatchingKeyService,
-        private readonly lookupService: SalesforceLookupService,
-        private readonly schema: SalesforceSchemaService,
+        private readonly salesforce: SalesforceService,
         private readonly logger = LogManager.get(DatapackLookupService)) {
         this.distinctLogger = new DistinctLogger(this.logger);
     }
@@ -209,7 +208,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             const fields = distinctFilters.reduce<Set<string>>((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id' ]));
 
             // lookup records
-            const records = await this.lookupService.lookup(sobjectType, distinctFilters, [...fields], undefined, false);
+            const records = await this.salesforce.data.lookup(sobjectType, distinctFilters, [...fields], undefined, false);
 
             // map record results back to lookup requests
             while (records.length) {
@@ -251,8 +250,8 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             this.logger.info(`Comparing record data to target org for ${records.length} ${type} records...`);
 
             const recordFields = [...records.reduce((acc, rec) => Object.keys(rec.values).reduce((acc, field) => acc.add(field), acc), new Set<string>())];
-            const targetOrgRecords = await this.lookupService.lookupById(records.map(rec => rec.recordId!), recordFields, false, cancelToken);
-            const objectFields = await this.schema.getSObjectFields(type);
+            const targetOrgRecords = await this.salesforce.data.lookupById(records.map(rec => rec.recordId!), recordFields, false, cancelToken);
+            const objectFields = await this.salesforce.schema.getSObjectFields(type);
 
             if (cancelToken?.isCancellationRequested) {
                 break;
@@ -367,7 +366,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
     }
 
     private async resolveFieldDescribe(sobjectType: string, field: string): Promise<{ describe: Field, fullName: string } | undefined> {
-        const fullFieldDescribe = await this.schema.describeSObjectFieldPath(sobjectType, field, false);
+        const fullFieldDescribe = await this.salesforce.schema.describeSObjectFieldPath(sobjectType, field, false);
         if (!fullFieldDescribe?.length) {
             return;
         }

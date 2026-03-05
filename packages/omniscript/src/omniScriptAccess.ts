@@ -1,5 +1,5 @@
 import { injectable } from "@vlocode/core";
-import { QueryBuilder, SalesforceLookupService, SalesforceSchemaService, SalesforceService } from "@vlocode/salesforce";
+import { QueryBuilder, SalesforceService } from "@vlocode/salesforce";
 import { OmniProcessRecord, OmniScriptSpecification, OmniScriptRecord, OmniScriptElementRecord, OmniProcessElementRecord, OmniScriptWithElementsRecord, OmniScriptElementType, VlocityUITemplateRecord } from "./types";
 import { arrayMapPush } from "@vlocode/util";
 
@@ -23,6 +23,11 @@ interface OmniScriptFindOptions {
     preferActive?: boolean;
 }
 
+interface VlocityUITemplateLookup {
+    name: string | string[];
+    active: boolean;
+}
+
 @injectable.singleton()
 /**
  * Provides methods to access Salesforce OmniScripts records and related components.
@@ -42,11 +47,7 @@ interface OmniScriptFindOptions {
  * 
  * @example
  * // Create an instance with required dependencies
- * const scriptAccess = new OmniScriptAccess(
- *   salesforceService,
- *   lookupService,
- *   schemaService
- * );
+ * const scriptAccess = new OmniScriptAccess(salesforceService);
  * 
  * // Find an active script by type information
  * const script = await scriptAccess.find({
@@ -68,22 +69,20 @@ export class OmniScriptAccess {
     private isOmniScriptSObjectExists?: boolean = undefined;
 
     constructor(
-        private readonly salesforceService: SalesforceService, 
-        private readonly lookupService: SalesforceLookupService,
-        private readonly schema: SalesforceSchemaService
+        private readonly salesforceService: SalesforceService
     ) {        
     }
 
     private async hasOmniProcessSObject() {
         if (this.isOmniProcessSObjectExists === undefined) {
-            this.isOmniProcessSObjectExists = await this.schema.isSObjectDefined(OmniProcessRecord.SObjectType);
+            this.isOmniProcessSObjectExists = await this.salesforceService.schema.isSObjectDefined(OmniProcessRecord.SObjectType);
         }
         return this.isOmniProcessSObjectExists;
     }
 
     private async hasOmniScriptSObject() {
         if (this.isOmniScriptSObjectExists === undefined) {
-            this.isOmniScriptSObjectExists = await this.schema.isSObjectDefined(OmniScriptRecord.SObjectType);
+            this.isOmniScriptSObjectExists = await this.salesforceService.schema.isSObjectDefined(OmniScriptRecord.SObjectType);
         }
         return this.isOmniScriptSObjectExists;
     }
@@ -306,7 +305,7 @@ export class OmniScriptAccess {
         }
 
         try {
-            return await query.execute<OmniProcessRecord>(this.salesforceService);
+            return await query.execute<OmniProcessRecord>(this.salesforceService.data);
         } catch (error) {
             return []; // Ignore errors (e.g. object not found) and return empty result
         }
@@ -336,7 +335,7 @@ export class OmniScriptAccess {
         }
 
         try {
-            return await query.execute<OmniScriptRecord>(this.salesforceService);
+            return await query.execute<OmniScriptRecord>(this.salesforceService.data);
         } catch (error) {
             return []; // Ignore errors (e.g. object not found) and return empty result
         }
@@ -393,7 +392,7 @@ export class OmniScriptAccess {
     }
 
     private async queryProcessElementRecords(filter?: OmniScriptElementFilter): Promise<OmniScriptElementRecord[]> {
-        const validIds = filter?.scriptId && await this.schema.filterIds(filter?.scriptId, (type) => type.name === OmniProcessRecord.SObjectType);
+        const validIds = filter?.scriptId && await this.salesforceService.schema.filterIds(filter?.scriptId, (type) => type.name === OmniProcessRecord.SObjectType);
         if (validIds?.length === 0) {
             return [];
         }
@@ -408,12 +407,12 @@ export class OmniScriptAccess {
                 ignoreUndefined: true 
             });
         }
-        return (await query.execute<OmniProcessElementRecord>(this.salesforceService))
+        return (await query.execute<OmniProcessElementRecord>(this.salesforceService.data))
             .map(OmniScriptElementRecord.fromProcessElement)
     }
 
     private async queryScriptElementRecords(filter?: OmniScriptElementFilter): Promise<OmniScriptElementRecord[]> {
-        const validIds = filter?.scriptId && await this.schema.filterIds(filter?.scriptId, (type) => type.name.endsWith('OmniScript__c'));
+        const validIds = filter?.scriptId && await this.salesforceService.schema.filterIds(filter?.scriptId, (type) => type.name.endsWith('OmniScript__c'));
         if (validIds?.length === 0) {
             return [];
         }
@@ -428,7 +427,7 @@ export class OmniScriptAccess {
                 ignoreUndefined: true 
             });
         }
-        return (await query.execute<OmniScriptElementRecord>(this.salesforceService))
+        return (await query.execute<OmniScriptElementRecord>(this.salesforceService.data))
             .map(OmniScriptElementRecord.fromScriptElement)
     }
 
@@ -455,7 +454,7 @@ export class OmniScriptAccess {
      * }
      */
     public async findActiveTemplates(names: string[]): Promise<Map<string, VlocityUITemplateRecord>> {
-        const records = await this.lookupService.lookup<VlocityUITemplateRecord>(
+        const records = await this.salesforceService.lookup<VlocityUITemplateLookup, keyof VlocityUITemplateRecord>(
             '%vlocity_namespace%__VlocityUITemplate__c', { name: names, active: true }
         );
         return new Map(records.map(record => [record.name, record]));

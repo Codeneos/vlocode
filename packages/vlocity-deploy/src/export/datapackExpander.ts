@@ -80,7 +80,7 @@ export class DatapackExpander {
         const fileNameFormat = this.definitions.getFileName(itemRef) ?? baseSourceKey;
         const baseName = this.evalPathFormat(fileNameFormat, { context: datapack });
         
-        const folderFormat = this.definitions.getFolder(itemRef) ?? baseSourceKey;
+        const folderFormat = this.definitions.getName(itemRef) ?? baseSourceKey;
         const folder = path.join(
             this.normalizeFileName(itemRef.scope ?? itemRef.objectType),
             this.evalPathFormat(folderFormat, { context: datapack })

@@ -5,7 +5,7 @@ import * as path from 'path';
 import datapackData from './data/datapack.json'
 
 import { Logger, container } from '@vlocode/core';
-import { SalesforceConnectionProvider, NamespaceService, SchemaDataStore, SalesforceSchemaService,  } from '@vlocode/salesforce';
+import { SalesforceConnectionProvider, SalesforceService, SchemaDataStore } from '@vlocode/salesforce';
 import { VlocityDatapack, VlocityNamespaceService, DatapackMatchingKeyService, VlocityMatchingKey } from '@vlocode/vlocity';
 import { DatapackRecordFactory } from '../datapackRecordFactory';
 
@@ -33,18 +33,29 @@ describe('datapackRecordFactory', () => {
         } as any) as DatapackMatchingKeyService;
     }
 
+    function mockSalesforceService(schema: SchemaDataStore) {
+        const normalize = (value: string) => value.replace(/%vlocity_namespace%/g, 'vlocity_cmt');
+        return ({
+            schema: {
+                describeSObject: async (type: string) => schema.get(normalize(type))?.describe,
+                describeSObjectField: async (type: string, field: string) => schema.get(normalize(type), normalize(field))?.describe,
+            }
+        } as any) as SalesforceService;
+    }
+
     beforeAll(() =>  container.add(Logger.null));
 
     it('should convert datapack to multiple deployable records', async () => {
         // Arrange
         const schemaDataFile = path.join(__dirname, './data/schema.json');
         const testContainer = container.create();
+        const schema = await new SchemaDataStore().loadFromFile(schemaDataFile);
 
         testContainer.use(mockConnectionProvider([]), SalesforceConnectionProvider);
         testContainer.use(new VlocityNamespaceService('vlocity_cmt'));
-        testContainer.use(await new SchemaDataStore().loadFromFile(schemaDataFile));
+        testContainer.use(schema);
+        testContainer.use(mockSalesforceService(schema), SalesforceService);
         testContainer.use(mockMatchingKeyService(), DatapackMatchingKeyService);
-        //testContainer.add(SalesforceSchemaService);
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);
         const sut = testContainer.new(DatapackRecordFactory);
@@ -222,9 +233,12 @@ describe('datapackRecordFactory', () => {
             } ]
         };
 
+        const schema = await new SchemaDataStore().load(schemaData);
+
         testContainer.add(mockConnectionProvider([]), { provides: [ SalesforceConnectionProvider ] });
-        testContainer.add(new VlocityNamespaceService('vlocity_cmt'), { provides: [ NamespaceService ] });
-        testContainer.add(await new SchemaDataStore().load(schemaData), { provides: [ SchemaDataStore ] });
+        testContainer.add(new VlocityNamespaceService('vlocity_cmt'));
+        testContainer.add(schema, { provides: [ SchemaDataStore ] });
+        testContainer.add(mockSalesforceService(schema), { provides: [ SalesforceService ] });
         testContainer.add(mockMatchingKeyService(), { provides: [ DatapackMatchingKeyService ] });
 
         const datapack = new VlocityDatapack(datapackData.VlocityDataPackType, datapackData);

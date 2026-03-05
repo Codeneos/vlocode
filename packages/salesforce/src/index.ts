@@ -27,6 +27,7 @@
  export * from './salesforceLabels';
  export * from './salesforceDeployment';
  export * from './salesforceLookupService';
+ export * from './salesforceDataService';
  export * from './salesforceProfile';
  export * from './salesforceUserPermissions';
  export * from './salesforceProfileService';

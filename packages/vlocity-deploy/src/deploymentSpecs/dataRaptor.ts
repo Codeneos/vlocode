@@ -14,7 +14,7 @@ export class DataRaptor implements DatapackDeploymentSpec {
 
     public async beforeDeploy(event: DatapackDeploymentEvent) {
         const drBundleNames = [...event.getRecords('DRBundle__c')].map(rec => ({ Name: rec.value('Name') }));
-        const existingMappings = await this.salesforceService.lookup('%vlocity_namespace%__DRMapItem__c', drBundleNames, [ 'Id', 'Name', 'MapId__c' ], undefined, false);
+        const existingMappings = await this.salesforceService.data.lookup('%vlocity_namespace%__DRMapItem__c', drBundleNames, [ 'Id', 'Name', 'MapId__c' ], undefined, false);
         const matchedMappingIds =  [...event.getRecords('DRMapItem__c')].filter(rec => rec.isUpdate).map(rec => rec.recordId);
         const deprecatedMappings = existingMappings.filter(rec => !matchedMappingIds.includes(rec.Id));
 

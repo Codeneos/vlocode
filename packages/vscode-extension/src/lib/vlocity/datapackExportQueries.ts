@@ -1,5 +1,5 @@
 import { injectable, Logger } from "@vlocode/core";
-import {  NamespaceService, QueryBuilder, QueryService, SalesforceSchemaService } from "@vlocode/salesforce";
+import { QueryBuilder, QueryService, SalesforceService } from "@vlocode/salesforce";
 import { DatapackTypeDefinitions, DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { ObjectEntry } from './vlocityDatapackService';
 import { deepClone, removeNamespacePrefix } from '@vlocode/util';
@@ -9,7 +9,7 @@ export class DatapackExportQueries {
 
     constructor(
         private readonly matchingKeys: DatapackMatchingKeyService,
-        private readonly schema: SalesforceSchemaService, 
+        private readonly salesforce: SalesforceService,
         private readonly logger: Logger) {
     }
 
@@ -40,7 +40,7 @@ export class DatapackExportQueries {
         );
         const matchingDefinition = await this.matchingKeys.getMatchingKeyDefinition(datapack.datapackType);
         const macthingKey = matchingDefinition.fields.length ? matchingDefinition : (exportDefinition?.matchingKey ?? matchingDefinition);
-        const nameField = await this.schema.getNameField(datapack.sobjectType);
+        const nameField = await this.salesforce.schema.getNameField(datapack.sobjectType);
 
         if (!macthingKey.fields.length && nameField) {
             macthingKey.fields.push(nameField);
@@ -59,7 +59,7 @@ export class DatapackExportQueries {
             const missingMatchingKeys = new Array<string>();
 
             for (const field of macthingKey.fields) {
-                const fieldDescribe = await this.schema.describeSObjectFieldPath(query.sobjectType, field, false);
+                const fieldDescribe = await this.salesforce.schema.describeSObjectFieldPath(query.sobjectType, field, false);
                 if (!fieldDescribe) {
                     this.logger.warn(`Unable to resolve field ${field} for ${datapack.datapackType} export query`);
                     continue;

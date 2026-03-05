@@ -1,5 +1,5 @@
 import { injectable } from "@vlocode/core";
-import { QueryBuilder, RecordFactory, SalesforceSchemaService, SalesforceService } from "@vlocode/salesforce";
+import { QueryBuilder, RecordFactory, SalesforceService } from "@vlocode/salesforce";
 import { asString } from "@vlocode/util";
 import { VlocityDatapack } from "@vlocode/vlocity";
 
@@ -159,19 +159,19 @@ export class FlexCardDefinitionAccess {
     private isOmniUiCardSObjectExists?: boolean = undefined;
     private isVlocityCardSObjectExists?: boolean = undefined;
 
-    constructor(private readonly salesforceService: SalesforceService, private readonly salesforceSchemaService: SalesforceSchemaService) {      
+    constructor(private readonly salesforceService: SalesforceService) {      
     }
 
     private async hasOmniUiCardSObject() {
         if (this.isOmniUiCardSObjectExists === undefined) {
-            this.isOmniUiCardSObjectExists = await this.salesforceSchemaService.isSObjectDefined('OmniUiCard');
+            this.isOmniUiCardSObjectExists = await this.salesforceService.schema.isSObjectDefined('OmniUiCard');
         }
         return this.isOmniUiCardSObjectExists;
     }
     
     private async hasVlocityCardSObject() {
         if (this.isVlocityCardSObjectExists === undefined) {
-            this.isVlocityCardSObjectExists = await this.salesforceSchemaService.isSObjectDefined('%vlocity_namespace%__VlocityCard__c');
+            this.isVlocityCardSObjectExists = await this.salesforceService.schema.isSObjectDefined('%vlocity_namespace%__VlocityCard__c');
         }
         return this.isVlocityCardSObjectExists;
     }

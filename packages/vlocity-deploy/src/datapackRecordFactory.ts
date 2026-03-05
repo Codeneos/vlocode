@@ -1,5 +1,5 @@
 
-import { SalesforceSchemaService, Field, NamespaceService } from '@vlocode/salesforce';
+import { SalesforceService, Field, NamespaceService } from '@vlocode/salesforce';
 import { Logger, injectable } from '@vlocode/core';
 import { isSalesforceId } from '@vlocode/util';
 import { DateTime } from 'luxon';
@@ -20,7 +20,7 @@ export class DatapackRecordFactory {
 
     constructor(
         private readonly namespaceService: NamespaceService,
-        private readonly schemaService: SalesforceSchemaService,
+        private readonly salesforce: SalesforceService,
         private readonly matchingKeyService: DatapackMatchingKeyService,
         private readonly logger: Logger) {
     }
@@ -32,7 +32,7 @@ export class DatapackRecordFactory {
     // List<Object> dataSetObjects = (List<Object>)JSON.deserializeUntyped('CURRENT_DATA_PACKS_CONTEXT_DATA');
 
     public async createRecords(datapack: VlocityDatapack) : Promise<DatapackDeploymentRecord[]> {
-        const sobject = await this.schemaService.describeSObject(datapack.sobjectType, false);
+        const sobject = await this.salesforce.schema.describeSObject(datapack.sobjectType, false);
         if (!sobject) {
             // Invalid Sobject name check
             throw new Error(`Datapack ${datapack.sourceKey} is for an SObject type (${datapack.sobjectType}) which does not exist in the target org.`);
@@ -44,7 +44,7 @@ export class DatapackRecordFactory {
         const records : Array<typeof record> = [ record ];
 
         for (const [key, value] of datapack.entries().filter(([key]) => !key.includes('.'))) {
-            const field = await this.schemaService.describeSObjectField(sobject.name, key, false);
+            const field = await this.salesforce.schema.describeSObjectField(sobject.name, key, false);
 
             // skip datapack fields
             if (DATAPACK_RESERVED_FIELDS.includes(key)) {

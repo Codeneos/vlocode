@@ -1,5 +1,5 @@
 import { DeferredWorkQueue, Logger, WorkItemResult } from '@vlocode/core';
-import { SalesforceLookupService } from '@vlocode/salesforce';
+import { SalesforceService } from '@vlocode/salesforce';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentRecord } from '../datapackDeploymentRecord';
 import { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
@@ -10,7 +10,7 @@ export class OverrideDefinitionRecords implements DatapackDeploymentSpec {
     private lookupQueue = new DeferredWorkQueue(this.lookupProcessor, this);
 
     public constructor(
-        private readonly lookupService: SalesforceLookupService,
+        private readonly salesforce: SalesforceService,
         private readonly logger: Logger) {
     }
 
@@ -20,7 +20,7 @@ export class OverrideDefinitionRecords implements DatapackDeploymentSpec {
 
     private async lookupProcessor(globalKeys: string[]) {
         const lookupFilters = globalKeys.map(key => ({ 'GlobalKey__c': key }));
-        const results = await this.lookupService.lookup('Product2', lookupFilters, ['id', 'GlobalKey__c']);
+        const results = await this.salesforce.data.lookup('Product2', lookupFilters, ['id', 'GlobalKey__c']);
 
         return globalKeys.map<WorkItemResult<string | undefined>>(key => ({
             status: 'fulfilled',

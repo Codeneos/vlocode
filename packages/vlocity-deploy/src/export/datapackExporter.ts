@@ -1,4 +1,4 @@
-import { DescribeSObjectResult, Field, SalesforceLookupService, SalesforceSchemaService } from "@vlocode/salesforce";
+import { DescribeSObjectResult, Field, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, DatapackMatchingKeyService } from "@vlocode/vlocity";
 import { forEachAsyncParallel, formatString, mapAsyncParallel, Timer } from "@vlocode/util";
@@ -54,8 +54,7 @@ type DatapackExportOptions = Omit<ExportContext, 'parent'>;
  * The `DatapackExporter` class is responsible for exporting and expanding Salesforce objects into datapacks.
  * It provides methods for exporting objects, expanding objects, and generating datapack exports.
  * 
- * The exporter uses the {@link SalesforceLookupService} to lookup Salesforce objects and the {@link SalesforceSchemaService} 
- * to describe Salesforce objects.
+ * The exporter uses the {@link SalesforceService} facade to lookup and describe Salesforce objects.
  * 
  * Definitions for the export and expand process are stored in the {@link DatapackExportDefinitionStore} which is a singleton and can be accessed 
  * from the container using `contaioner.get(DatapackExportDefinitionStore)`.
@@ -101,13 +100,12 @@ export class DatapackExporter {
          */
         public readonly definitions: DatapackExportDefinitionStore,
         private readonly expander: DatapackExpander,
-        private readonly lookupService: SalesforceLookupService,
-        private readonly schema: SalesforceSchemaService,
+        private readonly salesforce: SalesforceService,
         private readonly vlocityMatchingKeys: DatapackMatchingKeyService,
         private readonly logger: Logger,
     ) {
         this.logger = logger.distinct();
-        this.lookupService.enableLookupCache(true);
+        this.salesforce.data.cache.configure({ enabled: true, default: true });
     }
 
     /**
@@ -131,7 +129,7 @@ export class DatapackExporter {
     public async exportObject(id: string, context?: DatapackExportOptions): Promise<ExportResult> {
         this.logger.verbose(`Export SObject ${id}`);
         const timer = new Timer();
-        const data = await this.lookupService.lookupById(id);
+        const data = await this.salesforce.data.lookupById(id);
         if (!data) {
             throw new Error(`No SObject with id [${id}] does not exist in target org`);
         }
@@ -155,7 +153,7 @@ export class DatapackExporter {
     private async buildDatapack(record: Record<string, any>, context: DatapackExportOptions): Promise<VlocityDatapackSObject>;
     private async buildDatapack(record: Record<string, any>, context: ExportContext): Promise<VlocityDatapackSObject | VlocityDatapackReference | null>;
     private async buildDatapack(record: Record<string, any>, context: ExportContext) {
-        const describe = await this.schema.describeSObjectById(record.id);
+        const describe = await this.salesforce.schema.describeSObjectById(record.id);
         const matchingKey = await this.getMatchingKey(describe, record, context?.scope);
         const exportStack = this.getExportPath(context.parent);
         this.logger.verbose(`Build ${describe.name} (${record.Id}) datapack: ${matchingKey}`);
@@ -271,14 +269,14 @@ export class DatapackExporter {
             if (relatedObject.filter) {
                 Object.assign(filter, this.evalFilter(relatedObject.filter, datapack));
             }
-            return this.lookupService.lookup(relationship.childSObject, filter);
+            return this.salesforce.data.lookup(relationship.childSObject, filter);
         }
 
         const filter = this.evalFilter(relatedObject.filter, datapack);
         if (Object.keys(filter).length === 0) {
             throw new Error(`Filter evaluated to empty object for related object ${relatedObject.objectType} on ${datapack.objectType}`);
         }
-        return this.lookupService.lookup(relatedObject.objectType, filter);
+        return this.salesforce.data.lookup(relatedObject.objectType, filter);
     }
 
     private processFieldValues(datapack: ExportDatapack, options?: { recursive?: boolean }) {
@@ -349,7 +347,7 @@ export class DatapackExporter {
     }
 
     private async buildLookup(datapack: ExportDatapack, id: string, type: VlocityDatapackType = 'VlocityLookupMatchingKeyObject') {
-        const data = await this.lookupService.lookupById(id);
+        const data = await this.salesforce.data.lookupById(id);
         if (!data) {
             return null;
         }
@@ -462,7 +460,7 @@ export class DatapackExporter {
             throw new Error('Missing id field in data');
         }
 
-        const describe = await this.schema.describeSObjectById(data.id);
+        const describe = await this.salesforce.schema.describeSObjectById(data.id);
         const fields = await this.getMatchingFields(describe, datapack.scope);
         const matchingKey = await this.getMatchingKey(describe, data, datapack.scope);
         const matchingKeyObject = {

@@ -2,9 +2,15 @@ import { Container, Logger, container, injectable, inject } from '@vlocode/core'
 import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
-import { CompositeSchemaAccess } from './schema';
+import { CompositeSchemaAccess } from './schema/compositeSchemaAccess';
 import { cache, findField, groupBy, isSalesforceId, mapAsyncParallel, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
 import { PicklistEntry } from 'jsforce';
+
+interface SchemaAccessProvider {
+    describe(type: string): Promise<DescribeSObjectResult | undefined>;
+    getEntityDefinition(type: string): Promise<unknown>;
+    getFieldDefinition(type: string, field: string): Promise<unknown>;
+}
 
 /**
  * Interface defining the contract for accessing Salesforce schema information
@@ -52,10 +58,10 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
 
     @inject() private readonly logger: Logger;
     @inject() private readonly nsService: NamespaceService;
+    @inject(() => CompositeSchemaAccess) private readonly schemaAccess!: SchemaAccessProvider;
 
     constructor(
-        private readonly connectionProvider: SalesforceConnectionProvider,
-        private readonly schemaAccess: CompositeSchemaAccess
+        private readonly connectionProvider: SalesforceConnectionProvider
     ) {
     }
 

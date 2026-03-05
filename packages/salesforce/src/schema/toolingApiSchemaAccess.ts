@@ -4,7 +4,12 @@ import { QueryBuilder } from '../queryBuilder';
 import { EntityDefinition } from './types/entityDefinition';
 import { FieldDefinition } from './types/fieldDefinition';
 import { SchemaDataStore } from './schemaDataStore';
-import { QueryService } from '../queryService';
+
+interface SalesforceToolingQueryProvider {
+    tooling: {
+        query<T extends object = object, K extends PropertyKey = string>(query: string): Promise<Array<T & { [P in K]: any }>>;
+    };
+}
 
 /**
  * Lazy access to Salesforce schema objects, instead of pre-loading all schema data schema and describe calls are made when needed. This speeds up initial loading time but the total time needed
@@ -80,7 +85,10 @@ export class ToolingApiSchemaAccess {
     private readonly deferredProcessor = new DeferredWorkQueue(this.getEntityDefinitions, this);
     @inject(Logger) private readonly logger!: Logger;
 
-    constructor(private readonly queryService: QueryService, private readonly schemaStore: SchemaDataStore) {
+    constructor(
+        @inject('SalesforceService') private readonly salesforce: SalesforceToolingQueryProvider,
+        private readonly schemaStore: SchemaDataStore
+    ) {
     }
 
     @cache({ unwrapPromise: true })
@@ -92,7 +100,7 @@ export class ToolingApiSchemaAccess {
             const chunk = await new QueryBuilder(this.entityDefinitionObjectName, [ 'QualifiedApiName', 'KeyPrefix' ])
                 .limit(chunkSize, chunkNr * chunkSize)
                 .filter(this.entityDefinitionFilter)
-                .executeTooling(this.queryService);
+                .execute(this.salesforce.tooling);
 
             const validObjects = chunk.filter(e => !this.excludedObjectListPostFixes.some(postFix => e.QualifiedApiName.endsWith(postFix)));
             entities.push(...validObjects.map(e => e.QualifiedApiName));
@@ -166,7 +174,7 @@ export class ToolingApiSchemaAccess {
 
         try {
             const chunkQuery = query.clone().filter({ [field]: chunk });
-            const normalizedResults = await chunkQuery.executeTooling<T>(this.queryService);
+            const normalizedResults = await chunkQuery.execute<T>(this.salesforce.tooling);
             results.push(...normalizedResults);
         } catch (err: any) {
             // For some objects we get unknown errors even when the query is fine

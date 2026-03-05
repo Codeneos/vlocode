@@ -7,7 +7,7 @@ import { DatapackExpander, DatapackExportDefinitionStore, DatapackExporter } fro
 
 import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
-import { QueryService } from '@vlocode/salesforce';
+import { SalesforceService } from '@vlocode/salesforce';
 
 export default class extends SalesforceCommand {
 
@@ -73,8 +73,7 @@ export default class extends SalesforceCommand {
 
     private async getIds() {
         if (this.options.query) {
-            const queryService = this.container.new(QueryService);
-            const records = await queryService.query(this.options.query);
+            const records = await this.container.get(SalesforceService).data.query(this.options.query);
             if (records.length === 0) {
                 throw new Error(`No records found for the specified query: ${this.options.query}`);
             }

@@ -1,4 +1,4 @@
-import { SalesforceService, SalesforceDeployService, RecordBatch } from '@vlocode/salesforce';
+import { SalesforceService, RecordBatch } from '@vlocode/salesforce';
 import { inject, injectable, Logger } from '@vlocode/core';
 import { spreadAsync, timeout, Timer } from '@vlocode/util';
 
@@ -324,8 +324,7 @@ export class OmniScriptActivator {
 
     private async deployLwcWithMetadataApi(definition: OmniScriptDefinition, options?: OmniScriptLwcCompileOptions) {
         const sfPackage = await this.lwcCompiler.compileToPackage(definition, options);
-        const deployService = new SalesforceDeployService(this.salesforceService, Logger.null);
-        const result = await deployService.deployPackage(sfPackage);
+        const result = await this.salesforceService.deploy.deployPackage(sfPackage);
         if (!result.success) {
             throw new Error(`OmniScript LWC Component deployment failed: ${result.details?.componentFailures.map(failure => failure.problem)}`);
         }

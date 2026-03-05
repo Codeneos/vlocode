@@ -4,6 +4,7 @@ import { QueryService, QueryResult } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
 import { NamespaceService } from './namespaceService';
 import { DateTime } from 'luxon';
+import { SalesforceService } from './salesforceService';
 
 type ObjectFilter<T> = {
     [P in keyof T]?: T[P] | Array<T[P]> | string;
@@ -25,7 +26,7 @@ export class SalesforceLookupService {
 
     constructor(
         private readonly schemaService: SalesforceSchemaService,
-        private readonly queryService: QueryService) {
+        private readonly salesforceService: SalesforceService) {
     }
 
     /**
@@ -35,14 +36,14 @@ export class SalesforceLookupService {
      * @param enabled - A boolean value indicating whether the lookup cache should be enabled or disabled.
      */
     public enableLookupCache(enabled: boolean) {
-        this.queryService.setQueryCache({ enabled: enabled, default: true });
+        this.salesforceService.data.cache.configure({ enabled, default: true });
     }
 
     /**
      * Clears the lookup cache.
      */
     public clearLookupCache() {
-        this.queryService.clearCache();
+        this.salesforceService.data.cache.clear();
     }
 
     /**
@@ -200,7 +201,7 @@ export class SalesforceLookupService {
         const limitClause = limit ? ` limit ${limit}` : '';
         const whereClause = where?.trim().length ? ` where ${  where}` : '';
         const queryString = `select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`;
-        return this.queryService.query(queryString, useCache, cancelToken);
+        return this.salesforceService.data.query(queryString, useCache, cancelToken);
     }
 
     private async createWhereClause<T>(type: string, values: ObjectFilter<T> | undefined | null) : Promise<string> {

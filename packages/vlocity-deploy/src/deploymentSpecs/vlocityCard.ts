@@ -4,10 +4,10 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { forEachAsyncParallel, getErrorMessage, Iterable, Timer } from '@vlocode/util';
-import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
+import { SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 import { FlexCardActivator } from '../flexCard/flexCardActivator';
 import { RecordActivator } from './recordActivator';
-import { Container, Logger } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 
 @deploymentSpec({ recordFilter: /^VlocityCard__c$/i })
 export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
@@ -15,8 +15,8 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
     public constructor(
         private readonly activator: FlexCardActivator,
         private readonly recordActivator: RecordActivator,
+        private readonly salesforce: SalesforceService,
         private readonly logger: Logger,
-        private readonly container: Container,
     ) { }
 
     /**
@@ -104,7 +104,7 @@ export class VlocityUILayoutAndCards implements DatapackDeploymentSpec {
         if (packages.length) {
             const timer = new Timer();
             this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
-            await this.container.new(SalesforceDeployService, undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
+            await this.salesforce.deploy.deployPackage(packages.reduce((p, c) => p.merge(c)));
             this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }

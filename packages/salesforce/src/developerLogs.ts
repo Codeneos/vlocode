@@ -1,19 +1,24 @@
-import { injectable, Logger } from '@vlocode/core';
+import { injectable, Logger, inject } from '@vlocode/core';
 import { cache, CancellationToken } from '@vlocode/util';
 import type { SuccessResult } from 'jsforce';
 
 import { SalesforceConnectionProvider } from './connection';
 import { DeveloperLog, DeveloperLogRecord } from './developerLog';
 import { QueryBuilder } from './queryBuilder';
-import { QueryService } from './queryService';
 import { SalesforceDebugLevel, SalesforceDebugLevelRecord } from './salesforceDebugLevel';
+
+interface SalesforceToolingQueryProvider {
+    tooling: {
+        query<T extends object = object, K extends PropertyKey = string>(query: string): Promise<Array<T & { [P in K]: any }>>;
+    };
+}
 
 @injectable()
 export class DeveloperLogs {
 
     public constructor(
         private readonly connectionProvider: SalesforceConnectionProvider,
-        private readonly queryService: QueryService,
+        @inject('SalesforceService') private readonly salesforce: SalesforceToolingQueryProvider,
         private readonly logger: Logger) {
     }
 
@@ -33,7 +38,7 @@ export class DeveloperLogs {
             filters.push(`LogUserId = '${currentUser.id}'`);
         }
         const toolingQuery = `Select ${selectFields.join(',')} From ApexLog ${filters.length ? `where ${filters.join(' and ')}` : ''}`;
-        const entries = await this.queryService.query<DeveloperLogRecord>(toolingQuery);
+        const entries = await this.salesforce.tooling.query<DeveloperLogRecord>(toolingQuery);
         return entries.map(entry => new DeveloperLog(entry, this.connectionProvider));
     }
 
@@ -44,7 +49,7 @@ export class DeveloperLogs {
      * @returns 
      */
     public async clearDeveloperLogs(reportProgress?: (progress: { progress: number, total: number }) => any, token?: CancellationToken) {
-        const [ { logCount } ] = (await new QueryBuilder('ApexLog', [ 'count(Id) logCount' ]).executeTooling(this.queryService));
+        const [ { logCount } ] = (await new QueryBuilder('ApexLog', [ 'count(Id) logCount' ]).execute(this.salesforce.tooling));
         if (!logCount) {
             return 0;
         }
@@ -54,7 +59,7 @@ export class DeveloperLogs {
 
         while (token?.isCancellationRequested != true) {
             // Query and delete logs in chunks to avoid overloading the server
-            const apexLogs = await new QueryBuilder('ApexLog', [ 'Id' ]).limit(100).executeTooling(this.queryService);
+            const apexLogs = await new QueryBuilder('ApexLog', [ 'Id' ]).limit(100).execute(this.salesforce.tooling);
             const ids = apexLogs.map(log => log.Id);
             if (!ids.length) {
                 break;
@@ -83,7 +88,7 @@ export class DeveloperLogs {
     public async getDebugLevels(): Promise<Array<SalesforceDebugLevel>> {
         const selectFields = ['Id', 'DeveloperName', 'ApexCode', 'ApexProfiling', 'Callout', 'Database', 'System', 'Validation', 'Visualforce', 'Workflow' ];
         const toolingQuery = `Select ${selectFields.join(',')} From DebugLevel`;
-        const entries = await this.queryService.query<SalesforceDebugLevel>(toolingQuery);
+        const entries = await this.salesforce.tooling.query<SalesforceDebugLevel>(toolingQuery);
         return entries;
     }
 

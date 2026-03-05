@@ -1,5 +1,5 @@
 import { injectable, Logger } from '@vlocode/core';
-import { NamespaceService, SalesforceLabels, SalesforceSchemaService } from '@vlocode/salesforce';
+import { NamespaceService, SalesforceLabels, SalesforceService } from '@vlocode/salesforce';
 import { groupBy, sortBy } from '@vlocode/util';
 import { VlocityDatapack, VlocityInterfaceInvoker } from '@vlocode/vlocity';
 
@@ -18,7 +18,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     constructor(
         private readonly scriptAccess: OmniScriptAccess,
         private readonly genericInvoker: VlocityInterfaceInvoker,
-        private readonly schema: SalesforceSchemaService,
+        private readonly salesforce: SalesforceService,
         private readonly labels: SalesforceLabels,
         private readonly namespaceService: NamespaceService,
         private readonly logger: Logger
@@ -222,7 +222,7 @@ export class OmniScriptDefinitionGenerator implements OmniScriptDefinitionProvid
     private async getActivePicklistEntries(picklist: string) {
         try {
             const [type, field] = picklist.split('.');
-            const values = await this.schema.describePicklistValues(type, field);
+            const values = await this.salesforce.schema.describePicklistValues(type, field);
             return values.filter(entry => entry.active);
         } catch {
             this.logger.warn(`Unable to retrieve picklist values for: ${picklist}`);

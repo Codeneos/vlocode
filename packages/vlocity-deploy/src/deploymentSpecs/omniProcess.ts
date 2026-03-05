@@ -2,10 +2,10 @@ import type { DatapackDeploymentSpec } from '../datapackDeploymentSpec';
 import { VlocityDatapack } from '@vlocode/vlocity';
 import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
-import { SalesforceDeployService, SalesforcePackage } from '@vlocode/salesforce';
+import { SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 import { forEachAsyncParallel, getErrorMessage, Timer } from '@vlocode/util';
 import { DeploymentStatus } from '../datapackDeploymentRecord';
-import { Container, Logger } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 import { OmniProcessRecord, OmniScriptActivator, OmniScriptDefinition } from '@vlocode/omniscript';
 
 @deploymentSpec({ recordFilter: /^OmniProcess$/i })
@@ -20,7 +20,7 @@ export class OmniProcess implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: OmniScriptActivator,
-        private readonly container: Container,
+        private readonly salesforce: SalesforceService,
         private readonly logger: Logger) {
     }
 
@@ -90,7 +90,7 @@ export class OmniProcess implements DatapackDeploymentSpec {
         if (packages.length) {
             const timer = new Timer();
             this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
-            await this.container.new(SalesforceDeployService, undefined, Logger.null).deployPackage(packages.reduce((p, c) => p.merge(c)));
+            await this.salesforce.deploy.deployPackage(packages.reduce((p, c) => p.merge(c)));
             this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }

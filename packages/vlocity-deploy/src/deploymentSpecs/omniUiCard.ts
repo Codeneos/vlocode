@@ -4,17 +4,17 @@ import { deploymentSpec } from '../datapackDeploymentSpecRegistry';
 import { DatapackDeploymentEvent } from '../datapackDeploymentEvent';
 import { DatapackDeploymentRecord, DeploymentStatus } from '../datapackDeploymentRecord';
 import { FlexCardActivator } from '../flexCard/flexCardActivator';
-import { Container, Logger } from '@vlocode/core';
+import { Logger } from '@vlocode/core';
 import { forEachAsyncParallel, getErrorMessage, Timer } from '@vlocode/util';
-import { SalesforceDeployService, SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
+import { SalesforcePackage, SalesforceService } from '@vlocode/salesforce';
 
 @deploymentSpec({ recordFilter: /^OmniUiCard$/i })
 export class OmniUiCard implements DatapackDeploymentSpec {
 
     public constructor(
         private readonly activator: FlexCardActivator,
+        private readonly salesforce: SalesforceService,
         private readonly logger: Logger,
-        private readonly container: Container,
     ) { }
 
     /**
@@ -55,7 +55,7 @@ export class OmniUiCard implements DatapackDeploymentSpec {
             })
         );
         if (updatedCards.length) {
-            await this.container.get(SalesforceService).update('OmniUiCard', updatedCards);
+            await this.salesforce.update('OmniUiCard', updatedCards);
         }
     }
 
@@ -148,7 +148,7 @@ export class OmniUiCard implements DatapackDeploymentSpec {
             const timer = new Timer();
             this.logger.info(`Deploying ${packages.length} LWC component(s) using metadata api...`);
             const mergedPackage = packages.reduce((p, c) => p.merge(c));
-            await this.container.new(SalesforceDeployService, undefined, Logger.null).deployPackage(mergedPackage);
+            await this.salesforce.deploy.deployPackage(mergedPackage);
             this.logger.info(`Deployed ${packages.length} LWC components [${timer.stop()}]`);
         }
     }
