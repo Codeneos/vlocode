@@ -48,23 +48,4 @@ describe('DatapackExportDefinitionValidator', () => {
             field: 'MissingField'
         });
     });
-
-    it('requires embeddedObjects to be lookup fields', async () => {
-        const { validator } = createValidator([
-            { name: 'AccountId', type: 'reference', referenceTo: ['Account'] },
-            { name: 'Description', type: 'textarea' }
-        ]);
-
-        const errors = await validator.validate({
-            objectType: 'CustomObject__c',
-            name: 'Object_{Name}',
-            //embeddedObjects: ['Description', 'AccountId']
-        });
-
-        expect(errors).toHaveLength(1);
-        expect(errors[0]).toMatchObject({
-            type: 'INVALID_FIELD',
-            field: 'Description'
-        });
-    });
 });

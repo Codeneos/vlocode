@@ -81,7 +81,7 @@ describe('bulkIngestJob', () => {
             await bulkJob.close();
 
             // Assert
-            expect(clientMock.put).toHaveBeenCalledWith('Id\n1\n','123/batches', expectedOptions);
+            expect(clientMock.put).toHaveBeenCalledWith(Buffer.from('Id\n1\n'),'123/batches', expectedOptions);
             expect(clientMock.patch).toHaveBeenCalledWith({ state: 'UploadComplete' }, '123');
         });
         it('should call put and patch multiple times when job size exceeds chunkDataSize', async () => {
@@ -106,8 +106,8 @@ describe('bulkIngestJob', () => {
 
             // Assert
             expect(clientMock.put).toHaveBeenCalledTimes(2);
-            expect(clientMock.put).toHaveBeenNthCalledWith(1, 'Id\n1\n','123/batches', expectedOptions);
-            expect(clientMock.put).toHaveBeenNthCalledWith(2, 'Id\n2\n','456/batches', expectedOptions);
+            expect(clientMock.put).toHaveBeenNthCalledWith(1, Buffer.from('Id\n1\n'),'123/batches', expectedOptions);
+            expect(clientMock.put).toHaveBeenNthCalledWith(2, Buffer.from('Id\n2\n'),'456/batches', expectedOptions);
 
             expect(clientMock.patch).toHaveBeenCalledTimes(2);
             expect(clientMock.patch).toHaveBeenNthCalledWith(1, { state: 'UploadComplete' }, '123');

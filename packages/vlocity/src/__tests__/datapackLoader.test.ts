@@ -19,6 +19,12 @@ describe('datapackLoader', () => {
                     sobjectType: datapackType,
                 };
             },
+            getDatapackByObject: async (objectType: string) => {
+                return {
+                    datapackType: 'Target',
+                    sobjectType: objectType,
+                };
+            }
         } as any, { provides: [ DatapackInfoService ] });
     });
 

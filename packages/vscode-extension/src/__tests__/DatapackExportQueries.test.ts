@@ -44,7 +44,7 @@ describe('DatapackExportQueries', () => {
             // Arrange
             const types = { '%vlocity_namespace%__Version__c': 'double' };
             const fieds = [ 'Name', '%vlocity_namespace%__Version__c', '%vlocity_namespace%__Author__c' ];
-            const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), mockSchemaService(types), Logger.null);
+            const sut = new DatapackExportQueries(mockMatchingKeyService(fieds), { schema: mockSchemaService(types) } as any, Logger.null);
             const entry = {
                 datapackType: 'VlocityCard',
                 sobjectType: '%vlocity_namespace%__VlocityCard__c',
