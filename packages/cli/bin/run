@@ -1,9 +1,14 @@
 #!/usr/bin/env node
-const { existsSync } = require('fs');
-const { join } = require('path');
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-if (existsSync(join(__dirname, '../dist/cli.js'))) {
-    require('../dist/cli');
+// Recreate __dirname for ESM
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+if (existsSync(join(__dirname, '../dist/cli.mjs'))) {
+    await import('../dist/cli.mjs');
 } else {
-    require('../lib');
+    // ESM requires explicit file extensions or directory indexes
+    await import('../src/index.ts'); 
 }
