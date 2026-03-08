@@ -1,6 +1,8 @@
 interface ExpandFileDefinition {
     /**
-     * When set this value is used to dermine the POST fix of datapack decomposed file.
+     * When set it define the file name to which the export is written. For fields it would mean 
+     * an new file is created to write the values in this field to. Only set if the intenion is to 
+     * write the field value to a separate file instead of including it in the main datapack json file.
      *
      * When this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`.
      * When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`:
@@ -19,7 +21,7 @@ interface ExpandFileDefinition {
     fileName?: string | string[];
 }
 
-export interface DatapackExportDefinition {
+export interface DatapackExportDefinition extends ObjectFilter {
     /**
      * Name format of the datapack, used to create the folder name of the datapack, 
      * when a filename is not set this is also used as the file name.
@@ -40,10 +42,6 @@ export interface DatapackExportDefinition {
      */
     objectType: string;
     /**
-     * List of fields by which to sort the exported data when exporting	as a related object.
-     */
-    sortFields?: string[];
-    /**
      * List of fields which uniquely identify the object and are used
      * for matching the object when importing and for generating the
      * external lookup reference.
@@ -58,10 +56,6 @@ export interface DatapackExportDefinition {
      * List of fields to exclude from the export.
      */
     ignoreFields?: string[];
-    /**
-     * List of lookup fields that are embedded as part of the object export in the parent datapack.
-     */
-    embeddedObjects?: string[];
     /**
      * List of objects that are related to this object
      * and who's data should be included in the export.
@@ -83,6 +77,25 @@ export interface ExportFieldDefinition extends ExpandFileDefinition {
      * When true expands an array value in the datapack to individual files.
      */
     expandArray?: boolean;
+    /**
+     * When this field is alookup field and this flag is set to true, 
+     * the related record is exported as an embedded object in the same datapack instead of a separate datapack.
+     */
+    embeddedLookup?: boolean
+    /**
+     * When the field is a lookup and embeddedLookup is true, this array defines a list of fields to 
+     * exclude from the export of the related record.
+     * 
+     * This can be used to prevent circular references when exporting related records as embedded objects. 
+     * For example when exporting an Account with related Contacts as embedded objects, 
+     * excluding the AccountId field from the Contact export will prevent circular reference 
+     * between the Account and Contact datapacks.
+     */
+    ignoreFields?: string[];
+    /**
+     * List of fields by which to sort the exported data when exporting	as a related object.
+     */
+    sortFields?: string[];
 }
 
 type LookupFilter = string | { [key: string]: LookupFilter | number | boolean | null }
@@ -109,7 +122,7 @@ export interface ObjectFilter {
      * filter: "AccountId = '{parent.Id}' AND IsActive = 'true'"
      * ```
      */
-    filter: LookupFilter;
+    filter?: LookupFilter;
 }
 
 export interface ObjectRelationship {
@@ -122,5 +135,4 @@ export interface ObjectRelationship {
      */
     filter?: LookupFilter;
 }
-
 

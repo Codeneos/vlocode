@@ -8,6 +8,7 @@ import { QueryCache } from './queryCache';
 import { RecordFactory } from './queryRecordFactory';
 import { QueryResult, QueryService } from './queryService';
 import { SalesforceSchemaService } from './salesforceSchemaService';
+import { QueryFormatter, type SalesforceQueryData } from './queryParser';
 
 type ObjectFilter<T> = {
     [P in keyof T]?: T[P] | Array<T[P]> | string;
@@ -81,9 +82,13 @@ export class SalesforceDataService {
         return this.options.type;
     }
 
-    public query<T extends object = object, K extends PropertyKey = keyof T>(query: string, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
+    public query<T extends object = object, K extends PropertyKey = keyof T>(query: string | SalesforceQueryData, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
         if (!query) {
             throw new Error('None-empty query string mis required for query execution');
+        }
+
+        if (typeof query !== 'string') {
+            query = QueryFormatter.format(query);
         }
 
         const normalizedQuery = this.nsService.updateNamespace(query);

@@ -2,23 +2,7 @@ import { injectable, LifecyclePolicy, Logger, inject } from '@vlocode/core';
 import { CancellationToken, CustomError, wait } from '@vlocode/util';
 import { QueryBuilder, QueryFilterCondition } from './queryBuilder';
 import { DateTime } from 'luxon';
-
-interface SalesforceBatchServiceProvider {
-    tooling: {
-        query<T extends object = object, K extends PropertyKey = string>(query: string): Promise<Array<T & { [P in K]: any }>>;
-    };
-    executeAnonymous(code: string, options?: {
-        rollbackOnError?: boolean;
-        logLevels?: Record<string, string>;
-    }): Promise<{
-        success: boolean;
-        compiled?: boolean;
-        compileProblem?: string;
-        exceptionMessage?: string;
-        debugLog?: string;
-    }>;
-    getConnectedUserInfo(): Promise<{ id: string }>;
-}
+import type { SalesforceService } from './salesforceService';
 
 export type SalesforceBatchStatus = 'Processing' | 'Aborted' | 'Queued' | 'Completed';
 
@@ -102,7 +86,7 @@ export interface BatchExecuteOptions {
 export class SalesforceBatchService {
 
     constructor(
-        @inject('SalesforceService') private readonly salesforceService: SalesforceBatchServiceProvider,
+        @inject('SalesforceService') private readonly salesforceService: SalesforceService,
         private readonly logger: Logger) {
     }
 
