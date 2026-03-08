@@ -178,6 +178,16 @@ export class SalesforceService implements SalesforceConnectionProvider {
     }
 
     /**
+     * Replaces the namespace prefix in the given value with a placeholder, allowing it to be dynamically replaced later. 
+     * This is useful for storing values that may contain a namespace without hardcoding it.
+     * @param value The value to normalize
+     * @returns The normalized value
+     */
+    public replaceNamespace(value: string) {
+        return this.namespaceService.replaceNamespace(value);
+    }
+    
+    /**
      * Returns a list of records. All records are mapped to record proxy object 
      * @param query SOQL Query to execute
      */
