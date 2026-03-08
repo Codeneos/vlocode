@@ -195,7 +195,8 @@ export class HttpTransport implements Transport {
      * @returns Promise with the response
      */
     public httpRequest(info: HttpRequestInfo, options?: object): Promise<HttpResponse>;
-    public httpRequest(info: HttpRequestInfo): Promise<HttpResponse> {
+    public httpRequest(info: HttpRequestInfo, options?: object, retryCount?: number): Promise<HttpResponse>;
+    public httpRequest(info: HttpRequestInfo, options?: object, retryCount = 0): Promise<HttpResponse> {
         const url = this.parseUrl(info.url);
         this.logger.debug('%s %s', info.method, url.pathname);
         const timer = new Timer();
@@ -213,6 +214,10 @@ export class HttpTransport implements Transport {
             const syscall = 'syscall' in err && err.syscall as string;
 
             if (errorCode === 'ECONNRESET' || (errorCode === 'ETIMEDOUT' && syscall === 'connect')) {
+                if (retryCount === 0) {
+                    this.logger.verbose(`Connection reset by peer when requesting ${url.pathname} (${request.method}), retrying...`);
+                    return requestPromise.bind(this.httpRequest(info, options, retryCount + 1));
+                }
                 requestPromise.reject(new CustomError(`Connection reset by peer when requesting ${url.pathname} (${request.method})`, { code: 'ECONNRESET' }));
             } else if (errorCode === 'ECONNREFUSED') { 
                 requestPromise.reject(new CustomError(`Connection refused when requesting ${url.pathname} (${request.method})`, { code: 'ECONNREFUSED' }));
