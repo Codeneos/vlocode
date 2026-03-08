@@ -2,6 +2,7 @@ import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
 import { cache, filterUndefined, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
 import { DatapackTypeDefinition, DatapackTypeDefinitions } from './datapackTypeDefinitions';
+import { DatapackConfigAccess } from './datapackConfigAccess';
 
 export interface VlocityDatapackDefinition {
     /**
@@ -18,40 +19,33 @@ export interface VlocityDatapackDefinition {
     readonly datapackType: string;
 }
 
-/**
- * Partial record format for datapack configuration custom metadata records.
- */
-
-interface DatapackConfigurationRecord {
-    DeveloperName: string;
-    NamespacePrefix: string;
-    QualifiedApiName: string;
-    Label: string;
-    PrimarySObjectType: string;
-
-    ActivateLimit?: number;
-    ActivateService?: string;
-    ActivateType?: string;
-
-    ExportLimit?: number;
-    ExportService?: string;
-    ExportType?: string;
-
-    ImportLimit?: number;
-    ImportService?: string;
-    ImportType?: string;
-
-    ValidateService?: string;
-    ValidateType?: string;
-}
-
 @injectable.singleton()
 export class DatapackInfoService {
+
+    private datapackConfiguration: DatapackConfigAccess;
 
     constructor(
         public readonly logger: Logger,
         private readonly salesforce: SalesforceService
     ) {
+        this.datapackConfiguration = new DatapackConfigAccess(this.salesforce, this.logger)
+    }
+
+    /**
+     * Gets the datapack configuration for the specified datapack type, returns undefined if no configuration is found for the type.
+     * @param datapackType Datapack type
+     * @returns Datapack configuration record or undefined if no configuration is found for the type
+     */
+    public getDatapackConfiguration(datapackType: string) {
+        return this.datapackConfiguration.get(datapackType);
+    }
+
+    /**
+     * Gets all datapack configurations defined in the org, returns an empty array if no datapack configurations are found.
+     * @returns Array of datapack configuration records, empty array if no configurations are found
+     */
+    public getDatapackConfigurations() {
+        return this.datapackConfiguration.all();
     }
 
     /**
@@ -60,23 +54,12 @@ export class DatapackInfoService {
      */
     @cache()
     public async getDatapackDefinitions() : Promise<DatapackTypeDefinition[]> {
-        this.logger.verbose('Querying DataPack configuration from Salesforce');
-        const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>('%vlocity_namespace%__VlocityDataPackConfiguration__mdt', undefined, 'all');
-        if (configurationRecords.length == 0) {            
-            this.logger.error(`No DataPack configuration found in Salesforce`);
-        } else {
-            this.logger.verbose(`Loaded ${configurationRecords.length} DataPack configurations`);
-        }
-
-        // Split between standard and custom configuration, custom is preferred over standard
-        const standardConfiguration = configurationRecords.filter(f => f.NamespacePrefix != null);
-        const customConfiguration = configurationRecords.filter(f => f.NamespacePrefix == null);
-
-        const orgConfigs = new Map([...customConfiguration, ...standardConfiguration].map(record => [
-            record.DeveloperName.toLowerCase(),
+        const configurationRecords = await this.datapackConfiguration.all();
+        const orgConfigs = new Map(configurationRecords.map(record => [
+            record.name.toLowerCase(),
             { 
-                sobjectType: record.PrimarySObjectType, 
-                datapackType: record.DeveloperName
+                sobjectType: record.primarySObjectType, 
+                datapackType: record.name
             }
         ]) as Array<[string, VlocityDatapackDefinition]>);
         
@@ -119,7 +102,7 @@ export class DatapackInfoService {
      * otherwise returns the datapack definition.
      * @param datapackType Datapack type
      */
-    public async getDatapackInfo(sobjectType: string, datapackType?: string) : Promise<DatapackTypeDefinition | undefined> {
+    public async getDatapackByObject(sobjectType: string, datapackType?: string) : Promise<DatapackTypeDefinition | undefined> {
         const objectRegex = new RegExp(`^([a-z0-9_%]+__)?${removeNamespacePrefix(sobjectType)}$`,'i');
         const objects = (await this.getDatapackDefinitions()).filter(
             dataPack => objectRegex.test(dataPack.source.sobjectType)
@@ -128,6 +111,10 @@ export class DatapackInfoService {
             return objects.find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase());
         }
         return objects[0];
+    }
+
+    public async getDatapackByType(datapackType: string) : Promise<DatapackTypeDefinition | undefined> {
+        return (await this.getDatapackDefinitions()).find(dataPack => dataPack.datapackType.toLowerCase() === datapackType.toLowerCase());
     }
 
     /**
