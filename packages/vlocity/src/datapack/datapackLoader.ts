@@ -75,8 +75,8 @@ export class DatapackLoader {
         }
 
         const datapackDef = 
-            await this.datapackInfo.getDatapackBySObject(objectType, datapackTypeFolder) ||
-            await this.datapackInfo.getDatapackBySObject(objectType);
+            await this.datapackInfo.getDatapackByObject(objectType, datapackTypeFolder) ||
+            await this.datapackInfo.getDatapackByObject(objectType);
 
         return datapackDef?.datapackType ?? 'SObject';
     }
