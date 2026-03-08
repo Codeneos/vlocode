@@ -37,7 +37,7 @@ export interface HttpRequestInfo {
     /**
      * Body of the request in case of a POST, PATCH or PUT request
      */
-    body?: string | undefined;
+    body?: string | Buffer | undefined;
     /**
      * Parts of the request in case of a multipart request
      */

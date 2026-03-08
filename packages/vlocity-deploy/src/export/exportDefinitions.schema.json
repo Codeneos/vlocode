@@ -17,31 +17,8 @@
           "type": "object"
         },
         "filter": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "additionalProperties": {
-                "anyOf": [
-                  {
-                    "$ref": "#/definitions/alias-1030797743-4079-4167-1030797743-0-5223"
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": "object"
-            }
-          ],
-          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` relatedObjectFilter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+          "$ref": "#/definitions/LookupFilter",
+          "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
         },
         "ignoreFields": {
           "description": "List of fields to exclude from the export.",
@@ -49,6 +26,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "limit": {
+          "description": "Optional maximum number of records to return when querying this object.",
+          "type": "number"
         },
         "matchingKeyFields": {
           "description": "List of fields which uniquely identify the object and are used for matching the object when importing and for generating the external lookup reference.",
@@ -72,176 +53,12 @@
           "description": "Name format of the datapack, used to create the folder name of the datapack,  when a filename is not set this is also used as the file name.\n\nWhen this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`. When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`: ```yaml name:\n- Name\n- _constantValue # OR name: \"{Name}_constantValue\" ```"
         },
         "objectType": {
-          "description": "Primary entry point of the SObject to export. The object type to export, e.g. Account, Contact, etc. This is a required field.",
+          "description": "Type of SObject to which this filter applies",
           "type": "string"
         },
         "relatedObjects": {
           "additionalProperties": {
-            "anyOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "embeddedLookup": {
-                    "description": "When this field is alookup field and this flag is set to true,  the related record is exported as an embedded object in the same datapack instead of a separate datapack.",
-                    "type": "boolean"
-                  },
-                  "expandArray": {
-                    "description": "When true expands an array value in the datapack to individual files.",
-                    "type": "boolean"
-                  },
-                  "fileName": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      }
-                    ],
-                    "description": "When set it define the file name to which the export is written. For fields it would mean  an new file is created to write the values in this field to. Only set if the intenion is to  write the field value to a separate file instead of including it in the main datapack json file.\n\nWhen this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`. When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`: ```yaml name:\n- Name\n- _constantValue # OR name: \"{Name}_constantValue\" ```\n\nIf no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
-                  },
-                  "filter": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "additionalProperties": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/definitions/alias-1030797743-4079-4167-1030797743-0-5223"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "type": "object"
-                      }
-                    ],
-                    "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` relatedObjectFilter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
-                  },
-                  "ignoreFields": {
-                    "description": "When the field is a lookup and embeddedLookup is true, this array defines a list of fields to  exclude from the export of the related record.\n\nThis can be used to prevent circular references when exporting related records as embedded objects.  For example when exporting an Account with related Contacts as embedded objects,  excluding the AccountId field from the Contact export will prevent circular reference  between the Account and Contact datapacks.",
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array"
-                  },
-                  "objectType": {
-                    "description": "Type of SObject to which this filter applies",
-                    "type": "string"
-                  },
-                  "processor": {
-                    "description": "Processor function snippet to use for processing the field data before exporting.",
-                    "type": "string"
-                  },
-                  "sortFields": {
-                    "description": "List of fields by which to sort the exported data when exporting\tas a related object.",
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array"
-                  }
-                },
-                "required": [
-                  "objectType"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "embeddedLookup": {
-                    "description": "When this field is alookup field and this flag is set to true,  the related record is exported as an embedded object in the same datapack instead of a separate datapack.",
-                    "type": "boolean"
-                  },
-                  "expandArray": {
-                    "description": "When true expands an array value in the datapack to individual files.",
-                    "type": "boolean"
-                  },
-                  "fileName": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      }
-                    ],
-                    "description": "When set it define the file name to which the export is written. For fields it would mean  an new file is created to write the values in this field to. Only set if the intenion is to  write the field value to a separate file instead of including it in the main datapack json file.\n\nWhen this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`. When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`: ```yaml name:\n- Name\n- _constantValue # OR name: \"{Name}_constantValue\" ```\n\nIf no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
-                  },
-                  "filter": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "additionalProperties": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/definitions/alias-1030797743-4079-4167-1030797743-0-5223"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "type": "object"
-                      }
-                    ],
-                    "description": "Optional filter to apply to the related object data to export."
-                  },
-                  "ignoreFields": {
-                    "description": "When the field is a lookup and embeddedLookup is true, this array defines a list of fields to  exclude from the export of the related record.\n\nThis can be used to prevent circular references when exporting related records as embedded objects.  For example when exporting an Account with related Contacts as embedded objects,  excluding the AccountId field from the Contact export will prevent circular reference  between the Account and Contact datapacks.",
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array"
-                  },
-                  "processor": {
-                    "description": "Processor function snippet to use for processing the field data before exporting.",
-                    "type": "string"
-                  },
-                  "relationshipName": {
-                    "description": "Name of the relationship field on the parent object",
-                    "type": "string"
-                  },
-                  "sortFields": {
-                    "description": "List of fields by which to sort the exported data when exporting\tas a related object.",
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array"
-                  }
-                },
-                "required": [
-                  "relationshipName"
-                ],
-                "type": "object"
-              },
-              {
-                "type": "string"
-              }
-            ]
+            "$ref": "#/definitions/DatapackExportRelatedObject"
           },
           "description": "List of objects that are related to this object and who's data should be included in the export. The key is the name under which related records are exported.",
           "type": "object"
@@ -252,6 +69,132 @@
         "objectType"
       ],
       "type": "object"
+    },
+    "DatapackExportRelatedObject": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "embeddedLookup": {
+              "description": "When this field is alookup field and this flag is set to true,  the related record is exported as an embedded object in the same datapack instead of a separate datapack.",
+              "type": "boolean"
+            },
+            "expandArray": {
+              "description": "When true expands an array value in the datapack to individual files.",
+              "type": "boolean"
+            },
+            "fileName": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ],
+              "description": "When set it define the file name to which the export is written. For fields it would mean  an new file is created to write the values in this field to. Only set if the intenion is to  write the field value to a separate file instead of including it in the main datapack json file.\n\nWhen this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`. When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`: ```yaml name:\n- Name\n- _constantValue # OR name: \"{Name}_constantValue\" ```\n\nIf no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
+            },
+            "filter": {
+              "$ref": "#/definitions/LookupFilter",
+              "description": "Where condition to filter the object data to export by. Can be a string or an object. When an object, the key is the field name and the value is the value to filter by. Accesing fields from the parent datapack using bracket syntax `{}` is supported: ``` filter:  AccountId: $parent.Id  IsActive: true ```\n\nWhen defined as a string, the string is used as the where condition and interpolated this allows for more complex where conditions: ```yaml filter: \"AccountId = '{parent.Id}' AND IsActive = 'true'\" ```"
+            },
+            "ignoreFields": {
+              "description": "When the field is a lookup and embeddedLookup is true, this array defines a list of fields to  exclude from the export of the related record.\n\nThis can be used to prevent circular references when exporting related records as embedded objects.  For example when exporting an Account with related Contacts as embedded objects,  excluding the AccountId field from the Contact export will prevent circular reference  between the Account and Contact datapacks.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "limit": {
+              "description": "Optional maximum number of records to return when querying this object.",
+              "type": "number"
+            },
+            "objectType": {
+              "description": "Type of SObject to which this filter applies",
+              "type": "string"
+            },
+            "processor": {
+              "description": "Processor function snippet to use for processing the field data before exporting.",
+              "type": "string"
+            },
+            "sortFields": {
+              "description": "List of fields by which to sort the exported data when exporting\tas a related object.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "objectType"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "embeddedLookup": {
+              "description": "When this field is alookup field and this flag is set to true,  the related record is exported as an embedded object in the same datapack instead of a separate datapack.",
+              "type": "boolean"
+            },
+            "expandArray": {
+              "description": "When true expands an array value in the datapack to individual files.",
+              "type": "boolean"
+            },
+            "fileName": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ],
+              "description": "When set it define the file name to which the export is written. For fields it would mean  an new file is created to write the values in this field to. Only set if the intenion is to  write the field value to a separate file instead of including it in the main datapack json file.\n\nWhen this is a string the string is parsed as format and values between brackets are replace by field values from the object to export, i.e `{Name}`. When this is defined as an array each value in the array is evaluated as a field value expression and constants need to be prixed with a `_`: ```yaml name:\n- Name\n- _constantValue # OR name: \"{Name}_constantValue\" ```\n\nIf no extension is provided the extension is inferred from the field type:\n- json: .json\n- binary: .bin"
+            },
+            "filter": {
+              "$ref": "#/definitions/LookupFilter",
+              "description": "Optional filter to apply to the related object data to export."
+            },
+            "ignoreFields": {
+              "description": "When the field is a lookup and embeddedLookup is true, this array defines a list of fields to  exclude from the export of the related record.\n\nThis can be used to prevent circular references when exporting related records as embedded objects.  For example when exporting an Account with related Contacts as embedded objects,  excluding the AccountId field from the Contact export will prevent circular reference  between the Account and Contact datapacks.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "processor": {
+              "description": "Processor function snippet to use for processing the field data before exporting.",
+              "type": "string"
+            },
+            "relationshipName": {
+              "description": "Name of the relationship field on the parent object",
+              "type": "string"
+            },
+            "sortFields": {
+              "description": "List of fields by which to sort the exported data when exporting\tas a related object.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "relationshipName"
+          ],
+          "type": "object"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Definition of an object to export as part of a datapack,  including filter conditions and related objects to include in the export."
     },
     "ExportFieldDefinition": {
       "additionalProperties": false,
@@ -299,7 +242,31 @@
       },
       "type": "object"
     },
-    "alias-1030797743-4079-4167-1030797743-0-5223": {
+    "LookupFilerPrimitive": {
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "LookupFilerValue": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/LookupFilerPrimitive"
+        }
+      },
+      "required": [
+        "op",
+        "value"
+      ],
+      "type": "object"
+    },
+    "LookupFilter": {
       "anyOf": [
         {
           "type": "string"
@@ -308,20 +275,30 @@
           "additionalProperties": {
             "anyOf": [
               {
-                "$ref": "#/definitions/alias-1030797743-4079-4167-1030797743-0-5223"
+                "$ref": "#/definitions/LookupFilerValue"
               },
               {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
+                "$ref": "#/definitions/LookupFilerPrimitive"
               }
             ]
           },
           "type": "object"
+        },
+        {
+          "items": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/LookupFilerValue"
+                },
+                {
+                  "$ref": "#/definitions/LookupFilerPrimitive"
+                }
+              ]
+            },
+            "type": "object"
+          },
+          "type": "array"
         }
       ]
     }

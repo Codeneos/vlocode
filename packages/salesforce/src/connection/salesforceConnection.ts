@@ -1,4 +1,4 @@
-import { Connection, ConnectionOptions, Metadata } from 'jsforce';
+import { Connection, ConnectionOptions, Metadata, RequestInfo } from 'jsforce';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
 import { resumeOnce, CustomError, wait, asArray, formatString, DeferredPromise, Timer, encodeRFC3986URI, thenablePromise, cache } from '@vlocode/util';
@@ -278,16 +278,16 @@ export class SalesforceConnection extends Connection {
      * @returns Request promise
      */
     public request<T = any>(
-        request: string | HttpRequestInfo,
+        request: string | HttpRequestInfo | RequestInfo,
         options?: RequestOptions | any): Promise<T>;
 
     public request(
-        request: HttpRequestInfo,
+        request: HttpRequestInfo | RequestInfo,
         options: RequestOptions & { responseType: 'raw' }): Promise<HttpResponse>;
 
     @thenablePromise()
     public async request<T = any>(
-        info: string | HttpRequestInfo,
+        info: string | HttpRequestInfo | RequestInfo,
         options?: RequestOptions | any,
         callback?: any // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<T> {
@@ -319,8 +319,12 @@ export class SalesforceConnection extends Connection {
         }
     }
 
-    private prepareRequest(info: string | HttpRequestInfo) : HttpRequestInfo {
-        const request: HttpRequestInfo = typeof info === 'string' ? { method: 'GET', url: info } : { ...info };
+    private prepareRequest(info: string | HttpRequestInfo | RequestInfo) : HttpRequestInfo {
+        const request = (typeof info === 'string' ? { method: 'GET', url: info } : { ...info }) as HttpRequestInfo;
+
+        if (!request.url) {
+            throw new Error('Request URL is missing');
+        }
 
         // replace placeholders
         request.url = this.replaceTokens(request.url);

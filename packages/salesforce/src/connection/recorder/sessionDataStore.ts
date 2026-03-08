@@ -81,7 +81,7 @@ export class SessionDataStore {
     private normalizeRequest(info: HttpRequestInfo) : HttpRequestInfo {
         const normalized = removeUndefinedProperties({
             ...info,
-            body: info.body ? this.normalizeBody(info.body) : undefined,
+            body: info.body ? this.normalizeBody(info.body.toString()) : undefined,
             url: this.normalizeUrl(info.url),
             headers: this.filterHeaders(info.headers ?? {}),
         });

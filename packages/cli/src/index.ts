@@ -4,7 +4,6 @@ import * as path from 'path';
 import { Command, Option } from 'commander';
 import { FancyConsoleWriter, container, Logger, LogLevel, LogManager, ConsoleWriter } from '@vlocode/core';
 import { getErrorMessage } from '@vlocode/util';
-import { Module } from 'vm';
 
 // // @ts-ignore
 const buildInfo: Record<string, string> = {

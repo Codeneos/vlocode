@@ -7,6 +7,7 @@ export * from './deploymentSpecs';
 export * from './types';
 export * from './convert';
 export * from './export';
+export * from './export/definition-converter';
 export * from './flexCard';
 export * from './datapackDeploy';
 export * from './datapackDeployer';

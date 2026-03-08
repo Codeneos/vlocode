@@ -6,7 +6,7 @@ import type { DatapackConfiguration } from "@vlocode/vlocity/src/datapack/datapa
 import { groupBy, mapBy, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
 import type { DatapackExportDefinition, ExportFieldDefinition, LookupFilter, ObjectFilter } from "../exportDefinitions";
 import { LogManager } from "@vlocode/core";
-import type { DatapacksExpandDefinitionAccessor } from "./expandDefinitionAccessor";
+import type { DatapacksExpandDefinitionAccessor } from "../expandDefinitionAccessor";
 import { group } from "console";
 
 export class MigrationDataMapperConverter {
