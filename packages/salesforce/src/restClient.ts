@@ -53,48 +53,48 @@ export class RestClient {
         return this;
     }
 
-    public post(body: object | string | HttpRequestPart[], resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<HttpResponse>;
-    public post<T>(body: object | string | HttpRequestPart[], resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }) : Promise<T>;
-    public post<T>(body: object | string | HttpRequestPart[], resource?: string, options?: RestClientOptions) : Promise<T> {
+    public post(body: object | string | Buffer | HttpRequestPart[], resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<HttpResponse>;
+    public post<T>(body: object | string | Buffer | HttpRequestPart[], resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }) : Promise<T>;
+    public post<T>(body: object | string | Buffer | HttpRequestPart[], resource?: string, options?: RestClientOptions) : Promise<T | HttpResponse> {
         return this.connection.request<T>({            
             url: this.formatUrl(resource), 
             method: 'POST',
             parts: Array.isArray(body) ? body : undefined,
-            body: Array.isArray(body) ? undefined : this.formatBody(body),
+            body: (Array.isArray(body) ? undefined : this.formatBody(body)) as any,
             headers: this.getRequestHeaders(options)
-        }, { responseType: options?.rawResponse ? 'raw' : undefined });
+        }, { responseType: options?.rawResponse ? 'raw' : undefined }) as Promise<any>;
     }
 
     public get<T extends HttpResponse>(resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<T>;
     public get<T>(resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }) : Promise<T>;
-    public get<T>(resource?: string, options?: RestClientOptions) : Promise<T> {
+    public get<T>(resource?: string, options?: RestClientOptions) : Promise<T | HttpResponse> {
         return this.connection.request<T>({ 
             url: this.formatUrl(resource),
             method: 'GET',
             headers: this.getRequestHeaders(options)
-        }, { responseType: options?.rawResponse ? 'raw' : undefined });
+        }, { responseType: options?.rawResponse ? 'raw' : undefined }) as Promise<any>;
     }
 
-    public patch(body: object | string, resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<HttpResponse>;
-    public patch<T>(body: object | string, resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }): Promise<T>;
-    public patch<T>(body: object | string, resource?: string, options?: RestClientOptions): Promise<T> {  
+    public patch(body: object | string | Buffer, resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<HttpResponse>;
+    public patch<T>(body: object | string | Buffer, resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }): Promise<T>;
+    public patch<T>(body: object | string | Buffer, resource?: string, options?: RestClientOptions): Promise<T | HttpResponse> {  
         return this.connection.request<T>({ 
             url: this.formatUrl(resource),
             method: 'PATCH', 
-            body: this.formatBody(body),
+            body: this.formatBody(body) as any,
             headers: this.getRequestHeaders(options)
-        }, { responseType: options?.rawResponse ? 'raw' : undefined });
+        }, { responseType: options?.rawResponse ? 'raw' : undefined }) as Promise<any>;
     }
 
-    public put(body: object | string, resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<HttpResponse>;
-    public put<T>(body: object | string, resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }): Promise<T>;
-    public put<T>(body: object | string, resource?: string, options?: RestClientOptions): Promise<T> {  
+    public put(body: object | string | Buffer, resource: string | undefined, options: RestClientOptions & { rawResponse: true }): Promise<HttpResponse>;
+    public put<T>(body: object | string | Buffer, resource?: string, options?: RestClientOptions & { rawResponse?: false | undefined }): Promise<T>;
+    public put<T>(body: object | string | Buffer, resource?: string, options?: RestClientOptions): Promise<T | HttpResponse> {  
         return this.connection.request<T>({ 
             url: this.formatUrl(resource),
             method: 'PUT', 
-            body: this.formatBody(body),
+            body: this.formatBody(body) as any,
             headers: this.getRequestHeaders(options)
-        }, { responseType: options?.rawResponse ? 'raw' : undefined });
+        }, { responseType: options?.rawResponse ? 'raw' : undefined }) as Promise<any>;
     }
 
     public async delete(resource?: string, options?: RestClientOptions): Promise<number> {  
@@ -118,8 +118,8 @@ export class RestClient {
         return resource ? `${resourceBase}/${resource}` : resourceBase;
     }
 
-    private formatBody(body: any): string {
-        if (typeof body === 'string') {
+    private formatBody(body: any): string | Buffer {
+        if (typeof body === 'string' || Buffer.isBuffer(body)) {
             return body;
         }
         return JSON.stringify(body);
