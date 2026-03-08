@@ -173,11 +173,32 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
 
         this.recordsCount += data.length;
 
+        // Eagerly flush chunks to avoid open buffer accumulation
+        // using a 50,000 record heuristic to trigger chunking
+        if (this.pendingRecords.length >= 50000) {
+            await this.flushPendingRecords();
+        }
+
         if (options?.keepOpen !== false) {
             return this;
         }
 
         return this.close();
+    }
+
+    private async flushPendingRecords() {
+        if (this.pendingRecords.length === 0) {
+            return;
+        }
+
+        for (const chunk of this.encodeData(this.pendingRecords.splice(0))) {
+            if (!this.isOpen) {
+                await this.createNewJob();
+            }
+
+            await this.client.put(chunk, `${this.id}/batches`, { contentType: `text/csv; charset=${this.encoding}` });
+            await this.patch({ state: 'UploadComplete' });
+        }
     }
 
     /**
@@ -222,14 +243,7 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
             return this;
         }
 
-        for (const chunk of this.encodeData(this.pendingRecords.splice(0))) {
-            if (!this.isOpen) {
-                await this.createNewJob();
-            }
-
-            await this.client.put(chunk.toString(), `${this.id}/batches`, { contentType: `text/csv; charset=${this.encoding}` });
-            await this.patch({ state: 'UploadComplete' });
-        }
+        await this.flushPendingRecords();
 
         return this;
     }
@@ -281,39 +295,35 @@ export class BulkIngestJob<TRecord extends object = any> extends BulkJob<IngestJ
     /**
      * Retrieves a list of failed records for a completed insert, delete, update, or upsert job.
      */
-    public getFailedRecords() {
-        return this.getRecords<FailedRecord>('failedResults');
+    public async *getFailedRecords() {
+        yield* this.getRecords<FailedRecord>('failedResults');
     }
 
     /**
      * Retrieves a list of unprocessed records for failed or aborted jobs.
      */
-    public getUnprocessedRecords() {
-        return this.getRecords('unprocessedrecords');
+    public async *getUnprocessedRecords() {
+        yield* this.getRecords('unprocessedrecords');
     }
 
     /**
      * Retrieves a list of unprocessed records for failed or aborted jobs.
      */
-    public getSuccessfulRecords() {
-        return this.getRecords<SuccessfulRecord>('successfulResults');
+    public async *getSuccessfulRecords() {
+        yield* this.getRecords<SuccessfulRecord>('successfulResults');
     }
 
-    private async getRecords<T = TRecord>(type: string) : Promise<(T & TRecord)[]> {
-        const aggregateRecords: (T & TRecord)[] = [];
-        for (const records of await this.getAll<any[]>(job => `${job.id}/${type}`)) {
-            Iterable.forEach(
-                this.resultsToRecords<T & TRecord>(records),
-                record => aggregateRecords.push(record)
-            );
+    private async *getRecords<T = TRecord>(type: string) : AsyncGenerator<T & TRecord> {
+        for (const records of await this.getAll<any[]>(job => `${job.id}/${type}`, true)) {
+            yield* this.resultsToRecords<T & TRecord>(records);
         }
-        return aggregateRecords;
     }
 
-    private async getAll<T>(valueProvider: (value: IngestJobInfo) => string): Promise<T[]> {
+    private async getAll<T>(valueProvider: (value: IngestJobInfo) => string, isRawResults = false): Promise<T[]> {
         const resources: T[] = [];
         for (const job of Object.values(this.jobs)) {
-            resources.push(await this.client.get<T>(valueProvider(job)));
+            const resp = await this.client.get<T>(valueProvider(job), isRawResults ? { rawResponse: true } as any : undefined);
+            resources.push(isRawResults ? (resp as any).body : resp);
         }
         return resources;
     }
