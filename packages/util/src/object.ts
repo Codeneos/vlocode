@@ -286,10 +286,12 @@ export function flattenObject<T extends object>(values: T, flattenPredicate?: (o
  * Get a nested object property on the target object, property path is separated by a period-sign (.)
  * @param obj target object
  * @param prop property path separated by a period (.) to set
+ * @param options.throwOnMissingPath when true an error is thrown when a part of the path doesn't exist, otherwise undefined is returned when a part of the path doesn't exist; defaults to false
+ * @param options.separator separator to use for the property path, defaults to '.'
  * @returns The value at the path or undefined when not set or part of the path doesn't exists
  */
-export function getObjectProperty(obj: any, prop: string) {
-    return prop.split('.').reduce((o, p) => o && o[p], obj);
+export function getObjectProperty(obj: any, prop: string, options: { throwOnMissingPath?: boolean, separator?: string } = {}): any {
+    return prop.split(options.separator ?? '.').reduce((o, p) => o && o[p], obj);
 }
 
 /**
@@ -747,4 +749,44 @@ export function isArrowFunction(target: unknown): target is (...args: any[]) => 
         return false;
     }
     return target.prototype === undefined;
+}
+
+/**
+ * Define facade properties on the target object which are mapped to the source properties specified in the `properties` parameter. The facade properties are defined as non-enumerable and configurable.
+ * @param target Target object on which to define the facade properties
+ * @param properties Object specifying the mapping of the facade properties to the source properties; the keys of the object are the facade property names and the values are the source property names
+ * @returns The target object with the defined facade properties
+ */
+export function defineAliasedProperties<T extends object>(target: T, properties: Record<PropertyKey, PropertyKey>, options?: { enumerable?: boolean, configurable?: boolean }): T {
+    for (const [targetKey, sourceKey] of Object.entries(properties)) {
+        Object.defineProperty(target, targetKey, {
+            get() {
+                return this[sourceKey];
+            },
+            set(value) {
+                this[sourceKey] = value;
+            },
+            configurable: options?.configurable ?? false,
+            enumerable: options?.enumerable ?? false
+        });
+    }
+    return target;
+}
+
+/**
+ * Define read-only properties on the target object which are mapped to the source properties specified in the `properties` parameter. 
+ * The read-only properties are defined as non-enumerable and configurable.
+ * @param target Target object on which to define the read-only properties
+ * @param properties Object specifying the mapping of the read-only properties to the source properties; the keys of the object are the read-only property names and the values are either a function that returns the value of the property or a string which is the name of the source property
+ * @returns The target object with the defined read-only properties
+ */
+export function defineReadonlyProperties<T extends object>(target: T, properties: Record<PropertyKey, any>, options?: { enumerable?: boolean, configurable?: boolean }): T {
+    for (const [key, value] of Object.entries(properties)) {
+        Object.defineProperty(target, key, {
+            get: typeof value === 'function' ? value : () => value,
+            configurable: options?.configurable ?? false,
+            enumerable: options?.enumerable ?? false
+        });
+    }
+    return target;
 }
