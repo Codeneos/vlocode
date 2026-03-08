@@ -1,7 +1,7 @@
 import { injectable } from "@vlocode/core";
 import { merge } from "@vlocode/util";
 import { ObjectRef } from "./datapackExporter";
-import { DatapackExportDefinition, ExportFieldDefinition, ObjectFilter, ObjectRelationship } from "./exportDefinitions";
+import { DatapackExportDefinition, ExportFieldDefinition, DatapackExportRelatedObject } from "./exportDefinitions";
 
 /**
  * Class that stores and manages the configuration for exporting and expanding datapacks.
@@ -141,7 +141,7 @@ export class DatapackExportDefinitionStore {
     }
 
     public isEmbeddedObject(item: ObjectRef, field: string) {
-        return false;//this.get(item, "embeddedObjects")?.includes(field) === true;
+        return this.getFieldConfig(item, field, 'embeddedLookup') === true;
     }
 
     public getMatchingKeyFields(item: ObjectRef) {
@@ -172,7 +172,7 @@ export class DatapackExportDefinitionStore {
             : [];
     }
 
-    public getRelatedObjects(item: ObjectRef) : Array<(ObjectFilter | ObjectRelationship) & { name: string }> {
+    public getRelatedObjects(item: ObjectRef): Array<Exclude<{ name: string } & DatapackExportRelatedObject, string>> {
         const relatedObjects = this.get(item, 'relatedObjects');
         if (relatedObjects) {
             return Object.entries(relatedObjects).map(([key, value]) => {

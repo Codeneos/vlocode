@@ -1,3 +1,5 @@
+import type { QueryBinary } from "@vlocode/salesforce";
+
 interface ExpandFileDefinition {
     /**
      * When set it define the file name to which the export is written. For fields it would mean 
@@ -21,6 +23,12 @@ interface ExpandFileDefinition {
     fileName?: string | string[];
 }
 
+/**
+ * Definition of an object to export as part of a datapack, 
+ * including filter conditions and related objects to include in the export.
+ */
+export type DatapackExportRelatedObject = ExportFieldDefinition & (ObjectFilter | ObjectRelationship) | string;
+
 export interface DatapackExportDefinition extends ObjectFilter {
     /**
      * Name format of the datapack, used to create the folder name of the datapack, 
@@ -37,10 +45,6 @@ export interface DatapackExportDefinition extends ObjectFilter {
      * ```
      */
     name: string | string[];
-    /**
-     * Primary entry point of the SObject to export. The object type to export, e.g. Account, Contact, etc. This is a required field.
-     */
-    objectType: string;
     /**
      * List of fields which uniquely identify the object and are used
      * for matching the object when importing and for generating the
@@ -61,7 +65,7 @@ export interface DatapackExportDefinition extends ObjectFilter {
      * and who's data should be included in the export.
      * The key is the name under which related records are exported.
      */
-    relatedObjects?: Record<string, ExportFieldDefinition & (ObjectFilter | ObjectRelationship) | string>;
+    relatedObjects?: Record<string, DatapackExportRelatedObject>;
     /**
      * Optional object with specific export settings for fields in the object.
      */
@@ -98,7 +102,10 @@ export interface ExportFieldDefinition extends ExpandFileDefinition {
     sortFields?: string[];
 }
 
-type LookupFilter = string | { [key: string]: LookupFilter | number | boolean | null }
+export type LookupFilerPrimitive = string | number | boolean | null;
+export type LookupFilerValue = { op: string, value: LookupFilerPrimitive };
+type LookupFilterObject = { [key: string]: LookupFilerValue | LookupFilerPrimitive };
+export type LookupFilter = string | LookupFilterObject | LookupFilterObject[];
 
 export interface ObjectFilter {
     /**
@@ -111,7 +118,7 @@ export interface ObjectFilter {
      * field name and the value is the value to filter by. Accesing fields from the parent
      * datapack using bracket syntax `{}` is supported:
      * ```
-     * relatedObjectFilter:
+     * filter:
      *  AccountId: $parent.Id
      *  IsActive: true
      * ```
@@ -123,6 +130,10 @@ export interface ObjectFilter {
      * ```
      */
     filter?: LookupFilter;
+    /**
+     * Optional maximum number of records to return when querying this object.
+     */
+    limit?: number;
 }
 
 export interface ObjectRelationship {
@@ -135,4 +146,3 @@ export interface ObjectRelationship {
      */
     filter?: LookupFilter;
 }
-

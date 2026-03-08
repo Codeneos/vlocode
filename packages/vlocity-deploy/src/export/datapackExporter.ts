@@ -1,17 +1,19 @@
 import { DescribeSObjectResult, Field, SalesforceService } from "@vlocode/salesforce";
-import { ObjectFilter, ObjectRelationship } from "./exportDefinitions";
+import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { forEachAsyncParallel, formatString, mapAsyncParallel, Timer } from "@vlocode/util";
+import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, formatString, getObjectProperty, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
 import { Logger, injectable } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 import { randomUUID } from "crypto";
+import { NAMESPACE_PLACEHOLDER } from "../constants";
 
 export type ObjectRef = string | { objectType: string, scope?: string }
 
 interface ExportDatapack {
     readonly id: string;
     readonly objectType: string;
+    readonly normalizedObjectType: string;
     readonly scope?: string;
     readonly schema: DescribeSObjectResult;
     data: VlocityDatapackSObject;
@@ -101,7 +103,7 @@ export class DatapackExporter {
         public readonly definitions: DatapackExportDefinitionStore,
         private readonly expander: DatapackExpander,
         private readonly salesforce: SalesforceService,
-        private readonly vlocityMatchingKeys: DatapackMatchingKeyService,
+        private readonly datapackMatchingKeys: DatapackMatchingKeyService,
         private readonly logger: Logger,
     ) {
         this.logger = logger.distinct();
@@ -176,14 +178,16 @@ export class DatapackExporter {
         const datapack: ExportDatapack = {
             id: record.id,
             objectType: describe.name,
+            normalizedObjectType: removeNamespacePrefix(describe.name),
             scope: context?.scope,
             schema: describe,
             parent: context?.parent,
-            data: {
-                VlocityDataPackType: 'SObject',
-                VlocityRecordSourceKey: matchingKey,
-                VlocityRecordSObjectType: describe.name
-            },
+            data: defineReadonlyProperties({
+                    VlocityDataPackType: 'SObject',
+                    VlocityRecordSourceKey: matchingKey,
+                    VlocityRecordSObjectType: describe.name
+                }, { Id: record.id }
+            ),
             children: {},
             references: {},
             sourceKeys: {
@@ -240,43 +244,81 @@ export class DatapackExporter {
             }
 
             // Set datapack field
-            datapack.data[field.name] = value;
+            this.setDatapackField(datapack, field.name, value);
         }, this.exportParallelism);
+    }
+
+    private setDatapackField(datapack: ExportDatapack, fieldName: string, value: any) {
+        // Normalize the value
+        if (typeof value === 'string') {
+            value = this.salesforce.replaceNamespace(value);
+            value = this.tryParseAsJson(value) ?? value;
+        }
+
+        // Normalize the field name and set the value, also define a getter for the original field name 
+        const field = extractNamespaceAndName(fieldName);
+        const isVlocityNamespace = !!field.namespace && /$vlocity/i.test(field.namespace);
+        const datapackFieldName = isVlocityNamespace ? `${NAMESPACE_PLACEHOLDER}__${field.name}` : fieldName;
+        datapack.data[datapackFieldName] = value;
+
+        if (datapackFieldName !== fieldName) {
+            defineAliasedProperties(datapack.data, {
+                [fieldName]: datapackFieldName,
+                [field.name]: datapackFieldName
+            });
+        }
     }
 
     private async exportRelatedObjects(datapack: ExportDatapack) {
-        // Export related objects
-        await forEachAsyncParallel(this.definitions.getRelatedObjects(datapack), async (relatedObject) => {
-            const relatedRecords = await this.lookupRelatedRecords(datapack, relatedObject);
-            if (relatedRecords.length === 0) {
-                return;
+        // Export related objects§
+        for (const relatedObject of this.definitions.getRelatedObjects(datapack)) {
+            try {
+                const relatedRecords = await this.lookupRelatedRecords(datapack, relatedObject);
+                if (relatedRecords.length === 0) {
+                    continue;
+                }
+                datapack.data[relatedObject.name] = await mapAsyncParallel(
+                    relatedRecords,
+                    record => this.buildSObject(datapack, record.Id),
+                    this.exportParallelism
+                );
+            } catch (e) {
+                this.logger.error(`Error exporting related object for ${datapack.objectType}:`, e);
             }
-            datapack.data[relatedObject.name] = await mapAsyncParallel(
-                relatedRecords,
-                record => this.buildSObject(datapack, record.Id),
-                this.exportParallelism
-            );
-        }, this.exportParallelism);
+        };
     }
 
-    private lookupRelatedRecords(datapack: ExportDatapack, relatedObject: ObjectFilter | ObjectRelationship) {
+    private async lookupRelatedRecords(datapack: ExportDatapack, relatedObject: ObjectFilter | ObjectRelationship) {
         if ('relationshipName' in relatedObject) {
-            const relationship = datapack.schema.childRelationships.find(r => r.relationshipName === relatedObject.relationshipName);
-            if (!relationship) {
-                throw new Error(`Relationship ${relatedObject.relationshipName} not found on ${datapack.objectType}`);
-            }
-            const filter = { [relationship.field]: datapack.id };
-            if (relatedObject.filter) {
-                Object.assign(filter, this.evalFilter(relatedObject.filter, datapack));
-            }
-            return this.salesforce.data.lookup(relationship.childSObject, filter);
+            relatedObject = this.getObjectFilterFromRelationship(datapack, relatedObject);
         }
 
-        const filter = this.evalFilter(relatedObject.filter, datapack);
+        const filter = this.buildLookupFilter(relatedObject.filter, datapack);
         if (Object.keys(filter).length === 0) {
             throw new Error(`Filter evaluated to empty object for related object ${relatedObject.objectType} on ${datapack.objectType}`);
         }
-        return this.salesforce.data.lookup(relatedObject.objectType, filter);
+
+        this.logger.verbose(`Lookup ${relatedObject.objectType} (${datapack.objectType}) using filter:`, filter);
+        return this.salesforce.data.lookup(relatedObject.objectType, filter, undefined, relatedObject.limit);
+    }
+
+    private getObjectFilterFromRelationship(datapack: ExportDatapack, relatedObject: ObjectRelationship): ObjectFilter {
+        const relationship = datapack.schema.childRelationships.find(r => r.relationshipName === relatedObject.relationshipName);
+        if (!relationship) {
+            throw new Error(`Relationship ${relatedObject.relationshipName} not found on ${datapack.objectType}`);
+        }
+
+        let filter = relatedObject.filter;
+        if (typeof filter === 'string' && filter.length > 0) {
+            filter = `${filter} AND ${relationship.field} = '${datapack.id}'`;
+        } else if (typeof filter === 'object') {
+             filter = {
+                [relationship.field]: datapack.id,
+                ...filter
+            };
+        }
+
+        return { ...relatedObject, objectType: relationship.childSObject, filter }
     }
 
     private processFieldValues(datapack: ExportDatapack, options?: { recursive?: boolean }) {
@@ -437,20 +479,77 @@ export class DatapackExporter {
         return prossorFn(...Object.values(context));
     }
 
-    private evalFilter(filter: ObjectFilter['filter'] | null | boolean | number, datapack: ExportDatapack) {
-        if (typeof filter === 'string') {
-            return formatString(filter, datapack);
+    // Converts an Object filter to a lookup filter
+    private buildLookupFilter(filter: LookupFilter | undefined | null, datapack: ExportDatapack) {
+        if (filter == null) {
+            return null;
         }
+
+        if (typeof filter === 'string') {
+            // simple where clause as string, e.g. "Name = 'Test' AND Status__c != 'Closed'"
+            return formatString(filter, {
+                [datapack.objectType]: datapack.data,
+            });
+        }
+
+        // Multiple clauses for the same object which should be joined as OR
+        if (Array.isArray(filter)) {
+            return filter.map(item => this.buildLookupFilter(item, datapack));
+        }
+
+        // Object exp with field conditions
         if (typeof filter === 'object' && filter) {
             return Object.fromEntries(
                 Object.entries(filter).map(([key, value]) => [
                     key,
-                    this.evalFilter(value, datapack)
+                    this.evalFilterValue(value, datapack)
                 ])
             );
         }
-        return filter;
     }
+
+    private evalFilterValue(value: LookupFilerValue | LookupFilerPrimitive, datapack: ExportDatapack) {
+        if (typeof value === 'string') {
+            return this.evalFilterValueExp(value, datapack);
+        }
+        
+        if (typeof value === 'object' && value !== null) {
+            return {
+                op: value.op,
+                value: typeof value.value === 'string' ? this.evalFilterValueExp(value.value, datapack) : value.value
+            }
+        }
+    }
+
+    private evalFilterValueExp(stringFormat: string, datapack: ExportDatapack) {
+        return stringFormat.replace(/\$?{(.+?(.*?))}/gm, (match, key) => {
+            const value = getObjectProperty({
+                    Id: datapack.id,
+                    [datapack.objectType]: datapack.data,
+                    [datapack.normalizedObjectType]: datapack.data,
+                }, key.replace(':', '.'));
+            return value === undefined ? match : (typeof value === 'string' ? value : `${value}`);
+        });
+    }
+    
+    // relatedObjects:
+    //     vlocity_cmt__ObjectFieldAttribute__c:
+    //     objectType: vlocity_cmt__ObjectFieldAttribute__c
+    //     filter:
+    //         - vlocity_cmt__ObjectClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
+    //           vlocity_cmt__SubClassId__c: null
+    //         - vlocity_cmt__SubClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
+    //     vlocity_cmt__AttributeBinding__c:
+    //     objectType: vlocity_cmt__AttributeBinding__c
+    //     filter:
+    //         vlocity_cmt__ObjectClassId__c: '{vlocity_cmt__ObjectClass__c:Id}'
+    //     vlocity_cmt__AttributeAssignment__c:
+    //     objectType: vlocity_cmt__AttributeAssignment__c
+    //     filter:
+    //         vlocity_cmt__ObjectId__c: '{vlocity_cmt__ObjectClass__c:Id}'
+    //         vlocity_cmt__AttributeId__c:
+    //             op: '!='
+    //             value: null
 
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: 'VlocityMatchingKeyObject', data: Record<string, any>): Promise<VlocityDatapackMatchingReference>;
     private async buildMatchingKeyObject(datapack: ExportDatapack, refType: 'VlocityLookupMatchingKeyObject', data: Record<string, any>): Promise<VlocityDatapackLookupReference>;
@@ -577,7 +676,7 @@ export class DatapackExporter {
             return this.validateFieldList(type, matchingFields);
         }
 
-        const sfMatchingKey = (await this.vlocityMatchingKeys.getMatchingKeyDefinition(type.name)).fields;
+        const sfMatchingKey = (await this.datapackMatchingKeys.getMatchingKeyDefinition(type.name)).fields;
         if (sfMatchingKey.length > 0) {
             this.logger.debug(`Using Vlocity DR Matching keys for: ${type.name}`);
             return this.validateFieldList(type, sfMatchingKey);

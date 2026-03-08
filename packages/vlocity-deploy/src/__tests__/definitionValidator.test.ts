@@ -58,7 +58,7 @@ describe('DatapackExportDefinitionValidator', () => {
         const errors = await validator.validate({
             objectType: 'CustomObject__c',
             name: 'Object_{Name}',
-            embeddedObjects: ['Description', 'AccountId']
+            //embeddedObjects: ['Description', 'AccountId']
         });
 
         expect(errors).toHaveLength(1);

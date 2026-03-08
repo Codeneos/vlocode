@@ -56,7 +56,7 @@ export class DatapackExportDefinitionValidator {
             return errors;
         }
 
-        for (const property of ['matchingKeyFields', 'ignoreFields', 'embeddedObjects'] as const) {
+        for (const property of ['matchingKeyFields', 'ignoreFields'] as const) {
             const fields = definition[property];
             if (!fields) {
                 continue;
@@ -71,21 +71,7 @@ export class DatapackExportDefinitionValidator {
                 });
             }
         }
-
-        for (const fieldName of definition.embeddedObjects ?? []) {
-            const field = this.findField(describe, fieldName);
-            const isLookupField = Array.isArray(field?.referenceTo) && field.referenceTo.length > 0;
-            if (field && !isLookupField) {
-                errors.push({
-                    message: `Field ${fieldName} is incorrectly configured as lookup, actual field type: ${field.type}`,
-                    type: 'INVALID_FIELD',
-                    sobjectType: definition.objectType,
-                    field: fieldName,
-                    definition: definition
-                });
-            }
-        }
-
+        
         return errors;
     }
 
