@@ -17,14 +17,11 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
     if (a === b) {
         return true;
     }
-    if (a === null || a === undefined) {
-        return false;
-    }
-    if (b === null || b === undefined) {
+    if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) {
         return false;
     }
     if (options === undefined || options === true || (options && options.caseInsensitive)) {
-        return b.toLowerCase() === a.toLowerCase();
+        return a.toLowerCase() === b.toLowerCase();
     }
     return false;
 }
@@ -37,17 +34,35 @@ export function stringEquals(a : string | undefined | null, b: string | undefine
  * @returns `true` if a matches any of the strings in b, `false` otherwise
  */
 export function stringEqualsIgnoreCase(a : string | undefined | null, b: string | string[] | undefined | null) : boolean {
-    if (typeof a === 'string') {
-        if (typeof b === 'string') {
-            return b.toLowerCase() === a.toLowerCase();
-        } else if (Array.isArray(b)) {
-            return b.some(e => e.toLowerCase() === a.toLowerCase());
-        }
-        // A is string but b is not a string and not an array so never equal
-        return false;
+    if (typeof a !== 'string') {
+        return a === b;
     }
-    // Only equal if a strict equals b
-    return a === b;
+    if (typeof b === 'string') {
+        if (a === b) {
+            return true;
+        }
+        if (b.length !== a.length) {
+            return false;
+        }
+        return b.toLowerCase() === a.toLowerCase();
+    }
+    if (Array.isArray(b)) {
+        const { length } = a;
+        let aLower : string | undefined;
+        for (let i = 0; i < b.length; i++) {
+            const entry = b[i];
+            if (entry === a) {
+                return true;
+            }
+            if (typeof entry === 'string' && entry.length === length) {
+                aLower ??= a.toLowerCase();
+                if (entry.toLowerCase() === aLower) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 /**
@@ -60,20 +75,26 @@ export function stringEqualsIgnoreCase(a : string | undefined | null, b: string 
  * @param options.caseInsensitive Whether or not to do a case insensitive or case-sensitive comparison
  */
 export function endsWith(a: string | undefined | null, b: string | undefined | null, options?: { caseInsensitive: boolean }): boolean {
-    if (a === null || a === undefined) {
-        return false;
-    }
-    if (b === null || b === undefined) {
+    if (a == null || b == null) {
         return false;
     }
     if (options?.caseInsensitive) {
-        return a.toLowerCase().endsWith(b.toLowerCase());
+        if (a.length < b.length) {
+            return false;
+        }
+        return a.substring(a.length - b.length).toLowerCase() === b.toLowerCase();
     }
     return a.endsWith(b);
 }
 
 export function format(formatStr: string, ...args: any[]) {
-    return args.reduce((str, arg, i) => str.replace(new RegExp(`\\{${i}\\}`, 'g'), arg), formatStr);
+    if (!args.length) {
+        return formatStr;
+    }
+    return formatStr.replace(/\{(\d+)\}/g, (match, indexStr) => {
+        const index = parseInt(indexStr, 10);
+        return index < args.length ? String(args[index]) : match;
+    });
 }
 
 /**

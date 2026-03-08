@@ -3,6 +3,22 @@ import * as string from '../string';
 
 describe('util', () => {
 
+    
+    describe('#format', () => {
+        it('should format strings using numeric placeholders', () => {
+            expect(string.format('{0} {1} {2}', 'A', 'B', 'C')).toEqual('A B C');
+            expect(string.format('{1} {0}', 'A', 'B')).toEqual('B A');
+            expect(string.format('{0} {0}', 'X')).toEqual('X X');
+        });
+        it('should handle undefined placeholders gracefully', () => {
+            expect(string.format('{0} {1}', 'A')).toEqual('A {1}');
+        });
+        it('should handle no arguments', () => {
+            expect(string.format('Hello {0}')).toEqual('Hello {0}');
+            expect(string.format('Hello')).toEqual('Hello');
+        });
+    });
+
     describe('#formatString', () => {
         it('should replace placeholders with context values', () => {
             // eslint-disable-next-line no-template-curly-in-string
@@ -58,6 +74,20 @@ describe('util', () => {
             }
         });
     });
+    
+    describe('#endsWith', () => {
+        it('should return true for matching ends', () => {
+            expect(string.endsWith('test_string', 'string')).toBe(true);
+            expect(string.endsWith('test_string', 'STRING', { caseInsensitive: true })).toBe(true);
+        });
+        it('should return false for non-matching ends', () => {
+            expect(string.endsWith('test_string', 'long_test_string')).toBe(false);
+            expect(string.endsWith('test_string', 'long_test_string', { caseInsensitive: true })).toBe(false);
+            expect(string.endsWith(undefined, 'string')).toBe(false);
+            expect(string.endsWith('test_string', undefined)).toBe(false);
+        });
+    });
+
     describe('#substringAfter', () => {
         it('should return the first substring after needle', () => {
             const input = 'test__needle__c'
@@ -136,11 +166,17 @@ describe('util', () => {
         it('should return true for equal strings with different case', () => {
             expect(string.stringEqualsIgnoreCase('UnitTest', 'unittest')).toStrictEqual(true);
         });
+        it('should return true for equal strings with same case', () => {
+            expect(string.stringEqualsIgnoreCase('UnitTest', 'UnitTest')).toStrictEqual(true);
+        });
         it('should return false for unequal strings with same case', () => {
             expect(string.stringEqualsIgnoreCase('unittest1', 'unittest')).toStrictEqual(false);
         });
         it('should return true if string is found in array of strings with different case', () => {
             expect(string.stringEqualsIgnoreCase('UnitTest', ['foo', 'unittest', 'bar'])).toStrictEqual(true);
+        });
+        it('should return true for unicode strings with different case', () => {
+            expect(string.stringEqualsIgnoreCase('ÄÖÜ', 'äöü')).toStrictEqual(true);
         });
         it('should return true for undefied', () => {
             expect(string.stringEqualsIgnoreCase(undefined, undefined)).toStrictEqual(true);
