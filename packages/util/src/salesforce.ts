@@ -45,7 +45,14 @@ export function createRecordProxy<T extends object>(record: T, writable: boolean
  * @param field Field to remove the namespace from
  */
 export function removeNamespacePrefix(field : string) : string {
-    return extractNamespaceAndName(field).name;
+    const namespaceIndex = field.indexOf('__');
+    if (namespaceIndex > 0) {
+        const postfixIndex = field.indexOf('__', namespaceIndex + 2);
+        if (postfixIndex > namespaceIndex) {
+            return field.substring(namespaceIndex + 2);
+        }
+    }
+    return field;
 }
 
 /**
