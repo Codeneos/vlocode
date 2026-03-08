@@ -380,6 +380,7 @@ export class HttpTransport implements Transport {
         }
 
         if (this.isRedirect(response)) {
+            response.resume(); // consume the stream to avoid socket leaks
             const redirectRequestInfo = this.getRedirectRequest(response, request);
             return this.httpRequest(redirectRequestInfo);
         }
