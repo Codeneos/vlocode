@@ -3,7 +3,7 @@ import { NamespaceService } from './namespaceService';
 import { SalesforceConnectionProvider } from './connection';
 import { DescribeGlobalSObjectResult, DescribeSObjectResult, Field, FieldType } from './types';
 import { CompositeSchemaAccess } from './schema/compositeSchemaAccess';
-import { cache, findField, groupBy, isSalesforceId, mapAsyncParallel, mapBy, normalizeSalesforceName, removeNamespacePrefix } from '@vlocode/util';
+import { cache, findField, groupBy, isSalesforceId, mapAsyncParallel, mapBy, normalizeSalesforceName, removeNamespacePrefix, stringEqualsIgnoreCase } from '@vlocode/util';
 import { PicklistEntry } from 'jsforce';
 
 interface SchemaAccessProvider {
@@ -48,12 +48,12 @@ export interface ISalesforceSchemaService {
 export class SalesforceSchemaService implements ISalesforceSchemaService {
 
     private readonly fieldMatchingStrategies: Array<(field: Field, name: string) => boolean> = [
-        (field, name) => field.name.toLowerCase() === name.toLowerCase(),
-        (field, name) => !!field.relationshipName && field.relationshipName.toLowerCase() === name.toLowerCase(),
-        (field, name) => removeNamespacePrefix(field.name).toLowerCase() === name.toLowerCase(),
-        (field, name) => !!field.relationshipName && removeNamespacePrefix(field.relationshipName).toLowerCase() === name.toLowerCase(),
-        (field, name) => removeNamespacePrefix(field.name).toLowerCase().replace('__c', '') === name.toLowerCase(),
-        (field, name) => !!field.relationshipName && removeNamespacePrefix(field.relationshipName).toLowerCase().replace('__r', '') === name.toLowerCase(),
+        (field, name) => stringEqualsIgnoreCase(field.name, name),
+        (field, name) => !!field.relationshipName && stringEqualsIgnoreCase(field.relationshipName, name),
+        (field, name) => stringEqualsIgnoreCase(removeNamespacePrefix(field.name), name),
+        (field, name) => !!field.relationshipName && stringEqualsIgnoreCase(removeNamespacePrefix(field.relationshipName), name),
+        (field, name) => stringEqualsIgnoreCase(removeNamespacePrefix(field.name).replace('__c', ''), name),
+        (field, name) => !!field.relationshipName && stringEqualsIgnoreCase(removeNamespacePrefix(field.relationshipName).replace('__r', ''), name),
     ];
 
     @inject() private readonly logger: Logger;
@@ -124,7 +124,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         try {
             const result = await this.schemaAccess.describe(this.nsService.updateNamespace(type));
             if (result === undefined) {
-                throw Error(`No such object with name ${type} exists in this Salesforce instance`);
+                throw new Error(`No such object with name ${type} exists in this Salesforce instance`);;
             }
             return result;
         } catch (err) {
@@ -253,7 +253,6 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         }
     }
 
-
     /**
      * Filters a list of Salesforce IDs based on the provided filter function.
      * 
@@ -332,10 +331,10 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         const pathSplit = path.split('.');
         for (let i = 0; i < pathSplit.length; i++) {
             const propertyName = pathSplit[i];
-            const normalizedPropertyName = normalizeSalesforceName(propertyName);
+            const normalizedPropertyName = normalizeSalesforceName(propertyName).toLowerCase();
             const fields = (await this.describeSObject(type)).fields;
-            const field = fields.find(field => normalizeSalesforceName(field.name) === normalizedPropertyName || 
-                field.relationshipName && normalizeSalesforceName(field.relationshipName) == normalizedPropertyName);
+            const field = fields.find(field => normalizeSalesforceName(field.name).toLowerCase() === normalizedPropertyName || 
+                field.relationshipName && normalizeSalesforceName(field.relationshipName).toLowerCase() == normalizedPropertyName);
             if (!field) {
                 throw new Error(`Unable to resolve salesforce field path; no such salesforce field: ${type}.${propertyName}`);
             }
