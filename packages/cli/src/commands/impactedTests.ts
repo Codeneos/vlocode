@@ -1,11 +1,12 @@
-import { Logger, LogManager, FileSystem, injectable } from '@vlocode/core';
+import { Args, Flags } from '@oclif/core';
+import { container, Logger, LogManager, FileSystem, injectable } from '@vlocode/core';
 import { Timer, stringEqualsIgnoreCase, unique } from '@vlocode/util';
-import { existsSync} from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 
 import { Parser } from '@vlocode/apex';
-import { Argument, Option, Command } from '../command';
+import { parseExistingDirectory } from '../args';
+import { Command } from '../command';
 
 interface ApexClassInfo {
     name: string,
@@ -17,36 +18,38 @@ interface ApexClassInfo {
 }
 
 @injectable()
-export default class extends Command {
+export default class ImpactedTests extends Command<typeof ImpactedTests> {
 
     static description = 'Find impacted unit tests for a given set of APEX classes';
 
-    static args = [
-        new Argument('<folders...>', 'path to a folder containing the APEX classes files and triggers to parse')
-            .argParser((value, previous: string[] | undefined) => {
-                if (!existsSync(value)) {
-                    throw new Error('No such folder exists');
-                }
-                return (previous ?? []).concat([ value ]);
-            }).argRequired()
-    ];
+    static args = {
+        folders: Args.string({
+            required: true,
+            multiple: true,
+            description: 'path to a folder containing the APEX classes files and triggers to parse',
+            parse: parseExistingDirectory,
+        }),
+    };
 
-    static options = [
-        new Option('--classes <classes...>', 'list of classes to find impacted tests for'),
-        new Option('--output <file>', 'path to the file to which to write the impacted tested output as JSON').default('impactedTests.json')
-    ];
+    static flags = {
+        ...Command.flags,
+        classes: Flags.string({
+            multiple: true,
+            summary: 'list of classes to find impacted tests for',
+        }),
+        output: Flags.file({
+            default: 'impactedTests.json',
+            summary: 'path to the file to which to write the impacted tested output as JSON',
+        }),
+    };
 
-    constructor(
-        private fileSystem: FileSystem,
-        private logger: Logger = LogManager.get('vlocode-cli')
-    ) {
-        super();
-    }
+    private readonly fileSystem: FileSystem = container.get(FileSystem);
+    protected readonly logger: Logger = LogManager.get('vlocode-cli');
 
-    public async run(folders: string[], options: { classes?: string[] }) {
+    protected async execute() {
         const timerAll = new Timer();
 
-        const data = await this.parseSourceFiles(folders);
+        const data = await this.parseSourceFiles(this.args.folders);
         const testClasses = Object.values(data).filter((info) => info.isTest);
 
         this.logger.info(`Parsed ${Object.keys(data).length} in ${timerAll.toString('ms')}`);
@@ -73,7 +76,7 @@ export default class extends Command {
             ].map(testClass => testClass.name);
         }
 
-        for (const className of options.classes ?? []) {
+        for (const className of this.flags.classes ?? []) {
             const classInfo = data[className.toLowerCase()];
             if (!classInfo) {
                 this.logger.error(`Class ${className} not found`);
@@ -85,8 +88,8 @@ export default class extends Command {
                 this.logger.info(`Test classes: ${classInfo.testClasses.join(', ')}`);
             }
         }
-        this.logger.info(`Write impacted tests to impactedTests.json`);
-        await this.fileSystem.writeFile('impactedTests.json', Buffer.from(JSON.stringify(data, null, 4)));
+        this.logger.info(`Write impacted tests to ${this.flags.output}`);
+        await this.fileSystem.writeFile(this.flags.output, Buffer.from(JSON.stringify(data, null, 4)));
         this.logger.info(`Parsed ${Object.keys(data).length} in ${timerAll.toString('ms')}`);
     }
 

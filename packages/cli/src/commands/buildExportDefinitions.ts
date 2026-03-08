@@ -1,3 +1,4 @@
+import { Flags } from '@oclif/core';
 import { join } from 'path';
 
 import * as fs from 'fs-extra';
@@ -7,36 +8,43 @@ import { DatapacksExpandDefinitionAccessor, MigrationDataMapperConverter, Datapa
 import { SalesforceService } from '@vlocode/salesforce';
 import { DatapackInfoService } from '@vlocode/vlocity';
 
-import { Option } from '../command.js';
 import { SalesforceCommand } from '../salesforceCommand.js';
 
-export default class extends SalesforceCommand {
+export default class BuildExportDefinitions extends SalesforceCommand<typeof BuildExportDefinitions> {
 
     static description = 'Generate DatapackExportDefinition YAML from DRMapItem migration records';
 
-    static options = [
-        ...SalesforceCommand.options,
-        new Option(
-            '-e, --expand-definition <file>',
-            'optional path to datapacksexpanddefinition YAML file'
-        ).argParser((value) => {
-            if (!fs.existsSync(value)) {
-                throw new Error(`No such expand definition file: ${value}`);
-            }
-            return value;
+    static flags = {
+        ...SalesforceCommand.flags,
+        expandDefinition: Flags.file({
+            name: 'expand-definition',
+            char: 'e',
+            exists: true,
+            summary: 'optional path to datapacksexpanddefinition YAML file',
         }),
-        new Option('-x, --expanded', 'write one YAML file per datapack definition').default(false),
-        new Option('-o, --output <file>', 'output YAML file path for non-expanded mode').default('./export-definitions.yaml'),
-        new Option('-d, --output-dir <dir>', 'output directory for expanded mode').default('./datapack-export-definitions'),
-    ];
+        expanded: Flags.boolean({
+            char: 'x',
+            default: false,
+            summary: 'write one YAML file per datapack definition',
+        }),
+        output: Flags.file({
+            char: 'o',
+            default: './export-definitions.yaml',
+            summary: 'output YAML file path for non-expanded mode',
+        }),
+        outputDir: Flags.directory({
+            name: 'output-dir',
+            char: 'd',
+            default: './datapack-export-definitions',
+            summary: 'output directory for expanded mode',
+        }),
+    };
 
-    constructor(private readonly logger: Logger = LogManager.get('generate-export-definitions')) {
-        super();
-    }
+    protected readonly logger: Logger = LogManager.get('generate-export-definitions');
 
-    public async run() {
-        const expandDefinition = this.options.expandDefinition
-            ? await this.loadExpandDefinition(this.options.expandDefinition)
+    protected async execute() {
+        const expandDefinition = this.flags.expandDefinition
+            ? await this.loadExpandDefinition(this.flags.expandDefinition)
             : undefined;
 
         const converter = new MigrationDataMapperConverter(
@@ -47,10 +55,10 @@ export default class extends SalesforceCommand {
 
         const definitions = await converter.convertAll();
 
-        if (this.options.expanded) {
-            await this.writeSplit(definitions, this.options.outputDir);
+        if (this.flags.expanded) {
+            await this.writeSplit(definitions, this.flags.outputDir);
         } else {
-            await this.writeCombined(definitions, this.options.output);
+            await this.writeCombined(definitions, this.flags.output);
         }
     }
 

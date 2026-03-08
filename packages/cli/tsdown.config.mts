@@ -11,7 +11,8 @@ import commands from './build/commands.ts';
  * Entry points for the VSCode extension and related tools
  */
 const entryPoints = {
-    'cli': './src/index.ts',
+    'cli': './src/run.ts',
+    'index': './src/index.ts',
     'sass-compiler': '../sass/src/bin.ts',
 };
 
@@ -28,7 +29,7 @@ export default defineConfig({
   format: 'esm',
   fixedExtension: true,
   external: [...packageExternals],
-  sourcemap: false,
+  sourcemap: true,
   shims: true,
   minify: false,
   treeshake: false,
@@ -37,7 +38,7 @@ export default defineConfig({
     NODE_ENV: 'production',
     DEBUG: false
   },
-  nodeProtocol: true,
+  nodeProtocol: false,
   tsconfig: './tsconfig.json',
   inputOptions: {
     preserveEntrySignatures: 'strict',
@@ -55,4 +56,3 @@ export default defineConfig({
     dtracePatch()
   ]
 });
-

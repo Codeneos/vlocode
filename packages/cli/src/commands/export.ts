@@ -1,3 +1,4 @@
+import { Args, Flags } from '@oclif/core';
 import { join } from 'path';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
@@ -5,46 +6,47 @@ import * as yaml from 'js-yaml';
 import { Logger, LogManager } from '@vlocode/core';
 import { DatapackExpander, DatapackExportDefinitionStore, DatapackExporter } from '@vlocode/vlocity-deploy';
 
-import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 import { SalesforceService } from '@vlocode/salesforce';
 
-export default class extends SalesforceCommand {
+export default class Export extends SalesforceCommand<typeof Export> {
 
     static description = 'Export an objecr as datapack from Salesforce';
 
-    static args = [
-        new Argument('<ids...>', 'list of object IDs to export').argOptional()
-    ];
+    static args = {
+        ids: Args.string({
+            required: false,
+            multiple: true,
+            description: 'list of object IDs to export',
+        }),
+    };
 
-    static options = [
-        ...SalesforceCommand.options,
-        new Option(
-            '-d, --export-definitions <file>', 
-            'path of the YAML or JSON file containing the export definitions that define how objects are exported'
-        ).argParser((value) => {
-            if (!fs.existsSync(value)) {
-                throw new Error('Specified definitions file does not exists');
-            }
-            return value;
-        }).makeOptionMandatory(),
-        new Option(
-            '-e, --expand',
-            'expand the datapack once exported into separate files according to the export definitions'
-        ),
-        new Option(
-            '-q, --query <query-string>',
-            'specify the query to use to export the objects instead of using the object ID'
-        ).conflicts('ids')
-    ];
+    static flags = {
+        ...SalesforceCommand.flags,
+        exportDefinitions: Flags.file({
+            name: 'export-definitions',
+            char: 'd',
+            exists: true,
+            required: true,
+            summary: 'path of the YAML or JSON file containing the export definitions that define how objects are exported',
+        }),
+        expand: Flags.boolean({
+            char: 'e',
+            default: false,
+            summary: 'expand the datapack once exported into separate files according to the export definitions',
+        }),
+        query: Flags.string({
+            char: 'q',
+            name: 'query',
+            summary: 'specify the query to use to export the objects instead of using the object ID',
+        }),
+    };
 
-    constructor(private logger: Logger = LogManager.get('datapack-export')) {
-        super();
-    }
+    protected readonly logger: Logger = LogManager.get('datapack-export');
 
-    public async run() {
+    protected async execute() {
         const ids = await this.getIds();
-        const definitions = await this.loadDefinitions(this.options.exportDefinitions);
+        const definitions = await this.loadDefinitions(this.flags.exportDefinitions);
         this.container.get(DatapackExportDefinitionStore).load(definitions);
 
         const exporter = this.container.new(DatapackExporter);
@@ -52,7 +54,7 @@ export default class extends SalesforceCommand {
 
         for (const id of ids) {
             const result = await exporter.exportObject(id);
-            if (this.options.expand) {
+            if (this.flags.expand) {
                 const expanded = expander.expandDatapack(result.datapack);
                 for (const [fileName, fileData] of Object.entries(expanded.files)) {
                     await this.writeFile([expanded.folder, fileName], fileData);
@@ -72,17 +74,22 @@ export default class extends SalesforceCommand {
     }
 
     private async getIds() {
-        if (this.options.query) {
-            const records = await this.container.get(SalesforceService).data.query(this.options.query);
+        if (this.flags.query && this.args.ids?.length) {
+            throw new Error('Specify either object IDs or an export query, not both.');
+        }
+
+        if (this.flags.query) {
+            const records = await this.container.get(SalesforceService).data.query(this.flags.query);
             if (records.length === 0) {
-                throw new Error(`No records found for the specified query: ${this.options.query}`);
+                throw new Error(`No records found for the specified query: ${this.flags.query}`);
             }
             return records.map(record => record.Id);
         }
-        if (!this.args.ids?.length) {
+        const ids = this.args.ids;
+        if (!ids?.length) {
             throw new Error('No object IDs or export query specified. Either specify object IDs or an export query.');
         }
-        return this.args.ids
+        return ids;
     }
 
     public async writeFile(fileName: string | string[], data: object | string | Buffer) {
@@ -97,7 +104,7 @@ export default class extends SalesforceCommand {
         try {
             await fs.outputFile(fileName, data);
             this.logger.info(`Output file: ${fileName}`);
-        } catch (err) {
+        } catch (err: any) {
             this.logger.warn(`Failed to write file ${fileName}: ${err.message}`);
         }
     }
@@ -112,7 +119,7 @@ export default class extends SalesforceCommand {
             } else {
                 throw new Error('Unsupported file format, expected a YAML or JSON file');
             }
-        } catch (err) {
+        } catch (err: any) {
             this.logger.error(`Failed to load export definitions from ${filePath}: ${err.message}`);
         }
     }

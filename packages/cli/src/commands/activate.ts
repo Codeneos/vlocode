@@ -1,6 +1,6 @@
+import { Args, Flags } from '@oclif/core';
 import { Logger, LogManager, FileSystem } from '@vlocode/core';
 import { OmniScriptAccess, OmniScriptActivator, OmniScriptRecord, ScriptDefinitionProvider } from '@vlocode/omniscript';
-import { Argument, Option } from '../command';
 import logSymbols from 'log-symbols';
 import { forEachAsyncParallel, getErrorMessage, groupBy, isSalesforceId, Iterable, sortBy, Timer } from '@vlocode/util';
 import { SalesforceCommand } from '../salesforceCommand';
@@ -13,41 +13,57 @@ interface ScriptActivationInfo {
     status?: 'pending' | 'activated' | 'error',
 }
 
-export default class extends SalesforceCommand {
+export default class Activate extends SalesforceCommand<typeof Activate> {
 
     static description = 'Activate OmniScripts in Salesforce and deploy associated LWC components';
 
-    static args = [
-        new Argument('scriptFilter',
-            'Salesforce ID <type>/<subType>(/<language>) filter of the scripts to activate. ' +
-            'Supports wildcard characters, i.e: "MACD/" to activate multiple scripts').argParser(value => {
-            if (isSalesforceId(value)) {
-                return value;
-            }
-            const filter = value.split('/');
-            return Object.fromEntries(filter.map((value, index) => [ ['type', 'subType', 'language'][index], value || undefined ]));
-        }).argOptional()
-    ];
+    static args = {
+        scriptFilter: Args.string({
+            required: false,
+            description:
+                'Salesforce ID <type>/<subType>(/<language>) filter of the scripts to activate. Supports wildcard characters, i.e: "MACD/" to activate multiple scripts',
+        }),
+    };
 
-    static options = [
-        ...SalesforceCommand.options,
-        new Option('--parallel-activations', 'determines the amount of parallel activations to run').default(4),
-        new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
-        new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),
-        new Option('--skip-reactivate-dependencies', 'skips reactivating parent scripts that embed any of the scripts that are being activated. ' +
-            'When you activate a re-usable OmniScript all the OmniScript that embed this script will also get re-activated and updated.').default(false),
-        new Option('--remote-activation', 'use anonymous apex to activate OmniScripts.' +
-            'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' +
-            'Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.').default(false),
-        new Option('--debug-activation', 'save the updated script definitions as JSON file. ' + 
-            'Use this option while debugging to compare scripts activate with `--remote-activation` and local activation').default(false),
-    ];
+    static flags = {
+        ...SalesforceCommand.flags,
+        parallelActivations: Flags.integer({
+            name: 'parallel-activations',
+            default: 4,
+            summary: 'determines the amount of parallel activations to run',
+        }),
+        skipLwc: Flags.boolean({
+            name: 'skip-lwc',
+            default: false,
+            summary: 'skip LWC activation for LWC enabled OmniScripts',
+        }),
+        useMetadataApi: Flags.boolean({
+            name: 'use-metadata-api',
+            default: false,
+            summary: 'deploy LWC components using the Metadata API (slower) instead of the Tooling API',
+        }),
+        skipReactivateDependencies: Flags.boolean({
+            name: 'skip-reactivate-dependencies',
+            default: false,
+            summary: 'skips reactivating parent scripts that embed any of the scripts that are being activated. When you activate a re-usable OmniScript all the OmniScript that embed this script will also get re-activated and updated.',
+        }),
+        remoteActivation: Flags.boolean({
+            name: 'remote-activation',
+            default: false,
+            summary: 'use anonymous apex to activate OmniScripts. By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. Enable this when you experience issues or inconsistencies in scripts deployed through Vlocode.',
+        }),
+        debugActivation: Flags.boolean({
+            name: 'debug-activation',
+            default: false,
+            summary: 'save the updated script definitions as JSON file. Use this option while debugging to compare scripts activate with `--remote-activation` and local activation',
+        }),
+    };
 
-    constructor(private logger: Logger = LogManager.get('vlocode-cli')) {
-        super();
-    }
+    protected readonly logger: Logger = LogManager.get('vlocode-cli');
 
-    public async run(scriptFilter: any, options: any) {
+    protected async execute() {
+        const scriptFilter = this.parseScriptFilter(this.args.scriptFilter);
+        const options = this.flags;
         // Load scripts from Org
         const filterTimer = new Timer();
         this.logger.info(`Finding script(s) matching filter: ${scriptFilter ? JSON.stringify(scriptFilter) : 'ALL'}`);
@@ -85,7 +101,7 @@ export default class extends SalesforceCommand {
                         toolingApi: !options.useMetadataApi,
                         skipLwcDeployment: options.skipLwc,
                         remoteActivation: options.remoteActivation,
-                        reactivateDependentScripts: scriptFilter && options.skipReactivateDependencies !== true
+                        reactivateDependentScripts: !!scriptFilter && options.skipReactivateDependencies !== true
                     });
                     info.status = 'activated';
                     this.logger.info(`${logSymbols.success} Activated: ${info.type} (${info.script.id})`);
@@ -116,6 +132,21 @@ export default class extends SalesforceCommand {
                 this.logger.error(`${logSymbols.error} Failed: ${script}: ${getErrorMessage(error)}`);
             }
         }
+    }
+
+    private parseScriptFilter(value?: string) {
+        if (!value) {
+            return value;
+        }
+
+        if (isSalesforceId(value)) {
+            return value;
+        }
+
+        const filter = value.split('/');
+        return Object.fromEntries(
+            filter.map((part, index) => [['type', 'subType', 'language'][index], part || undefined])
+        );
     }
 
 

@@ -11,7 +11,7 @@
     "bin": {
         "vlocode": "bin/run"
     },
-    "main": "src/index.ts",
+    "main": "src/run.ts",
     "type": "module",
     "publishConfig": {
         "main": "dist/cli.mjs",
@@ -44,6 +44,18 @@
         "/dist",
         "/bin"
     ],
+    "oclif": {
+        "bin": "vlocode",
+        "dirname": "vlocode",
+        "commands": {
+            "strategy": "explicit",
+            "target": "dist/index.mjs",
+            "identifier": "COMMANDS"
+        },
+        "plugins": [
+            "@oclif/plugin-help"
+        ]
+    },
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/Codeneos/vlocode/issues"
@@ -52,6 +64,8 @@
     "devDependencies": {
         "@types/jest": "^29.5.11",
         "@types/js-yaml": "^4.0.2",
+        "@oclif/core": "^4.8.3",
+        "@oclif/plugin-help": "^6.2.37",
         "@vlocode/apex": "workspace:*",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
@@ -60,7 +74,6 @@
         "@vlocode/vlocity": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
         "chalk": "^4.1.2",
-        "commander": "^11.1.0",
         "glob": "^11.0.2",
         "jest": "^29.7.0",
         "js-yaml": "^4.1.0",

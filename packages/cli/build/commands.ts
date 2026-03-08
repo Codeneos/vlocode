@@ -1,6 +1,6 @@
 import type { Plugin } from 'rolldown';
 import { globSync } from 'fs';
-import { basename } from 'path';
+import { basename, dirname } from 'path';
 
 export default function commandsLoader(): Plugin {
     return {
@@ -12,8 +12,12 @@ export default function commandsLoader(): Plugin {
             }
             const commandFiles = globSync('**/*.ts', { cwd: './src/commands' });
             const imports = commandFiles.map((file, index) => `import cmd${index} from './commands/${file.replace(/\\/g, '/').replace(/\.ts$/, '')}';`).join('\n');
-            const commands = `{\n${commandFiles.map((file, index) => `"${basename(file, '.ts')}": cmd${index}`).join(',\n')}\n}`;
-            return `${imports}\n${code.replace(/\/\*=COMMANDS\*\//, commands)}`;
+            const commands = `{\n${commandFiles.map((file, index) => {
+                const relativeDir = dirname(file).replace(/\\/g, '/');
+                const commandId = relativeDir === '.' ? basename(file, '.ts') : `${relativeDir}/${basename(file, '.ts')}`;
+                return `"${commandId}": cmd${index}`;
+            }).join(',\n')}\n}`;
+            return `${imports}\n${code.replace(/\/\*=COMMANDS\*\/ undefined/, commands)}`;
         }
     };
 }

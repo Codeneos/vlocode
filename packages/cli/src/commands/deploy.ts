@@ -1,6 +1,6 @@
+import { Args, Flags } from '@oclif/core';
 import logSymbols from 'log-symbols';
 import chalk from 'chalk';
-import { existsSync } from 'fs';
 import { stat } from 'fs/promises';
 
 import { Logger, LogLevel, LogManager } from '@vlocode/core';
@@ -8,61 +8,80 @@ import { DatapackDeployer, DatapackDeploymentOptions } from '@vlocode/vlocity-de
 import { DatapackLoader } from '@vlocode/vlocity';
 import { groupBy, mapAsync, partition, pluralize, Timer } from '@vlocode/util';
 
-import { Argument, Option } from '../command';
+import { parseExistingPath } from '../args';
 import { SalesforceCommand } from '../salesforceCommand';
 
-export default class extends SalesforceCommand {
+export default class Deploy extends SalesforceCommand<typeof Deploy> {
 
     static description = 'Deploy datapacks to Salesforce';
 
-    static args = [
-        new Argument('<paths..>', 'path of the folders containing the datapacks or datapack files to be deployed').argParser((value, previous: string[] | undefined) => {
-            if (!existsSync(value)) {
-                throw new Error('No such folder exists');
-            }
-            return (previous ?? []).concat([ value ]);
-        })
-    ];
+    static args = {
+        paths: Args.string({
+            required: true,
+            multiple: true,
+            description: 'path of the folders containing the datapacks or datapack files to be deployed',
+            parse: parseExistingPath,
+        }),
+    };
 
-    static options = [
-        ...SalesforceCommand.options,
-        new Option('--purge-dependencies',
-            `delete embedded dependencies with matching keys after the primary datapack record is deployed. ` +
-            `By default Vlocode will only delete child records that do not have a matching key configuration, ` +
-            `with this flag Vlocode will delete all child records that have a lookup relationships to the primary datapack record. ` +
-            `For example; when deploying a Product2 datapack this flag will delete all child item records found in the target org with a lookup to the Product2 datapack that is deployed.`
-        ).default(false),
-        new Option('--lookup-failed', 'lookup dependencies that fail to deploy in the org').default(false),
-        new Option('--allow-unresolved', 
-            `do not fail the deployment of a datapack when a dependency cannot be resolved` +
-            `When this option is enabled Vlocode will attempt to deploy the datapack without the dependency and log a warning. ` +
-            `The field which contains the unresolved dependency will be set to null instead, enabling this can cause inconsistent data in the target org and is only recommended to resolve deployment issues.`
-        ).default(false),
-        new Option('--retry-count <count>', 'the number of times a record deployment is retried before failing it').default(1),
-        new Option('--bulk-api', 
-            'use the Salesforce bulk API to update and insert records' +
-            'Using the Bulk API for deployments is significantly slower compared to the standard Salesforce API and should only be used ' +
-            'to reduce the number of call outs made during the deployment'
-        ).default(false),
-        new Option('--delta', 'check for changes between the source data packs and source org and only deploy the datapacks that are changed').default(false),
-        new Option('--strict-order',
-            `enforce a strict order for datapacks that are dependent on other datapacks in the same deployment` +
-            `By default Vlocode determines deployment order based on record level dependencies, ` +
-            `this allows for more optimal chunking improving the overall speed of the deployment. ` +
-            `By setting this option to true Vlocode also enforces that any datapack that is dependent on another datapack is deployed after the datapack it depends on. ` +
-            `This reduces deployment speed but can improve compatibility, enable this option when you experience issues with deployment order.`
-        ).default(false),
-        new Option('--skip-lwc', 'skip LWC activation for LWC enabled OmniScripts').default(false),
-        new Option('--use-metadata-api', 'deploy LWC components using the Metadata API (slower) instead of the Tooling API').default(false),
-        new Option('--remote-script-activation', 'use anonymous apex to activate OmniScripts.' +
-            'By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. ' +
-            'Enable this for edge cases when OmniScripts are not working properly when using local script activation.'
-        ).default(false),
-        new Option('-y, --continue-on-error', 'continue deploying when one of the datapacks can be loaded.' +
-            'For any error that occurs while loading and converting a datapack to records the deployment will exit without making changes to the org. ' +
-            'You can ignore these errors and continue deploying the datapacks that were loaded without errors by setting this option.'
-        ).default(false),
-    ];
+    static flags = {
+        ...SalesforceCommand.flags,
+        purgeDependencies: Flags.boolean({
+            name: 'purge-dependencies',
+            default: false,
+            summary: 'delete embedded dependencies with matching keys after the primary datapack record is deployed. By default Vlocode will only delete child records that do not have a matching key configuration, with this flag Vlocode will delete all child records that have a lookup relationships to the primary datapack record. For example; when deploying a Product2 datapack this flag will delete all child item records found in the target org with a lookup to the Product2 datapack that is deployed.',
+        }),
+        lookupFailed: Flags.boolean({
+            name: 'lookup-failed',
+            default: false,
+            summary: 'lookup dependencies that fail to deploy in the org',
+        }),
+        allowUnresolved: Flags.boolean({
+            name: 'allow-unresolved',
+            default: false,
+            summary: 'do not fail the deployment of a datapack when a dependency cannot be resolvedWhen this option is enabled Vlocode will attempt to deploy the datapack without the dependency and log a warning. The field which contains the unresolved dependency will be set to null instead, enabling this can cause inconsistent data in the target org and is only recommended to resolve deployment issues.',
+        }),
+        retryCount: Flags.integer({
+            name: 'retry-count',
+            default: 1,
+            summary: 'the number of times a record deployment is retried before failing it',
+        }),
+        bulkApi: Flags.boolean({
+            name: 'bulk-api',
+            default: false,
+            summary: 'use the Salesforce bulk API to update and insert recordsUsing the Bulk API for deployments is significantly slower compared to the standard Salesforce API and should only be used to reduce the number of call outs made during the deployment',
+        }),
+        delta: Flags.boolean({
+            default: false,
+            summary: 'check for changes between the source data packs and source org and only deploy the datapacks that are changed',
+        }),
+        strictOrder: Flags.boolean({
+            name: 'strict-order',
+            default: false,
+            summary: 'enforce a strict order for datapacks that are dependent on other datapacks in the same deploymentBy default Vlocode determines deployment order based on record level dependencies, this allows for more optimal chunking improving the overall speed of the deployment. By setting this option to true Vlocode also enforces that any datapack that is dependent on another datapack is deployed after the datapack it depends on. This reduces deployment speed but can improve compatibility, enable this option when you experience issues with deployment order.',
+        }),
+        skipLwc: Flags.boolean({
+            name: 'skip-lwc',
+            default: false,
+            summary: 'skip LWC activation for LWC enabled OmniScripts',
+        }),
+        useMetadataApi: Flags.boolean({
+            name: 'use-metadata-api',
+            default: false,
+            summary: 'deploy LWC components using the Metadata API (slower) instead of the Tooling API',
+        }),
+        remoteScriptActivation: Flags.boolean({
+            name: 'remote-script-activation',
+            default: false,
+            summary: 'use anonymous apex to activate OmniScripts. By default Vlocode will generate script definitions locally which is faster and more reliable than remote activation. Enable this for edge cases when OmniScripts are not working properly when using local script activation.',
+        }),
+        continueOnError: Flags.boolean({
+            name: 'continue-on-error',
+            char: 'y',
+            default: false,
+            summary: 'continue deploying when one of the datapacks can be loaded.For any error that occurs while loading and converting a datapack to records the deployment will exit without making changes to the org. You can ignore these errors and continue deploying the datapacks that were loaded without errors by setting this option.',
+        }),
+    };
 
     private prefixFormat = {
         error: chalk.bgRedBright.white.bold(`ERROR`),
@@ -73,13 +92,12 @@ export default class extends SalesforceCommand {
         return LogManager.getGlobalLogLevel() <= LogLevel.verbose;
     }
 
-    constructor(private logger: Logger = LogManager.get('vlocity-deploy')) {
-        super();
-    }
+    protected readonly logger: Logger = LogManager.get('vlocity-deploy');
 
-    public async run(paths: string[], options: any) {
+    protected async execute() {
+        const options = this.flags;
         // Load datapacks
-        const datapacks = await this.loadDatapacks(paths);
+        const datapacks = await this.loadDatapacks(this.args.paths);
         if (!datapacks.length) {
             return;
         }
@@ -94,7 +112,7 @@ export default class extends SalesforceCommand {
             maxRetries: options.retryCount,
             deltaCheck: options.delta,
             skipLwcActivation: options.skipLwc,
-            remoteScriptActivation: options.remoteActivation,
+            remoteScriptActivation: options.remoteScriptActivation,
             useMetadataApi: options.useMetadataApi,
             continueOnError: options.continueOnError
         };
@@ -157,7 +175,4 @@ export default class extends SalesforceCommand {
         return datapacks;
     }
 
-    protected async init(options: any) {
-        await super.init(options);
-    }
 }

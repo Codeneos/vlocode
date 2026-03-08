@@ -1,66 +1,74 @@
-import { createWriteStream, WriteStream, readFileSync } from 'fs';
+import { Args, Flags } from '@oclif/core';
+import { createWriteStream, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { Logger, LogManager } from '@vlocode/core';
-import { Argument, Option } from '../command';
 import { SalesforceCommand } from '../salesforceCommand';
 import { BulkClient } from '@vlocode/salesforce';
 
-export default class extends SalesforceCommand {
+export default class BulkExport extends SalesforceCommand<typeof BulkExport> {
 
     static description = 'Export data from Salesforce using the Bulk API v2 and output as NDJSON';
 
-    static args = [
-        new Argument('<sobject>', 'SObject name to query (if no query / file is specified)').argOptional()
-    ];
+    static args = {
+        sobject: Args.string({
+            required: false,
+            description: 'SObject name to query (if no query / file is specified)',
+        }),
+    };
 
-    static options = [
-        ...SalesforceCommand.options,
-        new Option(
-            '-o, --output <file>', 
-            'path to the output NDJSON file'
-        ).makeOptionMandatory(),
-        new Option(
-            '-q, --query <query>', 
-            'SOQL query string to execute'
-        ).conflicts('file'),
-        new Option(
-            '-f, --file <file>', 
-            'path to a file containing a SOQL query'
-        ).conflicts('query'),
-        new Option(
-            '-l, --limit <number>',
-            'limit the number of records to export (only applies when providing an SObject name)'
-        ),
-        new Option(
-            '--include-deleted',
-            'include deleted records in the query (queryAll)'
-        ).default(false),
-        new Option(
-            '--chunk-size <size>',
-            'number of records to retrieve per API call'
-        ).default(50000)
-    ];
+    static flags = {
+        ...SalesforceCommand.flags,
+        output: Flags.file({
+            char: 'o',
+            required: true,
+            summary: 'path to the output NDJSON file',
+        }),
+        query: Flags.string({
+            char: 'q',
+            exclusive: ['file'],
+            summary: 'SOQL query string to execute',
+        }),
+        file: Flags.file({
+            char: 'f',
+            exists: true,
+            exclusive: ['query'],
+            summary: 'path to a file containing a SOQL query',
+        }),
+        limit: Flags.string({
+            char: 'l',
+            summary: 'limit the number of records to export (only applies when providing an SObject name)',
+        }),
+        includeDeleted: Flags.boolean({
+            name: 'include-deleted',
+            default: false,
+            summary: 'include deleted records in the query (queryAll)',
+        }),
+        chunkSize: Flags.integer({
+            name: 'chunk-size',
+            default: 50000,
+            summary: 'number of records to retrieve per API call',
+        }),
+    };
 
-    constructor(private logger: Logger = LogManager.get('bulk-export')) {
-        super();
-    }
+    protected readonly logger: Logger = LogManager.get('bulk-export');
 
-    public async run(sobject?: string) {
+    protected async execute() {
+        const sobject = this.args.sobject;
         let query = '';
 
-        if (this.options.query) {
-            query = this.options.query;
-        } else if (this.options.file) {
+        if (this.flags.query) {
+            query = this.flags.query;
+        } else if (this.flags.file) {
             try {
-                query = readFileSync(this.options.file, 'utf-8');
+                query = readFileSync(this.flags.file, 'utf-8');
             } catch(e: any) {
                 this.logger.error(`Unable to read query file: ${e.message}`);
                 return process.exit(1);
             }
         } else if (sobject) {
             query = `SELECT Id FROM ${sobject}`;
-            if (this.options.limit) {
-                query += ` LIMIT ${this.options.limit}`;
+            if (this.flags.limit) {
+                query += ` LIMIT ${this.flags.limit}`;
             }
         }
 
@@ -70,14 +78,14 @@ export default class extends SalesforceCommand {
             return process.exit(1);
         }
 
-        const outPath = resolve(process.cwd(), this.options.output);
+        const outPath = resolve(process.cwd(), this.flags.output);
         const connection = await this.getConnection();
         const bulkClient = new BulkClient(connection);
 
         this.logger.info(`Starting Bulk V2 Query: ${query}`);
         
         // Execute the job
-        const job = await bulkClient.query(query, { includeDeletedRecords: this.options.includeDeleted });
+        const job = await bulkClient.query(query, { includeDeletedRecords: this.flags.includeDeleted });
         
         this.logger.info(`Bulk Job created with ID: ${job.id}`);
         this.logger.info('Waiting for job to complete...');
@@ -87,10 +95,8 @@ export default class extends SalesforceCommand {
         
         try {
             let recordCount = 0;
-            let currentLocator: string | undefined = undefined;
-
             // Stream results continuously as NDJSON
-            for await (const record of job.records(Number(this.options.chunkSize))) {
+            for await (const record of job.records(this.flags.chunkSize)) {
                 recordCount++;
                 
                 // Write as NDJSON and do not buffer locally

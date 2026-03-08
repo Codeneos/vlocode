@@ -1,49 +1,74 @@
-import { CachedFileSystemAdapter, container, NodeFileSystem, FileSystem } from '@vlocode/core';
-import { InteractiveConnectionProvider, SalesforceConnectionProvider, NamespaceService, SfdxConnectionProvider, JsForceConnectionProvider, SalesforceConnection, ReplayTransport, SessionDataStore, HttpTransport, TransportRecorder } from '@vlocode/salesforce';
+import { Command as OclifCommand, Flags } from '@oclif/core';
+import { CachedFileSystemAdapter, container, NodeFileSystem } from '@vlocode/core';
+import {
+    HttpTransport,
+    InteractiveConnectionProvider,
+    JsForceConnectionProvider,
+    ReplayTransport,
+    SalesforceConnection,
+    SalesforceConnectionProvider,
+    SfdxConnectionProvider,
+    SessionDataStore,
+    TransportRecorder
+} from '@vlocode/salesforce';
 import { VlocityNamespaceService } from '@vlocode/vlocity';
-import { Command, Option } from './command';
 
-/**
- * Base command for Vlocode CLI commands that require Salesforce connectivity.
- * 
- * Creates a local container for IoC and registers the connection provider and FS interface.
- */
-export abstract class SalesforceCommand extends Command {
+import { Command } from './command';
 
-    static options = [
-        new Option('-u, --user <username>', 'Salesforce username or alias of the org to deploy the datapacks to').makeOptionMandatory(false),
-        new Option('-i, --instance <url>', 'Salesforce instance URL; for example: test.salesforce.com').default('test.salesforce.com'),
-        new Option('--record-session', 'record the interaction with Salesforce to a session log which can be replayed later using the `--replay-session` command').conflicts('replay-session'),
-        new Option('--replay-session <file>', 'load the specified session log previously recorded through the replay session option').conflicts('record-session'),
-    ];
+export abstract class SalesforceCommand<T extends typeof OclifCommand = typeof OclifCommand> extends Command<T> {
+    public static flags = {
+        ...Command.flags,
+        user: Flags.string({
+            name: 'user',
+            char: 'u',
+            summary: 'Salesforce username or alias of the org to deploy the datapacks to',
+        }),
+        instance: Flags.string({
+            name: 'instance',
+            char: 'i',
+            default: 'test.salesforce.com',
+            summary: 'Salesforce instance URL; for example: test.salesforce.com',
+        }),
+        recordSession: Flags.string({
+            name: 'record-session',
+            summary: 'record the interaction with Salesforce to a session log which can be replayed later using the `--replay-session` command',
+            exclusive: ['replaySession'],
+            multiple: false,
+            parse: async (input) => input || `vlocode-session-${Math.round(Date.now() / 1000)}.log`,
+        }),
+        replaySession: Flags.string({
+            name: 'replay-session',
+            summary: 'load the specified session log previously recorded through the replay session option',
+            exclusive: ['recordSession'],
+        }),
+    };
+
+    protected container = container.create();
 
     protected getConnection() {
         return this.container.get(SalesforceConnectionProvider).getJsForceConnection();
     }
 
-    protected container = container.create();
+    public async init(): Promise<void> {
+        await super.init();
 
-    protected async init(options: any) {
-        // Prep dependencies
-        if (options.recordSession) {
-            HttpTransport.options.recorder = new TransportRecorder(undefined, 
-                options.recordSession === true ? `vlocode-session-${Math.round(Date.now() / 1000)}.log` : options.recordSession);
+        if (this.flags.recordSession) {
+            HttpTransport.options.recorder = new TransportRecorder(undefined, this.flags.recordSession);
         }
 
-        if (options.replaySession) {
+        if (this.flags.replaySession) {
             this.container.add(new JsForceConnectionProvider(new SalesforceConnection({
-                transport: new ReplayTransport(SessionDataStore.loadSession(options.replaySession))
+                transport: new ReplayTransport(SessionDataStore.loadSession(this.flags.replaySession))
             })));
-        } else if (options.user) {
-            this.container.add(new SfdxConnectionProvider(options.user));
+        } else if (this.flags.user) {
+            this.container.add(new SfdxConnectionProvider(this.flags.user));
         } else {
-            this.container.add(new InteractiveConnectionProvider(`https://${options.instance}`));
+            this.container.add(new InteractiveConnectionProvider(`https://${this.flags.instance}`));
         }
 
-        // Setup Namespace replacer
-        this.container.add(await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider)));
-
-        // Setup a Cached file system for loading datapacks
+        this.container.add(
+            await this.container.get(VlocityNamespaceService).initialize(this.container.get(SalesforceConnectionProvider))
+        );
         this.container.add(new CachedFileSystemAdapter(new NodeFileSystem()));
     }
 }

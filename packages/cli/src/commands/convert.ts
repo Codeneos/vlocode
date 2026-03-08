@@ -1,37 +1,30 @@
+import { Args } from '@oclif/core';
 import { Logger, LogManager } from '@vlocode/core';
-import { Argument } from '../command';
 import { mapAsync, Timer } from '@vlocode/util';
 import { SalesforceCommand } from '../salesforceCommand';
-import { existsSync } from 'fs';
+import { parseExistingPath } from '../args';
 import { DatapackLoader } from '@vlocode/vlocity';
 import { stat } from 'fs/promises';
 import { OmniStudioConverter } from '@vlocode/vlocity-deploy';
 
-export default class extends SalesforceCommand {
+export default class Convert extends SalesforceCommand<typeof Convert> {
 
     static description = 'Convert Managed runtime OmniScript datapacks to native OmniProcess datapacks';
 
-    static args = [
-        new Argument('<paths..>', 'path of the folders containing the datapacks or datapack files to be deployed')
-            .argParser((value, previous: string[] | undefined) => {
-                if (!existsSync(value)) {
-                    throw new Error('No such folder exists');
-                }
-                return (previous ?? []).concat([ value ]);
-            })
-        ];
+    static args = {
+        paths: Args.string({
+            required: true,
+            multiple: true,
+            description: 'path of the folders containing the datapacks or datapack files to be deployed',
+            parse: parseExistingPath,
+        }),
+    };
 
-    static options = [
-        ...SalesforceCommand.options,
-    ];
+    protected readonly logger: Logger = LogManager.get('vlocode-cli');
 
-    constructor(private logger: Logger = LogManager.get('vlocode-cli')) {
-        super();
-    }
-
-    public async run(paths: any) {
+    protected async execute() {
         // Load datapacks
-        const datapacks = await this.loadDatapacks(paths);
+        const datapacks = await this.loadDatapacks(this.args.paths);
         if (!datapacks.length) {
             return;
         }
