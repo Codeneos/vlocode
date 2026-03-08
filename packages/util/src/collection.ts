@@ -1,3 +1,13 @@
+
+const isNumericString = (s: string) => {
+    if (s.length === 0) return false;
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        if (c !== 46 && (c < 48 || c > 57)) return false;
+    }
+    return true;
+};
+
 // File contains several functions for manipulating or accessing collectiong like objects such as: Set, Map and Array
 import { isPromise } from './async';
 import { Iterable } from './iterable';
@@ -97,7 +107,7 @@ export function primitiveCompare(a: unknown, b: unknown) {
 
     if (typeof a === typeof b) {
         if (typeof a === 'string') {
-            if (!/^[0-9.]+$/.test(a) || !/^[0-9.]+$/.test(b as string)) {
+            if (!isNumericString(a) || !isNumericString(b as string)) {
                 return a.localeCompare((b as string));
             }
 
@@ -115,12 +125,12 @@ export function primitiveCompare(a: unknown, b: unknown) {
         }
     }
 
-    if (typeof a === 'number' && typeof b === 'string' && /^[0-9.]+$/.test(b)) {
+    if (typeof a === 'number' && typeof b === 'string' && isNumericString(b)) {
         const d = a - parseFloat(b);
         return d === 0 ? 0 : d > 0 ? 1 : -1;
     }
 
-    if (typeof b === 'number' && typeof a === 'string' && /^[0-9.]+$/.test(a)) {
+    if (typeof b === 'number' && typeof a === 'string' && isNumericString(a)) {
         const d = parseFloat(a) - b;
         return d === 0 ? 0 : d > 0 ? 1 : -1;
     }
@@ -179,26 +189,34 @@ export function groupBy<T, K extends string | number, I = T>(iterable: Iterable<
     keySelector: keyof T | ((item: T) => K | undefined | Promise<K | undefined>),
     itemSelector?: (item: T) => I) : Record<K, I[]> | Promise<Record<K, I[]>> {
     const acc = {} as Record<K, I[]>;
-    const awaitables = new Array<Promise<any>>();
 
-    function accUpdate(acc: any, key: K | undefined, item: T) {
+    function accUpdate(key: K | undefined, item: T) {
         if (key) {
-            if (!acc[key]) {
-                acc[key] = [];
+            const value = itemSelector ? itemSelector(item) : item as unknown as I;
+            const current = acc[key];
+            if (current) {
+                current.push(value);
+            } else {
+                acc[key] = [value];
             }
-            acc[key].push(itemSelector ? itemSelector(item) : item);
         }
     }
 
-    const _keySelector = typeof keySelector === 'function'
-        ? keySelector : (item: T) => item[keySelector] as unknown as K;
+    if (typeof keySelector !== 'function') {
+        for (const item of iterable) {
+            accUpdate(item[keySelector] as unknown as K, item);
+        }
+        return acc;
+    }
 
+    const _keySelector = keySelector;
+    const awaitables = new Array<Promise<any>>();
     for (const item of iterable) {
         const key = _keySelector(item);
         if (isPromise(key)) {
-            awaitables.push(key.then(k => accUpdate(acc, k, item)));
+            awaitables.push(key.then(k => accUpdate(k, item)));
         } else {
-            accUpdate(acc, key, item);
+            accUpdate(key, item);
         }
     }
 
@@ -289,26 +307,23 @@ export function forEachAsyncParallel<T>(iterable: Iterable<T>, callback: (item: 
  */
 export function mapAsyncParallel<T,R>(iterable: Iterable<T>, callback: (item: T, index: number) => PromiseLike<R>, parallelism = 2) : Promise<R[]> {
     parallelism = parallelism < 1 ? 1 : parallelism;
-    const iterator = enumerateWithIndex(iterable);
-    const pendingWork = new Array<PromiseLike<R>>();
+    const iterator = iterable[Symbol.iterator]();
     const taskResults = new Array<R>();
+    let index = 0;
 
-    const getTask = () => {
-        const item = iterator.next();
-        if (item.done) {
-            return Promise.resolve();
+    const getTask = async () => {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            const currentIndex = index++;
+            const item = iterator.next();
+            if (item.done) {
+                return;
+            }
+            taskResults.push(await callback(item.value, currentIndex));
         }
-        return callback(item.value[1], item.value[0]).then(result => {
-            taskResults.push(result);
-            return getTask();
-        });
-    }
+    };
 
-    for (let i = 0; i < parallelism; i++) {
-        pendingWork.push(getTask());
-    }
-
-    return Promise.all(pendingWork).then(() => taskResults);
+    return Promise.all(Array.from({ length: parallelism }, () => getTask())).then(() => taskResults);
 }
 
 /**

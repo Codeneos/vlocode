@@ -31,6 +31,31 @@ describe('collection', () => {
             expect(result['2']).toEqual([list[2], list[3]]);
             expect(result['3']).toEqual([list[4]]);
         });
+        it('should support async key selectors', async () => {
+            const list = [
+                { group: '1', id: '1' },
+                { group: '1', id: '2' },
+                { group: '2', id: '3' },
+            ];
+
+            const result = await collection.groupBy(list, async i => i.group);
+
+            expect(result['1']).toEqual([list[0], list[1]]);
+            expect(result['2']).toEqual([list[2]]);
+        });
+        it('should ignore falsy keys to preserve current behavior', () => {
+            const list = [
+                { group: '', id: '1' },
+                { group: 0, id: '2' },
+                { group: '1', id: '3' },
+            ];
+
+            const result = collection.groupBy(list, i => i.group as string | number);
+
+            expect(result['']).toBeUndefined();
+            expect(result['0']).toBeUndefined();
+            expect(result['1']).toEqual([list[2]]);
+        });
     });
 
     describe('#mapAsyncParallel', () => {
@@ -64,6 +89,14 @@ describe('collection', () => {
         });
         it('should not throw an exception when parallelism is a negative number', async () => {
             expect(await collection.mapAsyncParallel([1,2], async i => i+1, -1)).toStrictEqual([2,3]);
+        });
+        it('should preserve completion order of results', async () => {
+            const result = await collection.mapAsyncParallel([30, 10, 20], async delay => {
+                await wait(delay);
+                return delay;
+            }, 3);
+
+            expect(result).toStrictEqual([10,20,30]);
         });
     });
 
