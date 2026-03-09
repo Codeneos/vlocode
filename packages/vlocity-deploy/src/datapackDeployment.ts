@@ -416,8 +416,10 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      */
     private getDeployableRecords() {
         const records = new Map<string, DatapackDeploymentRecord>();
+        const datapackStatusCache = new Map<string, DeploymentStatus | undefined>();
+        const circularDependencyCache = new Map<string, boolean>();
         for (const record of this.records.values()) {
-            if (record.isPending && record.retryCount == 0 && !this.hasPendingDependencies(record)) {
+            if (record.isPending && record.retryCount == 0 && !this.hasPendingDependencies(record, datapackStatusCache, circularDependencyCache)) {
                 records.set(record.sourceKey, record);
             }
         }
@@ -456,7 +458,7 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
      * Check if a record has pending dependencies that are not yet deployed as part of the current deployment
      * @param record
      */
-    private hasPendingDependencies(record: DatapackDeploymentRecord) : boolean {
+    private hasPendingDependencies(record: DatapackDeploymentRecord, datapackStatusCache?: Map<string, DeploymentStatus | undefined>, circularDependencyCache?: Map<string, boolean>) : boolean {
         for(const key of record.getDependencySourceKeys()) {
             const dependentRecord = this.records.get(key);
             if (!dependentRecord) {
@@ -469,9 +471,16 @@ export class DatapackDeployment extends AsyncEventEmitter<DatapackDeploymentEven
 
             const isExternalDependency = dependentRecord.datapackKey !== record.datapackKey;
             if (this.options.strictOrder && isExternalDependency) {
-                const dependencyStatus = this.getDatapackStatus(dependentRecord.datapackKey);
+                const cacheKey = dependentRecord.datapackKey;
+                const dependencyStatus = datapackStatusCache
+                    ? mapGetOrCreate(datapackStatusCache, cacheKey, () => this.getDatapackStatus(cacheKey))
+                    : this.getDatapackStatus(cacheKey);
                 if (dependencyStatus !== undefined && dependencyStatus < DeploymentStatus.Deployed) {
-                    if (this.isCircularDatapackDependency(record.datapackKey, dependentRecord.datapackKey)) {
+                    const circularDependencyKey = `${record.datapackKey}\u0000${dependentRecord.datapackKey}`;
+                    const isCircularDependency = circularDependencyCache
+                        ? mapGetOrCreate(circularDependencyCache, circularDependencyKey, () => this.isCircularDatapackDependency(record.datapackKey, dependentRecord.datapackKey))
+                        : this.isCircularDatapackDependency(record.datapackKey, dependentRecord.datapackKey);
+                    if (isCircularDependency) {
                         this.reportWarning(record, `Circular datapack dependency: ${record.datapackKey}->${dependentRecord.datapackKey}->${record.datapackKey}`);
                         continue;
                     }
