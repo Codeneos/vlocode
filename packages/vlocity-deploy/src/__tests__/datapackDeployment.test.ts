@@ -212,6 +212,30 @@ describe('DatapackDeployment', () => {
             expect(deploySets[0].map(r => r.sourceKey)).toStrictEqual([ 'A/1', 'B/1', 'C/1', 'D/1']);
             expect(deploySets[1].map(r => r.sourceKey)).toStrictEqual([ 'A/2', 'B/2', 'C/2', 'D/2']);
         });
+        it('with [strictOrder: true] should reuse datapack status lookups while selecting deployable records', () => {
+            // Arrange
+            const deployment = container.new(DatapackDeployment, { strictOrder: true });
+            const parentB1 = mockDatapackRecord({ sourceKey: 'B/1', datapackKey: 'B' });
+            const parentB2 = mockDatapackRecord({ sourceKey: 'B/2', datapackKey: 'B' });
+            const childA1 = mockDatapackRecord({ sourceKey: 'A/1', datapackKey: 'A' });
+            const childA2 = mockDatapackRecord({ sourceKey: 'A/2', datapackKey: 'A' });
+            const childA3 = mockDatapackRecord({ sourceKey: 'A/3', datapackKey: 'A' });
+
+            childA1.addDependency(parentB1);
+            childA2.addDependency(parentB1);
+            childA3.addDependency(parentB2);
+            parentB1.updateStatus(DeploymentStatus.Deployed, 'ID');
+
+            deployment.add(parentB1, parentB2, childA1, childA2, childA3);
+            const getDatapackStatusSpy = jest.spyOn(deployment as any, 'getDatapackStatus');
+
+            // Act
+            const records = deployment['getDeployableRecords']();
+
+            // Assert
+            expect(records && [...records.values()].map(record => record.sourceKey)).toStrictEqual([ 'B/2' ]);
+            expect(getDatapackStatusSpy.mock.calls.filter(([datapackKey]) => datapackKey === 'B')).toHaveLength(1);
+        });
     });
 
     describe('hasCircularDependencies', () => {
