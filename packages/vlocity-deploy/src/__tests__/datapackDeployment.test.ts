@@ -228,13 +228,18 @@ describe('DatapackDeployment', () => {
 
             deployment.add(parentB1, parentB2, childA1, childA2, childA3);
             const getDatapackStatusSpy = jest.spyOn(deployment as any, 'getDatapackStatus');
+            const isCircularDatapackDependencySpy = jest.spyOn(deployment as any, 'isCircularDatapackDependency');
 
             // Act
             const records = deployment['getDeployableRecords']();
 
             // Assert
-            expect(records && [...records.values()].map(record => record.sourceKey)).toStrictEqual([ 'B/2' ]);
+            if (!records) {
+                throw new Error('Expected deployment records to be returned');
+            }
+            expect([...records.values()].map(record => record.sourceKey)).toStrictEqual([ 'B/2' ]);
             expect(getDatapackStatusSpy.mock.calls.filter(([datapackKey]) => datapackKey === 'B')).toHaveLength(1);
+            expect(isCircularDatapackDependencySpy.mock.calls.filter(([fromDatapackKey, toDatapackKey]) => fromDatapackKey === 'A' && toDatapackKey === 'B')).toHaveLength(1);
         });
     });
 
