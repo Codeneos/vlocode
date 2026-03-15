@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Recreate __dirname for ESM
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+if (existsSync(join(__dirname, '../dist/mcp.mjs'))) {
+    await import('../dist/mcp.mjs');
+} else {
+    // Development mode: run via ts-node / tsx
+    const { register } = await import('node:module');
+    const { pathToFileURL } = await import('node:url');
+    register('ts-node/esm', pathToFileURL('./'));
+    await import('../src/index.ts');
+}
