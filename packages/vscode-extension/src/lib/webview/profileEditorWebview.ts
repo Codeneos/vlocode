@@ -164,7 +164,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
                 return;
             }
             const fields: SObjectField[] = describe.fields
-                .filter(f => f.type !== 'id')
+                .filter(f => f.type?.toLowerCase() !== 'id')
                 .map(f => ({ name: f.name, label: f.label, type: f.type }));
             this.post({ type: 'fieldsLoaded', objectName, fields });
         } catch (err) {

@@ -32,6 +32,7 @@ type AppAction =
     | { type: 'saved' }
     | { type: 'reset'; data: ProfileEditorData }
     | { type: 'error'; message: string }
+    | { type: 'saving' }
     | { type: 'objectsLoaded'; objects: string[] }
     | { type: 'fieldsLoaded'; objectName: string; fields: SObjectField[] }
     | { type: 'changeObject'; permission: ObjectPermission }
@@ -53,7 +54,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         case 'loading':
             return { ...state, status: 'loading', statusMessage: action.message ?? 'Loading…' };
         case 'saving':
-            return { ...state, status: 'saving', statusMessage: 'Saving…' } as AppState;
+            return { ...state, status: 'saving', statusMessage: 'Saving…' };
         case 'saved':
             return { ...state, objectChanges: new Map(), fieldChanges: new Map(), status: 'idle', statusMessage: '' };
         case 'reset':
@@ -198,7 +199,7 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
     );
 
     const handleSave = useCallback(() => {
-        dispatch({ type: 'loading', message: 'Saving…' } as AppAction);
+        dispatch({ type: 'saving' });
         postMessage({
             type: 'save',
             changes: {

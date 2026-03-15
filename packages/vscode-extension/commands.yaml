@@ -252,9 +252,9 @@ vlocode.editProfilePermissions:
   menus:
     - menu: commandPalette
     - menu: editor/context
-      when: config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\.profile-meta\.xml|\.profile|\.permissionset-meta\.xml|\.permissionset)$/
+      when: resourceScheme == file && resourceFilename =~ /(\.profile-meta\.xml|\.profile|\.permissionset-meta\.xml|\.permissionset)$/
     - menu: explorer/context
-      when: config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\.profile-meta\.xml|\.profile|\.permissionset-meta\.xml|\.permissionset)$/
+      when: resourceScheme == file && resourceFilename =~ /(\.profile-meta\.xml|\.profile|\.permissionset-meta\.xml|\.permissionset)$/
 vlocode.deployRecentValidation:
   title: 'Salesforce: Deploy Recent Validation'
   group: v_salesforce

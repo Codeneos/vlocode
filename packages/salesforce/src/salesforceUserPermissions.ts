@@ -288,9 +288,9 @@ export class SalesforceUserPermissions {
         if (merged.modifyAllRecords) {
             merged.viewAllRecords = true;
             merged.allowRead = true;
-            merged.allowCreate = merged.allowCreate ?? true;
-            merged.allowEdit = merged.allowEdit ?? true;
-            merged.allowDelete = merged.allowDelete ?? true;
+            merged.allowCreate = true;
+            merged.allowEdit = true;
+            merged.allowDelete = true;
         }
         if (merged.viewAllRecords) {
             merged.allowRead = true;
