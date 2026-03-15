@@ -94,13 +94,14 @@ export async function startMcpServer(options: VlocodeMcpOptions = {}) {
         LogManager.get(receiver ?? 'vlocode-mcp')
     );
 
-    // Register the Vlocity namespace service so namespace placeholders are resolved.
-    // Initialization is deferred to the first tool call so the server starts quickly.
-    const nsService = localContainer.get(VlocityNamespaceService);
+    // The Vlocity namespace service resolves namespace placeholders in queries
+    // and SObject type names. Initialization is deferred to the first tool call
+    // so the MCP server starts immediately without requiring a Salesforce connection.
     let nsInitialized = false;
 
     async function ensureNamespaceInitialized() {
         if (!nsInitialized) {
+            const nsService = new VlocityNamespaceService();
             await nsService.initialize(localContainer.get(SalesforceConnectionProvider));
             localContainer.add(nsService);
             nsInitialized = true;

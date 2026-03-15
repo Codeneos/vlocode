@@ -5,11 +5,7 @@ import vlocityPatch from '../../build/patches/vlocity.ts';
 import dtracePatch from '../../build/patches/dtrace.ts';
 import jsdomPatch from '../../build/patches/jsdom.ts';
 
-const packageExternals = [
-    'vscode',
-    'vscode-languageclient',
-    'electron'
-];
+const packageExternals: string[] = [];
 
 export default defineConfig({
     entry: {

@@ -188,7 +188,11 @@ async function describeSObjectField(
     if (field.picklistValues && field.picklistValues.length > 0) {
         lines.push('', 'Picklist values:');
         for (const pv of field.picklistValues) {
-            lines.push(`  ${pv.value}${pv.label !== pv.value ? ` (${pv.label})` : ''}${pv.defaultValue ? ' [default]' : ''}${!pv.active ? ' [inactive]' : ''}`);
+            const parts = [pv.value];
+            if (pv.label !== pv.value) parts.push(`(${pv.label})`);
+            if (pv.defaultValue) parts.push('[default]');
+            if (!pv.active) parts.push('[inactive]');
+            lines.push(`  ${parts.join(' ')}`);
         }
     }
 
