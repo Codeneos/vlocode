@@ -283,6 +283,10 @@
                 "title": "Salesforce: Remove from profiles"
             },
             {
+                "command": "vlocode.editProfilePermissions",
+                "title": "Salesforce: Edit Profile / Permission Set"
+            },
+            {
                 "command": "vlocode.deployRecentValidation",
                 "title": "Salesforce: Deploy Recent Validation"
             },
@@ -542,6 +546,11 @@
                     "when": "config.vlocity.salesforce.enabled"
                 },
                 {
+                    "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled"
+                },
+                {
                     "command": "vlocode.deployRecentValidation",
                     "group": "v_salesforce",
                     "when": "config.vlocity.salesforce.enabled"
@@ -783,6 +792,11 @@
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && explorerResourceIsFolder && resourceDirname =~ /(objects|classes)/"
                 },
                 {
+                    "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.profile-meta\\.xml|\\.profile|\\.permissionset-meta\\.xml|\\.permissionset)$/"
+                },
+                {
                     "command": "vlocode.omniScript.generateLwc",
                     "group": "v_vlocity_omniscript",
                     "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
@@ -878,6 +892,11 @@
                     "command": "vlocode.removeFromProfile",
                     "group": "v_salesforce_profile",
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                },
+                {
+                    "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.profile-meta\\.xml|\\.profile|\\.permissionset-meta\\.xml|\\.permissionset)$/"
                 },
                 {
                     "command": "vlocode.omniScript.generateLwc",
@@ -1512,7 +1531,7 @@
         ]
     },
     "scripts": {
-        "build": "pnpm pre-build && tsdown -c tsdown.config.mts",
+        "build": "pnpm pre-build && tsdown -c tsdown.config.mts && pnpm build:webviews",
         "watch": "pnpm build --watch",
         "pack": "vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "pre-build": "tsx build/commands.ts ./package.json ./commands.yaml",
@@ -1520,7 +1539,8 @@
         "publish": "vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "publish:beta": "vsce publish --pre-release --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
-        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build"
+        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build",
+        "build:webviews": "tsx build/webview.mts"
     },
     "devDependencies": {
         "@types/fs-extra": "^11",
@@ -1528,6 +1548,9 @@
         "@types/js-yaml": "^4.0.2",
         "@types/jsforce": "^1.9.38",
         "@types/luxon": "^3.3.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@types/react-window": "^2.0.0",
         "@types/vscode": "^1.95.0",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
@@ -1541,6 +1564,7 @@
         "acorn-walk": "^8.3.4",
         "acron": "^1.0.5",
         "chalk": "^4.1.2",
+        "esbuild": "^0.27.4",
         "escape-string-regexp": "^4.0.0",
         "fast-glob": "^3.3.3",
         "fs-extra": "^11.0",
@@ -1552,6 +1576,9 @@
         "mv": "^2.1.1",
         "open": "^8.2.1",
         "ovsx": "^0.10.7",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "react-window": "^2.2.7",
         "reflect-metadata": "^0.1.13",
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
