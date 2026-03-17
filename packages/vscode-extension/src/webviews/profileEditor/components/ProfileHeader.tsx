@@ -24,7 +24,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ data, onRefresh, i
                     className={`codicon ${isPermSet ? 'codicon-shield profile-header__icon--permissionset' : 'codicon-account'} profile-header__icon`}
                     aria-hidden="true"
                 />
-                <h1 className="profile-header__name">{data.profileName}</h1>
+                <h1 className="profile-header__name">{data.profileLabel}</h1>
                 <button
                     className="profile-header__refresh-btn"
                     onClick={onRefresh}

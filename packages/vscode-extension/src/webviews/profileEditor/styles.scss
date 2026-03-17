@@ -16,7 +16,7 @@
 %field-surface {
   background: var(--vscode-input-background);
   border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
 %focus-ring {
@@ -25,7 +25,7 @@
 
 %btn {
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 13px;
 
   &:disabled {
@@ -301,6 +301,11 @@ input[type='text'] {
     &:focus-within {
       @extend %focus-ring;
     }
+    input {
+      border: none;
+      outline: none;
+      background: none;
+    }
   }
 
   &__icon {
@@ -364,6 +369,7 @@ input[type='text'] {
   overflow: hidden;
   background: var(--vscode-editor-background);
   border-bottom: 2px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.3));
+  margin-right: 16px; // Account for scrollbar width to keep header aligned with rows
 }
 
 .table-row {
@@ -442,7 +448,7 @@ strong {
   padding: 0 4px;
   background: none;
   border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 2px;
+  border-radius: 4px;
   color: var(--vscode-textLink-foreground, #3794ff);
   font-size: 14px;
   line-height: 1;

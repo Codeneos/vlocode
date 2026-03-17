@@ -1,5 +1,5 @@
-import React, { useCallback, useRef } from 'react';
-import { List } from 'react-window';
+import React, { useRef } from 'react';
+import { List, type RowComponentProps } from 'react-window';
 import type { ObjectPermission } from '../types';
 
 const OBJECT_COLUMNS: { key: keyof Omit<ObjectPermission, 'objectName'>; label: string; abbr: string }[] = [
@@ -48,11 +48,7 @@ interface ObjectRowRowProps {
     onSelectionChange: (names: Set<string>) => void;
 }
 
-interface ObjectRowComponentProps extends ObjectRowRowProps {
-    index: number;
-    style: React.CSSProperties;
-    ariaAttributes?: Record<string, string | number>;
-}
+type ObjectRowComponentProps = RowComponentProps<ObjectRowRowProps>;
 
 const ObjectRow: React.FC<ObjectRowComponentProps> = ({
     index, permissions, filter, selection, lastClickedIndex,
@@ -242,7 +238,7 @@ export const ObjectPermissionsTable: React.FC<ObjectPermissionsTableProps> = ({
                 rowHeight={ROW_HEIGHT}
                 rowComponent={ObjectRow}
                 rowProps={rowProps}
-                style={{ flex: 1, outline: 'none' }}
+                style={{ flex: 1, outline: 'none', scrollbarGutter: 'stable' }}
             />
         </div>
     );

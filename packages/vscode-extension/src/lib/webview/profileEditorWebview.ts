@@ -56,10 +56,15 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
         profileOrPermSet: SalesforceUserPermissions,
         sourceFile?: vscode.Uri
     ): Promise<void> {
+        const panelWasOpen = this.isOpen;
         this.profile = profileOrPermSet;
         this.sourceFileUri = sourceFile;
         this.setTitle(`${profileOrPermSet.type}: ${profileOrPermSet.developerName}`);
         this.open();
+
+        if (panelWasOpen) {
+            await this.sendProfileData();
+        }
     }
 
     protected async handleMessage(message: WebviewMessage): Promise<void> {
@@ -130,6 +135,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
 
         return {
             profileName: profile.developerName,
+            profileLabel: profile.name,
             profileType: profile.type,
             userLicense: profile.license,
             description: profile.description,

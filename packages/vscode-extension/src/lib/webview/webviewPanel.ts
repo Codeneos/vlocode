@@ -16,6 +16,8 @@ export interface WebviewContext {
 export abstract class WebviewPanel<TIncoming, TOutgoing> {
     #panel: vscode.WebviewPanel | undefined;
     #disposables: vscode.Disposable[] = [];
+    #disposeListeners = new Set<() => void>();
+    #currentTitle: string;
 
     protected readonly logger = console; /*vscode.window.createOutputChannel(this.viewType);*/
 
@@ -25,7 +27,9 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
         protected readonly title: string,
         protected readonly scriptPath: string,
         protected readonly viewColumn: vscode.ViewColumn = vscode.ViewColumn.One
-    ) {}
+    ) {
+        this.#currentTitle = title;
+    }
 
     /**
      * Opens or reveals the webview panel.
@@ -38,7 +42,7 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
 
         this.#panel = vscode.window.createWebviewPanel(
             this.viewType,
-            this.title,
+            this.#currentTitle,
             this.viewColumn,
             {
                 enableScripts: true,
@@ -79,6 +83,7 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
      * Updates the panel title.
      */
     protected setTitle(title: string): void {
+        this.#currentTitle = title;
         if (this.#panel) {
             this.#panel.title = title;
         }
@@ -89,6 +94,21 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
      */
     public get isVisible(): boolean {
         return this.#panel?.visible ?? false;
+    }
+
+    /**
+     * Returns true if the panel has been created and not yet disposed.
+     */
+    public get isOpen(): boolean {
+        return this.#panel !== undefined;
+    }
+
+    /**
+     * Register a callback that fires when the panel is disposed.
+     */
+    public onDidDispose(listener: () => void): vscode.Disposable {
+        this.#disposeListeners.add(listener);
+        return new vscode.Disposable(() => this.#disposeListeners.delete(listener));
     }
 
     /**
@@ -103,6 +123,9 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
      */
     protected onDispose(): void {
         this.#panel = undefined;
+        for (const listener of this.#disposeListeners) {
+            listener();
+        }
         for (const d of this.#disposables) {
             d.dispose();
         }
@@ -131,10 +154,10 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
     content="default-src 'none';
              style-src ${webview.cspSource} 'unsafe-inline';
              script-src 'nonce-${nonce}' ${webview.cspSource};
-             font-src ${webview.cspSource};
+                         font-src ${webview.cspSource} data:;
              img-src ${webview.cspSource} data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${this.escapeHtml(this.title)}</title>
+  <title>${this.escapeHtml(this.#currentTitle)}</title>
   <style>
     html, body, #root {
       height: 100%;

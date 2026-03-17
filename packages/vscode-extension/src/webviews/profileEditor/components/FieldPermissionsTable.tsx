@@ -40,11 +40,7 @@ interface FieldRowRowProps {
     onSelectionChange: (names: Set<string>) => void;
 }
 
-interface FieldRowComponentProps extends FieldRowRowProps {
-    index: number;
-    style: React.CSSProperties;
-    ariaAttributes?: Record<string, string | number>;
-}
+type FieldRowComponentProps = RowComponentProps<FieldRowRowProps>;
 
 const FieldRow: React.FC<FieldRowComponentProps> = ({
     index, permissions, filter, selection, lastClickedIndex,
@@ -238,7 +234,7 @@ export const FieldPermissionsTable: React.FC<FieldPermissionsTableProps> = ({
                 rowHeight={ROW_HEIGHT}
                 rowComponent={FieldRow}
                 rowProps={rowProps}
-                style={{ flex: 1, outline: 'none' }}
+                style={{ flex: 1, outline: 'none', scrollbarGutter: 'stable' }}
             />
         </div>
     );

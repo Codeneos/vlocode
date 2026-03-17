@@ -16,7 +16,7 @@ import { getContext } from '../../lib/vlocodeContext';
 @vscodeCommand(VlocodeCommand.editProfilePermissions)
 export default class ProfileEditorCommand extends CommandBase {
 
-    private webview: ProfileEditorWebview | undefined;
+    private readonly webviews = new Map<string, ProfileEditorWebview>();
 
     public async execute(...args: any[]): Promise<void> {
         const uri = args[0] instanceof vscode.Uri
@@ -56,12 +56,16 @@ export default class ProfileEditorCommand extends CommandBase {
         const extensionContext = getContext();
         const connectionProvider = container.get(SalesforceConnectionProvider);
         const schemaService = container.get(SalesforceSchemaService);
+        const panelKey = uri.toString();
 
-        if (!this.webview) {
-            this.webview = new ProfileEditorWebview(extensionContext, connectionProvider, schemaService);
+        let webview = this.webviews.get(panelKey);
+        if (!webview) {
+            webview = new ProfileEditorWebview(extensionContext, connectionProvider, schemaService);
+            webview.onDidDispose(() => this.webviews.delete(panelKey));
+            this.webviews.set(panelKey, webview);
         }
 
-        await this.webview.openProfile(profile, uri);
+        await webview.openProfile(profile, uri);
     }
 
     private loadPermissionSet(name: string, xml: string): SalesforceUserPermissions {

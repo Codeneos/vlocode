@@ -25,6 +25,7 @@ export interface FieldPermission {
 
 export interface ProfileEditorData {
     profileName: string;
+    profileLabel: string;
     profileType: 'Profile' | 'PermissionSet';
     userLicense?: string;
     description?: string;
