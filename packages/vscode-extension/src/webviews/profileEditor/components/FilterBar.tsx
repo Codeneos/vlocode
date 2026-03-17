@@ -21,7 +21,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     return (
         <div className="filter-bar">
             <div className="filter-bar__input-wrapper">
-                <span className="filter-bar__icon">🔍</span>
+                <i className="codicon codicon-search filter-bar__icon" aria-hidden="true" />
                 <input
                     className="filter-bar__input"
                     type="text"
@@ -38,7 +38,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         title="Clear filter"
                         aria-label="Clear filter"
                     >
-                        ✕
+                        <i className="codicon codicon-close" aria-hidden="true" />
                     </button>
                 )}
             </div>

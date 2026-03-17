@@ -78,7 +78,9 @@ export const AddPermissionDialog: React.FC<AddPermissionDialogProps> = ({
                     <h2 className="dialog__title">
                         {mode === 'object' ? 'Add Object Permission' : 'Add Field Permission'}
                     </h2>
-                    <button className="dialog__close" onClick={onClose} aria-label="Close dialog">✕</button>
+                    <button className="dialog__close" onClick={onClose} aria-label="Close dialog">
+                        <i className="codicon codicon-close" aria-hidden="true" />
+                    </button>
                 </div>
 
                 <div className="dialog__body">

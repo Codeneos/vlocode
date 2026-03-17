@@ -289,7 +289,7 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
     if (state.status === 'error' && !state.data) {
         return (
             <div className="error-state">
-                <span className="error-icon">⚠</span>
+                <i className="codicon codicon-error error-icon" aria-hidden="true" />
                 <p>{state.statusMessage}</p>
             </div>
         );
@@ -308,10 +308,14 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
         <div className="app">
             {/* Top error / saving banner */}
             {state.status === 'error' && (
-                <div className="app__banner app__banner--error">⚠ {state.statusMessage}</div>
+                <div className="app__banner app__banner--error">
+                    <i className="codicon codicon-error" aria-hidden="true" /> {state.statusMessage}
+                </div>
             )}
             {state.status === 'loading' && (
-                <div className="app__banner app__banner--info">⏳ {state.statusMessage}</div>
+                <div className="app__banner app__banner--info">
+                    <i className="codicon codicon-loading codicon-modifier-spin" aria-hidden="true" /> {state.statusMessage}
+                </div>
             )}
 
             <ProfileHeader data={state.data} />
