@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
+export interface WebviewContext {
+    extensionPath: string;
+}
+
 /**
  * Reusable base class for VSCode webview panels with React UI support.
  * Manages the lifecycle of a webview panel and provides infrastructure
@@ -13,10 +17,10 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
     #panel: vscode.WebviewPanel | undefined;
     #disposables: vscode.Disposable[] = [];
 
-    protected readonly logger = vscode.window.createOutputChannel(this.viewType);
+    protected readonly logger = console; /*vscode.window.createOutputChannel(this.viewType);*/
 
     constructor(
-        protected readonly context: vscode.ExtensionContext,
+        protected readonly context: WebviewContext,
         protected readonly viewType: string,
         protected readonly title: string,
         protected readonly scriptPath: string,
@@ -59,7 +63,7 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
             this.#disposables
         );
 
-        this.#disposables.push(this.logger);
+        //this.#disposables.push(this.logger);
     }
 
     /**
@@ -147,7 +151,7 @@ export abstract class WebviewPanel<TIncoming, TOutgoing> {
 </head>
 <body>
   <div id="root"></div>
-  <script nonce="${nonce}" src="${scriptUri}"></script>
+    <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
     }

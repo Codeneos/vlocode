@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { SalesforceConnectionProvider, SalesforceSchemaService, SalesforceUserPermissions } from '@vlocode/salesforce';
-import { WebviewPanel } from './webviewPanel';
+import { WebviewPanel, type WebviewContext } from './webviewPanel';
 import {
     ExtensionMessage,
     FieldPermission,
@@ -24,7 +24,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
     private profile: SalesforceUserPermissions | undefined;
 
     constructor(
-        context: vscode.ExtensionContext,
+        context: WebviewContext,
         private readonly connectionProvider: SalesforceConnectionProvider,
         private readonly schemaService: SalesforceSchemaService
     ) {
@@ -32,7 +32,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
             context,
             'vlocode.profileEditor',
             'Profile Editor',
-            'webviews/profileEditor.js'
+            'webviews/profile-editor.mjs'
         );
     }
 

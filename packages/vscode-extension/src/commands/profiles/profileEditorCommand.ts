@@ -53,7 +53,7 @@ export default class ProfileEditorCommand extends CommandBase {
             ? SalesforceProfile.fromXml(profileName, xmlContent)
             : this.loadPermissionSet(profileName, xmlContent);
 
-        const extensionContext = getContext().extensionContext;
+        const extensionContext = getContext();
         const connectionProvider = container.get(SalesforceConnectionProvider);
         const schemaService = container.get(SalesforceSchemaService);
 

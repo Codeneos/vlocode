@@ -1531,7 +1531,7 @@
         ]
     },
     "scripts": {
-        "build": "pnpm pre-build && tsdown -c tsdown.config.mts && pnpm build:webviews",
+        "build": "pnpm pre-build && tsdown -c tsdown.config.mts",
         "watch": "pnpm build --watch",
         "pack": "vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "pre-build": "tsx build/commands.ts ./package.json ./commands.yaml",
@@ -1539,8 +1539,7 @@
         "publish": "vsce publish --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "publish:beta": "vsce publish --pre-release --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "cp-changelog": "shx cp ../../CHANGELOG.md CHANGELOG.md",
-        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build",
-        "build:webviews": "tsx build/webview.mts"
+        "vscode:prepublish": "pnpm run clean && pnpm run cp-changelog && pnpm build"
     },
     "devDependencies": {
         "@types/fs-extra": "^11",
@@ -1580,6 +1579,7 @@
         "react-dom": "^19.2.4",
         "react-window": "^2.2.7",
         "reflect-metadata": "^0.1.13",
+        "sass": "^1.97.3",
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
         "ts-jest": "^29.3.4",
