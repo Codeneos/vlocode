@@ -37,11 +37,13 @@ export default defineConfig((options: UserConfig) => {
     watch: developmentBuild ? [
       ...globSync('../*/src')
     ] : false,
+    deps: {
+      neverBundle: [...packageExternals],
+      onlyBundle: false,
+    },
     ignoreWatch: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/.vscode-test/**'], 
-    external: [...packageExternals],
     outDir: './dist',
     format: 'esm',
-    inlineOnly: false,
     shims: true,
     minify: false,
     treeshake: false,
@@ -55,6 +57,9 @@ export default defineConfig((options: UserConfig) => {
     },
     nodeProtocol: true,
     tsconfig: './tsconfig.json',
+    comments: {
+      legal: 'none',
+    },
     inputOptions: {
       checks: {
         eval: false,
@@ -63,7 +68,6 @@ export default defineConfig((options: UserConfig) => {
     outputOptions: {
       keepNames: true,
       chunkFileNames: '[hash:21].mjs',
-      legalComments: 'none'
     },
     plugins: [
       yaml(), 
