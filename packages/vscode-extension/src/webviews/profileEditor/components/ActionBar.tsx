@@ -1,20 +1,23 @@
 import React from 'react';
+import type { SaveTarget } from '../types';
 
 interface ActionBarProps {
     hasChanges: boolean;
     isSaving: boolean;
-    onSave: () => void;
+    hasFileSource: boolean;
+    onSave: (target: SaveTarget) => void;
     onReset: () => void;
     changeCount: number;
 }
 
 /**
  * Floating action bar fixed to the bottom of the screen.
- * Shows save/reset buttons and unsaved change count.
+ * Shows save-to-org / save-to-file / reset buttons and unsaved change count.
  */
 export const ActionBar: React.FC<ActionBarProps> = ({
     hasChanges,
     isSaving,
+    hasFileSource,
     onSave,
     onReset,
     changeCount
@@ -37,15 +40,29 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                     disabled={isSaving}
                     aria-label="Reset changes"
                 >
-                    Reset
+                    <i className="codicon codicon-discard" aria-hidden="true" /> Reset
                 </button>
+                {hasFileSource && (
+                    <button
+                        className="action-bar__btn action-bar__btn--save-file"
+                        onClick={() => onSave('file')}
+                        disabled={isSaving}
+                        aria-label="Save changes to source file"
+                        title="Save changes to the local source file"
+                    >
+                        <i className="codicon codicon-save" aria-hidden="true" />
+                        {isSaving ? 'Saving…' : 'Save to File'}
+                    </button>
+                )}
                 <button
                     className="action-bar__btn action-bar__btn--save"
-                    onClick={onSave}
+                    onClick={() => onSave('org')}
                     disabled={isSaving}
-                    aria-label="Save changes"
+                    aria-label="Save changes to Salesforce org"
+                    title="Deploy changes to the connected Salesforce org"
                 >
-                    {isSaving ? 'Saving…' : 'Save'}
+                    <i className="codicon codicon-cloud-upload" aria-hidden="true" />
+                    {isSaving ? 'Saving…' : 'Deploy to Org'}
                 </button>
             </div>
         </div>

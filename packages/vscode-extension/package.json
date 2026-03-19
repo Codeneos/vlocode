@@ -287,6 +287,10 @@
                 "title": "Salesforce: Edit Profile / Permission Set"
             },
             {
+                "command": "vlocode.openProfileFromOrg",
+                "title": "Salesforce: Open Profile / Permission Set from Org"
+            },
+            {
                 "command": "vlocode.deployRecentValidation",
                 "title": "Salesforce: Deploy Recent Validation"
             },
@@ -547,6 +551,11 @@
                 },
                 {
                     "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled"
+                },
+                {
+                    "command": "vlocode.openProfileFromOrg",
                     "group": "v_salesforce_profile",
                     "when": "config.vlocity.salesforce.enabled"
                 },

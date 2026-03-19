@@ -265,6 +265,15 @@ export class SalesforceUserPermissions {
     }
 
     /**
+     * Removes all object-level permissions for the specified Salesforce object.
+     *
+     * @param objectName - The API name of the SObject to remove permissions for.
+     */
+    public removeObjectPermissions(objectName: string) {
+        this.removeItem('objectPermissions', objectName);
+    }
+
+    /**
      * Adds or updates object-level permissions for the specified Salesforce object.
      *
      * @param objectName - The API name of the SObject.

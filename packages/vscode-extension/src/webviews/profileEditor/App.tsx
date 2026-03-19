@@ -3,40 +3,55 @@ import type {
     ExtensionMessage,
     FieldPermission,
     ObjectPermission,
+    PermissionProblem,
     ProfileEditorData,
+    SaveTarget,
     SObjectField,
     WebviewMessage
 } from './types';
+import type { AppAction } from './actions';
+export type { AppAction } from './actions';
 import { ProfileHeader } from './components/ProfileHeader';
 import { FilterBar } from './components/FilterBar';
 import { ObjectPermissionsTable } from './components/ObjectPermissionsTable';
 import { FieldPermissionsTable } from './components/FieldPermissionsTable';
 import { ActionBar } from './components/ActionBar';
 import { AddPermissionDialog } from './components/AddPermissionDialog';
+import { ProblemsTable } from './components/ProblemsTable';
+import { scanPermissions } from './lib/permissionRules';
 
-type Tab = 'objects' | 'fields';
+type Tab = 'objects' | 'fields' | 'problems';
 
-interface AppState {
+export interface AppState {
     data: ProfileEditorData | null;
     objectChanges: Map<string, ObjectPermission>;
     fieldChanges: Map<string, FieldPermission>;
-    status: 'idle' | 'loading' | 'saving' | 'error';
+    removedObjectNames: Set<string>;
+    removedFieldNames: Set<string>;
+    status: 'idle' | 'loading' | 'saving' | 'refreshing' | 'validating' | 'error';
     statusMessage: string;
     availableObjects: string[];
     loadedFields: Map<string, SObjectField[]>;
+    /** Problems from org validation (server-side) */
+    orgProblems: PermissionProblem[];
 }
 
-type AppAction =
+export type AppAction =
     | { type: 'init'; data: ProfileEditorData }
     | { type: 'loading'; message?: string }
     | { type: 'saved' }
     | { type: 'reset'; data: ProfileEditorData }
     | { type: 'error'; message: string }
     | { type: 'saving' }
+    | { type: 'refreshing' }
+    | { type: 'validating' }
     | { type: 'objectsLoaded'; objects: string[] }
     | { type: 'fieldsLoaded'; objectName: string; fields: SObjectField[] }
+    | { type: 'orgProblems'; problems: PermissionProblem[] }
     | { type: 'changeObject'; permission: ObjectPermission }
     | { type: 'changeField'; permission: FieldPermission }
+    | { type: 'removeObject'; objectName: string }
+    | { type: 'removeField'; fieldName: string }
     | { type: 'addObject'; permission: ObjectPermission }
     | { type: 'addField'; permission: FieldPermission };
 
@@ -48,21 +63,39 @@ function reducer(state: AppState, action: AppAction): AppState {
                 data: action.data,
                 objectChanges: new Map(),
                 fieldChanges: new Map(),
+                removedObjectNames: new Set(),
+                removedFieldNames: new Set(),
                 status: 'idle',
-                statusMessage: ''
+                statusMessage: '',
+                orgProblems: []
             };
         case 'loading':
             return { ...state, status: 'loading', statusMessage: action.message ?? 'Loading…' };
         case 'saving':
             return { ...state, status: 'saving', statusMessage: 'Saving…' };
+        case 'refreshing':
+            return { ...state, status: 'refreshing', statusMessage: 'Refreshing…' };
+        case 'validating':
+            return { ...state, status: 'validating', statusMessage: 'Validating…' };
         case 'saved':
-            return { ...state, objectChanges: new Map(), fieldChanges: new Map(), status: 'idle', statusMessage: '' };
+            return {
+                ...state,
+                objectChanges: new Map(),
+                fieldChanges: new Map(),
+                removedObjectNames: new Set(),
+                removedFieldNames: new Set(),
+                status: 'idle',
+                statusMessage: ''
+            };
         case 'reset':
             return {
                 ...state,
                 data: action.data,
                 objectChanges: new Map(),
                 fieldChanges: new Map(),
+                removedObjectNames: new Set(),
+                removedFieldNames: new Set(),
+                orgProblems: [],
                 status: 'idle',
                 statusMessage: ''
             };
@@ -75,10 +108,11 @@ function reducer(state: AppState, action: AppAction): AppState {
             loadedFields.set(action.objectName, action.fields);
             return { ...state, loadedFields };
         }
+        case 'orgProblems':
+            return { ...state, orgProblems: action.problems, status: 'idle', statusMessage: '' };
         case 'changeObject': {
             const objectChanges = new Map(state.objectChanges);
             objectChanges.set(action.permission.objectName, action.permission);
-            // Also update the main data
             if (state.data) {
                 const objectPermissions = state.data.objectPermissions.map(op =>
                     op.objectName === action.permission.objectName ? action.permission : op
@@ -97,6 +131,32 @@ function reducer(state: AppState, action: AppAction): AppState {
                 return { ...state, fieldChanges, data: { ...state.data, fieldPermissions } };
             }
             return { ...state, fieldChanges };
+        }
+        case 'removeObject': {
+            const removedObjectNames = new Set(state.removedObjectNames);
+            removedObjectNames.add(action.objectName);
+            const objectChanges = new Map(state.objectChanges);
+            objectChanges.delete(action.objectName);
+            if (state.data) {
+                const objectPermissions = state.data.objectPermissions.filter(
+                    op => op.objectName !== action.objectName
+                );
+                return { ...state, objectChanges, removedObjectNames, data: { ...state.data, objectPermissions } };
+            }
+            return { ...state, objectChanges, removedObjectNames };
+        }
+        case 'removeField': {
+            const removedFieldNames = new Set(state.removedFieldNames);
+            removedFieldNames.add(action.fieldName);
+            const fieldChanges = new Map(state.fieldChanges);
+            fieldChanges.delete(action.fieldName);
+            if (state.data) {
+                const fieldPermissions = state.data.fieldPermissions.filter(
+                    fp => fp.fieldName !== action.fieldName
+                );
+                return { ...state, fieldChanges, removedFieldNames, data: { ...state.data, fieldPermissions } };
+            }
+            return { ...state, fieldChanges, removedFieldNames };
         }
         case 'addObject': {
             const objectChanges = new Map(state.objectChanges);
@@ -131,10 +191,13 @@ const initialState: AppState = {
     data: null,
     objectChanges: new Map(),
     fieldChanges: new Map(),
+    removedObjectNames: new Set(),
+    removedFieldNames: new Set(),
     status: 'loading',
     statusMessage: 'Loading profile…',
     availableObjects: [],
-    loadedFields: new Map()
+    loadedFields: new Map(),
+    orgProblems: []
 };
 
 interface AppProps {
@@ -150,6 +213,10 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
     const [filter, setFilter] = useState('');
     const [objectFilter, setObjectFilter] = useState('');
     const [dialogMode, setDialogMode] = useState<'object' | 'field' | null>(null);
+
+    // Per-tab selection state
+    const [objectSelection, setObjectSelection] = useState<Set<string>>(new Set());
+    const [fieldSelection, setFieldSelection] = useState<Set<string>>(new Set());
 
     // Listen for messages from the extension
     useEffect(() => {
@@ -167,6 +234,8 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
                     break;
                 case 'reset':
                     dispatch({ type: 'reset', data: msg.data });
+                    setObjectSelection(new Set());
+                    setFieldSelection(new Set());
                     break;
                 case 'error':
                     dispatch({ type: 'error', message: msg.message });
@@ -176,6 +245,13 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
                     break;
                 case 'fieldsLoaded':
                     dispatch({ type: 'fieldsLoaded', objectName: msg.objectName, fields: msg.fields });
+                    break;
+                case 'problems':
+                    dispatch({ type: 'orgProblems', problems: msg.problems });
+                    // Auto-switch to problems tab if org errors found
+                    if (msg.problems.some(p => p.category === 'deployment')) {
+                        setActiveTab('problems');
+                    }
                     break;
             }
         };
@@ -188,6 +264,21 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
         postMessage({ type: 'ready' });
     }, [postMessage]);
 
+    // Merge client-side problems with org-side problems
+    const allProblems = useMemo(() => {
+        if (!state.data) return state.orgProblems;
+        const clientProblems = scanPermissions(state.data);
+        // Deduplicate by id — org problems take priority
+        const orgIds = new Set(state.orgProblems.map(p => p.id));
+        return [
+            ...state.orgProblems,
+            ...clientProblems.filter(p => !orgIds.has(p.id))
+        ];
+    }, [state.data, state.orgProblems]);
+
+    const problemCount = allProblems.length;
+    const problemErrorCount = allProblems.filter(p => p.severity === 'error').length;
+
     const handleObjectChange = useCallback(
         (perm: ObjectPermission) => dispatch({ type: 'changeObject', permission: perm }),
         []
@@ -198,19 +289,62 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
         []
     );
 
-    const handleSave = useCallback(() => {
+    const handleRemoveObject = useCallback(
+        (objectName: string) => {
+            dispatch({ type: 'removeObject', objectName });
+            setObjectSelection(prev => { const n = new Set(prev); n.delete(objectName); return n; });
+        },
+        []
+    );
+
+    const handleRemoveField = useCallback(
+        (fieldName: string) => {
+            dispatch({ type: 'removeField', fieldName });
+            setFieldSelection(prev => { const n = new Set(prev); n.delete(fieldName); return n; });
+        },
+        []
+    );
+
+    const handleRemoveSelectedObjects = useCallback(() => {
+        for (const name of objectSelection) {
+            dispatch({ type: 'removeObject', objectName: name });
+        }
+        setObjectSelection(new Set());
+    }, [objectSelection]);
+
+    const handleRemoveSelectedFields = useCallback(() => {
+        for (const name of fieldSelection) {
+            dispatch({ type: 'removeField', fieldName: name });
+        }
+        setFieldSelection(new Set());
+    }, [fieldSelection]);
+
+    const handleSave = useCallback((target: SaveTarget) => {
         dispatch({ type: 'saving' });
         postMessage({
             type: 'save',
+            target,
             changes: {
                 objectPermissions: Array.from(state.objectChanges.values()),
-                fieldPermissions: Array.from(state.fieldChanges.values())
+                fieldPermissions: Array.from(state.fieldChanges.values()),
+                removedObjectNames: Array.from(state.removedObjectNames),
+                removedFieldNames: Array.from(state.removedFieldNames)
             }
         });
-    }, [state.objectChanges, state.fieldChanges, postMessage]);
+    }, [state.objectChanges, state.fieldChanges, state.removedObjectNames, state.removedFieldNames, postMessage]);
 
     const handleReset = useCallback(() => {
         postMessage({ type: 'reset' });
+    }, [postMessage]);
+
+    const handleRefresh = useCallback(() => {
+        dispatch({ type: 'refreshing' });
+        postMessage({ type: 'refresh' });
+    }, [postMessage]);
+
+    const handleValidate = useCallback(() => {
+        dispatch({ type: 'validating' });
+        postMessage({ type: 'validatePermissions' });
     }, [postMessage]);
 
     const handleOpenAddDialog = useCallback(
@@ -256,7 +390,11 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
         []
     );
 
-    const totalChanges = state.objectChanges.size + state.fieldChanges.size;
+    const totalChanges =
+        state.objectChanges.size +
+        state.fieldChanges.size +
+        state.removedObjectNames.size +
+        state.removedFieldNames.size;
     const hasChanges = totalChanges > 0;
 
     const filteredObjectCount = useMemo(() => {
@@ -304,6 +442,8 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
         );
     }
 
+    const isRefreshing = state.status === 'refreshing';
+
     return (
         <div className="app">
             {/* Top error / saving banner */}
@@ -312,13 +452,17 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
                     <i className="codicon codicon-error" aria-hidden="true" /> {state.statusMessage}
                 </div>
             )}
-            {state.status === 'loading' && (
+            {(state.status === 'loading' || state.status === 'saving' || state.status === 'refreshing' || state.status === 'validating') && (
                 <div className="app__banner app__banner--info">
                     <i className="codicon codicon-loading codicon-modifier-spin" aria-hidden="true" /> {state.statusMessage}
                 </div>
             )}
 
-            <ProfileHeader data={state.data} />
+            <ProfileHeader
+                data={state.data}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
+            />
 
             {/* Tabs */}
             <div className="tab-bar" role="tablist">
@@ -328,6 +472,7 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
                     role="tab"
                     aria-selected={activeTab === 'objects'}
                 >
+                    <i className="codicon codicon-symbol-class" aria-hidden="true" />
                     Object Permissions
                     <span className="tab-bar__badge">{state.data.objectPermissions.length}</span>
                 </button>
@@ -337,38 +482,71 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
                     role="tab"
                     aria-selected={activeTab === 'fields'}
                 >
+                    <i className="codicon codicon-symbol-field" aria-hidden="true" />
                     Field-Level Security
                     <span className="tab-bar__badge">{state.data.fieldPermissions.length}</span>
                 </button>
+                <button
+                    className={`tab-bar__tab${activeTab === 'problems' ? ' tab-bar__tab--active' : ''}${problemErrorCount > 0 ? ' tab-bar__tab--has-errors' : ''}`}
+                    onClick={() => setActiveTab('problems')}
+                    role="tab"
+                    aria-selected={activeTab === 'problems'}
+                >
+                    <i className={`codicon ${problemErrorCount > 0 ? 'codicon-error' : 'codicon-checklist'}`} aria-hidden="true" />
+                    Problems
+                    {problemCount > 0 && (
+                        <span className={`tab-bar__badge${problemErrorCount > 0 ? ' tab-bar__badge--error' : ''}`}>
+                            {problemCount}
+                        </span>
+                    )}
+                </button>
             </div>
 
-            {/* Filter bar */}
-            <FilterBar
-                value={filter}
-                onChange={setFilter}
-                placeholder={activeTab === 'objects' ? 'Filter objects…' : 'Filter objects / fields…'}
-                resultCount={activeTab === 'objects' ? filteredObjectCount : filteredFieldCount}
-                totalCount={activeTab === 'objects'
-                    ? state.data.objectPermissions.length
-                    : state.data.fieldPermissions.length}
-            />
+            {/* Filter bar (only for object/field tabs) */}
+            {activeTab !== 'problems' && (
+                <FilterBar
+                    value={filter}
+                    onChange={setFilter}
+                    placeholder={activeTab === 'objects' ? 'Filter objects…' : 'Filter objects / fields…'}
+                    resultCount={activeTab === 'objects' ? filteredObjectCount : filteredFieldCount}
+                    totalCount={activeTab === 'objects'
+                        ? state.data.objectPermissions.length
+                        : state.data.fieldPermissions.length}
+                />
+            )}
 
-            {/* Table area */}
-            <div className="table-container" role="table">
+            {/* Tab content */}
+            <div className="table-container" role="tabpanel">
                 {activeTab === 'objects' ? (
                     <ObjectPermissionsTable
                         permissions={state.data.objectPermissions}
                         filter={filter}
+                        selection={objectSelection}
                         onChange={handleObjectChange}
+                        onRemove={handleRemoveObject}
+                        onRemoveSelected={handleRemoveSelectedObjects}
+                        onSelectionChange={setObjectSelection}
                         onAddObject={() => handleOpenAddDialog('object')}
                     />
-                ) : (
+                ) : activeTab === 'fields' ? (
                     <FieldPermissionsTable
                         permissions={state.data.fieldPermissions}
                         filter={filter}
                         objectFilter={objectFilter}
+                        selection={fieldSelection}
                         onChange={handleFieldChange}
+                        onRemove={handleRemoveField}
+                        onRemoveSelected={handleRemoveSelectedFields}
+                        onSelectionChange={setFieldSelection}
                         onAddField={() => handleOpenAddDialog('field')}
+                    />
+                ) : (
+                    <ProblemsTable
+                        problems={allProblems}
+                        data={state.data}
+                        dispatch={dispatch}
+                        onValidate={handleValidate}
+                        isValidating={state.status === 'validating'}
                     />
                 )}
             </div>
@@ -377,6 +555,7 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
             <ActionBar
                 hasChanges={hasChanges}
                 isSaving={state.status === 'saving'}
+                hasFileSource={!!state.data.filePath}
                 onSave={handleSave}
                 onReset={handleReset}
                 changeCount={totalChanges}

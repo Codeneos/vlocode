@@ -2,3 +2,4 @@
 
 export * from './updateProfileCommand';
 export * from './profileEditorCommand';
+export * from './openProfileFromOrgCommand';

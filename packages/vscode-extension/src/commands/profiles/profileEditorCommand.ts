@@ -61,7 +61,7 @@ export default class ProfileEditorCommand extends CommandBase {
             this.webview = new ProfileEditorWebview(extensionContext, connectionProvider, schemaService);
         }
 
-        await this.webview.openProfile(profile);
+        await this.webview.openProfile(profile, uri);
     }
 
     private loadPermissionSet(name: string, xml: string): SalesforceUserPermissions {

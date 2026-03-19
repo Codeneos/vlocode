@@ -67,6 +67,7 @@ export enum VlocodeCommand {
     addToProfile = 'vlocode.addToProfile',
     removeFromProfile = 'vlocode.removeFromProfile',
     editProfilePermissions = 'vlocode.editProfilePermissions',
+    openProfileFromOrg = 'vlocode.openProfileFromOrg',
     openMetaXml = 'vlocode.openMetaXml',
     openSourceFile = 'vlocode.openSourceFile',
     omniScriptGenerateLwc = 'vlocode.omniScript.generateLwc',
