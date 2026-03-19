@@ -18,7 +18,6 @@ import { FieldPermissionsTable } from './components/FieldPermissionsTable';
 import { ActionBar } from './components/ActionBar';
 import { AddPermissionDialog } from './components/AddPermissionDialog';
 import { ProblemsTable } from './components/ProblemsTable';
-import { scanPermissions } from './lib/permissionRules';
 
 type Tab = 'objects' | 'fields' | 'problems';
 
@@ -32,28 +31,9 @@ export interface AppState {
     statusMessage: string;
     availableObjects: string[];
     loadedFields: Map<string, SObjectField[]>;
-    /** Problems from org validation (server-side) */
+    /** Problems from the backend validator ({@link SalesforceProfileValidator}) */
     orgProblems: PermissionProblem[];
 }
-
-export type AppAction =
-    | { type: 'init'; data: ProfileEditorData }
-    | { type: 'loading'; message?: string }
-    | { type: 'saved' }
-    | { type: 'reset'; data: ProfileEditorData }
-    | { type: 'error'; message: string }
-    | { type: 'saving' }
-    | { type: 'refreshing' }
-    | { type: 'validating' }
-    | { type: 'objectsLoaded'; objects: string[] }
-    | { type: 'fieldsLoaded'; objectName: string; fields: SObjectField[] }
-    | { type: 'orgProblems'; problems: PermissionProblem[] }
-    | { type: 'changeObject'; permission: ObjectPermission }
-    | { type: 'changeField'; permission: FieldPermission }
-    | { type: 'removeObject'; objectName: string }
-    | { type: 'removeField'; fieldName: string }
-    | { type: 'addObject'; permission: ObjectPermission }
-    | { type: 'addField'; permission: FieldPermission };
 
 function reducer(state: AppState, action: AppAction): AppState {
     switch (action.type) {
@@ -264,18 +244,8 @@ export const App: React.FC<AppProps> = ({ postMessage }) => {
         postMessage({ type: 'ready' });
     }, [postMessage]);
 
-    // Merge client-side problems with org-side problems
-    const allProblems = useMemo(() => {
-        if (!state.data) return state.orgProblems;
-        const clientProblems = scanPermissions(state.data);
-        // Deduplicate by id — org problems take priority
-        const orgIds = new Set(state.orgProblems.map(p => p.id));
-        return [
-            ...state.orgProblems,
-            ...clientProblems.filter(p => !orgIds.has(p.id))
-        ];
-    }, [state.data, state.orgProblems]);
-
+    // Problems come exclusively from the backend (structural + org-level validation)
+    const allProblems = state.orgProblems;
     const problemCount = allProblems.length;
     const problemErrorCount = allProblems.filter(p => p.severity === 'error').length;
 

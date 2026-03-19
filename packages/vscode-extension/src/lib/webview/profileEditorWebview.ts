@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
-import { SalesforceConnectionProvider, SalesforceSchemaService, SalesforceUserPermissions } from '@vlocode/salesforce';
+import {
+    SalesforceConnectionProvider,
+    SalesforceProfileValidator,
+    SalesforceSchemaService,
+    SalesforceUserPermissions
+} from '@vlocode/salesforce';
 import { WebviewPanel, type WebviewContext } from './webviewPanel';
 import {
     ExtensionMessage,
@@ -93,6 +98,12 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
         try {
             const data = this.buildProfileEditorData(this.profile);
             this.post({ type: 'init', data });
+            // Run structural validation automatically after loading
+            const structuralProblems = SalesforceProfileValidator.validate(this.profile)
+                .map(p => this.mapValidationProblem(p));
+            if (structuralProblems.length > 0) {
+                this.post({ type: 'problems', problems: structuralProblems });
+            }
         } catch (err) {
             this.logger.error(`Failed to load profile data: ${err}`);
             this.post({ type: 'error', message: `Failed to load profile data: ${err}` });
@@ -224,74 +235,56 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
     }
 
     /**
-     * Validates profile permissions against org metadata and sends problems to the webview.
+     * Validates profile permissions using {@link SalesforceProfileValidator}.
+     * Runs structural checks immediately, then org-level checks asynchronously.
+     * Both sets of results are sent to the webview as `problems` messages.
      */
     private async validatePermissions(): Promise<void> {
         if (!this.profile) {
             return;
         }
 
-        this.post({ type: 'loading', message: 'Validating permissions...' });
-
-        const problems: PermissionProblem[] = [];
+        this.post({ type: 'loading', message: 'Validating permissions…' });
 
         try {
-            // Validate field permissions against org describe
-            const objectNamesInFields = [...new Set(this.profile.fields.map(f => f.field.split('.')[0]))];
-            for (const objectName of objectNamesInFields) {
-                try {
-                    const describe = await this.schemaService.describeSObject(objectName, false);
-                    const validFieldNames = new Set(describe?.fields?.map(f => `${objectName}.${f.name}`) ?? []);
+            // 1. Structural rules (synchronous, no org access needed)
+            const structural = SalesforceProfileValidator.validate(this.profile)
+                .map(p => this.mapValidationProblem(p));
+            this.post({ type: 'problems', problems: structural });
 
-                    for (const fp of this.profile.fields) {
-                        if (fp.field.startsWith(`${objectName}.`) && validFieldNames.size > 0 && !validFieldNames.has(fp.field)) {
-                            problems.push({
-                                id: `unknown-field:${fp.field}`,
-                                severity: 'warning',
-                                category: 'validation',
-                                itemType: 'fieldPermission',
-                                itemName: fp.field,
-                                message: `Field "${fp.field}" does not exist on ${objectName} in this org.`,
-                                docsUrl: 'https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_profile.htm',
-                                fixable: true,
-                                fixAction: 'remove'
-                            });
-                        }
-                    }
-                } catch {
-                    // If describe fails, skip this object's field validation
-                }
-            }
-
-            // Validate object permissions - objects that don't exist
-            try {
-                const allObjects = await this.schemaService.describeSObjects();
-                const validObjectNames = new Set(allObjects.map(o => o.name));
-                for (const op of this.profile.objects) {
-                    if (!validObjectNames.has(op.object)) {
-                        problems.push({
-                            id: `unknown-object:${op.object}`,
-                            severity: 'warning',
-                            category: 'validation',
-                            itemType: 'objectPermission',
-                            itemName: op.object,
-                            message: `Object "${op.object}" does not exist in this org.`,
-                            docsUrl: 'https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_profile.htm',
-                            fixable: true,
-                            fixAction: 'remove'
-                        });
-                    }
-                }
-            } catch {
-                // Skip object validation if describe fails
-            }
-
-            this.post({ type: 'problems', problems });
+            // 2. Org-level rules (async, requires schema service)
+            const orgProblems = await SalesforceProfileValidator.validateAgainstOrg(
+                this.profile,
+                this.schemaService
+            );
+            const allProblems = [
+                ...structural,
+                ...orgProblems.map(p => this.mapValidationProblem(p))
+            ];
+            this.post({ type: 'problems', problems: allProblems });
             this.post({ type: 'loading', message: undefined });
         } catch (err) {
             this.logger.error(`Validation error: ${err}`);
             this.post({ type: 'error', message: `Validation failed: ${err}` });
         }
+    }
+
+    /**
+     * Maps a {@link ProfileValidationProblem} from the salesforce package to the
+     * webview-facing {@link PermissionProblem} DTO.
+     */
+    private mapValidationProblem(p: import('@vlocode/salesforce').ProfileValidationProblem): PermissionProblem {
+        return {
+            id: p.id,
+            severity: p.severity,
+            category: p.category === 'structural' ? 'validation' : p.category as 'deployment' | 'validation',
+            itemType: p.itemType as PermissionProblem['itemType'],
+            itemName: p.itemName,
+            message: p.message,
+            docsUrl: p.docsUrl,
+            fixable: p.fixable,
+            fixAction: p.fixAction
+        };
     }
 
     /**

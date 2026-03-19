@@ -1,8 +1,7 @@
 import React from 'react';
 import type { Dispatch } from 'react';
 import type { PermissionProblem, ProfileEditorData } from '../types';
-import type { AppAction } from '../App';
-import { getFixForProblem } from '../lib/permissionRules';
+import type { AppAction } from '../actions';
 
 interface ProblemsTableProps {
     problems: PermissionProblem[];
@@ -24,8 +23,58 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 /**
+ * Applies a fix for a problem by dispatching the appropriate action.
+ * Looks up current permission state to avoid overwriting existing access flags.
+ */
+function applyFix(
+    problem: PermissionProblem,
+    data: ProfileEditorData,
+    dispatch: Dispatch<AppAction>
+): void {
+    const { fixAction, itemType, itemName } = problem;
+    if (!fixAction) return;
+
+    if (fixAction === 'remove') {
+        if (itemType === 'objectPermission') {
+            dispatch({ type: 'removeObject', objectName: itemName });
+        } else if (itemType === 'fieldPermission') {
+            dispatch({ type: 'removeField', fieldName: itemName });
+        }
+        return;
+    }
+
+    if (fixAction === 'grant-read') {
+        if (itemType === 'objectPermission') {
+            // Merge with current state — only add allowRead, preserve other flags
+            const existing = data.objectPermissions.find(op => op.objectName === itemName);
+            if (existing) {
+                dispatch({ type: 'changeObject', permission: { ...existing, allowRead: true } });
+            }
+        } else if (itemType === 'fieldPermission') {
+            // Merge with current state — only add readable, preserve editable
+            const existing = data.fieldPermissions.find(fp => fp.fieldName === itemName);
+            if (existing) {
+                dispatch({ type: 'changeField', permission: { ...existing, readable: true } });
+            }
+        }
+        return;
+    }
+
+    if (fixAction === 'grant-all' && itemType === 'objectPermission') {
+        const existing = data.objectPermissions.find(op => op.objectName === itemName);
+        dispatch({
+            type: 'changeObject', permission: {
+                ...(existing ?? { objectName: itemName }),
+                allowRead: true, allowCreate: true, allowEdit: true, allowDelete: true,
+                viewAllRecords: true, modifyAllRecords: true
+            }
+        });
+    }
+}
+
+/**
  * Problems tab — shows structural and deployment errors for the current profile/permset.
- * Each row shows severity, category, affected item, message, doc link, and optional Fix.
+ * Problems are supplied entirely by the backend ({@link SalesforceProfileValidator}).
  */
 export const ProblemsTable: React.FC<ProblemsTableProps> = ({
     problems,
@@ -136,58 +185,52 @@ interface ProblemRowProps {
     dispatch: Dispatch<AppAction>;
 }
 
-const ProblemRow: React.FC<ProblemRowProps> = ({ problem, data, dispatch }) => {
-    const fix = getFixForProblem(problem, data);
-
-    return (
-        <div
-            className={`problems-row problems-row--${problem.severity}`}
-            role="row"
-            title={problem.message}
-        >
-            <div className="problems-cell problems-cell--severity" role="cell">
-                <i className={`codicon ${SEVERITY_ICON[problem.severity]}`} aria-hidden="true" />
-            </div>
-            <div className="problems-cell problems-cell--category" role="cell">
-                <span className={`problems-badge problems-badge--${problem.category}`}>
-                    {CATEGORY_LABEL[problem.category]}
-                </span>
-            </div>
-            <div className="problems-cell problems-cell--item" role="cell" title={problem.itemName}>
-                {problem.itemName || '—'}
-            </div>
-            <div className="problems-cell problems-cell--message" role="cell">
-                <span className="problems-message">{problem.message}</span>
-                {problem.docsUrl && (
-                    <a
-                        className="problems-docs-link"
-                        href={problem.docsUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Open Salesforce documentation"
-                        aria-label="Open Salesforce documentation"
-                        onClick={e => {
-                            e.preventDefault();
-                            // In the VSCode webview, links must be opened via postMessage
-                            // We use a data attribute approach and let the extension open them
-                            window.open(problem.docsUrl, '_blank');
-                        }}
-                    >
-                        <i className="codicon codicon-link-external" aria-hidden="true" />
-                    </a>
-                )}
-            </div>
-            <div className="problems-cell problems-cell--actions" role="cell">
-                {fix && (
-                    <button
-                        className="problems-fix-btn"
-                        onClick={() => fix(dispatch)}
-                        title="Auto-fix this problem"
-                    >
-                        Fix
-                    </button>
-                )}
-            </div>
+const ProblemRow: React.FC<ProblemRowProps> = ({ problem, data, dispatch }) => (
+    <div
+        className={`problems-row problems-row--${problem.severity}`}
+        role="row"
+        title={problem.message}
+    >
+        <div className="problems-cell problems-cell--severity" role="cell">
+            <i className={`codicon ${SEVERITY_ICON[problem.severity]}`} aria-hidden="true" />
         </div>
-    );
-};
+        <div className="problems-cell problems-cell--category" role="cell">
+            <span className={`problems-badge problems-badge--${problem.category}`}>
+                {CATEGORY_LABEL[problem.category]}
+            </span>
+        </div>
+        <div className="problems-cell problems-cell--item" role="cell" title={problem.itemName}>
+            {problem.itemName || '—'}
+        </div>
+        <div className="problems-cell problems-cell--message" role="cell">
+            <span className="problems-message">{problem.message}</span>
+            {problem.docsUrl && (
+                <a
+                    className="problems-docs-link"
+                    href={problem.docsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open Salesforce documentation"
+                    aria-label="Open Salesforce documentation"
+                    onClick={e => {
+                        e.preventDefault();
+                        window.open(problem.docsUrl, '_blank');
+                    }}
+                >
+                    <i className="codicon codicon-link-external" aria-hidden="true" />
+                </a>
+            )}
+        </div>
+        <div className="problems-cell problems-cell--actions" role="cell">
+            {problem.fixable && (
+                <button
+                    className="problems-fix-btn"
+                    onClick={() => applyFix(problem, data, dispatch)}
+                    title="Auto-fix this problem"
+                >
+                    Fix
+                </button>
+            )}
+        </div>
+    </div>
+);
