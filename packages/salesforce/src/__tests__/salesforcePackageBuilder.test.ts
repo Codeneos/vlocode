@@ -41,6 +41,11 @@ describe('SalesforcePackageBuilder', () => {
         'src/lwc/test/test.html': '<template></template>',
         'src/lwc/test/test.js': 'import {LightningElement, api} from \'lwc\';',
         'src/lwc/test/support.js': 'import {LightningElement, api} from \'lwc\';',
+        // LWC files that should be excluded from deployment
+        'src/lwc/test/__tests__/test.spec.js': 'describe("test", () => { it("works", () => {}); });',
+        'src/lwc/test/__tests__/testHelper.js': 'export const mockData = {};',
+        'src/lwc/test/jsconfig.json': '{"compilerOptions": {}}',
+        'src/lwc/test/tsconfig.json': '{"compilerOptions": {}}',
         // Aura
         'src/aura/test/test.cmp-meta.xml': buildMetadataXml('AuraDefinitionBundle', { description: 'test' }),
         'src/aura/test/test.cmp': '<aura:component></aura:component>',
@@ -64,6 +69,13 @@ describe('SalesforcePackageBuilder', () => {
         // Dashboards
         'src/dashboards/MyFolder.dashboardFolder-meta.xml': buildXml('DashboardFolder', { name: 'MyFolder', accessType: 'Public', publicFolderAccess: 'ReadWrite' }),
         'src/dashboards/MyFolder/Board.dashboard-meta.xml': buildXml('Dashboard', { name: 'Board' }),
+        // DigitalExperienceBundle
+        'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml': buildXml('DigitalExperienceBundle', { label: 'OrderSign1', type: 'LWR' }),
+        'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/_meta.json': JSON.stringify({ type: 'sfdc_cms__view', title: 'News Detail' }),
+        'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/content.json': JSON.stringify({ label: 'News Detail' }),
+        'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/_meta.json': JSON.stringify({ type: 'sfdc_cms__view', title: 'Register' }),
+        'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/content.json': JSON.stringify({ label: 'Register' }),
+        'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/fr.json': JSON.stringify({ label: "S'inscrire" }),
     });
 
     beforeAll(() => {
@@ -73,6 +85,24 @@ describe('SalesforcePackageBuilder', () => {
 
     describe('#addFiles', () => {
         describe('#lwcComponent', () => {
+            it('should place bundle files at the correct package paths in the archive', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml' ]);
+
+                const sfPackage = await (await packageBuilder.build()).generateArchive();
+                const packageFiles = Object.keys(sfPackage.files).filter(f => !f.endsWith('/'));
+
+                expect(packageFiles).toEqual(expect.arrayContaining([
+                    'package.xml',
+                    'lwc/test/test.js-meta.xml',
+                    'lwc/test/test.html',
+                    'lwc/test/test.js',
+                    'lwc/test/support.js',
+                ]));
+                // Component name in manifest should still be just the bundle folder name
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                expect(manifest.types[0].members[0]).toEqual('test');
+            });
             it('should add all related parts when adding the meta file', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
                 await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml']);
@@ -148,6 +178,42 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.types[0].name).toEqual('LightningComponentBundle');
                 expect(manifest.types[0].members.length).toEqual(1);
                 expect(manifest.types[0].members[0]).toEqual('test');
+            });
+            it('should exclude __tests__ files from the deployable package', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml' ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+
+                expect(filesAdded).not.toContain('src/lwc/test/__tests__/test.spec.js');
+                expect(filesAdded).not.toContain('src/lwc/test/__tests__/testHelper.js');
+                expect(filesAdded.length).toEqual(4);
+            });
+            it('should exclude jsconfig.json and tsconfig.json from the deployable package', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/lwc/test/test.js-meta.xml' ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+
+                expect(filesAdded).not.toContain('src/lwc/test/jsconfig.json');
+                expect(filesAdded).not.toContain('src/lwc/test/tsconfig.json');
+                expect(filesAdded.length).toEqual(4);
+            });
+            it('should exclude test files when adding the LWC folder directly', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/lwc/test' ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+
+                expect(filesAdded.length).toEqual(4);
+                expect(filesAdded).toEqual(expect.arrayContaining([
+                    'src/lwc/test/test.html',
+                    'src/lwc/test/test.js-meta.xml',
+                    'src/lwc/test/test.js',
+                    'src/lwc/test/support.js',
+                ]));
+                expect(filesAdded).not.toContain('src/lwc/test/__tests__/test.spec.js');
+                expect(filesAdded).not.toContain('src/lwc/test/jsconfig.json');
             });
             it('should not add the same file multiple times when adding all bundled files', async () => {
                 const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
@@ -480,7 +546,7 @@ describe('SalesforcePackageBuilder', () => {
                     'src/classes/myClass.cls-meta.xml',
                     'src/triggers/myTrigger.trigger-meta.xml',
                 ]));
-                expect(manifest.list().length).toEqual(9);
+                expect(manifest.list().length).toEqual(12);
                 expect(manifest.list('AuraDefinitionBundle').length).toEqual(1);
                 expect(manifest.list('LightningComponentBundle').length).toEqual(1);
                 expect(manifest.list('ApexClass').length).toEqual(1);
@@ -489,6 +555,8 @@ describe('SalesforcePackageBuilder', () => {
                 expect(manifest.list('CustomField').length).toEqual(1);
                 expect(manifest.list('ListView').length).toEqual(1);
                 expect(manifest.list('Dashboard').length).toEqual(2);
+                expect(manifest.list('DigitalExperienceBundle').length).toEqual(1);
+                expect(manifest.list('DigitalExperience').length).toEqual(2);
             });
         });
         describe('#dashboards', () => {
@@ -504,6 +572,106 @@ describe('SalesforcePackageBuilder', () => {
                 expect(dashBoard.packagePath).toEqual('dashboards/MyFolder/Board.dashboard');
                 expect(manifest.list().length).toEqual(2);
                 expect(manifest.list('Dashboard').length).toEqual(2);
+            });
+        });
+        describe('#digitalExperienceBundle', () => {
+            it('should add all bundle files when adding the meta file', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml' ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+                expect(filesAdded.length).toEqual(6);
+                expect(filesAdded).toEqual(expect.arrayContaining([
+                    'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/_meta.json',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/content.json',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/_meta.json',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/content.json',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/fr.json',
+                ]));
+            });
+            it('should add all bundle files when adding the bundle folder', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/digitalExperiences/site/OrderSign1' ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+                expect(filesAdded.length).toEqual(6);
+                expect(filesAdded).toEqual(expect.arrayContaining([
+                    'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/_meta.json',
+                    'src/digitalExperiences/site/OrderSign1/sfdc_cms__view/register/fr.json',
+                ]));
+            });
+            it('should use site/BundleName as the DigitalExperienceBundle manifest member', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml' ]);
+
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                const bundleEntry = manifest.types.find(t => t.name === 'DigitalExperienceBundle');
+
+                expect(bundleEntry).toBeDefined();
+                expect(bundleEntry!.members).toEqual([ 'site/OrderSign1' ]);
+            });
+            it('should add a DigitalExperience manifest entry for each _meta.json in the bundle', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml' ]);
+
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                const deEntry = manifest.types.find(t => t.name === 'DigitalExperience');
+
+                expect(deEntry).toBeDefined();
+                expect(deEntry!.members.length).toEqual(2);
+                expect(deEntry!.members).toEqual(expect.arrayContaining([
+                    'site/OrderSign1.sfdc_cms__view/newsDetail',
+                    'site/OrderSign1.sfdc_cms__view/register',
+                ]));
+            });
+            it('should preserve the full bundle directory structure in archive package paths', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml' ]);
+
+                const sfPackage = await (await packageBuilder.build()).generateArchive();
+                const packageFiles = Object.keys(sfPackage.files).filter(f => !f.endsWith('/'));
+
+                expect(packageFiles).toEqual(expect.arrayContaining([
+                    'package.xml',
+                    'digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml',
+                    'digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/_meta.json',
+                    'digitalExperiences/site/OrderSign1/sfdc_cms__view/newsDetail/content.json',
+                    'digitalExperiences/site/OrderSign1/sfdc_cms__view/register/_meta.json',
+                    'digitalExperiences/site/OrderSign1/sfdc_cms__view/register/content.json',
+                    'digitalExperiences/site/OrderSign1/sfdc_cms__view/register/fr.json',
+                ]));
+            });
+            it('should not rename content files to the .digitalExperience suffix', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([ 'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml' ]);
+
+                const sfPackage = await (await packageBuilder.build()).generateArchive();
+                const packageFiles = Object.keys(sfPackage.files);
+
+                // No file should be renamed to the bundle suffix
+                expect(packageFiles.filter(f => f.endsWith('.digitalExperience'))).toHaveLength(0);
+                // Content files must retain their original names
+                expect(packageFiles.some(f => f.endsWith('_meta.json'))).toBe(true);
+                expect(packageFiles.some(f => f.endsWith('content.json'))).toBe(true);
+                expect(packageFiles.some(f => f.endsWith('fr.json'))).toBe(true);
+            });
+            it('should not add duplicate files when the same bundle is added multiple times', async () => {
+                const packageBuilder = new SalesforcePackageBuilder(SalesforcePackageType.deploy, apiVersion);
+                await packageBuilder.addFiles([
+                    'src/digitalExperiences/site/OrderSign1',
+                    'src/digitalExperiences/site/OrderSign1/OrderSign1.digitalExperience-meta.xml',
+                ]);
+
+                const filesAdded = normalizePath([ ...(await packageBuilder.build()).files() ]);
+                const manifest = packageBuilder.getManifest().toJson(apiVersion);
+                const bundleEntry = manifest.types.find(t => t.name === 'DigitalExperienceBundle');
+                const deEntry = manifest.types.find(t => t.name === 'DigitalExperience');
+
+                expect(filesAdded.length).toEqual(6);
+                expect(bundleEntry!.members.length).toEqual(1);
+                expect(deEntry!.members.length).toEqual(2);
             });
         });
         describe('#replacements', () => {

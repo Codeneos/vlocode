@@ -171,6 +171,7 @@ export class SalesforcePackageBuilder {
     private rebuildRequired = false;
     private readonly parsedFiles = new Set<string>();
     private readonly composedData = new Map<string, MetadataObject>();
+    private readonly processedBundles = new Set<string>();
     private readonly plugins: [ TokenReplacementPlugin, ...SalesforcePackageBuilderPlugin[] ] = [
         // For backwards compatibility the token replacement plugin is always the first plugin
         new TokenReplacementPlugin(),
@@ -185,7 +186,7 @@ export class SalesforcePackageBuilder {
         '**/.DS_Store',
         '**/.sf',
         '**/.sfdx',
-        '**/lwc/**/__test__/**',
+        '**/lwc/**/__tests__/**',
         '**/lwc/**/jsconfig.json',
         '**/lwc/**/tsconfig.json',
     ].map(pattern => new Minimatch(pattern, { nocomment: true, nocase: true }));
@@ -246,6 +247,7 @@ export class SalesforcePackageBuilder {
         this.mdPackage = new SalesforcePackage(this.apiVersion);
         this.parsedFiles.clear();
         this.composedData.clear();
+        this.processedBundles.clear();
         this.rebuildRequired = false;
         return this.addFiles(sources, token);
     }
@@ -278,9 +280,9 @@ export class SalesforcePackageBuilder {
 
             const metadataType = xmlName && MetadataRegistry.getMetadataType(xmlName);
             if (!xmlName || !metadataType) {
-                const isInStaticResourceFolder = file.split(/\/|\\/).includes('staticresources');
-                if (!isInStaticResourceFolder) {
-                    // This is just here to avoid complaining on static resources that are part of an extracted zip file
+                const parts = file.split(/\/|\\/);
+                const inMixedContentBundle = parts.some(p => ['staticresources', 'experiences', 'digitalExperiences'].includes(p));
+                if (!inMixedContentBundle) {
                     this.logger.warn(`${file} (xmlName: ${xmlName ?? '?'}) is not a known Salesforce metadata type`);
                 }
                 continue;
@@ -441,14 +443,57 @@ export class SalesforcePackageBuilder {
     }
 
     private async addBundledSources(bundleFolder: string, metadataType: MetadataType) {
-        const bundleFiles = await this.fs.readDirectory(bundleFolder);
-        const componentName = bundleFolder.split(/\\|\//g).pop()!;
-        for (const file of bundleFiles) {
-            const fullPath = path.join(bundleFolder, file.name);
-            if (file.isFile() && this.addParsedFile(fullPath)) {
-                await this.addSingleSourceFile(fullPath, metadataType, componentName);
+        const normalizedFolder = bundleFolder.replace(/\\/g, '/');
+        if (this.processedBundles.has(normalizedFolder)) {
+            return;
+        }
+        this.processedBundles.add(normalizedFolder);
+
+        const componentName = this.getBundleComponentName(bundleFolder, metadataType);
+        const childMetaTypes = metadataType.childXmlNames
+            .map(n => MetadataRegistry.getDecomposition(metadataType, n))
+            .filter(d => d && (d as any).metaFileSuffix)
+            .map(d => ({ name: d!.name, suffix: (d as any).metaFileSuffix as string }));
+
+        for await (const file of this.readDirectoryRecursive(bundleFolder)) {
+            if (this.ignorePatterns.some(pattern => pattern.match(file))) {
+                this.logger.verbose(`Ignoring bundle file ${file} matching global ignore patterns`);
+                this.addParsedFile(file);
+                continue;
+            }
+
+            this.addParsedFile(file);
+            await this.addSingleSourceFile(file, metadataType, componentName);
+
+            // For each child meta file (e.g. _meta.json inside a DigitalExperienceBundle),
+            // register a manifest entry for the child type.
+            // Member name format: {bundleComponentName}.{ContentType/ContentApiName}
+            // e.g. site/OrderSign1.sfdc_cms__view/newsDetail
+            const childType = childMetaTypes.find(ct => file.endsWith(ct.suffix));
+            if (childType) {
+                const relativeDir = path.relative(bundleFolder, path.dirname(file)).replace(/\\/g, '/');
+                const childComponentName = `${componentName}.${relativeDir}`;
+                this.mdPackage.addManifestEntry(childType.name, childComponentName);
             }
         }
+    }
+
+    /**
+     * Computes the manifest component name for a bundle given its root folder.
+     * For standard bundles (LWC/Aura) this is the folder name itself.
+     * For deeply nested bundles like DigitalExperienceBundle the component name
+     * includes the intermediate path segments between the type's directoryName and
+     * the bundle root (e.g. `site/foos` for `digitalExperiences/site/foos`).
+     */
+    private getBundleComponentName(bundleFolder: string, metadataType: MetadataType): string {
+        if (metadataType.directoryName) {
+            const parts = bundleFolder.split(/\\|\//g);
+            const dirIndex = parts.lastIndexOf(metadataType.directoryName);
+            if (dirIndex !== -1 && dirIndex < parts.length - 1) {
+                return parts.slice(dirIndex + 1).join(path.posix.sep);
+            }
+        }
+        return bundleFolder.split(/\\|\//g).pop()!;
     }
 
     private async addSingleSourceFile(file: string, metadataType: MetadataType, componentName?: string) {
@@ -517,7 +562,7 @@ export class SalesforcePackageBuilder {
         for(const file of await this.fs.readDirectory(folder)) {
             const fullPath = path.join(folder, file.name);
             if (file.isDirectory()) {
-                return yield* this.readDirectoryRecursive(fullPath);
+                yield* this.readDirectoryRecursive(fullPath);
             } else {
                 yield fullPath;
             }
@@ -835,7 +880,7 @@ export class SalesforcePackageBuilder {
         const componentName = sourceFileName.replace(/\.[^.]+$/ig, '');
 
         if (metadataType.isBundle) {
-            return metaFile.split(/\\|\//g).slice(-2).shift()!;
+            return this.getBundleComponentName(path.dirname(metaFile), metadataType);
         }
 
         const packageFolder = this.getPackageFolder(metaFile, metadataType);
@@ -862,7 +907,14 @@ export class SalesforcePackageBuilder {
         }
 
         if (metadataType.isBundle && componentPackageFolder) {
-            const componentName = fullSourcePath.split(/\\|\//g).slice(-2).shift()!;
+            const parts = fullSourcePath.split(/\\|\//g);
+            const dirIndex = parts.lastIndexOf(componentPackageFolder);
+            if (dirIndex !== -1) {
+                // Return path from directoryName up to (but not including) the filename,
+                // preserving any intermediate folders (e.g. SpaceApiName/BundleName for DigitalExperienceBundle).
+                return parts.slice(dirIndex, -1).join(path.posix.sep);
+            }
+            const componentName = parts.slice(-2).shift()!;
             return path.posix.join(componentPackageFolder, componentName);
         }
 
@@ -896,8 +948,9 @@ export class SalesforcePackageBuilder {
                     return path.posix.join(packageFolder, `${contentFile.split(/\\|\//g).pop()!}-meta.xml`);
                 }
             }
-        } else if (expectedSuffix && !file.endsWith(expectedSuffix)) {
-            // for non-document source files should match the metadata suffix
+        } else if (expectedSuffix && !file.endsWith(expectedSuffix) && !metadataType.isBundle) {
+            // for non-document source files should match the metadata suffix;
+            // skip for bundle types whose content files (e.g. _meta.json, content.json) keep their original names
             return path.posix.join(packageFolder, `${this.stripFileExtension(contentName, 1)}.${expectedSuffix}`);
         }
 
