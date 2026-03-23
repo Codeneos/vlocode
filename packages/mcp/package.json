@@ -1,0 +1,61 @@
+{
+    "name": "@vlocode/mcp",
+    "version": "1.41.2",
+    "description": "Vlocode MCP (Model Context Protocol) server for Salesforce and Vlocity datapack operations",
+    "keywords": [
+        "Vlocity",
+        "Salesforce",
+        "Datapacks",
+        "MCP",
+        "ModelContextProtocol"
+    ],
+    "bin": {
+        "vlocode-mcp": "bin/run"
+    },
+    "main": "src/index.ts",
+    "type": "module",
+    "publishConfig": {
+        "main": "dist/mcp.mjs",
+        "access": "public"
+    },
+    "readme": "./README.md",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "watch": "tsdown -c tsdown.config.mts --watch",
+        "build": "tsdown -c tsdown.config.mts",
+        "prepublish": "pnpm run clean && pnpm run build",
+        "pack-only": "pnpm pack",
+        "clean": "shx rm -rf ./dist './*.tgz' './src/**/*.{d.ts,ts.map,js.map,js}'"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Codeneos/vlocode.git"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "files": [
+        "/dist",
+        "/bin"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Codeneos/vlocode/issues"
+    },
+    "homepage": "https://github.com/Codeneos/vlocode#readme",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.27.1"
+    },
+    "devDependencies": {
+        "@vlocode/core": "workspace:*",
+        "@vlocode/salesforce": "workspace:*",
+        "@vlocode/util": "workspace:*",
+        "@vlocode/vlocity": "workspace:*",
+        "@vlocode/vlocity-deploy": "workspace:*",
+        "shx": "^0.3.4"
+    },
+    "publisher": "curlybracket"
+}

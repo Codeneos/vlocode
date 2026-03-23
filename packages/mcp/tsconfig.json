@@ -1,0 +1,22 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "module": "es2022",
+        "target": "es2022",
+        "moduleResolution": "node",
+        "outDir": "dist",
+        "baseUrl": "src",
+        "declaration": true,
+        "noEmit": true,
+        "declarationMap": true,
+        "allowImportingTsExtensions": true
+    },
+    "exclude": [
+        "../../build/**/*.ts"
+    ],
+    "include": [
+        "src/**/*",
+        "../../build/**/*.ts",
+        "tsdown.config.mts"
+    ]
+}

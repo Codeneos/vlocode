@@ -30,7 +30,8 @@
             "@vlocode/salesforce": ["./packages/salesforce/src"],
             "@vlocode/vlocity": ["./packages/vlocity/src"],
             "@vlocode/vlocity-deploy": ["./packages/vlocity-deploy/src"],
-            "@vlocode/omniscript": ["./packages/omniscript/src"]
+            "@vlocode/omniscript": ["./packages/omniscript/src"],
+            "@vlocode/mcp": ["./packages/mcp/src"]
         }
     }
 }
