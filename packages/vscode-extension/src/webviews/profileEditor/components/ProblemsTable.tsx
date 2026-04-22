@@ -133,7 +133,7 @@ export const ProblemsTable: React.FC<ProblemsTableProps> = ({
                 <div className="problems-table" role="table" aria-label="Permission problems">
                     {/* Header */}
                     <div className="problems-row problems-row--header" role="row">
-                        <div className="problems-cell problems-cell--severity" role="columnheader">Severity</div>
+                        <div className="problems-cell problems-cell--severity" role="columnheader"></div>
                         <div className="problems-cell problems-cell--category" role="columnheader">Category</div>
                         <div className="problems-cell problems-cell--item" role="columnheader">Item</div>
                         <div className="problems-cell problems-cell--message" role="columnheader">Message</div>

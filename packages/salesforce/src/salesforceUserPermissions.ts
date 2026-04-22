@@ -25,7 +25,7 @@ type UserPermissionSortConfig = {
         keyof ArrayElement<Exclude<UserPermissionMetadata[P] & readonly unknown[], readonly unknown[]>>;
 }
 
-const PermissionNameFields = {
+export const PermissionNameFields = {
     applicationVisibilities: 'application',
     classAccesses: 'apexClass',
     customMetadataTypeAccesses: 'name',
@@ -39,6 +39,11 @@ const PermissionNameFields = {
     recordTypeVisibilities: 'recordType',
     userPermissions: 'name',
 } as const;
+
+export type PermissionPropertyType = keyof typeof PermissionNameFields;
+
+export type PermissableSubtype<TType extends PermissionPropertyType> = ArrayElement<UserPermissionMetadata[TType]>;
+
 
 /**
  * Represents a Salesforce user permissions model, providing methods to manage and manipulate
@@ -133,6 +138,19 @@ export class SalesforceUserPermissions {
         if (metadata) {
             this.mergeWith(metadata);
         }
+    }
+
+    /**
+     * Retrieves the items of a specific permission type from the metadata.
+     * @param type - The type of permission items to retrieve, corresponding to the keys of `UserPermissionMetadata`.
+     * @returns 
+     */
+    public getItemsForType<T extends PermissionPropertyType>(type: T) : UserPermissionMetadata[T] {
+        const value = this.metadata[type];
+        if (!Array.isArray(value)) {
+            throw new Error(`Property '${type}' is not an array in the metadata.`);
+        }
+        return value as any as UserPermissionMetadata[T];
     }
 
     /**
@@ -316,6 +334,16 @@ export class SalesforceUserPermissions {
         }
 
         this.update('objectPermissions', merged);
+    }
+
+    /**
+     * Retrieves the object-level permissions for a specified Salesforce object.
+     *
+     * @param objectName - The API name of the SObject to retrieve permissions for.
+     * @returns An object containing the permissions for the specified SObject, or `undefined` if no permissions are found.
+     */
+    getObjectPermissions(objectName: string) {
+        return this.objects.find(o => o.object === objectName);
     }
 
     /**

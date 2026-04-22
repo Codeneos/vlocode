@@ -4,7 +4,8 @@ import {
     SalesforceConnectionProvider,
     SalesforceProfileValidator,
     SalesforceSchemaService,
-    SalesforceUserPermissions
+    SalesforceUserPermissions,
+    ProfileValidationProblem
 } from '@vlocode/salesforce';
 import { WebviewPanel, type WebviewContext } from './webviewPanel';
 import {
@@ -33,6 +34,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
     private profile: SalesforceUserPermissions | undefined;
     /** Absolute path to the local source file, when opened from disk. */
     private sourceFileUri: vscode.Uri | undefined;
+    private validator: SalesforceProfileValidator;
 
     constructor(
         context: WebviewContext,
@@ -45,6 +47,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
             'Profile Editor',
             'webviews/profile-editor.mjs'
         );
+        this.validator = new SalesforceProfileValidator();
     }
 
     /**
@@ -104,7 +107,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
             const data = this.buildProfileEditorData(this.profile);
             this.post({ type: 'init', data });
             // Run structural validation automatically after loading
-            const structuralProblems = SalesforceProfileValidator.validate(this.profile)
+            const structuralProblems = this.validator.validate(this.profile)
                 .map(p => this.mapValidationProblem(p));
             if (structuralProblems.length > 0) {
                 this.post({ type: 'problems', problems: structuralProblems });
@@ -254,12 +257,12 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
 
         try {
             // 1. Structural rules (synchronous, no org access needed)
-            const structural = SalesforceProfileValidator.validate(this.profile)
+            const structural = this.validator.validate(this.profile)
                 .map(p => this.mapValidationProblem(p));
             this.post({ type: 'problems', problems: structural });
 
             // 2. Org-level rules (async, requires schema service)
-            const orgProblems = await SalesforceProfileValidator.validateAgainstOrg(
+            const orgProblems = await this.validator.validateAgainstOrg(
                 this.profile,
                 this.schemaService
             );
@@ -279,7 +282,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
      * Maps a {@link ProfileValidationProblem} from the salesforce package to the
      * webview-facing {@link PermissionProblem} DTO.
      */
-    private mapValidationProblem(p: import('@vlocode/salesforce').ProfileValidationProblem): PermissionProblem {
+    private mapValidationProblem(p: ProfileValidationProblem): PermissionProblem {
         return {
             id: p.id,
             severity: p.severity,
@@ -288,8 +291,7 @@ export class ProfileEditorWebview extends WebviewPanel<WebviewMessage, Extension
             itemName: p.itemName,
             message: p.message,
             docsUrl: p.docsUrl,
-            fixable: p.fixable,
-            fixAction: p.fixAction
+            fixable: p.fixAction !== undefined
         };
     }
 
