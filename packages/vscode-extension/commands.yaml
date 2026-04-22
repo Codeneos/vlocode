@@ -245,6 +245,22 @@ vlocode.removeFromProfile:
   title: 'Salesforce: Remove from profiles'
   group: v_salesforce_profile
   menus: *profileCmdMenuConfig
+vlocode.editProfilePermissions:
+  title: 'Salesforce: Edit Profile / Permission Set'
+  group: v_salesforce_profile
+  when: config.vlocity.salesforce.enabled
+  menus:
+    - menu: commandPalette
+    - menu: editor/context
+      when: resourceScheme == file && resourceFilename =~ /(\.profile-meta\.xml|\.profile|\.permissionset-meta\.xml|\.permissionset)$/
+    - menu: explorer/context
+      when: resourceScheme == file && resourceFilename =~ /(\.profile-meta\.xml|\.profile|\.permissionset-meta\.xml|\.permissionset)$/
+vlocode.openProfileFromOrg:
+  title: 'Salesforce: Open Profile / Permission Set from Org'
+  group: v_salesforce_profile
+  when: config.vlocity.salesforce.enabled
+  menus:
+    - menu: commandPalette
 vlocode.deployRecentValidation:
   title: 'Salesforce: Deploy Recent Validation'
   group: v_salesforce

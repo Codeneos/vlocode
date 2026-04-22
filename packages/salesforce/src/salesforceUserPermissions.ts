@@ -25,7 +25,7 @@ type UserPermissionSortConfig = {
         keyof ArrayElement<Exclude<UserPermissionMetadata[P] & readonly unknown[], readonly unknown[]>>;
 }
 
-const PermissionNameFields = {
+export const PermissionNameFields = {
     applicationVisibilities: 'application',
     classAccesses: 'apexClass',
     customMetadataTypeAccesses: 'name',
@@ -39,6 +39,11 @@ const PermissionNameFields = {
     recordTypeVisibilities: 'recordType',
     userPermissions: 'name',
 } as const;
+
+export type PermissionPropertyType = keyof typeof PermissionNameFields;
+
+export type PermissableSubtype<TType extends PermissionPropertyType> = ArrayElement<UserPermissionMetadata[TType]>;
+
 
 /**
  * Represents a Salesforce user permissions model, providing methods to manage and manipulate
@@ -99,6 +104,21 @@ export class SalesforceUserPermissions {
         return this.metadata.fullName;
     }
 
+    /**
+     * The license associated with this profile or permission set.
+     * For profiles this is `userLicense`, for permission sets this is `license`.
+     */
+    public get license() : string | undefined {
+        return (this.metadata as any).userLicense ?? (this.metadata as any).license;
+    }
+
+    /**
+     * Optional human-readable description of this profile or permission set.
+     */
+    public get description() : string | undefined {
+        return (this.metadata as any).description;
+    }
+
     constructor(
         public readonly type: 'Profile' | 'PermissionSet', 
         public readonly developerName: string,
@@ -118,6 +138,19 @@ export class SalesforceUserPermissions {
         if (metadata) {
             this.mergeWith(metadata);
         }
+    }
+
+    /**
+     * Retrieves the items of a specific permission type from the metadata.
+     * @param type - The type of permission items to retrieve, corresponding to the keys of `UserPermissionMetadata`.
+     * @returns 
+     */
+    public getItemsForType<T extends PermissionPropertyType>(type: T) : UserPermissionMetadata[T] {
+        const value = this.metadata[type];
+        if (!Array.isArray(value)) {
+            throw new Error(`Property '${type}' is not an array in the metadata.`);
+        }
+        return value as any as UserPermissionMetadata[T];
     }
 
     /**
@@ -247,6 +280,86 @@ export class SalesforceUserPermissions {
      */
     public removeField(name: string) {
         this.removeItem('fieldPermissions', name);
+    }
+
+    /**
+     * Removes all object-level permissions for the specified Salesforce object.
+     *
+     * @param objectName - The API name of the SObject to remove permissions for.
+     */
+    public removeObjectPermissions(objectName: string) {
+        this.removeItem('objectPermissions', objectName);
+    }
+
+    /**
+     * Adds or updates object-level permissions for the specified Salesforce object.
+     *
+     * @param objectName - The API name of the SObject.
+     * @param permissions - Partial permission flags to set. Salesforce access rules are automatically enforced:
+     *  - modifyAllRecords implies viewAllRecords, allowRead, allowCreate, allowEdit, allowDelete.
+     *  - viewAllRecords implies allowRead.
+     *  - allowCreate / allowEdit / allowDelete imply allowRead.
+     */
+    public setObjectPermissions(objectName: string, permissions: {
+        allowRead?: boolean;
+        allowCreate?: boolean;
+        allowEdit?: boolean;
+        allowDelete?: boolean;
+        viewAllRecords?: boolean;
+        modifyAllRecords?: boolean;
+    }) {
+        const existing = this.objects.find(o => o.object === objectName) ?? {};
+        const merged = { ...existing, ...permissions, object: objectName };
+
+        // Enforce Salesforce access rules
+        if (merged.modifyAllRecords) {
+            merged.viewAllRecords = true;
+            merged.allowRead = true;
+            merged.allowCreate = true;
+            merged.allowEdit = true;
+            merged.allowDelete = true;
+        }
+        if (merged.viewAllRecords) {
+            merged.allowRead = true;
+        }
+        if (merged.allowCreate || merged.allowEdit || merged.allowDelete) {
+            merged.allowRead = true;
+        }
+        if (!merged.allowRead) {
+            merged.allowCreate = false;
+            merged.allowEdit = false;
+            merged.allowDelete = false;
+            merged.viewAllRecords = false;
+            merged.modifyAllRecords = false;
+        }
+
+        this.update('objectPermissions', merged);
+    }
+
+    /**
+     * Retrieves the object-level permissions for a specified Salesforce object.
+     *
+     * @param objectName - The API name of the SObject to retrieve permissions for.
+     * @returns An object containing the permissions for the specified SObject, or `undefined` if no permissions are found.
+     */
+    getObjectPermissions(objectName: string) {
+        return this.objects.find(o => o.object === objectName);
+    }
+
+    /**
+     * Sets field-level security permissions for the specified field.
+     * Enforces the Salesforce rule that editable fields must also be readable.
+     *
+     * @param fieldName - Qualified field name in the format "ObjectName.FieldName".
+     * @param readable - Whether the field should be readable.
+     * @param editable - Whether the field should be editable. If true, readable is also set to true.
+     */
+    public setFieldPermissions(fieldName: string, readable: boolean, editable: boolean) {
+        this.update('fieldPermissions', {
+            field: fieldName,
+            readable: editable ? true : readable,
+            editable
+        });
     }
 
     /**

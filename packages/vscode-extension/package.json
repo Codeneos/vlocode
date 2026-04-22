@@ -283,6 +283,14 @@
                 "title": "Salesforce: Remove from profiles"
             },
             {
+                "command": "vlocode.editProfilePermissions",
+                "title": "Salesforce: Edit Profile / Permission Set"
+            },
+            {
+                "command": "vlocode.openProfileFromOrg",
+                "title": "Salesforce: Open Profile / Permission Set from Org"
+            },
+            {
                 "command": "vlocode.deployRecentValidation",
                 "title": "Salesforce: Deploy Recent Validation"
             },
@@ -542,6 +550,16 @@
                     "when": "config.vlocity.salesforce.enabled"
                 },
                 {
+                    "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled"
+                },
+                {
+                    "command": "vlocode.openProfileFromOrg",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled"
+                },
+                {
                     "command": "vlocode.deployRecentValidation",
                     "group": "v_salesforce",
                     "when": "config.vlocity.salesforce.enabled"
@@ -783,6 +801,11 @@
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && explorerResourceIsFolder && resourceDirname =~ /(objects|classes)/"
                 },
                 {
+                    "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.profile-meta\\.xml|\\.profile|\\.permissionset-meta\\.xml|\\.permissionset)$/"
+                },
+                {
                     "command": "vlocode.omniScript.generateLwc",
                     "group": "v_vlocity_omniscript",
                     "when": "resourcePath =~ /[\\/\\\\]OmniScript([\\/\\\\]|$)/"
@@ -878,6 +901,11 @@
                     "command": "vlocode.removeFromProfile",
                     "group": "v_salesforce_profile",
                     "when": "config.vlocity.salesforce.profileActionsInContextMenu && config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.object|\\.field-meta\\.xml|\\.cls|\\.cls-meta\\.xml)$/"
+                },
+                {
+                    "command": "vlocode.editProfilePermissions",
+                    "group": "v_salesforce_profile",
+                    "when": "config.vlocity.salesforce.enabled && resourceScheme == file && resourceFilename =~ /(\\.profile-meta\\.xml|\\.profile|\\.permissionset-meta\\.xml|\\.permissionset)$/"
                 },
                 {
                     "command": "vlocode.omniScript.generateLwc",
@@ -1528,6 +1556,9 @@
         "@types/js-yaml": "^4.0.2",
         "@types/jsforce": "^1.9.38",
         "@types/luxon": "^3.3.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@types/react-window": "^2.0.0",
         "@types/vscode": "^1.95.0",
         "@vlocode/core": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
@@ -1535,12 +1566,14 @@
         "@vlocode/util": "workspace:*",
         "@vlocode/vlocity": "workspace:*",
         "@vlocode/vlocity-deploy": "workspace:*",
+        "@vscode/codicons": "^0.0.45",
         "@vscode/test-electron": "^2.3.8",
         "@vscode/vsce": "^3.4.1",
         "acorn": "^8.15.0",
         "acorn-walk": "^8.3.4",
         "acron": "^1.0.5",
         "chalk": "^4.1.2",
+        "esbuild": "^0.27.4",
         "escape-string-regexp": "^4.0.0",
         "fast-glob": "^3.3.3",
         "fs-extra": "^11.0",
@@ -1552,7 +1585,11 @@
         "mv": "^2.1.1",
         "open": "^8.2.1",
         "ovsx": "^0.10.7",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "react-window": "^2.2.7",
         "reflect-metadata": "^0.1.13",
+        "sass": "^1.97.3",
         "shx": "^0.3.4",
         "source-map-support": "^0.5.21",
         "ts-jest": "^29.3.4",

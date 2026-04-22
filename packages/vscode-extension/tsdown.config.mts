@@ -1,6 +1,7 @@
 import { defineConfig, type UserConfig } from 'tsdown'
 
 import yaml from '../../build/plugins/yaml-loader.ts';
+import reactCssInjectPlugin from '../../build/plugins/react-css-inject.mts';
 import fileTypesPatch from '../../build/patches/file-types.ts';
 import vlocityPatch from '../../build/patches/vlocity.ts';
 import dtracePatch from '../../build/patches/dtrace.ts';
@@ -16,6 +17,10 @@ export const entryPoints = {
     'sass-compiler': '../sass/src/bin.ts'
 };
 
+export const webviews = {
+    'profile-editor': './src/webviews/profileEditor/index.tsx'
+};
+
 export const packageExternals = [
     // VSCode is an external that we do not want to package
     'vscode',
@@ -28,16 +33,17 @@ console.log(`Running tsdown with the following configuration: ${globSync('../*/s
 export default defineConfig((options: UserConfig) => {
   const developmentBuild = Boolean(options.watch);
   const config: UserConfig = {
-    entry: entryPoints,
     target: 'esnext',
     watch: developmentBuild ? [
       ...globSync('../*/src')
     ] : false,
+    deps: {
+      neverBundle: [...packageExternals],
+      onlyBundle: false,
+    },
     ignoreWatch: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/.vscode-test/**'], 
-    external: [...packageExternals],
     outDir: './dist',
     format: 'esm',
-    inlineOnly: false,
     shims: true,
     minify: false,
     treeshake: false,
@@ -51,6 +57,9 @@ export default defineConfig((options: UserConfig) => {
     },
     nodeProtocol: true,
     tsconfig: './tsconfig.json',
+    comments: {
+      legal: 'none',
+    },
     inputOptions: {
       checks: {
         eval: false,
@@ -59,7 +68,6 @@ export default defineConfig((options: UserConfig) => {
     outputOptions: {
       keepNames: true,
       chunkFileNames: '[hash:21].mjs',
-      legalComments: 'none'
     },
     plugins: [
       yaml(), 
@@ -67,8 +75,21 @@ export default defineConfig((options: UserConfig) => {
       vlocityPatch(),
       jsdomPatch(),
       dtracePatch(),
-      simpleGitPatch()
+      simpleGitPatch(),
+      reactCssInjectPlugin()
     ]
   }
-  return config;
+  return [
+    { ...config, entry: entryPoints, platform: 'node' },
+    {
+      ...config,
+      entry: webviews,
+      outDir: './dist/webviews',
+      platform: 'browser',
+      outputOptions: {
+        ...config.outputOptions,
+        codeSplitting: false
+      }
+    }
+  ];
 });

@@ -31,6 +31,7 @@
  export * from './salesforceProfile';
  export * from './salesforceUserPermissions';
  export * from './salesforceProfileService';
+ export * from './salesforceProfileValidator';
  export * from './salesforceSchemaService';
  export * from './salesforceService';
  export * from './schemaValidator';
