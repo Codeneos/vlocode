@@ -179,8 +179,10 @@ export class ToolingApiSchemaAccess {
         } catch (err: any) {
             // For some objects we get unknown errors even when the query is fine
             // to avoid excluding specific objects we try to isolate the object causing the issue
+            const limitError = err?.message?.includes('EXCEEDED_ID_LIMIT') || 
+                err?.code === 'EXCEEDED_ID_LIMIT' || 
+                err?.errorCode === 'EXCEEDED_ID_LIMIT';
             const connectionReset = err?.message?.includes('read ECONNRESET');
-            const limitError = err?.message?.includes('EXCEEDED_ID_LIMIT');
             const unexpectedError = err?.message?.includes('An unexpected error occurred. Please include this ErrorId if you contact support');
 
             if (!unexpectedError && !connectionReset && !limitError) {
