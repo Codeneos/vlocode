@@ -4,7 +4,7 @@ import { vscodeCommand } from '../../lib/commandRouter';
 import { CommandBase } from '../../lib/commandBase';
 import { cache, clearCache, substringBetweenLast } from '@vlocode/util';
 import { container } from '@vlocode/core/src/di/container';
-import { ApexSourceStatus } from 'lib/salesforce/apexSourceStatus';
+import { ApexSourceStatus } from '../../lib/salesforce/apexSourceStatus';
 
 /**
  * Represents a command for toggling test coverage

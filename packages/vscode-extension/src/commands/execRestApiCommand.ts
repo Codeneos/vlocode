@@ -9,7 +9,7 @@ import { ApiRequestDocumentParser } from '../lib/salesforce/apiRequestDocumentPa
 import MetadataCommand from './metadata/metadataCommand';
 import { QuickPick } from '../lib/ui/quickPick';
 import { container } from '@vlocode/core';
-import { VirtualContentProvider } from 'contentProviders/virtualApexContentProvider';
+import { VirtualContentProvider } from '../contentProviders/virtualApexContentProvider';
 
 @vscodeCommand(VlocodeCommand.execRestApi)
 export default class ExecuteRestApiCommand extends MetadataCommand {
@@ -201,4 +201,3 @@ export default class ExecuteRestApiCommand extends MetadataCommand {
         return { content: responseBody ? String(responseBody) : 'No response body', language: 'plaintext' };
     }
 }
-

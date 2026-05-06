@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import VlocodeService from '../lib/vlocodeService';
 import { container, injectable } from '@vlocode/core';
 import { VlocodeCommand } from '../constants';
-import { ApexSourceStatus } from 'lib/salesforce/apexSourceStatus';
+import { ApexSourceStatus } from '../lib/salesforce/apexSourceStatus';
 
 
 @injectable()

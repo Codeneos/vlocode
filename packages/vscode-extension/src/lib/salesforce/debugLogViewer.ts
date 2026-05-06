@@ -1,11 +1,9 @@
 
 import * as path from 'path';
-import * as vscode from 'vscode';
-import * as fs from 'fs-extra';
 import { DateTime } from 'luxon';
 import { DeveloperLog } from '@vlocode/salesforce';
 import { container } from '@vlocode/core';
-import { VirtualContentProvider } from 'contentProviders/virtualApexContentProvider';
+import { VirtualContentProvider } from '../../contentProviders/virtualApexContentProvider';
 
 export class DebugLogViewer {
 
