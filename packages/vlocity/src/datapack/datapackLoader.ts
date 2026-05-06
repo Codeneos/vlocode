@@ -4,6 +4,7 @@ import { mapAsyncParallel, filterUndefined, CancellationToken, OptionalPromise, 
 import { VlocityDatapack } from './datapack';
 import { getExportProjectFolder } from './datapackUtil';
 import { DatapackInfoService } from './datapackInfoService';
+import { setDatapackFieldSource, setDatapackSource } from './datapackSource';
 
 type DatapackLoaderFunc = (fileName: string) => OptionalPromise<string | object>;
 
@@ -91,18 +92,18 @@ export class DatapackLoader {
         return filterUndefined(datapacks);
     }
 
-    protected async loadJson(fileName : string) : Promise<any> {
+    protected async loadJson(fileName : string, external = false) : Promise<any> {
         if (!await this.fileExists(fileName)) {
             return undefined;
         }
 
         const datapackJson = await this.fileSystem.readFile(fileName);
         const baseDir = directoryName(fileName);
-        const datapack = JSON.parse(datapackJson.toString());
+        const datapack = setDatapackSource(JSON.parse(datapackJson.toString()), { fileName, external });
 
         for (const [key, value] of Object.entries(datapack)) {
             try {
-                datapack[key] = await this.resolveValue(baseDir, value);
+                datapack[key] = await this.resolveValue(baseDir, value, datapack, key);
             } catch(err) {
                 this.logger.error(`Failed to load datapack property ${key}: ${err}`);
             }
@@ -125,13 +126,19 @@ export class DatapackLoader {
         return this.fileSystem.readFile(fileName);
     }
 
-    private async resolveValue(baseDir: string, fieldValue: any) : Promise<any> {
+    private async resolveValue(baseDir: string, fieldValue: any, owner?: object, fieldName?: string) : Promise<any> {
         if (typeof fieldValue === 'string') {
             const loader = this.loaders.find(candidateLoader => !candidateLoader.test || candidateLoader.test.test(fieldValue));
             if (loader) {
                 try {
-                    const value = await loader.load(path.join(baseDir, fieldValue));
+                    const resolvedFile = path.join(baseDir, fieldValue);
+                    const value = /\.json$/i.test(fieldValue)
+                        ? await this.loadJson(resolvedFile, true)
+                        : await loader.load(resolvedFile);
                     if (value !== undefined) {
+                        if (owner && fieldName && (typeof value !== 'object' || value === null)) {
+                            setDatapackFieldSource(owner, fieldName, resolvedFile);
+                        }
                         return value;
                     }
                 } catch {
@@ -141,8 +148,9 @@ export class DatapackLoader {
         } else if (Array.isArray(fieldValue)) {
             return Promise.all(fieldValue.map(value => this.resolveValue(baseDir, value)));
         } else if (fieldValue !== null && typeof fieldValue === 'object') {
+            setDatapackSource(fieldValue, { fileName: path.join(baseDir, '.'), external: false });
             await Promise.all(Object.keys(fieldValue).map(
-                async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key])));
+                async key => fieldValue[key] = await this.resolveValue(baseDir, fieldValue[key], fieldValue, key)));
         }
         return fieldValue;
     }

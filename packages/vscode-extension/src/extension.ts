@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import vlocityPackageManifest from 'vlocity/package.json';
 
 import * as constants from './constants';
-import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, FileSystem, NodeFileSystem } from '@vlocode/core';
+import { LogManager, LogLevel, Logger , ConsoleWriter, OutputChannelWriter, TerminalWriter , container, LifecyclePolicy, Container, NodeFileSystem } from '@vlocode/core';
 import * as vlocityUtil from './lib/vlocity/vlocityLogging';
 import { getContext, initializeContext } from './lib/vlocodeContext';
 import { ConfigurationManager } from './lib/config';
@@ -34,6 +34,7 @@ import { PushSourceLensProvider } from './codeLensProviders/pushSourceLensProvid
 import { SfdxConfigManager } from './lib/sfdxConfigManager';
 import { SalesforceApexContentProvider } from './contentProviders/salesforceApexContentProvider';
 import { VirtualContentProvider } from './contentProviders/virtualApexContentProvider';
+import { DataMapperEditorProvider } from './webviews/dataMapperEditorProvider';
 
 /**
  * Start time of the extension set when the bundled entrypoint is loaded by VSCode.
@@ -206,6 +207,7 @@ class Vlocode {
         PushSourceLensProvider.register(this.service);
         SalesforceApexContentProvider.register(this.service);
         VirtualContentProvider.register(this.service);
+        this.service.registerDisposable(DataMapperEditorProvider.register(context, this.service));
 
         // Watch conditionalContextMenus for changes
         ConfigurationManager.onConfigChange(this.service.config, 'conditionalContextMenus',

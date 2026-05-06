@@ -1,0 +1,118 @@
+@if (groups().length) {
+    <section class="dm-flow" aria-label="Extraction objects">
+        <div class="dm-flow__start" aria-hidden="true"></div>
+        @for (group of groups(); track group.id) {
+            <article class="dm-card dm-card--extract">
+                <header class="dm-card__header">
+                    <span class="dm-card__icon codicon codicon-symbol-object" aria-hidden="true"></span>
+                    <div>
+                        <h2>{{ group.inputObjectName || 'Untitled' }}</h2>
+                        <p>Extract Object</p>
+                    </div>
+                    <div class="dm-card__actions" aria-label="Extract actions">
+                        <button type="button" class="dm-icon-button" title="Move up" aria-label="Move extraction up" (click)="moveGroupRequested.emit({ group, direction: -1 })">
+                            <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" title="Move down" aria-label="Move extraction down" (click)="moveGroupRequested.emit({ group, direction: 1 })">
+                            <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" title="Delete" aria-label="Delete extraction" (click)="deleteGroupRequested.emit(group)">
+                            <span class="codicon codicon-trash" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </header>
+                <div class="dm-card__body dm-card__body--edit">
+                    <div class="dm-extract-grid">
+                        <label class="dm-field">
+                            <span><abbr title="Required">*</abbr> Extraction Object</span>
+                            <dm-autocomplete-input
+                                placeholder="Search object or path"
+                                [value]="group.inputObjectName || ''"
+                                [suggestions]="objectSuggestions()"
+                                (valueChange)="updateObject(group, $event)" />
+                        </label>
+                        <label class="dm-field">
+                            <span><abbr title="Required">*</abbr> Extract Object Path</span>
+                            <input type="text" placeholder="Output path" [ngModel]="group.outputFieldName || ''" (ngModelChange)="updatePath(group, $event)">
+                        </label>
+                    </div>
+
+                    <div class="dm-filter-editor">
+                        <header class="dm-filter-editor__header">
+                            <h3>Filter</h3>
+                            <div class="dm-filter-editor__actions">
+                                <button type="button" class="dm-button" (click)="addCondition(group, 'AND')">AND</button>
+                                <button type="button" class="dm-button" (click)="addCondition(group, 'OR')">OR</button>
+                                <button type="button" class="dm-button" (click)="addSpecialFilter(group, 'LIMIT')">LIMIT</button>
+                                <button type="button" class="dm-button" (click)="addSpecialFilter(group, 'OFFSET')">OFFSET</button>
+                                <button type="button" class="dm-button" (click)="addSpecialFilter(group, 'ORDER BY')">ORDER BY</button>
+                            </div>
+                        </header>
+
+                        <div class="dm-filter-list">
+                            @for (item of group.items; track item.GlobalKey ?? $index; let index = $index) {
+                                <div class="dm-filter-row">
+                                    <div class="dm-filter-row__joiner">
+                                        @if (index > 0 && !isSpecialFilter(item)) {
+                                            <select [ngModel]="joinerFor(group, index)" (ngModelChange)="setJoiner(group, item, $event)">
+                                                <option value="AND">AND</option>
+                                                <option value="OR">OR</option>
+                                            </select>
+                                        }
+                                    </div>
+
+                                    @if (isSpecialFilter(item)) {
+                                        <label class="dm-field">
+                                            <span>Action</span>
+                                            <select [ngModel]="item.FilterOperator || ''" (ngModelChange)="updateFilter(group, item, 'FilterOperator', $event)">
+                                                <option value="LIMIT">LIMIT</option>
+                                                <option value="OFFSET">OFFSET</option>
+                                                <option value="ORDER BY">ORDER BY</option>
+                                            </select>
+                                        </label>
+                                        <label class="dm-field dm-filter-row__wide">
+                                            <span>Value</span>
+                                            <input type="text" [ngModel]="item.FilterValue || ''" (ngModelChange)="updateFilter(group, item, 'FilterValue', $event)">
+                                        </label>
+                                    } @else {
+                                        <label class="dm-field">
+                                            <span>Field</span>
+                                            <dm-autocomplete-input
+                                                placeholder="Select field"
+                                                [value]="item.InputFieldName || ''"
+                                                [suggestions]="sourceSuggestions()"
+                                                (valueChange)="updateFilter(group, item, 'InputFieldName', $event)" />
+                                        </label>
+                                        <label class="dm-field">
+                                            <span>Operator</span>
+                                            <select [ngModel]="item.FilterOperator || ''" (ngModelChange)="updateFilter(group, item, 'FilterOperator', $event)">
+                                                <option value="">Select</option>
+                                                @for (operator of filterOperators; track operator) {
+                                                    <option [value]="operator">{{ operator }}</option>
+                                                }
+                                            </select>
+                                        </label>
+                                        <label class="dm-field">
+                                            <span>Value</span>
+                                            <input type="text" placeholder="Enter a value" [ngModel]="item.FilterValue || ''" (ngModelChange)="updateFilter(group, item, 'FilterValue', $event)">
+                                        </label>
+                                    }
+
+                                    <button type="button" class="dm-icon-button" title="Delete filter" aria-label="Delete filter" (click)="deleteFilter(group, item)">
+                                        <span class="codicon codicon-trash" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </article>
+            <div class="dm-flow__insert">
+                <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert extraction object" (click)="insertExtractionRequested.emit(group)"></button>
+            </div>
+        }
+        <div class="dm-flow__end" aria-hidden="true"></div>
+    </section>
+} @else {
+    <dm-empty-state title="No extract objects" message="No extraction rows are configured." actionLabel="Add Extraction" [page]="true" (action)="createExtractionRequested.emit()" />
+}

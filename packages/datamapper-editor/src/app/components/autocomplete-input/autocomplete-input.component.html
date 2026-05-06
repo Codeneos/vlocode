@@ -1,0 +1,29 @@
+<div class="dm-combobox">
+    <input
+        type="text"
+        role="combobox"
+        autocomplete="off"
+        [attr.aria-label]="ariaLabel()"
+        [attr.aria-expanded]="open()"
+        [disabled]="disabled()"
+        [placeholder]="placeholder()"
+        [ngModel]="value()"
+        (focus)="open.set(true); search.set(value())"
+        (blur)="closeSoon()"
+        (ngModelChange)="updateValue($event)">
+
+    @if (open() && filteredSuggestions().length) {
+        <ul class="dm-combobox__list" role="listbox">
+            @for (field of filteredSuggestions(); track field.path) {
+                <li role="option">
+                    <button type="button" class="dm-combobox__option" (mousedown)="selectValue(field.path)">
+                        <span>{{ field.path }}</span>
+                        @if (field.label && field.label !== field.name) {
+                            <small>{{ field.label }}</small>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>

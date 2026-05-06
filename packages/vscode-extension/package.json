@@ -28,6 +28,7 @@
     "files": [
         "loader.mjs",
         "dist/**/*.{mjs,js}",
+        "resources/datamapper-editor/**/*",
         "resources/**/*.{png,gif,svg}",
         "syntax/**/*.json",
         "README.md",
@@ -101,6 +102,24 @@
                 "view": "datapackExplorer",
                 "when": "vlocode.orgSelected != true",
                 "contents": "Select an Salesforce instance to start exploring datapacks.\n[Select Salesforce org](command:vlocode.selectOrg)"
+            }
+        ],
+        "customEditors": [
+            {
+                "viewType": "vlocode.datamapperEditor",
+                "displayName": "DataMapper Editor",
+                "selector": [
+                    {
+                        "filenamePattern": "**/omniDataTransforms/*.rpt-meta.xml"
+                    },
+                    {
+                        "filenamePattern": "**/DataRaptor/**/*_DataPack.json"
+                    },
+                    {
+                        "filenamePattern": "**/DataRaptor/**/*_Items.json"
+                    }
+                ],
+                "priority": "default"
             }
         ],
         "views": {
@@ -389,6 +408,16 @@
             {
                 "command": "vlocode.dataRaptor.convert",
                 "title": "DataRaptor: Convert Runtime"
+            },
+            {
+                "command": "vlocode.datamapper.openEditor",
+                "title": "DataMapper: Open Editor",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "vlocode.datamapper.viewSource",
+                "title": "DataMapper: View Source",
+                "icon": "$(code)"
             },
             {
                 "command": "vlocode.openMetaXml",
@@ -691,6 +720,18 @@
                     "when": "resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)([\\/\\\\]|$)/"
                 },
                 {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]omniDataTransforms[\\/\\\\].*\\.rpt-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]DataRaptor[\\/\\\\].*_(DataPack|Items)\\.json$/"
+                },
+                {
+                    "command": "vlocode.datamapper.viewSource",
+                    "when": "activeCustomEditorId == vlocode.datamapperEditor"
+                },
+                {
                     "command": "vlocode.apex.toggleCoverage",
                     "group": "v_apex",
                     "when": "resourceExtname == .cls"
@@ -821,6 +862,14 @@
                     "command": "vlocode.dataRaptor.convert",
                     "group": "v_vlocity_omniscript",
                     "when": "resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]omniDataTransforms[\\/\\\\].*\\.rpt-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]DataRaptor[\\/\\\\].*_(DataPack|Items)\\.json$/"
                 }
             ],
             "editor/context": [
@@ -918,6 +967,18 @@
                     "command": "vlocode.dataRaptor.convert",
                     "group": "v_vlocity_omniscript",
                     "when": "resourcePath =~ /[\\/\\\\](DataRaptor|OmniDataTransform)([\\/\\\\]|$)/"
+                },
+                {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]omniDataTransforms[\\/\\\\].*\\.rpt-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]DataRaptor[\\/\\\\].*_(DataPack|Items)\\.json$/"
+                },
+                {
+                    "command": "vlocode.datamapper.viewSource",
+                    "when": "activeCustomEditorId == vlocode.datamapperEditor"
                 },
                 {
                     "command": "vlocode.apex.toggleCoverage",
@@ -1026,12 +1087,30 @@
             ],
             "editor/title/run": [
                 {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]omniDataTransforms[\\/\\\\].*\\.rpt-meta\\.xml$/"
+                },
+                {
+                    "command": "vlocode.datamapper.openEditor",
+                    "when": "activeCustomEditorId != vlocode.datamapperEditor && resourcePath =~ /[\\/\\\\]DataRaptor[\\/\\\\].*_(DataPack|Items)\\.json$/"
+                },
+                {
+                    "command": "vlocode.datamapper.viewSource",
+                    "when": "activeCustomEditorId == vlocode.datamapperEditor"
+                },
+                {
                     "command": "vlocode.openMetaXml",
                     "when": "resourceExtname =~ /\\.(cls|trigger)$/"
                 },
                 {
                     "command": "vlocode.openSourceFile",
                     "when": "resourcePath =~ /\\.(cls|trigger)-meta\\.xml$/"
+                }
+            ],
+            "webview/context": [
+                {
+                    "command": "vlocode.datamapper.viewSource",
+                    "when": "webviewId == vlocode.datamapperEditor"
                 }
             ]
         },
@@ -1512,7 +1591,7 @@
         ]
     },
     "scripts": {
-        "build": "pnpm pre-build && tsdown -c tsdown.config.mts",
+        "build": "pnpm --filter @vlocode/datamapper-editor build && pnpm pre-build && tsdown -c tsdown.config.mts",
         "watch": "pnpm build --watch",
         "pack": "vsce package --no-dependencies --allow-star-activation --allow-package-secrets npm",
         "pre-build": "tsx build/commands.ts ./package.json ./commands.yaml",
@@ -1530,6 +1609,7 @@
         "@types/luxon": "^3.3.0",
         "@types/vscode": "^1.95.0",
         "@vlocode/core": "workspace:*",
+        "@vlocode/datamapper-editor": "workspace:*",
         "@vlocode/omniscript": "workspace:*",
         "@vlocode/salesforce": "workspace:*",
         "@vlocode/util": "workspace:*",

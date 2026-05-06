@@ -1,0 +1,95 @@
+<section class="dm-panel" aria-label="Mapped fields">
+    <header class="dm-panel__header">
+        <div>
+            <h2>{{ title() }}</h2>
+            <p>{{ mappingItems().length }} fields mapped</p>
+        </div>
+    </header>
+    <div class="dm-toolbar">
+        <button type="button" class="dm-button dm-button--primary" (click)="createMapping()">Create Mapping</button>
+        <label class="dm-search">
+            <span class="dm-search__icon" aria-hidden="true"></span>
+            <input type="search" placeholder="Search fields" [ngModel]="mappingFilter()" (ngModelChange)="mappingFilterChange.emit($event)">
+        </label>
+    </div>
+    <div class="dm-table-wrap">
+        <table class="dm-table">
+            <thead>
+                <tr>
+                    <th>
+                        <button type="button" class="dm-table__sort" [attr.aria-label]="'Sort by ' + inputColumn()" (click)="setSort('input')">
+                            <span>{{ inputColumn() }}</span>
+                            <span class="codicon" [class.codicon-arrow-up]="sortIcon('input') === 'up'" [class.codicon-arrow-down]="sortIcon('input') === 'down'" [class.codicon-arrow-swap]="sortIcon('input') === 'swap'" aria-hidden="true"></span>
+                        </button>
+                    </th>
+                    <th>
+                        <button type="button" class="dm-table__sort" [attr.aria-label]="'Sort by ' + outputColumn()" (click)="setSort('output')">
+                            <span>{{ outputColumn() }}</span>
+                            <span class="codicon" [class.codicon-arrow-up]="sortIcon('output') === 'up'" [class.codicon-arrow-down]="sortIcon('output') === 'down'" [class.codicon-arrow-swap]="sortIcon('output') === 'swap'" aria-hidden="true"></span>
+                        </button>
+                    </th>
+                    <th class="dm-table__actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (item of sortedMappingItems(); track rowKey(item)) {
+                    <tr
+                        [class.dm-table__row--editing]="isEditing(item)"
+                        [class.dm-table__row--disabled]="item.IsDisabled === true && !isEditing(item)"
+                        (dblclick)="handleRowDoubleClick(item)">
+                        @if (isEditing(item) && draft(); as draftItem) {
+                            <td>
+                                <dm-autocomplete-input
+                                    placeholder="Input path"
+                                    [value]="mapperKind() === 'load' ? draftItem.InputFieldName || '' : inputPath(draftItem)"
+                                    [suggestions]="sourceSuggestions()"
+                                    (valueChange)="setDraftInputPath($event)" />
+                            </td>
+                            <td>
+                                @if (mapperKind() === 'load') {
+                                    <div class="dm-table__inline-grid">
+                                        <select [ngModel]="selectedDraftLoadObject()" (ngModelChange)="setDraftLoadObject($event)">
+                                            <option value="">Object</option>
+                                            @for (group of loadObjects(); track group.id) {
+                                                <option [value]="group.sequence">{{ loadObjectLabel(group) }}</option>
+                                            }
+                                        </select>
+                                        <dm-autocomplete-input
+                                            placeholder="Field API name"
+                                            [value]="draftItem.OutputFieldName || ''"
+                                            [suggestions]="outputSuggestions()"
+                                            (valueChange)="setDraftLoadField($event)" />
+                                    </div>
+                                } @else {
+                                    <dm-autocomplete-input
+                                        placeholder="Output path"
+                                        [value]="outputPath(draftItem)"
+                                        [suggestions]="outputSuggestions()"
+                                        (valueChange)="setDraftOutputPath($event)" />
+                                }
+                            </td>
+                        } @else {
+                            <td>{{ displayInputPath(item) }}</td>
+                            <td>{{ displayOutputPath(item) }}</td>
+                        }
+                        <td class="dm-table__actions">
+                            <div class="dm-table__action-list" (dblclick)="$event.stopPropagation()">
+                                @if (isEditing(item)) {
+                                    <button type="button" class="dm-button dm-button--compact dm-button--primary" [disabled]="!canSaveDraft()" (click)="saveInlineEdit()">Save</button>
+                                    <button type="button" class="dm-button dm-button--compact" (click)="cancelInlineEdit()">Cancel</button>
+                                } @else {
+                                    <button type="button" class="dm-button dm-button--compact" (click)="editMappingRequested.emit(item)">Edit</button>
+                                    <button type="button" class="dm-button dm-button--compact" (click)="deleteMappingRequested.emit(item)">Delete</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                } @empty {
+                    <tr>
+                        <td colspan="3" class="dm-table__empty">No mappings match the current filter.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

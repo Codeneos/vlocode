@@ -19,6 +19,7 @@
     },
     "include": [
         "src/**/*.ts", 
+        "../sass/src/**/*.ts",
         "../../build/**/*.ts", 
         "tsdown.config.mts" 
     ],
@@ -28,6 +29,7 @@
         { "path": "../salesforce" },
         { "path": "../vlocity" },
         { "path": "../omniscript" },
-        { "path": "../vlocity-deploy" }
+        { "path": "../vlocity-deploy" },
+        { "path": "../sass" }
     ]
 }

@@ -1,0 +1,21 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "module": "es2022",
+        "moduleResolution": "bundler",
+        "target": "ES2022",
+        "emitDecoratorMetadata": false,
+        "useDefineForClassFields": false,
+        "types": []
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "files": [],
+    "references": [
+        {
+            "path": "./tsconfig.app.json"
+        }
+    ]
+}

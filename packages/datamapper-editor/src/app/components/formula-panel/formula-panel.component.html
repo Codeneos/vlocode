@@ -1,0 +1,59 @@
+@if (items().length) {
+    <section class="dm-flow" aria-label="Formulas">
+        <div class="dm-flow__start" aria-hidden="true"></div>
+        @for (item of items(); track item.GlobalKey ?? item.FormulaSequence ?? $index; let index = $index) {
+            <article class="dm-card dm-card--formula" [class.dm-card--disabled]="item.IsDisabled === true">
+                <header class="dm-card__header">
+                    <span class="dm-card__icon codicon codicon-symbol-method" aria-hidden="true"></span>
+                    <div>
+                        <h2>Formula {{ item.FormulaSequence || $index + 1 }}</h2>
+                        <p>{{ item.IsDisabled === true ? 'Disabled Formula' : 'Extract Formula' }}</p>
+                    </div>
+                    <div class="dm-card__actions">
+                        <button type="button" class="dm-icon-button" title="Move up" aria-label="Move formula up" (click)="moveFormulaRequested.emit({ item, direction: -1 })">
+                            <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" title="Move down" aria-label="Move formula down" (click)="moveFormulaRequested.emit({ item, direction: 1 })">
+                            <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" [title]="item.IsDisabled === true ? 'Enable' : 'Disable'" [attr.aria-label]="item.IsDisabled === true ? 'Enable formula' : 'Disable formula'" (click)="updateFormula(item, 'IsDisabled', item.IsDisabled !== true)">
+                            <span class="codicon" [class.codicon-eye]="item.IsDisabled === true" [class.codicon-eye-closed]="item.IsDisabled !== true" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" title="Delete" aria-label="Delete formula" (click)="deleteFormulaRequested.emit(item)">
+                            <span class="codicon codicon-trash" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </header>
+                <div class="dm-card__body dm-card__body--edit">
+                    <label class="dm-field">
+                        <span>Formula Expression</span>
+                        <textarea rows="7" [disabled]="item.IsDisabled === true" [ngModel]="item.FormulaExpression || ''" (ngModelChange)="updateFormula(item, 'FormulaExpression', $event)"></textarea>
+                    </label>
+
+                    <label class="dm-field">
+                        <span>Formula Result Path</span>
+                        <dm-autocomplete-input
+                            placeholder="Result path"
+                            [value]="item.FormulaResultPath || ''"
+                            [suggestions]="outputSuggestions()"
+                            [disabled]="item.IsDisabled === true"
+                            (valueChange)="updateFormula(item, 'FormulaResultPath', $event)" />
+                    </label>
+
+                    <div class="dm-form-grid">
+                        <label class="dm-field">
+                            <span>Sequence</span>
+                            <input type="number" min="1" [disabled]="item.IsDisabled === true" [ngModel]="item.FormulaSequence || $index + 1" (ngModelChange)="updateFormula(item, 'FormulaSequence', $event)">
+                        </label>
+                    </div>
+                </div>
+            </article>
+            <div class="dm-flow__insert">
+                <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert formula" (click)="insertFormulaRequested.emit(item)"></button>
+            </div>
+        }
+        <div class="dm-flow__end" aria-hidden="true"></div>
+    </section>
+} @else {
+    <dm-empty-state title="No formulas" message="This DataMapper does not define formula rows." [page]="true" actionLabel="Add Formula" (action)="createFormulaRequested.emit()" />
+}

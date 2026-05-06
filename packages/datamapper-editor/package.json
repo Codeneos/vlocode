@@ -1,0 +1,32 @@
+{
+    "name": "@vlocode/datamapper-editor",
+    "version": "1.41.2",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "ng build --configuration production",
+        "watch": "ng build --watch --configuration development",
+        "clean": "shx rm -rf ../vscode-extension/resources/datamapper-editor"
+    },
+    "author": {
+        "name": "Peter van Gulik",
+        "email": "peter@curlybracket.nl"
+    },
+    "dependencies": {
+        "@angular/common": "^21.2.11",
+        "@angular/compiler": "^21.2.11",
+        "@angular/core": "^21.2.11",
+        "@angular/forms": "^21.2.11",
+        "@angular/platform-browser": "^21.2.11",
+        "@vscode/codicons": "^0.0.45",
+        "rxjs": "^7.8.2",
+        "tslib": "2.8.1"
+    },
+    "devDependencies": {
+        "@angular/build": "^21.2.9",
+        "@angular/cli": "^21.2.9",
+        "sass": "^1.93.0",
+        "shx": "^0.3.4",
+        "typescript": "catalog:"
+    }
+}

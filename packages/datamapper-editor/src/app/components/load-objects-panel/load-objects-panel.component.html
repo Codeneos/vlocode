@@ -1,0 +1,84 @@
+@if (groups().length) {
+    <section class="dm-flow" aria-label="Load objects">
+        <div class="dm-flow__start" aria-hidden="true"></div>
+        @for (group of groups(); track group.id) {
+            <article class="dm-card dm-card--load">
+                <header class="dm-card__header">
+                    <span class="dm-card__icon codicon codicon-database" aria-hidden="true"></span>
+                    <div>
+                        <h2>{{ group.outputObjectName || 'Untitled' }}</h2>
+                        <p>Load Object {{ group.sequence }}</p>
+                    </div>
+                    <div class="dm-card__actions" aria-label="Load object actions">
+                        <button type="button" class="dm-icon-button" title="Move up" aria-label="Move load object up" (click)="moveGroupRequested.emit({ group, direction: -1 })">
+                            <span class="codicon codicon-arrow-up" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" title="Move down" aria-label="Move load object down" (click)="moveGroupRequested.emit({ group, direction: 1 })">
+                            <span class="codicon codicon-arrow-down" aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="dm-icon-button" title="Delete" aria-label="Delete load object" (click)="deleteGroupRequested.emit(group)">
+                            <span class="codicon codicon-trash" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </header>
+                <div class="dm-card__body dm-card__body--edit">
+                    <label class="dm-field">
+                        <span><abbr title="Required">*</abbr> Object</span>
+                        <dm-autocomplete-input
+                            placeholder="Search object"
+                            [value]="group.outputObjectName || ''"
+                            [suggestions]="objectSuggestions()"
+                            (valueChange)="updateObjectName(group, $event)" />
+                    </label>
+
+                    <section class="dm-link-editor" aria-label="Object links">
+                        <header class="dm-filter-editor__header">
+                            <h3>Links</h3>
+                            @if (group.sequence > 1) {
+                                <button type="button" class="dm-button" (click)="addLink(group)">Add Link</button>
+                            }
+                        </header>
+                        @if (group.sequence > 1) {
+                            @for (link of group.links; track link.GlobalKey ?? $index) {
+                                <div class="dm-link-row">
+                                    <label class="dm-field">
+                                        <span>Parent Object</span>
+                                        <select [ngModel]="link.LinkedObjectSequence || ''" (ngModelChange)="updateLink(group, link, 'LinkedObjectSequence', $event)">
+                                            <option value="">Select</option>
+                                            @for (candidate of groups(); track candidate.id) {
+                                                @if (candidate.sequence < group.sequence) {
+                                                    <option [value]="candidate.sequence">{{ loadObjectLabel(candidate) }}</option>
+                                                }
+                                            }
+                                        </select>
+                                    </label>
+                                    <label class="dm-field">
+                                        <span>Target Field</span>
+                                        <input type="text" placeholder="Lookup field" [ngModel]="link.OutputFieldName || ''" (ngModelChange)="updateLink(group, link, 'OutputFieldName', $event)">
+                                    </label>
+                                    <label class="dm-field">
+                                        <span>Source Value</span>
+                                        <input type="text" placeholder="Parent field or value" [ngModel]="link.InputFieldName || link.FilterValue || ''" (ngModelChange)="updateLink(group, link, 'InputFieldName', $event)">
+                                    </label>
+                                    <button type="button" class="dm-icon-button" title="Delete link" aria-label="Delete link" (click)="deleteLink(group, link)">
+                                        <span class="codicon codicon-trash" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            } @empty {
+                                <p class="dm-muted">No links configured for this object.</p>
+                            }
+                        } @else {
+                            <p class="dm-muted">The first load object cannot be linked.</p>
+                        }
+                    </section>
+                </div>
+            </article>
+            <div class="dm-flow__insert">
+                <button type="button" class="dm-flow__add dm-flow__add--insert" aria-label="Insert load object" (click)="insertObjectRequested.emit(group)"></button>
+            </div>
+        }
+        <div class="dm-flow__end" aria-hidden="true"></div>
+    </section>
+} @else {
+    <dm-empty-state title="No load objects" message="No objects are configured for this load mapper." actionLabel="Add Object" [page]="true" (action)="createObjectRequested.emit()" />
+}

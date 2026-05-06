@@ -80,5 +80,7 @@ export enum VlocodeCommand {
     cardGenerateLwc  = 'vlocode.card.generateLwc',
     cardDeployLwc  = 'vlocode.card.deployLwc',
     cardActivate  = 'vlocode.card.activate',
+    openDataMapperEditor = 'vlocode.datamapper.openEditor',
+    viewDataMapperSource = 'vlocode.datamapper.viewSource',
     importMultipack = 'vlocode.importMultipack',
 }

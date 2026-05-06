@@ -19,3 +19,4 @@ packages/*/out
 /packages/*/coverage
 /packages/apex/src/grammar/*.interp
 /packages/apex/src/grammar/*.tokens
+/packages/vscode-extension/resources/datamapper-editor/

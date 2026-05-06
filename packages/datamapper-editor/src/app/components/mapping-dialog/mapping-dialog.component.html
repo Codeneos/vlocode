@@ -1,0 +1,102 @@
+<div class="dm-dialog-backdrop" role="presentation" (click)="cancel.emit()"></div>
+<section class="dm-dialog" role="dialog" aria-modal="true" aria-labelledby="mapping-title">
+    <button type="button" class="dm-dialog__close" aria-label="Close" (click)="cancel.emit()">
+        <span class="codicon codicon-close" aria-hidden="true"></span>
+    </button>
+    <header class="dm-dialog__header">
+        <h2 id="mapping-title">{{ title() }}</h2>
+    </header>
+    <div class="dm-dialog__body">
+        <label class="dm-field">
+            <span>{{ inputLabel() }}</span>
+            <dm-autocomplete-input
+                placeholder="Input path"
+                [value]="mapperKind() === 'load' ? item().InputFieldName || '' : inputPath(item())"
+                [suggestions]="sourceSuggestions()"
+                (valueChange)="setInputPath($event)" />
+        </label>
+
+        @if (mapperKind() === 'load') {
+            <div class="dm-form-grid">
+                <label class="dm-field">
+                    <span><abbr title="Required">*</abbr> Domain Object</span>
+                    @if (loadObjects().length) {
+                        <select [ngModel]="selectedLoadObject()" (ngModelChange)="setLoadObject($event)">
+                            <option value="">Select</option>
+                            @for (group of loadObjects(); track group.id) {
+                                <option [value]="group.sequence">{{ loadObjectLabel(group) }}</option>
+                            }
+                        </select>
+                    } @else {
+                        <dm-autocomplete-input
+                            placeholder="Object API name"
+                            [value]="item().OutputObjectName || ''"
+                            [suggestions]="domainObjectSuggestions()"
+                            (valueChange)="setDomainObjectName($event)" />
+                    }
+                </label>
+                <label class="dm-field">
+                    <span><abbr title="Required">*</abbr> Domain Object Field</span>
+                    <dm-autocomplete-input
+                        placeholder="Field API name"
+                        [value]="item().OutputFieldName || ''"
+                        [suggestions]="outputSuggestions()"
+                        (valueChange)="setLoadField($event)" />
+                </label>
+            </div>
+        } @else {
+            <label class="dm-field">
+                <span><abbr title="Required">*</abbr> {{ outputLabel() }}</span>
+                <dm-autocomplete-input
+                    placeholder="Output path"
+                    [value]="outputPath(item())"
+                    [suggestions]="outputSuggestions()"
+                    (valueChange)="setOutputPath($event)" />
+            </label>
+        }
+
+        <div class="dm-form-grid">
+            <label class="dm-field">
+                <span>Output Data Type</span>
+                <dm-autocomplete-input
+                    placeholder="Output data type"
+                    [value]="item().OutputFieldFormat || ''"
+                    [suggestions]="dataTypeSuggestions()"
+                    (valueChange)="setValue('OutputFieldFormat', $event)" />
+            </label>
+
+            <label class="dm-field">
+                <span>Default Value</span>
+                <input type="text" [ngModel]="item().DefaultValue || ''" (ngModelChange)="setValue('DefaultValue', $event)">
+            </label>
+        </div>
+
+        <label class="dm-check">
+            <input type="checkbox" [ngModel]="item().IsDisabled === true" (ngModelChange)="setValue('IsDisabled', $event)">
+            <span>Is Disabled</span>
+        </label>
+        @if (mapperKind() === 'load') {
+            <div class="dm-check-row">
+                <label class="dm-check">
+                    <input type="checkbox" [ngModel]="item().IsUpsertKey === true" (ngModelChange)="setValue('IsUpsertKey', $event)">
+                    <span>Upsert Key</span>
+                </label>
+                <label class="dm-check">
+                    <input type="checkbox" [ngModel]="item().IsRequiredForUpsert === true" (ngModelChange)="setValue('IsRequiredForUpsert', $event)">
+                    <span>Required For Upsert</span>
+                </label>
+                <label class="dm-check">
+                    <input type="checkbox" [ngModel]="item().IsLookup === true" (ngModelChange)="setValue('IsLookup', $event)">
+                    <span>Lookup</span>
+                </label>
+            </div>
+        }
+    </div>
+    <footer class="dm-dialog__footer">
+        <button type="button" class="dm-button" (click)="cancel.emit()">Cancel</button>
+        @if (isCreating()) {
+            <button type="button" class="dm-button" [disabled]="mapperKind() === 'load' ? !item().OutputFieldName : !outputPath(item())" (click)="saveAndAddAnother.emit(item())">Save and Create Another</button>
+        }
+        <button type="button" class="dm-button dm-button--primary" [disabled]="mapperKind() === 'load' ? !item().OutputFieldName : !outputPath(item())" (click)="saveMapping.emit(item())">Save</button>
+    </footer>
+</section>

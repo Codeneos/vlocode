@@ -1,0 +1,117 @@
+@if (!hasLoaded() && error(); as message) {
+    <main class="dm-shell dm-shell--center">
+        <dm-empty-state title="Unable to open DataMapper" [message]="message" role="alert" actionLabel="Retry" (action)="requestReload()" />
+    </main>
+} @else {
+    <main class="dm-shell">
+        <div class="dm-topbar">
+            <header class="dm-header">
+                <div>
+                    <h1>{{ model().title }}</h1>
+                    <p>{{ mapperSubtitle() }}</p>
+                </div>
+                <div class="dm-header__actions">
+                    <button type="button" class="dm-button" [disabled]="refreshing()" (click)="refresh()">
+                        <span class="codicon" [class.codicon-sync]="refreshing()" [class.codicon-refresh]="!refreshing()" [class.codicon-modifier-spin]="refreshing()" aria-hidden="true"></span>
+                        @if (refreshing()) { Refreshing } @else { Refresh }
+                    </button>
+                    <button type="button" class="dm-button" [disabled]="deploying()" (click)="deploy()">
+                        <span class="codicon codicon-cloud-upload" aria-hidden="true"></span>
+                        @if (deploying()) { Deploying } @else { Deploy }
+                    </button>
+                    <button type="button" class="dm-button" [disabled]="openingSalesforce()" (click)="openSalesforce()">
+                        <span class="codicon codicon-link-external" aria-hidden="true"></span>
+                        @if (openingSalesforce()) { Opening } @else { Open in Salesforce }
+                    </button>
+                    <button type="button" class="dm-button dm-button--primary" [disabled]="saving()" (click)="save()">
+                        <span class="codicon codicon-save" aria-hidden="true"></span>
+                        @if (saving()) { Saving } @else { Save }
+                    </button>
+                </div>
+            </header>
+
+            <nav class="dm-tabs" aria-label="DataMapper sections">
+                @for (tab of tabs(); track tab.id) {
+                    <button type="button" [class.dm-tabs__tab--active]="activeTab() === tab.id" class="dm-tabs__tab" (click)="activeTab.set(tab.id)">
+                        {{ tab.label }}
+                    </button>
+                }
+            </nav>
+        </div>
+
+        @switch (activeTab()) {
+            @case ('objects') {
+                <dm-load-objects-panel
+                    [groups]="loadObjectGroups()"
+                    [objectSuggestions]="domainObjectSuggestions()"
+                    (createObjectRequested)="createLoadObject()"
+                    (insertObjectRequested)="insertLoadObjectAfter($event)"
+                    (updateGroupRequested)="updateLoadObjectGroup($event)"
+                    (moveGroupRequested)="moveLoadObjectGroup($event.group, $event.direction)"
+                    (deleteGroupRequested)="deleteLoadObjectGroup($event)" />
+            }
+            @case ('extract') {
+                <dm-extract-panel
+                    [groups]="extractionGroups()"
+                    [objectSuggestions]="objectSuggestions()"
+                    [sourceSuggestions]="sourceSuggestions()"
+                    (createExtractionRequested)="createExtraction()"
+                    (insertExtractionRequested)="createExtraction($event)"
+                    (updateGroupRequested)="updateExtractionGroup($event)"
+                    (moveGroupRequested)="moveExtractionGroup($event.group, $event.direction)"
+                    (deleteGroupRequested)="deleteExtractionGroup($event)" />
+            }
+            @case ('formula') {
+                <dm-formula-panel
+                    [items]="formulaItems()"
+                    [outputSuggestions]="outputSuggestions()"
+                    (createFormulaRequested)="createFormula()"
+                    (insertFormulaRequested)="insertFormulaAfter($event)"
+                    (updateFormulaRequested)="updateFormula($event)"
+                    (moveFormulaRequested)="moveFormula($event.item, $event.direction)"
+                    (deleteFormulaRequested)="deleteFormula($event)" />
+            }
+            @case ('mapping') {
+                <dm-mapping-panel
+                    [mapperKind]="mapperKind()"
+                    [mappingItems]="mappingItems()"
+                    [filteredMappingItems]="filteredMappingItems()"
+                    [mappingFilter]="mappingFilter()"
+                    [sourceSuggestions]="sourceSuggestions()"
+                    [outputSuggestions]="outputSuggestions()"
+                    [loadObjects]="loadObjectGroups()"
+                    (mappingFilterChange)="mappingFilter.set($event)"
+                    (createMappingRequested)="createMapping()"
+                    (editMappingRequested)="editMapping($event)"
+                    (updateMappingRequested)="saveMappingRow($event)"
+                    (deleteMappingRequested)="deleteMapping($event)" />
+            }
+        }
+
+        @if (editing(); as item) {
+            <dm-mapping-dialog
+                [mapperKind]="mapperKind()"
+                [item]="item"
+                [editIndex]="editIndex()"
+                [sourceSuggestions]="sourceSuggestions()"
+                [outputSuggestions]="outputSuggestions()"
+                [loadObjects]="loadObjectGroups()"
+                [domainObjectSuggestions]="domainObjectSuggestions()"
+                [dataTypes]="dataTypes"
+                (itemChange)="updateEditing($event)"
+                (cancel)="cancelEdit()"
+                (saveMapping)="applyEdit($event)"
+                (saveAndAddAnother)="applyEditAndCreateNext($event)" />
+        }
+
+        @if (loading()) {
+            <section class="dm-loading" role="status" aria-live="polite" aria-busy="true">
+                <div class="dm-loading__content">
+                    <span class="dm-loading__spinner" aria-hidden="true"></span>
+                    <h2>{{ loadingTitle() }}</h2>
+                    <p>{{ loadingMessage() }}</p>
+                </div>
+            </section>
+        }
+    </main>
+}

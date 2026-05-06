@@ -413,6 +413,35 @@ vlocode.dataRaptor.convert:
       when: *whenDataRaptor
 
 # editor
+vlocode.datamapper.openEditor:
+  title: 'DataMapper: Open Editor'
+  icon: $(preview)
+  when: activeCustomEditorId != vlocode.datamapperEditor
+  menus:
+    - menu: editor/title/run
+      when: &whenDataMapperFile
+        - resourcePath =~ /[\/\\]omniDataTransforms[\/\\].*\.rpt-meta\.xml$/
+        - resourcePath =~ /[\/\\]DataRaptor[\/\\].*_(DataPack|Items)\.json$/
+    - menu: editor/context
+      when: *whenDataMapperFile
+    - menu: explorer/context
+      when: *whenDataMapperFile
+    - menu: commandPalette
+      when: *whenDataMapperFile
+vlocode.datamapper.viewSource:
+  title: 'DataMapper: View Source'
+  icon: $(code)
+  menus:
+    - menu: editor/title/run
+      when: &whenDataMapperEditor
+        - activeCustomEditorId == vlocode.datamapperEditor
+    - menu: editor/context
+      when: *whenDataMapperEditor
+    - menu: webview/context
+      when:
+        - webviewId == vlocode.datamapperEditor
+    - menu: commandPalette
+      when: *whenDataMapperEditor
 vlocode.openMetaXml:
   title: 'Salesforce: Open -meta.xml'
   icon: resources/{type}/meta-xml.svg
