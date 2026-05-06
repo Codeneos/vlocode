@@ -2,6 +2,22 @@ import { removeNamespacePrefix } from '@vlocode/util';
 import { DatapackFields } from './datapack';
 import { SalesforceQueryData } from '@vlocode/salesforce';
 
+export type SalesforceUrlType = 'standard' | 'lwc' | 'classic';
+export type SalesforceUrlResolver = (record: any) => string;
+export type SalesforceUrlDefinition = SalesforceUrlResolver | Partial<Record<SalesforceUrlType, SalesforceUrlResolver>>;
+
+export interface SalesforceUrlOption {
+    type: SalesforceUrlType;
+    label: string;
+    detail: string;
+}
+
+export const SalesforceUrlTypeLabels: Record<SalesforceUrlType, string> = {
+    standard: 'Standard Designer',
+    lwc: 'LWC Designer',
+    classic: 'Classic Package Designer'
+};
+
 /**
  * Interface defining the query properties for a datapack type
  */
@@ -10,6 +26,12 @@ export interface DatapackTypeDefinition {
      * Name of the datapack type
      */
     datapackType: string;
+
+    /**
+     * Name of the export definition used to export this datapack type.
+     * When omitted the datapack type is used as the export definition name.
+     */
+    exportDefinition?: string;
 
     /*
     * Human friendnamly of the datapack type
@@ -42,7 +64,7 @@ export interface DatapackTypeDefinition {
     /**
      * Allows overwriting the default Salesforce URL for the datapack type.
      */
-    salesforceUrl?: ((record: any) => string) | Record<string, ((record: any) => string)>;
+    salesforceUrl?: SalesforceUrlDefinition;
     
     /**
      * Allows changing the default Matching Key for the datapack type.
@@ -87,9 +109,9 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 orderBy: ["%vlocity_namespace%__Version__c"]
             },
             salesforceUrl: {
-                'Standard Designer (Summer \'25)': (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${record.Id}`,
-                'LWC Designer': (record: any) => `/lightning/cmp/%vlocity_namespace%__OmniDesignerAuraWrapper?c__recordId=${record.Id}`,
-                'Classic Designer': (record: any) => `/apex/%vlocity_namespace%__omniscriptdesigner?id=${record.Id}`
+                standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${record.Id}`,
+                lwc: (record: any) => `/lightning/cmp/%vlocity_namespace%__OmniDesignerAuraWrapper?c__recordId=${record.Id}`,
+                classic: (record: any) => `/apex/%vlocity_namespace%__omniscriptdesigner?id=${record.Id}`
             },            
             displayName: (record: any) => `Version ${record.Version__c || 0}`,
             description: (record: any) => `${record.IsActive__c ? 'Active - ' : ''}${record.IsLwcEnabled__c ? 'LWC' : 'classic'}`,
@@ -111,9 +133,9 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 orderBy: ["VersionNumber"]
             },
             salesforceUrl: {
-                'Standard Designer (Summer \'25)': (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${record.Id}`,
-                'LWC Designer': (record: any) => `/lightning/cmp/%vlocity_namespace%__OmniDesignerAuraWrapper?c__recordId=${record.Id}`,
-                'Classic Designer': (record: any) => `/apex/%vlocity_namespace%__omniscriptdesigner?id=${record.Id}`
+                standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=omniscript&id=${record.Id}`,
+                lwc: (record: any) => `/lightning/cmp/%vlocity_namespace%__OmniDesignerAuraWrapper?c__recordId=${record.Id}`,
+                classic: (record: any) => `/apex/%vlocity_namespace%__omniscriptdesigner?id=${record.Id}`
             },
             displayName: (record: any) => `Version ${record.VersionNumber || 0}`,
             description: (record: any) => `${record.IsActive ? 'Active' : ''}`,
@@ -136,8 +158,8 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 whereCondition: "%vlocity_namespace%__IsProcedure__c = true"
             },
             salesforceUrl: {
-                'Standard Designer (Summer \'25)': (record: any) => `/builder_industries_interaction_rule/industriesBuilder.app?recordId=${record.Id}`,
-                'Classic Package Designer': (record: any) => `/apex/%vlocity_namespace%__integrationproceduredesigner?id=${record.Id}`
+                standard: (record: any) => `/builder_industries_interaction_rule/industriesBuilder.app?recordId=${record.Id}`,
+                classic: (record: any) => `/apex/%vlocity_namespace%__integrationproceduredesigner?id=${record.Id}`
             },
             displayName: (record: any) => `Version ${record.Version__c || 0}`,
             description: (record: any) => record.IsActive__c ? 'Active' : '',
@@ -159,8 +181,8 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 orderBy: ["Type", "SubType", "VersionNumber"] 
             },
             salesforceUrl: {
-                'Standard Designer (Summer \'25)': (record: any) => `/builder_industries_interaction_rule/industriesBuilder.app?recordId=${record.Id}`,
-                'Classic Package Designer': (record: any) => `/apex/%vlocity_namespace%__integrationproceduredesigner?id=${record.Id}`
+                standard: (record: any) => `/builder_industries_interaction_rule/industriesBuilder.app?recordId=${record.Id}`,
+                classic: (record: any) => `/apex/%vlocity_namespace%__integrationproceduredesigner?id=${record.Id}`
             },
             displayName: (record: any) => `Version ${record.VersionNumber || 0}`,
             description: (record: any) => `${record.IsActive ? 'Active' : ''}`,
@@ -193,7 +215,10 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
                 sobjectType: "OmniDataTransform",
                 fieldList: ["Id", "Name"]
             },
-            salesforceUrl: (record: any) => `/apex/%vlocity_namespace%__drmapper?id=${record.Id}`,
+            salesforceUrl: {
+                standard: (record: any) => `/lightning/r/OmniDataTransform/${record.Id}/view`,
+                classic: (record: any) => `/apex/%vlocity_namespace%__drmapper?id=${record.Id}`
+            },
             matchingKey: {
                 fields: ["Name"]
             }
@@ -211,8 +236,8 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
             displayName: "Name"
         },
         salesforceUrl: {
-            'Standard Designer (Summer \'25)': (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=flexcard&id=${record.Id}`,
-            'Classic Designer': (record: any) => `/apex/%vlocity_namespace%__carddesignernew?id=${record.Id}`,
+            standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=flexcard&id=${record.Id}`,
+            classic: (record: any) => `/apex/%vlocity_namespace%__carddesignernew?id=${record.Id}`,
         },
         matchingKey: {
             fields: ["Name", "%vlocity_namespace%__Version__c", "%vlocity_namespace%__Author__c"]
@@ -225,6 +250,9 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
             sobjectType: "OmniUiCard",
             fieldList: ["Id", "Name"],
             whereCondition: "IsActive = true"
+        },
+        salesforceUrl: {
+            standard: (record: any) => `/builder_omnistudio/omnistudioBuilder.app?type=flexcard&id=${record.Id}`
         }
     },
     AttributeAssignmentRule: {

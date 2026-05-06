@@ -35,6 +35,7 @@ interface ExportDatapack {
 interface ExportContext {
     scope?: string;
     parent?: ExportDatapack;
+    embedded?: boolean;
 }
 
 interface ExportResult {
@@ -50,7 +51,7 @@ interface ExportResult {
 /**
  * Options for exporting datapacks.
  */
-type DatapackExportOptions = Omit<ExportContext, 'parent'>;
+type DatapackExportOptions = Omit<ExportContext, 'parent' | 'embedded'>;
 
 /**
  * The `DatapackExporter` class is responsible for exporting and expanding Salesforce objects into datapacks.
@@ -119,7 +120,7 @@ export class DatapackExporter {
      */
     public async exportObjectAndExpand(id: string, context?: DatapackExportOptions): Promise<DatapackExpandResult> {
         const result = await this.exportObject(id, context);
-        return this.expander.expandDatapack(result.datapack);
+        return this.expander.expandDatapack(result.datapack, context);
     }
 
     /**
@@ -165,7 +166,7 @@ export class DatapackExporter {
             return this.buildLookup(context.parent!, record.id, 'VlocityMatchingKeyObject');
         }
 
-        if (exportStack.length >= this.maxExportDepth) {
+        if (!context.embedded && exportStack.length >= this.maxExportDepth) {
             this.logger.warn(`Max export depth reached for ${matchingKey}: ${exportStack.join(' -> ')}`);
             return this.buildMatchingKeyObject(context.parent!, 'VlocityLookupMatchingKeyObject', record);
         }
@@ -279,7 +280,7 @@ export class DatapackExporter {
                 }
                 datapack.data[embeddedObject.name] = await mapAsyncParallel(
                     embeddedRecords,
-                    record => this.buildSObject(datapack, record.Id),
+                    record => this.buildEmbeddedSObject(datapack, record),
                     this.exportParallelism
                 );
             } catch (e) {
@@ -385,18 +386,55 @@ export class DatapackExporter {
     }
 
     private buildSObject(datapack: ExportDatapack, id: string) {
-        return this.buildLookup(datapack, id, 'SObject');
+        return this.buildLookup(datapack, id, 'SObject', { embedded: true });
     }
 
-    private async buildLookup(datapack: ExportDatapack, id: string, type: VlocityDatapackType = 'VlocityLookupMatchingKeyObject') {
+    private async buildEmbeddedSObject(datapack: ExportDatapack, record: Record<string, any>) {
+        const id = record.Id ?? record.id;
+        if (!id) {
+            throw new Error(`Embedded ${datapack.objectType} record is missing an Id`);
+        }
+        const sobjectPack = await this.buildDatapack(record, { scope: datapack.scope, parent: datapack, embedded: true });
+        return this.addReference(datapack, id, sobjectPack);
+    }
+
+    private async buildLookup(
+        datapack: ExportDatapack,
+        id: string,
+        type: VlocityDatapackType = 'VlocityLookupMatchingKeyObject',
+        context?: Pick<ExportContext, 'embedded'>
+    ) {
+        if (type !== 'SObject') {
+            const localReference = this.buildLocalReference(datapack, id, type);
+            if (localReference) {
+                return this.addReference(datapack, id, localReference);
+            }
+        }
+
         const data = await this.salesforce.data.lookupById(id);
         if (!data) {
             return null;
         }
         const sobjectPack = type === 'SObject'
-            ? await this.buildDatapack(data, { scope: datapack.scope, parent: datapack })
+            ? await this.buildDatapack(data, { scope: datapack.scope, parent: datapack, embedded: context?.embedded })
             : await this.buildMatchingKeyObject(datapack, type, data);
         return this.addReference(datapack, id, sobjectPack);
+    }
+
+    private buildLocalReference(datapack: ExportDatapack, id: string, type: VlocityDatapackReferenceType): VlocityDatapackReference | undefined {
+        const root = this.getDatapackRoot(datapack);
+        const sourceKey = Object.entries(root.sourceKeys).find(([, recordId]) => recordId === id)?.[0];
+        const referencedDatapack = this.datapacks[id];
+        if (!sourceKey || !referencedDatapack) {
+            return undefined;
+        }
+
+        const referenceType = type === 'VlocityLookupMatchingKeyObject' ? 'VlocityMatchingKeyObject' : type;
+        return {
+            VlocityDataPackType: referenceType,
+            VlocityRecordSObjectType: referencedDatapack.objectType,
+            [VlocityDatapackSourceKey[referenceType]]: sourceKey
+        } as VlocityDatapackReference;
     }
 
     private addReference(datapack: ExportDatapack, refId: string, ref: VlocityDatapackLookupReference): VlocityDatapackLookupReference;
