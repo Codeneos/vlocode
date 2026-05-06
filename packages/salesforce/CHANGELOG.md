@@ -4,6 +4,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
+
+### Bug Fixes
+
+* enhance error handling for EXCEEDED_ID_LIMIT in getEntityDefinition method ([8cba50a](https://github.com/Codeneos/vlocode/commit/8cba50ac50caf15f3f5063dfc8df0b9347b5639c))
+* **salesforce:** field matching case sensitivity ([c6bf17c](https://github.com/Codeneos/vlocode/commit/c6bf17c0d80131c7f1f48be1a3d84ab78ecc0a4d))
+* socket leak on 302 redriect responses (edge-case) ([e9c42c3](https://github.com/Codeneos/vlocode/commit/e9c42c37149eaca2efb2f4a9b4ca2155638720bf))
+
+### Features
+
+* add method to retrieve final package components with optional filtering ([a050dfb](https://github.com/Codeneos/vlocode/commit/a050dfb3a14575e25f77f6c3bf5953894c48555c))
+* enhance httpRequest method with retry logic for connection errors ([af79ea8](https://github.com/Codeneos/vlocode/commit/af79ea863b54818c93944b1f3085a6a87d096ce2))
+* enhance SalesforcePackageBuilder to support mixed content bundles like DigitalExperienceBundle ([#439](https://github.com/Codeneos/vlocode/issues/439)) ([bf755b1](https://github.com/Codeneos/vlocode/commit/bf755b104e42cff897a469b1c621efb4b95b2fd9))
+* implement eager flushing of pending records to optimize memory usage ([71810eb](https://github.com/Codeneos/vlocode/commit/71810ebc9b1b74a4c95fa92c6369be74737504e3))
+* **salesforce:** add namespace replace support to SalesforceService ([cfcbb33](https://github.com/Codeneos/vlocode/commit/cfcbb3370b88598e980fd0c61b0872dc66f464f6))
+* update RestClient methods to support Buffer type for request bodies ([9c37d47](https://github.com/Codeneos/vlocode/commit/9c37d475ed9b87d9f93e649147a3d43ed9df010d))
+
 ## [1.41.1](https://github.com/Codeneos/vlocode/compare/v1.41.0...v1.41.1) (2026-02-26)
 
 ### Features

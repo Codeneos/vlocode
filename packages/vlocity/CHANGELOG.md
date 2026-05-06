@@ -4,6 +4,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
+
+### Features
+
+* add new data mapper UI to edit data mappers from VS Code ([9c81874](https://github.com/Codeneos/vlocode/commit/9c81874938721d532ba45fa346278c96a543bac4))
+* add tests for DatapackExporter and DatapackExpander functionality ([6eb5a4b](https://github.com/Codeneos/vlocode/commit/6eb5a4bd5db8ca80d04591b98cc6837d4c958109))
+* refactor datapack export logic to support non omnistudio orgs ([5bcf434](https://github.com/Codeneos/vlocode/commit/5bcf434cb43c4eb82cbfb42b774dfade3a93cccf))
+
 ## [1.41.1](https://github.com/Codeneos/vlocode/compare/v1.41.0...v1.41.1) (2026-02-26)
 
 **Note:** Version bump only for package @vlocode/vlocity

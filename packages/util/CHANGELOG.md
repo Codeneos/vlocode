@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.42.0](https://github.com/Codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
+
+### Features
+
+* **util:** add object property aliasing and readonly modifiers ([e96410b](https://github.com/Codeneos/vlocode/commit/e96410bd4a8999eefdc0afa344c2fd8f4bf8ebd4))
+
+### Performance Improvements
+
+* **util:** accelerate salesforce namespace prefix removal ([cf79d5a](https://github.com/Codeneos/vlocode/commit/cf79d5aff2dd104f1422d0ff6c414470ee348873))
+* **util:** improve primitive comparison with direct char scanning ([98ebf7b](https://github.com/Codeneos/vlocode/commit/98ebf7bfab217a468aca870230e4ffbe5d2177b1))
+* **util:** optimize string utilities and format regex ([ec1cca7](https://github.com/Codeneos/vlocode/commit/ec1cca7a5424279912b7231a545cc2caaecbbeba))
+
 ## [1.41.1](https://github.com/Codeneos/vlocode/compare/v1.41.0...v1.41.1) (2026-02-26)
 
 ### Features

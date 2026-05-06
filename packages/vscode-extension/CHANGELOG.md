@@ -4,6 +4,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.42.0](https://github.com/codeneos/vlocode/compare/v1.41.2...v1.42.0) (2026-05-06)
+
+### Bug Fixes
+
+* update import paths for ApexSourceStatus and adjust TypeScript version in package files ([20bf38b](https://github.com/codeneos/vlocode/commit/20bf38b114530f675b2f496463bbe867dfb3dae6))
+
+### Features
+
+* add new data mapper UI to edit data mappers from VS Code ([9c81874](https://github.com/codeneos/vlocode/commit/9c81874938721d532ba45fa346278c96a543bac4))
+* add support for exporting data packs from OmniStudio orgs and using custom export definitions on non-vlocity orgs ([b67dbba](https://github.com/codeneos/vlocode/commit/b67dbba7d23ad7a1c1ece8f6b26d8d7ce8f6c742))
+* refactor datapack export logic to support non omnistudio orgs ([5bcf434](https://github.com/codeneos/vlocode/commit/5bcf434cb43c4eb82cbfb42b774dfade3a93cccf))
+
 ## [1.41.2](https://github.com/codeneos/vlocode/compare/v1.41.1...v1.41.2) (2026-02-26)
 
 **Note:** Version bump only for package vlocode

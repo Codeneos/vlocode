@@ -1,6 +1,6 @@
 {
     "name": "@vlocode/datamapper-editor",
-    "version": "1.41.2",
+    "version": "1.42.0",
     "private": true,
     "type": "module",
     "scripts": {
