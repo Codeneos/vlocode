@@ -1,5 +1,3 @@
-import type { QueryBinary } from "@vlocode/salesforce";
-
 interface ExpandFileDefinition {
     /**
      * When set it define the file name to which the export is written. For fields it would mean 
@@ -25,9 +23,9 @@ interface ExpandFileDefinition {
 
 /**
  * Definition of an object to export as part of a datapack, 
- * including filter conditions and related objects to include in the export.
+ * including filter conditions and embedded objects to include in the export.
  */
-export type DatapackExportRelatedObject = ExportFieldDefinition & (ObjectFilter | ObjectRelationship) | string;
+export type DatapackExportEmbeddedObject = ExportFieldDefinition & (ObjectFilter | ObjectRelationship) | string;
 
 export interface DatapackExportDefinition extends ObjectFilter {
     /**
@@ -61,11 +59,10 @@ export interface DatapackExportDefinition extends ObjectFilter {
      */
     ignoreFields?: string[];
     /**
-     * List of objects that are related to this object
-     * and who's data should be included in the export.
-     * The key is the name under which related records are exported.
+     * List of objects that should be embedded in this datapack.
+     * The key is the name under which embedded records are exported.
      */
-    relatedObjects?: Record<string, DatapackExportRelatedObject>;
+    embeddedObjects?: Record<string, DatapackExportEmbeddedObject>;
     /**
      * Optional object with specific export settings for fields in the object.
      */
@@ -97,7 +94,7 @@ export interface ExportFieldDefinition extends ExpandFileDefinition {
      */
     ignoreFields?: string[];
     /**
-     * List of fields by which to sort the exported data when exporting	as a related object.
+     * List of fields by which to sort the exported data when exporting as an embedded object.
      */
     sortFields?: string[];
 }
@@ -142,7 +139,7 @@ export interface ObjectRelationship {
      */
     relationshipName: string;
     /**
-     * Optional filter to apply to the related object data to export.
+     * Optional filter to apply to the embedded object data to export.
      */
     filter?: LookupFilter;
 }

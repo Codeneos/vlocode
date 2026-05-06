@@ -1,13 +1,10 @@
 import type { SalesforceService } from "@vlocode/salesforce";
-import type { DatapacksExpandDefinition } from "../datapacksExpandDefinition";
 import type { DatapackInfoService } from "@vlocode/vlocity";
 import { MigrationDataMapperFields, type MigrationDataMapperItemRecord } from "./migrationDataMapper.types";
-import type { DatapackConfiguration } from "@vlocode/vlocity/src/datapack/datapackConfigAccess";
-import { groupBy, mapBy, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
+import { groupBy, removeNamespacePrefix, sortBy, stringEqualsIgnoreCase, substringAfter } from "@vlocode/util";
 import type { DatapackExportDefinition, ExportFieldDefinition, LookupFilter, ObjectFilter } from "../exportDefinitions";
 import { LogManager } from "@vlocode/core";
 import type { DatapacksExpandDefinitionAccessor } from "../expandDefinitionAccessor";
-import { group } from "console";
 
 export class MigrationDataMapperConverter {
 
@@ -61,9 +58,9 @@ export class MigrationDataMapperConverter {
             record => record.interfaceObjectLookupOrder
         );
 
-        const relatedObjectGroups = Object.values(recordsByLookupOrder).map(group => this.convertLookupGroup(group));
-        //const relatedObjectsByOutputNode = mapBy(relatedObjects.slice(1), group => group.outputNode);
-        const primaryObject = relatedObjectGroups[0];
+        const embeddedObjectGroups = Object.values(recordsByLookupOrder).map(group => this.convertLookupGroup(group));
+        //const embeddedObjectsByOutputNode = mapBy(embeddedObjects.slice(1), group => group.outputNode);
+        const primaryObject = embeddedObjectGroups[0];
         const primaryObjectType = primaryObject.objectType!;
         const fields: Record<string, ExportFieldDefinition> = {};
 
@@ -90,10 +87,10 @@ export class MigrationDataMapperConverter {
             ignoredFields.set(removeNamespacePrefix(field).toLowerCase(), field);
         }   
 
-        // Prep related object definitions
-        const releatedObjects: Record<string, ObjectFilter> = {};
-        for (const group of relatedObjectGroups.slice(1)) {
-            const relatedObjFilter: ObjectFilter = {
+        // Prep embedded object definitions
+        const embeddedObjects: Record<string, ObjectFilter> = {};
+        for (const group of embeddedObjectGroups.slice(1)) {
+            const embeddedObjectFilter: ObjectFilter = {
                 objectType: group.objectType,
                 filter: group.filters.length === 1 ? group.filters[0] : group.filters,
                 limit: group.limit,
@@ -116,7 +113,7 @@ export class MigrationDataMapperConverter {
                 fields[outputNode] = { ...fields[outputNode], sortFields };
             }
 
-            releatedObjects[outputNode] = relatedObjFilter;
+            embeddedObjects[outputNode] = embeddedObjectFilter;
         }
 
         const exportDef: DatapackExportDefinition = {
@@ -125,7 +122,7 @@ export class MigrationDataMapperConverter {
             filter: primaryObject.filters,
             matchingKeyFields: await sourceKeyFields,
             ignoreFields: [...ignoredFields.values()],
-            relatedObjects: releatedObjects,
+            embeddedObjects,
             fields,
         };
 

@@ -48,11 +48,18 @@ export class DatapackConfigAccess {
     @cache()
     private async init() {
         this.logger.verbose('Loading DataPack configuration from Org');
-        const configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>(
-            this.datapackConfigObject,
-            undefined,
-            'all'
-        );
+        let configurationRecords: DatapackConfigurationRecord[];
+        try {
+            configurationRecords = await this.salesforce.lookup<DatapackConfigurationRecord>(
+                this.datapackConfigObject,
+                undefined,
+                'all'
+            );
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Unable to load DataPack configuration from Salesforce; using local definitions only: ${message}`);
+            return new Map<string, DatapackConfiguration>();
+        }
 
         if (configurationRecords.length === 0) {
             this.logger.error(`No DataPack configuration found in Salesforce`);
@@ -64,21 +71,23 @@ export class DatapackConfigAccess {
         // Split between standard and custom configuration, custom is preferred over standard
         const configs = new Map<string, DatapackConfiguration>();
         for (const record of configurationRecords) {
-            const isStandard = record.NamespacePrefix != null;
+            const isStandard = record.namespacePrefix != null;
 
             const name = record.developerName.toLowerCase();
             const existing = configs.get(name);
             if (existing) {
                 if (isStandard) {
-                    this.logger.verbose(`Skipping standard DataPack configuration ${record.DeveloperName} because a custom configuration with the same name exists`);
+                    this.logger.verbose(`Skipping standard DataPack configuration ${record.developerName} because a custom configuration with the same name exists`);
                     continue;
                 } 
-                this.logger.verbose(`Overriding standard DataPack configuration ${record.DeveloperName} with custom configuration`);
+                this.logger.verbose(`Overriding standard DataPack configuration ${record.developerName} with custom configuration`);
             }
 
-            record.name = record.developerName;
-            record.isStandard = isStandard;
-            configs.set(name, record as any);
+            configs.set(name, {
+                ...record,
+                name: record.developerName,
+                isStandard
+            });
         }
         
         return configs;

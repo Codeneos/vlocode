@@ -1,7 +1,7 @@
 import { injectable } from "@vlocode/core";
 import { merge } from "@vlocode/util";
 import { ObjectRef } from "./datapackExporter";
-import { DatapackExportDefinition, ExportFieldDefinition, DatapackExportRelatedObject } from "./exportDefinitions";
+import { DatapackExportDefinition, ExportFieldDefinition, DatapackExportEmbeddedObject } from "./exportDefinitions";
 
 /**
  * Class that stores and manages the configuration for exporting and expanding datapacks.
@@ -150,11 +150,11 @@ export class DatapackExportDefinitionStore {
 
     public getFieldConfig(item: ObjectRef, field: string, configKey?: keyof ExportFieldDefinition) {
         const fieldConfig = this.get(item, 'fields')?.[field];
-        const relConfig = this.get(item, 'relatedObjects')?.[field];
+        const embeddedConfig = this.get(item, 'embeddedObjects')?.[field];
         if (configKey) {
-            return fieldConfig?.[configKey] ?? relConfig?.[configKey];
+            return fieldConfig?.[configKey] ?? embeddedConfig?.[configKey];
         }
-        return fieldConfig ?? relConfig;
+        return fieldConfig ?? embeddedConfig;
     }
 
     public getFieldsWith<K extends keyof ExportFieldDefinition>(item: ObjectRef, setting: K)
@@ -172,10 +172,10 @@ export class DatapackExportDefinitionStore {
             : [];
     }
 
-    public getRelatedObjects(item: ObjectRef): Array<Exclude<{ name: string } & DatapackExportRelatedObject, string>> {
-        const relatedObjects = this.get(item, 'relatedObjects');
-        if (relatedObjects) {
-            return Object.entries(relatedObjects).map(([key, value]) => {
+    public getEmbeddedObjects(item: ObjectRef): Array<Exclude<{ name: string } & DatapackExportEmbeddedObject, string>> {
+        const embeddedObjects = this.get(item, 'embeddedObjects');
+        if (embeddedObjects) {
+            return Object.entries(embeddedObjects).map(([key, value]) => {
                 if (typeof value === 'string') {
                     return { name: key, relationshipName: value };
                 }

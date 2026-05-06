@@ -25,7 +25,7 @@ export class DeployDatapackCommand extends DatapackCommand {
     private static readonly savingDocuments = new Map<string, Set<string>>();
 
     private get strategy(): VlocityDeploy {
-        if (this.vlocode.config.deploymentMode === 'direct') {
+        if (this.vlocode.config.deploymentMode === 'direct' || !this.vlocode.isVlocityBuildToolsAvailable) {
             return container.get(VlocodeDirectDeployment);
         }
         return container.get(VlocityToolsDeployment);

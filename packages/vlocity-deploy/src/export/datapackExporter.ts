@@ -92,7 +92,7 @@ export class DatapackExporter {
     public maxExportDepth = 10;
 
     /**
-     * Number of parallel exports to run when exporting related objects. Set to 1 to disable parallelism and run all exports sequentially.
+     * Number of parallel exports to run when exporting embedded objects. Set to 1 to disable parallelism and run all exports sequentially.
      */
     public exportParallelism = 5;
 
@@ -125,7 +125,7 @@ export class DatapackExporter {
     /**
      * Generate a datapack export for an object by the object id. Returns the datapack object in conslidated form without expanding.
      * Als returns the parent keys of the datapack including the id's of the parent objects to allow
-     * exporting related objects if needed by calling {@link exportObject} with the parent object id.
+     * exporting embedded objects if needed by calling {@link exportObject} with the parent object id.
      * @param id Id of the object to export
      */
     public async exportObject(id: string, context?: DatapackExportOptions): Promise<ExportResult> {
@@ -199,7 +199,7 @@ export class DatapackExporter {
         this.datapacks[record.id] = datapack;
 
         await this.exportObjectFields(datapack, record);
-        await this.exportRelatedObjects(datapack);
+        await this.exportEmbeddedObjects(datapack);
         this.updateForeignKeys(datapack);
         this.processFieldValues(datapack);
 
@@ -269,46 +269,46 @@ export class DatapackExporter {
         }
     }
 
-    private async exportRelatedObjects(datapack: ExportDatapack) {
-        // Export related objects§
-        for (const relatedObject of this.definitions.getRelatedObjects(datapack)) {
+    private async exportEmbeddedObjects(datapack: ExportDatapack) {
+        // Export embedded objects
+        for (const embeddedObject of this.definitions.getEmbeddedObjects(datapack)) {
             try {
-                const relatedRecords = await this.lookupRelatedRecords(datapack, relatedObject);
-                if (relatedRecords.length === 0) {
+                const embeddedRecords = await this.lookupEmbeddedRecords(datapack, embeddedObject);
+                if (embeddedRecords.length === 0) {
                     continue;
                 }
-                datapack.data[relatedObject.name] = await mapAsyncParallel(
-                    relatedRecords,
+                datapack.data[embeddedObject.name] = await mapAsyncParallel(
+                    embeddedRecords,
                     record => this.buildSObject(datapack, record.Id),
                     this.exportParallelism
                 );
             } catch (e) {
-                this.logger.error(`Error exporting related object for ${datapack.objectType}:`, e);
+                this.logger.error(`Error exporting embedded object for ${datapack.objectType}:`, e);
             }
-        };
+        }
     }
 
-    private async lookupRelatedRecords(datapack: ExportDatapack, relatedObject: ObjectFilter | ObjectRelationship) {
-        if ('relationshipName' in relatedObject) {
-            relatedObject = this.getObjectFilterFromRelationship(datapack, relatedObject);
+    private async lookupEmbeddedRecords(datapack: ExportDatapack, embeddedObject: ObjectFilter | ObjectRelationship) {
+        if ('relationshipName' in embeddedObject) {
+            embeddedObject = this.getObjectFilterFromRelationship(datapack, embeddedObject);
         }
 
-        const filter = this.buildLookupFilter(relatedObject.filter, datapack);
+        const filter = this.buildLookupFilter(embeddedObject.filter, datapack);
         if (Object.keys(filter).length === 0) {
-            throw new Error(`Filter evaluated to empty object for related object ${relatedObject.objectType} on ${datapack.objectType}`);
+            throw new Error(`Filter evaluated to empty object for embedded object ${embeddedObject.objectType} on ${datapack.objectType}`);
         }
 
-        this.logger.verbose(`Lookup ${relatedObject.objectType} (${datapack.objectType}) using filter:`, filter);
-        return this.salesforce.data.lookup(relatedObject.objectType, filter, undefined, relatedObject.limit);
+        this.logger.verbose(`Lookup ${embeddedObject.objectType} (${datapack.objectType}) using filter:`, filter);
+        return this.salesforce.data.lookup(embeddedObject.objectType, filter, undefined, embeddedObject.limit);
     }
 
-    private getObjectFilterFromRelationship(datapack: ExportDatapack, relatedObject: ObjectRelationship): ObjectFilter {
-        const relationship = datapack.schema.childRelationships.find(r => r.relationshipName === relatedObject.relationshipName);
+    private getObjectFilterFromRelationship(datapack: ExportDatapack, embeddedObject: ObjectRelationship): ObjectFilter {
+        const relationship = datapack.schema.childRelationships.find(r => r.relationshipName === embeddedObject.relationshipName);
         if (!relationship) {
-            throw new Error(`Relationship ${relatedObject.relationshipName} not found on ${datapack.objectType}`);
+            throw new Error(`Relationship ${embeddedObject.relationshipName} not found on ${datapack.objectType}`);
         }
 
-        let filter = relatedObject.filter;
+        let filter = embeddedObject.filter;
         if (typeof filter === 'string' && filter.length > 0) {
             filter = `${filter} AND ${relationship.field} = '${datapack.id}'`;
         } else if (typeof filter === 'object') {
@@ -318,7 +318,7 @@ export class DatapackExporter {
             };
         }
 
-        return { ...relatedObject, objectType: relationship.childSObject, filter }
+        return { ...embeddedObject, objectType: relationship.childSObject, filter }
     }
 
     private processFieldValues(datapack: ExportDatapack, options?: { recursive?: boolean }) {
@@ -519,6 +519,8 @@ export class DatapackExporter {
                 value: typeof value.value === 'string' ? this.evalFilterValueExp(value.value, datapack) : value.value
             }
         }
+
+        return value;
     }
 
     private evalFilterValueExp(stringFormat: string, datapack: ExportDatapack) {
@@ -532,7 +534,7 @@ export class DatapackExporter {
         });
     }
     
-    // relatedObjects:
+    // embeddedObjects:
     //     vlocity_cmt__ObjectFieldAttribute__c:
     //     objectType: vlocity_cmt__ObjectFieldAttribute__c
     //     filter:
@@ -573,7 +575,7 @@ export class DatapackExporter {
             const field = describe.fields.find(f => f.name === fieldName)!;
 
             if (field.referenceTo?.length && value) {
-                matchingKeyObject[field.name] = this.buildLookup(datapack, value);
+                matchingKeyObject[field.name] = await this.buildLookup(datapack, value);
             } else {
                 matchingKeyObject[fieldName] = value;
             }

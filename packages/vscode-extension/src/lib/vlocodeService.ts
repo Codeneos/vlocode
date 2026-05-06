@@ -58,9 +58,13 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
     private _datapackService?: VlocityDatapackService;
     public get datapackService(): VlocityDatapackService {
         if (!this._datapackService) {
-            throw new Error('Industries or Omnistudio is not found on the target org; datapack services are not available');
+            throw new Error('Vlocode datapack services are not initialized');
         }
         return this._datapackService;
+    }
+
+    public get isVlocityBuildToolsAvailable(): boolean {
+        return this.isVlocityInstalled === true;
     }
 
     private _salesforceService?: SalesforceService;
@@ -144,13 +148,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 await this.nsService.initialize(this._salesforceService);
                 this.isOmnistudioInstalled = /omnistudio/ig.test(this.nsService.getNamespace() ?? '');
                 this.isVlocityInstalled = /vlocity/ig.test(this.nsService.getNamespace() ?? '');
+                this._datapackService = container.get(VlocityDatapackService);
                 if (this.isVlocityInstalled) {
                     this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
-                    this._datapackService = await container.get(VlocityDatapackService).initialize();
+                    this._datapackService = await this._datapackService.initialize();
                     await container.get(DatapackMatchingKeyService).initialize();
                 } else {
-                    vscode.window.showWarningMessage('Vlocity managed package not found on the target org; datapack services will not be available');
-                    this.logger.warn('Salesforce Industries Managed package not found on the target org; datapack services will not be available');
+                    vscode.window.showWarningMessage('Vlocity managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
+                    this.logger.warn('Salesforce Industries Managed package not found on the target org; compatibility deployment mode is not available. Direct datapack deployment remains available.');
                 }
             }
             this.updateExtensionStatus();
