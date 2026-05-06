@@ -1,31 +1,23 @@
 import * as vscode from 'vscode';
 import * as constants from '../constants';
 import { LogManager, injectable, container } from '@vlocode/core';
-import { DatapackInfoService, getDatapackTypeDefinition, DatapackTypeDefinition } from '@vlocode/vlocity';
-import { groupBy, normalizeSalesforceName, clearCache, lazy, pluralize, getErrorMessage } from '@vlocode/util';
+import { DatapackTypeDefinition } from '@vlocode/vlocity';
+import { groupBy, lazy, pluralize, getErrorMessage } from '@vlocode/util';
 
-import { DescribeGlobalSObjectResult } from 'jsforce';
 import { TreeItemCollapsibleState } from 'vscode';
-import VlocityDatapackService, { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
+import { ObjectEntry } from '../lib/vlocity/vlocityDatapackService';
 import BaseDataProvider from './baseDataProvider';
-import { QueryBuilder, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
+import { QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
 import { randomUUID } from 'crypto';
+import { DatapackDefinitionRegistry, DatapackDefinitionRoot } from '../lib/vlocity/datapackDefinitionRegistry';
 
 @injectable()
 export default class DatapackDataProvider extends BaseDataProvider<DatapackNode> {
 
     private logger = lazy(() => LogManager.get(DatapackDataProvider));
 
-    private get datapackInfoService(): DatapackInfoService {
-        return container.get(DatapackInfoService);
-    }
-
-    private get datapackService() : VlocityDatapackService {
-        return this.vlocode.datapackService;
-    }
-
-    private get salesforceService() : SalesforceService {
-        return this.vlocode.salesforceService;
+    private get definitionRegistry(): DatapackDefinitionRegistry {
+        return container.get(DatapackDefinitionRegistry);
     }
 
     protected initialize() {
@@ -42,7 +34,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
                     const record = node.records.slice(-1)[0];
                     return record && {
                         id: record.Id,
-                        datapackType: node.datapackDefinition.datapackType,
+                        datapackType: node.datapackDefinition.exportDefinition ?? node.datapackDefinition.datapackType,
                         sobjectType: record.attributes.type
                     } as ObjectEntry;
                 }
@@ -50,17 +42,13 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
             }).filter(node => node !== undefined);
 
             return this.executeCommand(constants.VlocodeCommand.exportDatapack, ...exportableNodes);
-        } else if (node.nodeType == DatapackNodeType.Object || node.nodeType == DatapackNodeType.SObjectRecord) {
+        } else if (node.nodeType == DatapackNodeType.Object) {
             return this.executeCommand(constants.VlocodeCommand.exportDatapack, node);
-        } else if (node.nodeType == DatapackNodeType.SObjectType && node instanceof DatapackSObjectTypeNode) {
-            const children = await this.vlocode.withStatusBarProgress('Loading exportable SObjects...', () => this.getExportableSObjectRecords(node.sobjectType));
-            return this.executeCommand(constants.VlocodeCommand.exportDatapack, ...children);
         }
     }
 
     private onRefresh(): void {
-        clearCache(this.datapackInfoService);
-        clearCache(this.vlocode.salesforceService.schema);
+        this.definitionRegistry.clearCaches();
         super.refresh();
     }
 
@@ -95,7 +83,7 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         const nodeSorter = (a: DatapackNode, b: DatapackNode) => a.getItemLabel().localeCompare(b.getItemLabel());
         try {
             const nodes = await this.getNodes(node);
-            return nodes.sort(nodeSorter);
+            return node ? nodes.sort(nodeSorter) : nodes;
         } catch (err) {
             return [ new DatapackErrorNode(getErrorMessage(err)) ];
         }
@@ -103,28 +91,22 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
     private async getNodes(node?: DatapackNode): Promise<DatapackNode[]> {
         if (!node) {
-            return [
-                new DatapackRootNode('Datapacks', 'Vlocity datapacks', TreeItemCollapsibleState.Expanded),
-                new DatapackRootNode('SObjects', 'Generic SObjects', TreeItemCollapsibleState.Collapsed)
-            ];
-        }
-
-        if (node instanceof DatapackRootNode) {
-            if (node.label === 'Datapacks') {
-                const datapacks = await this.datapackInfoService.getDatapackDefinitions();
-                return datapacks.map(info => new DatapackCategoryNode(info));
-            } else if (node.label === 'SObjects') {
-                return this.getExportableSObjectTypes();
-            }
+            return this.getDatapackRootNodes();
+        } else if (node instanceof DatapackDefinitionRootNode) {
+            return node.definitions.map(info => new DatapackCategoryNode(node.config.id, info));
         } else if (node instanceof DatapackCategoryNode) {
             return this.expandCategoryNode(node);
         } else if (node instanceof DatapackObjectGroupNode) {
             return this.createDatapackObjectNodes(node.records, node.datapackDefinition);
-        } else if (node instanceof DatapackSObjectTypeNode) {
-            return this.getExportableSObjectRecords(node.sobjectType);
         }
 
         throw new Error(`Specified node type is neither a Category or Group node: ${node.getItemLabel()} (${node.nodeType})`);
+    }
+
+    private async getDatapackRootNodes(): Promise<DatapackNode[]> {
+        const rootNodes = (await this.definitionRegistry.getExplorerRoots())
+            .map(root => new DatapackDefinitionRootNode(root));
+        return rootNodes.length ? rootNodes : [ new DatapackTextNode('No datapack definitions available') ];
     }
 
     private async expandCategoryNode(node: DatapackCategoryNode) {
@@ -136,9 +118,8 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
         }
 
         // group results?
-        const typeDefinition = getDatapackTypeDefinition(node)
-        if (typeDefinition?.grouping) {
-            return this.createDatapackGroupNodes(records, typeDefinition);
+        if (node.datapackDefinition.grouping) {
+            return this.createDatapackGroupNodes(records, node.datapackDefinition);
         }
         return this.createDatapackObjectNodes(records, node.datapackDefinition);
     }
@@ -172,31 +153,6 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
     // }
 
 
-    private async getExportableSObjectTypes() {
-        const customObjects = await this.vlocode.salesforceService.schema.describeSObjects();
-        const datapacks = await this.datapackInfoService.getDatapackDefinitions();
-        const hasDatapack = (sobject: string) => datapacks.some(dp => normalizeSalesforceName(dp.source.sobjectType) === normalizeSalesforceName(sobject));
-        const isExportable = (sobject: DescribeGlobalSObjectResult) => sobject.retrieveable && sobject.updateable && sobject.createable && !sobject.deprecatedAndHidden;
-        const nonDatapackObjects = customObjects.filter(record => isExportable(record) && !hasDatapack(record.name));
-        return nonDatapackObjects.map(record => new DatapackSObjectTypeNode(record.name));
-    }
-
-    private async getExportableSObjectRecords(sobjectType: string) {
-        // const nameFields = [ 'Name', 'FullName', 'DeveloperName' ];
-        const objectInfo = await this.salesforceService.schema.describeSObject(sobjectType);
-        const nameField = objectInfo.fields.find(field => field.nameField)?.name ?? 'Id';
-        const records = await this.salesforceService.lookup<SObjectRecord>(sobjectType, undefined, [ nameField ], 2000);
-        return this.createDatapackObjectNodes(records, {
-            typeLabel: objectInfo.label,
-            datapackType: 'SObject',
-            source: {
-                sobjectType: sobjectType,
-                fieldList: [ 'Id', nameField ]
-            },
-            displayName: nameField,
-        });
-    }
-
     private createDatapackGroupNodes(records: SObjectRecord[], datapackType: DatapackTypeDefinition) : DatapackNode[] {
         const grouping = datapackType.grouping;
         if (!grouping) {
@@ -217,12 +173,10 @@ export default class DatapackDataProvider extends BaseDataProvider<DatapackNode>
 
 enum DatapackNodeType {
     Text = 'text',
-    Root = 'root',
+    DefinitionRoot = 'definitionRoot',
     Category = 'category',
     Object = 'object',
     ObjectGroup = 'objectGroup',
-    SObjectType = 'sobjectType',
-    SObjectRecord = 'sobject'
 }
 
 interface TreeNode {
@@ -259,18 +213,18 @@ class DatapackTextNode extends DatapackNode {
     }
 }
 
-class DatapackRootNode extends DatapackNode {
-    constructor(
-        public readonly label: string,
-        private readonly desc: string,
-        collapsibleState: TreeItemCollapsibleState,
-        icon: { light: string; dark: string } | string | undefined = undefined) {
-        super(DatapackNodeType.Root, collapsibleState, icon);
+class DatapackDefinitionRootNode extends DatapackNode {
+    constructor(public readonly config: DatapackDefinitionRoot) {
+        super(DatapackNodeType.DefinitionRoot, TreeItemCollapsibleState.Collapsed);
     }
 
-    public getId = () => `root:${this.getItemLabel()}`;
-    public getItemLabel = () => this.label;
-    public getItemDescription = () => this.desc;
+    public get definitions() {
+        return this.config.definitions;
+    }
+
+    public getId = () => `datapackRoot:${this.config.id}`;
+    public getItemLabel = () => this.config.label;
+    public getItemDescription = () => this.config.description;
 }
 
 class DatapackErrorNode extends DatapackTextNode {
@@ -283,7 +237,7 @@ class DatapackErrorNode extends DatapackTextNode {
 }
 
 class DatapackCategoryNode extends DatapackNode {
-    constructor(public datapackDefinition: DatapackTypeDefinition) {
+    constructor(private readonly rootId: string, public datapackDefinition: DatapackTypeDefinition) {
         super(DatapackNodeType.Category, true);
     }
 
@@ -295,9 +249,14 @@ class DatapackCategoryNode extends DatapackNode {
         return this.datapackDefinition.datapackType;
     }
 
-    public getId = () => `${this.nodeType}:${this.datapackType}:${this.sobjectType}`;
+    public get exportDefinition() {
+        return this.datapackDefinition.exportDefinition ?? this.datapackType;
+    }
+
+    public getId = () => `${this.nodeType}:${this.rootId}:${this.datapackType}:${this.sobjectType}`;
     public getItemLabel = () => this.datapackDefinition.typeLabel;
-    public getItemTooltip = () => `View datapacks of type ${this.datapackType}`;
+    public getItemDescription = () => this.exportDefinition !== this.getItemLabel() ? this.exportDefinition : this.sobjectType;
+    public getItemTooltip = () => `View datapacks of type ${this.exportDefinition} (${this.sobjectType})`;
 }
 
 class DatapackObjectGroupNode extends DatapackNode {
@@ -322,15 +281,6 @@ class DatapackObjectGroupNode extends DatapackNode {
         }
         return this.datapackDefinition.grouping?.displayName(this.records[0]);
     }
-}
-
-class DatapackSObjectTypeNode extends DatapackNode {
-    constructor(public sobjectType: string) {
-        super(DatapackNodeType.SObjectType, true);
-    }
-
-    public getId = () => `SObject_${this.sobjectType}`;
-    public getItemLabel = () => this.sobjectType;
 }
 
 class DatapackObjectNode extends DatapackNode implements ObjectEntry {
@@ -367,7 +317,7 @@ class DatapackObjectNode extends DatapackNode implements ObjectEntry {
     }
 
     public get datapackType(): string {
-        return this.datapackDefinition.datapackType;
+        return this.datapackDefinition.exportDefinition ?? this.datapackDefinition.datapackType;
     }
 
     public get id(): string {

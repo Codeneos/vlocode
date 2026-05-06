@@ -8,6 +8,8 @@ import { QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
 import { DatapackResultCollection } from '../../lib/vlocity/vlocityDatapackService';
 import { DatapackTypeDefinitions, DatapackTypeDefinition, ObjectEntry } from '@vlocode/vlocity';
+import { container } from '@vlocode/core';
+import { VlocodeDirectExport } from '../../lib/vlocity/vlocodeDirectExport';
 @vscodeCommand(constants.VlocodeCommand.exportDatapack, { focusLog: true  })
 export default class ExportDatapackCommand extends DatapackCommand {
 
@@ -207,10 +209,23 @@ export default class ExportDatapackCommand extends DatapackCommand {
             location: vscode.ProgressLocation.Notification,
             cancellable: true
         }, async (progress, token) => {
-            const results = await this.datapackService.export(entries, exportPath, dependencyExportDepth, token);
+            const results = await this.exportDatapacks(entries, exportPath, dependencyExportDepth, progress, token);
             this.showResultMessage(results);
         });
 
+    }
+
+    protected async exportDatapacks(
+        entries: ObjectEntry[],
+        exportPath: string,
+        dependencyExportDepth: number,
+        progress?: vscode.Progress<{ message?: string; progress?: number; total?: number }>,
+        token?: vscode.CancellationToken
+    ) {
+        if (!this.vlocode.isVlocityBuildToolsAvailable) {
+            return container.get(VlocodeDirectExport).export(entries, exportPath, dependencyExportDepth, progress, token);
+        }
+        return this.datapackService.export(entries, exportPath, dependencyExportDepth, token);
     }
 
     protected showResultMessage(results : DatapackResultCollection) {

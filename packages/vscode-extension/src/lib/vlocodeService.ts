@@ -67,6 +67,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this.isVlocityInstalled === true;
     }
 
+    public get hasIndustriesDatapacks(): boolean {
+        return this.isVlocityInstalled === true;
+    }
+
+    public get hasOmniStudioDatapacks(): boolean {
+        return this.isOmnistudioInstalled === true || this.isVlocityInstalled === true;
+    }
+
     private _salesforceService?: SalesforceService;
     public get salesforceService(): SalesforceService {
         if (!this._salesforceService) {
@@ -146,8 +154,9 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this._salesforceService = container.get(SalesforceService);                
                 this.showStatus('$(sync~spin) Initializing SF services...');
                 await this.nsService.initialize(this._salesforceService);
-                this.isOmnistudioInstalled = /omnistudio/ig.test(this.nsService.getNamespace() ?? '');
-                this.isVlocityInstalled = /vlocity/ig.test(this.nsService.getNamespace() ?? '');
+                const namespace = this.nsService.getNamespace() ?? '';
+                this.isVlocityInstalled = /vlocity/ig.test(namespace);
+                this.isOmnistudioInstalled = this.isVlocityInstalled || /omnistudio/ig.test(namespace) || await this.hasAccessibleSObject([ 'OmniProcess', 'OmniDataTransform' ]);
                 this._datapackService = container.get(VlocityDatapackService);
                 if (this.isVlocityInstalled) {
                     this.showStatus('$(sync~spin) Initializing SF-Industries Services...');
@@ -179,6 +188,19 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
                 this.showStatus('$(alert) Could not connect to Salesforce', VlocodeCommand.selectOrg);
             }
         }
+    }
+
+    private async hasAccessibleSObject(sobjectTypes: readonly string[]) {
+        for (const sobjectType of sobjectTypes) {
+            try {
+                if (await this._salesforceService?.schema.describeSObject(sobjectType, false)) {
+                    return true;
+                }
+            } catch {
+                // Ignore describe failures during capability detection; the explorer filters inaccessible definitions separately.
+            }
+        }
+        return false;
     }
 
     private resetConnection(): void {

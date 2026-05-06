@@ -35,7 +35,7 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
             const results = await mapAsync(Object.entries(datapacksByProject),
                 async ([projectFolder, datapacks]) => {
                     const exportEntries = await this.getSalesforceRecords(datapacks, { showRecordSelection: flatDatapackList.length > 1 });
-                    return this.datapackService.export(exportEntries.filter(e => e.id), projectFolder, dependencyExportDepth, cancelToken);
+                    return this.exportDatapacks(exportEntries.filter(e => e.id), projectFolder, dependencyExportDepth, progress, cancelToken);
                 }
             );
             // report UI progress back
@@ -43,4 +43,3 @@ export default class RefreshDatapackCommand extends ExportDatapackCommand {
         });
     }
 }
-

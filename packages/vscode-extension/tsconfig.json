@@ -1,16 +1,15 @@
 {
     "extends": "../../tsconfig",
     "compilerOptions": {
-        "module": "es2022",
+        "module": "preserve",
         "target": "es2022",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "outDir": "lib",
         "sourceMap": true,
         "declaration": false,
         "allowArbitraryExtensions": true,
         "allowImportingTsExtensions": true,
         "noEmit": true,
-        "baseUrl": "src",
         "types": ["node", "jest"],
         "typeRoots": [
             "./types",
