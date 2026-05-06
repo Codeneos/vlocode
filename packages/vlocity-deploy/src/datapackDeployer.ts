@@ -35,8 +35,8 @@ export type DatapackFilter =
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class DatapackDeployer {
 
-    @inject() private readonly container: Container;
-    @inject() private readonly specRegistry: DatapackDeploymentSpecRegistry;
+    @inject(Container) private readonly container: Container;
+    @inject(DatapackDeploymentSpecRegistry) private readonly specRegistry: DatapackDeploymentSpecRegistry;
 
     /**
      * List of Vlocity global identifier field names that need verification after deployment.
