@@ -97,10 +97,13 @@ export class DatapackExpander {
             const fileNameFormat = this.definitions.getFileName(itemRef, field);
             let value = datapack[field];
 
-            if (fileNameFormat) {
+            if (fileNameFormat && value !== null) {
                 const defaultExt = 'json';
                 if (this.expandFieldArray({ ...itemRef, field }, value)) {
                     value = value.map(item => {
+                        if (item === null) {
+                            return null;
+                        }
                         const fileName = this.evalPathFormat(fileNameFormat, { context: item ?? datapack, defaultExt });
                         return files.addFile(fileName, item);
                     });
@@ -149,7 +152,7 @@ export class DatapackExpander {
     }
 
     private expandFieldArray(ref: FieldRef, value: unknown): value is unknown[] {
-        if (Array.isArray(value)) {
+        if (!Array.isArray(value)) {
             return false;
         }
         const shouldExpand = this.definitions.getFieldConfig(ref, ref.field, 'expandArray');
