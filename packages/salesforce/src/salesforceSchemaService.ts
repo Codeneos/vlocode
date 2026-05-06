@@ -56,8 +56,8 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         (field, name) => !!field.relationshipName && stringEqualsIgnoreCase(removeNamespacePrefix(field.relationshipName).replace('__r', ''), name),
     ];
 
-    @inject() private readonly logger: Logger;
-    @inject() private readonly nsService: NamespaceService;
+    @inject(Logger) private readonly logger: Logger;
+    @inject(NamespaceService) private readonly nsService: NamespaceService;
     @inject(() => CompositeSchemaAccess) private readonly schemaAccess!: SchemaAccessProvider;
 
     constructor(

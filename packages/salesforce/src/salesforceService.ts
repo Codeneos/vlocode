@@ -35,10 +35,10 @@ interface MetadataInfo { type: string; fullName: string; metadata: any; name: st
 @injectable({ lifecycle: LifecyclePolicy.singleton })
 export class SalesforceService implements SalesforceConnectionProvider {
 
-    @inject() public readonly schema: SalesforceSchemaService;
-    @inject() public readonly deploy: SalesforceDeployService;
-    @inject() public readonly logs: DeveloperLogs;
-    @inject() public readonly profiles: SalesforceProfileService;
+    @inject(SalesforceSchemaService) public readonly schema: SalesforceSchemaService;
+    @inject(SalesforceDeployService) public readonly deploy: SalesforceDeployService;
+    @inject(DeveloperLogs) public readonly logs: DeveloperLogs;
+    @inject(SalesforceProfileService) public readonly profiles: SalesforceProfileService;
 
     private _data?: SalesforceDataService;
     public get data() {

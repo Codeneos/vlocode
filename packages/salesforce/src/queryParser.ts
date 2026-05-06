@@ -75,7 +75,7 @@ export interface SalesforceQueryData {
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class QueryFormatter {
 
-    @inject() private readonly namespace: NamespaceService;
+    @inject(NamespaceService) private readonly namespace: NamespaceService;
 
     /**
      * Format structured query data into a SOQL query that can be executed against Salesforce.

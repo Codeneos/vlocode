@@ -50,8 +50,8 @@ export class QueryService {
     private queryCacheEnabled = true;
     private queryCacheDefault = false;
 
-    @inject() private readonly logger: Logger;
-    @inject() private readonly nsService: NamespaceService;
+    @inject(Logger) private readonly logger: Logger;
+    @inject(NamespaceService) private readonly nsService: NamespaceService;
 
     constructor(
         @inject(() => SalesforceConnectionProvider) private readonly connectionProvider: SalesforceConnectionProvider, 
