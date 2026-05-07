@@ -15,32 +15,17 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": [
-                {
-                    "fileLocation": [
-                        "relative",
-                        "${workspaceFolder}/packages/vscode-extension"
-                    ],
-                    "owner": "tsdown",
-                    "pattern": [
-                        {
-                            "regexp": "(Warning|Error|Info): (.*)$",
-                            "message": 2,
-                            "severity": 1
-                        },
-                        {
-                            "regexp": "^\\s*╭─\\[\\s*([^:]+):(\\d+):(\\d+)\\s*\\]",
-                            "file": 1,
-                            "line": 2,
-                            "column": 3
-                        }
-                    ],
-                    "background": {
-                        "beginsPattern": "Build start$",
-                        "endsPattern": "((Build complete)|Rebuilt) in \\d+ms.$"
-                    }
+            "problemMatcher": {
+                "owner": "build-extension",
+                "pattern": {
+                    "regexp": "^$"
                 },
-            ]
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*Build start.*",
+                    "endsPattern": ".*((Build complete)|(Rebuilt)) in \\d+ms.*"
+                }
+            }
         },
         {
             "type": "shell",

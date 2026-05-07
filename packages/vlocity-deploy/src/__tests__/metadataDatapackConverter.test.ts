@@ -1,7 +1,7 @@
 import 'jest';
 
 import { XML } from '@vlocode/util';
-import { VlocityDatapack } from '@vlocode/vlocity';
+import { DataMapperExecutor, VlocityDatapack } from '@vlocode/vlocity';
 import { MetadataDatapackConverter } from '../convert';
 
 describe('metadataDatapackConverter', () => {
@@ -69,6 +69,30 @@ describe('metadataDatapackConverter', () => {
         expect(converted.OmniDataTransformItem).toHaveLength(1);
         expect(converted.OmniDataTransformItem[0].InputFieldName).toBe('Account:Name');
         expect(converted.OmniDataTransformItem[0].OutputFieldName).toBe('account:name');
+    });
+
+    it('should produce DataMapper XML conversions that can be executed', async () => {
+        // arrange
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<OmniDataTransform xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>ExampleTransform</name>
+    <type>Transform</type>
+    <inputType>JSON</inputType>
+    <outputType>JSON</outputType>
+    <omniDataTransformItem>
+        <globalKey>item-1</globalKey>
+        <inputFieldName>account:name</inputFieldName>
+        <outputFieldName>customer:name</outputFieldName>
+        <outputObjectName>json</outputObjectName>
+    </omniDataTransformItem>
+</OmniDataTransform>`;
+
+        // test
+        const datapack = converter.metadataXmlToDatapack('/metadata/ExampleTransform.rpt-meta.xml', xml);
+        const result = await new DataMapperExecutor().execute(datapack, { account: { name: 'Acme' } });
+
+        // assert
+        expect(result).toEqual({ customer: { name: 'Acme' } });
     });
 
     it('should round-trip OmniScript metadata XML and keep element hierarchy', () => {
