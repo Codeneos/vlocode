@@ -1,0 +1,80 @@
+<section class="dm-preview" aria-label="DataMapper preview">
+    <header class="dm-preview__top">
+        <div>
+            <h2>Preview</h2>
+            <p>{{ queryCount() }} queries · {{ resultCount() }} rows · {{ totalDuration() }}</p>
+        </div>
+        <button type="button" class="dm-button dm-button--primary" [disabled]="running() || !!inputError()" (click)="runPreview.emit()">
+            <span class="codicon" [class.codicon-play]="!running()" [class.codicon-loading]="running()" [class.codicon-modifier-spin]="running()" aria-hidden="true"></span>
+            @if (running()) { Running } @else { Run Preview }
+        </button>
+    </header>
+
+    <div class="dm-preview__grid">
+        <section class="dm-preview__pane dm-preview__pane--input" aria-label="Preview input JSON">
+            <header class="dm-preview__pane-header">
+                <h3>Input</h3>
+                <span>JSON</span>
+            </header>
+            <dm-json-editor
+                [value]="inputJson()"
+                ariaLabel="Input JSON"
+                (valueChange)="inputJsonChange.emit($event)" />
+            @if (inputError(); as message) {
+                <p class="dm-preview__message dm-preview__message--error">{{ message }}</p>
+            }
+        </section>
+
+        <div class="dm-preview__right">
+            <section class="dm-preview__pane dm-preview__pane--output" aria-label="Preview output JSON">
+                <header class="dm-preview__pane-header">
+                    <h3>Output</h3>
+                    <span>JSON</span>
+                </header>
+                <dm-json-editor
+                    [value]="outputJson()"
+                    [readOnly]="true"
+                    ariaLabel="Output JSON" />
+                @if (executionError(); as message) {
+                    <p class="dm-preview__message dm-preview__message--error">{{ message }}</p>
+                }
+            </section>
+
+            <section class="dm-preview__pane dm-preview__pane--debug" aria-label="Preview query debug">
+                <header class="dm-preview__pane-header">
+                    <h3>Debug</h3>
+                    <span>{{ queryCount() }} queries</span>
+                </header>
+                <div class="dm-preview__debug-table-wrap">
+                    <table class="dm-preview__debug-table">
+                        <thead>
+                            <tr>
+                                <th>SOQL</th>
+                                <th>Rows</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (query of debug()?.queries ?? []; track $index) {
+                                <tr [class.dm-preview__debug-row--error]="!!query.error">
+                                    <td>
+                                        <code>{{ query.soql }}</code>
+                                        @if (query.error) {
+                                            <small>{{ query.error }}</small>
+                                        }
+                                    </td>
+                                    <td>{{ query.resultCount }}</td>
+                                    <td>{{ formatDuration(query.durationMs) }}</td>
+                                </tr>
+                            } @empty {
+                                <tr>
+                                    <td colspan="3" class="dm-preview__debug-empty">No queries executed.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</section>

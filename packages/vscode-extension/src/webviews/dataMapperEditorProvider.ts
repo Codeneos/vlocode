@@ -5,7 +5,7 @@ import VlocodeService from '../lib/vlocodeService';
 import { VlocodeCommand } from '../constants';
 import { getErrorMessage } from '@vlocode/util';
 import { container } from '@vlocode/core';
-import { DatapackFileWriter, DatapackLoader, getDatapackHeaders, VlocityDatapack } from '@vlocode/vlocity';
+import { DataMapperExecutor, DatapackFileWriter, DatapackLoader, getDatapackHeaders, VlocityDatapack, type DataMapperDefinition } from '@vlocode/vlocity';
 import { MetadataDatapackConverter } from '@vlocode/vlocity-deploy';
 
 interface DataMapperModel {
@@ -52,6 +52,18 @@ interface EditorState {
     sourceFields: FieldSuggestion[];
     outputFields: FieldSuggestion[];
     error?: string;
+}
+
+interface DataMapperPreviewQuery {
+    soql: string;
+    resultCount: number;
+    durationMs: number;
+    error?: string;
+}
+
+interface DataMapperPreviewDebug {
+    queries: DataMapperPreviewQuery[];
+    totalDurationMs: number;
 }
 
 interface LoadedDocument {
@@ -119,6 +131,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
 
         webviewPanel.onDidDispose(() => documentSubscription.dispose());
         webviewPanel.webview.onDidReceiveMessage(async message => {
+            const requestType = message.type;
             try {
                 switch (message.type) {
                     case 'ready':
@@ -153,10 +166,24 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
                             });
                         }
                         break;
+                    case 'preview':
+                        {
+                            const debug: DataMapperPreviewDebug = { queries: [], totalDurationMs: 0 };
+                            const start = Date.now();
+                            try {
+                                const output = await this.executePreview(message.model ?? loaded.model, message.input, debug);
+                                debug.totalDurationMs = Date.now() - start;
+                                webviewPanel.webview.postMessage({ type: 'previewResult', result: { output, debug } });
+                            } catch (error) {
+                                debug.totalDurationMs = Date.now() - start;
+                                webviewPanel.webview.postMessage({ type: 'previewError', message: getErrorMessage(error), debug });
+                            }
+                        }
+                        break;
                 }
             } catch (error) {
                 const message = getErrorMessage(error);
-                webviewPanel.webview.postMessage({ type: 'error', message });
+                webviewPanel.webview.postMessage({ type: requestType === 'preview' ? 'previewError' : 'error', message });
                 vscode.window.showErrorMessage(message);
             }
         });
@@ -180,6 +207,39 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
                 path: field.name
             })))
         };
+    }
+
+    private async executePreview(model: DataMapperModel, input: unknown, debug: DataMapperPreviewDebug): Promise<unknown> {
+        const definition: DataMapperDefinition = {
+            ...model.header,
+            OmniDataTransformItem: model.items
+        };
+        const queryRunner = {
+            query: async (soql: string): Promise<Record<string, unknown>[]> => {
+                const start = Date.now();
+                try {
+                    if (!this.service.isInitialized) {
+                        throw new Error('Select a Salesforce org to execute DataMapper preview queries.');
+                    }
+                    const records = await this.service.salesforceService.query<Record<string, unknown>>(soql, false);
+                    debug.queries.push({
+                        soql,
+                        resultCount: records.length,
+                        durationMs: Date.now() - start
+                    });
+                    return records;
+                } catch (error) {
+                    debug.queries.push({
+                        soql,
+                        resultCount: 0,
+                        durationMs: Date.now() - start,
+                        error: getErrorMessage(error)
+                    });
+                    throw error;
+                }
+            }
+        };
+        return new DataMapperExecutor().execute(definition, input, { queryRunner });
     }
 
     private getDataMapperKind(model: DataMapperModel) {
@@ -414,7 +474,7 @@ export class DataMapperEditorProvider implements vscode.CustomTextEditorProvider
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource};">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' ${webview.cspSource}; worker-src ${webview.cspSource} blob:; font-src ${webview.cspSource} data:; img-src ${webview.cspSource} data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="${styles}">
     <title>DataMapper Editor</title>

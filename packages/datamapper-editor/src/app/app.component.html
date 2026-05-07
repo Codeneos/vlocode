@@ -86,6 +86,17 @@
                     (updateMappingRequested)="saveMappingRow($event)"
                     (deleteMappingRequested)="deleteMapping($event)" />
             }
+            @case ('preview') {
+                <dm-preview-panel
+                    [inputJson]="previewInputJson()"
+                    [outputJson]="previewOutputJson()"
+                    [inputError]="previewInputError()"
+                    [executionError]="previewError()"
+                    [debug]="previewDebug()"
+                    [running]="previewRunning()"
+                    (inputJsonChange)="updatePreviewInput($event)"
+                    (runPreview)="runPreview()" />
+            }
         }
 
         @if (editing(); as item) {

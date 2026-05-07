@@ -28,13 +28,15 @@ export function getTabs(kind: DataMapperKind): Array<{ id: TabId; label: string 
     if (kind === 'transform') {
         return [
             { id: 'formula', label: 'Formula' },
-            { id: 'mapping', label: 'Transforms' }
+            { id: 'mapping', label: 'Transforms' },
+            { id: 'preview', label: 'Preview' }
         ];
     }
     return [
         { id: 'extract', label: 'Extract' },
         { id: 'formula', label: 'Formula' },
-        { id: 'mapping', label: 'Mapping' }
+        { id: 'mapping', label: 'Mapping' },
+        { id: 'preview', label: 'Preview' }
     ];
 }
 

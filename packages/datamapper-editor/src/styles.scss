@@ -267,10 +267,68 @@ button, input, select, textarea { font: inherit; }
     &--page { width: min(680px, calc(100% - 32px)); margin: 72px auto; }
 }
 
+.dm-preview {
+    display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px;
+    width: min(1480px, calc(100% - 24px)); height: calc(100vh - 136px); min-height: 560px; margin: 18px auto 24px;
+
+    &__top {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding-bottom: 10px; border-bottom: 1px solid $panel;
+        h2 { @include heading; }
+        p { @include copy; }
+    }
+
+    &__grid { display: grid; grid-template-columns: minmax(260px, 3fr) minmax(0, 7fr); gap: 12px; min-height: 0; }
+    &__right { display: grid; grid-template-rows: minmax(280px, 1fr) minmax(170px, 0.42fr); gap: 12px; min-height: 0; }
+    &__pane {
+        display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0;
+        border: 1px solid $panel; border-radius: 4px; background: $editor;
+    }
+    &__pane-header {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        min-height: 40px; padding: 8px 10px; border-bottom: 1px solid $panel; background: $side;
+        h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
+        span { color: $desc; font-size: 12px; }
+    }
+    dm-json-editor, .dm-json-editor {
+        display: block; overflow: hidden; width: 100%; height: 100%; min-height: 0;
+        background: var(--vscode-editor-background);
+    }
+    &__message {
+        margin: 0; padding: 7px 10px; border-top: 1px solid $panel; color: var(--vscode-foreground); background: $side;
+        &--error {
+            color: var(--vscode-inputValidation-errorForeground, var(--vscode-errorForeground));
+            background: var(--vscode-inputValidation-errorBackground, #{$side});
+        }
+    }
+    &__debug-table-wrap { overflow: auto; min-height: 0; }
+    &__debug-table {
+        width: 100%; border-collapse: collapse; table-layout: fixed;
+        th, td { border-bottom: 1px solid $panel; padding: 7px 10px; text-align: left; vertical-align: top; }
+        th { position: sticky; top: 0; z-index: 1; color: var(--vscode-foreground); background: var(--vscode-editorGroupHeader-tabsBackground); font-weight: 600; }
+        th:nth-child(2), th:nth-child(3), td:nth-child(2), td:nth-child(3) { width: 82px; text-align: right; white-space: nowrap; }
+        code {
+            display: block; color: var(--vscode-editor-foreground);
+            font-family: var(--vscode-editor-font-family, monospace); overflow-wrap: anywhere; white-space: pre-wrap;
+        }
+        small { display: block; margin-top: 4px; color: var(--vscode-errorForeground); }
+    }
+    &__debug-row--error { background: color-mix(in srgb, var(--vscode-inputValidation-errorBackground, #{$editor}) 60%, #{$editor}); }
+    &__debug-empty { color: $desc; text-align: center; }
+}
+
 @media (max-width: 720px) {
     .dm-header, .dm-toolbar, .dm-details, .dm-form-grid, .dm-extract-grid, .dm-filter-row, .dm-link-row { grid-template-columns: 1fr; }
     .dm-header { display: grid; }
     .dm-toolbar { justify-content: stretch; .dm-search { justify-self: stretch; } }
     .dm-filter-row__joiner { min-height: 0; }
     .dm-flow, .dm-panel { width: calc(100% - 20px); margin-top: 20px; }
+    .dm-preview {
+        width: calc(100% - 20px); height: auto; min-height: 0; margin-top: 14px;
+        &__top { display: grid; }
+        &__grid, &__right { grid-template-columns: 1fr; grid-template-rows: none; }
+        &__pane--input { min-height: 260px; }
+        &__pane--output { min-height: 360px; }
+        &__pane--debug { min-height: 220px; }
+    }
 }

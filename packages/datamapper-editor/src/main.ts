@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, provideZonelessChangeDetection, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
 import { EmptyStateComponent } from './app/components/empty-state/empty-state.component';
@@ -7,7 +7,8 @@ import { FormulaPanelComponent } from './app/components/formula-panel/formula-pa
 import { LoadObjectsPanelComponent } from './app/components/load-objects-panel/load-objects-panel.component';
 import { MappingDialogComponent } from './app/components/mapping-dialog/mapping-dialog.component';
 import { MappingPanelComponent } from './app/components/mapping-panel/mapping-panel.component';
-import type { DataMapperItem, DataMapperModel, EditorState, ExtractGroup, FieldSuggestion, LoadObjectGroup, TabId } from './app/models/datamapper.model';
+import { PreviewPanelComponent } from './app/components/preview-panel/preview-panel.component';
+import type { DataMapperItem, DataMapperModel, DataMapperPreviewDebug, DataMapperPreviewResult, EditorState, ExtractGroup, FieldSuggestion, LoadObjectGroup, TabId } from './app/models/datamapper.model';
 import { firstTab, getDataMapperKind, getDataMapperSubtitle, getTabs } from './app/models/datamapper-kind';
 import { createExtractGroups, extractGroupId, isExtractionItem, nextExtractSequence, normalizeExtractSequences } from './app/models/extract-groups';
 import { createLoadObjectGroups, isFormulaItem, isLoadItem, isLoadMappingItem, loadObjectGroupId, nextLoadSequence, normalizeLoadSequences } from './app/models/load-objects';
@@ -22,6 +23,8 @@ interface VsCodeApi {
 type ExtensionToWebviewMessage =
     | { type: 'load'; state: EditorState }
     | { type: 'fields'; sourceFields: FieldSuggestion[]; outputFields: FieldSuggestion[]; error?: string }
+    | { type: 'previewResult'; result: DataMapperPreviewResult }
+    | { type: 'previewError'; message: string; debug?: DataMapperPreviewDebug }
     | { type: 'error'; message: string };
 
 type WebviewToExtensionMessage =
@@ -30,7 +33,8 @@ type WebviewToExtensionMessage =
     | { type: 'deploy'; model: DataMapperModel }
     | { type: 'openSalesforce' }
     | { type: 'refresh' }
-    | { type: 'refreshFields'; model: DataMapperModel; objects: string[] };
+    | { type: 'refreshFields'; model: DataMapperModel; objects: string[] }
+    | { type: 'preview'; model: DataMapperModel; input: unknown };
 
 const EMPTY_MODEL: DataMapperModel = {
     header: {},
@@ -65,12 +69,15 @@ const DATA_TYPES = [
         FormulaPanelComponent,
         LoadObjectsPanelComponent,
         MappingDialogComponent,
-        MappingPanelComponent
+        MappingPanelComponent,
+        PreviewPanelComponent
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './app/app.component.html'
 })
 export class AppComponent {
+    private readonly changeDetectorRef = inject(ChangeDetectorRef);
+
     protected readonly dataTypes = DATA_TYPES;
     protected readonly activeTab = signal<TabId>('extract');
     protected readonly model = signal<DataMapperModel>(EMPTY_MODEL);
@@ -82,6 +89,11 @@ export class AppComponent {
     protected readonly deploying = signal(false);
     protected readonly openingSalesforce = signal(false);
     protected readonly refreshing = signal(false);
+    protected readonly previewRunning = signal(false);
+    protected readonly previewInputJson = signal('{\n}');
+    protected readonly previewOutputJson = signal('');
+    protected readonly previewError = signal<string | undefined>(undefined);
+    protected readonly previewDebug = signal<DataMapperPreviewDebug | undefined>(undefined);
     protected readonly hasLoaded = signal(false);
     protected readonly fieldMetadataLoading = signal(false);
     protected readonly editing = signal<DataMapperItem | undefined>(undefined);
@@ -89,6 +101,7 @@ export class AppComponent {
 
     private readonly vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
     private lastFieldObjectsKey = '';
+    private previewInputDirty = false;
 
     protected readonly mapperKind = computed(() => getDataMapperKind(this.model()));
     protected readonly mapperSubtitle = computed(() => getDataMapperSubtitle(this.model(), this.mapperKind()));
@@ -115,6 +128,7 @@ export class AppComponent {
         return 'Fetching Salesforce object fields for autocomplete.';
     });
     private readonly fieldMetadataObjects = computed(() => this.fieldObjectNamesForModel(this.model()));
+    protected readonly previewInputError = computed(() => this.validatePreviewInput(this.previewInputJson()));
 
     protected readonly formulaItems = computed(() =>
         this.model().items
@@ -177,7 +191,10 @@ export class AppComponent {
     ]));
 
     constructor() {
-        window.addEventListener('message', event => this.handleMessage(event.data as ExtensionToWebviewMessage));
+        window.addEventListener('message', event => {
+            this.handleMessage(event.data as ExtensionToWebviewMessage);
+            this.changeDetectorRef.markForCheck();
+        });
         effect(() => {
             if (!this.hasLoaded()) {
                 return;
@@ -239,6 +256,41 @@ export class AppComponent {
         if (!this.vscode) {
             window.setTimeout(() => this.refreshing.set(false), 1000);
         }
+    }
+
+    protected updatePreviewInput(inputJson: string) {
+        this.previewInputDirty = true;
+        this.previewInputJson.set(inputJson);
+        this.previewError.set(undefined);
+    }
+
+    protected runPreview() {
+        const inputError = this.previewInputError();
+        if (inputError) {
+            this.previewError.set(inputError);
+            return;
+        }
+
+        let input: unknown;
+        try {
+            input = JSON.parse(this.previewInputJson());
+        } catch (error) {
+            this.previewError.set(this.getErrorMessage(error));
+            return;
+        }
+
+        this.previewRunning.set(true);
+        this.previewError.set(undefined);
+        this.previewDebug.set(undefined);
+        this.previewOutputJson.set('');
+
+        if (!this.vscode) {
+            this.previewRunning.set(false);
+            this.previewError.set('Preview is only available inside the VS Code DataMapper editor.');
+            return;
+        }
+
+        this.vscode.postMessage({ type: 'preview', model: this.model(), input });
     }
 
     protected createMapping() {
@@ -477,10 +529,24 @@ export class AppComponent {
     }
 
     private handleMessage(message: ExtensionToWebviewMessage) {
+        if (message.type === 'previewResult') {
+            this.previewOutputJson.set(this.stringifyJson(message.result.output));
+            this.previewDebug.set(message.result.debug);
+            this.previewError.set(undefined);
+            this.previewRunning.set(false);
+            return;
+        }
+        if (message.type === 'previewError') {
+            this.previewError.set(message.message);
+            this.previewDebug.set(message.debug);
+            this.previewRunning.set(false);
+            return;
+        }
         if (message.type === 'error') {
             this.error.set(message.message);
             this.fieldMetadataLoading.set(false);
             this.refreshing.set(false);
+            this.previewRunning.set(false);
             return;
         }
         if (message.type === 'fields') {
@@ -496,9 +562,16 @@ export class AppComponent {
             this.sourceFields.set(message.state.sourceFields);
             this.outputFields.set(message.state.outputFields);
             this.lastFieldObjectsKey = this.fieldObjectNamesForModel(message.state.model).join('\u001f');
+            if (!this.previewInputDirty) {
+                this.previewInputJson.set(this.getInitialPreviewJson(message.state.model));
+            }
+            this.previewOutputJson.set('');
+            this.previewError.set(undefined);
+            this.previewDebug.set(undefined);
             this.hasLoaded.set(true);
             this.fieldMetadataLoading.set(false);
             this.refreshing.set(false);
+            this.previewRunning.set(false);
             const visibleTabs = getTabs(getDataMapperKind(message.state.model)).map(tab => tab.id);
             if (!visibleTabs.includes(this.activeTab())) {
                 this.activeTab.set(firstTab(getDataMapperKind(message.state.model)));
@@ -579,6 +652,45 @@ export class AppComponent {
             }
         }
         return [...objectNames].sort((a, b) => a.localeCompare(b));
+    }
+
+    private getInitialPreviewJson(model: DataMapperModel) {
+        const value = model.header.PreviewJsonData ?? model.header.ExpectedInputJson;
+        if (typeof value === 'string' && value.trim()) {
+            return this.formatJsonText(value);
+        }
+        if (value && typeof value === 'object') {
+            return this.stringifyJson(value);
+        }
+        return '{\n}';
+    }
+
+    private validatePreviewInput(inputJson: string) {
+        if (!inputJson.trim()) {
+            return 'Input must be valid JSON.';
+        }
+        try {
+            JSON.parse(inputJson);
+            return undefined;
+        } catch (error) {
+            return this.getErrorMessage(error);
+        }
+    }
+
+    private formatJsonText(value: string) {
+        try {
+            return this.stringifyJson(JSON.parse(value));
+        } catch {
+            return value;
+        }
+    }
+
+    private stringifyJson(value: unknown) {
+        return JSON.stringify(value ?? null, null, 2) ?? 'null';
+    }
+
+    private getErrorMessage(error: unknown) {
+        return error instanceof Error ? error.message : String(error);
     }
 }
 

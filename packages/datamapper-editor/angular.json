@@ -20,9 +20,13 @@
                         "browser": "src/main.ts",
                         "tsConfig": "tsconfig.app.json",
                         "inlineStyleLanguage": "scss",
+                        "loader": {
+                            ".ttf": "dataurl"
+                        },
                         "assets": [],
                         "styles": [
                             "node_modules/@vscode/codicons/dist/codicon.css",
+                            "node_modules/monaco-editor/min/vs/editor/editor.main.css",
                             "src/styles.scss"
                         ],
                         "scripts": []

@@ -63,4 +63,21 @@ export interface EditorState {
     error?: string;
 }
 
-export type TabId = 'objects' | 'extract' | 'formula' | 'mapping';
+export interface DataMapperPreviewQuery {
+    soql: string;
+    resultCount: number;
+    durationMs: number;
+    error?: string;
+}
+
+export interface DataMapperPreviewDebug {
+    queries: DataMapperPreviewQuery[];
+    totalDurationMs: number;
+}
+
+export interface DataMapperPreviewResult {
+    output: unknown;
+    debug: DataMapperPreviewDebug;
+}
+
+export type TabId = 'objects' | 'extract' | 'formula' | 'mapping' | 'preview';
