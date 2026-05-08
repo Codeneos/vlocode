@@ -7,21 +7,17 @@ import {
     toNumber
 } from './functions/runtimeFunctions';
 import { OMNISTUDIO_FORMULA_CONSTANTS } from './registry';
-import type { OmniStudioFormulaContext, OmniStudioFormulaToken, OmniStudioFormulaTokenType } from './types';
+import type {
+    OmniStudioFormulaContext,
+    OmniStudioFormulaNode,
+    OmniStudioFormulaRuntimeContext,
+    OmniStudioFormulaToken,
+    OmniStudioFormulaTokenType
+} from './types';
 
 export { OMNISTUDIO_FORMULA_RUNTIME_FUNCTIONS } from './functions/runtimeFunctions';
 export type { OmniStudioFormulaFunction } from './functions/runtimeFunctions';
-
-export type OmniStudioFormulaNode =
-    | { type: 'literal'; value: unknown }
-    | { type: 'variable'; path: string }
-    | { type: 'unary'; operator: string; argument: OmniStudioFormulaNode }
-    | { type: 'binary'; operator: string; left: OmniStudioFormulaNode; right: OmniStudioFormulaNode }
-    | { type: 'call'; name: string; args: OmniStudioFormulaNode[] };
-
-export interface OmniStudioFormulaRuntimeContext extends OmniStudioFormulaContext {
-    evaluator: OmniStudioFormulaEvaluator;
-}
+export type { OmniStudioFormulaNode, OmniStudioFormulaRuntimeContext } from './types';
 
 const formulaConstantNames = new Set<string>(OMNISTUDIO_FORMULA_CONSTANTS);
 const wordOperators = new Set(['AND', 'OR', 'NOT', 'LIKE', 'NOTLIKE']);

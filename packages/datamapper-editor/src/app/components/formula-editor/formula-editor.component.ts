@@ -35,7 +35,6 @@ export class FormulaEditorComponent {
     readonly valueChange = output<string>();
 
     private readonly destroyRef = inject(DestroyRef);
-    private validationTimer: number | undefined;
 
     protected readonly languageId = OMNISTUDIO_FORMULA_LANGUAGE_ID;
     protected readonly diagnosticValue = signal('');
@@ -76,12 +75,13 @@ export class FormulaEditorComponent {
 
     constructor() {
         registerOmniStudioFormulaLanguage(monaco);
+        let validationTimer: number | undefined;
         effect(() => {
             const value = this.value();
-            window.clearTimeout(this.validationTimer);
-            this.validationTimer = window.setTimeout(() => this.diagnosticValue.set(value), 150);
+            window.clearTimeout(validationTimer);
+            validationTimer = window.setTimeout(() => this.diagnosticValue.set(value), 150);
         });
-        this.destroyRef.onDestroy(() => window.clearTimeout(this.validationTimer));
+        this.destroyRef.onDestroy(() => window.clearTimeout(validationTimer));
     }
 
     protected handleEditorReady(editor: monaco.editor.IStandaloneCodeEditor) {
@@ -92,9 +92,6 @@ export class FormulaEditorComponent {
             const insertedText = event.changes.map(change => change.text).join('');
             if (/^[A-Za-z_$]$/.test(insertedText)) {
                 editor.trigger('omnistudio-formula', 'editor.action.triggerSuggest', {});
-            }
-            if (/[(,]/.test(insertedText)) {
-                window.setTimeout(() => editor.trigger('omnistudio-formula', 'editor.action.triggerParameterHints', {}));
             }
         });
         this.destroyRef.onDestroy(() => disposable.dispose());

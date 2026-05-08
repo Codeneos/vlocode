@@ -16,6 +16,24 @@ export interface OmniStudioFormulaContext {
     resolvePath(path: string): unknown;
 }
 
+export type OmniStudioFormulaNode =
+    | { type: 'literal'; value: unknown }
+    | { type: 'variable'; path: string }
+    | { type: 'unary'; operator: string; argument: OmniStudioFormulaNode }
+    | { type: 'binary'; operator: string; left: OmniStudioFormulaNode; right: OmniStudioFormulaNode }
+    | { type: 'call'; name: string; args: OmniStudioFormulaNode[] };
+
+export interface OmniStudioFormulaEvaluatorLike {
+    parse(expression: string): OmniStudioFormulaNode;
+    dependencies(expression: string): string[];
+    evaluate(expression: string, context: OmniStudioFormulaContext): Promise<unknown>;
+    evaluateAst(node: OmniStudioFormulaNode, context: OmniStudioFormulaContext): Promise<unknown>;
+}
+
+export interface OmniStudioFormulaRuntimeContext extends OmniStudioFormulaContext {
+    readonly evaluator: OmniStudioFormulaEvaluatorLike;
+}
+
 export type OmniStudioFormulaTokenType = 'number' | 'string' | 'identifier' | 'variable' | 'operator' | 'paren' | 'comma' | 'eof';
 
 export interface OmniStudioFormulaToken {

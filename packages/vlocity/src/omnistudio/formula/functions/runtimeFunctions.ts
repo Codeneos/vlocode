@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import { getDataMapperPathValue } from '../../../datamapper/path';
-import type { OmniStudioFormulaRuntimeContext } from '../evaluator';
-import type { OmniStudioFormulaContext } from '../types';
+import type { OmniStudioFormulaContext, OmniStudioFormulaRuntimeContext } from '../types';
 
 export type OmniStudioFormulaFunction = (args: unknown[], context: OmniStudioFormulaRuntimeContext) => unknown | Promise<unknown>;
 
