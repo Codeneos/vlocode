@@ -63,7 +63,6 @@ export class DatapackDeployer {
      * @returns Datapack deployment object
      */
     public async createDeployment(datapacks: VlocityDatapack[], options?: DatapackDeploymentOptions, cancellationToken?: CancellationToken) {
-        this.container.get(SalesforceService).data.cache.configure({ enabled: false });
         const deployment = this.container.new(DatapackDeployment, options);
         const recordFactory = this.container.new(DatapackRecordFactory);
 
@@ -157,7 +156,12 @@ export class DatapackDeployer {
 
             this.logger.verbose(`Verifying org-data after deployment on ${sobjectType} fields [${fields.map(f => f.name).join(', ')}] for ${records.length} record(s)`);
             const deployedData = new Map(records.map(r => [r.recordId as string, r]));
-            const orgData = await this.salesforce.data.lookupById(deployedData.keys(), fields.map(f => f.name), false);
+            const orgData = await this.salesforce.data.lookupById(deployedData.keys(), fields.map(f => f.name));
+
+            if (!orgData) {
+                this.logger.warn(`Could not retrieve deployed data for ${sobjectType} to verify deployed field values`);
+                continue;
+            }
 
             for (const result of orgData.values()) {
                 const mismatchedFieldData = fields.map(field => ({

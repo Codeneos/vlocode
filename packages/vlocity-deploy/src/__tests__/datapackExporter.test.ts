@@ -1,4 +1,5 @@
 import 'jest';
+import * as path from 'path';
 
 import { DatapackExporter } from '../export/datapackExporter';
 import { DatapackExpander } from '../export/datapackExpander';
@@ -89,6 +90,123 @@ describe('DatapackExporter', () => {
         });
     });
 
+    it('projects array values when evaluating exact filter placeholders', () => {
+        const { exporter } = createExporter();
+        const datapack = {
+            id: '01t000000000001AAA',
+            objectType: 'Product2',
+            normalizedObjectType: 'Product2',
+            data: {
+                Id: '01t000000000001AAA',
+                SBQQ__ProductFeature__c: [
+                    { Id: 'a10000000000001AAA' },
+                    { Id: 'a10000000000002AAA' }
+                ]
+            }
+        };
+
+        const filter = exporter.buildLookupFilter({
+            SBQQ__Feature__c: '{Product2:SBQQ__ProductFeature__c:Id}'
+        }, datapack);
+
+        expect(filter).toStrictEqual({
+            SBQQ__Feature__c: [
+                'a10000000000001AAA',
+                'a10000000000002AAA'
+            ]
+        });
+    });
+
+    it('drops OR filter branches with unresolved exact placeholders', () => {
+        const { exporter } = createExporter();
+        const datapack = {
+            id: '01t000000000001AAA',
+            objectType: 'Product2',
+            normalizedObjectType: 'Product2',
+            data: {
+                Id: '01t000000000001AAA'
+            }
+        };
+
+        const filter = exporter.buildLookupFilter([
+            { SBQQ__Product__c: '{Product2:Id}' },
+            { SBQQ__Feature__c: '{Product2:SBQQ__ProductFeature__c:Id}' }
+        ], datapack);
+
+        expect(filter).toStrictEqual([
+            { SBQQ__Product__c: '01t000000000001AAA' }
+        ]);
+    });
+
+    it('tries alternative datapack value paths in order', () => {
+        const { exporter } = createExporter();
+        const datapack = {
+            id: '01t000000000001AAA',
+            objectType: 'Product2',
+            normalizedObjectType: 'Product2',
+            data: {
+                Id: '01t000000000001AAA'
+            }
+        };
+
+        const filter = exporter.buildLookupFilter({
+            Product__c: '{Product2:MissingId|Product2:Id}'
+        }, datapack);
+
+        expect(filter).toStrictEqual({
+            Product__c: '01t000000000001AAA'
+        });
+    });
+
+    it('stringifies projected arrays inside mixed filter strings', () => {
+        const { exporter } = createExporter();
+        const datapack = {
+            id: '01t000000000001AAA',
+            objectType: 'Product2',
+            normalizedObjectType: 'Product2',
+            data: {
+                Id: '01t000000000001AAA',
+                SBQQ__ProductFeature__c: [
+                    { Id: 'a10000000000001AAA' },
+                    { Id: 'a10000000000002AAA' }
+                ]
+            }
+        };
+
+        const filter = exporter.buildLookupFilter({
+            Debug__c: 'features:{Product2:SBQQ__ProductFeature__c:Id}'
+        }, datapack);
+
+        expect(filter).toStrictEqual({
+            Debug__c: 'features:a10000000000001AAA,a10000000000002AAA'
+        });
+    });
+
+    it('resolves projected arrays inside string filters with mixed path separators', () => {
+        const { exporter } = createExporter();
+        const datapack = {
+            id: '01t000000000001AAA',
+            objectType: 'Product2',
+            normalizedObjectType: 'Product2',
+            data: {
+                Id: '01t000000000001AAA',
+                SBQQ__ProductFeature__c: [
+                    { Id: 'a10000000000001AAA' },
+                    { Id: 'a10000000000002AAA' }
+                ]
+            }
+        };
+
+        const filter = exporter.buildLookupFilter(
+            "(SBQQ__Product__c = '{Product2:Id}') or (SBQQ__Feature__c IN ({Product2.SBQQ__ProductFeature__c:Id}))",
+            datapack
+        );
+
+        expect(filter).toBe(
+            "(SBQQ__Product__c = '01t000000000001AAA') or (SBQQ__Feature__c IN (a10000000000001AAA,a10000000000002AAA))"
+        );
+    });
+
     it('awaits lookup references included in matching key objects', async () => {
         const describe = {
             name: 'Child__c',
@@ -124,6 +242,31 @@ describe('DatapackExporter', () => {
         expect(result.Parent__c).not.toHaveProperty('then');
     });
 
+    it('uses the name field for unscoped SObject matching keys', async () => {
+        const describe = {
+            name: 'Account',
+            fields: [
+                { name: 'Id', referenceTo: [] },
+                { name: 'Name', nameField: true, autoNumber: false, calculated: false, referenceTo: [] },
+                { name: 'LegacyKey__c', referenceTo: [] }
+            ]
+        };
+        const { exporter, matchingKeys } = createExporter({ describe });
+
+        const result = await exporter.getMatchingKey(
+            describe,
+            {
+                id: '001000000000001AAA',
+                Id: '001000000000001AAA',
+                Name: 'Acme',
+                LegacyKey__c: null
+            }
+        );
+
+        expect(result).toBe('Account/Acme');
+        expect(matchingKeys.getMatchingKeyDefinition).not.toHaveBeenCalled();
+    });
+
     it('passes export scope to the expander', async () => {
         const { exporter, expander } = createExporter();
         const datapack = {
@@ -140,6 +283,104 @@ describe('DatapackExporter', () => {
         await exporter.exportObjectAndExpand('0jN000000000001AAA', { scope: 'OmniScript' });
 
         expect(expander.expandDatapack).toHaveBeenCalledWith(datapack, { scope: 'OmniScript' });
+    });
+
+    it('exports lookup-related objects within the selected dependency depth', async () => {
+        const rootId = 'a00000000000001AAA';
+        const relatedId = 'a01000000000001AAA';
+        const rootDescribe = {
+            name: 'Root__c',
+            fields: [
+                { name: 'Id', referenceTo: [] },
+                { name: 'Name', referenceTo: [] },
+                { name: 'Lookup__c', referenceTo: ['Related__c'] }
+            ],
+            childRelationships: []
+        };
+        const relatedDescribe = {
+            name: 'Related__c',
+            fields: [
+                { name: 'Id', referenceTo: [] },
+                { name: 'Name', referenceTo: [] }
+            ],
+            childRelationships: []
+        };
+        const definitions = {
+            getEmbeddedObjects: jest.fn(() => []),
+            getMatchingKeyFields: jest.fn(() => ['Name']),
+            getFieldsWith: jest.fn(() => []),
+            isAutoGeneratedMatchingKey: jest.fn(() => false),
+            isEmbeddedObject: jest.fn(() => false),
+            isFieldIgnored: jest.fn(() => false)
+        };
+        const salesforce = {
+            data: {
+                cache: {
+                    configure: jest.fn()
+                },
+                lookupById: jest.fn(async (id: string) => id === rootId
+                    ? { Id: rootId, id: rootId, Name: 'Root', Lookup__c: relatedId }
+                    : { Id: relatedId, id: relatedId, Name: 'Related' })
+            },
+            schema: {
+                describeSObjectById: jest.fn(async (id: string) => id === rootId ? rootDescribe : relatedDescribe)
+            },
+            replaceNamespace: jest.fn((value: string) => value)
+        };
+        const matchingKeys = {
+            getMatchingKeyDefinition: jest.fn(async (type: string) => ({
+                sobjectType: type,
+                fields: [],
+                returnField: 'Id'
+            }))
+        };
+        const expandedResults: any[] = [];
+        const expander = {
+            expandDatapack: jest.fn((datapack) => {
+                const result = {
+                    baseName: datapack.Name,
+                    folder: datapack.Name,
+                    objectType: datapack.VlocityRecordSObjectType,
+                    sourceKey: datapack.VlocityRecordSourceKey,
+                    parentKeys: [],
+                    files: {},
+                    writeToFilesystem: jest.fn()
+                };
+                expandedResults.push(result);
+                return result;
+            })
+        };
+        const exporter = new DatapackExporter(
+            definitions as any,
+            expander as any,
+            salesforce as any,
+            matchingKeys as any,
+            createLogger() as any
+        ) as any;
+        exporter.data = salesforce.data;
+        exporter.maxExportDepth = 1;
+
+        const result = await exporter.exportObjectAndExpand(rootId);
+
+        expect(expander.expandDatapack).toHaveBeenCalledTimes(2);
+        const rootDatapack = expander.expandDatapack.mock.calls[0][0];
+        const relatedDatapack = expander.expandDatapack.mock.calls[1][0];
+        expect(rootDatapack.Lookup__c).toMatchObject({
+            VlocityDataPackType: 'VlocityMatchingKeyObject',
+            VlocityMatchingRecordSourceKey: 'Related__c/Related'
+        });
+        expect(relatedDatapack).toMatchObject({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Related__c',
+            VlocityRecordSourceKey: 'Related__c/Related'
+        });
+        expect(exporter.datapacks[relatedId].parent).toBeUndefined();
+        expect(exporter.datapacks[rootId].children).not.toHaveProperty(relatedId);
+        expect(exporter.datapacks[rootId].sourceKeys['Related__c/Related']).toBe(relatedId);
+        await result.writeToFilesystem('/tmp/out');
+        expect(expandedResults[0].writeToFilesystem).toHaveBeenCalledWith('/tmp/out', undefined);
+        expect(expandedResults[1].writeToFilesystem).toHaveBeenCalledWith('/tmp/out', undefined);
+        expect(salesforce.data.lookupById).toHaveBeenCalledTimes(2);
     });
 
     it('builds embedded objects from the records returned by the embedded lookup even at root-only depth', async () => {
@@ -162,7 +403,8 @@ describe('DatapackExporter', () => {
             foreignKeys: {},
             sourceKeys: {
                 'Parent__c/Parent': 'a00000000000001AAA'
-            }
+            },
+            dependencyDepth: 0
         };
         const childDescribe = {
             name: 'Child__c',
@@ -218,7 +460,8 @@ describe('DatapackExporter', () => {
             matchingKeys as any,
             createLogger() as any
         ) as any;
-        exporter.maxExportDepth = 1;
+        exporter.data = salesforce.data;
+        exporter.maxExportDepth = 0;
 
         await exporter.exportEmbeddedObjects(parentDatapack);
 
@@ -292,5 +535,61 @@ describe('DatapackExpander', () => {
             'Parent_DataPack.json'
         ]);
         expect(JSON.parse(result.files['Parent_DataPack.json'].toString()).PropertySet).toBeNull();
+    });
+
+    it('uses the source key name for unconfigured generic SObject folders', () => {
+        const definitions = {
+            getFileName: jest.fn(),
+            getName: jest.fn(),
+            getFieldConfig: jest.fn()
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Account',
+            VlocityRecordSourceKey: 'Account/Acme',
+            Name: 'Acme'
+        });
+
+        expect(result.folder).toBe('Account/Acme');
+        expect(Object.keys(result.files)).toStrictEqual([
+            'Acme_DataPack.json'
+        ]);
+    });
+
+    it('writes expanded files to the filesystem', async () => {
+        const definitions = {
+            getFileName: jest.fn((_item, field) => field === undefined ? ['Name'] : field === 'Children' ? ['_Child', 'Name'] : undefined),
+            getName: jest.fn(() => ['Name']),
+            getFieldConfig: jest.fn((_item, field, configKey) => field === 'Children' && configKey === 'expandArray')
+        };
+        const expander = new DatapackExpander(definitions as any, createLogger() as any);
+
+        const result = expander.expandDatapack({
+            VlocityDataPackType: 'SObject',
+            VlocityRecordSObjectType: 'Parent__c',
+            VlocityRecordSourceKey: 'Parent__c/Parent',
+            Name: 'Parent',
+            Children: [
+                {
+                    Name: 'First',
+                    Parent: {
+                        VlocityDataPackType: 'VlocityLookupMatchingKeyObject',
+                        VlocityLookupRecordSourceKey: 'Other__c/Other'
+                    }
+                }
+            ]
+        });
+
+        const outputFile = jest.fn(async () => undefined);
+        const remove = jest.fn(async () => undefined);
+        await result.writeToFilesystem('/tmp/out', { fs: { outputFile, remove }, prune: true });
+
+        const targetFolder = path.join('/tmp/out', 'Parent_c', 'Parent');
+        expect(remove).toHaveBeenCalledWith(targetFolder);
+        expect(outputFile).toHaveBeenCalledWith(path.join(targetFolder, 'Parent_Child_First.json'), expect.any(Buffer));
+        expect(outputFile).toHaveBeenCalledWith(path.join(targetFolder, 'Parent_DataPack.json'), expect.any(Buffer));
+        expect(outputFile).not.toHaveBeenCalledWith(path.join(targetFolder, 'Parent_ParentKeys.json'), expect.anything());
     });
 });

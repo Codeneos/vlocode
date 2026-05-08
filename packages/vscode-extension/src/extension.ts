@@ -36,6 +36,7 @@ import { SalesforceApexContentProvider } from './contentProviders/salesforceApex
 import { VirtualContentProvider } from './contentProviders/virtualApexContentProvider';
 import { DataMapperEditorProvider } from './webviews/dataMapperEditorProvider';
 import { VlocodeLogLinkProvider } from './lib/vlocodeLogLinkProvider';
+import { DatapackDefinitionRegistry } from './lib/vlocity/datapackDefinitionRegistry';
 
 /**
  * Start time of the extension set when the bundled entrypoint is loaded by VSCode.
@@ -128,6 +129,29 @@ class Vlocode {
         return developerLogsView;
     }
 
+    private configureLogLinkProvider() {
+        let linkProviderRegistration: vscode.Disposable | undefined;
+
+        this.service.registerDisposable(ConfigurationManager.onConfigChange(
+            this.service.config,
+            'enableLogLinks',
+            ({ enableLogLinks }) => {
+                if (enableLogLinks) {
+                    linkProviderRegistration ??= VlocodeLogLinkProvider.register();
+                } else {
+                    linkProviderRegistration?.dispose();
+                    linkProviderRegistration = undefined;
+                }
+            },
+            { initial: true }
+        ));
+        this.service.registerDisposable({ dispose: () => linkProviderRegistration?.dispose() });
+    }
+
+    private configureDatapackExportDefinitions() {
+        this.service.registerDisposable(container.get(DatapackDefinitionRegistry).initialize());
+    }
+
     private activate(context: vscode.ExtensionContext) {
         // Check context flags
         this.isDebug = context.extensionMode > 1 || /--debug|--inspect-brk/.test(process.execArgv.join(' '));
@@ -200,7 +224,8 @@ class Vlocode {
         PushSourceLensProvider.register(this.service);
         SalesforceApexContentProvider.register(this.service);
         VirtualContentProvider.register(this.service);
-        VlocodeLogLinkProvider.register(this.service);
+        this.configureLogLinkProvider();
+        this.configureDatapackExportDefinitions();
         this.service.registerDisposable(DataMapperEditorProvider.register(context, this.service));
 
         // Watch conditionalContextMenus for changes

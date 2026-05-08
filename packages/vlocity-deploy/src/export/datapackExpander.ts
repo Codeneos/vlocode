@@ -1,8 +1,11 @@
 import path from "path/posix";
+import nativePath from "path";
 
 import { injectable, Logger } from "@vlocode/core";
 import { formatString, normalizeName, substringAfter } from "@vlocode/util";
 import { VlocityDatapackSObject } from "@vlocode/vlocity";
+import * as fs from "fs-extra";
+
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 import { ObjectRef } from "./datapackExporter";
 
@@ -13,6 +16,15 @@ export interface DatapackExpandResult {
     sourceKey: string;
     parentKeys: string[];	
     files: Record<string, Buffer | string>;
+    writeToFilesystem(path: string, options?: WriteToFilesystemOptions): Promise<void>;
+}
+
+export interface WriteToFilesystemOptions {
+    fs?: {
+        outputFile: (file: string, data: Buffer | string) => Promise<void>;
+        remove?: (path: string) => Promise<void>;
+    };
+    prune?: boolean;
 }
 
 type FieldRef = ObjectRef & { field: string };
@@ -31,7 +43,7 @@ type FieldRef = ObjectRef & { field: string };
  * }
  * ```
  */
-@injectable()
+@injectable.transient()
 export class DatapackExpander {
 
     private static datapackFileName = 'DataPack.json';
@@ -129,14 +141,17 @@ export class DatapackExpander {
         files.addFile(DatapackExpander.datapackFileName, data);
         this.logger.info(`Expanded ${datapack.VlocityRecordSourceKey} (${files.count})`);
 
-        return {
+        const result: DatapackExpandResult = {
             objectType: datapack.VlocityRecordSObjectType,
             sourceKey: datapack.VlocityRecordSourceKey,
             parentKeys: [...this.collectParentKeys(datapack)],
             files: files.getFiles({ withFolder: false }),
             folder,
-            baseName
+            baseName,
+            writeToFilesystem: (targetPath, options) => this.writeToFilesystem(result, targetPath, options)
         };
+
+        return result;
     }
 
     private collectParentKeys(datapack: object, parentKeys: Set<string> = new Set()): Set<string> {
@@ -175,6 +190,25 @@ export class DatapackExpander {
             return `${normalized}.${extension}`;
         }
         return normalized;
+    }
+
+    private async writeToFilesystem(result: DatapackExpandResult, destinationPath: string, options?: WriteToFilesystemOptions) {
+        const outputFs = options?.fs ?? fs;
+        const targetFolder = nativePath.join(destinationPath, result.folder);
+
+        if (options?.prune) {
+            if (!outputFs.remove) {
+                throw new Error('Cannot prune datapack output folder because the configured filesystem does not provide remove()');
+            }
+            await outputFs.remove(targetFolder);
+        }
+
+        for (const [fileName, fileData] of Object.entries(result.files)) {
+            const outputFile = nativePath.join(targetFolder, fileName);
+            await outputFs.outputFile(outputFile, fileData);
+            this.logger.verbose(`Output file: ${outputFile}`);
+        }
+
     }
 }
 

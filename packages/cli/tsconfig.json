@@ -3,9 +3,8 @@
     "compilerOptions": {
         "module": "es2022",
         "target": "es2022",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "outDir": "dist",
-        "baseUrl": "src",
         "declaration": true,
         "noEmit": true,
         "declarationMap": true,

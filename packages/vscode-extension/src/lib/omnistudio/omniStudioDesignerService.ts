@@ -1,5 +1,5 @@
 import { Logger, injectable } from '@vlocode/core';
-import { SalesforceService } from '@vlocode/salesforce';
+import { QueryBuilder, SalesforceService } from '@vlocode/salesforce';
 import { DatapackTypeDefinition, SalesforceUrlType } from '@vlocode/vlocity';
 import { getErrorMessage } from '@vlocode/util';
 
@@ -60,7 +60,7 @@ export class OmniStudioDesignerService {
     }
 
     private async determineManagedPackageDesignerDisabled(): Promise<boolean> {
-        if (!this.vlocode.hasIndustriesDatapacks) {
+        if (!this.vlocode.isVlocityAvailable) {
             return true;
         }
 
@@ -97,8 +97,7 @@ export class OmniStudioDesignerService {
 
         try {
             const [record] = await this.salesforce.query<{ Value?: string }>(
-                `SELECT Value FROM OmniInteractionConfig WHERE DeveloperName = '${this.escapeSoql(settingName)}' LIMIT 1`,
-                true
+                `SELECT Value FROM OmniInteractionConfig WHERE DeveloperName = '${this.escapeSoql(settingName)}' LIMIT 1`
             );
             return record?.Value ?? null;
         } catch (error) {
@@ -117,8 +116,7 @@ export class OmniStudioDesignerService {
 
         try {
             const [record] = await this.salesforce.query<Record<string, string>>(
-                `SELECT ${valueField} FROM ${sobjectType} WHERE Name = '${this.escapeSoql(settingName)}' LIMIT 1`,
-                true
+                `SELECT ${valueField} FROM ${sobjectType} WHERE Name = '${this.escapeSoql(settingName)}' LIMIT 1`
             );
             return record?.[valueField] ?? null;
         } catch (error) {

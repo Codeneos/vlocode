@@ -12,6 +12,8 @@ type RecordQuickPickItem = (vscode.QuickPickItem & { record: SObjectRecord });
 
 export abstract class DatapackCommand extends CommandBase {
 
+    protected outputChannelName = 'Vlocity Datapacks';
+
     protected get datapackService() : VlocityDatapackService {
         return this.vlocode.datapackService;
     }

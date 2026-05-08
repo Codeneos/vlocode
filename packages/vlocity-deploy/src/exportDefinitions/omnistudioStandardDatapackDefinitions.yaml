@@ -1,0 +1,93 @@
+id: omnistudio-standard
+label: OmniStudio Standard Datapacks
+description: Standard runtime OmniStudio datapacks
+definitions:
+  OmniProcess: &omniProcessBase
+    objectType: OmniProcess
+    name:
+      - Name
+    matchingKeyFields:
+      - Type
+      - SubType
+      - Language
+      - VersionNumber
+    fields:
+      CustomJavaScript:
+        fileName:
+          - _JavaScript
+      PropertySetConfig:
+        fileName:
+          - _PropertySetConfig
+      CustomHtmlTemplates:
+        fileName:
+          - _HTMLTemplates
+    embeddedObjects:
+      OmniProcessElement:
+        objectType: OmniProcessElement
+        filter:
+          OmniProcessId: "{OmniProcess:Id}"
+        fileName:
+          - _Element
+          - Name
+        expandArray: true
+
+  IntegrationProcedureOmniProcess:
+    <<: *omniProcessBase
+    matchingKeyFields:
+      - Type
+      - SubType
+      - VersionNumber
+
+  OmniDataTransform: &omniDataTransform
+    objectType: OmniDataTransform
+    name:
+      - Name
+    matchingKeyFields:
+      - VersionNumber
+      - Name
+    fields:
+      ExpectedInputJson:
+        fileName:
+          - _InputJson
+      PreviewJsonData:
+        fileName:
+          - _SampleInputJson
+      PreviewXmlData:
+        fileName:
+          - _SampleInputXML
+      ExpectedOutputJson:
+        fileName:
+          - _TargetOutJson
+      ExpectedOutputXml:
+        fileName:
+          - _TargetOutXml
+    embeddedObjects:
+      OmniDataTransformItem:
+        objectType: OmniDataTransformItem
+        filter:
+          OmniDataTransformationId: "{OmniDataTransform:Id}"
+        fileName:
+          - _Items
+
+  OmniProcessElement:
+    objectType: OmniProcessElement
+    name:
+      - Name
+    matchingKeyFields:
+      - OmniProcessId
+      - Name
+    ignoreFields:
+      - Level
+    fields:
+      PropertySetConfig:
+        fileName:
+          - _PropertySetConfig
+
+  OmniDataTransformItem:
+    objectType: OmniDataTransformItem
+    name:
+      - GlobalKey
+    matchingKeyFields:
+      - GlobalKey
+    ignoreFields:
+      - OmniDataTransformationId

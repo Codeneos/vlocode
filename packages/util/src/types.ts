@@ -13,6 +13,16 @@ export type Await<T> = T extends {
 
 export type AwaitReturnType<T extends (...args: any) => any> = Await<ReturnType<T>>;
 
+/**
+ * Extracts the public structural surface of a type.
+ */
+export type Public<T> = Pick<T, keyof T>;
+
+/**
+ * Extracts the public structural surface of a class instance type.
+ */
+export type PublicInstance<T extends abstract new (...args: any) => any> = Public<InstanceType<T>>;
+
 type ExtractPropertyNames<T> = { [K in keyof T]: T[K] extends (...args: any[]) => any ? never : K }[keyof T];
 
 /**

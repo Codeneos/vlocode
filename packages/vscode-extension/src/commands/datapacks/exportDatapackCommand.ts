@@ -6,8 +6,8 @@ import { groupBy, pluralize } from '@vlocode/util';
 import { DatapackCommand } from './datapackCommand';
 import { QueryBuilder, SObjectRecord } from '@vlocode/salesforce';
 import { vscodeCommand } from '../../lib/commandRouter';
-import { DatapackResultCollection } from '../../lib/vlocity/vlocityDatapackService';
-import { DatapackTypeDefinitions, DatapackTypeDefinition, ObjectEntry } from '@vlocode/vlocity';
+import { DatapackResultCollection, ObjectEntry } from '../../lib/vlocity/vlocityDatapackService';
+import { DatapackTypeDefinitions, DatapackTypeDefinition } from '@vlocode/vlocity';
 import { container } from '@vlocode/core';
 import { VlocodeDirectExport } from '../../lib/vlocity/vlocodeDirectExport';
 @vscodeCommand(constants.VlocodeCommand.exportDatapack, { focusLog: true  })
@@ -222,10 +222,26 @@ export default class ExportDatapackCommand extends DatapackCommand {
         progress?: vscode.Progress<{ message?: string; progress?: number; total?: number }>,
         token?: vscode.CancellationToken
     ) {
-        if (!this.vlocode.isVlocityBuildToolsAvailable) {
-            return container.get(VlocodeDirectExport).export(entries, exportPath, dependencyExportDepth, progress, token);
+        const [ directEntries, buildToolsEntries ] = entries.reduce<[ObjectEntry[], ObjectEntry[]]>((groups, entry) => {
+            groups[this.useDirectExport(entry) ? 0 : 1].push(entry);
+            return groups;
+        }, [ [], [] ]);
+
+        const results = new DatapackResultCollection();
+
+        if (directEntries.length) {
+            results.join(await container.get(VlocodeDirectExport).export(directEntries, exportPath, dependencyExportDepth, progress, token));
         }
-        return this.datapackService.export(entries, exportPath, dependencyExportDepth, token);
+
+        if (buildToolsEntries.length) {
+            results.join(await this.datapackService.export(buildToolsEntries, exportPath, dependencyExportDepth, token));
+        }
+
+        return results;
+    }
+
+    private useDirectExport(entry: ObjectEntry) {
+        return entry.exportMode === 'direct' || !this.vlocode.isVlocityAvailable;
     }
 
     protected showResultMessage(results : DatapackResultCollection) {

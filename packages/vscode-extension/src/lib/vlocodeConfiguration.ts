@@ -23,11 +23,15 @@ export abstract class VlocodeVlocityDeployConfiguration extends BaseConfiguratio
     allowUnresolvedDependencies: boolean;
 }
 
+export type CustomExportDefinitionFiles = Record<string, string>;
+
 export default abstract class VlocodeConfiguration extends BaseConfiguration {
     logLevel: 'info' | 'verbose' | 'debug';
+    enableLogLinks: boolean;
     //sfdxUsername?: string;
     projectPath?: string;
     customJobOptionsYaml?: string;
+    customExportDefinitionFiles?: CustomExportDefinitionFiles;
     parallelLimit?: number;
     deployOnSave: boolean;
     autoActivate: boolean;

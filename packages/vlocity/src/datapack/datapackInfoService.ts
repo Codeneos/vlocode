@@ -1,6 +1,6 @@
 import { Logger, injectable } from '@vlocode/core';
 import { SalesforceService } from '@vlocode/salesforce';
-import { cache, filterUndefined, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
+import { cache, filterUndefined, forEachAsyncParallel, removeNamespacePrefix, substringBeforeLast } from '@vlocode/util';
 import { DatapackTypeDefinition, DatapackTypeDefinitions } from './datapackTypeDefinitions';
 import { DatapackConfigAccess } from './datapackConfigAccess';
 
@@ -66,21 +66,23 @@ export class DatapackInfoService {
         const localTypes = new Set(Object.keys(DatapackTypeDefinitions).map(key => key.toLowerCase()));
         const configs = Object.values(DatapackTypeDefinitions).flat();
 
-        for (const [type, info] of orgConfigs.entries()) {
+        await forEachAsyncParallel(orgConfigs, async ([type, info]) => {
             if (localTypes.has(type)) {
-                continue;
+                return;
             }
 
             if (!info.sobjectType) {
                 this.logger.warn(`Datapack configuration '${info.datapackType}' does not have a primary SObject type - set the PrimarySObjectType field in the VlocityDataPackConfiguration__mdt metadata object`);
-                continue;
+                return;
             }
 
-            const sobject = await this.salesforce.schema.describeSObject(info.sobjectType, false) ||
-            await this.salesforce.schema.describeSObject(this.salesforce.updateNamespace(`%vlocity_namespace%__${info.sobjectType}`), false);
+            const sobject = 
+                await this.salesforce.schema.describeSObject(info.sobjectType, false) ||
+                await this.salesforce.schema.describeSObject(this.salesforce.updateNamespace(`%vlocity_namespace%__${info.sobjectType}`), false);
+                
             if (!sobject) {
                 this.logger.warn(`Datapack configuration '${info.datapackType}' has an invalid SObject type '${info.sobjectType}'`);
-                continue;
+                return;
             }
             
             configs.push({
@@ -91,7 +93,7 @@ export class DatapackInfoService {
                     fieldList: filterUndefined([ 'Id', sobject.fields.find(f => f.nameField)?.name ]),
                 }
             });
-        }
+        });
         
         return configs;
     }

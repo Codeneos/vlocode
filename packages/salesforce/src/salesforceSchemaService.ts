@@ -6,12 +6,6 @@ import { CompositeSchemaAccess } from './schema/compositeSchemaAccess';
 import { cache, findField, groupBy, isSalesforceId, mapAsyncParallel, mapBy, normalizeSalesforceName, removeNamespacePrefix, stringEqualsIgnoreCase } from '@vlocode/util';
 import { PicklistEntry } from 'jsforce';
 
-interface SchemaAccessProvider {
-    describe(type: string): Promise<DescribeSObjectResult | undefined>;
-    getEntityDefinition(type: string): Promise<unknown>;
-    getFieldDefinition(type: string, field: string): Promise<unknown>;
-}
-
 /**
  * Interface defining the contract for accessing Salesforce schema information
  */
@@ -58,7 +52,7 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
 
     @inject(Logger) private readonly logger: Logger;
     @inject(NamespaceService) private readonly nsService: NamespaceService;
-    @inject(() => CompositeSchemaAccess) private readonly schemaAccess!: SchemaAccessProvider;
+    @inject(() => CompositeSchemaAccess) private readonly schemaAccess!: CompositeSchemaAccess;
 
     constructor(
         private readonly connectionProvider: SalesforceConnectionProvider
@@ -82,6 +76,32 @@ export class SalesforceSchemaService implements ISalesforceSchemaService {
         const con = await this.connectionProvider.getJsForceConnection();
         const components = await con.metadata.list({ type: 'CustomMetadata' });
         return components.map(cmp => cmp.fullName);
+    }
+
+    /**
+     * Checks if the SObject is accessible for the current user; this does not check if the SObject is actually defined but only 
+     * if it's accessible through the describe API, this means that for objects that are not accessible for the current user 
+     * this method will return false even when they are actually defined in the org.
+     * @param type Type of SObject
+     * @returns true when the SObject is accessible for the current user otherwise false; when false is returned it can 
+     * either mean that the SObject is not defined or that it's not accessible for the current user
+     */
+    public async isSObjectAccessible(type: string): Promise<boolean> {
+        return this.getObjectDescribe(type) !== undefined;
+    }
+
+    /**
+     * Gets the SObject describe for a given SObject type; returns undefined when the SObject is not accessible for the current user, 
+     * this does not check if the SObject is actually defined but only if it's accessible through the describe API, 
+     * this means that for objects that are not accessible for the current user this method will return undefined even when they are actually defined in the org.
+     * @param type Type of SObject
+     * @returns the SObject describe when the SObject is accessible for the current user otherwise undefined;
+     * when undefined is returned it can either mean that the SObject is not defined or that it's not accessible for the current user
+     */
+    public async getObjectDescribe(type: string): Promise<DescribeGlobalSObjectResult | undefined> {
+        const objects = await this.describeSObjects();
+        const normalizedType = this.nsService.updateNamespace(type).toLowerCase();
+        return objects.find(obj => obj.name.toLowerCase() === normalizedType);
     }
 
     /**

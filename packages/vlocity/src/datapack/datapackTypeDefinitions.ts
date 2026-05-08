@@ -18,6 +18,8 @@ export const SalesforceUrlTypeLabels: Record<SalesforceUrlType, string> = {
     classic: 'Classic Package Designer'
 };
 
+export type DatapackExportMode = 'direct' | 'tools';
+
 /**
  * Interface defining the query properties for a datapack type
  */
@@ -42,7 +44,7 @@ export interface DatapackTypeDefinition {
      * Defines the source query how to retrieve the datapack records from Salesforce.
      */
     source: SalesforceQueryData;
-    
+
     /**
      * Function to format the name of the datapack for display in the UI
      */
@@ -52,7 +54,17 @@ export interface DatapackTypeDefinition {
      * Description of a single datapack for the UI. Single line format.
      */
     description?: string | ((record: any) => string);
-    
+
+    /**
+     * Defines how the datapack should be exported. If not provided, the datapack will be exported using the default export mode.
+     */
+    exportMode?: DatapackExportMode;
+
+    /**
+     * Optional scope for datapack definitions to allow multiple configurations for the same Object Type.
+     */
+    scope?: string;
+
     /**
      * Defines optional grouping logic for the datapack type.
      */
@@ -65,7 +77,7 @@ export interface DatapackTypeDefinition {
      * Allows overwriting the default Salesforce URL for the datapack type.
      */
     salesforceUrl?: SalesforceUrlDefinition;
-    
+
     /**
      * Allows changing the default Matching Key for the datapack type.
      */
@@ -126,6 +138,7 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         {
             typeLabel: "OmniScript (OmniProcess)",
             datapackType: "OmniScript",
+            exportDefinition: "OmniProcess",
             source: {
                 sobjectType: "OmniProcess",
                 fieldList: ["Id", "Name", "LastModifiedDate", "Type", "SubType", "Language", "VersionNumber", "IsActive"],
@@ -174,6 +187,7 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         {
             typeLabel: "Integration Procedure (OmniProcess)",
             datapackType: "IntegrationProcedure",
+            exportDefinition: "IntegrationProcedureOmniProcess",
             source: {
                 sobjectType: "OmniProcess",
                 fieldList: ["Id", "Name", "LastModifiedDate", "Type", "SubType", "VersionNumber", "IsActive"],
@@ -211,6 +225,7 @@ export const DatapackTypeDefinitions: Record<string, DatapackTypeDefinition | Da
         },{
             typeLabel: "DataMapper (OmniDataTransform)",
             datapackType: "DataRaptor",
+            exportDefinition: "OmniDataTransform",
             source: {
                 sobjectType: "OmniDataTransform",
                 fieldList: ["Id", "Name"]

@@ -1,8 +1,8 @@
-import { DescribeSObjectResult, Field, SalesforceService } from "@vlocode/salesforce";
+import { DescribeSObjectResult, Field, SalesforceDataService, SalesforceService } from "@vlocode/salesforce";
 import { ObjectFilter, ObjectRelationship, type LookupFilerPrimitive, type LookupFilerValue, type LookupFilter } from "./exportDefinitions";
 import { VlocityDatapackLookupReference, VlocityDatapackMatchingReference, VlocityDatapackReference, VlocityDatapackReferenceType, VlocityDatapackSObject, VlocityDatapackSourceKey, VlocityDatapackType, DatapackMatchingKeyService } from "@vlocode/vlocity";
-import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, formatString, getObjectProperty, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
-import { Logger, injectable } from "@vlocode/core";
+import { defineAliasedProperties, defineReadonlyProperties, extractNamespaceAndName, forEachAsyncParallel, mapAsyncParallel, removeNamespacePrefix, Timer } from "@vlocode/util";
+import { Logger, container, injectable } from "@vlocode/core";
 import { DatapackExpandResult, DatapackExpander } from "./datapackExpander";
 import { DatapackExportDefinitionStore } from "./exportDefinitionStore";
 import { randomUUID } from "crypto";
@@ -15,6 +15,7 @@ interface ExportDatapack {
     readonly objectType: string;
     readonly normalizedObjectType: string;
     readonly scope?: string;
+    readonly dependencyDepth: number;
     readonly schema: DescribeSObjectResult;
     data: VlocityDatapackSObject;
     references: Record<string, VlocityDatapackReference>;
@@ -25,7 +26,8 @@ interface ExportDatapack {
      */
     foreignKeys: Record<string, string>;
     /**
-     * Map of SourceKeys that are provided by this datapack and any embedded child datapacks.
+     * Map of SourceKeys that are provided by this datapack, embedded child datapacks,
+     * and related top-level datapacks known to this datapack for reference conversion.
      * The keys are the SourceKeys and the values are the Id's of the objects.
      */
     sourceKeys: Record<string, string>;
@@ -36,6 +38,7 @@ interface ExportContext {
     scope?: string;
     parent?: ExportDatapack;
     embedded?: boolean;
+    dependencyDepth?: number;
 }
 
 interface ExportResult {
@@ -44,6 +47,7 @@ interface ExportResult {
         id: string;
     }[];
     datapack: VlocityDatapackSObject;
+    relatedDatapacks: VlocityDatapackSObject[];
     objectType: string;
     sourceKey: string;
 }
@@ -51,7 +55,7 @@ interface ExportResult {
 /**
  * Options for exporting datapacks.
  */
-type DatapackExportOptions = Omit<ExportContext, 'parent' | 'embedded'>;
+type DatapackExportOptions = Omit<ExportContext, 'parent' | 'embedded' | 'dependencyDepth'>;
 
 /**
  * The `DatapackExporter` class is responsible for exporting and expanding Salesforce objects into datapacks.
@@ -71,7 +75,7 @@ type DatapackExportOptions = Omit<ExportContext, 'parent' | 'embedded'>;
  * const expanded = await exporter.exportExpandObject('001000000000000');
  * ```
  */
-@injectable()
+@injectable.transient()
 export class DatapackExporter {
 
     private readonly unwriteableFields = [
@@ -85,6 +89,7 @@ export class DatapackExporter {
 
     private datapacks: Record<string, ExportDatapack> = {};
     private matchingKeys: Record<string, string> = {};
+    private data: SalesforceDataService;
 
     /**
      * Maximum depth to export objects, when the depth is reached the 
@@ -108,7 +113,7 @@ export class DatapackExporter {
         private readonly logger: Logger,
     ) {
         this.logger = logger.distinct();
-        this.salesforce.data.cache.configure({ enabled: true, default: true });
+        this.data = container.new(SalesforceDataService, { type: 'data' });
     }
 
     /**
@@ -120,7 +125,9 @@ export class DatapackExporter {
      */
     public async exportObjectAndExpand(id: string, context?: DatapackExportOptions): Promise<DatapackExpandResult> {
         const result = await this.exportObject(id, context);
-        return this.expander.expandDatapack(result.datapack, context);
+        const expanded = this.expander.expandDatapack(result.datapack, context);
+        const related = (result.relatedDatapacks ?? []).map(datapack => this.expander.expandDatapack(datapack, context));
+        return related.length ? this.combineExpandResults(expanded, related) : expanded;
     }
 
     /**
@@ -132,25 +139,41 @@ export class DatapackExporter {
     public async exportObject(id: string, context?: DatapackExportOptions): Promise<ExportResult> {
         this.logger.verbose(`Export SObject ${id}`);
         const timer = new Timer();
-        const data = await this.salesforce.data.lookupById(id);
+        const data = await this.data.lookupById(id);
         if (!data) {
             throw new Error(`No SObject with id [${id}] does not exist in target org`);
         }
 
-        await this.buildDatapack(data, context ?? {});
+        const existingDatapacks = new Set(Object.keys(this.datapacks));
+        await this.buildDatapack(data, { ...context, dependencyDepth: 0 });
         const datapack = this.datapacks[id];
         this.logger.info(`Exported ${datapack.data.VlocityRecordSourceKey} - ${timer.toString('ms')}`);
 
-        return this.asExportResult(datapack);
+        return this.asExportResult(datapack, existingDatapacks);
     }
 
-    private asExportResult(datapack: ExportDatapack): ExportResult {
+    private asExportResult(datapack: ExportDatapack, existingDatapacks?: Set<string>): ExportResult {
         return {
             parentKeys: Object.entries(datapack.foreignKeys).map(([key, id]) => ({ key, id })),
             datapack: datapack.data,
+            relatedDatapacks: Object.values(this.datapacks)
+                .filter(item => !item.parent && item.id !== datapack.id && existingDatapacks?.has(item.id) !== true)
+                .map(item => item.data),
             sourceKey: datapack.data.VlocityRecordSourceKey,
             objectType: datapack.objectType
         };
+    }
+
+    private combineExpandResults(root: DatapackExpandResult, related: DatapackExpandResult[]): DatapackExpandResult {
+        const result: DatapackExpandResult = {
+            ...root,
+            parentKeys: [ ...new Set([ ...root.parentKeys, ...related.flatMap(item => item.parentKeys) ]) ],
+            writeToFilesystem: async (targetPath, options) => {
+                await root.writeToFilesystem(targetPath, options);
+                await mapAsyncParallel(related, item => item.writeToFilesystem(targetPath, options), this.exportParallelism);
+            }
+        };
+        return result;
     }
 
     private async buildDatapack(record: Record<string, any>, context: DatapackExportOptions): Promise<VlocityDatapackSObject>;
@@ -166,7 +189,8 @@ export class DatapackExporter {
             return this.buildLookup(context.parent!, record.id, 'VlocityMatchingKeyObject');
         }
 
-        if (!context.embedded && exportStack.length >= this.maxExportDepth) {
+        const dependencyDepth = context.dependencyDepth ?? 0;
+        if (!context.embedded && dependencyDepth > this.maxExportDepth) {
             this.logger.warn(`Max export depth reached for ${matchingKey}: ${exportStack.join(' -> ')}`);
             return this.buildMatchingKeyObject(context.parent!, 'VlocityLookupMatchingKeyObject', record);
         }
@@ -181,6 +205,7 @@ export class DatapackExporter {
             objectType: describe.name,
             normalizedObjectType: removeNamespacePrefix(describe.name),
             scope: context?.scope,
+            dependencyDepth,
             schema: describe,
             parent: context?.parent,
             data: defineReadonlyProperties({
@@ -295,12 +320,12 @@ export class DatapackExporter {
         }
 
         const filter = this.buildLookupFilter(embeddedObject.filter, datapack);
-        if (Object.keys(filter).length === 0) {
+        if (this.isEmptyLookupFilter(filter)) {
             throw new Error(`Filter evaluated to empty object for embedded object ${embeddedObject.objectType} on ${datapack.objectType}`);
         }
 
         this.logger.verbose(`Lookup ${embeddedObject.objectType} (${datapack.objectType}) using filter:`, filter);
-        return this.salesforce.data.lookup(embeddedObject.objectType, filter, undefined, embeddedObject.limit);
+        return this.data.lookup(embeddedObject.objectType, filter, undefined, embeddedObject.limit);
     }
 
     private getObjectFilterFromRelationship(datapack: ExportDatapack, embeddedObject: ObjectRelationship): ObjectFilter {
@@ -368,10 +393,14 @@ export class DatapackExporter {
     private updateForeignKeys(datapack: ExportDatapack) {
         const root = this.getDatapackRoot(datapack);
         for (const [key, id] of Object.entries(datapack.foreignKeys)) {
-            if (root.children[id] || root.id === id) {
+            if (this.hasKnownSourceKey(root, id)) {
                 delete datapack.foreignKeys[key];
             }
         }
+    }
+
+    private hasKnownSourceKey(datapack: ExportDatapack, id: string) {
+        return datapack.id === id || Object.values(datapack.sourceKeys).includes(id);
     }
 
     private getDatapackRoot(datapack: ExportDatapack) {
@@ -394,7 +423,12 @@ export class DatapackExporter {
         if (!id) {
             throw new Error(`Embedded ${datapack.objectType} record is missing an Id`);
         }
-        const sobjectPack = await this.buildDatapack(record, { scope: datapack.scope, parent: datapack, embedded: true });
+        const sobjectPack = await this.buildDatapack(record, {
+            scope: datapack.scope,
+            parent: datapack,
+            embedded: true,
+            dependencyDepth: datapack.dependencyDepth
+        });
         return this.addReference(datapack, id, sobjectPack);
     }
 
@@ -411,14 +445,40 @@ export class DatapackExporter {
             }
         }
 
-        const data = await this.salesforce.data.lookupById(id);
+        const data = await this.data.lookupById(id);
         if (!data) {
             return null;
         }
-        const sobjectPack = type === 'SObject'
-            ? await this.buildDatapack(data, { scope: datapack.scope, parent: datapack, embedded: context?.embedded })
-            : await this.buildMatchingKeyObject(datapack, type, data);
-        return this.addReference(datapack, id, sobjectPack);
+        if (type === 'SObject') {
+            const sobjectPack = await this.buildDatapack(data, {
+                scope: datapack.scope,
+                parent: datapack,
+                embedded: context?.embedded,
+                dependencyDepth: datapack.dependencyDepth
+            });
+            return this.addReference(datapack, id, sobjectPack);
+        }
+
+        const matchingKeyObject = await this.buildMatchingKeyObject(datapack, type, data);
+        const reference = this.addReference(datapack, id, matchingKeyObject);
+        if (reference && this.shouldExportRelatedLookup(datapack, type)) {
+            await this.buildRelatedDatapack(datapack, data);
+        }
+        return reference;
+    }
+
+    private shouldExportRelatedLookup(datapack: ExportDatapack, type: VlocityDatapackType) {
+        return type === 'VlocityLookupMatchingKeyObject' && datapack.dependencyDepth < this.maxExportDepth;
+    }
+
+    private async buildRelatedDatapack(datapack: ExportDatapack, data: Record<string, any>) {
+        const relatedDatapack = await this.buildDatapack(data, {
+            scope: datapack.scope,
+            dependencyDepth: datapack.dependencyDepth + 1
+        });
+        if (relatedDatapack?.VlocityDataPackType === 'SObject') {
+            this.addKnownSourceKey(datapack, data.id, relatedDatapack);
+        }
     }
 
     private buildLocalReference(datapack: ExportDatapack, id: string, type: VlocityDatapackReferenceType): VlocityDatapackReference | undefined {
@@ -472,7 +532,7 @@ export class DatapackExporter {
         }
 
         if (datapack.children[refId]) {
-            throw new Error(`Duplicate record export detected for id ${refId} on ${datapack.objectType}`);
+            return datapack.children[refId];
         }
 
         const currentRefId = datapack.sourceKeys[child.VlocityRecordSourceKey];
@@ -482,6 +542,20 @@ export class DatapackExporter {
 
         datapack.sourceKeys[child.VlocityRecordSourceKey] = refId;
         datapack.children[refId] = child;
+        return child;
+    }
+
+    private addKnownSourceKey(datapack: ExportDatapack, refId: string, child: VlocityDatapackSObject): VlocityDatapackSObject {
+        if (datapack.parent) {
+            child = this.addKnownSourceKey(datapack.parent, refId, child);
+        }
+
+        const currentRefId = datapack.sourceKeys[child.VlocityRecordSourceKey];
+        if (currentRefId && currentRefId !== refId) {
+            throw new Error(`Source key conflict for "${child.VlocityRecordSourceKey}" on ${datapack.objectType}: ${refId} <> ${currentRefId}`);
+        }
+
+        datapack.sourceKeys[child.VlocityRecordSourceKey] = refId;
         return child;
     }
 
@@ -525,24 +599,26 @@ export class DatapackExporter {
 
         if (typeof filter === 'string') {
             // simple where clause as string, e.g. "Name = 'Test' AND Status__c != 'Closed'"
-            return formatString(filter, {
-                [datapack.objectType]: datapack.data,
-            });
+            return this.evalFilterValueExp(filter, datapack);
         }
 
         // Multiple clauses for the same object which should be joined as OR
         if (Array.isArray(filter)) {
-            return filter.map(item => this.buildLookupFilter(item, datapack));
+            const clauses = filter
+                .map(item => this.buildLookupFilter(item, datapack))
+                .filter(item => !this.isEmptyLookupFilter(item));
+            return clauses.length ? clauses : undefined;
         }
 
         // Object exp with field conditions
         if (typeof filter === 'object' && filter) {
-            return Object.fromEntries(
-                Object.entries(filter).map(([key, value]) => [
-                    key,
-                    this.evalFilterValue(value, datapack)
-                ])
-            );
+            const entries = Object.entries(filter).map(([key, value]) => [
+                key,
+                this.evalFilterValue(value, datapack)
+            ]);
+            return entries.some(([, value]) => value === undefined)
+                ? undefined
+                : Object.fromEntries(entries);
         }
     }
 
@@ -552,9 +628,13 @@ export class DatapackExporter {
         }
         
         if (typeof value === 'object' && value !== null) {
+            const resolvedValue = typeof value.value === 'string' ? this.evalFilterValueExp(value.value, datapack) : value.value;
+            if (resolvedValue === undefined) {
+                return undefined;
+            }
             return {
                 op: value.op,
-                value: typeof value.value === 'string' ? this.evalFilterValueExp(value.value, datapack) : value.value
+                value: resolvedValue
             }
         }
 
@@ -562,14 +642,73 @@ export class DatapackExporter {
     }
 
     private evalFilterValueExp(stringFormat: string, datapack: ExportDatapack) {
+        const context = {
+            Id: datapack.id,
+            [datapack.objectType]: datapack.data,
+            [datapack.normalizedObjectType]: datapack.data,
+        };
+
+        const exactMatch = stringFormat.match(/^\$?{(.+?)}$/);
+        if (exactMatch) {
+            return this.getDatapackValue(context, exactMatch[1]);
+        }
+
         return stringFormat.replace(/\$?{(.+?(.*?))}/gm, (match, key) => {
-            const value = getObjectProperty({
-                    Id: datapack.id,
-                    [datapack.objectType]: datapack.data,
-                    [datapack.normalizedObjectType]: datapack.data,
-                }, key.replace(':', '.'));
+            const value = this.getDatapackValue(context, key);
             return value === undefined ? match : (typeof value === 'string' ? value : `${value}`);
         });
+    }
+
+    /**
+     * Gets a value from the datapack based on the property path.
+     * The property path can include dot notation for nested properties and can also include multiple options separated by `|` or `;` to try multiple paths.
+     *
+     * If a node in the path is an array each element of the array will be traversed and the results will be returned as an array.
+     * For example, if the path is `Contacts.Name` and `Contacts` is an array of contact records, the result will be an array of names for each contact.
+     *
+     * @param obj The object to get the value from, typically the datapack data object.
+     * @param prop The property path to get the value from, can include dot notation and multiple options separated by `|` or `;`.
+     */
+    private getDatapackValue(obj: any, prop: string): any {
+        for (const propertyPath of prop.split(/[|;]/).map(path => path.trim()).filter(Boolean)) {
+            const value = this.getDatapackPathValue(obj, propertyPath.split(/[.:]/));
+
+            if (value !== undefined) {
+                return value;
+            }
+        }
+    }
+
+    private getDatapackPathValue(value: any, path: string[]): any {
+        if (value === undefined || path.length === 0) {
+            return value;
+        }
+
+        const [segment, ...remainingPath] = path;
+        if (Array.isArray(value)) {
+            const values = value
+                .flatMap(item => this.getDatapackPathValue(item, path))
+                .filter(item => item !== undefined);
+            return values.length ? values : undefined;
+        }
+
+        return this.getDatapackPathValue(value?.[segment], remainingPath);
+    }
+
+    private isEmptyLookupFilter(filter: unknown): boolean {
+        if (filter == null) {
+            return true;
+        }
+        if (typeof filter === 'string') {
+            return filter.trim().length === 0;
+        }
+        if (Array.isArray(filter)) {
+            return filter.length === 0;
+        }
+        if (typeof filter === 'object') {
+            return Object.keys(filter).length === 0;
+        }
+        return false;
     }
     
     // embeddedObjects:
@@ -714,6 +853,11 @@ export class DatapackExporter {
         const matchingFields = this.definitions.getMatchingKeyFields({ objectType: type.name, scope });
         if (matchingFields.length > 0) {
             return this.validateFieldList(type, matchingFields);
+        }
+
+        const nameField = type.fields.find(field => field.nameField && !field.autoNumber && !field.calculated);
+        if (!scope && nameField) {
+            return [ nameField.name ];
         }
 
         const sfMatchingKey = (await this.datapackMatchingKeys.getMatchingKeyDefinition(type.name)).fields;

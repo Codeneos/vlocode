@@ -322,6 +322,11 @@
                 }
             },
             {
+                "command": "vlocode.datapackExplorer.addCustomDefinitions",
+                "title": "Add Custom Export Definitions...",
+                "icon": "$(add)"
+            },
+            {
                 "command": "vlocode.datapackExplorer.openSalesforce",
                 "title": "Open in Salesforce",
                 "icon": {
@@ -614,6 +619,10 @@
                 {
                     "command": "vlocode.datapackExplorer.refresh",
                     "when": "view == datapackExplorer && false"
+                },
+                {
+                    "command": "vlocode.datapackExplorer.addCustomDefinitions",
+                    "when": "view == datapackExplorer"
                 },
                 {
                     "command": "vlocode.datapackExplorer.openSalesforce",
@@ -1060,6 +1069,11 @@
                     "when": "view == datapackExplorer"
                 },
                 {
+                    "command": "vlocode.datapackExplorer.addCustomDefinitions",
+                    "group": "v_vlocity",
+                    "when": "view == datapackExplorer"
+                },
+                {
                     "command": "vlocode.jobExplorer.refresh",
                     "group": "navigation",
                     "when": "view == jobExplorer"
@@ -1154,6 +1168,11 @@
                         ],
                         "markdownDescription": "Determines the amount of detail printed to the Vlocode output channel."
                     },
+                    "vlocity.enableLogLinks": {
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "Enable clickable file paths and URLs in the Vlocode output channel. Disabled by default because link detection scans output text and resolves path candidates."
+                    },
                     "vlocity.conditionalContextMenus": {
                         "type": "boolean",
                         "default": true,
@@ -1184,6 +1203,15 @@
                         "type": "string",
                         "scope": "machine-overridable",
                         "markdownDescription": "Path to the custom YAML that is used during deployment and export, see the official Vlocity Build repository for [documentation](https://github.com/vlocityinc/vlocity_build#additional-command-line-options) on the format of this file.\n\n> **Note** most of the job options are controlled by Vlocode therefore only the **`preStepApex`**, **`postStepApex`** and **`OverrideSettings`** settings will be used from specified YAML file."
+                    },
+                    "vlocity.customExportDefinitionFiles": {
+                        "type": "object",
+                        "scope": "resource",
+                        "default": {},
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "markdownDescription": "Additional YAML files that define custom datapack and export definitions. Object keys become Datapacks explorer root node labels and values are YAML file paths; relative paths are resolved from workspace folders."
                     },
                     "vlocity.deployOnSave": {
                         "type": "boolean",

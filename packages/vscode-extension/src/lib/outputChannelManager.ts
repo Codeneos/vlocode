@@ -1,4 +1,3 @@
-import { OUTPUT_CHANNEL_NAME } from '../constants';
 import * as vscode from 'vscode';
 
 /**
@@ -6,14 +5,6 @@ import * as vscode from 'vscode';
  */
 export class OutputChannelManager {
     private static outputChannels: Map<string, vscode.OutputChannel> = new Map();
-
-    /**
-     * Returns the default output channel.
-     * @returns The default output channel.
-     */
-    public static getDefault() : vscode.OutputChannel {
-        return this.get(OUTPUT_CHANNEL_NAME);
-    }
 
     /**
      * Retrieves an output channel with the specified name. If the output channel does not exist,

@@ -505,7 +505,7 @@ export class SalesforceConnection extends Connection {
         const isTooling = (options?.type ?? options?.queryType) === 'tooling';
         const baseUri = `/services/data/v{apiVersion}${isTooling ? `/tooling` : ''}`;
         const resourceUri = `${options?.includeDeleted ? 'queryAll' : 'query'}?q=${encodeRFC3986URI(soql)}`;
-        return new AsyncQueryIterator<T>(new RestClient(this, baseUri), resourceUri, options?.queryMore)
+        return new AsyncQueryIterator<T>(new RestClient(this, baseUri), resourceUri, isTooling ? false : options?.queryMore)
             .once('done', (records) => this.logger.debug(`[SIZE=%s] SOQL=%s (%s)`, records.length, soql, timer.elapsed));
     }
 

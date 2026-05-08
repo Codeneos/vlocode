@@ -18,6 +18,7 @@ import { DeveloperLogs } from './developerLogs';
 import { QueryBuilder } from './queryBuilder';
 import { SalesforceBatchService } from './salesforceBatchService';
 import { SalesforceProfileService } from './salesforceProfileService';
+import type { SalesforceQueryData } from './queryParser';
 
 export interface OrganizationDetails {
     readonly id: string;
@@ -173,8 +174,11 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param value - The new namespace value to set
      * @returns A promise that resolves when the namespace has been updated
      */
-    public updateNamespace(value: string) {
-        return this.namespaceService.updateNamespace(value);
+    public updateNamespace<T extends string | object>(value: T): T {
+        if (typeof value === 'string') {
+            return this.namespaceService.updateNamespace(value) as T;
+        }
+        return this.namespaceService.updateObjectNamespace(value) as T;
     }
 
     /**
@@ -191,16 +195,11 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * Returns a list of records. All records are mapped to record proxy object 
      * @param query SOQL Query to execute
      */
-    public async query<T extends Partial<SObjectRecord>>(query: string, useCache?: boolean) : Promise<T[]> {
-        return this.data.query(query, useCache);
-    }
-
-    /**
-     * Update query cache behavior for the current Salesforce service instance.
-     */
-    public setQueryCache(options: { enabled: boolean, default?: boolean }) {
-        this.data.cache.configure(options);
-        return this;
+    public async query<T extends Partial<SObjectRecord>>(query: string | QueryBuilder | SalesforceQueryData) : Promise<T[]> {
+        if (query instanceof QueryBuilder) {
+            query = query.getQuery();
+        }
+        return this.data.query(query);
     }
 
     /**
@@ -211,8 +210,8 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param limit limit the number of results
      * @param useCache use the query cache
      */
-    public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number, useCache?: boolean): Promise<QueryResult<T, K>[]>  {
-        return this.data.lookup(type, filter, lookupFields, limit, useCache);
+    public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: T | string | Array<T | string>, lookupFields?: K[] | 'all', limit?: number): Promise<QueryResult<T, K>[]>  {
+        return this.data.lookup(type, filter, lookupFields, limit);
     }
 
     /**
@@ -254,7 +253,7 @@ export class SalesforceService implements SalesforceConnectionProvider {
      * @param chunkSize Number of records to delete in a single call
      */
     public async deleteWhere(type: string, filter?: object | string | Array<object | string>, chunkSize = 200) : Promise<{ id: string, success: boolean, error?: string }[]> {
-        const records = await this.lookup(type, filter, ['Id'], undefined, false);
+        const records = await this.lookup(type, filter, ['Id']);
         return this.delete(records.map(rec => rec.Id), chunkSize);
     }
 

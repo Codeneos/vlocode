@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import chalk from 'chalk';
 
 import { Logger, injectable ,container, LifecyclePolicy, inject } from '@vlocode/core';
-import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel } from '@vlocode/util';
+import { observeArray, ObservableArray, observeObject, Observable, sfdx, isPromise, intersect, preventParallel, clearCache } from '@vlocode/util';
 import { SalesforceConnectionProvider, SalesforceService, SfdxConnectionProvider } from '@vlocode/salesforce';
 import { DatapackMatchingKeyService, VlocityNamespaceService } from '@vlocode/vlocity';
 
@@ -63,15 +63,11 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         return this._datapackService;
     }
 
-    public get isVlocityBuildToolsAvailable(): boolean {
+    public get isVlocityAvailable(): boolean {
         return this.isVlocityInstalled === true;
     }
 
-    public get hasIndustriesDatapacks(): boolean {
-        return this.isVlocityInstalled === true;
-    }
-
-    public get hasOmniStudioDatapacks(): boolean {
+    public get isOmniStudioAvailable(): boolean {
         return this.isOmnistudioInstalled === true || this.isVlocityInstalled === true;
     }
 
@@ -679,6 +675,14 @@ export default class VlocodeService implements vscode.Disposable, SalesforceConn
         }
         this.logger.verbose(`Using Salesforce API version: ${apiVersion}`);
         this.config.salesforce.apiVersion = `${apiVersion}.0`;
+    }
+
+    public flushCaches() {
+        if (!this.isInitialized) {
+            return;
+        }
+        clearCache(this.datapackService);
+        clearCache(this.salesforceService.schema);
     }
 }
 

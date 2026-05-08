@@ -28,13 +28,26 @@ export class DatapackExportDefinitionStore {
     private scopedConfig: Record<string, Record<string, DatapackExportDefinition>> = {};
 
     /**
+     * Clears the configuration for a specific scope or all configurations if no scope is provided.
+     */
+    public clear(scope?: string) {
+        if (scope) {
+            delete this.scopedConfig[scope];
+        } else {
+            this.sobjectConfig = {};
+            this.globalConfig = {};
+            this.scopedConfig = {};
+        }
+    }
+
+    /**
      * Loads the provided configuration into the datapack exporter.
      *
      * @param config - The configuration object containing datapack export definitions.
      */
-    public load(config: Record<string, Partial<DatapackExportDefinition>>) {
+    public load(config: Record<string, Partial<DatapackExportDefinition>>, options?: { scope?: string }) {
         for (const [key, value] of Object.entries(config)) {
-            merge(this.getDefinition(key, undefined), value);
+            merge(this.getDefinition(key, options?.scope), value);
         }
     }
 
@@ -74,7 +87,7 @@ export class DatapackExportDefinitionStore {
             return value.concat(globalValue);
         }
 
-        return value || globalValue;
+        return value ?? globalValue;
     }
 
     /**

@@ -36,14 +36,14 @@ export class CompositeSchemaAccess {
         return this.schemaStore.get(type, field)?.describe;
     }
 
-    public async getEntityDefinition(type: string): Promise<EntityDefinition| undefined>{
+    public async getEntityDefinition(type: string): Promise<EntityDefinition | undefined>{
         if (!this.schemaStore.get(type)?.tooling) {
             await this.enqueueTooling(type);
         }
         return this.schemaStore.get(type)?.tooling;
     }
 
-    public async getFieldDefinition(type: string, field: string): Promise<FieldDefinition| undefined>{
+    public async getFieldDefinition(type: string, field: string): Promise<FieldDefinition | undefined>{
         if (!this.schemaStore.get(type)?.tooling) {
             await this.enqueueTooling(type);
         }

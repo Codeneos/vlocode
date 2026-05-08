@@ -273,6 +273,14 @@ vlocode.datapackExplorer.refresh:
   menus:
     - menu: view/title
       group: navigation
+vlocode.datapackExplorer.addCustomDefinitions:
+  title: Add Custom Export Definitions...
+  icon: $(add)
+  when: view == datapackExplorer
+  menus:
+    - menu: view/title
+      group: v_vlocity
+    - menu: commandPalette
 vlocode.datapackExplorer.openSalesforce:
   title: Open in Salesforce
   icon: resources/{type}/link-external.svg

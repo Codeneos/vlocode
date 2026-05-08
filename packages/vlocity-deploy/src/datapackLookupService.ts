@@ -208,7 +208,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             const fields = distinctFilters.reduce<Set<string>>((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id' ]));
 
             // lookup records
-            const records = await this.salesforce.data.lookup(sobjectType, distinctFilters, [...fields], undefined, false);
+            const records = await this.salesforce.data.lookup(sobjectType, distinctFilters, [...fields], undefined);
 
             // map record results back to lookup requests
             while (records.length) {
@@ -250,7 +250,7 @@ export class DatapackLookupService implements DatapackDependencyResolver {
             this.logger.info(`Comparing record data to target org for ${records.length} ${type} records...`);
 
             const recordFields = [...records.reduce((acc, rec) => Object.keys(rec.values).reduce((acc, field) => acc.add(field), acc), new Set<string>())];
-            const targetOrgRecords = await this.salesforce.data.lookupById(records.map(rec => rec.recordId!), recordFields, false, cancelToken);
+            const targetOrgRecords = await this.salesforce.data.lookupById(records.map(rec => rec.recordId!), recordFields, cancelToken);
             const objectFields = await this.salesforce.schema.getSObjectFields(type);
 
             if (cancelToken?.isCancellationRequested) {

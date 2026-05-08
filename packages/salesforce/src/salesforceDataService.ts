@@ -1,8 +1,8 @@
 import { inject, injectable, LifecyclePolicy, Logger } from '@vlocode/core';
-import { asArray, CancellationToken, groupBy, isSalesforceId, joinLimit, mapKeys } from '@vlocode/util';
+import { asArray, CancellationToken, groupBy, isSalesforceId, joinLimit, mapKeys, type Public } from '@vlocode/util';
 import { DateTime } from 'luxon';
 
-import { SalesforceConnectionProvider } from './connection';
+import { SalesforceConnectionProvider, type Query2Options } from './connection';
 import { NamespaceService } from './namespaceService';
 import { QueryCache } from './queryCache';
 import { RecordFactory } from './queryRecordFactory';
@@ -23,101 +23,104 @@ type LookupFilter<T> = ObjectFilter<T> | Array<ObjectFilter<T> | string> | strin
 export type SalesforceDataServiceType = 'data' | 'tooling';
 
 export interface SalesforceDataServiceOptions {
-    type: SalesforceDataServiceType;
+    type?: SalesforceDataServiceType;
+    queryCache?: Boolean;
+    executor?: QueryRunner;
+}
+export interface QueryRunner {
+    execute<T extends object = object, K extends PropertyKey = keyof T> (query: string, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]>
 }
 
-export interface SalesforceDataCacheOptions {
-    enabled?: boolean;
-    default?: boolean;
+export class StandardQueryRunner implements QueryRunner {
+    constructor(
+        public readonly options: Query2Options, 
+        private readonly connectionProvider: SalesforceConnectionProvider) {
+    }
+
+    public async execute<T extends object = object, K extends PropertyKey = keyof T>(query: string, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
+        const connection = await this.connectionProvider.getJsForceConnection();
+        const result = connection.query2<QueryResult<T, K>>(query, this.options);
+        const records = new Array<QueryResult<T, K>>();
+        for await (const record of result) {
+            if (cancelToken?.isCancellationRequested) {
+                break;
+            }
+            records.push(RecordFactory.create<QueryResult<T, K>>(record));
+        }
+        return records;
+    }
 }
 
-export class SalesforceDataCacheController {
+export class CachedQueryRunner implements QueryRunner {
+    private readonly cache = new QueryCache();
+    private queryCacheEnabled = true;
 
-    constructor(private readonly owner: SalesforceDataService) {
+    constructor(
+        private readonly runner: QueryRunner
+    ) {
     }
 
-    public get enabled() {
-        return this.owner.getCacheState().enabled;
+    public async execute<T extends object = object, K extends PropertyKey = keyof T>(query: string, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
+        if (!this.queryCacheEnabled) {
+            return this.runner.execute<T, K>(query, cancelToken);
+        }
+        return this.cache.getOrSet(query, () => this.runner.execute<T, K>(query, cancelToken));
     }
 
-    public set enabled(value: boolean) {
-        this.owner.configureCache({ enabled: value });
+    public clearCache() {
+        this.cache.clear();
     }
 
-    public get default() {
-        return this.owner.getCacheState().default;
+    public enabled(state?: boolean) {
+        const currentState = this.queryCacheEnabled;
+        if (state !== undefined && state !== this.queryCacheEnabled) {
+            this.cache.clear();
+            this.queryCacheEnabled = state;
+        }
+        return this.queryCacheEnabled;
     }
 
-    public set default(value: boolean) {
-        this.owner.configureCache({ default: value });
-    }
-
-    public configure(options: SalesforceDataCacheOptions) {
-        this.owner.configureCache(options);
-        return this;
-    }
-
-    public clear() {
-        this.owner.clearCache();
-        return this;
+    public isCacheEnabled() {
+        return this.queryCacheEnabled;
     }
 }
 
 @injectable({ lifecycle: LifecyclePolicy.transient })
 export class SalesforceDataService {
 
-    private readonly queryCache = new QueryCache();
-    private queryCacheEnabled = true;
-    private queryCacheDefault = false;
-
-    public readonly cache = new SalesforceDataCacheController(this);
-
     @inject(Logger) private readonly logger!: Logger;
     @inject(NamespaceService) private readonly nsService!: NamespaceService;
+    private queryRunner: QueryRunner;
 
     constructor(
         private readonly options: SalesforceDataServiceOptions,
         private readonly schemaService: SalesforceSchemaService,
         @inject(() => SalesforceConnectionProvider) private readonly connectionProvider: SalesforceConnectionProvider,
     ) {
+        if (options.executor) {
+            this.queryRunner = options.executor;
+        } else {
+            const runner = new StandardQueryRunner({ type: options.type ?? 'data' }, connectionProvider);
+            this.queryRunner = options.queryCache ? new CachedQueryRunner(runner) : runner;
+        }
     }
 
     public get type() {
         return this.options.type;
     }
 
-    public query<T extends object = object, K extends PropertyKey = keyof T>(query: string | SalesforceQueryData, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
+    public query<T extends object = object, K extends PropertyKey = keyof T>(
+        query: string | SalesforceQueryData, 
+        cancelToken?: CancellationToken
+    ): Promise<QueryResult<T, K>[]> {
         if (!query) {
             throw new Error('None-empty query string mis required for query execution');
         }
-
         if (typeof query !== 'string') {
             query = QueryFormatter.format(query);
         }
-
         const normalizedQuery = this.nsService.updateNamespace(query);
-        const enableCache = this.queryCacheEnabled && (useCache ?? this.queryCacheDefault);
-        const queryExecutor = async () => {
-            const connection = await this.connectionProvider.getJsForceConnection();
-            const result = connection.query2<QueryResult<T, K>>(normalizedQuery, {
-                type: this.type,
-                queryMore: this.type === 'data',
-            });
-            const records = new Array<QueryResult<T, K>>();
-            for await (const record of result) {
-                if (cancelToken?.isCancellationRequested) {
-                    break;
-                }
-                records.push(RecordFactory.create<QueryResult<T, K>>(record));
-            }
-            return records;
-        };
-
-        if (enableCache) {
-            return this.queryCache.getOrSet(normalizedQuery, queryExecutor) as Promise<QueryResult<T, K>[]>;
-        }
-
-        return queryExecutor();
+        return this.queryRunner.execute<T, K>(normalizedQuery, cancelToken);
     }
 
     /**
@@ -132,8 +135,8 @@ export class SalesforceDataService {
      * @param {CancellationToken} [cancelToken] - The cancellation token.
      * @returns {Promise<QueryResult<T, K> | undefined>} - A promise that resolves to the lookup result.
      */
-    public async lookupSingle<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K> | undefined>  {
-        return (await this.lookup(type, filter, lookupFields, 1, useCache, cancelToken))[0];
+    public async lookupSingle<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | 'all', cancelToken?: CancellationToken): Promise<QueryResult<T, K> | undefined>  {
+        return (await this.lookup(type, filter, lookupFields, 1, cancelToken))[0];
     }
 
     /**
@@ -144,7 +147,7 @@ export class SalesforceDataService {
      * @param cancelToken Optional cancellation token to signal the method that it should quit as soon as possible.
      * @returns The record or undefined if it doesn't exist
      */
-    public async lookupById<K extends PropertyKey>(id: string, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<{ Id: string }, K> | undefined>;
+    public async lookupById<K extends PropertyKey>(id: string, lookupFields?: K[] | 'all', cancelToken?: CancellationToken): Promise<QueryResult<{ Id: string }, K> | undefined>;
     /**
      * Lookup multiple records by ID and returns their values mapped by record ID
      * @param ids Iterable list of IDs
@@ -153,10 +156,10 @@ export class SalesforceDataService {
      * @param cancelToken Optional cancellation token to signal the method that it should quit as soon as possible.
      * @returns Records in a Map keyed by their record ID
      */
-    public async lookupById<K extends PropertyKey>(ids: Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<Map<string, QueryResult<{ Id: string }, K>>>;
-    public async lookupById<K extends PropertyKey>(ids: string | Iterable<string>, lookupFields?: K[] | 'all', useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<{ Id: string }, K> | undefined | Map<string, QueryResult<{ Id: string }, K>>> {
+    public async lookupById<K extends PropertyKey>(ids: Iterable<string>, lookupFields?: K[] | 'all', cancelToken?: CancellationToken): Promise<Map<string, QueryResult<{ Id: string }, K>>>;
+    public async lookupById<K extends PropertyKey>(ids: string | Iterable<string>, lookupFields?: K[] | 'all', cancelToken?: CancellationToken): Promise<QueryResult<{ Id: string }, K> | undefined | Map<string, QueryResult<{ Id: string }, K>>> {
         if (typeof ids === 'string') {
-            return (await this.lookupById([ids], lookupFields, useCache, cancelToken)).get(ids);
+            return (await this.lookupById([ids], lookupFields, cancelToken)).get(ids);
         }
         const idsByType = await groupBy(ids, async id => (await this.schemaService.describeSObjectById(id)).name);
         const resultsById = new Map<string, QueryResult<{ Id: string }, K>>();
@@ -164,7 +167,7 @@ export class SalesforceDataService {
             if (cancelToken?.isCancellationRequested) {
                 break;
             }
-            const results = await this.lookup(type, asArray(ids).map(Id => ({ Id })), lookupFields, undefined, useCache, cancelToken);
+            const results = await this.lookup(type, asArray(ids).map(Id => ({ Id })), lookupFields, undefined, cancelToken);
             results.forEach(r => resultsById.set(r.Id, r));
         }
         return resultsById;
@@ -212,7 +215,7 @@ export class SalesforceDataService {
      * @param limit limit the number of results to lookup, set to 0, null, undefined or false to not limit the lookup results; when specified as 1 returns a single record instead of an array.
      * @param useCache when true instructs the QueryService to cache the result in case of a cache miss and otherwise retrive the cached response. The default behavhior depends on the @see QueryService configuration.
      */
-    public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | readonly K[] | 'all', limit?: number, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]>  {
+    public async lookup<T extends object, K extends PropertyKey = keyof T>(type: string, filter?: LookupFilter<T>, lookupFields?: K[] | readonly K[] | 'all', limit?: number, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]>  {
         const filters = await Promise.all(asArray(filter).map(f => typeof f === 'string' ? Promise.resolve(f) : this.createWhereClause(type, f)));
         const results = new Array<QueryResult<T, K>>();
         const lookupFieldLen = Array.isArray(lookupFields) ? lookupFields.reduce((a, f) => a + String(f).length, 0) : 1000;
@@ -222,7 +225,7 @@ export class SalesforceDataService {
             if (cancelToken?.isCancellationRequested) {
                 break;
             }
-            results.push(...await this.lookupWhere<T, K>(type, filterChunks.shift(), lookupFields || 'all', limit, useCache, cancelToken));
+            results.push(...await this.lookupWhere<T, K>(type, filterChunks.shift(), lookupFields || 'all', limit, cancelToken));
         } while(filterChunks.length);
 
         return results;
@@ -241,7 +244,7 @@ export class SalesforceDataService {
             : [...filters.reduce((acc, filter) => Object.keys(filter).reduce((acc, field) => acc.add(field), acc), new Set([ 'Id', ...lookupFields ]))];
 
         // lookup records
-        const records = await this.lookup<T, K>(type, filters, fields as any, undefined, false, cancelToken);
+        const records = await this.lookup<T, K>(type, filters, fields as any, undefined, cancelToken);
 
         // map record results back to lookup requests
         while (records.length) {
@@ -261,31 +264,7 @@ export class SalesforceDataService {
         return lookupResults;
     }
 
-    public clearCache() {
-        this.queryCache.clear();
-        return this;
-    }
-
-    public configureCache(options: { enabled?: boolean, default?: boolean }) {
-        if (options.enabled !== undefined && options.enabled !== this.queryCacheEnabled) {
-            this.logger.verbose(`Query cache ${options.enabled ? 'enabled' : 'disabled'} for ${this.type} access`);
-            this.clearCache();
-            this.queryCacheEnabled = options.enabled;
-        }
-        if (options.default !== undefined) {
-            this.queryCacheDefault = options.default;
-        }
-        return this;
-    }
-
-    public getCacheState() {
-        return {
-            enabled: this.queryCacheEnabled,
-            default: this.queryCacheDefault,
-        };
-    }
-
-    private async lookupWhere<T extends object, K extends PropertyKey = keyof T>(type: string, where?: string, selectFields: K[] | readonly K[] | 'all' = 'all', limit?: number, useCache?: boolean, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
+    private async lookupWhere<T extends object, K extends PropertyKey = keyof T>(type: string, where?: string, selectFields: K[] | readonly K[] | 'all' = 'all', limit?: number, cancelToken?: CancellationToken): Promise<QueryResult<T, K>[]> {
         this.logger.verbose(`Lookup ${type} records ${limit ? `- limit ${limit} ` : ``}- fields:`, () => JSON.stringify(selectFields));
         const fields = new Set(['Id']);
 
@@ -309,7 +288,7 @@ export class SalesforceDataService {
         const limitClause = limit ? ` limit ${limit}` : '';
         const whereClause = where?.trim().length ? ` where ${  where}` : '';
         const queryString = `select ${Array.from(fields).join(',')} from ${realType}${whereClause}${limitClause}`;
-        return this.query(queryString, useCache, cancelToken);
+        return this.query(queryString, cancelToken);
     }
 
     private async createWhereClause<T>(type: string, values: ObjectFilter<T> | undefined | null) : Promise<string> {

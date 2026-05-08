@@ -592,6 +592,9 @@ importers:
       fs-extra:
         specifier: '11'
         version: 11.3.3
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.1
       luxon:
         specifier: ^3.4.4
         version: 3.7.2

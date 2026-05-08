@@ -8,18 +8,6 @@ import { forEachAsyncParallel, Iterable, lazy } from '@vlocode/util';
 import { OutputChannelManager } from './outputChannelManager';
 import { CommandLogger } from './commandLogger';
 
-type CommandOutputOptions<T = {}> = Partial<T> & {
-    appendEmptyLine?: boolean;
-    focus?: boolean;
-}
-
-const TerminalCharacters = {
-    HorizontalLine: String.fromCharCode(0x2015),
-    HorizontalLineBold: String.fromCharCode(0x2501),
-    VerticalLine: String.fromCharCode(0x2502),
-    VerticalLineBold: String.fromCharCode(0x2503)
-} as const;
-
 export abstract class CommandBase implements Command {
 
     private outputLogger?: CommandLogger;
@@ -74,9 +62,10 @@ export abstract class CommandBase implements Command {
 
     protected getOutputChannel() {
         if (!this.outputChannel) {
-            this.outputChannel = this.outputChannelName
-                ? OutputChannelManager.get(this.outputChannelName)
-                : OutputChannelManager.getDefault();
+            if (!this.outputChannelName) {
+                throw new Error(`${this.getName()} uses command output without a named output channel`);
+            }
+            this.outputChannel = OutputChannelManager.get(this.outputChannelName);
         }
         return this.outputChannel;
     }

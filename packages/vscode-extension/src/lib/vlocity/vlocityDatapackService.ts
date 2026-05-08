@@ -9,7 +9,7 @@ import { Logger, injectable } from '@vlocode/core';
 import { DatapackLoader, VlocityDatapack, getDatapackManifestKey, getExportProjectFolder, DatapackMatchingKeyService } from '@vlocode/vlocity';
 import VlocodeConfiguration from '../../lib/vlocodeConfiguration';
 
-import { groupBy, mapAsync , getDocumentBodyAsString , stringEquals, getErrorMessage } from '@vlocode/util';
+import { groupBy, mapAsync , getDocumentBodyAsString , getErrorMessage } from '@vlocode/util';
 import DataPacksExpand from 'vlocity/lib/datapacksexpand';
 import { SalesforceConnectionProvider, SalesforceService, SObjectRecord } from '@vlocode/salesforce';
 import { DatapackExportQueries } from './datapackExportQueries';
@@ -19,12 +19,16 @@ export interface ManifestEntry {
     key: string;
 }
 
+export type DatapackExportMode = 'direct' | 'tools';
+
 export interface ObjectEntry {
     sobjectType: string;
     datapackType: string;
     globalKey?: string;
     name?: string;
     id?: string;
+    exportMode?: DatapackExportMode;
+    exportDefinitionScope?: string;
 }
 
 type ObjectEntryWithId = ObjectEntry & { id: string };

@@ -39,7 +39,7 @@ export class ScriptDefinitionProvider implements OmniScriptDefinitionProvider {
             }
         }
 
-        const records = await this.salesforce.data.query(QueryFormatter.format(query), false);
+        const records = await this.salesforce.data.query(query);
 
         if (records.length == 0) {
             throw new Error(`Specified OmniScript doesn't exists or isn't activated, activate the OmniScript before compiling it`);
