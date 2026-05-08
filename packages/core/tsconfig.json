@@ -8,5 +8,6 @@
         "declarationMap": true
     },
     "include": ["src/**/*"],
+    "exclude": ["**/__tests__/**", "**/*.test.ts"],
     "references": [{ "path": "../util" }]
 }
