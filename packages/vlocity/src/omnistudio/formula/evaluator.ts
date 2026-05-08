@@ -341,10 +341,13 @@ class FormulaTokenizer {
                 tokens.push({ type: 'string', value: this.readString(char), start, end: this.index });
                 continue;
             }
-            if (char === '%' && this.expression.indexOf('%', this.index + 1) !== -1) {
-                const start = this.index;
-                tokens.push({ type: 'variable', value: this.readPercentVariable(), start, end: this.index });
-                continue;
+            if (char === '%') {
+                const closeIndex = this.expression.indexOf('%', this.index + 1);
+                if (closeIndex !== -1 && /^[\w.:]+$/.test(this.expression.slice(this.index + 1, closeIndex))) {
+                    const start = this.index;
+                    tokens.push({ type: 'variable', value: this.readPercentVariable(), start, end: this.index });
+                    continue;
+                }
             }
             if (/[0-9]/.test(char) || (char === '.' && /[0-9]/.test(this.expression[this.index + 1]))) {
                 const start = this.index;

@@ -283,7 +283,7 @@ export class DatapackExporter {
 
         // Normalize the field name and set the value, also define a getter for the original field name 
         const field = extractNamespaceAndName(fieldName);
-        const isVlocityNamespace = !!field.namespace && /$vlocity/i.test(field.namespace);
+        const isVlocityNamespace = !!field.namespace && /^vlocity/i.test(field.namespace);
         const datapackFieldName = isVlocityNamespace ? `${NAMESPACE_PLACEHOLDER}__${field.name}` : fieldName;
         datapack.data[datapackFieldName] = value;
 
@@ -351,7 +351,7 @@ export class DatapackExporter {
         // Process fields
         for (const field of this.definitions.getFieldsWith(datapack, 'processor')) {
             try {
-                datapack.data[field.name] = this.evalProcessor(field.processor, datapack, datapack.data[field.name]);
+                datapack.data[field.name] = this.evalProcessor(field.processor, datapack.data[field.name], datapack);
             } catch (e) {
                 this.logger.error(`Error processing field ${field.name} on ${datapack.schema.name}`, e);
             }
